@@ -47,6 +47,13 @@ Plug 'tpope/vim-abolish'
 Plug 'tpope/vim-sleuth'
 Plug 'tpope/vim-surround'
 
+" Undo tree visualiser
+Plug 'simnalamburt/vim-mundo'
+
+" FZF for Vim
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+
 " Allows traversing motions without numbers easier.
 Plug 'easymotion/vim-easymotion'
 
