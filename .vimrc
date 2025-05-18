@@ -1,6 +1,7 @@
 syntax on        " Enable syntax highlighting
 set number       " Show line numbers
 set incsearch
+set clipboard=unnamed
 
 " Necessary for cut operations from cutlass to be included in yank history
 let g:yoinkIncludeDeleteOperations = 1
