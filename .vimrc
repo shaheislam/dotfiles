@@ -37,14 +37,18 @@ autocmd BufRead,BufNewFile *.tf set filetype=terraform
 
 " Plugins
 call plug#begin()
-Plug 'hashivim/vim-terraform'
-Plug 'michaeljsmith/vim-indent-object'
 Plug 'ap/vim-css-color'
-Plug 'tpope/vim-surround'
+Plug 'hashivim/vim-terraform'
+Plug 'junegunn/rainbow_parentheses.vim'
+Plug 'michaeljsmith/vim-indent-object'
+Plug 'nathanaelkane/vim-indent-guides'
 Plug 'psliwka/vim-smoothie'
 Plug 'tpope/vim-abolish'
-Plug 'nathanaelkane/vim-indent-guides'
-Plug 'junegunn/rainbow_parentheses.vim'
+Plug 'tpope/vim-sleuth'
+Plug 'tpope/vim-surround'
+
+" Allows traversing motions without numbers easier.
+Plug 'easymotion/vim-easymotion'
 
 " Allows unix readline commands in vim
 Plug 'tpope/vim-rsi'
@@ -77,5 +81,4 @@ call plug#end()
 
 " Macros
 let @f = "0cwfixup\<Esc>j"
-
 
