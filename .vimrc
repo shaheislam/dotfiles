@@ -8,11 +8,12 @@ let g:yoinkIncludeDeleteOperations = 1
 " Optional to enable indent on startup toggle to enable
 let g:indent_guides_enable_on_vim_startup = 0 
 
-" vim-cutlass using 'x' for cut (Separate cut and delete)
-nnoremap x d
-xnoremap x d
-nnoremap xx dd
-nnoremap X D
+" vim-cutlass using 'm' for cut (Separate cut and delete)
+nnoremap m d
+xnoremap m d
+
+nnoremap mm dd
+nnoremap M D
 
 " vim-yoink mappings
 " paste mappings (allow cycle through functionality)			\
