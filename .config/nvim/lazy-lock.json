@@ -36,5 +36,6 @@
   "vim-surround": { "branch": "master", "commit": "3d188ed2113431cf8dac77be61b842acb64433d9" },
   "vim-terraform": { "branch": "master", "commit": "8912ca1be3025a1c9fab193618f3b99517e01973" },
   "vim-visualrepeat": { "branch": "master", "commit": "93f6bb50e49b239fc8a69fee5bbac5dfdac8e9cf" },
-  "vim-yoink": { "branch": "master", "commit": "89ed6934679fdbc3c20f552b50b1f869f624cd22" }
+  "vim-yoink": { "branch": "master", "commit": "89ed6934679fdbc3c20f552b50b1f869f624cd22" },
+  "which-key.nvim": { "branch": "main", "commit": "370ec46f710e058c9c1646273e6b225acf47cbed" }
 }
