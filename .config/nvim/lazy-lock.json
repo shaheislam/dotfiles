@@ -11,6 +11,7 @@
   "nui.nvim": { "branch": "main", "commit": "f535005e6ad1016383f24e39559833759453564e" },
   "nvim-treesitter": { "branch": "master", "commit": "066fd6505377e3fd4aa219e61ce94c2b8bdb0b79" },
   "nvim-web-devicons": { "branch": "master", "commit": "1fb58cca9aebbc4fd32b086cb413548ce132c127" },
+  "oil.nvim": { "branch": "master", "commit": "685cdb4ffa74473d75a1b97451f8654ceeab0f4a" },
   "plenary.nvim": { "branch": "master", "commit": "857c5ac632080dba10aae49dba902ce3abf91b35" },
   "rainbow_parentheses.vim": { "branch": "master", "commit": "27e7cd73fec9d1162169180399ff8ea9fa28b003" },
   "render-markdown.nvim": { "branch": "main", "commit": "df64d5d5432e13026a79384ec4e2bab185fd4eb5" },

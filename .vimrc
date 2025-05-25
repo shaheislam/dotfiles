@@ -3,10 +3,14 @@ set number       " Show line numbers
 set incsearch
 set clipboard=unnamed
 
+" Set leader key to space
+let mapleader = " "
+let maplocalleader = " "
+
 " Necessary for cut operations from cutlass to be included in yank history
 let g:yoinkIncludeDeleteOperations = 1
 " Optional to enable indent on startup toggle to enable
-let g:indent_guides_enable_on_vim_startup = 0 
+let g:indent_guides_enable_on_vim_startup = 0
 
 " vim-cutlass using 'm' for cut (Separate cut and delete)
 nnoremap m d
@@ -90,4 +94,3 @@ call plug#end()
 
 " Macros
 let @f = "0cwfixup\<Esc>j"
-
