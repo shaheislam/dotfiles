@@ -36,6 +36,22 @@ vim.keymap.set('n', '<leader>s', '<plug>(SubversiveSubstituteRange)')
 vim.keymap.set('x', '<leader>s', '<plug>(SubversiveSubstituteRange)')
 vim.keymap.set('n', '<leader>ss', '<plug>(SubversiveSubstituteWordRange)')
 
+-- Telescope keymaps
+vim.keymap.set('n', '<leader>ff', '<cmd>Telescope find_files<cr>', { desc = 'Find Files' })
+vim.keymap.set('n', '<leader>fg', '<cmd>Telescope live_grep<cr>', { desc = 'Live Grep' })
+vim.keymap.set('n', '<leader>fb', '<cmd>Telescope buffers<cr>', { desc = 'Find Buffers' })
+vim.keymap.set('n', '<leader>fh', '<cmd>Telescope help_tags<cr>', { desc = 'Help Tags' })
+vim.keymap.set('n', '<leader>fr', '<cmd>Telescope oldfiles<cr>', { desc = 'Recent Files' })
+vim.keymap.set('n', '<leader>/', '<cmd>Telescope current_buffer_fuzzy_find<cr>', { desc = 'Search in Buffer' })
+
+-- Harpoon keymaps
+vim.keymap.set('n', '<leader>a', function() require('harpoon'):list():add() end, { desc = 'Harpoon add file' })
+vim.keymap.set('n', '<C-e>', function() require('harpoon').ui:toggle_quick_menu(require('harpoon'):list()) end, { desc = 'Harpoon toggle menu' })
+vim.keymap.set('n', '<C-h>', function() require('harpoon'):list():select(1) end, { desc = 'Harpoon file 1' })
+vim.keymap.set('n', '<C-t>', function() require('harpoon'):list():select(2) end, { desc = 'Harpoon file 2' })
+vim.keymap.set('n', '<C-n>', function() require('harpoon'):list():select(3) end, { desc = 'Harpoon file 3' })
+vim.keymap.set('n', '<C-s>', function() require('harpoon'):list():select(4) end, { desc = 'Harpoon file 4' })
+
 -- Autocmd for Terraform files
 vim.api.nvim_create_autocmd({'BufRead', 'BufNewFile'}, {
   pattern = '*.tf',
@@ -81,6 +97,140 @@ require("lazy").setup({
     end
   },
   'junegunn/fzf.vim',
+  
+  -- Telescope - Fuzzy finder
+  {
+    'nvim-telescope/telescope.nvim',
+    tag = '0.1.8',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      require('telescope').setup({
+        defaults = {
+          file_ignore_patterns = { "node_modules", ".git", "dist" },
+          mappings = {
+            i = {
+              ["<C-u>"] = false,
+              ["<C-d>"] = false,
+            },
+          },
+        },
+      })
+    end,
+  },
+  
+  -- Telescope fzf native for better performance
+  {
+    'nvim-telescope/telescope-fzf-native.nvim',
+    build = 'make',
+    config = function()
+      require('telescope').load_extension('fzf')
+    end,
+  },
+  
+  -- Which-key for keybinding hints
+  {
+    'folke/which-key.nvim',
+    event = 'VeryLazy',
+    config = function()
+      local wk = require('which-key')
+      
+      wk.setup({
+        -- Your configuration options here
+        window = {
+          border = "rounded", -- none, single, double, shadow
+          position = "bottom", -- bottom, top
+        },
+        layout = {
+          height = { min = 4, max = 25 }, -- min and max height of the columns
+          width = { min = 20, max = 50 }, -- min and max width of the columns
+          spacing = 3, -- spacing between columns
+        },
+      })
+
+      -- Register your key mappings with descriptions
+      wk.register({
+        ["<leader>f"] = {
+          name = "Find", -- group name
+          f = { "Find Files" },
+          g = { "Live Grep" },
+          b = { "Find Buffers" },
+          h = { "Help Tags" },
+          r = { "Recent Files" },
+          ["/"] = { "Search in Buffer" },
+        },
+        ["<leader>s"] = {
+          name = "Substitute", -- group name
+          s = { "Substitute Word Range" },
+        },
+        ["<leader>a"] = { "Harpoon Add File" },
+      })
+
+      -- Register some of your other mappings
+      wk.register({
+        ["<C-e>"] = { "Harpoon Toggle Menu" },
+        ["<C-h>"] = { "Harpoon File 1" },
+        ["<C-t>"] = { "Harpoon File 2" },
+        ["<C-n>"] = { "Harpoon File 3" },
+        ["<C-s>"] = { "Harpoon File 4" },
+      })
+    end,
+  },
+  
+  -- Harpoon for quick file navigation
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      require('harpoon'):setup()
+    end,
+  },
+  
+  -- Avante - AI pair programming
+  {
+    'yetone/avante.nvim',
+    event = 'VeryLazy',
+    lazy = false,
+    version = false,
+    opts = {
+      provider = "claude", -- You can change to "openai", "azure", "gemini", etc.
+    },
+    build = 'make',
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter',
+      'stevearc/dressing.nvim',
+      'nvim-lua/plenary.nvim',
+      'MunifTanjim/nui.nvim',
+      --- The below dependencies are optional,
+      'nvim-tree/nvim-web-devicons', -- or echasnovski/mini.icons
+      'zbirenbaum/copilot.lua', -- for providers='copilot'
+      {
+        -- support for image pasting
+        'HakonHarnes/img-clip.nvim',
+        event = 'VeryLazy',
+        opts = {
+          -- recommended settings
+          default = {
+            embed_image_as_base64 = false,
+            prompt_for_file_name = false,
+            drag_and_drop = {
+              insert_mode = true,
+            },
+            -- required for Windows users
+            use_absolute_path = true,
+          },
+        },
+      },
+      {
+        -- Make sure to set this up properly if you have lazy=true
+        'MeanderingProgrammer/render-markdown.nvim',
+        opts = {
+          file_types = { "markdown", "Avante" },
+        },
+        ft = { "markdown", "Avante" },
+      },
+    },
+  },
   
   -- Allows traversing motions without numbers easier
   'easymotion/vim-easymotion',
