@@ -51,13 +51,13 @@ vim.keymap.set('n', '<leader>/', '<cmd>Telescope current_buffer_fuzzy_find<cr>',
 -- Oil.nvim keymap
 vim.keymap.set('n', '<leader>e', '<cmd>Oil<cr>', { desc = 'Open File Browser' })
 
--- Harpoon keymaps
+-- Harpoon keymaps (using Ctrl + ASDF - left hand home row)
 vim.keymap.set('n', '<leader>a', function() require('harpoon'):list():add() end, { desc = 'Harpoon add file' })
 vim.keymap.set('n', '<C-e>', function() require('harpoon').ui:toggle_quick_menu(require('harpoon'):list()) end, { desc = 'Harpoon toggle menu' })
-vim.keymap.set('n', '<C-h>', function() require('harpoon'):list():select(1) end, { desc = 'Harpoon file 1' })
-vim.keymap.set('n', '<C-t>', function() require('harpoon'):list():select(2) end, { desc = 'Harpoon file 2' })
-vim.keymap.set('n', '<C-n>', function() require('harpoon'):list():select(3) end, { desc = 'Harpoon file 3' })
-vim.keymap.set('n', '<C-s>', function() require('harpoon'):list():select(4) end, { desc = 'Harpoon file 4' })
+vim.keymap.set('n', '<C-a>', function() require('harpoon'):list():select(1) end, { desc = 'Harpoon file 1' })
+vim.keymap.set('n', '<C-s>', function() require('harpoon'):list():select(2) end, { desc = 'Harpoon file 2' })
+vim.keymap.set('n', '<C-d>', function() require('harpoon'):list():select(3) end, { desc = 'Harpoon file 3' })
+vim.keymap.set('n', '<C-f>', function() require('harpoon'):list():select(4) end, { desc = 'Harpoon file 4' })
 
 -- Autocmd for Terraform files
 vim.api.nvim_create_autocmd({'BufRead', 'BufNewFile'}, {
@@ -180,7 +180,7 @@ require("lazy").setup({
         keymaps = {
           ["g?"] = "actions.show_help",
           ["<CR>"] = "actions.select",
-          ["<C-s>"] = "actions.select_vsplit",
+          ["<C-v>"] = "actions.select_vsplit",
           ["<C-h>"] = "actions.select_split",
           ["<C-t>"] = "actions.select_tab",
           ["<C-p>"] = "actions.preview",
@@ -194,7 +194,7 @@ require("lazy").setup({
           ["gx"] = "actions.open_external",
           ["g."] = "actions.toggle_hidden",
           ["g\\"] = "actions.toggle_trash",
-          ["<C-f>"] = {
+          ["<leader>f"] = {
             desc = "Fuzzy find files",
             callback = function()
               require("telescope.builtin").find_files({
@@ -305,10 +305,10 @@ require("lazy").setup({
         { "<leader>a", desc = "Harpoon Add File" },
         { "<leader>e", desc = "Open File Browser" },
         { "<C-e>", desc = "Harpoon Toggle Menu" },
-        { "<C-h>", desc = "Harpoon File 1" },
-        { "<C-t>", desc = "Harpoon File 2" },
-        { "<C-n>", desc = "Harpoon File 3" },
-        { "<C-s>", desc = "Harpoon File 4" },
+        { "<C-a>", desc = "Harpoon File 1" },
+        { "<C-s>", desc = "Harpoon File 2" },
+        { "<C-d>", desc = "Harpoon File 3" },
+        { "<C-f>", desc = "Harpoon File 4" },
       },
     },
   },
@@ -321,52 +321,6 @@ require("lazy").setup({
     config = function()
       require('harpoon'):setup()
     end,
-  },
-
-  -- Avante - AI pair programming
-  {
-    'yetone/avante.nvim',
-    event = 'VeryLazy',
-    lazy = false,
-    version = false,
-    opts = {
-      provider = "claude", -- You can change to "openai", "azure", "gemini", etc.
-    },
-    build = 'make',
-    dependencies = {
-      'nvim-treesitter/nvim-treesitter',
-      'stevearc/dressing.nvim',
-      'nvim-lua/plenary.nvim',
-      'MunifTanjim/nui.nvim',
-      --- The below dependencies are optional,
-      'nvim-tree/nvim-web-devicons', -- or echasnovski/mini.icons
-      'zbirenbaum/copilot.lua', -- for providers='copilot'
-      {
-        -- support for image pasting
-        'HakonHarnes/img-clip.nvim',
-        event = 'VeryLazy',
-        opts = {
-          -- recommended settings
-          default = {
-            embed_image_as_base64 = false,
-            prompt_for_file_name = false,
-            drag_and_drop = {
-              insert_mode = true,
-            },
-            -- required for Windows users
-            use_absolute_path = true,
-          },
-        },
-      },
-      {
-        -- Make sure to set this up properly if you have lazy=true
-        'MeanderingProgrammer/render-markdown.nvim',
-        opts = {
-          file_types = { "markdown", "Avante" },
-        },
-        ft = { "markdown", "Avante" },
-      },
-    },
   },
 
   -- Allows traversing motions without numbers easier
