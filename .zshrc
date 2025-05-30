@@ -141,6 +141,9 @@ export BAT_THEME=tokyonight_night
 # Enable Powerlevel10k prompt customization.
 # [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
+# direnv integration
+eval "$(direnv hook zsh)"
+
 # ---- Zoxide (better cd) ----
 eval "$(zoxide init zsh)"
 alias cd="z"
@@ -160,3 +163,6 @@ function aws-sso() {
 # Added by Windsurf
 export PATH="/Users/shahe/.codeium/windsurf/bin:$PATH"
 
+alias code='code --reuse-window'
+export VSCODE_CLI_USE_REUSE_WINDOW=1
+export FZF_DEFAULT_COMMAND='fd'
