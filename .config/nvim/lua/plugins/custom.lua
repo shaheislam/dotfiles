@@ -180,7 +180,7 @@ return {
     end,
   },
 
-  -- Project management with forced work directory scanning
+  -- Project management
   {
     "ahmedkhalf/project.nvim",
     opts = {
