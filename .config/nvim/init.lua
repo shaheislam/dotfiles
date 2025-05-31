@@ -1,4 +1,8 @@
 -- ~/.config/nvim/init.lua
+-- Set leader keys BEFORE loading lazy
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
+
 -- Bootstrap LazyVim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
@@ -50,10 +54,6 @@ vim.api.nvim_create_autocmd("VimEnter", {
     vim.fn.setreg('f', '0cwfixup\\<Esc>j')
   end,
 })
-
--- Your custom settings that override LazyVim defaults
-vim.g.mapleader = " "
-vim.g.maplocalleader = " "
 
 -- Custom settings
 vim.opt.clipboard = "unnamed" -- Your preference
