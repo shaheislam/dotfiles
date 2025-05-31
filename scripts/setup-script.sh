@@ -46,7 +46,6 @@ BREW_PACKAGES=(
   "terraform"
   "asdf"
   "stylua"
-  "prettier"
   "black"
   "isort"
   "node"
