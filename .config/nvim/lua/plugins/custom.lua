@@ -99,7 +99,7 @@ return {
 
   -- Additional plugins you had that aren't in LazyVim
   "inkarkat/vim-ingo-library",
-  "inkarkat/vim-ReplaceWithRegister", 
+  "inkarkat/vim-ReplaceWithRegister",
   "inkarkat/vim-ReplaceWithSameIndentRegister",
   "inkarkat/vim-visualrepeat",
   "christoomey/vim-sort-motion",
@@ -117,7 +117,6 @@ return {
   "tpope/vim-abolish",
   "tpope/vim-sleuth",
   "tpope/vim-surround",
-  "jiangmiao/auto-pairs",
   "tpope/vim-repeat",
 
   -- FZF integration
@@ -134,10 +133,10 @@ return {
     "nvim-telescope/telescope.nvim",
     opts = {
       defaults = {
-        file_ignore_patterns = { 
-          "node_modules", 
-          ".git", 
-          "dist", 
+        file_ignore_patterns = {
+          "node_modules",
+          ".git",
+          "dist",
           "build",
           "%.lock",
           "package%-lock%.json",
@@ -158,7 +157,7 @@ return {
           end
         })
       end, desc = "Live Grep (No Tests)" },
-      
+
       { "<leader>fF", function()
         require("telescope.builtin").find_files({
           find_command = { 'rg', '--files', '--hidden', '--glob', '!.git/*', '--glob', '!node_modules/*', '--glob', '!dist/*' }
