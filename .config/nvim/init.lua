@@ -4,6 +4,10 @@ vim.opt.number = true  -- Show line numbers
 vim.opt.relativenumber = true  -- Show relative line numbers
 vim.opt.incsearch = true
 vim.opt.clipboard = 'unnamed'
+vim.opt.termguicolors = true  -- Enable 24-bit RGB colors
+vim.opt.signcolumn = 'yes'  -- Always show sign column
+vim.opt.updatetime = 250  -- Faster completion
+vim.opt.timeoutlen = 300  -- Faster which-key
 
 -- Set leader key to space
 vim.g.mapleader = ' '
@@ -51,13 +55,30 @@ vim.keymap.set('n', '<leader>/', '<cmd>Telescope current_buffer_fuzzy_find<cr>',
 -- Oil.nvim keymap
 vim.keymap.set('n', '<leader>e', '<cmd>Oil<cr>', { desc = 'Open File Browser' })
 
--- Harpoon keymaps (using Ctrl + ASDF - left hand home row)
+-- Harpoon keymaps (using Ctrl + 1234)
 vim.keymap.set('n', '<leader>a', function() require('harpoon'):list():add() end, { desc = 'Harpoon add file' })
 vim.keymap.set('n', '<C-e>', function() require('harpoon').ui:toggle_quick_menu(require('harpoon'):list()) end, { desc = 'Harpoon toggle menu' })
-vim.keymap.set('n', '<C-a>', function() require('harpoon'):list():select(1) end, { desc = 'Harpoon file 1' })
-vim.keymap.set('n', '<C-s>', function() require('harpoon'):list():select(2) end, { desc = 'Harpoon file 2' })
-vim.keymap.set('n', '<C-d>', function() require('harpoon'):list():select(3) end, { desc = 'Harpoon file 3' })
-vim.keymap.set('n', '<C-f>', function() require('harpoon'):list():select(4) end, { desc = 'Harpoon file 4' })
+vim.keymap.set('n', '<C-1>', function() require('harpoon'):list():select(1) end, { desc = 'Harpoon file 1' })
+vim.keymap.set('n', '<C-2>', function() require('harpoon'):list():select(2) end, { desc = 'Harpoon file 2' })
+vim.keymap.set('n', '<C-3>', function() require('harpoon'):list():select(3) end, { desc = 'Harpoon file 3' })
+vim.keymap.set('n', '<C-4>', function() require('harpoon'):list():select(4) end, { desc = 'Harpoon file 4' })
+
+-- Git keymaps
+vim.keymap.set('n', '<leader>gs', '<cmd>Git<cr>', { desc = 'Git Status' })
+vim.keymap.set('n', '<leader>gp', '<cmd>Git push<cr>', { desc = 'Git Push' })
+vim.keymap.set('n', '<leader>gl', '<cmd>Git pull<cr>', { desc = 'Git Pull' })
+vim.keymap.set('n', '<leader>gb', '<cmd>Git blame<cr>', { desc = 'Git Blame' })
+
+-- Terminal keymap
+vim.keymap.set('n', '<leader>t', '<cmd>ToggleTerm<cr>', { desc = 'Toggle Terminal' })
+
+-- Search and replace keymap
+vim.keymap.set('n', '<leader>sr', '<cmd>lua require("spectre").toggle()<cr>', { desc = 'Search and Replace' })
+
+-- Session keymaps
+vim.keymap.set('n', '<leader>qs', function() require('persistence').load() end, { desc = 'Restore Session' })
+vim.keymap.set('n', '<leader>ql', function() require('persistence').load({ last = true }) end, { desc = 'Restore Last Session' })
+vim.keymap.set('n', '<leader>qd', function() require('persistence').stop() end, { desc = 'Stop Session' })
 
 -- Autocmd for Terraform files
 vim.api.nvim_create_autocmd({'BufRead', 'BufNewFile'}, {
@@ -83,6 +104,311 @@ vim.opt.rtp:prepend(lazypath)
 
 -- Plugin setup with lazy.nvim
 require("lazy").setup({
+  -- Colorschemes
+  {
+    'folke/tokyonight.nvim',
+    lazy = false,
+    priority = 1000,
+    config = function()
+      vim.cmd([[colorscheme tokyonight-night]])
+    end,
+  },
+  'catppuccin/nvim',
+  'rose-pine/neovim',
+
+  -- LSP & Completion
+  {
+    'VonHeikemen/lsp-zero.nvim',
+    branch = 'v3.x',
+    lazy = true,
+    config = false,
+    init = function()
+      -- Disable automatic setup, we are doing it manually
+      vim.g.lsp_zero_extend_cmp = 0
+      vim.g.lsp_zero_extend_lspconfig = 0
+    end,
+  },
+  {
+    'williamboman/mason.nvim',
+    lazy = false,
+    config = true,
+  },
+  {
+    'hrsh7th/nvim-cmp',
+    event = 'InsertEnter',
+    dependencies = {
+      {'L3MON4D3/LuaSnip'},
+      {'hrsh7th/cmp-nvim-lsp'},
+      {'hrsh7th/cmp-buffer'},
+      {'hrsh7th/cmp-path'},
+      {'saadparwaiz1/cmp_luasnip'},
+    },
+    config = function()
+      local lsp_zero = require('lsp-zero')
+      lsp_zero.extend_cmp()
+
+      local cmp = require('cmp')
+      local cmp_action = lsp_zero.cmp_action()
+
+      cmp.setup({
+        formatting = lsp_zero.cmp_format(),
+        mapping = cmp.mapping.preset.insert({
+          ['<C-Space>'] = cmp.mapping.complete(),
+          ['<C-u>'] = cmp.mapping.scroll_docs(-4),
+          ['<C-d>'] = cmp.mapping.scroll_docs(4),
+          ['<C-f>'] = cmp_action.luasnip_jump_forward(),
+          ['<C-b>'] = cmp_action.luasnip_jump_backward(),
+        })
+      })
+    end
+  },
+  {
+    'neovim/nvim-lspconfig',
+    cmd = {'LspInfo', 'LspInstall', 'LspStart'},
+    event = {'BufReadPre', 'BufNewFile'},
+    dependencies = {
+      {'hrsh7th/cmp-nvim-lsp'},
+      {'williamboman/mason-lspconfig.nvim'},
+    },
+    config = function()
+      local lsp_zero = require('lsp-zero')
+      lsp_zero.extend_lspconfig()
+
+      lsp_zero.on_attach(function(client, bufnr)
+        lsp_zero.default_keymaps({buffer = bufnr})
+      end)
+
+      require('mason-lspconfig').setup({
+        ensure_installed = {'lua_ls', 'tsserver', 'rust_analyzer', 'gopls', 'pyright'},
+        handlers = {
+          lsp_zero.default_setup,
+          lua_ls = function()
+            local lua_opts = lsp_zero.nvim_lua_ls()
+            require('lspconfig').lua_ls.setup(lua_opts)
+          end,
+        }
+      })
+    end
+  },
+
+  -- Treesitter for better syntax highlighting
+  {
+    'nvim-treesitter/nvim-treesitter',
+    build = ':TSUpdate',
+    config = function()
+      require('nvim-treesitter.configs').setup({
+        ensure_installed = { "lua", "vim", "vimdoc", "javascript", "typescript", "python", "rust", "go", "terraform", "json", "yaml" },
+        highlight = { enable = true },
+        indent = { enable = true },
+        incremental_selection = {
+          enable = true,
+          keymaps = {
+            init_selection = '<C-space>',
+            node_incremental = '<C-space>',
+            scope_incremental = false,
+            node_decremental = '<bs>',
+          },
+        },
+      })
+    end,
+  },
+  'nvim-treesitter/nvim-treesitter-textobjects',
+
+  -- Git integration
+  {
+    'lewis6991/gitsigns.nvim',
+    config = function()
+      require('gitsigns').setup({
+        signs = {
+          add = { text = '+' },
+          change = { text = '~' },
+          delete = { text = '_' },
+          topdelete = { text = '‾' },
+          changedelete = { text = '~' },
+        },
+        on_attach = function(bufnr)
+          local gs = package.loaded.gitsigns
+
+          local function map(mode, l, r, opts)
+            opts = opts or {}
+            opts.buffer = bufnr
+            vim.keymap.set(mode, l, r, opts)
+          end
+
+          -- Navigation
+          map('n', ']c', function()
+            if vim.wo.diff then return ']c' end
+            vim.schedule(function() gs.next_hunk() end)
+            return '<Ignore>'
+          end, {expr=true})
+
+          map('n', '[c', function()
+            if vim.wo.diff then return '[c' end
+            vim.schedule(function() gs.prev_hunk() end)
+            return '<Ignore>'
+          end, {expr=true})
+
+          -- Actions
+          map('n', '<leader>hs', gs.stage_hunk, { desc = 'Stage hunk' })
+          map('n', '<leader>hr', gs.reset_hunk, { desc = 'Reset hunk' })
+          map('n', '<leader>hS', gs.stage_buffer, { desc = 'Stage buffer' })
+          map('n', '<leader>hu', gs.undo_stage_hunk, { desc = 'Undo stage hunk' })
+          map('n', '<leader>hR', gs.reset_buffer, { desc = 'Reset buffer' })
+          map('n', '<leader>hp', gs.preview_hunk, { desc = 'Preview hunk' })
+          map('n', '<leader>hb', function() gs.blame_line{full=true} end, { desc = 'Blame line' })
+          map('n', '<leader>tb', gs.toggle_current_line_blame, { desc = 'Toggle line blame' })
+          map('n', '<leader>hd', gs.diffthis, { desc = 'Diff this' })
+          map('n', '<leader>hD', function() gs.diffthis('~') end, { desc = 'Diff this ~' })
+          map('n', '<leader>td', gs.toggle_deleted, { desc = 'Toggle deleted' })
+        end
+      })
+    end,
+  },
+  'tpope/vim-fugitive',
+  'tpope/vim-rhubarb',
+
+  -- UI Enhancements
+  {
+    'nvim-lualine/lualine.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
+      require('lualine').setup({
+        options = {
+          theme = 'tokyonight',
+          component_separators = '|',
+          section_separators = '',
+        },
+        sections = {
+          lualine_x = {
+            {
+              require("lazy.status").updates,
+              cond = require("lazy.status").has_updates,
+              color = { fg = "#ff9e64" },
+            },
+            'encoding',
+            'fileformat',
+            'filetype'
+          },
+        },
+      })
+    end,
+  },
+  {
+    'rcarriga/nvim-notify',
+    config = function()
+      vim.notify = require('notify')
+      require('notify').setup({
+        stages = 'fade_in_slide_out',
+        background_colour = 'FloatShadow',
+        timeout = 3000,
+      })
+    end,
+  },
+  {
+    'lukas-reineke/indent-blankline.nvim',
+    main = 'ibl',
+    config = function()
+      require('ibl').setup({
+        indent = {
+          char = '│',
+          tab_char = '│',
+        },
+        scope = { enabled = false },
+        exclude = {
+          filetypes = {
+            'help',
+            'alpha',
+            'dashboard',
+            'neo-tree',
+            'Trouble',
+            'trouble',
+            'lazy',
+            'mason',
+            'notify',
+            'toggleterm',
+            'lazyterm',
+          },
+        },
+      })
+    end,
+  },
+
+  -- Productivity plugins
+  {
+    'numToStr/Comment.nvim',
+    config = function()
+      require('Comment').setup()
+    end,
+  },
+  {
+    'nmac427/guess-indent.nvim',
+    config = function()
+      require('guess-indent').setup({})
+    end,
+  },
+  {
+    'nvim-pack/nvim-spectre',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+      require('spectre').setup()
+    end,
+  },
+  {
+    'folke/persistence.nvim',
+    event = 'BufReadPre',
+    config = function()
+      require('persistence').setup()
+    end,
+  },
+  {
+    'akinsho/toggleterm.nvim',
+    version = "*",
+    config = function()
+      require('toggleterm').setup({
+        size = 20,
+        open_mapping = [[<c-\>]],
+        hide_numbers = true,
+        shade_terminals = true,
+        shading_factor = 2,
+        start_in_insert = true,
+        insert_mappings = true,
+        persist_size = true,
+        direction = 'float',
+        close_on_exit = true,
+        shell = vim.o.shell,
+        float_opts = {
+          border = 'curved',
+          winblend = 0,
+          highlights = {
+            border = 'Normal',
+            background = 'Normal',
+          },
+        },
+      })
+    end,
+  },
+  {
+    'stevearc/conform.nvim',
+    config = function()
+      require('conform').setup({
+        formatters_by_ft = {
+          lua = { 'stylua' },
+          python = { 'isort', 'black' },
+          javascript = { { 'prettierd', 'prettier' } },
+          typescript = { { 'prettierd', 'prettier' } },
+          json = { { 'prettierd', 'prettier' } },
+          yaml = { { 'prettierd', 'prettier' } },
+          terraform = { 'terraform_fmt' },
+        },
+        format_on_save = {
+          timeout_ms = 500,
+          lsp_fallback = true,
+        },
+      })
+    end,
+  },
+
+  -- Original plugins
   'ap/vim-css-color',
   'hashivim/vim-terraform',
   'junegunn/rainbow_parentheses.vim',
@@ -302,13 +628,34 @@ require("lazy").setup({
         { "<leader>fr", desc = "Recent Files" },
         { "<leader>s", group = "Substitute" },
         { "<leader>ss", desc = "Substitute Word Range" },
+        { "<leader>sr", desc = "Search and Replace" },
         { "<leader>a", desc = "Harpoon Add File" },
         { "<leader>e", desc = "Open File Browser" },
+        { "<leader>t", desc = "Toggle Terminal" },
+        { "<leader>g", group = "Git" },
+        { "<leader>gs", desc = "Git Status" },
+        { "<leader>gp", desc = "Git Push" },
+        { "<leader>gl", desc = "Git Pull" },
+        { "<leader>gb", desc = "Git Blame" },
+        { "<leader>h", group = "Git Hunks" },
+        { "<leader>hs", desc = "Stage Hunk" },
+        { "<leader>hr", desc = "Reset Hunk" },
+        { "<leader>hS", desc = "Stage Buffer" },
+        { "<leader>hu", desc = "Undo Stage Hunk" },
+        { "<leader>hR", desc = "Reset Buffer" },
+        { "<leader>hp", desc = "Preview Hunk" },
+        { "<leader>hb", desc = "Blame Line" },
+        { "<leader>hd", desc = "Diff This" },
+        { "<leader>hD", desc = "Diff This ~" },
+        { "<leader>q", group = "Session" },
+        { "<leader>qs", desc = "Restore Session" },
+        { "<leader>ql", desc = "Restore Last Session" },
+        { "<leader>qd", desc = "Stop Session" },
         { "<C-e>", desc = "Harpoon Toggle Menu" },
-        { "<C-a>", desc = "Harpoon File 1" },
-        { "<C-s>", desc = "Harpoon File 2" },
-        { "<C-d>", desc = "Harpoon File 3" },
-        { "<C-f>", desc = "Harpoon File 4" },
+        { "<C-1>", desc = "Harpoon File 1" },
+        { "<C-2>", desc = "Harpoon File 2" },
+        { "<C-3>", desc = "Harpoon File 3" },
+        { "<C-4>", desc = "Harpoon File 4" },
       },
     },
   },
@@ -353,6 +700,9 @@ require("lazy").setup({
   -- Optional dependencies for enhanced functionality
   'tpope/vim-repeat',
   'inkarkat/vim-visualrepeat',
+
+  -- Web dev icons (dependency for many plugins)
+  'nvim-tree/nvim-web-devicons',
 })
 
 -- Macros
