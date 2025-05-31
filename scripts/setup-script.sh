@@ -185,9 +185,22 @@ else
   echo "Warning: npm not found. Install Node.js first."
 fi
 
-# Install Python packages for formatters
-echo "=== Installing Python packages ==="
-pip3 install black isort ruff
+# Install Python packages via Homebrew (safer)
+echo "=== Installing Python packages via Homebrew ==="
+PYTHON_BREW_PACKAGES=(
+  "black"
+  "isort"
+  "ruff"
+)
+
+for package in "${PYTHON_BREW_PACKAGES[@]}"; do
+  if brew list "$package" &>/dev/null; then
+    echo "$package already installed"
+  else
+    echo "Installing $package via Homebrew..."
+    brew install "$package"
+  fi
+done
 
 # Install Rust formatters
 echo "=== Installing Rust formatters ==="
