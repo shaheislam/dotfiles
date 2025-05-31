@@ -176,18 +176,13 @@ fi
 # Install Node.js packages globally for formatters
 echo "=== Installing Node.js global packages ==="
 
-# Check if npm packages are needed based on your nvim config
 if command -v npm &> /dev/null; then
-  # Install prettier daemon for faster formatting
-  npm install -g @fsouza/prettierd
-
-  # Install standard prettier as fallback
-  npm install -g prettier
-
-  # Optional: TOML support for prettier
-  npm install -g prettier-plugin-toml
+  # Only install prettierd - use existing Homebrew prettier
+  npm install -g @fsouza/prettierd prettier-plugin-toml
+  echo "Installed prettierd and prettier-plugin-toml"
+  echo "Using existing prettier from Homebrew"
 else
-  echo "Warning: npm not found. Install Node.js first to get formatters."
+  echo "Warning: npm not found. Install Node.js first."
 fi
 
 # Install Python packages for formatters
