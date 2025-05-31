@@ -34,7 +34,6 @@ BREW_PACKAGES=(
   "mise"
   "kubie"
   "starship"
-  "eks-node-viewer"
   "fzf"
   "ripgrep"
   "neovim"
