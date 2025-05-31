@@ -44,6 +44,7 @@ autocmd BufRead,BufNewFile *.tf set filetype=terraform
 " Plugins
 call plug#begin()
 Plug 'ap/vim-css-color'
+Plug 'ghifarit53/tokyonight-vim'
 Plug 'hashivim/vim-terraform'
 Plug 'junegunn/rainbow_parentheses.vim'
 Plug 'michaeljsmith/vim-indent-object'
@@ -94,3 +95,12 @@ call plug#end()
 
 " Macros
 let @f = "0cwfixup\<Esc>j"
+
+" Tokyonight theme settings
+
+set termguicolors
+
+let g:tokyonight_style = 'night' " available: night, storm
+let g:tokyonight_enable_italic = 1
+
+colorscheme tokyonight
