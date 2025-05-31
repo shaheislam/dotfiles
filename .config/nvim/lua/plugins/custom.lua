@@ -189,14 +189,64 @@ return {
       patterns = { ".git", "_darcs", ".hg", ".bzr", ".svn", "Makefile", "package.json", "Cargo.toml" },
       show_hidden = false,
       silent_chdir = true,
+      scope_chdir = 'global',
     },
     event = "VeryLazy",
     config = function(_, opts)
       require("project_nvim").setup(opts)
       require("telescope").load_extension("projects")
+
+      -- Auto-discover all work projects on first load
+      vim.schedule(function()
+        local work_dir = vim.fn.expand("~/work")
+        if vim.fn.isdirectory(work_dir) == 1 then
+          local handle = vim.loop.fs_scandir(work_dir)
+          if handle then
+            while true do
+              local name, type = vim.loop.fs_scandir_next(handle)
+              if not name then break end
+
+              if type == "directory" then
+                local project_path = work_dir .. "/" .. name
+                local git_path = project_path .. "/.git"
+
+                -- If it has a .git directory, add it as a project
+                if vim.fn.isdirectory(git_path) == 1 then
+                  require("project_nvim.utils.history").add_project(project_path)
+                  print("Added work project: " .. name)
+                end
+              end
+            end
+          end
+        end
+      end)
     end,
     keys = {
       { "<leader>fp", "<cmd>Telescope projects<cr>", desc = "Projects" },
+      -- Add a manual refresh command
+      { "<leader>fP", function()
+        -- Manually refresh work projects
+        local work_dir = vim.fn.expand("~/work")
+        if vim.fn.isdirectory(work_dir) == 1 then
+          local handle = vim.loop.fs_scandir(work_dir)
+          if handle then
+            while true do
+              local name, type = vim.loop.fs_scandir_next(handle)
+              if not name then break end
+
+              if type == "directory" then
+                local project_path = work_dir .. "/" .. name
+                local git_path = project_path .. "/.git"
+
+                if vim.fn.isdirectory(git_path) == 1 then
+                  require("project_nvim.utils.history").add_project(project_path)
+                end
+              end
+            end
+          end
+        end
+        vim.cmd("Telescope projects")
+      end, desc = "Refresh & Show Projects" },
     },
   },
 }
