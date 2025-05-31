@@ -67,22 +67,42 @@ for package in "${BREW_PACKAGES[@]}"; do
   fi
 done
 
-# Install GUI applications via Homebrew Cask
+# Install GUI applications via Homebrew Cask (only if not already present)
 echo "=== Installing GUI applications via Homebrew Cask ==="
-CASK_PACKAGES=(
-  "ghostty"
-  "aerospace"
-  "visual-studio-code"
-)
 
-for cask in "${CASK_PACKAGES[@]}"; do
-  if brew list --cask "$cask" &>/dev/null; then
-    echo "$cask already installed"
-  else
-    echo "Installing $cask..."
-    brew install --cask "$cask"
-  fi
-done
+# Function to check if app is installed
+app_installed() {
+  [ -d "/Applications/$1.app" ]
+}
+
+# Install Ghostty
+if app_installed "Ghostty"; then
+  echo "Ghostty already installed"
+else
+  echo "Installing Ghostty..."
+  brew install --cask ghostty
+fi
+
+# Install Visual Studio Code
+if app_installed "Visual Studio Code"; then
+  echo "Visual Studio Code already installed"
+else
+  echo "Installing Visual Studio Code..."
+  brew install --cask visual-studio-code
+fi
+
+# Install AeroSpace
+if app_installed "AeroSpace"; then
+  echo "AeroSpace already installed"
+else
+  echo "Installing AeroSpace..."
+  brew install --cask nikitabobko/tap/aerospace || {
+    echo "Tap failed, installing manually..."
+    curl -L https://github.com/nikitabobko/AeroSpace/releases/latest/download/AeroSpace-Beta.zip -o /tmp/aerospace.zip
+    unzip /tmp/aerospace.zip -d /tmp/
+    sudo mv "/tmp/AeroSpace.app" "/Applications/"
+  }
+fi
 
 # Install SketchyBar (status bar) - needs special handling
 if ! command -v sketchybar &> /dev/null; then
@@ -112,26 +132,30 @@ fi
 
 # Install Oh My Zsh plugins
 echo "=== Installing Oh My Zsh plugins ==="
-declare -A plugins=(
-  ["zsh-completions"]="https://github.com/zsh-users/zsh-completions"
-  ["zsh-vi-mode"]="https://github.com/jeffreytse/zsh-vi-mode"
-  ["fzf-tab"]="https://github.com/Aloxaf/fzf-tab"
-  ["zsh-kubectl-prompt"]="https://github.com/superbrothers/zsh-kubectl-prompt"
-  ["docker-zsh-completion"]="https://github.com/greymd/docker-zsh-completion"
-  ["zsh-autosuggestions"]="https://github.com/zsh-users/zsh-autosuggestions"
-  ["zsh-syntax-highlighting"]="https://github.com/zsh-users/zsh-syntax-highlighting"
-  ["zsh-history-substring-search"]="https://github.com/zsh-users/zsh-history-substring-search"
-)
 
-for plugin in "${!plugins[@]}"; do
-  plugin_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/$plugin"
+# Array of plugin names and their git URLs
+install_zsh_plugin() {
+  local plugin_name="$1"
+  local plugin_url="$2"
+  local plugin_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/$plugin_name"
+
   if [ ! -d "$plugin_dir" ]; then
-    echo "Installing plugin: $plugin"
-    git clone "${plugins[$plugin]}" "$plugin_dir"
+    echo "Installing plugin: $plugin_name"
+    git clone "$plugin_url" "$plugin_dir"
   else
-    echo "Plugin $plugin already installed"
+    echo "Plugin $plugin_name already installed"
   fi
-done
+}
+
+# Install each plugin
+install_zsh_plugin "zsh-completions" "https://github.com/zsh-users/zsh-completions"
+install_zsh_plugin "zsh-vi-mode" "https://github.com/jeffreytse/zsh-vi-mode"
+install_zsh_plugin "fzf-tab" "https://github.com/Aloxaf/fzf-tab"
+install_zsh_plugin "zsh-kubectl-prompt" "https://github.com/superbrothers/zsh-kubectl-prompt"
+install_zsh_plugin "docker-zsh-completion" "https://github.com/greymd/docker-zsh-completion"
+install_zsh_plugin "zsh-autosuggestions" "https://github.com/zsh-users/zsh-autosuggestions"
+install_zsh_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting"
+install_zsh_plugin "zsh-history-substring-search" "https://github.com/zsh-users/zsh-history-substring-search"
 
 # Install and setup fzf
 if [ ! -d "$HOME/.fzf" ]; then
@@ -152,7 +176,20 @@ fi
 
 # Install Node.js packages globally for formatters
 echo "=== Installing Node.js global packages ==="
-npm install -g prettierd prettier-plugin-toml
+
+# Check if npm packages are needed based on your nvim config
+if command -v npm &> /dev/null; then
+  # Install prettier daemon for faster formatting
+  npm install -g @fsouza/prettierd
+
+  # Install standard prettier as fallback
+  npm install -g prettier
+
+  # Optional: TOML support for prettier
+  npm install -g prettier-plugin-toml
+else
+  echo "Warning: npm not found. Install Node.js first to get formatters."
+fi
 
 # Install Python packages for formatters
 echo "=== Installing Python packages ==="
