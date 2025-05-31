@@ -53,6 +53,7 @@ Plug 'psliwka/vim-smoothie'
 Plug 'tpope/vim-abolish'
 Plug 'tpope/vim-sleuth'
 Plug 'tpope/vim-surround'
+Plug 'tpope/vim-fugitive'
 
 " Undo tree visualiser
 Plug 'simnalamburt/vim-mundo'

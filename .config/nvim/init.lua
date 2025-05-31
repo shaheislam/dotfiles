@@ -45,7 +45,11 @@ vim.keymap.set('x', '<leader>s', '<plug>(SubversiveSubstituteRange)')
 vim.keymap.set('n', '<leader>ss', '<plug>(SubversiveSubstituteWordRange)')
 
 -- Telescope keymaps
-vim.keymap.set('n', '<leader>ff', '<cmd>Telescope find_files<cr>', { desc = 'Find Files' })
+vim.keymap.set('n', '<leader>ff', function()
+  require('telescope.builtin').find_files({
+    cwd = vim.fn.getcwd()
+  })
+end, { desc = 'Find Files' })
 vim.keymap.set('n', '<leader>fg', '<cmd>Telescope live_grep<cr>', { desc = 'Live Grep' })
 vim.keymap.set('n', '<leader>fb', '<cmd>Telescope buffers<cr>', { desc = 'Find Buffers' })
 vim.keymap.set('n', '<leader>fh', '<cmd>Telescope help_tags<cr>', { desc = 'Help Tags' })
@@ -418,7 +422,7 @@ require("lazy").setup({
   'tpope/vim-abolish',
   'tpope/vim-sleuth',
   'tpope/vim-surround',
-
+  'tpope/vim-fugitive',
   -- Undo tree visualiser
   'simnalamburt/vim-mundo',
 
@@ -440,6 +444,7 @@ require("lazy").setup({
       require('telescope').setup({
         defaults = {
           file_ignore_patterns = { "node_modules", ".git", "dist" },
+          hidden = true,
           mappings = {
             i = {
               ["<C-u>"] = false,
