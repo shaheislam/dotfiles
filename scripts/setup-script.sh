@@ -9,7 +9,7 @@ echo "=== Starting macOS Development Environment Setup ==="
 if ! command -v brew &> /dev/null; then
   echo "Installing Homebrew..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  
+
   # Add Homebrew to PATH (for Apple Silicon Macs)
   if [[ $(uname -m) == 'arm64' ]]; then
     echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> $HOME/.zprofile
@@ -36,6 +36,27 @@ BREW_PACKAGES=(
   "starship"
   "eks-node-viewer"
   "fzf"
+  "ripgrep"
+  "neovim"
+  "tmux"
+  "thefuck"
+  "atuin"
+  "lazygit"
+  "lazydocker"
+  "fish"
+  "terraform"
+  "asdf"
+  "stylua"
+  "prettier"
+  "black"
+  "isort"
+  "node"
+  "python@3.11"
+  "go"
+  "rust"
+  "awscli"
+  "kubectl"
+  "azure-cli"
 )
 
 for package in "${BREW_PACKAGES[@]}"; do
@@ -46,6 +67,33 @@ for package in "${BREW_PACKAGES[@]}"; do
     brew install "$package"
   fi
 done
+
+# Install GUI applications via Homebrew Cask
+echo "=== Installing GUI applications via Homebrew Cask ==="
+CASK_PACKAGES=(
+  "ghostty"
+  "aerospace"
+  "visual-studio-code"
+)
+
+for cask in "${CASK_PACKAGES[@]}"; do
+  if brew list --cask "$cask" &>/dev/null; then
+    echo "$cask already installed"
+  else
+    echo "Installing $cask..."
+    brew install --cask "$cask"
+  fi
+done
+
+# Install SketchyBar (status bar) - needs special handling
+if ! command -v sketchybar &> /dev/null; then
+  echo "=== Installing SketchyBar ==="
+  brew tap FelixKratz/formulae
+  brew install sketchybar
+  brew services start sketchybar
+else
+  echo "SketchyBar already installed"
+fi
 
 # Install Oh My Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
@@ -103,6 +151,26 @@ else
   echo "fzf-git.sh already installed"
 fi
 
+# Install Node.js packages globally for formatters
+echo "=== Installing Node.js global packages ==="
+npm install -g prettierd prettier-plugin-toml
+
+# Install Python packages for formatters
+echo "=== Installing Python packages ==="
+pip3 install black isort ruff
+
+# Install Rust formatters
+echo "=== Installing Rust formatters ==="
+if command -v cargo &> /dev/null; then
+  cargo install stylua
+fi
+
+# Setup atuin
+if command -v atuin &> /dev/null && [ ! -f "$HOME/.local/share/atuin/key" ]; then
+  echo "=== Setting up Atuin ==="
+  atuin import auto
+fi
+
 # Create/modify .zshrc with appropriate configurations
 echo "=== Configuring .zshrc ==="
 
@@ -114,94 +182,115 @@ fi
 
 # Create a new .zshrc
 cat > "$HOME/.zshrc" << 'EOF'
-# Enable Powerlevel10k instant prompt
+KEYTIMEOUT=500
+
+# Enable Powerlevel10k instant prompt (or starship)
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+# Choose between powerlevel10k and starship (uncomment one)
+eval "$(starship init zsh)"
+# export ZSH_THEME="powerlevel10k/powerlevel10k"
+
 # Path to your oh-my-zsh installation
 export ZSH="$HOME/.oh-my-zsh"
-
-# Set theme
-ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Set plugins
 plugins=(
   git
   zsh-completions
-  zsh-vi-mode
   fzf-tab
   zsh-kubectl-prompt
   docker-zsh-completion
+  zsh-syntax-highlighting
   zsh-autosuggestions
   zsh-history-substring-search
-  zsh-syntax-highlighting
 )
 
 # Source Oh My Zsh
 source $ZSH/oh-my-zsh.sh
 
-# Source zsh-vi-mode from Homebrew if installed
-if [ -f "$(brew --prefix)/opt/zsh-vi-mode/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh" ]; then
-  source "$(brew --prefix)/opt/zsh-vi-mode/share/zsh-vi-mode/zsh-vi-mode.plugin.zsh"
+# Paths
+export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+export PATH="$HOME/Library/Python/3.9/bin:$PATH"
+
+# Add VSCode bin to PATH
+if [ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]; then
+  export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 fi
 
-# Initialize zoxide
-if command -v zoxide &> /dev/null; then
-  eval "$(zoxide init zsh)"
-fi
+# Initialize tools
+eval "$(zoxide init zsh)"
+eval "$(direnv hook zsh)"
+eval "$(atuin init zsh)"
 
-# Initialize direnv
-if command -v direnv &> /dev/null; then
-  eval "$(direnv hook zsh)"
+# Source asdf
+if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
+  . /opt/homebrew/opt/asdf/libexec/asdf.sh
 fi
-
-# Initialize mise
-if command -v mise &> /dev/null; then
-  eval "$(mise activate zsh)"
-fi
-
-# Initialize starship prompt if not using powerlevel10k
-# (uncomment to use instead of powerlevel10k)
-# if command -v starship &> /dev/null; then
-#   eval "$(starship init zsh)"
-# fi
 
 # Source fzf-git.sh
 if [ -f "$HOME/fzf-git.sh/fzf-git.sh" ]; then
   source "$HOME/fzf-git.sh/fzf-git.sh"
 fi
 
-# Setup bat as a replacement for cat
-if command -v bat &> /dev/null; then
-  alias cat='bat'
-fi
-
-# Setup eza as a replacement for ls
-if command -v eza &> /dev/null; then
-  alias ls='eza'
-  alias ll='eza -la'
-  alias la='eza -a'
-  alias lt='eza --tree'
-fi
-
 # FZF configuration
-export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
-export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+source <(fzf --zsh)
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# FZF theme
+fg="#CBE0F0"
+bg="#011628"
+bg_highlight="#143652"
+purple="#B388FF"
+blue="#06BCE4"
+cyan="#2CF9ED"
+
+export FZF_DEFAULT_OPTS="--color=fg:${fg},bg:${bg},hl:${purple},fg+:${fg},bg+:${bg_highlight},hl+:${purple},info:${blue},prompt:${cyan},pointer:${cyan},marker:${cyan},spinner:${cyan},header:${cyan}"
+export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 
-# Source powerlevel10k config
+# Aliases
+alias python=python3
+alias cd="z"
+alias ls="eza"
+alias la="eza -al"
+alias cat="bat"
+alias k="kubectl"
+
+# bat theme
+export BAT_THEME=tokyonight_night
+
+# thefuck
+if command -v thefuck > /dev/null 2>&1; then
+  eval $(thefuck --alias)
+fi
+
+# VSCode function
+code() {
+  if command -v code &> /dev/null; then
+    command code "$@"
+  elif [ -d "/Applications/Visual Studio Code.app" ]; then
+    open -a "Visual Studio Code" "$@"
+  else
+    echo "VSCode is not installed or not found in the expected location."
+  fi
+}
+
+# AWS SSO function
+function aws-sso() {
+    local profile=${1:-petlab}
+    aws sso login --profile "$profile"
+    eval "$(aws configure export-credentials --profile "$profile" --format env)"
+    export AWS_DEFAULT_PROFILE="$profile"
+    export AWS_PROFILE="$profile"
+    aws sts get-caller-identity >/dev/null 2>&1 || echo "Failed to get credentials"
+}
+
+# Source powerlevel10k config if using it
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-
-# Add Homebrew to PATH for Apple Silicon Mac
-if [[ $(uname -m) == 'arm64' ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-fi
-
-# Source asdf if installed via Homebrew
-if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
-  . /opt/homebrew/opt/asdf/libexec/asdf.sh
-fi
 EOF
 
 # Create basic .tmux.conf file
@@ -248,6 +337,10 @@ else
   echo "tmux configuration already exists"
 fi
 
+# Create necessary directories
+echo "=== Creating configuration directories ==="
+mkdir -p "$HOME/.config/"{nvim,ghostty,aerospace,sketchybar,atuin,fish}
+
 # Run p10k configuration if it doesn't exist
 if [ ! -f "$HOME/.p10k.zsh" ]; then
   echo "=== Setting up Powerlevel10k ==="
@@ -257,8 +350,19 @@ fi
 echo ""
 echo "=== Setup Complete! ==="
 echo ""
+echo "Installed dependencies:"
+echo "- Core tools: neovim, tmux, ripgrep, fd, bat, eza, zoxide"
+echo "- Git tools: lazygit, lazydocker"
+echo "- Shell enhancements: atuin, thefuck, starship"
+echo "- Development tools: terraform, node, python, go, rust"
+echo "- Formatters: stylua, prettier, black, isort"
+echo "- macOS apps: ghostty, aerospace, sketchybar"
+echo ""
 echo "Next steps:"
 echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"
-echo "2. If this is your first time with Powerlevel10k, run 'p10k configure'"
-echo "3. Enjoy your new development environment!"
+echo "2. If using Powerlevel10k, run 'p10k configure'"
+echo "3. Set up your dotfiles with 'stow' if using GNU Stow"
+echo "4. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
+echo "5. Start sketchybar: 'brew services start sketchybar'"
+echo "6. Enjoy your new development environment!"
 echo ""
