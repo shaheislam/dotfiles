@@ -17,7 +17,7 @@ require("lazy").setup({
   spec = {
     -- Import LazyVim and its plugins
     { "LazyVim/LazyVim", import = "lazyvim.plugins" },
-    
+
     -- Import your custom plugins
     { import = "plugins" },
   },
@@ -42,6 +42,13 @@ require("lazy").setup({
       },
     },
   },
+})
+
+-- Custom macro setup
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    vim.fn.setreg('f', '0cwfixup\\<Esc>j')
+  end,
 })
 
 -- Your custom settings that override LazyVim defaults
