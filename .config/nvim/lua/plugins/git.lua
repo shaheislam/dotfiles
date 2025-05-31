@@ -48,6 +48,27 @@ return {
         })
         lazygit:toggle()
       end, desc = "Lazygit" },
+
+      -- LazyDocker integration
+      { "<leader>gd", function()
+        local Terminal = require('toggleterm.terminal').Terminal
+        local lazydocker = Terminal:new({
+          cmd = "lazydocker",
+          dir = "git_dir",
+          direction = "float",
+          float_opts = {
+            border = "curved",
+          },
+          on_open = function(term)
+            vim.cmd("startinsert!")
+            vim.api.nvim_buf_set_keymap(term.bufnr, "n", "q", "<cmd>close<CR>", {noremap = true, silent = true})
+          end,
+          on_close = function(term)
+            vim.cmd("startinsert!")
+          end,
+        })
+        lazydocker:toggle()
+      end, desc = "LazyDocker" },
     },
   },
 
