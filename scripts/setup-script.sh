@@ -108,6 +108,14 @@ else
   brew install --cask ghostty
 fi
 
+# Install WezTerm
+if app_installed "WezTerm"; then
+  echo "WezTerm already installed"
+else
+  echo "Installing WezTerm..."
+  brew install --cask wezterm
+fi
+
 # Install Visual Studio Code
 if app_installed "Visual Studio Code"; then
   echo "Visual Studio Code already installed"
@@ -408,7 +416,7 @@ fi
 
 # Create necessary directories
 echo "=== Creating configuration directories ==="
-mkdir -p "$HOME/.config/"{nvim,ghostty,aerospace,sketchybar,atuin,fish}
+mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish}
 
 # Run p10k configuration if it doesn't exist
 if [ ! -f "$HOME/.p10k.zsh" ]; then
@@ -427,7 +435,7 @@ echo "- Development tools: terraform, node, python, go, rust"
 echo "- Formatters: stylua, prettier, black, isort"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
-echo "- macOS apps: ghostty, aerospace, sketchybar"
+echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
 echo ""
 echo "Next steps:"
 echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"
