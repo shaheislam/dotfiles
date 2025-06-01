@@ -3,7 +3,7 @@ return {
   lazy = false,
   build = false, -- so that it doesn't build the rock https://github.com/3rd/image.nvim/issues/91#issuecomment-2453430239
   opts = {
-    backend = "kitty", -- "kitty" or "ueberzug"
+    backend = "ueberzug", -- Changed from "kitty" to "ueberzug"
     processor = "magick_cli", -- or "magick_rock"
     integrations = {
       markdown = {
