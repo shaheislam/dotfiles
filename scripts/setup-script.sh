@@ -55,7 +55,7 @@ BREW_PACKAGES=(
   "awscli"
   "kubectl"
   "azure-cli"
-  "ueberzugpp"
+  "imagemagick"
 )
 
 for package in "${BREW_PACKAGES[@]}"; do
@@ -64,6 +64,31 @@ for package in "${BREW_PACKAGES[@]}"; do
   else
     echo "Installing $package..."
     brew install "$package"
+  fi
+done
+
+# Install ueberzugpp (for image display in terminals like iTerm2)
+if ! command -v ueberzugpp &> /dev/null; then
+  echo "=== Installing ueberzugpp for image display ==="
+  brew install jstkdng/programs/ueberzugpp
+else
+  echo "ueberzugpp already installed"
+fi
+
+# Install Nerd Fonts for beautiful terminal icons
+echo "=== Installing Nerd Fonts ==="
+NERD_FONTS=(
+  "font-jetbrains-mono-nerd-font"
+  "font-fira-code-nerd-font"
+  "font-hack-nerd-font"
+)
+
+for font in "${NERD_FONTS[@]}"; do
+  if brew list --cask "$font" &>/dev/null; then
+    echo "$font already installed"
+  else
+    echo "Installing $font..."
+    brew install --cask "$font"
   fi
 done
 
@@ -400,13 +425,15 @@ echo "- Git tools: lazygit, lazydocker"
 echo "- Shell enhancements: atuin, thefuck, starship"
 echo "- Development tools: terraform, node, python, go, rust"
 echo "- Formatters: stylua, prettier, black, isort"
+echo "- Image display: ueberzugpp, imagemagick"
+echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
 echo "- macOS apps: ghostty, aerospace, sketchybar"
 echo ""
 echo "Next steps:"
 echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"
-echo "2. If using Powerlevel10k, run 'p10k configure'"
+echo "2. Configure iTerm2 to use 'JetBrainsMono Nerd Font' in Preferences → Profiles → Text"
 echo "3. Set up your dotfiles with 'stow' if using GNU Stow"
 echo "4. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
 echo "5. Start sketchybar: 'brew services start sketchybar'"
-echo "6. Enjoy your new development environment!"
+echo "6. Your Starship prompt should display beautiful icons!"
 echo ""

@@ -21,7 +21,7 @@ truncation_symbol = "…/"
 read_only ="  "
 
 [git_branch]
-symbol = "git:"
+symbol = " "
 truncation_symbol = "…"
 truncation_length = 20
 style = "#FF8C00 bold"
@@ -39,7 +39,7 @@ style = "bold red"
 
 [azure]
 format = "[$symbol](blue bold)[$subscription]($style) "
-symbol = "az:"
+symbol = "󰠅 "
 style = "white bold"
 disabled = false
 
@@ -53,7 +53,7 @@ s189-teacher-services-cloud-production = "s189-prod"
 
 [kubernetes]
 format = '[$symbol$context(\($namespace\))]($style) '
-symbol = "k8s:"
+symbol = "☸ "
 style = "cyan bold"
 disabled = false
 
@@ -67,20 +67,20 @@ error_symbol = "[➜](bold red)"
 
 [terraform]
 format = "[$symbol(tf:$version)]($style) "
-symbol = "tf:"
+symbol = "󱁢 "
 style = "bold 105"
 disabled = false
 
 [python]
 format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
-symbol = "py:"
+symbol = " "
 pyenv_version_name = true
 pyenv_prefix = "pyenv "
 style = "purple bold"
 
 [aws]
 format = "[(\\[$symbol$profile(@$region):$duration\\])]($style)"
-symbol = "aws:"
+symbol = "  "
 style = "bold yellow"
 force_display = true
 
