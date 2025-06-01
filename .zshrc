@@ -1,13 +1,7 @@
 KEYTIMEOUT=500
 
-# Enable Powerlevel10k instant prompt (or starship)
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-# Choose between powerlevel10k and starship (uncomment one)
+# Initialize Starship prompt
 eval "$(starship init zsh)"
-# export ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Path to your oh-my-zsh installation
 export ZSH="$HOME/.oh-my-zsh"
@@ -104,6 +98,3 @@ function aws-sso() {
     export AWS_PROFILE="$profile"
     aws sts get-caller-identity >/dev/null 2>&1 || echo "Failed to get credentials"
 }
-
-# Source powerlevel10k config if using it
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
