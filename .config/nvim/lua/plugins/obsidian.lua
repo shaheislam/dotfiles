@@ -7,44 +7,91 @@ return {
   dependencies = {
     "nvim-lua/plenary.nvim",
   },
-  keys = {
-    { "<leader>on", "<cmd>ObsidianNew<cr>", desc = "New Obsidian note", ft = "markdown" },
-    { "<leader>oo", "<cmd>ObsidianOpen<cr>", desc = "Open in Obsidian app", ft = "markdown" },
-    { "<leader>ob", "<cmd>ObsidianBacklinks<cr>", desc = "Show ObsidianBacklinks", ft = "markdown" },
-    { "<leader>ot", "<cmd>ObsidianTemplate<cr>", desc = "Insert Obsidian template", ft = "markdown" },
-    { "<leader>os", "<cmd>ObsidianSearch<cr>", desc = "Search Obsidian notes", ft = "markdown" },
-    { "<leader>oq", "<cmd>ObsidianQuickSwitch<cr>", desc = "Quick Switch", ft = "markdown" },
-    { "<leader>ol", "<cmd>ObsidianLinks<cr>", desc = "Show ObsidianLinks", ft = "markdown" },
-    { "<leader>of", "<cmd>ObsidianFollowLink<cr>", desc = "Follow link under cursor", ft = "markdown" },
-    { "<leader>op", "<cmd>ObsidianPasteImg<cr>", desc = "Paste image from clipboard", ft = "markdown" },
-    { "<leader>or", "<cmd>ObsidianRename<cr>", desc = "Rename note", ft = "markdown" },
-  },
   opts = {
     workspaces = {
       {
-        name = "personal",
+        name = "main",
         path = "~/Documents/Obsidian Vault",
       },
     },
+
+    -- Disable obsidian.nvim UI since we're using render-markdown.nvim
+    ui = {
+      enable = false,
+    },
+
     completion = {
       nvim_cmp = false,
-      min_chars = 2,
+      mappings = {},
     },
-    new_notes_location = "notes_subdir",
-    wiki_link_func = "use_alias_only",
-    preferred_link_style = "wiki",
-    finder = "telescope.nvim",
-    sort_by = "modified",
-    sort_reversed = true,
-    open_notes_in = "current",
+
     templates = {
       folder = "Templates",
       date_format = "%Y-%m-%d",
       time_format = "%H:%M",
     },
-    ui = {
-      enable = true,
+
+    mappings = {
+      ["gf"] = {
+        action = function()
+          return require("obsidian").util.gf_passthrough()
+        end,
+        opts = { noremap = false, expr = true, buffer = true },
+      },
+      ["<leader>ch"] = {
+        action = function()
+          return require("obsidian").util.toggle_checkbox()
+        end,
+        opts = { buffer = true },
+      },
+      ["<cr>"] = {
+        action = function()
+          return require("obsidian").util.smart_action()
+        end,
+        opts = { buffer = true, expr = true },
+      },
     },
-    mappings = {},
+
+    new_notes_location = "current_dir",
+
+    note_id_func = function(title)
+      local suffix = ""
+      if title ~= nil then
+        suffix = title:gsub(" ", "-"):gsub("[^A-Za-z0-9-]", ""):lower()
+      else
+        for _ = 1, 4 do
+          suffix = suffix .. string.char(math.random(65, 90))
+        end
+      end
+      return tostring(os.time()) .. "-" .. suffix
+    end,
+
+    wiki_link_func = "use_alias_only",
+
+    image_name_func = function()
+      return string.format("%s-", os.time())
+    end,
+
+    attachments = {
+      img_folder = "assets/imgs",
+    },
+  },
+
+  keys = {
+    -- Note Management
+    { "<leader>on", "<cmd>ObsidianNew<cr>", desc = "New note" },
+    { "<leader>oo", "<cmd>ObsidianOpen<cr>", desc = "Open in Obsidian app" },
+    { "<leader>ob", "<cmd>ObsidianBacklinks<cr>", desc = "Show backlinks" },
+    { "<leader>ot", "<cmd>ObsidianTemplate<cr>", desc = "Insert template" },
+    { "<leader>or", "<cmd>ObsidianRename<cr>", desc = "Rename note" },
+
+    -- Search and Navigation
+    { "<leader>os", "<cmd>ObsidianSearch<cr>", desc = "Search notes" },
+    { "<leader>oq", "<cmd>ObsidianQuickSwitch<cr>", desc = "Quick switch" },
+    { "<leader>ol", "<cmd>ObsidianLinks<cr>", desc = "Show links" },
+    { "<leader>of", "<cmd>ObsidianFollowLink<cr>", desc = "Follow link" },
+
+    -- Media
+    { "<leader>op", "<cmd>ObsidianPasteImg<cr>", desc = "Paste image" },
   },
 }
