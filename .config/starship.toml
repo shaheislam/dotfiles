@@ -48,6 +48,8 @@ color_purple = '#bb9af7'
 color_red = '#f7768e'
 color_yellow = '#e0af68'
 arrow = '#bb9af7'
+color_white = '#ffffff'
+color_black = '#000000'
 
 [os]
 disabled = true
@@ -78,12 +80,12 @@ Pop = ""
 
 [username]
 show_always = true
-style_user = "bg:color_orange fg:color_fg0"
-style_root = "bg:color_orange fg:color_fg0"
+style_user = "bg:color_orange fg:color_black"
+style_root = "bg:color_orange fg:color_black"
 format = '[ $user ]($style)'
 
 [directory]
-style = "fg:color_fg0 bg:color_yellow"
+style = "fg:color_black bg:color_yellow"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
@@ -98,71 +100,71 @@ truncation_symbol = "…/"
 [git_branch]
 symbol = " "
 style = "bg:color_aqua"
-format = '[[ $symbol $branch ](fg:color_fg0 bg:color_aqua)]($style)'
+format = '[[ $symbol $branch ](fg:color_black bg:color_aqua)]($style)'
 
 [git_status]
 style = "bg:color_aqua"
-format = '[[($all_status$ahead_behind )](fg:color_fg0 bg:color_aqua)]($style)'
+format = '[[($all_status$ahead_behind )](fg:color_black bg:color_aqua)]($style)'
 
 [nodejs]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [c]
 symbol = " "
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [rust]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [golang]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [php]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [java]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [kotlin]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [haskell]
 symbol = ""
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [python]
 symbol = " "
 style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
 
 [docker_context]
 symbol = ""
 style = "bg:color_bg3"
-format = '[[ $symbol( $context) ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol( $context) ](fg:color_white bg:color_bg3)]($style)'
 
 [conda]
 style = "bg:color_bg3"
-format = '[[ $symbol( $environment) ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol( $environment) ](fg:color_white bg:color_bg3)]($style)'
 
 # Integrate your original cloud/DevOps tools with the new style
 [aws]
 symbol = "  "
 style = "bg:color_bg3"
-format = '[[ $symbol$profile(@$region) ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol$profile(@$region) ](fg:color_white bg:color_bg3)]($style)'
 force_display = false
 
 [aws.region_aliases]
@@ -184,7 +186,7 @@ logging = "LOG"
 [azure]
 symbol = "󰠅 "
 style = "bg:color_bg3"
-format = '[[ $symbol$subscription ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol$subscription ](fg:color_white bg:color_bg3)]($style)'
 disabled = false
 
 [azure.subscription_aliases]
@@ -198,13 +200,13 @@ s189-teacher-services-cloud-production = "s189-prod"
 [kubernetes]
 symbol = "☸ "
 style = "bg:color_bg3"
-format = '[[ $symbol$context(\($namespace\)) ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol$context(\($namespace\)) ](fg:color_white bg:color_bg3)]($style)'
 disabled = false
 
 [terraform]
 symbol = "󱁢 "
 style = "bg:color_bg3"
-format = '[[ $symbol(tf:$version) ](fg:#83a598 bg:color_bg3)]($style)'
+format = '[[ $symbol(tf:$version) ](fg:color_white bg:color_bg3)]($style)'
 disabled = false
 
 [time]
