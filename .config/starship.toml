@@ -1,140 +1,94 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-command_timeout = 2000
-format = """\
+format = """
 [╭╴](fg:arrow)\
+[](color_orange)\
+$os\
+$username\
+[](bg:color_yellow fg:color_orange)\
 $directory\
-(\
-    $kubernetes\
-    $aws\
-    $azure\
-    $conda\
-    $shlvl\
-    $python\
-    $terraform\
-    $golang\
-    $nodejs\
-    $rust\
-    $git_branch\
-    $git_commit\
-    $git_state\
-    $git_metrics\
-    $git_status\
-    $hg_branch\
-)\
+[](fg:color_yellow bg:color_aqua)\
+$git_branch\
+$git_status\
+[](fg:color_aqua bg:color_blue)\
+$c\
+$cpp\
+$rust\
+$golang\
+$nodejs\
+$php\
+$java\
+$kotlin\
+$haskell\
+$python\
+[](fg:color_blue bg:color_bg3)\
+$docker_context\
+$conda\
+$pixi\
+$aws\
+$azure\
+$kubernetes\
+$terraform\
+[](fg:color_bg3 bg:color_bg1)\
+$time\
+[ ](fg:color_bg1)\
 $cmd_duration
 [╰─](fg:arrow)$character\
 """
 
-# Disables the blank line at the start of the prompt
-add_newline = true
+palette = 'gruvbox_dark'
 
-# To change the colors: change to the corresponding palette.
-palette = "light"
+[palettes.gruvbox_dark]
+color_fg0 = '#fbf1c7'
+color_bg1 = '#3c3836'
+color_bg3 = '#665c54'
+color_blue = '#458588'
+color_aqua = '#689d6a'
+color_green = '#98971a'
+color_orange = '#d65d0e'
+color_purple = '#b16286'
+color_red = '#cc241d'
+color_yellow = '#d79921'
+arrow = '#674EA7'
 
-[palettes.old]
-arrow = "#FFFF00"
-os = "#3778BF"
-os_admin = "#6A040F"
-directory = "#3F37C9"
-time = "#177E89"
-git = "#B02B10"
-git_status = "#8B1D2C"
-python = "#3776AB"
-conda = "#3EB049"
-rust = "#C33C00"
-clang = "#1A4A96"
-duration = "yellow"
-text_color = "#EDF2F4"
-text_light = "#EDF2F4"
-
-[palettes.light]
-arrow = "#674EA7"
-os = "#F7768E"
-os_admin = "#6A040F"
-directory = "#674EA7"
-time = "#674EA7"
-git = "#674EA7"
-git_status = "#674EA7"
-python = "#F5CB5C"
-conda = "#674EA7"
-rust = "#C33C00"
-clang = "#1A4A96"
-duration = "#674EA7"
-k8s = "#674EA7"
-aws = "#674EA7"
-azure = "#674EA7"
-tf = "#674EA7"
-go = "#674EA7"
-nodejs = "#674EA7"
-text_color = "#363636"
-text_light = "#363636"
-
-[palettes.normal]
-arrow = "#353535"
-os = "#F7768E"
-os_admin = "#1A4A96"
-directory = "#363636"
-time = "#363636"
-git = "#363636"
-git_status = "#363636"
-clang = "#363636"
-python = "#363636"
-conda = "#363636"
-duration = "#D8DEE9"
-text_color = "#26272A"
-text_light = "#26272A"
-k8s = "#363636"
-aws = "#363636"
-azure = "#363636"
-tf = "#363636"
-go = "#363636"
-nodejs = "#363636"
-
-[terraform]
-format = '[ ](fg:tf)[$symbol tf:$version]($style)[](fg:tf)'
-style = "fg:text_light bg:tf"
-symbol = "󱁢 "
+[os]
 disabled = false
+style = "bg:color_orange fg:color_fg0"
 
-[golang]
-format = '[ ](fg:go)[$symbol go:$version]($style)[](fg:go)'
-style = "fg:text_light bg:go"
-symbol = " "
-disabled = false
-
-[nodejs]
-format = '[ ](fg:nodejs)[$symbol node:$version]($style)[](fg:nodejs)'
-style = "fg:text_light bg:nodejs"
-symbol = " "
-disabled = false
-
-[rust]
-format = "[ ](fg:rust)[$symbol rust:$version](bg:rust fg:text_color)[](fg:rust)"
-symbol = " "
-version_format = "${raw}"
-disabled = false
+[os.symbols]
+Windows = "󰍲"
+Ubuntu = "󰕈"
+SUSE = ""
+Raspbian = "󰐿"
+Mint = "󰣭"
+Macos = "󰀵"
+Manjaro = ""
+Linux = "󰌽"
+Gentoo = "󰣨"
+Fedora = "󰣛"
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = "󰣇"
+Artix = "󰣇"
+EndeavourOS = ""
+CentOS = ""
+Debian = "󰣚"
+Redhat = "󱄛"
+RedHatEnterprise = "󱄛"
+Pop = ""
 
 [username]
-style_user = 'os'
-style_root = 'os_admin'
-format = '[]($style)[  $user](bg:$style fg:text_color)[]($style)'
-disabled = false
 show_always = true
-
-[character]
-success_symbol = "[➜](bold green)"
-error_symbol = "[➜](bold red)"
+style_user = "bg:color_orange fg:color_fg0"
+style_root = "bg:color_orange fg:color_fg0"
+format = '[ $user ]($style)'
 
 [directory]
-format = " [](fg:directory)[   $path]($style)[$read_only]($read_only_style)[](fg:directory)"
+style = "fg:color_fg0 bg:color_yellow"
+format = "[ $path ]($style)"
 truncation_length = 3
-style = "fg:text_color bg:directory"
-read_only_style = "fg:text_color bg:directory"
-before_repo_root_style = "fg:text_color bg:directory"
 truncation_symbol = "…/"
-truncate_to_repo = true
-read_only = "  "
 
 [directory.substitutions]
 "Documents" = "󰈙 "
@@ -143,57 +97,83 @@ read_only = "  "
 "Pictures" = " "
 "Developer" = "󰲋 "
 
-[time]
-disabled = false
-format = " [](fg:time)[ $time]($style)[](fg:time)"
-time_format = "%H:%M"
-style = "fg:text_color bg:time"
-
-[cmd_duration]
-format = " [](fg:duration)[$duration]($style)[](fg:duration)"
-style = "fg:text_light bg:duration"
-min_time = 500
-
 [git_branch]
-format = " [](fg:git)[$symbol$branch](fg:text_light bg:git)[](fg:git)"
-symbol = ""
+symbol = " "
+style = "bg:color_aqua"
+format = '[[ $symbol $branch ](fg:color_fg0 bg:color_aqua)]($style)'
 
 [git_status]
-format = '([ ](fg:git_status)[ $all_status$ahead_behind ]($style)[](fg:git_status))'
-style = "fg:text_light bg:git_status"
+style = "bg:color_aqua"
+format = '[[($all_status$ahead_behind )](fg:color_fg0 bg:color_aqua)]($style)'
 
-[docker_context]
-disabled = false
+[nodejs]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[c]
 symbol = " "
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[package]
-disabled = false
+[cpp]
+symbol = " "
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[kubernetes]
-style = "fg:text_light bg:k8s"
-format = '[ ](fg:k8s)[$symbol cl:$cluster ns:$namespace]($style)[](fg:k8s)'
-symbol = "☸ "
-disabled = false
+[rust]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[golang]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[php]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[java]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[kotlin]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[haskell]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [python]
-disabled = false
-format = '[ ](fg:python)[${symbol}py:${version}(\($virtualenv\))]($style)[](fg:python)'
 symbol = " "
-version_format = "${raw}"
-style = "fg:text_light bg:python"
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[docker_context]
+symbol = ""
+style = "bg:color_bg3"
+format = '[[ $symbol( $context) ](fg:#83a598 bg:color_bg3)]($style)'
 
 [conda]
-format = "[ ](fg:conda)[$symbol$environment]($style)[](fg:conda)"
-style = "bg:conda fg:text_color"
-ignore_base = false
-disabled = false
-symbol = " "
+style = "bg:color_bg3"
+format = '[[ $symbol( $environment) ](fg:#83a598 bg:color_bg3)]($style)'
 
-# Integrate your original AWS configuration with the new style
+[pixi]
+style = "bg:color_bg3"
+format = '[[ $symbol( $version)( $environment) ](fg:color_fg0 bg:color_bg3)]($style)'
+
+# Integrate your original cloud/DevOps tools with the new style
 [aws]
-style = "fg:text_color bg:aws"
-format = "[ ](fg:aws)[$symbol$profile@$region]($style)[](fg:aws)"
 symbol = "  "
+style = "bg:color_bg3"
+format = '[[ $symbol$profile(@$region) ](fg:#83a598 bg:color_bg3)]($style)'
 force_display = false
 
 [aws.region_aliases]
@@ -212,11 +192,10 @@ management = "MGT"
 prod = "PROD"
 logging = "LOG"
 
-# Integrate your original Azure configuration
 [azure]
-style = "fg:text_color bg:azure"
-format = "[ ](fg:azure)[$symbol$subscription]($style)[](fg:azure)"
 symbol = "󰠅 "
+style = "bg:color_bg3"
+format = '[[ $symbol$subscription ](fg:#83a598 bg:color_bg3)]($style)'
 disabled = false
 
 [azure.subscription_aliases]
@@ -227,46 +206,37 @@ s189-teacher-services-cloud-development = "s189-dev"
 s189-teacher-services-cloud-test = "s189-test"
 s189-teacher-services-cloud-production = "s189-prod"
 
-[gcloud]
-style = "bold #FFAC31"
-format = "on[ ☁️ $account(@$domain) ($project)]($style)"
-
-[os]
+[kubernetes]
+symbol = "☸ "
+style = "bg:color_bg3"
+format = '[[ $symbol$context(\($namespace\)) ](fg:#83a598 bg:color_bg3)]($style)'
 disabled = false
-style = "bg:os fg:text_color"
 
-[os.symbols]
-Alpine = " "
-Amazon = " "
-Android = " "
-Arch = " "
-CentOS = " "
-Debian = " "
-DragonFly = " "
-Emscripten = " "
-EndeavourOS = " "
-Fedora = " "
-FreeBSD = " "
-Gentoo = " "
-Linux = " "
-Macos = " "
-Manjaro = " "
-Mariner = " "
-MidnightBSD = " "
-Mint = " "
-NetBSD = " "
-NixOS = " "
-openSUSE = " "
-Pop = " "
-Raspbian = " "
-Redhat = " "
-RedHatEnterprise = " "
-Redox = " "
-SUSE = " "
-Ubuntu = " "
-Unknown = " "
-Windows = " "
-Satellite = "s"
-Alien = ""
-Noodles = "��"
-Radioactive = ""
+[terraform]
+symbol = "󱁢 "
+style = "bg:color_bg3"
+format = '[[ $symbol(tf:$version) ](fg:#83a598 bg:color_bg3)]($style)'
+disabled = false
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:color_bg1"
+format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
+
+[cmd_duration]
+format = " [$duration]($style)"
+style = "fg:color_yellow"
+min_time = 500
+
+[line_break]
+disabled = false
+
+[character]
+disabled = false
+success_symbol = '[](bold fg:color_green)'
+error_symbol = '[](bold fg:color_red)'
+vimcmd_symbol = '[](bold fg:color_green)'
+vimcmd_replace_one_symbol = '[](bold fg:color_purple)'
+vimcmd_replace_symbol = '[](bold fg:color_purple)'
+vimcmd_visual_symbol = '[](bold fg:color_yellow)'
