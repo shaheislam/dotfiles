@@ -21,7 +21,7 @@ truncation_symbol = "…/"
 read_only ="  "
 
 [git_branch]
-symbol = "[](bold #FF8C00) "
+symbol = ""
 truncation_symbol = "…"
 truncation_length = 20
 style = "#FF8C00 bold"
