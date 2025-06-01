@@ -129,47 +129,4 @@ return {
       })
     end,
   },
-
-  -- Oil.nvim integration with telescope
-  {
-    "stevearc/oil.nvim",
-    dependencies = { "nvim-tree/nvim-web-devicons" },
-    cmd = "Oil",
-    opts = {
-      default_file_explorer = true,
-      delete_to_trash = true,
-      skip_confirm_for_simple_edits = false,
-      view_options = {
-        show_hidden = false,
-        is_hidden_file = function(name, bufnr)
-          return vim.startswith(name, ".")
-        end,
-      },
-      float = {
-        padding = 2,
-        max_width = 0,
-        max_height = 0,
-        border = "rounded",
-        win_options = {
-          winblend = 0,
-        },
-      },
-      keymaps = {
-        ["<C-h>"] = false, -- Remove conflict with window navigation
-        ["<C-l>"] = false, -- Remove conflict with window navigation
-        ["<leader>ff"] = {
-          desc = "Find files in current directory",
-          callback = function()
-            require("telescope.builtin").find_files({
-              cwd = require("oil").get_current_dir()
-            })
-          end,
-        },
-      },
-    },
-    keys = {
-      { "<leader>e", "<cmd>Oil<cr>", desc = "Open File Browser" },
-      { "-", "<cmd>Oil<cr>", desc = "Open parent directory" },
-    },
-  },
 }
