@@ -1,12 +1,13 @@
 -- ~/.config/nvim/lua/plugins/custom.lua
 return {
-  -- Disable LazyVim's default file explorer (neo-tree) since we prefer Oil
+  -- Completely disable LazyVim's default file explorer (neo-tree)
   { "nvim-neo-tree/neo-tree.nvim", enabled = false },
 
-  -- Oil.nvim - Your preferred file browser
+  -- Oil.nvim - Your preferred file browser with aggressive keybinding override
   {
     "stevearc/oil.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
+    lazy = false, -- Load immediately to override neo-tree
     opts = {
       default_file_explorer = true,
       delete_to_trash = true,
@@ -38,8 +39,13 @@ return {
       },
     },
     keys = {
-      { "<leader>e", "<cmd>Oil<cr>", desc = "Open File Browser" },
+      { "<leader>e", "<cmd>Oil<cr>", desc = "Open File Browser", mode = { "n", "v" } },
+      { "<leader>fe", "<cmd>Oil<cr>", desc = "Open File Browser" },
     },
+    init = function()
+      -- Override any existing <leader>e mappings immediately
+      vim.keymap.set("n", "<leader>e", "<cmd>Oil<cr>", { desc = "Open File Browser", silent = true })
+    end,
   },
 
   -- Harpoon v2 - Your quick navigation setup
