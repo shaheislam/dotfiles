@@ -55,6 +55,7 @@ BREW_PACKAGES=(
   "awscli"
   "kubectl"
   "azure-cli"
+  "ueberzugpp"
 )
 
 for package in "${BREW_PACKAGES[@]}"; do
