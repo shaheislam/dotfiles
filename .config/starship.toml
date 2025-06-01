@@ -1,88 +1,176 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
 format = """
-[╭╴](fg:arrow)\
+[](color_orange)\
+$os\
+$username\
+[](bg:color_yellow fg:color_orange)\
 $directory\
+[](fg:color_yellow bg:color_aqua)\
 $git_branch\
-$git_status \
+$git_status\
+[](fg:color_aqua bg:color_blue)\
+$c\
+$cpp\
+$rust\
+$golang\
+$nodejs\
+$php\
+$java\
+$kotlin\
+$haskell\
+$python\
+[](fg:color_blue bg:color_bg3)\
+$docker_context\
+$conda\
+$pixi\
+$aws\
 $azure\
-$aws \
 $kubernetes\
 $terraform\
-$python\
-$cmd_duration\
-$line_break\
-[╰─](fg:arrow)$character\
-"""
+[](fg:color_bg3 bg:color_bg1)\
+$time\
+[ ](fg:color_bg1)\
+$line_break$character"""
+
+palette = 'gruvbox_dark'
+
+[palettes.gruvbox_dark]
+color_fg0 = '#fbf1c7'
+color_bg1 = '#3c3836'
+color_bg3 = '#665c54'
+color_blue = '#458588'
+color_aqua = '#689d6a'
+color_green = '#98971a'
+color_orange = '#d65d0e'
+color_purple = '#b16286'
+color_red = '#cc241d'
+color_yellow = '#d79921'
+
+[os]
+disabled = false
+style = "bg:color_orange fg:color_fg0"
+
+[os.symbols]
+Windows = "󰍲"
+Ubuntu = "󰕈"
+SUSE = ""
+Raspbian = "󰐿"
+Mint = "󰣭"
+Macos = "󰀵"
+Manjaro = ""
+Linux = "󰌽"
+Gentoo = "󰣨"
+Fedora = "󰣛"
+Alpine = ""
+Amazon = ""
+Android = ""
+Arch = "󰣇"
+Artix = "󰣇"
+EndeavourOS = ""
+CentOS = ""
+Debian = "󰣚"
+Redhat = "󱄛"
+RedHatEnterprise = "󱄛"
+Pop = ""
+
+[username]
+show_always = true
+style_user = "bg:color_orange fg:color_fg0"
+style_root = "bg:color_orange fg:color_fg0"
+format = '[ $user ]($style)'
 
 [directory]
-style = "bold blue"
+style = "fg:color_fg0 bg:color_yellow"
+format = "[ $path ]($style)"
 truncation_length = 3
-truncate_to_repo = true
 truncation_symbol = "…/"
-read_only ="  "
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+"Developer" = "󰲋 "
 
 [git_branch]
 symbol = ""
-truncation_symbol = "…"
-truncation_length = 20
-style = "#FF8C00 bold"
+style = "bg:color_aqua"
+format = '[[ $symbol $branch ](fg:color_fg0 bg:color_aqua)]($style)'
 
 [git_status]
-format = "([$staged](green bold)[$deleted](red bold)[$modified](yellow bold)[$renamed](blue bold)[$ahead_behind]($style))"
-ahead = "⇡${count}"
-behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
-modified = "!${count}"
-staged = "+${count}"
-renamed = "»${count}"
-deleted = "-${count}"
-style = "bold red"
+style = "bg:color_aqua"
+format = '[[($all_status$ahead_behind )](fg:color_fg0 bg:color_aqua)]($style)'
 
-[azure]
-format = "[$symbol](blue bold)[$subscription]($style) "
-symbol = "󰠅 "
-style = "white bold"
-disabled = false
+[nodejs]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[azure.subscription_aliases]
-s165-teachingqualificationsservice-development = "s165-dev"
-s165-teachingqualificationsservice-test = "s165-test"
-s165-teachingqualificationsservice-production = "s165-prod"
-s189-teacher-services-cloud-development = "s189-dev"
-s189-teacher-services-cloud-test = "s189-test"
-s189-teacher-services-cloud-production = "s189-prod"
+[c]
+symbol = " "
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[kubernetes]
-format = '[$symbol$context(\($namespace\))]($style) '
-symbol = "☸ "
-style = "cyan bold"
-disabled = false
+[cpp]
+symbol = " "
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[cmd_duration]
-min_time = 500
-format = "[$duration]($style) "
+[rust]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[character]
-success_symbol = "[➜](bold green)"
-error_symbol = "[➜](bold red)"
+[golang]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
-[terraform]
-format = "[$symbol(tf:$version)]($style) "
-symbol = "󱁢 "
-style = "bold 105"
-disabled = false
+[php]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[java]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[kotlin]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
+
+[haskell]
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
 [python]
-format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
-symbol = " "
-pyenv_version_name = true
-pyenv_prefix = "pyenv "
-style = "purple bold"
+symbol = ""
+style = "bg:color_blue"
+format = '[[ $symbol( $version) ](fg:color_fg0 bg:color_blue)]($style)'
 
+[docker_context]
+symbol = ""
+style = "bg:color_bg3"
+format = '[[ $symbol( $context) ](fg:#83a598 bg:color_bg3)]($style)'
+
+[conda]
+style = "bg:color_bg3"
+format = '[[ $symbol( $environment) ](fg:#83a598 bg:color_bg3)]($style)'
+
+[pixi]
+style = "bg:color_bg3"
+format = '[[ $symbol( $version)( $environment) ](fg:color_fg0 bg:color_bg3)]($style)'
+
+# Integrate your original cloud/DevOps tools with the new style
 [aws]
-format = "[(\\[$symbol$profile(@$region):$duration\\])]($style)"
 symbol = "  "
-style = "bold yellow"
-force_display = true
+style = "bg:color_bg3"
+format = '[[ $symbol$profile(@$region) ](fg:#83a598 bg:color_bg3)]($style)'
+force_display = false
 
 [aws.region_aliases]
 us-west-2    = "usw2"
@@ -99,3 +187,47 @@ security = "SEC"
 management = "MGT"
 prod = "PROD"
 logging = "LOG"
+
+[azure]
+symbol = "󰠅 "
+style = "bg:color_bg3"
+format = '[[ $symbol$subscription ](fg:#83a598 bg:color_bg3)]($style)'
+disabled = false
+
+[azure.subscription_aliases]
+s165-teachingqualificationsservice-development = "s165-dev"
+s165-teachingqualificationsservice-test = "s165-test"
+s165-teachingqualificationsservice-production = "s165-prod"
+s189-teacher-services-cloud-development = "s189-dev"
+s189-teacher-services-cloud-test = "s189-test"
+s189-teacher-services-cloud-production = "s189-prod"
+
+[kubernetes]
+symbol = "☸ "
+style = "bg:color_bg3"
+format = '[[ $symbol$context(\($namespace\)) ](fg:#83a598 bg:color_bg3)]($style)'
+disabled = false
+
+[terraform]
+symbol = "󱁢 "
+style = "bg:color_bg3"
+format = '[[ $symbol(tf:$version) ](fg:#83a598 bg:color_bg3)]($style)'
+disabled = false
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:color_bg1"
+format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
+
+[line_break]
+disabled = false
+
+[character]
+disabled = false
+success_symbol = '[](bold fg:color_green)'
+error_symbol = '[](bold fg:color_red)'
+vimcmd_symbol = '[](bold fg:color_green)'
+vimcmd_replace_one_symbol = '[](bold fg:color_purple)'
+vimcmd_replace_symbol = '[](bold fg:color_purple)'
+vimcmd_visual_symbol = '[](bold fg:color_yellow)'
