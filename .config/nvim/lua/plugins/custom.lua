@@ -137,23 +137,52 @@ return {
   -- Custom search exclusions for Telescope
   {
     "nvim-telescope/telescope.nvim",
-    opts = {
-      defaults = {
-        file_ignore_patterns = {
-          "node_modules",
-          ".git",
-          "dist",
-          "build",
-          "%.lock",
-          "package%-lock%.json",
-          "yarn%.lock",
-          "%.log",
-          "%.cache",
-          "%.min%.js",
-          "%.min%.css"
-        },
-      },
+    dependencies = {
+      "nvim-telescope/telescope-fzf-native.nvim",
+      build = "make",
     },
+    config = function()
+      require("telescope").setup({
+        defaults = {
+          file_ignore_patterns = {
+            "node_modules",
+            ".git",
+            "dist",
+            "build",
+            "%.lock",
+            "package%-lock%.json",
+            "yarn%.lock",
+            "%.log",
+            "%.cache",
+            "%.min%.js",
+            "%.min%.css"
+          },
+          -- Enable multi-selection and better search
+          vimgrep_arguments = {
+            "rg",
+            "--color=never",
+            "--no-heading",
+            "--with-filename",
+            "--line-number",
+            "--column",
+            "--smart-case",
+            "--hidden",
+            "--glob=!.git/*",
+          },
+        },
+        pickers = {
+          find_files = {
+            -- Remove custom find_command to use default fuzzy finder
+            hidden = true,
+            -- Add these options for better search
+            find_command = nil, -- Use default telescope finder
+          },
+        },
+      })
+
+      -- Load fzf extension for better fuzzy finding
+      require("telescope").load_extension("fzf")
+    end,
     keys = {
       -- Custom search exclusions
       { "<leader>fG", function()
@@ -166,7 +195,9 @@ return {
 
       { "<leader>fF", function()
         require("telescope.builtin").find_files({
-          find_command = { 'rg', '--files', '--hidden', '--glob', '!.git/*', '--glob', '!node_modules/*', '--glob', '!dist/*' }
+          hidden = true,
+          no_ignore = false,
+          follow = true,
         })
       end, desc = "Find Files (Custom)" },
     },

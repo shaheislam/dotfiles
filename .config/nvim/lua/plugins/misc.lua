@@ -103,7 +103,9 @@ return {
       -- Override LazyVim defaults with your custom versions
       { "<leader>ff", function()
         require("telescope.builtin").find_files({
-          find_command = { 'rg', '--files', '--hidden', '--glob', '!.git/*', '--glob', '!node_modules/*', '--glob', '!dist/*' }
+          hidden = true,
+          no_ignore = false,
+          follow = true,
         })
       end, desc = "Find Files (Custom)" },
 
