@@ -1,6 +1,0 @@
-# Atuin configuration
-auto_sync = true
-update_check = false
-style = "compact"
-inline_height = 40
-show_preview = true
