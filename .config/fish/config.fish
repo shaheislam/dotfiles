@@ -1,23 +1,13 @@
 # Fish Shell Configuration
 # Translated from .zshrc setup
 
-# Debug section (remove after troubleshooting)
-echo "Fish config loading..."
-echo "PATH: $PATH"
-echo "Starship command found: "(command -v starship)
-
 # Set key timeout (equivalent to KEYTIMEOUT in zsh)
 set -g fish_key_bindings fish_default_key_bindings
 set -g fish_escape_delay_ms 500
 
 # Initialize Starship prompt
-echo "Attempting to initialize Starship..."
 if command -v starship >/dev/null
-    echo "Starship found, initializing..."
     starship init fish | source
-    echo "Starship initialized successfully"
-else
-    echo "Starship command not found!"
 end
 
 # Environment Variables
