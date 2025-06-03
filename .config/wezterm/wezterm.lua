@@ -24,7 +24,23 @@ config.default_cursor_style = 'BlinkingBlock'
 config.cursor_blink_rate = 500
 
 -- Shell
-config.default_prog = { '/opt/homebrew/bin/fish' }
+config.default_prog = { '/opt/homebrew/bin/fish', '-l', '-c', 'starship init fish | source; exec fish' }
+
+-- Environment variables
+config.set_environment_variables = {
+  TERM = 'xterm-256color',
+  COLORTERM = 'truecolor',
+  STARSHIP_CONFIG = os.getenv("HOME") .. '/.config/starship.toml',
+}
+
+-- Ensure proper shell integration
+config.enable_kitty_keyboard = true
+config.enable_csi_u_key_encoding = false
+
+-- Terminal features for better prompt support
+config.term = "xterm-256color"
+config.enable_scroll_bar = false
+config.scrollback_lines = 10000
 
 -- Key bindings
 config.keys = {

@@ -12,6 +12,7 @@ end
 
 # Environment Variables
 set -x BAT_THEME tokyonight_night
+set -x STARSHIP_CONFIG $HOME/.config/starship.toml
 
 # Path configuration
 set -gx PATH /opt/homebrew/bin $HOME/bin $HOME/.local/bin /usr/local/bin $PATH
