@@ -79,17 +79,6 @@ if command -v thefuck >/dev/null
     thefuck --alias | source
 end
 
-# VSCode function
-function code
-    if command -v code >/dev/null
-        command code $argv
-    else if test -d "/Applications/Visual Studio Code.app"
-        open -a "Visual Studio Code" $argv
-    else
-        echo "VSCode is not installed or not found in the expected location."
-    end
-end
-
 # AWS SSO function
 function aws-sso
     set -l profile $argv[1]
