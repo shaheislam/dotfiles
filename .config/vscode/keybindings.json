@@ -1,0 +1,168 @@
+// Place your key bindings in this file to override the defaults
+[
+  // NAVIGATION
+  {
+    "key": "cmd+shift+a",
+    "command": "workbench.action.terminal.focusNext",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "cmd+shift+b",
+    "command": "workbench.action.terminal.focusPrevious",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "cmd+shift+j",
+    "command": "workbench.action.togglePanel"
+  },
+  {
+    "key": "cmd+shift+n",
+    "command": "workbench.action.terminal.new",
+    "when": "terminalFocus"
+  },
+  {
+    "key": "cmd+shift+w",
+    "command": "workbench.action.terminal.kill",
+    "when": "terminalFocus"
+  },
+  // FILE TREE
+  {
+    "command": "workbench.action.toggleSidebarVisibility",
+    "key": "cmd+e"
+  },
+  {
+    "command": "workbench.action.focusActiveEditorGroup",
+    "key": "cmd+1"
+  },
+  {
+    "command": "workbench.files.action.focusFilesExplorer",
+    "key": "cmd+e",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "n",
+    "command": "explorer.newFile",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+  {
+    "command": "renameFile",
+    "key": "r",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+  {
+    "key": "shift+n",
+    "command": "explorer.newFolder",
+    "when": "explorerViewletFocus"
+  },
+  {
+    "command": "deleteFile",
+    "key": "d",
+    "when": "filesExplorerFocus && !inputFocus"
+  },
+  // EXTRA
+  {
+    "key": "cmd+shift+5",
+    "command": "editor.emmet.action.matchTag"
+  },
+  {
+    "key": "cmd+alt+z",
+    "command": "workbench.action.toggleZenMode"
+  },
+  // ADDITIONAL MAC BINDINGS
+  {
+    "key": "cmd+alt+m",
+    "command": "workbench.action.toggleMaximizedPanel",
+    "when": "panelAlignment == 'center' || panelPosition != 'bottom' && panelPosition != 'top'"
+  },
+  {
+    "key": "cmd+alt+c",
+    "command": "peacock.changeColorToRandom"
+  },
+  {
+    "key": "cmd+`",
+    "command": "workbench.action.terminal.toggleTerminal",
+    "when": "terminal.active"
+  },
+  {
+    "key": "ctrl+`",
+    "command": "-workbench.action.terminal.toggleTerminal",
+    "when": "terminal.active"
+  },
+  {
+    "key": "cmd+0",
+    "command": "terminal.focus"
+  },
+  {
+    "key": "cmd+[IntlBackslash]",
+    "command": "workbench.action.focusSideBar"
+  },
+  {
+    "key": "cmd+0",
+    "command": "-workbench.action.focusSideBar"
+  },
+  // Split Management
+  {
+    "key": "cmd+shift+h",
+    "command": "workbench.action.moveEditorToLeftGroup"
+  },
+  {
+    "key": "cmd+shift+l",
+    "command": "workbench.action.moveEditorToRightGroup"
+  },
+  // Buffer/Tab Management (vim-like)
+  {
+    "key": "cmd+shift+x",
+    "command": "workbench.action.closeActiveEditor"
+  },
+  {
+    "key": "cmd+shift+o",
+    "command": "workbench.action.closeOtherEditors"
+  },
+  {
+    "key": "cmd+2",
+    "command": "workbench.action.openEditorAtIndex1"
+  },
+  {
+    "key": "cmd+3",
+    "command": "workbench.action.openEditorAtIndex2"
+  },
+  {
+    "key": "cmd+4",
+    "command": "workbench.action.openEditorAtIndex3"
+  },
+  {
+    "key": "cmd+5",
+    "command": "workbench.action.openEditorAtIndex4"
+  },
+  {
+    "key": "cmd+6",
+    "command": "workbench.action.openEditorAtIndex5"
+  },
+  // VIM Extension Integration
+  {
+    "key": "tab",
+    "command": "-extension.vim_tab",
+    "when": "editorFocus && vim.active && !inDebugRepl && vim.mode != 'Insert'"
+  },
+  // Toggle between source and test files
+  {
+    "key": "cmd+t",
+    "command": "extension.alternate-file",
+    "when": "editorTextFocus"
+  },
+  // Global symbol search (different from vim's local symbol search)
+  {
+    "key": "cmd+shift+r",
+    "command": "workbench.action.showAllSymbols"
+  },
+  // Zen/Distraction-free editing
+  {
+    "key": "cmd+alt+f",
+    "command": "workbench.action.toggleCenteredLayout"
+  },
+  // Quick terminal access (like vim's :terminal)
+  {
+    "key": "cmd+j cmd+j",
+    "command": "workbench.action.terminal.toggleTerminal"
+  }
+]
