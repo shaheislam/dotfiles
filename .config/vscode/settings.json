@@ -153,6 +153,18 @@
       "commands": ["workbench.action.quickTextSearch"]
     },
 
+    // Search Editor: New Search Editor
+    {
+      "before": ["leader", "o", "s"],
+      "commands": ["search.action.openNewEditor"]
+    },
+
+    // Apply search editor changes
+    {
+      "before": ["leader", "w", "s"],
+      "commands": ["searchEditorApplyChanges.apply"]
+    },
+
     {
       "before": ["leader", "n", "e"],
       "commands": ["workbench.files.action.focusFilesExplorer"]
@@ -237,5 +249,5 @@
   "launch": {},
   "githubLocalActions.dockerDesktopPath": "/Applications/Docker.app",
   "workbench.activityBar.location": "top",
-  "workbench.colorTheme": "Tokyo Night Storm Frameless"
+  "workbench.colorTheme": "Tokyo Night Frameless"
 }
