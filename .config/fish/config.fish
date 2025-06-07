@@ -132,18 +132,60 @@ if status is-interactive
         end
     end
 
-    function ssmc
+        function ssmc
         set -l profile $argv[1]
         if test -z "$profile"
             set profile "petlab"  # Default profile
         end
 
-        set -l instance_id (cat $HOME/instances | fzf --prompt="Select EC2 instance: ")
-        if test -n "$instance_id"
-            echo "Connecting to instance: $instance_id with profile: $profile"
-            aws ssm start-session --target $instance_id --profile $profile
+        echo "Fetching instances from AWS..."
+
+        # Get instances with their names and IDs, only running instances
+        set -l instances (aws ec2 describe-instances \
+            --profile $profile \
+            --filters "Name=instance-state-name,Values=running" \
+            --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,LaunchTime]' \
+            --output text 2>/dev/null)
+
+        if test -z "$instances"
+            echo "No running instances found or AWS CLI error"
+            return 1
+        end
+
+        # Format for fzf: "Name (InstanceType) - InstanceId"
+        set -l formatted_instances
+        for line in $instances
+            set -l parts (string split \t $line)
+            set -l name $parts[1]
+            set -l instance_id $parts[2]
+            set -l instance_type $parts[3]
+            set -l launch_time $parts[4]
+
+            # Handle instances without Name tag
+            if test "$name" = "None" -o -z "$name"
+                set name "Unnamed"
+            end
+
+            set -a formatted_instances "$name ($instance_type) - $instance_id"
+        end
+
+        # Use fzf to select instance
+        set -l selection (printf '%s\n' $formatted_instances | fzf --prompt="Select EC2 instance: " --height=40% --border)
+
+        if test -n "$selection"
+            # Extract instance ID from selection (everything after the last " - ")
+            set -l instance_id (string match -r -- '- (i-[a-f0-9]+)$' $selection | tail -1)
+
+            if test -n "$instance_id"
+                echo "Connecting to instance: $instance_id with profile: $profile"
+                aws ssm start-session --target $instance_id --profile $profile
+            else
+                echo "Failed to extract instance ID from selection"
+                return 1
+            end
         else
             echo "No instance selected"
+            return 1
         end
     end
 
