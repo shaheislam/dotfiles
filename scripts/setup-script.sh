@@ -190,6 +190,40 @@ install_zsh_plugin "zsh-autosuggestions" "https://github.com/zsh-users/zsh-autos
 install_zsh_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting"
 install_zsh_plugin "zsh-history-substring-search" "https://github.com/zsh-users/zsh-history-substring-search"
 
+# Install fisher and fish plugins
+if command -v fish &> /dev/null; then
+  echo "=== Installing Fisher and Fish plugins ==="
+
+  # Install Fisher package manager for Fish
+  if ! fish -c "type fisher" &>/dev/null; then
+    echo "Installing Fisher package manager..."
+    fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher"
+  else
+    echo "Fisher already installed"
+  fi
+
+  # List of Fisher plugins to install
+  FISHER_PLUGINS=(
+    "gazorby/fish-abbreviation-tips"
+    "patrickf3139/colored-man-pages"
+    "jorgebucaran/autopair.fish"
+    "evanlucas/fish-kubectl-completions"
+    "oh-my-fish/plugin-bang-bang"
+    "jhillyerd/plugin-git"
+    "PatrickF1/fzf.fish"
+  )
+
+  # Install each plugin
+  for plugin in "${FISHER_PLUGINS[@]}"; do
+    echo "Installing Fish plugin: $plugin"
+    fish -c "fisher install $plugin" || echo "Warning: Failed to install $plugin"
+  done
+
+  echo "Fisher and Fish plugins installation complete"
+else
+  echo "Warning: Fish shell not found. Skipping Fisher plugin installation."
+fi
+
 # Install and setup fzf
 if [ ! -d "$HOME/.fzf" ]; then
   echo "=== Installing fzf ==="
