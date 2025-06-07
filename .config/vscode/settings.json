@@ -1,3 +1,4 @@
+
 {
   // Peacock Theme Configuration
   "workbench.colorCustomizations": {
@@ -146,8 +147,11 @@
     { "before": ["leader", "r"], "commands": ["workbench.action.gotoSymbol"] },
     { "before": ["leader", "p"], "commands": ["editor.action.formatDocument"] },
 
-    // fzf-quick-open
-    { "before": ["leader", "g"], "commands": ["fzf-quick-open.runFzfSearch"] },
+    // Quick text search
+    {
+      "before": ["leader", "g"],
+      "commands": ["workbench.action.quickTextSearch"]
+    },
 
     {
       "before": ["leader", "n", "e"],
@@ -233,5 +237,5 @@
   "launch": {},
   "githubLocalActions.dockerDesktopPath": "/Applications/Docker.app",
   "workbench.activityBar.location": "top",
-  "workbench.colorTheme": "Tokyo Night"
+  "workbench.colorTheme": "Tokyo Night Storm Frameless"
 }
