@@ -133,7 +133,18 @@ if status is-interactive
     end
 
     function ssmc
-        aws ssm start-session --target $argv[1] --profile $argv[2] (cat $HOME/instances | fzf)
+        set -l profile $argv[1]
+        if test -z "$profile"
+            set profile "petlab"  # Default profile
+        end
+
+        set -l instance_id (cat $HOME/instances | fzf --prompt="Select EC2 instance: ")
+        if test -n "$instance_id"
+            echo "Connecting to instance: $instance_id with profile: $profile"
+            aws ssm start-session --target $instance_id --profile $profile
+        else
+            echo "No instance selected"
+        end
     end
 
     function f

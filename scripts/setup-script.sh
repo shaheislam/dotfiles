@@ -137,6 +137,14 @@ else
   }
 fi
 
+# Install AWS Session Manager Plugin
+if ! command -v session-manager-plugin &> /dev/null; then
+  echo "Installing AWS Session Manager Plugin..."
+  brew install --cask session-manager-plugin
+else
+  echo "AWS Session Manager Plugin already installed"
+fi
+
 # Install SketchyBar (status bar) - needs special handling
 if ! command -v sketchybar &> /dev/null; then
   echo "=== Installing SketchyBar ==="
