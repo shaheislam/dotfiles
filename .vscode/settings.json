@@ -1,21 +1,237 @@
 {
-    "workbench.colorCustomizations": {
-        "activityBar.activeBackground": "#3ba28f",
-        "activityBar.background": "#3ba28f",
-        "activityBar.foreground": "#15202b",
-        "activityBar.inactiveForeground": "#15202b99",
-        "activityBarBadge.background": "#903ca4",
-        "activityBarBadge.foreground": "#e7e7e7",
-        "commandCenter.border": "#e7e7e799",
-        "sash.hoverBorder": "#3ba28f",
-        "statusBar.background": "#2d7d6e",
-        "statusBar.foreground": "#e7e7e7",
-        "statusBarItem.hoverBackground": "#3ba28f",
-        "statusBarItem.remoteBackground": "#2d7d6e",
-        "statusBarItem.remoteForeground": "#e7e7e7",
-        "titleBar.activeBackground": "#2d7d6e",
-        "titleBar.activeForeground": "#e7e7e7",
-        "titleBar.inactiveBackground": "#2d7d6e99",
-        "titleBar.inactiveForeground": "#e7e7e799"
+  // Peacock Theme Configuration
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#3ba28f",
+    "activityBar.background": "#3ba28f",
+    "activityBar.foreground": "#15202b",
+    "activityBar.inactiveForeground": "#15202b99",
+    "activityBarBadge.background": "#903ca4",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#3ba28f",
+    "statusBar.background": "#2d7d6e",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#3ba28f",
+    "statusBarItem.remoteBackground": "#2d7d6e",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#2d7d6e",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#2d7d6e99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#2d7d6e",
+
+  // Editor Configuration
+  "editor.formatOnSave": true,
+  "editor.suggest.insertMode": "replace",
+  "editor.linkedEditing": true,
+  "editor.lineNumbers": "relative",
+  "editor.cursorSurroundingLines": 8,
+  "editor.scrollBeyondLastLine": false,
+  "editor.minimap.enabled": false,
+  "editor.wordWrap": "off",
+  "editor.rulers": [80, 120],
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.enablePreviewFromQuickOpen": false,
+  "workbench.list.automaticKeyboardNavigation": false,
+  "workbench.startupEditor": "none",
+  "workbench.editor.showTabs": "multiple",
+  "window.zoomLevel": 0.5,
+  "update.showReleaseNotes": false,
+  "breadcrumbs.enabled": false,
+  "window.openFilesInNewWindow": "off",
+  "window.openFoldersInNewWindow": "off",
+
+  // Zen Mode Configuration
+  "zenMode.hideLineNumbers": false,
+
+  // Terminal Configuration
+  "terminal.integrated.fontFamily": "MesloLGS NF",
+  "terminal.integrated.defaultProfile.osx": "fish",
+
+  // Terminal Profiles Configuration
+  "terminal.integrated.profiles.osx": {
+    "fish": {
+      "path": "/opt/homebrew/bin/fish",
+      "args": []
+    },
+    "fish-fallback": {
+      "path": "/usr/local/bin/fish",
+      "args": []
+    },
+    "zsh": {
+      "path": "/bin/zsh",
+      "args": ["-l"]
+    },
+    "bash": {
+      "path": "/bin/bash",
+      "args": ["-l"]
     }
+  },
+
+  // Smooth scrolling settings
+  "editor.smoothScrolling": true,
+  "workbench.list.smoothScrolling": true,
+  "terminal.integrated.smoothScrolling": true,
+
+  // Vim Configuration
+  "vim.easymotion": true,
+  "vim.incsearch": true,
+  "vim.useSystemClipboard": true,
+  "vim.useCtrlKeys": true,
+  "vim.hlsearch": true,
+  "vim.leader": "<Space>",
+  "vim.handleKeys": {
+    "<tab>": false,
+    "<S-tab>": false
+  },
+
+  // Vim Insert Mode Bindings
+  "vim.insertModeKeyBindings": [
+    {
+      "before": ["j", "j"],
+      "after": ["<Esc>"]
+    }
+  ],
+
+  // Vim Normal Mode Bindings (Non-Recursive)
+  "vim.normalModeKeyBindingsNonRecursive": [
+    // NAVIGATION
+    // switch b/w buffers
+    { "before": ["<S-h>"], "commands": [":bprevious"] },
+    { "before": ["<S-l>"], "commands": [":bnext"] },
+
+    // Tab navigation
+    {
+      "before": ["g", "<tab>"],
+      "commands": ["workbench.action.quickOpenPreviousRecentlyUsedEditor"]
+    },
+    {
+      "before": ["g", "t"],
+      "commands": ["workbench.action.nextEditor"]
+    },
+    {
+      "before": ["g", "T"],
+      "commands": ["workbench.action.previousEditor"]
+    },
+
+    // splits
+    { "before": ["leader", "v"], "commands": [":vsplit"] },
+    { "before": ["leader", "s"], "commands": [":split"] },
+
+    // panes
+    {
+      "before": ["leader", "h"],
+      "commands": ["workbench.action.focusLeftGroup"]
+    },
+    {
+      "before": ["leader", "j"],
+      "commands": ["workbench.action.focusBelowGroup"]
+    },
+    {
+      "before": ["leader", "k"],
+      "commands": ["workbench.action.focusAboveGroup"]
+    },
+    {
+      "before": ["leader", "l"],
+      "commands": ["workbench.action.focusRightGroup"]
+    },
+
+    // FILE OPERATIONS
+    { "before": ["leader", "w"], "commands": [":w!"] },
+    { "before": ["leader", "q"], "commands": [":q!"] },
+    { "before": ["leader", "x"], "commands": [":x!"] },
+    { "before": ["leader", "f"], "commands": ["workbench.action.quickOpen"] },
+    { "before": ["leader", "r"], "commands": ["workbench.action.gotoSymbol"] },
+    { "before": ["leader", "p"], "commands": ["editor.action.formatDocument"] },
+
+    // Quick text search
+    { "before": ["leader", "g"], "commands": ["workbench.action.quickTextSearch"] },
+
+    {
+      "before": ["leader", "n", "e"],
+      "commands": ["workbench.files.action.focusFilesExplorer"]
+    },
+    // DIAGNOSTICS & CODE ACTIONS
+    {
+      "before": ["[", "d"],
+      "commands": ["editor.action.marker.prev"]
+    },
+    {
+      "before": ["]", "d"],
+      "commands": ["editor.action.marker.next"]
+    },
+    {
+      "before": ["<leader>", "c", "a"],
+      "commands": ["editor.action.quickFix"]
+    },
+    {
+      "before": ["g", "h"],
+      "commands": ["editor.action.showDefinitionPreviewHover"]
+    }
+  ],
+
+  // Vim Visual Mode Bindings
+  "vim.visualModeKeyBindings": [
+    // Stay in visual mode while indenting
+    { "before": ["<"], "commands": ["editor.action.outdentLines"] },
+    { "before": [">"], "commands": ["editor.action.indentLines"] },
+
+    // Move selected lines while staying in visual mode
+    { "before": ["J"], "commands": ["editor.action.moveLinesDownAction"] },
+    { "before": ["K"], "commands": ["editor.action.moveLinesUpAction"] },
+
+    // toggle comment selection
+    { "before": ["leader", "c"], "commands": ["editor.action.commentLine"] }
+  ],
+
+  // Language-Specific Formatting
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {},
+
+  // JavaScript/TypeScript Configuration
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  // Go Configuration
+  "go.toolsManagement.autoUpdate": true,
+
+  // File Explorer
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.openEditors.visible": 0,
+
+  // Git Configuration
+  "git.autofetch": true,
+  "git.confirmSync": false,
+
+  // Search Configuration
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/dist": true,
+    "**/build": true
+  },
+
+  // Files Configuration
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // Launch Configuration
+  "launch": {},
+  "githubLocalActions.dockerDesktopPath": "/Applications/Docker.app",
+  "workbench.activityBar.location": "top",
+  "workbench.colorTheme": "Tokyo Night Storm Frameless"
 }
