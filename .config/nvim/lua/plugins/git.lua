@@ -31,9 +31,14 @@ return {
       -- Lazygit integration
       { "<leader>gg", function()
         local Terminal = require('toggleterm.terminal').Terminal
+        local git_root = vim.fn.fnamemodify(vim.fn.finddir('.git', '.;'), ':h')
+        if git_root == "" then
+          vim.notify("Not in a git repository", vim.log.levels.ERROR)
+          return
+        end
         local lazygit = Terminal:new({
           cmd = "lazygit",
-          dir = vim.fn.getcwd(),
+          dir = git_root,
           direction = "float",
           float_opts = {
             border = "curved",
