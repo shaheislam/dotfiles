@@ -100,8 +100,6 @@ if status is-interactive
     alias cat="bat --theme Dracula -P"
     alias k=kubectl
     alias kubectl=kubecolor
-    alias vi=nvim
-    alias vim=nvim
     alias n=nvim
     alias c=clear
     alias lg=lazygit
