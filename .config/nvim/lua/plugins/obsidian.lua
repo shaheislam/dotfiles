@@ -1,4 +1,43 @@
 -- ~/.config/nvim/lua/plugins/obsidian.lua
+local function get_device_name()
+  local handle = io.popen("hostname")
+  if handle then
+    local device = handle:read("*a"):gsub("%s+$", "")
+    handle:close()
+    return device
+  end
+  return "unknown"
+end
+
+local device = get_device_name()
+local workspaces = {
+  -- DFE vault
+  {
+    name = "dfe",
+    path = "/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/Engineering",
+  },
+  -- PetLab vault
+  {
+    name = "petlab",
+    path = "~/Documents/Obsidian Vault",
+  },
+}
+
+-- Filter workspaces based on device name
+local function get_workspaces_for_device()
+  local device_workspaces = {}
+  for _, workspace in ipairs(workspaces) do
+    if workspace.name == device then
+      table.insert(device_workspaces, workspace)
+    end
+  end
+  -- If no device-specific workspace is found, use all workspaces
+  if #device_workspaces == 0 then
+    return workspaces
+  end
+  return device_workspaces
+end
+
 return {
   "epwalsh/obsidian.nvim",
   version = "*",
@@ -8,12 +47,7 @@ return {
     "nvim-lua/plenary.nvim",
   },
   opts = {
-    workspaces = {
-      {
-        name = "main",
-        path = "~/Documents/Obsidian Vault",
-      },
-    },
+    workspaces = get_workspaces_for_device(),
 
     -- Disable obsidian.nvim UI since we're using render-markdown.nvim
     ui = {
