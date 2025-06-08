@@ -102,6 +102,7 @@ if status is-interactive
     alias kubectl=kubecolor
     alias n=nvim
     alias c=clear
+    alias cur=cursor
     alias lg=lazygit
     alias ld=lazydocker
     alias fixterm="stty sane"
