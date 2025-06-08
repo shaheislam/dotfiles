@@ -30,7 +30,7 @@ function code --description "Open VS Code, with zoxide integration for directory
     # If zoxide found a directory, jump to it and open VS Code
     if test $status -eq 0 -a -n "$target_dir"
         echo "Jumping to: $target_dir"
-        cd "$target_dir"
+        z $argv[1]
 
         # Open VS Code in the target directory
         if command -v code >/dev/null

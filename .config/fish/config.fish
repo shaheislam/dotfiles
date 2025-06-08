@@ -51,6 +51,11 @@ if status is-interactive
         source /opt/homebrew/opt/asdf/libexec/asdf.fish
     end
 
+    # Configure mise settings
+    if command -v mise >/dev/null
+        mise settings add idiomatic_version_file_enable_tools ruby
+    end
+
     # FZF configuration - enhanced version combining both configs
     if command -v fzf >/dev/null
         fzf --fish | source
@@ -93,13 +98,14 @@ if status is-interactive
     # Enhanced aliases combining both configs
     alias python=python3
     alias mkdir="mkdir -p"
-    alias cd="z"
     alias ls="eza"
     alias la="eza -al"
     alias l="eza -hal"
     alias cat="bat --theme Dracula -P"
     alias k=kubectl
     alias kubectl=kubecolor
+    alias vi=nvim
+    alias vim=nvim
     alias n=nvim
     alias c=clear
     alias cur=cursor
