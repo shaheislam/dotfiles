@@ -1,7 +1,14 @@
 function cursor --description "Open Cursor, with zoxide integration for directory jumping"
-    # If no arguments provided, open current directory
+    # If no arguments, open current directory
     if test (count $argv) -eq 0
         open -a Cursor .
+        return
+    end
+
+    # Check if the first argument is an existing file or directory
+    if test -e "$argv[1]"
+        # It's an existing file/directory, open it directly
+        open -a Cursor $argv
         return
     end
 
@@ -9,16 +16,12 @@ function cursor --description "Open Cursor, with zoxide integration for director
     set -l target_dir (zoxide query $argv[1] 2>/dev/null)
 
     # If zoxide found a directory, jump to it and open Cursor
-    if test -n "$target_dir"
+    if test $status -eq 0 -a -n "$target_dir"
+        echo "Jumping to: $target_dir"
         cd "$target_dir"
         open -a Cursor .
     else
-        # If no directory found, try to open the argument as a file
-        if test -e "$argv[1]"
-            open -a Cursor "$argv[1]"
-        else
-            echo "Directory or file not found: $argv[1]"
-            return 1
-        end
+        # Fallback to opening the argument (might be a file that doesn't exist yet)
+        open -a Cursor $argv
     end
 end
