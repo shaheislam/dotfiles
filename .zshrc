@@ -3,24 +3,6 @@ KEYTIMEOUT=500
 # Initialize Starship prompt
 eval "$(starship init zsh)"
 
-# Path to your oh-my-zsh installation
-export ZSH="$HOME/.oh-my-zsh"
-
-# Set plugins
-plugins=(
-  git
-  zsh-completions
-  fzf-tab
-  zsh-kubectl-prompt
-  docker-zsh-completion
-  zsh-syntax-highlighting
-  zsh-autosuggestions
-  zsh-history-substring-search
-)
-
-# Source Oh My Zsh
-source $ZSH/oh-my-zsh.sh
-
 # Paths
 export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
@@ -70,7 +52,6 @@ alias la="eza -al"
 alias cat="bat"
 alias k=kubectl
 alias kubectl=kubecolor
-
 
 # Obsidian Aliases
 alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
