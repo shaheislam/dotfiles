@@ -56,6 +56,7 @@ BREW_PACKAGES=(
   "kubectl"
   "azure-cli"
   "imagemagick"
+  "Azure/kubelogin/kubelogin"
 )
 
 for package in "${BREW_PACKAGES[@]}"; do
@@ -472,6 +473,23 @@ mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish}
 if [ ! -f "$HOME/.p10k.zsh" ]; then
   echo "=== Setting up Powerlevel10k ==="
   echo "Please run 'p10k configure' after this script completes to set up your terminal prompt"
+fi
+
+# Configure Azure Kubernetes tools
+echo "=== Configuring Azure Kubernetes tools ==="
+if command -v kubelogin &> /dev/null; then
+  echo "Configuring kubelogin..."
+  # Create .kube directory if it doesn't exist
+  mkdir -p $HOME/.kube
+  # Set proper permissions for kubeconfig
+  if [ -f "$HOME/.kube/config" ]; then
+    chmod 600 $HOME/.kube/config
+  fi
+  # Convert kubeconfig to use Azure CLI authentication
+  kubelogin convert-kubeconfig -l azurecli
+  echo "Azure Kubernetes tools configured successfully"
+else
+  echo "kubelogin not found, skipping Azure Kubernetes configuration"
 fi
 
 echo ""
