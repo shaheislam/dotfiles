@@ -113,6 +113,9 @@ if status is-interactive
     alias ld=lazydocker
     alias fixterm="stty sane"
 
+    # Obsidian Aliases
+    alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
+
     # Kubernetes aliases
     alias kctx="kubie ctx"
     alias kns="kubie ns"

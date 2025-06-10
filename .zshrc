@@ -70,6 +70,11 @@ alias la="eza -al"
 alias cat="bat"
 alias k="kubectl"
 
+
+# Obsidian Aliases
+
+alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
+
 # bat theme
 export BAT_THEME=tokyonight_night
 
