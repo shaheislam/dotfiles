@@ -250,6 +250,61 @@ else
   echo "fzf-git.sh already installed"
 fi
 
+# Install Tmux Plugin Manager and plugins
+echo "=== Installing Tmux Plugin Manager and plugins ==="
+
+# Install TPM if not already installed
+if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
+  echo "Installing Tmux Plugin Manager..."
+  git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+else
+  echo "Tmux Plugin Manager already installed"
+fi
+
+# Function to install tmux plugin
+install_tmux_plugin() {
+  local plugin_name="$1"
+  local plugin_url="$2"
+  local plugin_dir="$HOME/.tmux/plugins/$plugin_name"
+
+  if [ ! -d "$plugin_dir" ]; then
+    echo "Installing tmux plugin: $plugin_name"
+    git clone "$plugin_url" "$plugin_dir"
+  else
+    echo "Tmux plugin $plugin_name already installed"
+  fi
+}
+
+# Install tmux plugins
+install_tmux_plugin "tmux-sensible" "https://github.com/tmux-plugins/tmux-sensible"
+install_tmux_plugin "tmux-yank" "https://github.com/tmux-plugins/tmux-yank"
+install_tmux_plugin "tmux-resurrect" "https://github.com/tmux-plugins/tmux-resurrect"
+install_tmux_plugin "tmux-continuum" "https://github.com/tmux-plugins/tmux-continuum"
+install_tmux_plugin "tmux-open" "https://github.com/tmux-plugins/tmux-open"
+install_tmux_plugin "tmux-battery" "https://github.com/tmux-plugins/tmux-battery"
+install_tmux_plugin "tmux-cpu" "https://github.com/tmux-plugins/tmux-cpu"
+install_tmux_plugin "tmux-pain-control" "https://github.com/tmux-plugins/tmux-pain-control"
+install_tmux_plugin "tmux-copycat" "https://github.com/tmux-plugins/tmux-copycat"
+install_tmux_plugin "tmux-urlview" "https://github.com/tmux-plugins/tmux-urlview"
+install_tmux_plugin "tmux-sessionist" "https://github.com/tmux-plugins/tmux-sessionist"
+install_tmux_plugin "tmux-sidebar" "https://github.com/tmux-plugins/tmux-sidebar"
+install_tmux_plugin "tmux-prefix-highlight" "https://github.com/tmux-plugins/tmux-prefix-highlight"
+install_tmux_plugin "tmux-which-key" "https://github.com/lalitmee/tmux-which-key"
+install_tmux_plugin "catppuccin" "https://github.com/catppuccin/tmux"
+
+# Create tmux config directory if it doesn't exist
+mkdir -p "$HOME/.tmux"
+
+# Copy tmux configuration
+if [ -f "$(pwd)/.tmux.conf" ]; then
+  echo "Installing tmux configuration..."
+  cp "$(pwd)/.tmux.conf" "$HOME/.tmux.conf"
+else
+  echo "Warning: .tmux.conf not found in current directory"
+fi
+
+echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (capital i) to install the plugins."
+
 # Install vim-plug
 if [ ! -f "$HOME/.vim/autoload/plug.vim" ]; then
   echo "=== Installing vim-plug ==="
