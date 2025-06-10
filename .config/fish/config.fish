@@ -114,7 +114,7 @@ if status is-interactive
     alias fixterm="stty sane"
 
     # Obsidian Aliases
-    alias obsdfe="'/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
+    alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
 
     # Kubernetes aliases
     alias kctx="kubie ctx"

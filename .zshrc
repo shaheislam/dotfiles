@@ -73,8 +73,7 @@ alias kubectl=kubecolor
 
 
 # Obsidian Aliases
-
-alias obsdfe="'/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
+alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
 
 # bat theme
 export BAT_THEME=tokyonight_night
