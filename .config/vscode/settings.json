@@ -75,14 +75,15 @@
   "editor.smoothScrolling": true,
   "workbench.list.smoothScrolling": true,
   "terminal.integrated.smoothScrolling": true,
-
-  // Vim Configuration
   "vim.easymotion": true,
-  "vim.incsearch": true,
-  "vim.useSystemClipboard": true,
-  "vim.useCtrlKeys": true,
   "vim.hlsearch": true,
+  "vim.incsearch": true,
   "vim.leader": "<Space>",
+  "vim.scroll": 20,
+  "vim.scrollSpeed": 1,
+  "vim.smoothScrolling": true,
+  "vim.useCtrlKeys": true,
+  "vim.useSystemClipboard": true,
   "vim.handleKeys": {
     "<tab>": false,
     "<S-tab>": false
