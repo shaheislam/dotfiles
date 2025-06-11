@@ -3,13 +3,14 @@
 
 # Only run in interactive sessions
 if status is-interactive
-    # Set key timeout (equivalent to KEYTIMEOUT in zsh)
-    set -g fish_key_bindings fish_default_key_bindings
-    set -g fish_escape_delay_ms 500
+    # Set key bindings for better autocomplete
+    set -g fish_key_bindings fish_vi_key_bindings
+    set -g fish_escape_delay_ms 100
 
     # Environment Variables
     set -x BAT_THEME tokyo-night
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
+    set -x TERM screen-256color  # Changed from xterm-256color to screen-256color
 
     # Additional environment variables from extended config
     set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
@@ -228,6 +229,25 @@ if status is-interactive
         if not aws sts get-caller-identity >/dev/null 2>&1
             echo "Failed to get credentials"
         end
+    end
+
+    # Set environment variables
+    set -gx EDITOR nvim
+    set -gx VISUAL nvim
+    set -gx LANG en_US.UTF-8
+    set -gx LC_ALL en_US.UTF-8
+    set -gx TERM xterm-256color
+
+    # Configure tmux.fish
+    status is-interactive; and begin
+        set fish_tmux_autostart true
+        set fish_tmux_autoconnect true
+        set fish_tmux_autoname_session true
+    end
+
+    # Tmux function with correct TERM
+    function tmux
+        env TERM=xterm-256color /opt/homebrew/bin/tmux $argv
     end
 end
 
