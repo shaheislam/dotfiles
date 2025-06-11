@@ -8,7 +8,7 @@
   "friendly-snippets": { "branch": "main", "commit": "572f5660cf05f8cd8834e096d7b4c921ba18e175" },
   "fzf": { "branch": "master", "commit": "3b68dcdd81394f1ac9f743e1f74ff754f95eef9e" },
   "fzf.vim": { "branch": "master", "commit": "98dcd77a189a8a87052c20d1be8082aea60101b7" },
-  "grug-far.nvim": { "branch": "main", "commit": "cc44e17696caee09d3c788883dc3576317ec4b30" },
+  "grug-far.nvim": { "branch": "main", "commit": "1a85fba510c6086b396be5a3c7c77ab32829d7df" },
   "harpoon": { "branch": "harpoon2", "commit": "ed1f853847ffd04b2b61c314865665e1dadf22c7" },
   "lazy.nvim": { "branch": "main", "commit": "6c3bda4aca61a13a9c63f1c1d1b16b9d3be90d7a" },
   "lazydev.nvim": { "branch": "main", "commit": "2367a6c0a01eb9edb0464731cc0fb61ed9ab9d2c" },
