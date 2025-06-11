@@ -22,52 +22,34 @@ fi
 
 # Install packages using Brewfile
 echo "=== Installing packages via Brewfile ==="
-if [ -f "$HOME/dotfiles/Brewfile" ]; then
+if [ -f "$HOME/dotfiles/homebrew/Brewfile" ]; then
   echo "Found Brewfile, installing packages..."
-  brew bundle --file="$HOME/dotfiles/Brewfile"
+  brew bundle --file="$HOME/dotfiles/homebrew/Brewfile"
 else
-  echo "Error: Brewfile not found at $HOME/dotfiles/Brewfile"
+  echo "Error: Brewfile not found at $HOME/dotfiles/homebrew/Brewfile"
   exit 1
 fi
 
 # Install command line tools and applications
 echo "=== Installing CLI tools via Homebrew ==="
+
+# Remove npm tldr if it exists to avoid conflicts with tealdeer
+if command -v tldr &> /dev/null && [ -L "/opt/homebrew/bin/tldr" ]; then
+  echo "Removing npm tldr package to avoid conflicts..."
+  npm uninstall -g tldr
+fi
+
 BREW_PACKAGES=(
-  "zsh-vi-mode"
-  "bat"
-  "git-delta"
-  "eza"
-  "zoxide"
-  "fd"
-  "stow"
-  "direnv"
-  "mise"
-  "kubie"
-  "starship"
-  "fzf"
-  "ripgrep"
-  "neovim"
-  "tmux"
-  "thefuck"
-  "atuin"
-  "lazygit"
-  "lazydocker"
-  "fish"
-  "terraform"
-  "terraform-docs"
-  "asdf"
-  "stylua"
-  "black"
-  "isort"
-  "node"
-  "python@3.11"
-  "go"
-  "rust"
-  "awscli"
-  "kubectl"
-  "azure-cli"
-  "imagemagick"
-  "Azure/kubelogin/kubelogin"
+  "bottom"
+  "fastfetch"
+  "onefetch"
+  "tealdeer"
+  "glow"
+  "jq"
+  "yq"
+  "shellcheck"
+  "shfmt"
+  "gh"
 )
 
 for package in "${BREW_PACKAGES[@]}"; do
@@ -79,20 +61,10 @@ for package in "${BREW_PACKAGES[@]}"; do
   fi
 done
 
-# Install ueberzugpp (for image display in terminals like iTerm2)
-if ! command -v ueberzugpp &> /dev/null; then
-  echo "=== Installing ueberzugpp for image display ==="
-  brew install jstkdng/programs/ueberzugpp
-else
-  echo "ueberzugpp already installed"
-fi
-
 # Install Nerd Fonts for beautiful terminal icons
 echo "=== Installing Nerd Fonts ==="
 NERD_FONTS=(
-  "font-jetbrains-mono-nerd-font"
-  "font-fira-code-nerd-font"
-  "font-hack-nerd-font"
+  "font-iosevka-nerd-font"
 )
 
 for font in "${NERD_FONTS[@]}"; do
@@ -112,12 +84,12 @@ app_installed() {
   [ -d "/Applications/$1.app" ]
 }
 
-# Install Ghostty
-if app_installed "Ghostty"; then
-  echo "Ghostty already installed"
+# Install Raycast
+if app_installed "Raycast"; then
+  echo "Raycast already installed"
 else
-  echo "Installing Ghostty..."
-  brew install --cask ghostty
+  echo "Installing Raycast..."
+  brew install --cask raycast
 fi
 
 # Install WezTerm
@@ -128,12 +100,20 @@ else
   brew install --cask wezterm
 fi
 
-# Install Visual Studio Code
-if app_installed "Visual Studio Code"; then
-  echo "Visual Studio Code already installed"
+# Install Visual Studio Code Insiders
+if app_installed "Visual Studio Code - Insiders"; then
+  echo "Visual Studio Code Insiders already installed"
 else
-  echo "Installing Visual Studio Code..."
-  brew install --cask visual-studio-code
+  echo "Installing Visual Studio Code Insiders..."
+  brew install --cask visual-studio-code@insiders
+fi
+
+# Install ueberzugpp (for image display in terminals like iTerm2)
+if ! command -v ueberzugpp &> /dev/null; then
+  echo "=== Installing ueberzugpp for image display ==="
+  brew install jstkdng/programs/ueberzugpp
+else
+  echo "ueberzugpp already installed"
 fi
 
 # Install AeroSpace
