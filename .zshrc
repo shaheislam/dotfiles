@@ -57,7 +57,7 @@ alias kubectl=kubecolor
 alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
 
 # bat theme
-export BAT_THEME=tokyonight_night
+export BAT_THEME=tokyo-night
 
 # thefuck
 if command -v thefuck > /dev/null 2>&1; then

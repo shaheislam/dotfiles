@@ -8,7 +8,7 @@ if status is-interactive
     set -g fish_escape_delay_ms 500
 
     # Environment Variables
-    set -x BAT_THEME tokyonight_night
+    set -x BAT_THEME tokyo-night
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
 
     # Additional environment variables from extended config
@@ -101,7 +101,7 @@ if status is-interactive
     alias ls="eza"
     alias la="eza -al"
     alias l="eza -hal"
-    alias cat="bat --theme Dracula -P"
+    alias cat="bat"
     alias k=kubectl
     alias kubectl=kubecolor
     alias vi=nvim
