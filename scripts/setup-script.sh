@@ -20,6 +20,16 @@ else
   brew update
 fi
 
+# Install packages using Brewfile
+echo "=== Installing packages via Brewfile ==="
+if [ -f "$HOME/dotfiles/Brewfile" ]; then
+  echo "Found Brewfile, installing packages..."
+  brew bundle --file="$HOME/dotfiles/Brewfile"
+else
+  echo "Error: Brewfile not found at $HOME/dotfiles/Brewfile"
+  exit 1
+fi
+
 # Install command line tools and applications
 echo "=== Installing CLI tools via Homebrew ==="
 BREW_PACKAGES=(
