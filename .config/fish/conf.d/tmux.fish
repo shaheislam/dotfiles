@@ -186,7 +186,8 @@ function _fish_tmux_plugin_run_autostart --on-variable fish_tmux_autostart
 end
 
 if not set -q TMUX
-    set -g TMUX tmux new-session -d -s base
+    set -g TMUX tmux new-session -d -s base -c $PWD
+    set -gx SHELL /opt/homebrew/bin/fish
     eval $TMUX
     tmux attach-session -d -t base
 end
