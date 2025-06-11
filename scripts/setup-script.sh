@@ -44,6 +44,7 @@ BREW_PACKAGES=(
   "lazydocker"
   "fish"
   "terraform"
+  "terraform-docs"
   "asdf"
   "stylua"
   "black"
