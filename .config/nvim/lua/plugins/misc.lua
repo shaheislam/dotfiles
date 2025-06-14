@@ -5,9 +5,27 @@ return {
     "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
-    opts = {},
-    config = function()
+    opts = {
+      transparent = true,
+      styles = {
+        sidebars = "transparent",
+        floats = "transparent",
+      },
+    },
+    config = function(_, opts)
+      require("tokyonight").setup(opts)
       vim.cmd([[colorscheme tokyonight-night]])
+
+      -- Force background transparency
+      vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
+      vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
+      vim.api.nvim_set_hl(0, "NormalNC", { bg = "none" })
+      vim.api.nvim_set_hl(0, "Terminal", { bg = "none" })
+      vim.api.nvim_set_hl(0, "EndOfBuffer", { bg = "none" })
+      vim.api.nvim_set_hl(0, "SignColumn", { bg = "none" })
+      vim.api.nvim_set_hl(0, "VertSplit", { bg = "none" })
+      vim.api.nvim_set_hl(0, "StatusLine", { bg = "none" })
+      vim.api.nvim_set_hl(0, "StatusLineNC", { bg = "none" })
     end,
   },
 
@@ -130,5 +148,10 @@ return {
         },
       })
     end,
+  },
+
+  {
+    "typicode/bg.nvim",
+    lazy = false,
   },
 }
