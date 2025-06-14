@@ -8,7 +8,7 @@ if status is-interactive
     set -g fish_escape_delay_ms 100
 
     # Environment Variables
-    set -x BAT_THEME tokyo-night
+    set -x BAT_THEME tokyonight_night
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     set -x TERM screen-256color  # Changed from xterm-256color to screen-256color
 
