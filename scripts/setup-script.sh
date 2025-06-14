@@ -316,6 +316,15 @@ else
   echo "Warning: npm not found. Install Node.js first."
 fi
 
+# Configure bat with Tokyo Night theme
+echo "=== Configuring bat with Tokyo Night theme ==="
+mkdir -p "$(bat --config-dir)/themes"
+cd "$(bat --config-dir)/themes"
+curl -O https://raw.githubusercontent.com/folke/tokyonight.nvim/main/extras/sublime/tokyonight_night.tmTheme
+bat cache --build
+echo '--theme="tokyonight_night"' > "$(bat --config-dir)/config"
+echo "Bat configured with Tokyo Night theme"
+
 # Install Python packages via Homebrew (safer)
 echo "=== Installing Python packages via Homebrew ==="
 PYTHON_BREW_PACKAGES=(
