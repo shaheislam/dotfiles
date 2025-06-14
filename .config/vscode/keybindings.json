@@ -31,10 +31,6 @@
     "key": "cmd+e"
   },
   {
-    "command": "workbench.action.focusActiveEditorGroup",
-    "key": "cmd+1"
-  },
-  {
     "command": "workbench.files.action.focusFilesExplorer",
     "key": "cmd+e",
     "when": "editorTextFocus"
@@ -91,6 +87,10 @@
   {
     "key": "cmd+0",
     "command": "terminal.focus"
+  },
+  {
+    "key": "cmd+1",
+    "command": "workbench.action.focusFirstEditorGroup"
   },
   {
     "key": "cmd+9",
