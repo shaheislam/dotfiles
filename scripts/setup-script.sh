@@ -524,6 +524,16 @@ fi
 echo "=== Creating configuration directories ==="
 mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish}
 
+# Install Neovim plugins automatically
+echo "=== Installing Neovim plugins ==="
+if command -v nvim &> /dev/null; then
+  echo "Installing Neovim plugins via Lazy.nvim..."
+  nvim --headless "+Lazy! sync" +qa
+  echo "Neovim plugins installed successfully"
+else
+  echo "Warning: Neovim not found. Skipping plugin installation."
+fi
+
 # Run p10k configuration if it doesn't exist
 if [ ! -f "$HOME/.p10k.zsh" ]; then
   echo "=== Setting up Powerlevel10k ==="
