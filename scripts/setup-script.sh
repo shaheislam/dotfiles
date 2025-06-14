@@ -296,6 +296,26 @@ fi
 
 echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (capital i) to install the plugins."
 
+# Configure tmux-which-key plugin
+echo "=== Configuring tmux-which-key plugin ==="
+if [ -d "$HOME/.tmux/plugins/tmux-which-key" ]; then
+  if command -v python3 &> /dev/null; then
+    echo "Setting up tmux-which-key configuration..."
+    cd "$HOME/.tmux/plugins/tmux-which-key"
+    # Copy example config if config.yaml doesn't exist
+    if [ ! -f "config.yaml" ]; then
+      cp config.example.yaml config.yaml
+    fi
+    # Build the init.tmux file
+    python3 plugin/build.py config.yaml plugin/init.tmux
+    echo "tmux-which-key configured successfully"
+  else
+    echo "Warning: python3 not found. tmux-which-key requires python3 for configuration."
+  fi
+else
+  echo "tmux-which-key plugin not found. Install tmux plugins first."
+fi
+
 # Install vim-plug
 if [ ! -f "$HOME/.vim/autoload/plug.vim" ]; then
   echo "=== Installing vim-plug ==="
