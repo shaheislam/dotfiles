@@ -150,8 +150,8 @@ return {
     end,
   },
 
-  {
-    "typicode/bg.nvim",
-    lazy = false,
-  },
+  -- {
+  --   "typicode/bg.nvim",
+  --   lazy = false,
+  -- },
 }

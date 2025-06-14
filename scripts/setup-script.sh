@@ -298,6 +298,7 @@ echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (capital i)
 
 # Configure tmux-which-key plugin
 echo "=== Configuring tmux-which-key plugin ==="
+# The plugin will be in ~/.tmux/plugins after stow creates the symlink
 if [ -d "$HOME/.tmux/plugins/tmux-which-key" ]; then
   if command -v python3 &> /dev/null; then
     echo "Setting up tmux-which-key configuration..."
@@ -313,7 +314,7 @@ if [ -d "$HOME/.tmux/plugins/tmux-which-key" ]; then
     echo "Warning: python3 not found. tmux-which-key requires python3 for configuration."
   fi
 else
-  echo "tmux-which-key plugin not found. Install tmux plugins first."
+  echo "tmux-which-key plugin not found. Make sure to run 'stow .' from your dotfiles directory first."
 fi
 
 # Install vim-plug
