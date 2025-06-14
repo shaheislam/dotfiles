@@ -93,6 +93,10 @@
     "command": "terminal.focus"
   },
   {
+    "key": "cmd+9",
+    "command": "workbench.action.focusSecondEditorGroup"
+  },
+  {
     "key": "cmd+[IntlBackslash]",
     "command": "workbench.action.focusSideBar"
   },
@@ -166,3 +170,4 @@
     "command": "workbench.action.terminal.toggleTerminal"
   }
 ]
+
