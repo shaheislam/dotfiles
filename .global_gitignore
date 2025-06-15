@@ -1,0 +1,26 @@
+# Global Git Ignore File
+# This file contains patterns that should be ignored across all Git repositories
+
+# Ignore CLAUDE.md files in the work directory
+work/**/CLAUDE.md
+
+# Common system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*.log

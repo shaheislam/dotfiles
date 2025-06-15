@@ -575,6 +575,11 @@ if [ ! -f "$HOME/.p10k.zsh" ]; then
   echo "Please run 'p10k configure' after this script completes to set up your terminal prompt"
 fi
 
+# Configure global gitignore
+echo "=== Configuring global gitignore ==="
+git config --global core.excludesfile ~/.dotfiles/.global_gitignore
+echo "Global gitignore configured to use ~/.dotfiles/.global_gitignore"
+
 # Configure Azure Kubernetes tools
 echo "=== Configuring Azure Kubernetes tools ==="
 if command -v kubelogin &> /dev/null; then
