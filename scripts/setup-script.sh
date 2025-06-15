@@ -337,6 +337,19 @@ else
   echo "Warning: npm not found. Install Node.js first."
 fi
 
+# Install global packages using bun if available
+if command -v bun &> /dev/null; then
+  echo "=== Installing global packages with bun ==="
+  bun install -g ccusage
+  echo "Installed ccusage globally via bun"
+  
+  # Add bun bin to PATH for current session
+  export PATH="$HOME/.bun/bin:$PATH"
+  echo "Added bun bin directory to PATH"
+else
+  echo "Warning: bun not found. Will be installed via Brewfile."
+fi
+
 # Configure bat with Tokyo Night theme
 echo "=== Configuring bat with Tokyo Night theme ==="
 mkdir -p "$(bat --config-dir)/themes"
@@ -418,6 +431,7 @@ source $ZSH/oh-my-zsh.sh
 # Paths
 export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
+export PATH="$HOME/.bun/bin:$PATH"
 
 # Add VSCode bin to PATH
 if [ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]; then

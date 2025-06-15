@@ -23,6 +23,7 @@ if status is-interactive
     fish_add_path $HOME/Library/Python/3.9/bin
     fish_add_path $HOME/.cargo/env
     fish_add_path $HOME/.rd/bin
+    fish_add_path $HOME/.bun/bin
 
     # Add VSCode bin to PATH if it exists
     if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
