@@ -109,7 +109,6 @@ if status is-interactive
     alias vi=nvim
     alias vim=nvim
     alias n=nvim
-    alias c=clear
     alias cur=cursor
     alias lg=lazygit
     alias ld=lazydocker
