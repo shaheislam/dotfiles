@@ -10,7 +10,7 @@ if status is-interactive
     # Environment Variables
     set -x BAT_THEME tokyonight_night
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
-    set -x TERM screen-256color  # Changed from xterm-256color to screen-256color
+    # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
     # Additional environment variables from extended config
     set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
@@ -239,7 +239,8 @@ if status is-interactive
     set -gx VISUAL nvim
     set -gx LANG en_US.UTF-8
     set -gx LC_ALL en_US.UTF-8
-    set -gx TERM xterm-256color
+    # Let terminal/VS Code set TERM appropriately
+    # set -gx TERM xterm-256color
 
     # Configure tmux.fish
     status is-interactive; and begin
