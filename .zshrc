@@ -53,6 +53,8 @@ alias cat="bat"
 alias k=kubectl
 alias kubectl=kubecolor
 alias tr="tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
+alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
+alias tk="tmux kill-server"
 
 # Obsidian Aliases
 alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"

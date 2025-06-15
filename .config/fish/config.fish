@@ -133,6 +133,8 @@ if status is-interactive
     alias save="~/sesh.sh save"
     alias rest="~/sesh.sh restore"
     alias tr="tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
+    alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
+    alias tk="tmux kill-server"
 
     # Functions from extended config
     function gis
