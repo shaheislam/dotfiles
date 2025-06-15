@@ -1,5 +1,7 @@
 # Claude Code Rules for Dotfiles
 
+> **Note**: This file extends the global DevOps rules in `~/.claude/CLAUDE.md`. Read both files for complete context.
+
 ## Core Development Principles
 
 ### 1. Setup Script Compatibility
