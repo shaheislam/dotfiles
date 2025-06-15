@@ -131,7 +131,7 @@ if status is-interactive
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
     alias save="~/sesh.sh save"
     alias rest="~/sesh.sh restore"
-    alias tr="tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
+    alias tr="clear; tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
     alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
     alias tk="tmux kill-server"
 
