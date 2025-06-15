@@ -296,6 +296,17 @@ fi
 
 echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (capital i) to install the plugins."
 
+# Initialize git submodules for tmux plugins
+echo "=== Initializing git submodules for tmux plugins ==="
+if [ -f "$HOME/dotfiles/.gitmodules" ]; then
+  cd "$HOME/dotfiles"
+  echo "Initializing and updating git submodules..."
+  git submodule update --init --recursive
+  echo "Git submodules initialized successfully"
+else
+  echo "No .gitmodules file found, skipping submodule initialization"
+fi
+
 # Configure tmux-which-key plugin
 echo "=== Configuring tmux-which-key plugin ==="
 # The plugin will be in ~/.tmux/plugins after stow creates the symlink
