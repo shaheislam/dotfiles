@@ -57,7 +57,7 @@ alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
 alias tk="tmux kill-server"
 
 # Obsidian Aliases
-alias obs="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"
+alias obs="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/Engineering'"
 
 # bat theme
 export BAT_THEME=tokyonight_night
