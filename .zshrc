@@ -52,6 +52,7 @@ alias la="eza -al"
 alias cat="bat"
 alias k=kubectl
 alias kubectl=kubecolor
+alias tr="tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
 
 # Obsidian Aliases
 alias obsdfe="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/'"

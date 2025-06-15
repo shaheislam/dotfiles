@@ -132,6 +132,7 @@ if status is-interactive
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
     alias save="~/sesh.sh save"
     alias rest="~/sesh.sh restore"
+    alias tr="tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
 
     # Functions from extended config
     function gis
