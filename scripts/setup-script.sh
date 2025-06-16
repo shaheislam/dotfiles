@@ -412,15 +412,18 @@ fi
 
 # Install global packages using bun if available
 if command -v bun &> /dev/null; then
-  echo "=== Installing global packages with bun ==="
-  bun install -g ccusage
-  echo "Installed ccusage globally via bun"
-  
-  # Add bun bin to PATH for current session
-  export PATH="$HOME/.bun/bin:$PATH"
-  echo "Added bun bin directory to PATH"
+  log_info "Installing global packages with bun..."
+  if bun install -g ccusage; then
+    log_success "Installed ccusage globally via bun"
+    # Add bun bin to PATH for current session
+    export PATH="$HOME/.bun/bin:$PATH"
+    log_success "Added bun bin directory to PATH"
+  else
+    log_warning "Failed to install global packages with bun"
+  fi
 else
-  echo "Warning: bun not found. Will be installed via Brewfile."
+  log_warning "bun not found. Should be installed via Brewfile"
+  log_info "You can manually install bun with: curl -fsSL https://bun.sh/install | bash"
 fi
 
 # Configure bat with Tokyo Night theme
