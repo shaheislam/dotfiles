@@ -322,6 +322,9 @@ if [ -f "$HOME/dotfiles/.gitmodules" ]; then
   echo "Using git submodules for tmux plugins..."
   cd "$HOME/dotfiles"
   git submodule update --init --recursive
+  # Reset any modified submodules to their committed state
+  git submodule foreach --recursive git reset --hard
+  git submodule foreach --recursive git clean -fd
 else
   echo "No .gitmodules found, installing plugins individually..."
   # Install tmux plugins (matching .tmux.conf exactly)
