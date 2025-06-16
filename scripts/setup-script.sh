@@ -1,7 +1,53 @@
 #!/bin/bash
 
-# Exit on error
-set -e
+# Better error handling - continue on non-critical errors
+set -u  # Exit on undefined variables
+# Removed set -e to allow script to continue on recoverable errors
+
+# Track overall success/failure
+SETUP_ERRORS=0
+SETUP_WARNINGS=0
+
+# Helper functions for error handling
+log_error() {
+    echo "❌ ERROR: $1" >&2
+    ((SETUP_ERRORS++))
+}
+
+log_warning() {
+    echo "⚠️  WARNING: $1" >&2
+    ((SETUP_WARNINGS++))
+}
+
+log_success() {
+    echo "✅ $1"
+}
+
+log_info() {
+    echo "ℹ️  $1"
+}
+
+# Function to run commands with error handling
+run_with_retry() {
+    local cmd="$1"
+    local description="$2"
+    local max_attempts="${3:-1}"
+    
+    for attempt in $(seq 1 $max_attempts); do
+        if eval "$cmd"; then
+            log_success "$description"
+            return 0
+        else
+            if [ $attempt -eq $max_attempts ]; then
+                log_error "$description failed after $max_attempts attempts"
+                return 1
+            else
+                log_warning "$description failed (attempt $attempt/$max_attempts), retrying..."
+                sleep 2
+            fi
+        fi
+    done
+}
 
 echo "=== Starting macOS Development Environment Setup ==="
 
@@ -23,11 +69,16 @@ fi
 # Install packages using Brewfile
 echo "=== Installing packages via Brewfile ==="
 if [ -f "$HOME/dotfiles/homebrew/Brewfile" ]; then
-  echo "Found Brewfile, installing packages..."
-  brew bundle --file="$HOME/dotfiles/homebrew/Brewfile"
+  log_info "Found Brewfile, installing packages..."
+  if brew bundle --file="$HOME/dotfiles/homebrew/Brewfile"; then
+    log_success "Homebrew packages installed successfully"
+  else
+    log_error "Failed to install some Homebrew packages"
+    log_info "Continuing with setup - you may need to install packages manually"
+  fi
 else
-  echo "Error: Brewfile not found at $HOME/dotfiles/homebrew/Brewfile"
-  exit 1
+  log_error "Brewfile not found at $HOME/dotfiles/homebrew/Brewfile"
+  log_info "Continuing setup without Homebrew packages"
 fi
 
 # Install command line tools and applications
@@ -266,22 +317,27 @@ install_tmux_plugin() {
   fi
 }
 
-# Install tmux plugins
-install_tmux_plugin "tmux-sensible" "https://github.com/tmux-plugins/tmux-sensible"
-install_tmux_plugin "tmux-yank" "https://github.com/tmux-plugins/tmux-yank"
-install_tmux_plugin "tmux-resurrect" "https://github.com/tmux-plugins/tmux-resurrect"
-install_tmux_plugin "tmux-continuum" "https://github.com/tmux-plugins/tmux-continuum"
-install_tmux_plugin "tmux-open" "https://github.com/tmux-plugins/tmux-open"
-install_tmux_plugin "tmux-battery" "https://github.com/tmux-plugins/tmux-battery"
-install_tmux_plugin "tmux-cpu" "https://github.com/tmux-plugins/tmux-cpu"
-install_tmux_plugin "tmux-pain-control" "https://github.com/tmux-plugins/tmux-pain-control"
-install_tmux_plugin "tmux-copycat" "https://github.com/tmux-plugins/tmux-copycat"
-install_tmux_plugin "tmux-urlview" "https://github.com/tmux-plugins/tmux-urlview"
-install_tmux_plugin "tmux-sessionist" "https://github.com/tmux-plugins/tmux-sessionist"
-install_tmux_plugin "tmux-sidebar" "https://github.com/tmux-plugins/tmux-sidebar"
-install_tmux_plugin "tmux-prefix-highlight" "https://github.com/tmux-plugins/tmux-prefix-highlight"
-install_tmux_plugin "tmux-which-key" "https://github.com/lalitmee/tmux-which-key"
-install_tmux_plugin "catppuccin" "https://github.com/catppuccin/tmux"
+# Install tmux plugins via git submodules (preferred) or individual cloning (fallback)
+if [ -f "$HOME/dotfiles/.gitmodules" ]; then
+  echo "Using git submodules for tmux plugins..."
+  cd "$HOME/dotfiles"
+  git submodule update --init --recursive
+else
+  echo "No .gitmodules found, installing plugins individually..."
+  # Install tmux plugins (matching .tmux.conf exactly)
+  install_tmux_plugin "tmux-sensible" "https://github.com/tmux-plugins/tmux-sensible"
+  install_tmux_plugin "tmux-resurrect" "https://github.com/tmux-plugins/tmux-resurrect"
+  install_tmux_plugin "tmux-continuum" "https://github.com/tmux-plugins/tmux-continuum"
+  install_tmux_plugin "tmux-yank" "https://github.com/tmux-plugins/tmux-yank"
+  install_tmux_plugin "tmux-prefix-highlight" "https://github.com/tmux-plugins/tmux-prefix-highlight"
+  install_tmux_plugin "tmux-which-key" "https://github.com/alexwforsythe/tmux-which-key"
+  install_tmux_plugin "tmux-open" "https://github.com/tmux-plugins/tmux-open"
+  install_tmux_plugin "tmux-copycat" "https://github.com/tmux-plugins/tmux-copycat"
+  install_tmux_plugin "tmux-pain-control" "https://github.com/tmux-plugins/tmux-pain-control"
+  install_tmux_plugin "tmux-sidebar" "https://github.com/tmux-plugins/tmux-sidebar"
+  install_tmux_plugin "tmux-fingers" "https://github.com/Morantron/tmux-fingers"
+  install_tmux_plugin "tmux-battery" "https://github.com/tmux-plugins/tmux-battery"
+fi
 
 # Create tmux config directory if it doesn't exist
 mkdir -p "$HOME/.tmux"
@@ -296,16 +352,22 @@ fi
 
 echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (capital i) to install the plugins."
 
-# Initialize git submodules for tmux plugins
-echo "=== Initializing git submodules for tmux plugins ==="
-if [ -f "$HOME/dotfiles/.gitmodules" ]; then
-  cd "$HOME/dotfiles"
-  echo "Initializing and updating git submodules..."
-  git submodule update --init --recursive
-  echo "Git submodules initialized successfully"
+# Apply tmux-continuum fix
+echo "=== Applying tmux-continuum fix ==="
+if [ -f "$(pwd)/scripts/fix_tmux_continuum.sh" ]; then
+  bash "$(pwd)/scripts/fix_tmux_continuum.sh"
 else
-  echo "No .gitmodules file found, skipping submodule initialization"
+  echo "Warning: fix_tmux_continuum.sh script not found"
 fi
+
+# Build tmux-fingers plugin
+echo "=== Building tmux-fingers plugin ==="
+if [ -f "$(pwd)/scripts/build_tmux_fingers.sh" ]; then
+  bash "$(pwd)/scripts/build_tmux_fingers.sh"
+else
+  echo "Warning: build_tmux_fingers.sh script not found"
+fi
+
 
 # Configure tmux-which-key plugin
 echo "=== Configuring tmux-which-key plugin ==="
@@ -609,7 +671,23 @@ else
 fi
 
 echo ""
+# Setup completion summary
+echo ""
 echo "=== Setup Complete! ==="
+echo ""
+
+# Display error/warning summary
+if [ $SETUP_ERRORS -eq 0 ] && [ $SETUP_WARNINGS -eq 0 ]; then
+    log_success "All setup steps completed successfully! 🎉"
+elif [ $SETUP_ERRORS -eq 0 ]; then
+    log_success "Setup completed with $SETUP_WARNINGS warnings (see above)"
+    log_info "Warnings are usually non-critical and can be resolved later"
+else
+    log_error "Setup completed with $SETUP_ERRORS errors and $SETUP_WARNINGS warnings"
+    log_info "Review the errors above and run manual fixes as needed"
+    log_info "You can re-run this script to retry failed steps"
+fi
+
 echo ""
 echo "Installed dependencies:"
 echo "- Core tools: neovim, tmux, ripgrep, fd, bat, eza, zoxide"
@@ -629,3 +707,10 @@ echo "4. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerosp
 echo "5. Start sketchybar: 'brew services start sketchybar'"
 echo "6. Your Starship prompt should display beautiful icons!"
 echo ""
+
+# Exit with appropriate code
+if [ $SETUP_ERRORS -gt 0 ]; then
+    exit 1
+else
+    exit 0
+fi
