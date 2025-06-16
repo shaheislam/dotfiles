@@ -1,0 +1,26 @@
+[
+  {
+    "content": "Check tmux plugin manager (TPM) installation and configuration",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Verify tmux plugin definitions in .tmux.conf",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Check plugin installation status and reinstall if needed",
+    "status": "completed",
+    "priority": "high",
+    "id": "3"
+  },
+  {
+    "content": "Test tmux plugins functionality",
+    "status": "completed",
+    "priority": "medium",
+    "id": "4"
+  }
+]

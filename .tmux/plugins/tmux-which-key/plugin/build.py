@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-from pyyaml.lib import yaml
+try:
+    import yaml
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent / 'pyyaml' / 'lib'))
+    import yaml
 
 special_key_chars: List[str] = ['~']
 
