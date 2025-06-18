@@ -13,7 +13,10 @@
       "Bash(sh:*)",
       "Bash(mkdir:*)",
       "Bash(cp:*)",
-      "Bash(stow:*)"
+      "Bash(stow:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp:*)"
     ],
     "deny": []
   }
