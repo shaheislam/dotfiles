@@ -401,7 +401,7 @@ else
   echo "vim-plug already installed"
 fi
 
-# Install Node.js packages globally for formatters
+# Install Node.js packages globally for formatters and browser tools
 echo "=== Installing Node.js global packages ==="
 
 if command -v npm &> /dev/null; then
@@ -409,6 +409,30 @@ if command -v npm &> /dev/null; then
   npm install -g @fsouza/prettierd prettier-plugin-toml
   echo "Installed prettierd and prettier-plugin-toml"
   echo "Using existing prettier from Homebrew"
+  
+  # Install BrowserTools MCP packages
+  echo "Installing BrowserTools MCP packages..."
+  npm install -g @agentdeskai/browser-tools-mcp@1.2.0
+  npm install -g @agentdeskai/browser-tools-server@1.2.0
+  echo "Installed BrowserTools MCP packages"
+  
+  # Download BrowserTools Chrome extension to dotfiles directory
+  echo "Setting up BrowserTools Chrome extension..."
+  mkdir -p "$HOME/dotfiles/.config/browser-tools"
+  cd "$HOME/dotfiles/.config/browser-tools"
+  if [ ! -d "browser-tools-mcp" ]; then
+    git clone https://github.com/AgentDeskAI/browser-tools-mcp.git
+    echo "BrowserTools Chrome extension downloaded to ~/dotfiles/.config/browser-tools/"
+    echo ""
+    echo "⚠️  MANUAL STEP REQUIRED: Install Chrome Extension"
+    echo "1. Open Chrome and go to chrome://extensions/"
+    echo "2. Enable 'Developer mode' (toggle in top right)"
+    echo "3. Click 'Load unpacked' and select: $HOME/dotfiles/.config/browser-tools/browser-tools-mcp"
+    echo "4. The BrowserTools extension should now be installed"
+    echo ""
+  else
+    echo "BrowserTools extension already downloaded"
+  fi
 else
   echo "Warning: npm not found. Install Node.js first."
 fi
@@ -637,6 +661,7 @@ fi
 # Create necessary directories
 echo "=== Creating configuration directories ==="
 mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish}
+mkdir -p "$HOME/Library/Application Support/Claude"
 
 # Install Neovim plugins automatically
 echo "=== Installing Neovim plugins ==="
