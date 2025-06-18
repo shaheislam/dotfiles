@@ -56,6 +56,7 @@ brew "yq"
 brew "shellcheck"
 brew "shfmt"
 brew "gh"
+brew "pipx"
 
 # Nerd Fonts
 cask "font-jetbrains-mono-nerd-font"

@@ -13,6 +13,61 @@
       "args": [
         "@agentdeskai/browser-tools-mcp@1.2.0"
       ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-github"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-memory"
+      ]
+    },
+    "git": {
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-git",
+        "--repository",
+        "/Users/shaheislam/dotfiles"
+      ]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-puppeteer"
+      ]
+    },
+    "fetch": {
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-fetch"
+      ]
+    },
+    "duckduckgo": {
+      "command": "npx",
+      "args": [
+        "duckduckgo-mcp-server"
+      ]
+    },
+    "sqlite": {
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-sqlite",
+        "--db-path",
+        "/Users/shaheislam/Documents/databases"
+      ]
     }
   }
 }

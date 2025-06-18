@@ -485,6 +485,54 @@ if command -v cargo &> /dev/null; then
   cargo install stylua
 fi
 
+# Install Python MCP servers via pipx
+echo "=== Installing Python MCP servers ==="
+if command -v pipx &> /dev/null; then
+  echo "Installing Python-based MCP servers..."
+  
+  # Install MCP servers that are Python-based
+  pipx install mcp-server-git || echo "Warning: Failed to install mcp-server-git"
+  pipx install mcp-server-fetch || echo "Warning: Failed to install mcp-server-fetch"  
+  pipx install mcp-server-sqlite || echo "Warning: Failed to install mcp-server-sqlite"
+  
+  echo "Python MCP servers installation complete"
+else
+  echo "Warning: pipx not found. Install pipx first via Homebrew"
+  echo "Run: brew install pipx"
+fi
+
+# Configure Claude Code MCP servers (user scope)
+echo "=== Configuring Claude Code MCP servers ==="
+if command -v claude &> /dev/null; then
+  echo "Adding MCP servers to Claude Code user scope..."
+  
+  # Core development tools
+  claude mcp add --scope user filesystem npx @modelcontextprotocol/server-filesystem "$HOME/Desktop" "$HOME/Downloads" || echo "Warning: Failed to add filesystem MCP"
+  claude mcp add --scope user git pipx run mcp-server-git "$HOME/dotfiles" || echo "Warning: Failed to add git MCP"
+  claude mcp add --scope user github npx @modelcontextprotocol/server-github || echo "Warning: Failed to add github MCP"
+  claude mcp add --scope user memory npx @modelcontextprotocol/server-memory || echo "Warning: Failed to add memory MCP"
+  claude mcp add --scope user sequential-thinking npx @modelcontextprotocol/server-sequential-thinking || echo "Warning: Failed to add sequential-thinking MCP"
+  
+  # Web and automation tools
+  claude mcp add --scope user browser-tools npx @agentdeskai/browser-tools-mcp@1.2.0 || echo "Warning: Failed to add browser-tools MCP"
+  claude mcp add --scope user puppeteer npx @modelcontextprotocol/server-puppeteer || echo "Warning: Failed to add puppeteer MCP"
+  claude mcp add --scope user fetch pipx run mcp-server-fetch || echo "Warning: Failed to add fetch MCP"
+  claude mcp add --scope user duckduckgo npx duckduckgo-mcp-server || echo "Warning: Failed to add duckduckgo MCP"
+  
+  # Database tools
+  claude mcp add --scope user sqlite pipx run mcp-server-sqlite "$HOME/Documents/databases" || echo "Warning: Failed to add sqlite MCP"
+  claude mcp add --scope user postgres npx @modelcontextprotocol/server-postgres || echo "Warning: Failed to add postgres MCP"
+  
+  # Enterprise integration
+  claude mcp add --scope user slack npx slack-mcp-server || echo "Warning: Failed to add slack MCP"
+  
+  echo "Claude Code MCP configuration complete"
+  echo "You can verify with: claude mcp list"
+else
+  echo "Warning: Claude Code CLI not found. MCP servers not configured for Claude Code."
+  echo "Install Claude Code CLI first, then run this script again or configure manually."
+fi
+
 # Setup atuin
 if command -v atuin &> /dev/null && [ ! -f "$HOME/.local/share/atuin/key" ]; then
   echo "=== Setting up Atuin ==="
@@ -662,6 +710,7 @@ fi
 echo "=== Creating configuration directories ==="
 mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish}
 mkdir -p "$HOME/Library/Application Support/Claude"
+mkdir -p "$HOME/Documents/databases"
 
 # Install Neovim plugins automatically
 echo "=== Installing Neovim plugins ==="
@@ -726,6 +775,7 @@ echo "- Git tools: lazygit, lazydocker"
 echo "- Shell enhancements: atuin, thefuck, starship"
 echo "- Development tools: terraform, node, python, go, rust"
 echo "- Formatters: stylua, prettier, black, isort"
+echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
@@ -736,7 +786,9 @@ echo "2. Configure iTerm2 to use 'JetBrainsMono Nerd Font' in Preferences → Pr
 echo "3. Set up your dotfiles with 'stow' if using GNU Stow"
 echo "4. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
 echo "5. Start sketchybar: 'brew services start sketchybar'"
-echo "6. Your Starship prompt should display beautiful icons!"
+echo "6. Restart Claude Desktop to load MCP servers"
+echo "7. Verify Claude Code MCP servers with 'claude mcp list'"
+echo "8. Your Starship prompt should display beautiful icons!"
 echo ""
 
 # Exit with appropriate code

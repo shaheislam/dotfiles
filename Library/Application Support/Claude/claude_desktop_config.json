@@ -44,6 +44,73 @@
         "-y",
         "@modelcontextprotocol/server-memory"
       ]
+    },
+    "git": {
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-git",
+        "--repository",
+        "/Users/shaheislam/dotfiles"
+      ]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ]
+    },
+    "fetch": {
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-fetch"
+      ]
+    },
+    "duckduckgo": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "duckduckgo-mcp-server"
+      ]
+    },
+    "sqlite": {
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-sqlite",
+        "--db-path",
+        "/Users/shaheislam/Documents/databases"
+      ]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres"
+      ]
+    },
+    "slack": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "slack-mcp-server"
+      ]
+    },
+    "linear": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "linear-mcp-server"
+      ]
+    },
+    "exa": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "exa-mcp-server"
+      ]
     }
   }
 }

@@ -16,7 +16,10 @@
       "Bash(stow:*)",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(claude mcp add:*)",
-      "Bash(claude mcp:*)"
+      "Bash(claude mcp:*)",
+      "Bash(pip3:*)",
+      "Bash(brew install:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
