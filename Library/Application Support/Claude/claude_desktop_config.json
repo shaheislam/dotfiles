@@ -111,6 +111,13 @@
         "-y",
         "exa-mcp-server"
       ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
     }
   }
 }

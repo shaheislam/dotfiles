@@ -526,6 +526,9 @@ if command -v claude &> /dev/null; then
   # Enterprise integration
   claude mcp add --scope user slack npx slack-mcp-server || echo "Warning: Failed to add slack MCP"
   
+  # Browser automation (Microsoft Playwright)
+  claude mcp add --scope user playwright npx @playwright/mcp@latest || echo "Warning: Failed to add playwright MCP"
+  
   echo "Claude Code MCP configuration complete"
   echo "You can verify with: claude mcp list"
 else

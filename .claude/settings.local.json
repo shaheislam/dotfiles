@@ -19,7 +19,9 @@
       "Bash(claude mcp:*)",
       "Bash(pip3:*)",
       "Bash(brew install:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx @playwright/mcp@latest:*)"
     ],
     "deny": []
   }

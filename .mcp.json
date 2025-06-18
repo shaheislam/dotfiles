@@ -68,6 +68,12 @@
         "--db-path",
         "/Users/shaheislam/Documents/databases"
       ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ]
     }
   }
 }
