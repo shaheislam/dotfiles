@@ -24,5 +24,18 @@
       "Bash(npx @playwright/mcp@latest:*)"
     ],
     "deny": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "filesystem",
+    "browser-tools",
+    "sequential-thinking",
+    "github",
+    "memory",
+    "git",
+    "puppeteer",
+    "fetch",
+    "duckduckgo",
+    "sqlite",
+    "playwright"
+  ]
 }
