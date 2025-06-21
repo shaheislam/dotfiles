@@ -21,7 +21,15 @@
       "Bash(brew install:*)",
       "Bash(grep:*)",
       "WebFetch(domain:github.com)",
-      "Bash(npx @playwright/mcp@latest:*)"
+      "Bash(npx @playwright/mcp@latest:*)",
+      "mcp__fetch__fetch",
+      "Bash(claude code config mcp --json)",
+      "Bash(claude code config mcp)",
+      "Bash(claude config mcp)",
+      "Bash(aws configure:*)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "mcp__browser-tools__takeScreenshot"
     ],
     "deny": []
   },

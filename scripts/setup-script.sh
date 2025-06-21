@@ -420,19 +420,30 @@ if command -v npm &> /dev/null; then
   echo "Setting up BrowserTools Chrome extension..."
   mkdir -p "$HOME/dotfiles/.config/browser-tools"
   cd "$HOME/dotfiles/.config/browser-tools"
-  if [ ! -d "browser-tools-mcp" ]; then
-    git clone https://github.com/AgentDeskAI/browser-tools-mcp.git
-    echo "BrowserTools Chrome extension downloaded to ~/dotfiles/.config/browser-tools/"
-    echo ""
-    echo "⚠️  MANUAL STEP REQUIRED: Install Chrome Extension"
-    echo "1. Open Chrome and go to chrome://extensions/"
-    echo "2. Enable 'Developer mode' (toggle in top right)"
-    echo "3. Click 'Load unpacked' and select: $HOME/dotfiles/.config/browser-tools/browser-tools-mcp"
-    echo "4. The BrowserTools extension should now be installed"
-    echo ""
-  else
-    echo "BrowserTools extension already downloaded"
+  
+  # Download the packaged extension if not already present
+  if [ ! -f "BrowserTools-extension.zip" ]; then
+    echo "Downloading BrowserTools Chrome extension..."
+    curl -L https://github.com/AgentDeskAI/browser-tools-mcp/releases/download/v1.2.0/BrowserTools-1.2.0-extension.zip -o BrowserTools-extension.zip
   fi
+  
+  # Extract extension if not already extracted
+  if [ ! -d "chrome-extension" ]; then
+    echo "Extracting BrowserTools Chrome extension..."
+    unzip BrowserTools-extension.zip
+    # Clean up macOS metadata
+    rm -rf __MACOSX
+  fi
+  
+  echo "BrowserTools Chrome extension prepared at ~/dotfiles/.config/browser-tools/chrome-extension"
+  echo ""
+  echo "⚠️  MANUAL STEP REQUIRED: Install Chrome Extension"
+  echo "1. Open Chrome and go to chrome://extensions/"
+  echo "2. Enable 'Developer mode' (toggle in top right)"
+  echo "3. Click 'Load unpacked' and select: $HOME/dotfiles/.config/browser-tools/chrome-extension"
+  echo "4. The BrowserTools extension should now be installed"
+  echo "5. Start browser-tools server: npx @agentdeskai/browser-tools-server@latest"
+  echo ""
 else
   echo "Warning: npm not found. Install Node.js first."
 fi
@@ -524,13 +535,47 @@ if command -v claude &> /dev/null; then
   claude mcp add --scope user postgres npx @modelcontextprotocol/server-postgres || echo "Warning: Failed to add postgres MCP"
   
   # Enterprise integration
-  claude mcp add --scope user slack npx slack-mcp-server || echo "Warning: Failed to add slack MCP"
+  claude mcp add --scope user slack npx @modelcontextprotocol/server-slack || echo "Warning: Failed to add slack MCP"
+  claude mcp add --scope user airbnb "npx @openbnb/mcp-server-airbnb --ignore-robots-txt" || echo "Warning: Failed to add airbnb MCP"
   
   # Browser automation (Microsoft Playwright)
   claude mcp add --scope user playwright npx @playwright/mcp@latest || echo "Warning: Failed to add playwright MCP"
   
+  # AWS MCP servers (require uv to be installed)
+  echo "Adding AWS MCP servers to Claude Code..."
+  
+  # Core AWS tools (no credentials required)
+  claude mcp add --scope user aws-documentation uvx awslabs.aws-documentation-mcp-server@latest || echo "Warning: Failed to add aws-documentation MCP"
+  claude mcp add --scope user aws-cdk uvx awslabs.cdk-mcp-server@latest || echo "Warning: Failed to add aws-cdk MCP"
+  claude mcp add --scope user aws-terraform uvx awslabs.terraform-mcp-server@latest || echo "Warning: Failed to add aws-terraform MCP"
+  
+  # AWS services (require AWS credentials)
+  claude mcp add --scope user aws-cost-analysis uvx awslabs.cost-analysis-mcp-server@latest || echo "Warning: Failed to add aws-cost-analysis MCP"
+  claude mcp add --scope user aws-iam uvx awslabs.iam-mcp-server@latest || echo "Warning: Failed to add aws-iam MCP"
+  claude mcp add --scope user aws-cloudformation uvx awslabs.cfn-mcp-server@latest || echo "Warning: Failed to add aws-cloudformation MCP"
+  claude mcp add --scope user aws-dynamodb uvx awslabs.dynamodb-mcp-server@latest || echo "Warning: Failed to add aws-dynamodb MCP"
+  claude mcp add --scope user aws-lambda uvx awslabs.lambda-tool-mcp-server@latest || echo "Warning: Failed to add aws-lambda MCP"
+  
+  echo "AWS MCP servers added to Claude Code"
+  
   echo "Claude Code MCP configuration complete"
   echo "You can verify with: claude mcp list"
+  
+  echo ""
+  echo "Note: AWS MCP servers are also configured in Claude Desktop config."
+  echo "Both Claude Desktop and Claude Code can now use AWS MCP servers."
+  echo ""
+  echo "Some MCP servers are disabled by default in Claude Desktop:"
+  echo "- exa (requires EXA_API_KEY)"
+  echo "- linear (requires LINEAR_API_KEY)"  
+  echo "- slack (requires SLACK_BOT_TOKEN and SLACK_APP_TOKEN)"
+  echo "- postgres (requires POSTGRES_CONNECTION_STRING)"
+  echo ""
+  echo "API-based servers are configured in Claude Code but will fail without credentials."
+  echo "Configure API keys/credentials in the Claude Desktop config file to enable them."
+  echo ""
+  echo "Note: browser-tools MCP is enabled with error suppression to hide JSON parsing warnings."
+  echo "Both browser-tools and playwright MCP are available for browser automation."
 else
   echo "Warning: Claude Code CLI not found. MCP servers not configured for Claude Code."
   echo "Install Claude Code CLI first, then run this script again or configure manually."

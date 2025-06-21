@@ -107,6 +107,18 @@
 - **tmux**: Use TPM, update `.tmux.conf` with plugin definitions
 - **Neovim**: Use LazyVim plugin system, follow LazyVim conventions
 
+### MCP Server Integration
+- **Browser-Tools MCP**: Requires Chrome extension + bridge server setup
+  1. Add packages to Brewfile: npm packages for MCP and server
+  2. Update setup script to download Chrome extension from GitHub releases
+  3. Extract extension to `.config/browser-tools/chrome-extension/`
+  4. Configure both Claude Desktop and Claude Code MCP configs
+  5. Document manual Chrome extension installation steps
+  6. Use version-specific packages (v1.1.0 for Claude Desktop, v1.2.0 for Claude Code)
+- **AWS MCP Servers**: Use `uvx` command with proper environment variables
+- **Python MCP Servers**: Install via `pipx` and configure with appropriate paths
+- **API-based MCPs**: Add to config but disable by default, document API key requirements
+
 ## Quality Assurance
 
 ### Before Committing Changes
