@@ -29,7 +29,8 @@
       "Bash(aws configure:*)",
       "Bash(curl:*)",
       "Bash(unzip:*)",
-      "mcp__browser-tools__takeScreenshot"
+      "mcp__browser-tools__takeScreenshot",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": []
   },
