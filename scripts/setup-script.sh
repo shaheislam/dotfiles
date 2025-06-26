@@ -151,12 +151,12 @@ else
   brew install --cask wezterm
 fi
 
-# Install Visual Studio Code Insiders
-if app_installed "Visual Studio Code - Insiders"; then
-  echo "Visual Studio Code Insiders already installed"
+# Install Visual Studio Code
+if app_installed "Visual Studio Code"; then
+  echo "Visual Studio Code already installed"
 else
-  echo "Installing Visual Studio Code Insiders..."
-  brew install --cask visual-studio-code@insiders
+  echo "Installing Visual Studio Code..."
+  brew install --cask visual-studio-code
 fi
 
 # Install ueberzugpp (for image display in terminals like iTerm2)

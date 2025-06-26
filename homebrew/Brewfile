@@ -68,7 +68,7 @@ cask "font-iosevka-nerd-font"
 # GUI Applications
 cask "ghostty"
 cask "wezterm"
-cask "visual-studio-code@insiders"
+cask "visual-studio-code"
 cask "aerospace"
 cask "session-manager-plugin"
 cask "raycast"
