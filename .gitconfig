@@ -1,0 +1,26 @@
+[user]
+	name = Shahe Islam
+	email = shahe.islam@outlook.com
+
+[core]
+	excludesfile = ~/.gitignore_global
+	autocrlf = input
+
+[init]
+	defaultBranch = main
+
+[push]
+	default = simple
+
+[pull]
+	rebase = false
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	lg = log --oneline --graph --decorate --all
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	visual = !gitk
