@@ -85,16 +85,7 @@ if command -v thefuck > /dev/null 2>&1; then
   eval $(thefuck --alias)
 fi
 
-# VSCode function
-code() {
-  if command -v code &> /dev/null; then
-    command code "$@"
-  elif [ -d "/Applications/Visual Studio Code.app" ]; then
-    open -a "Visual Studio Code" "$@"
-  else
-    echo "VSCode is not installed or not found in the expected location."
-  fi
-}
+# VSCode is available via PATH (see line 35-38)
 
 # AWS SSO function
 function aws-sso() {
