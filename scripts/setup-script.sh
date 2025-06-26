@@ -512,6 +512,15 @@ else
   echo "Run: brew install pipx"
 fi
 
+# Install Claude Code CLI
+echo "=== Installing Claude Code CLI ==="
+if ! command -v claude &> /dev/null; then
+  echo "Installing Claude Code CLI via npm..."
+  npm install -g @anthropic-ai/claude-code || echo "Warning: Failed to install Claude Code CLI"
+else
+  echo "Claude Code CLI already installed"
+fi
+
 # Configure Claude Code MCP servers (user scope)
 echo "=== Configuring Claude Code MCP servers ==="
 if command -v claude &> /dev/null; then
