@@ -787,8 +787,8 @@ fi
 
 # Configure global gitignore
 echo "=== Configuring global gitignore ==="
-git config --global core.excludesfile ~/.dotfiles/.global_gitignore
-echo "Global gitignore configured to use ~/.dotfiles/.global_gitignore"
+git config --global core.excludesfile ~/.gitignore_global
+echo "Global gitignore configured to use ~/.gitignore_global"
 
 # Configure Azure Kubernetes tools
 echo "=== Configuring Azure Kubernetes tools ==="

@@ -57,3 +57,14 @@ work/**/CLAUDE.md
 
 # Claude files and folders (exclude from dotfiles repo)
 .claude
+
+# CLAUDE.md files - prevent commits outside allowed directories
+# Block all CLAUDE.md files by default
+/**/CLAUDE.md
+/**/CLAUDE.local.md
+
+# But allow them in specific directories (using negation)
+!~/dotfiles/**/CLAUDE.md
+!~/dotfiles/**/CLAUDE.local.md
+!~/personal/**/CLAUDE.md
+!~/personal/**/CLAUDE.local.md
