@@ -15,4 +15,4 @@
 	whoami = config user.name
 	whomail = config user.email
 [core]
-	excludesfile = /Users/shaheislam/.dotfiles/.global_gitignore
+	excludesfile = /Users/shaheislam/.gitignore_global
