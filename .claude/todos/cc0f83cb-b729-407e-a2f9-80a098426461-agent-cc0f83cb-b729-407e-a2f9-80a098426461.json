@@ -1,0 +1,20 @@
+[
+  {
+    "content": "Search for OpenSearch configurations referencing RDS audit logs in ~/work",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Look for Terraform files with both OpenSearch and RDS audit configurations",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Check for Kinesis/Firehose configurations routing RDS logs to OpenSearch",
+    "status": "completed",
+    "priority": "medium",
+    "id": "3"
+  }
+]
