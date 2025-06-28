@@ -262,15 +262,23 @@ if status is-interactive
     end
 
     # Git worktree functions
-    function gwtaf
+    function gwtaf --description "Add worktree for existing branch in ../repo-branch format"
         # Add worktree in ../repo-name-branch format
+        if test -z "$argv[1]"
+            echo "Usage: gwtaf <existing-branch>"
+            return 1
+        end
         set branch $argv[1]
         set repo (basename (git rev-parse --show-toplevel))
         git worktree add ../$repo-$branch $branch
     end
 
-    function gwtabf
+    function gwtabf --description "Create new branch + worktree in ../repo-branch format"
         # Create branch + worktree in ../repo-name-branch format
+        if test -z "$argv[1]"
+            echo "Usage: gwtabf <new-branch>"
+            return 1
+        end
         set branch $argv[1]
         set repo (basename (git rev-parse --show-toplevel))
         git worktree add -b $branch ../$repo-$branch
