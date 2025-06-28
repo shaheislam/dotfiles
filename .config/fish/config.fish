@@ -134,6 +134,14 @@ if status is-interactive
     alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
     alias tk="tmux kill-server"
 
+    # Git worktree aliases
+    alias gwta="git worktree add"
+    alias gwtab="git worktree add -b"
+    alias gwtl="git worktree list"
+    alias gwtr="git worktree remove"
+    alias gwtp="git worktree prune"
+    alias gwtm="git worktree move"
+
     # Functions from extended config
     function gis
         if test -n "$argv[1]"
@@ -251,6 +259,21 @@ if status is-interactive
     # Tmux function with correct TERM
     function tmux
         env TERM=xterm-256color /opt/homebrew/bin/tmux $argv
+    end
+
+    # Git worktree functions
+    function gwtaf
+        # Add worktree in ../repo-name-branch format
+        set branch $argv[1]
+        set repo (basename (git rev-parse --show-toplevel))
+        git worktree add ../$repo-$branch $branch
+    end
+
+    function gwtabf
+        # Create branch + worktree in ../repo-name-branch format
+        set branch $argv[1]
+        set repo (basename (git rev-parse --show-toplevel))
+        git worktree add -b $branch ../$repo-$branch
     end
 end
 

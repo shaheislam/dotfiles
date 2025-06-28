@@ -120,6 +120,14 @@ alias tr="clear; tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect
 alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
 alias tk="tmux kill-server"
 
+# Git worktree aliases
+alias gwta="git worktree add"
+alias gwtab="git worktree add -b"
+alias gwtl="git worktree list"
+alias gwtr="git worktree remove"
+alias gwtp="git worktree prune"
+alias gwtm="git worktree move"
+
 # thefuck
 if command -v thefuck > /dev/null 2>&1; then
   eval $(thefuck --alias)
@@ -214,5 +222,20 @@ function aws-sso() {
     if ! aws sts get-caller-identity >/dev/null 2>&1; then
         echo "Failed to get credentials"
     fi
+}
+
+# Git worktree functions
+function gwtaf() {
+    # Add worktree in ../repo-name-branch format
+    local branch=$1
+    local repo=$(basename $(git rev-parse --show-toplevel))
+    git worktree add ../$repo-$branch $branch
+}
+
+function gwtabf() {
+    # Create branch + worktree in ../repo-name-branch format
+    local branch=$1
+    local repo=$(basename $(git rev-parse --show-toplevel))
+    git worktree add -b $branch ../$repo-$branch
 }
 
