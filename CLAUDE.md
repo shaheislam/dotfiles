@@ -150,3 +150,7 @@
 - Keep track of deprecated configurations
 - Record solutions to common problems
 - Update workflow documentation as processes evolve
+
+### Recent Updates
+- **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
+- **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
