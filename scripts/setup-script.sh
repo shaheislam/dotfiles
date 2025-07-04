@@ -790,6 +790,21 @@ echo "=== Configuring global gitignore ==="
 git config --global core.excludesfile ~/.gitignore_global
 echo "Global gitignore configured to use ~/.gitignore_global"
 
+# Setup SSH config
+echo "=== Setting up SSH configuration ==="
+if [ -f "$HOME/dotfiles/.ssh/config" ] && [ ! -L "$HOME/.ssh/config" ]; then
+  echo "Backing up existing SSH config to ~/.ssh/config.backup"
+  cp "$HOME/.ssh/config" "$HOME/.ssh/config.backup"
+  ln -sf "$HOME/dotfiles/.ssh/config" "$HOME/.ssh/config"
+  echo "SSH config linked from dotfiles"
+elif [ ! -f "$HOME/.ssh/config" ]; then
+  mkdir -p "$HOME/.ssh"
+  ln -sf "$HOME/dotfiles/.ssh/config" "$HOME/.ssh/config"
+  echo "SSH config linked from dotfiles"
+else
+  echo "SSH config already linked"
+fi
+
 # Configure Azure Kubernetes tools
 echo "=== Configuring Azure Kubernetes tools ==="
 if command -v kubelogin &> /dev/null; then
