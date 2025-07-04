@@ -115,6 +115,7 @@ if status is-interactive
 
     # Obsidian Aliases
     alias obs="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/Engineering'"
+    alias obsplb="cd '/Users/shahe/Documents/Local Vault'"
 
     # Kubernetes aliases
     alias kctx="kubie ctx"
