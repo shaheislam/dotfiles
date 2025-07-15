@@ -25,8 +25,7 @@
       ],
       "env": {
         "NODE_OPTIONS": "--no-warnings"
-      },
-      "_note": "Using version 1.1.0 for better stability. Restart Claude Desktop to apply changes."
+      }
     },
     "sequential-thinking": {
       "command": "npx",
@@ -79,38 +78,6 @@
         "duckduckgo-mcp-server"
       ]
     },
-    "sqlite": {
-      "command": "pipx",
-      "args": [
-        "run",
-        "mcp-server-sqlite",
-        "--db-path",
-        "/Users/shaheislam/Documents/databases"
-      ]
-    },
-    "postgres": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres"
-      ],
-      "env": {
-        "POSTGRES_CONNECTION_STRING": "postgresql://user:password@localhost:5432/database"
-      },
-      "disabled": true
-    },
-    "slack": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-slack"
-      ],
-      "env": {
-        "SLACK_BOT_TOKEN": "your-slack-bot-token-here",
-        "SLACK_APP_TOKEN": "your-slack-app-token-here"
-      },
-      "disabled": true
-    },
     "linear": {
       "command": "npx",
       "args": [
@@ -119,8 +86,7 @@
       ],
       "env": {
         "LINEAR_API_KEY": "your-linear-api-key-here"
-      },
-      "disabled": true
+      }
     },
     "exa": {
       "command": "npx",
@@ -130,8 +96,7 @@
       ],
       "env": {
         "EXA_API_KEY": "your-exa-api-key-here"
-      },
-      "disabled": true
+      }
     },
     "playwright": {
       "command": "npx",
@@ -164,16 +129,6 @@
         "awslabs.terraform-mcp-server@latest"
       ],
       "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "aws-cost-analysis": {
-      "command": "uvx",
-      "args": [
-        "awslabs.cost-analysis-mcp-server@latest"
-      ],
-      "env": {
-        "AWS_PROFILE": "default",
         "FASTMCP_LOG_LEVEL": "ERROR"
       }
     },
