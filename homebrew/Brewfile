@@ -58,6 +58,7 @@ brew "shellcheck"
 brew "shfmt"
 brew "gh"
 brew "pipx"
+brew "gemini-cli"
 
 # Nerd Fonts
 cask "font-jetbrains-mono-nerd-font"

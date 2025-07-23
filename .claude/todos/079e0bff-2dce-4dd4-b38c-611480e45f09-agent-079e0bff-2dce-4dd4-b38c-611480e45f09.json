@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Examine the Gemini CLI repository to understand installation requirements",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Check current Brewfile for package management patterns",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Update Brewfile to include Gemini CLI",
+    "status": "completed",
+    "priority": "medium",
+    "id": "3"
+  },
+  {
+    "content": "Update setup script to handle Gemini CLI installation",
+    "status": "completed",
+    "priority": "medium",
+    "id": "4"
+  },
+  {
+    "content": "Add any necessary Fish shell configurations",
+    "status": "completed",
+    "priority": "low",
+    "id": "5"
+  }
+]
