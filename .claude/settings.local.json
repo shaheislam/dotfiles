@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(steampipe query:*)",
-      "Bash(aws sts get-caller-identity:*)"
+      "Bash(aws sts get-caller-identity:*)",
+      "Bash(tmux show-options:*)",
+      "Bash(git clone:*)",
+      "Bash(ls:*)",
+      "Bash(./tmux-fingers.tmux)",
+      "Bash(tmux source-file:*)",
+      "Bash(tmux run-shell:*)",
+      "Bash(brew search:*)"
     ]
   },
   "enabledMcpjsonServers": [

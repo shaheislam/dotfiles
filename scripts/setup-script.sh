@@ -363,13 +363,7 @@ else
   echo "Warning: fix_tmux_continuum.sh script not found"
 fi
 
-# Build tmux-fingers plugin
-echo "=== Building tmux-fingers plugin ==="
-if [ -f "$(pwd)/scripts/build_tmux_fingers.sh" ]; then
-  bash "$(pwd)/scripts/build_tmux_fingers.sh"
-else
-  echo "Warning: build_tmux_fingers.sh script not found"
-fi
+# tmux-fingers is now installed via Homebrew (see Brewfile)
 
 
 # Configure tmux-which-key plugin
