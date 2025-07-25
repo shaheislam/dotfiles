@@ -1,0 +1,26 @@
+[
+  {
+    "content": "Query detailed EBS snapshot metadata (age, size, description)",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Query RDS snapshot details and automated backup info",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Query EC2 instance launch times for backup context",
+    "status": "completed",
+    "priority": "medium",
+    "id": "3"
+  },
+  {
+    "content": "Update backup sections with enhanced metadata",
+    "status": "completed",
+    "priority": "medium",
+    "id": "4"
+  }
+]

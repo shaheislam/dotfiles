@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(steampipe query:*)",
+      "Bash(aws sts get-caller-identity:*)"
+    ]
+  },
   "enabledMcpjsonServers": [
     "filesystem",
     "browser-tools",
