@@ -1,0 +1,20 @@
+[
+  {
+    "content": "Check current tmux configuration for copy/paste settings",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Add macOS clipboard integration to tmux config",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Test copy/paste functionality across panes",
+    "status": "completed",
+    "priority": "medium",
+    "id": "3"
+  }
+]
