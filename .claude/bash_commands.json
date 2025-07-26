@@ -180,5 +180,82 @@
     "tool_name": "Bash",
     "command": "du -sh ~/.claude/* | sort -h",
     "description": "Check size of remaining Claude directory contents"
+  },
+  {
+    "timestamp": "2025-07-26T23:49:42.285563",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "git config status.submoduleSummary false",
+    "description": "Disable submodule summary in git status"
+  },
+  {
+    "timestamp": "2025-07-26T23:49:58.745383",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "find ~ -name \".tmux\" -type d 2>/dev/null | head -5",
+    "description": "Find dotfiles directory with tmux plugins"
+  },
+  {
+    "timestamp": "2025-07-26T23:50:37.295474",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && git config status.submoduleSummary false",
+    "description": "Navigate to dotfiles and disable submodule summary"
+  },
+  {
+    "timestamp": "2025-07-26T23:50:53.945810",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "git -C ~/dotfiles config status.submoduleSummary false",
+    "description": "Disable submodule summary in dotfiles repo"
+  },
+  {
+    "timestamp": "2025-07-26T23:52:04.949706",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "find ~/dotfiles -name \".git*\" -type f",
+    "description": "Find git configuration files in dotfiles"
+  },
+  {
+    "timestamp": "2025-07-26T23:52:11.480965",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -la ~/dotfiles/",
+    "description": "List all files including hidden ones in dotfiles"
+  },
+  {
+    "timestamp": "2025-07-26T23:52:24.727717",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "git -C ~/dotfiles config diff.ignoreSubmodules dirty",
+    "description": "Configure git to ignore dirty submodules in diff"
+  },
+  {
+    "timestamp": "2025-07-26T23:52:49.204076",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "git -C ~/dotfiles config status.submoduleSummary false",
+    "description": "Disable submodule summary in git status"
+  },
+  {
+    "timestamp": "2025-07-26T23:53:21.631853",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "find ~/dotfiles -name \".gitignore\" -not -path \"*/plugins/*\"",
+    "description": "Find local gitignore files excluding plugin directories"
+  },
+  {
+    "timestamp": "2025-07-26T23:56:19.141151",
+    "session_id": "8856e4c9-6d48-4a00-a2be-6d718fb96fab",
+    "tool_name": "Bash",
+    "command": "cat /Users/shahe/dotfiles/.gitignore",
+    "description": "Check current gitignore contents"
+  },
+  {
+    "timestamp": "2025-07-26T23:56:37.248706",
+    "session_id": "8856e4c9-6d48-4a00-a2be-6d718fb96fab",
+    "tool_name": "Bash",
+    "command": "ls -la /Users/shahe/dotfiles/.gitignore",
+    "description": "Check if gitignore exists"
   }
 ]

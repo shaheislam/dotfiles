@@ -1,0 +1,10 @@
+# Tmux plugin manager and plugins
+.tmux/plugins/
+
+# Claude Code files
+.claude/ide/*.lock
+.claude/todos/*.json
+.claude/shell-snapshots/*.sh
+
+# macOS
+.DS_Store
