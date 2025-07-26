@@ -6,6 +6,7 @@
 .claude/todos/*.json
 .claude/shell-snapshots/*.sh
 .claude/audio_hook.log
+.claude/bash_commands.json
 .claude/projects/
 .claude/statsig/
 
