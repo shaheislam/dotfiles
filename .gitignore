@@ -5,6 +5,9 @@
 .claude/ide/*.lock
 .claude/todos/*.json
 .claude/shell-snapshots/*.sh
+.claude/audio_hook.log
+.claude/projects/
+.claude/statsig/
 
 # macOS
 .DS_Store
