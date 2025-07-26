@@ -1,0 +1,32 @@
+[
+  {
+    "content": "Download custom audio files from Richard Bray's repo",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Download remaining hook scripts we haven't implemented",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Set up utils directory and helper scripts",
+    "status": "completed",
+    "priority": "medium",
+    "id": "3"
+  },
+  {
+    "content": "Update configuration to match Richard's exactly",
+    "status": "completed",
+    "priority": "medium",
+    "id": "4"
+  },
+  {
+    "content": "Test complete setup with custom audio",
+    "status": "completed",
+    "priority": "high",
+    "id": "5"
+  }
+]

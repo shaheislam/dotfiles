@@ -1,0 +1,184 @@
+[
+  {
+    "timestamp": "2025-07-26T23:09:53.268050",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "find ~/Library -name \"*claude*\" -type d 2>/dev/null",
+    "description": "Find Claude-related directories"
+  },
+  {
+    "timestamp": "2025-07-26T23:10:10.183819",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.claude",
+    "description": "Check Claude configuration directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:11:35.435991",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -la",
+    "description": "List files with details in current directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:14:59.089429",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls ~/Downloads",
+    "description": "List contents of Downloads directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:33:13.061411",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -1 | wc -l",
+    "description": "Count number of files in current directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:38:18.820755",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.claude/*.log ~/.claude/*.json",
+    "description": "List log and JSON files in Claude directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:40:43.683000",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "rm -f ~/.claude/hooks/logs/notifications-2025-07-26.log",
+    "description": "Remove notification log file"
+  },
+  {
+    "timestamp": "2025-07-26T23:41:09.027635",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "rm -f ~/.claude/hooks/logs/notifications-2025-07-26.log",
+    "description": "Remove notification log file"
+  },
+  {
+    "timestamp": "2025-07-26T23:43:51.853711",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "find ~/.claude -type f -name \"*.log\" -exec ls -lah {} \\;",
+    "description": "Find all log files and their sizes"
+  },
+  {
+    "timestamp": "2025-07-26T23:43:57.408343",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "du -sh ~/.claude/* ~/.claude/.*",
+    "description": "Show disk usage of all items in Claude directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:44:05.589736",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.claude/backups/ | head -10",
+    "description": "Check what's in the backups directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:44:11.952425",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.claude/shell-snapshots/ | head -10",
+    "description": "Check what's in shell-snapshots directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:44:17.777693",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.claude/projects/ | head -10",
+    "description": "Check what's in projects directory"
+  },
+  {
+    "timestamp": "2025-07-26T23:44:23.293266",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "find ~/.claude -name \"*.log\" -mtime +7",
+    "description": "Find log files older than 7 days"
+  },
+  {
+    "timestamp": "2025-07-26T23:44:30.108732",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls ~/.claude/shell-snapshots/ | wc -l",
+    "description": "Count number of shell snapshots"
+  },
+  {
+    "timestamp": "2025-07-26T23:45:48.425045",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "ls -t ~/.claude/shell-snapshots/ | tail -n +4",
+    "description": "List shell snapshots to delete (keep 3 most recent)"
+  },
+  {
+    "timestamp": "2025-07-26T23:45:54.395779",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "cd ~/.claude/shell-snapshots/ && ls -t | tail -n +4",
+    "description": "List old shell snapshots to delete (keep 3 most recent)"
+  },
+  {
+    "timestamp": "2025-07-26T23:46:00.480420",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "/bin/ls -t ~/.claude/shell-snapshots/ | tail -n +4",
+    "description": "List old shell snapshots to delete using full ls path"
+  },
+  {
+    "timestamp": "2025-07-26T23:46:22.502056",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "cd ~/.claude/shell-snapshots/ && /bin/ls -t | tail -n +4 | xargs rm",
+    "description": "Delete old shell snapshots (keeping 3 most recent)"
+  },
+  {
+    "timestamp": "2025-07-26T23:46:40.287565",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "/bin/ls ~/.claude/shell-snapshots/ | wc -l",
+    "description": "Verify shell snapshot cleanup - should be 3 files left"
+  },
+  {
+    "timestamp": "2025-07-26T23:46:47.150616",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "du -sh ~/.claude/projects/*",
+    "description": "Check size of each project cache"
+  },
+  {
+    "timestamp": "2025-07-26T23:46:53.367975",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "/bin/ls -lat ~/.claude/projects/",
+    "description": "Check last access time of project caches"
+  },
+  {
+    "timestamp": "2025-07-26T23:47:00.044558",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "rm -rf ~/.claude/projects/-Users-shahe-work-checkout-nextjs ~/.claude/projects/-Users-shahe-work-petlab-aws-security ~/.claude/projects/-Users-shahe-work-petlab-frontend-infra",
+    "description": "Remove old inactive project caches (from July 3, July 8, July 9)"
+  },
+  {
+    "timestamp": "2025-07-26T23:47:21.234629",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "rm ~/.claude/settings.json.backup-20250726-225251",
+    "description": "Remove old settings backup file"
+  },
+  {
+    "timestamp": "2025-07-26T23:47:31.589875",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "du -sh ~/.claude",
+    "description": "Check total Claude directory size after cleanup"
+  },
+  {
+    "timestamp": "2025-07-26T23:47:36.850285",
+    "session_id": "3dd5698e-7ff4-437a-99c3-ab055c97d506",
+    "tool_name": "Bash",
+    "command": "du -sh ~/.claude/* | sort -h",
+    "description": "Check size of remaining Claude directory contents"
+  }
+]
