@@ -584,6 +584,15 @@ else
   echo "Install Claude Code CLI first, then run this script again or configure manually."
 fi
 
+# SuperClaude setup is handled by stow when dotfiles are linked
+echo "=== SuperClaude Configuration ==="
+if [ -L "$HOME/.claude" ]; then
+  log_success "SuperClaude already configured via dotfiles symlink"
+else
+  log_info "SuperClaude will be configured when you run 'stow . --adopt' from dotfiles directory"
+  echo "This will symlink ~/.claude/ to your dotfiles/.claude/ directory"
+fi
+
 # Setup atuin
 if command -v atuin &> /dev/null && [ ! -f "$HOME/.local/share/atuin/key" ]; then
   echo "=== Setting up Atuin ==="
@@ -784,6 +793,15 @@ echo "=== Configuring global gitignore ==="
 git config --global core.excludesfile ~/.gitignore_global
 echo "Global gitignore configured to use ~/.gitignore_global"
 
+# Configure Claude Code
+echo "=== Configuring Claude Code ==="
+if command -v claude &> /dev/null; then
+    claude config set --global preferredNotifChannel terminal_bell
+    echo "Claude Code notification channel set to terminal_bell"
+else
+    echo "Claude Code not found, skipping configuration"
+fi
+
 # Setup SSH config
 echo "=== Setting up SSH configuration ==="
 if [ -f "$HOME/dotfiles/.ssh/config" ] && [ ! -L "$HOME/.ssh/config" ]; then
@@ -842,6 +860,7 @@ echo "- Shell enhancements: atuin, thefuck, starship"
 echo "- Development tools: terraform, node, python, go, rust"
 echo "- Formatters: stylua, prettier, black, isort"
 echo "- MCP tools: pipx, browser-tools, Python MCP servers"
+echo "- Claude Code: CLI tool with SuperClaude framework"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
@@ -849,12 +868,13 @@ echo ""
 echo "Next steps:"
 echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"
 echo "2. Configure iTerm2 to use 'JetBrainsMono Nerd Font' in Preferences → Profiles → Text"
-echo "3. Set up your dotfiles with 'stow' if using GNU Stow"
+echo "3. Set up your dotfiles with 'stow . --adopt' (includes SuperClaude configuration)"
 echo "4. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
 echo "5. Start sketchybar: 'brew services start sketchybar'"
 echo "6. Restart Claude Desktop to load MCP servers"
 echo "7. Verify Claude Code MCP servers with 'claude mcp list'"
-echo "8. Your Starship prompt should display beautiful icons!"
+echo "8. SuperClaude framework is ready via stow symlinks at ~/.claude/"
+echo "9. Your Starship prompt should display beautiful icons!"
 echo ""
 
 # Exit with appropriate code

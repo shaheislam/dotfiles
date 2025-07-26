@@ -1,0 +1,26 @@
+[
+  {
+    "content": "Comment out the conflicting shift+enter keybinding in keybindings.json",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Run /terminal-setup command again",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Find how to set preferredNotifChannel in Claude Code config",
+    "status": "completed",
+    "priority": "high",
+    "id": "3"
+  },
+  {
+    "content": "Troubleshoot why terminal bell is not audible",
+    "status": "in_progress",
+    "priority": "high",
+    "id": "4"
+  }
+]

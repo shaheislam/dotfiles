@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Django: Debug Server",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": ["runserver", "8000"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "django": true,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "settings.dev"
+            }
+        },
+        {
+            "name": "Flask: Debug Server",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "FLASK_ENV": "development",
+                "FLASK_DEBUG": "1"
+            }
+        },
+        {
+            "name": "FastAPI: Debug Server",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": ["main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}
