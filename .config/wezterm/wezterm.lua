@@ -24,7 +24,7 @@ config.default_cursor_style = 'BlinkingBlock'
 config.cursor_blink_rate = 500
 
 -- Shell
-config.default_prog = { '/opt/homebrew/bin/fish', '-l', '-c', 'starship init fish | source; exec fish' }
+config.default_prog = { '/opt/homebrew/bin/fish', '-l' }
 
 -- Environment variables
 config.set_environment_variables = {
@@ -80,6 +80,6 @@ config.keys = {
 
 -- Performance
 config.enable_wayland = false
-config.front_end = "WebGpu"
+config.front_end = "OpenGL"
 
 return config
