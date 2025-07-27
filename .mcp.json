@@ -4,8 +4,8 @@
       "command": "npx",
       "args": [
         "@modelcontextprotocol/server-filesystem",
-        "/Users/shaheislam/Desktop",
-        "/Users/shaheislam/Downloads"
+        "${HOME}/Desktop",
+        "${HOME}/Downloads"
       ]
     },
     "browser-tools": {
@@ -38,7 +38,7 @@
         "run",
         "mcp-server-git",
         "--repository",
-        "/Users/shaheislam/dotfiles"
+        "${HOME}/dotfiles"
       ]
     },
     "puppeteer": {
@@ -58,15 +58,6 @@
       "command": "npx",
       "args": [
         "duckduckgo-mcp-server"
-      ]
-    },
-    "sqlite": {
-      "command": "pipx",
-      "args": [
-        "run",
-        "mcp-server-sqlite",
-        "--db-path",
-        "/Users/shaheislam/Documents/databases"
       ]
     },
     "playwright": {

@@ -9,7 +9,10 @@
       "Bash(./tmux-fingers.tmux)",
       "Bash(tmux source-file:*)",
       "Bash(tmux run-shell:*)",
-      "Bash(brew search:*)"
+      "Bash(brew search:*)",
+      "Bash(find:*)",
+      "Bash(stow:*)",
+      "Bash(git checkout:*)"
     ]
   },
   "enabledMcpjsonServers": [

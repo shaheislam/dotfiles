@@ -5,8 +5,8 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "/Users/shaheislam/Desktop",
-        "/Users/shaheislam/Downloads"
+        "${HOME}/Desktop",
+        "${HOME}/Downloads"
       ]
     },
     "airbnb": {
@@ -54,7 +54,7 @@
         "run",
         "mcp-server-git",
         "--repository",
-        "/Users/shaheislam/dotfiles"
+        "${HOME}/dotfiles"
       ]
     },
     "puppeteer": {

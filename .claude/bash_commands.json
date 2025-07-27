@@ -264,5 +264,117 @@
     "tool_name": "Bash",
     "command": "git status --porcelain --ignored",
     "description": "Check git status including ignored files"
+  },
+  {
+    "timestamp": "2025-07-27T11:30:27.668504",
+    "session_id": "750a5fd1-1f79-4f0a-961f-22dd8de05203",
+    "tool_name": "Bash",
+    "command": "find ~/.config -name \"*claude*\" -type f 2>/dev/null | head -20",
+    "description": "Find Claude config files"
+  },
+  {
+    "timestamp": "2025-07-27T11:30:37.791546",
+    "session_id": "750a5fd1-1f79-4f0a-961f-22dd8de05203",
+    "tool_name": "Bash",
+    "command": "cat ~/Library/Application\\ Support/Claude/claude_desktop_config.json | jq -r '.mcpServers.filesystem' 2>/dev/null || echo \"Not found\"",
+    "description": "Check filesystem MCP server config"
+  },
+  {
+    "timestamp": "2025-07-27T11:30:46.829848",
+    "session_id": "750a5fd1-1f79-4f0a-961f-22dd8de05203",
+    "tool_name": "Bash",
+    "command": "whoami",
+    "description": "Check current username"
+  },
+  {
+    "timestamp": "2025-07-27T11:30:50.825921",
+    "session_id": "750a5fd1-1f79-4f0a-961f-22dd8de05203",
+    "tool_name": "Bash",
+    "command": "ls -la /Users/shaheislam 2>/dev/null || echo \"User shaheislam does not exist\"",
+    "description": "Check if shaheislam user exists"
+  },
+  {
+    "timestamp": "2025-07-27T11:33:43.422777",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "rm ~/.tmux.conf && stow . --target=$HOME",
+    "description": "Remove existing tmux config and stow dotfiles"
+  },
+  {
+    "timestamp": "2025-07-27T11:33:50.196676",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "stow --adopt . --target=$HOME",
+    "description": "Adopt existing files into stow package"
+  },
+  {
+    "timestamp": "2025-07-27T11:33:58.116117",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "git status",
+    "description": "Check git status after stow adopt"
+  },
+  {
+    "timestamp": "2025-07-27T11:34:03.293898",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "git diff .gitconfig",
+    "description": "Check gitconfig changes"
+  },
+  {
+    "timestamp": "2025-07-27T11:34:03.297066",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "git diff .ssh/config",
+    "description": "Check SSH config changes"
+  },
+  {
+    "timestamp": "2025-07-27T11:34:03.309412",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "git diff .config/containers/podman/machine/applehv/podman-machine-default.json",
+    "description": "Check Podman config changes"
+  },
+  {
+    "timestamp": "2025-07-27T11:34:08.566268",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "git checkout -- .gitconfig .ssh/config .config/containers/podman/machine/applehv/podman-machine-default.json",
+    "description": "Restore dotfiles versions of adopted files"
+  },
+  {
+    "timestamp": "2025-07-27T11:34:34.560462",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "ls -la ~ | grep .tmux.conf",
+    "description": "Check if tmux config is now a symlink"
+  },
+  {
+    "timestamp": "2025-07-27T11:36:18.860962",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "echo $HOME",
+    "description": "Check current home directory"
+  },
+  {
+    "timestamp": "2025-07-27T11:36:35.954315",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "ls -la ~/Desktop ~/Downloads 2>/dev/null || echo \"Directories don't exist\"",
+    "description": "Check if Desktop and Downloads exist"
+  },
+  {
+    "timestamp": "2025-07-27T11:42:55.577306",
+    "session_id": "1586f8f8-ae07-4a96-9b97-10fe9af01341",
+    "tool_name": "Bash",
+    "command": "mkdir -p ~/Documents/databases",
+    "description": "Create databases directory for SQLite MCP"
+  },
+  {
+    "timestamp": "2025-07-27T11:52:39.432397",
+    "session_id": "acc0144a-d65a-4695-9ab7-5f184f1edf21",
+    "tool_name": "Bash",
+    "command": "find /Users/shahe/dotfiles -maxdepth 2 -type f -name \".*\" | head -20",
+    "description": "Show dotfiles and config files"
   }
 ]
