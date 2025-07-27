@@ -6,6 +6,7 @@ function ssh-switch --description "Switch between SSH keys for GitHub"
         echo "Available keys:"
         echo "  personal - Use shaheislam-github key"
         echo "  dfe      - Use shaheislamdfe key"
+        echo "  petlab   - Add bitbucket SSH key for PetLab"
         echo ""
         echo "Current active key:"
         ssh -T git@github.com 2>&1 | grep "Hi"
@@ -25,9 +26,15 @@ function ssh-switch --description "Switch between SSH keys for GitHub"
             echo "Switched to DFE SSH key (shaheislamdfe)"
             ssh -T git@github.com 2>&1 | grep "Hi"
             
+        case petlab
+            # Add bitbucket SSH key for PetLab
+            ssh-add ~/.ssh/bitbucket
+            echo "Added bitbucket SSH key for PetLab"
+            ssh -T git@bitbucket.org 2>&1 | grep -E "(logged in as|You can use git)"
+            
         case \*
             echo "Unknown key: $key"
-            echo "Use 'personal' or 'dfe'"
+            echo "Use 'personal', 'dfe', or 'petlab'"
             return 1
     end
 end

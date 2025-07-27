@@ -376,5 +376,12 @@
     "tool_name": "Bash",
     "command": "find /Users/shahe/dotfiles -maxdepth 2 -type f -name \".*\" | head -20",
     "description": "Show dotfiles and config files"
+  },
+  {
+    "timestamp": "2025-07-27T15:46:06.143018",
+    "session_id": "efa9a00c-57ca-462b-a973-985aca491d8f",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && find . -name \"*ssh*\" -type f | grep -E \"(ssh-switch|ssh_switch)\" | head -20",
+    "description": "Search for ssh-switch related files in dotfiles"
   }
 ]
