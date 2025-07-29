@@ -45,6 +45,7 @@ if status is-interactive
     end
 
     if command -v atuin >/dev/null
+        set -gx ATUIN_NOBIND "true"
         atuin init fish | source
     end
 
@@ -284,6 +285,113 @@ if status is-interactive
         set repo (basename (git rev-parse --show-toplevel))
         git worktree add -b $branch ../$repo-$branch
     end
+
+    # Custom Atuin wrapper functions for different filter modes
+    function _atuin_search_directory --description "Atuin search with directory filter"
+        set -l keymap_mode
+        switch $fish_key_bindings
+            case fish_vi_key_bindings
+                switch $fish_bind_mode
+                    case default
+                        set keymap_mode vim-normal
+                    case insert
+                        set keymap_mode vim-insert
+                end
+            case '*'
+                set keymap_mode emacs
+        end
+
+        set -l ATUIN_H (ATUIN_SHELL_FISH=t ATUIN_LOG=error ATUIN_QUERY=(commandline -b) atuin search --keymap-mode=$keymap_mode --filter-mode=directory -i 3>&1 1>&2 2>&3 | string collect)
+
+        if test -n "$ATUIN_H"
+            if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
+                set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
+                commandline -r "$ATUIN_HIST"
+                commandline -f repaint
+                commandline -f execute
+                return
+            else
+                commandline -r "$ATUIN_H"
+            end
+        end
+
+        commandline -f repaint
+    end
+
+    function _atuin_search_session --description "Atuin search with session filter"
+        set -l keymap_mode
+        switch $fish_key_bindings
+            case fish_vi_key_bindings
+                switch $fish_bind_mode
+                    case default
+                        set keymap_mode vim-normal
+                    case insert
+                        set keymap_mode vim-insert
+                end
+            case '*'
+                set keymap_mode emacs
+        end
+
+        set -l ATUIN_H (ATUIN_SHELL_FISH=t ATUIN_LOG=error ATUIN_QUERY=(commandline -b) atuin search --keymap-mode=$keymap_mode --filter-mode=session -i 3>&1 1>&2 2>&3 | string collect)
+
+        if test -n "$ATUIN_H"
+            if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
+                set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
+                commandline -r "$ATUIN_HIST"
+                commandline -f repaint
+                commandline -f execute
+                return
+            else
+                commandline -r "$ATUIN_H"
+            end
+        end
+
+        commandline -f repaint
+    end
+
+    function _atuin_search_global --description "Atuin search with global filter"
+        set -l keymap_mode
+        switch $fish_key_bindings
+            case fish_vi_key_bindings
+                switch $fish_bind_mode
+                    case default
+                        set keymap_mode vim-normal
+                    case insert
+                        set keymap_mode vim-insert
+                end
+            case '*'
+                set keymap_mode emacs
+        end
+
+        set -l ATUIN_H (ATUIN_SHELL_FISH=t ATUIN_LOG=error ATUIN_QUERY=(commandline -b) atuin search --keymap-mode=$keymap_mode --filter-mode=global -i 3>&1 1>&2 2>&3 | string collect)
+
+        if test -n "$ATUIN_H"
+            if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
+                set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
+                commandline -r "$ATUIN_HIST"
+                commandline -f repaint
+                commandline -f execute
+                return
+            else
+                commandline -r "$ATUIN_H"
+            end
+        end
+
+        commandline -f repaint
+    end
+
+    # Custom Atuin keybindings for different filter modes
+    # Up arrow - directory search (default behavior)
+    bind \e\[A _atuin_search_directory
+    bind -M insert \e\[A _atuin_search_directory
+    
+    # Left arrow - session search  
+    bind \e\[D _atuin_search_session
+    bind -M insert \e\[D _atuin_search_session
+    
+    # Right arrow - global search
+    bind \e\[C _atuin_search_global  
+    bind -M insert \e\[C _atuin_search_global
 end
 
 # Note: Additional git+fzf functionality is provided in conf.d/plugins.fish
