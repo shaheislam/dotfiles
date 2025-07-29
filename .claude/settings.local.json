@@ -12,7 +12,8 @@
       "Bash(brew search:*)",
       "Bash(find:*)",
       "Bash(stow:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(grep:*)"
     ]
   },
   "enabledMcpjsonServers": [
