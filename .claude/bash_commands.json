@@ -481,5 +481,19 @@
     "tool_name": "Bash",
     "command": "killall -9 node",
     "description": "Force kill all node processes"
+  },
+  {
+    "timestamp": "2025-07-29T20:32:55.585873",
+    "session_id": "ecad7e16-d2f3-42f1-b5ae-26ca9ca80059",
+    "tool_name": "Bash",
+    "command": "mv ~/.claude.json ~/dotfiles/.claude.json",
+    "description": "Move Claude config to dotfiles directory"
+  },
+  {
+    "timestamp": "2025-07-29T20:33:04.399123",
+    "session_id": "ecad7e16-d2f3-42f1-b5ae-26ca9ca80059",
+    "tool_name": "Bash",
+    "command": "ln -sf ~/dotfiles/.claude.json ~/.claude.json",
+    "description": "Create symlink from home directory to dotfiles"
   }
 ]

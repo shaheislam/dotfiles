@@ -33,12 +33,6 @@
         "${HOME}/dotfiles"
       ]
     },
-    "puppeteer": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-puppeteer"
-      ]
-    },
     "fetch": {
       "command": "pipx",
       "args": [

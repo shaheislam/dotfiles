@@ -529,7 +529,6 @@ if command -v claude &> /dev/null; then
   
   # Web and automation tools
   claude mcp add --scope user browser-tools npx @agentdeskai/browser-tools-mcp@1.2.0 || echo "Warning: Failed to add browser-tools MCP"
-  claude mcp add --scope user puppeteer npx @modelcontextprotocol/server-puppeteer || echo "Warning: Failed to add puppeteer MCP"
   claude mcp add --scope user fetch pipx run mcp-server-fetch || echo "Warning: Failed to add fetch MCP"
   claude mcp add --scope user duckduckgo npx duckduckgo-mcp-server || echo "Warning: Failed to add duckduckgo MCP"
   
