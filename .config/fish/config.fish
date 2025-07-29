@@ -384,14 +384,6 @@ if status is-interactive
     # Up arrow - directory search (default behavior)
     bind \e\[A _atuin_search_directory
     bind -M insert \e\[A _atuin_search_directory
-    
-    # Left arrow - session search  
-    bind \e\[D _atuin_search_session
-    bind -M insert \e\[D _atuin_search_session
-    
-    # Right arrow - global search
-    bind \e\[C _atuin_search_global  
-    bind -M insert \e\[C _atuin_search_global
 end
 
 # Note: Additional git+fzf functionality is provided in conf.d/plugins.fish
