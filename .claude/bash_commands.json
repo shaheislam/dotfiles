@@ -509,5 +509,26 @@
     "tool_name": "Bash",
     "command": "rm -f ~/dotfiles/scripts/debug-fzf-atuin.fish ~/dotfiles/scripts/test-fzf-atuin.sh ~/dotfiles/scripts/test-atuin-fzf.sh ~/dotfiles/.config/fish/functions/test_fzf_atuin.fish",
     "description": "Remove debug and test files"
+  },
+  {
+    "timestamp": "2025-07-29T21:48:34.255357",
+    "session_id": "d0571a9d-0f54-42b3-bfd8-e77c87c94d00",
+    "tool_name": "Bash",
+    "command": "which zoxide && zoxide --version",
+    "description": "Check zoxide installation"
+  },
+  {
+    "timestamp": "2025-07-29T21:50:58.732488",
+    "session_id": "d0571a9d-0f54-42b3-bfd8-e77c87c94d00",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.local/share/zoxide/",
+    "description": "Check zoxide database"
+  },
+  {
+    "timestamp": "2025-07-29T21:51:05.340995",
+    "session_id": "d0571a9d-0f54-42b3-bfd8-e77c87c94d00",
+    "tool_name": "Bash",
+    "command": "mkdir -p ~/.local/share/zoxide && touch ~/.local/share/zoxide/db.zo",
+    "description": "Create zoxide database directory"
   }
 ]

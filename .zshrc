@@ -93,7 +93,7 @@ export FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --color=fg:${fg},bg:${bg},hl:${purple
 # Aliases
 alias python=python3
 alias mkdir="mkdir -p"
-alias cd="z"
+# Use z for zoxide navigation (cd is kept as default)
 alias ls="eza"
 alias la="eza -al"
 alias l="eza -hal"
