@@ -45,7 +45,15 @@ fi
 # Initialize tools
 eval "$(zoxide init zsh)"
 eval "$(direnv hook zsh)"
+
+# Atuin with custom FZF integration
+export ATUIN_NOBIND="true"
 eval "$(atuin init zsh)"
+
+# Source custom FZF-Atuin integration
+if [[ -f "$HOME/.config/zsh/atuin-fzf.zsh" ]]; then
+    source "$HOME/.config/zsh/atuin-fzf.zsh"
+fi
 
 # Source asdf
 if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then

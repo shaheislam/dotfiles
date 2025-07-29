@@ -495,5 +495,19 @@
     "tool_name": "Bash",
     "command": "ln -sf ~/dotfiles/.claude.json ~/.claude.json",
     "description": "Create symlink from home directory to dotfiles"
+  },
+  {
+    "timestamp": "2025-07-29T21:35:37.125353",
+    "session_id": "d0571a9d-0f54-42b3-bfd8-e77c87c94d00",
+    "tool_name": "Bash",
+    "command": "chmod +x ~/dotfiles/scripts/test-atuin-fzf.sh && ~/dotfiles/scripts/test-atuin-fzf.sh",
+    "description": "Run test script"
+  },
+  {
+    "timestamp": "2025-07-29T21:36:50.567819",
+    "session_id": "d0571a9d-0f54-42b3-bfd8-e77c87c94d00",
+    "tool_name": "Bash",
+    "command": "rm -f ~/dotfiles/scripts/debug-fzf-atuin.fish ~/dotfiles/scripts/test-fzf-atuin.sh ~/dotfiles/scripts/test-atuin-fzf.sh ~/dotfiles/.config/fish/functions/test_fzf_atuin.fish",
+    "description": "Remove debug and test files"
   }
 ]

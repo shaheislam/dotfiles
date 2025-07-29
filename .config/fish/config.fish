@@ -395,3 +395,10 @@ if status is-interactive
 end
 
 # Note: Additional git+fzf functionality is provided in conf.d/plugins.fish
+
+# FZF-Atuin integration - Custom history search
+if status is-interactive
+    # Override the default Ctrl-R binding from plugins.fish
+    bind \cr atuin_fzf_search
+    bind -M insert \cr atuin_fzf_search
+end
