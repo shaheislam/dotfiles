@@ -383,5 +383,103 @@
     "tool_name": "Bash",
     "command": "cd ~/dotfiles && find . -name \"*ssh*\" -type f | grep -E \"(ssh-switch|ssh_switch)\" | head -20",
     "description": "Search for ssh-switch related files in dotfiles"
+  },
+  {
+    "timestamp": "2025-07-29T19:54:06.467005",
+    "session_id": "e5ddf45c-deb4-41d6-a28b-d330c48c3d83",
+    "tool_name": "Bash",
+    "command": "ls -la ~/Library/Application\\ Support/Claude/",
+    "description": "Check Claude config directory and symlinks"
+  },
+  {
+    "timestamp": "2025-07-29T19:54:10.802147",
+    "session_id": "e5ddf45c-deb4-41d6-a28b-d330c48c3d83",
+    "tool_name": "Bash",
+    "command": "ls -la ~/Library/Application\\ Support/Claude/claude_desktop_config.json",
+    "description": "Check if the symlinked config file resolves correctly"
+  },
+  {
+    "timestamp": "2025-07-29T19:54:15.120493",
+    "session_id": "e5ddf45c-deb4-41d6-a28b-d330c48c3d83",
+    "tool_name": "Bash",
+    "command": "readlink -f ~/Library/Application\\ Support/Claude/claude_desktop_config.json",
+    "description": "Resolve the full path of the symlink"
+  },
+  {
+    "timestamp": "2025-07-29T19:55:01.414879",
+    "session_id": "e5ddf45c-deb4-41d6-a28b-d330c48c3d83",
+    "tool_name": "Bash",
+    "command": "test -f ~/Library/Application\\ Support/Claude/claude_desktop_config.json && echo \"File exists and is accessible\" || echo \"File does not exist or is not accessible\"",
+    "description": "Test if the symlinked file is accessible"
+  },
+  {
+    "timestamp": "2025-07-29T19:55:14.481038",
+    "session_id": "e5ddf45c-deb4-41d6-a28b-d330c48c3d83",
+    "tool_name": "Bash",
+    "command": "which pipx",
+    "description": "Check if pipx is available"
+  },
+  {
+    "timestamp": "2025-07-29T19:55:18.589549",
+    "session_id": "e5ddf45c-deb4-41d6-a28b-d330c48c3d83",
+    "tool_name": "Bash",
+    "command": "pipx list | grep -E \"(mcp-server-git|mcp-server-fetch)\"",
+    "description": "Check if pipx MCP servers are installed"
+  },
+  {
+    "timestamp": "2025-07-29T20:18:25.646059",
+    "session_id": "7601478b-5f15-48b9-b1dd-edd14ecaa918",
+    "tool_name": "Bash",
+    "command": "pipx list | grep -i aws",
+    "description": "Check for installed AWS MCP servers"
+  },
+  {
+    "timestamp": "2025-07-29T20:18:43.325019",
+    "session_id": "7601478b-5f15-48b9-b1dd-edd14ecaa918",
+    "tool_name": "Bash",
+    "command": "uvx --help",
+    "description": "Check if uvx is available for running MCP servers"
+  },
+  {
+    "timestamp": "2025-07-29T20:19:36.821691",
+    "session_id": "7601478b-5f15-48b9-b1dd-edd14ecaa918",
+    "tool_name": "Bash",
+    "command": "ps aux | grep -i mcp | grep -v grep",
+    "description": "Check for any running MCP processes"
+  },
+  {
+    "timestamp": "2025-07-29T20:19:44.386066",
+    "session_id": "7601478b-5f15-48b9-b1dd-edd14ecaa918",
+    "tool_name": "Bash",
+    "command": "pkill -f \"awslabs.*mcp-server\"",
+    "description": "Kill all AWS MCP server processes"
+  },
+  {
+    "timestamp": "2025-07-29T20:19:54.193837",
+    "session_id": "7601478b-5f15-48b9-b1dd-edd14ecaa918",
+    "tool_name": "Bash",
+    "command": "ps aux | grep -i \"awslabs\" | grep -v grep",
+    "description": "Check if AWS MCP processes are still running"
+  },
+  {
+    "timestamp": "2025-07-29T20:21:00.769821",
+    "session_id": "9105d977-a609-403f-ab7c-cc0e123d49f9",
+    "tool_name": "Bash",
+    "command": "ps aux | grep -i mcp | grep -v grep",
+    "description": "Check for running MCP processes"
+  },
+  {
+    "timestamp": "2025-07-29T20:21:06.881147",
+    "session_id": "9105d977-a609-403f-ab7c-cc0e123d49f9",
+    "tool_name": "Bash",
+    "command": "pkill -f \"mcp-server\" && pkill -f \"browser-tools-mcp\" && pkill -f \"awslabs\"",
+    "description": "Kill all MCP server processes to clean up"
+  },
+  {
+    "timestamp": "2025-07-29T20:21:27.100460",
+    "session_id": "9105d977-a609-403f-ab7c-cc0e123d49f9",
+    "tool_name": "Bash",
+    "command": "killall -9 node",
+    "description": "Force kill all node processes"
   }
 ]
