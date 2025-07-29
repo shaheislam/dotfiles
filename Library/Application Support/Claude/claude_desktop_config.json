@@ -1,14 +1,5 @@
 {
   "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "${HOME}/Desktop",
-        "${HOME}/Downloads"
-      ]
-    },
     "browser-tools": {
       "command": "npx",
       "args": [
