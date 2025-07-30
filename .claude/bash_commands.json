@@ -530,5 +530,26 @@
     "tool_name": "Bash",
     "command": "mkdir -p ~/.local/share/zoxide && touch ~/.local/share/zoxide/db.zo",
     "description": "Create zoxide database directory"
+  },
+  {
+    "timestamp": "2025-07-30T17:38:39.119522",
+    "session_id": "8ff77809-51c7-4b89-b760-67d1a149bae0",
+    "tool_name": "Bash",
+    "command": "echo $TERM_PROGRAM",
+    "description": null
+  },
+  {
+    "timestamp": "2025-07-30T17:39:41.251246",
+    "session_id": "8ff77809-51c7-4b89-b760-67d1a149bae0",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish\"",
+    "description": null
+  },
+  {
+    "timestamp": "2025-07-30T17:48:00.128764",
+    "session_id": "7aedfb83-5c31-4767-a20a-acb86285300b",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish\"",
+    "description": null
   }
 ]

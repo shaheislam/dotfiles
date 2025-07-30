@@ -1,11 +1,16 @@
 {
-  "numStartups": 2,
+  "numStartups": 7,
   "installMethod": "unknown",
   "autoUpdates": true,
   "tipsHistory": {
     "ide-hotkey": 1,
     "custom-agents": 2,
-    "new-user-warmup": 2
+    "new-user-warmup": 2,
+    "memory-command": 3,
+    "theme-command": 4,
+    "shift-enter": 5,
+    "prompt-queue": 6,
+    "enter-to-steer-in-relatime": 7
   },
   "promptQueueUseCount": 1,
   "userID": "314417c69db0f64abd403f0ca54cdf0f2ea9d7cbc1fcd01fe195ba27806c9dad",
@@ -14,6 +19,26 @@
     "/Users/shaheislam/dotfiles": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "That worked, do you need to clean anything up?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Now neither work",
+          "pastedContents": {}
+        },
+        {
+          "display": "I want it so that the right arrow key will only populte the cmdline with the cmd whereas enter executes it directly, currently i only have the latter",
+          "pastedContents": {}
+        },
+        {
+          "display": "No improvement",
+          "pastedContents": {}
+        },
+        {
+          "display": "When i hit ctrl-r and enter on a command it doesn't actually  run nothing happens... I have the atuin search settings working properly but i cant execute the commands",
+          "pastedContents": {}
+        },
         {
           "display": "What is the zoxide database for?",
           "pastedContents": {}
@@ -64,7 +89,17 @@
         "index.tsx",
         "models.py"
       ],
-      "exampleFilesGeneratedAt": 1753818485044
+      "exampleFilesGeneratedAt": 1753818485044,
+      "lastCost": 0.001512,
+      "lastAPIDuration": 1488,
+      "lastDuration": 2932,
+      "lastLinesAdded": 0,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 1815,
+      "lastTotalOutputTokens": 15,
+      "lastTotalCacheCreationInputTokens": 0,
+      "lastTotalCacheReadInputTokens": 0,
+      "lastSessionId": "85ea2141-2c20-4f8d-9b99-74194e96cb79"
     },
     "/Users/shaheislam/work/teacher-services-cloud": {
       "allowedTools": [],
