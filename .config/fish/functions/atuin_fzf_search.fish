@@ -13,7 +13,7 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     if test "$TERM_PROGRAM" = "WezTerm"
         # For WezTerm, ensure we're using the right terminal settings
         set -l fzf_result (
-            sh -c "stty sane; $atuin_cmd --cwd '$current_dir' 2>/dev/null | fzf --tac --no-sort --height=80% --query='$cmd_buffer' --header='Mode: $current_mode | C-d: dir | C-g: global | C-s: session' --bind='ctrl-d:reload($atuin_cmd --cwd \"$current_dir\" 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session)' --bind='ctrl-g:reload($atuin_cmd 2>/dev/null)+change-header(Mode: global | C-d: dir | C-g: global | C-s: session)' --bind='ctrl-s:reload($atuin_cmd --filter-mode session 2>/dev/null)+change-header(Mode: session | C-d: dir | C-g: global | C-s: session)' --bind='ctrl-r:reload($atuin_cmd --cwd \"$current_dir\" 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session)'"
+            sh -c "stty sane; $atuin_cmd --cwd '$current_dir' 2>/dev/null | fzf --tac --no-sort --height=80% --query='$cmd_buffer' --header='Mode: $current_mode | C-d: dir | C-g: global | C-s: session' --bind='ctrl-d:reload($atuin_cmd --cwd \"$current_dir\" 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session)' --bind='ctrl-g:reload($atuin_cmd --filter-mode global 2>/dev/null)+change-header(Mode: global | C-d: dir | C-g: global | C-s: session)' --bind='ctrl-s:reload($atuin_cmd --filter-mode session 2>/dev/null)+change-header(Mode: session | C-d: dir | C-g: global | C-s: session)' --bind='ctrl-r:reload($atuin_cmd --cwd \"$current_dir\" 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session)'"
         )
     else
         # For other terminals, use the standard approach
@@ -25,7 +25,7 @@ function atuin_fzf_search --description "Search shell history using atuin with f
                 --query="$cmd_buffer" \
                 --header="Mode: $current_mode | C-d: dir | C-g: global | C-s: session" \
                 --bind="ctrl-d:reload($atuin_cmd --cwd '$current_dir' 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session)" \
-                --bind="ctrl-g:reload($atuin_cmd 2>/dev/null)+change-header(Mode: global | C-d: dir | C-g: global | C-s: session)" \
+                --bind="ctrl-g:reload($atuin_cmd --filter-mode global 2>/dev/null)+change-header(Mode: global | C-d: dir | C-g: global | C-s: session)" \
                 --bind="ctrl-s:reload($atuin_cmd --filter-mode session 2>/dev/null)+change-header(Mode: session | C-d: dir | C-g: global | C-s: session)" \
                 --bind="ctrl-r:reload($atuin_cmd --cwd '$current_dir' 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session)"
         )

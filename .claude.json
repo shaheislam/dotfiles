@@ -70,6 +70,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "My C-g global switch for history isn't working properly, but C-d and C-s are",
+          "pastedContents": {}
+        },
+        {
           "display": "Make the ssh-switch function more resilient so this error doesn't occur again",
           "pastedContents": {}
         },
