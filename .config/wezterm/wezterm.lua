@@ -34,7 +34,7 @@ config.set_environment_variables = {
 }
 
 -- Ensure proper shell integration
-config.enable_kitty_keyboard = true
+config.enable_kitty_keyboard = false
 config.enable_csi_u_key_encoding = false
 
 -- Terminal features for better prompt support
