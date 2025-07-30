@@ -70,6 +70,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Make the ssh-switch function more resilient so this error doesn't occur again",
+          "pastedContents": {}
+        },
+        {
+          "display": "╰─▶ ssh-switch dfe\nsed: /Users/shaheislam/.ssh/config: in-place editing only works for regular files\nSwitched to DFE SSH key (shaheislamdfe)\nHi shaheislamdfe! You've successfully authenticated, but GitHub does not provide shell access.\n\n╭╴󰊠 shaheislam  …/dotfiles  main  !⇡    @euw1  󰠅 s189-test  s189d01-tsc-cluster6-aks   16:37 󰊨 1s\n╰─▶ git push origin\nERROR: Repository not found.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n\n💡 gpo => git push origin\n",
+          "pastedContents": {}
+        },
+        {
           "display": "Do you need to clean anything up before i commit this?",
           "pastedContents": {}
         },
