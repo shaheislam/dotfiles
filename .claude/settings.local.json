@@ -14,7 +14,15 @@
       "Bash(stow:*)",
       "Bash(git checkout:*)",
       "Bash(grep:*)",
-      "Bash(fish:*)"
+      "Bash(fish:*)",
+      "Bash(echo $PATH)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "Bash(s3grep:*)",
+      "Bash(~/.cargo/bin/s3grep:*)",
+      "Bash(export AWS_PROFILE=petlab)",
+      "Bash(aws s3 ls:*)",
+      "Bash(export AWS_PROFILE=logging)",
+      "Bash(chmod:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

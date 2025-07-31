@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+
+# AWS Log Viewer - Interactive S3 log browser with s3grep integration
+# Usage: aws-log-viewer [bucket]
+
+set -euo pipefail
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Check dependencies
+check_dependencies() {
+    local missing=()
+    
+    command -v aws >/dev/null 2>&1 || missing+=("aws")
+    command -v s3grep >/dev/null 2>&1 || missing+=("s3grep")
+    command -v jq >/dev/null 2>&1 || missing+=("jq")
+    command -v fzf >/dev/null 2>&1 || missing+=("fzf")
+    
+    if [ ${#missing[@]} -ne 0 ]; then
+        echo -e "${RED}Missing dependencies: ${missing[*]}${NC}"
+        echo "Please install them first."
+        exit 1
+    fi
+}
+
+# Check AWS credentials
+check_aws_auth() {
+    if [ -z "${AWS_PROFILE:-}" ]; then
+        echo -e "${YELLOW}No AWS profile set. Available profiles:${NC}"
+        aws configure list-profiles 2>/dev/null || echo "No profiles found"
+        echo ""
+        read -p "Enter profile name (or press enter to continue without): " profile
+        if [ -n "$profile" ]; then
+            export AWS_PROFILE="$profile"
+        fi
+    fi
+    
+    if ! aws sts get-caller-identity >/dev/null 2>&1; then
+        echo -e "${RED}AWS authentication failed. Please run 'aws sso login --profile <profile>'${NC}"
+        exit 1
+    fi
+    
+    echo -e "${GREEN}✓ Authenticated as:${NC}"
+    aws sts get-caller-identity | jq -r '"\(.Arn)"'
+    echo ""
+}
+
+# Interactive bucket selection
+select_bucket() {
+    local bucket="$1"
+    
+    if [ -z "$bucket" ]; then
+        echo -e "${YELLOW}Select a bucket:${NC}"
+        bucket=$(aws s3 ls | awk '{print $3}' | fzf --height=40% --reverse --prompt="Bucket: ")
+    fi
+    
+    if [ -z "$bucket" ]; then
+        echo -e "${RED}No bucket selected${NC}"
+        exit 1
+    fi
+    
+    echo "$bucket"
+}
+
+# Browse bucket prefixes interactively
+browse_prefixes() {
+    local bucket="$1"
+    local current_prefix="${2:-}"
+    
+    echo -e "${CYAN}Browsing s3://$bucket/$current_prefix${NC}"
+    
+    local prefixes=$(aws s3 ls "s3://$bucket/$current_prefix" 2>/dev/null | grep "PRE" | awk '{print $2}' || true)
+    local files=$(aws s3 ls "s3://$bucket/$current_prefix" 2>/dev/null | grep -v "PRE" | tail -20 | awk '{print $4}' || true)
+    
+    if [ -z "$prefixes" ] && [ -z "$files" ]; then
+        echo -e "${YELLOW}No contents found${NC}"
+        return 1
+    fi
+    
+    local selection=$(
+        {
+            [ -n "$current_prefix" ] && echo "../ (Go back)"
+            echo "🔍 Search in current directory"
+            echo "$prefixes" | sed 's/^/[DIR] /'
+            echo "$files" | head -10 | sed 's/^/[FILE] /'
+        } | fzf --height=80% --reverse --prompt="Select: " --header="Navigate with arrows, Enter to select"
+    )
+    
+    if [ -z "$selection" ]; then
+        return 1
+    fi
+    
+    if [[ "$selection" == "../ (Go back)" ]]; then
+        current_prefix=$(echo "$current_prefix" | sed 's|[^/]*/$||')
+        browse_prefixes "$bucket" "$current_prefix"
+    elif [[ "$selection" == "🔍 Search in current directory" ]]; then
+        search_in_prefix "$bucket" "$current_prefix"
+    elif [[ "$selection" == "[DIR] "* ]]; then
+        local dir=$(echo "$selection" | sed 's/\[DIR\] //')
+        browse_prefixes "$bucket" "$current_prefix$dir"
+    elif [[ "$selection" == "[FILE] "* ]]; then
+        local file=$(echo "$selection" | sed 's/\[FILE\] //')
+        search_single_file "$bucket" "$current_prefix$file"
+    fi
+}
+
+# Search within a prefix using s3grep
+search_in_prefix() {
+    local bucket="$1"
+    local prefix="$2"
+    
+    echo -e "${CYAN}Searching in s3://$bucket/$prefix${NC}"
+    echo ""
+    
+    # Detect log type from prefix
+    if [[ "$prefix" == *"GuardDuty"* ]]; then
+        echo -e "${YELLOW}🔍 GuardDuty logs detected${NC}"
+        search_guardduty_logs "$bucket" "$prefix"
+    elif [[ "$prefix" == *"CloudTrail"* ]]; then
+        echo -e "${YELLOW}🔐 CloudTrail logs detected${NC}"
+        search_cloudtrail_logs "$bucket" "$prefix"
+    else
+        echo -e "${YELLOW}📄 Generic logs${NC}"
+        search_generic_logs "$bucket" "$prefix"
+    fi
+}
+
+# Search GuardDuty logs with s3grep
+search_guardduty_logs() {
+    local bucket="$1"
+    local prefix="$2"
+    
+    echo "Common GuardDuty patterns:"
+    echo "  1) High severity (7-10)"
+    echo "  2) Medium+ severity (4-10)"
+    echo "  3) All findings"
+    echo "  4) UnauthorizedAccess"
+    echo "  5) Custom pattern"
+    echo ""
+    read -p "Select pattern (1-5): " choice
+    
+    case $choice in
+        1) pattern='"severity":[7-9]' ;;
+        2) pattern='"severity":[4-9]' ;;
+        3) pattern='"severity":' ;;
+        4) pattern='UnauthorizedAccess' ;;
+        5) read -p "Enter pattern: " pattern ;;
+        *) pattern='"severity":' ;;
+    esac
+    
+    echo -e "${CYAN}Searching with s3grep...${NC}"
+    
+    s3grep --bucket "$bucket" --pattern "$pattern" --prefix "$prefix" 2>/dev/null | \
+    while IFS=: read -r filepath json; do
+        filename=$(basename "$filepath")
+        echo -e "${PURPLE}━━━ File: $filename ━━━${NC}"
+        echo "$json" | jq -r '
+            "🔍 \(.type // "Unknown")
+            📊 Severity: \(.severity // "N/A") | \(.title // "No title")
+            👤 Resource: \(.resource.resourceType // "Unknown")
+            🌍 Region: \(.region // "Unknown") | Account: \(.accountId // "Unknown")
+            🕐 Created: \(.createdAt // "Unknown")
+            
+            📝 Description:
+            \(.description // "No description available")
+            "' 2>/dev/null || echo -e "${RED}Failed to parse JSON${NC}"
+        echo ""
+    done | less -R
+    
+    echo ""
+    read -p "Press enter to continue..."
+    browse_prefixes "$bucket" "$prefix"
+}
+
+# Search CloudTrail logs with s3grep
+search_cloudtrail_logs() {
+    local bucket="$1"
+    local prefix="$2"
+    
+    echo "Common CloudTrail patterns:"
+    echo "  1) AssumeRole - Role assumption events"
+    echo "  2) CreateBucket - S3 bucket creation"
+    echo "  3) RunInstances - EC2 instance launches"
+    echo "  4) root - Root account usage"
+    echo "  5) DeleteBucket - S3 bucket deletion"
+    echo "  6) Custom pattern"
+    echo ""
+    read -p "Select pattern (1-6): " choice
+    
+    case $choice in
+        1) pattern="AssumeRole" ;;
+        2) pattern="CreateBucket" ;;
+        3) pattern="RunInstances" ;;
+        4) pattern="root" ;;
+        5) pattern="DeleteBucket" ;;
+        6) read -p "Enter pattern: " pattern ;;
+        *) pattern="AssumeRole" ;;
+    esac
+    
+    echo -e "${CYAN}Searching with s3grep...${NC}"
+    
+    s3grep --bucket "$bucket" --pattern "$pattern" --prefix "$prefix" 2>/dev/null | \
+    while IFS=: read -r filepath json; do
+        filename=$(basename "$filepath")
+        echo -e "${PURPLE}━━━ File: $filename ━━━${NC}"
+        echo "$json" | jq -r '
+            if .Records then
+                .Records[] | 
+                "🔐 Event: \(.eventName // "Unknown") | \(.eventSource // "Unknown")
+                👤 User: \(.userIdentity.userName // .userIdentity.arn // .userIdentity.principalId // "System")
+                🌍 Source: \(.sourceIPAddress // "N/A") | Region: \(.awsRegion // "N/A")
+                🕐 Time: \(.eventTime // "Unknown")
+                
+                📋 Request Parameters:
+                \(.requestParameters // {} | tostring | .[0:200])...
+                "
+            else
+                "🔐 Event: \(.eventName // "Unknown") | \(.eventSource // "Unknown")
+                👤 User: \(.userIdentity.userName // .userIdentity.arn // .userIdentity.principalId // "System")
+                🌍 Source: \(.sourceIPAddress // "N/A") | Region: \(.awsRegion // "N/A")
+                🕐 Time: \(.eventTime // "Unknown")
+                "
+            end' 2>/dev/null || echo -e "${RED}Failed to parse JSON${NC}"
+        echo ""
+    done | less -R
+    
+    echo ""
+    read -p "Press enter to continue..."
+    browse_prefixes "$bucket" "$prefix"
+}
+
+# Search generic logs with s3grep
+search_generic_logs() {
+    local bucket="$1"
+    local prefix="$2"
+    
+    echo ""
+    read -p "Enter search pattern: " pattern
+    
+    echo -e "${CYAN}Searching with s3grep...${NC}"
+    
+    s3grep --bucket "$bucket" --pattern "$pattern" --prefix "$prefix" 2>/dev/null | \
+    while IFS=: read -r filepath content; do
+        filename=$(basename "$filepath")
+        echo -e "${PURPLE}━━━ File: $filename ━━━${NC}"
+        echo "$content" | jq '.' 2>/dev/null || echo "$content"
+        echo ""
+    done | less -R
+    
+    echo ""
+    read -p "Press enter to continue..."
+    browse_prefixes "$bucket" "$prefix"
+}
+
+# Search a single file with s3grep
+search_single_file() {
+    local bucket="$1"
+    local filepath="$2"
+    local prefix=$(dirname "$filepath")/
+    local filename=$(basename "$filepath")
+    
+    echo -e "${CYAN}Analyzing: $filename${NC}"
+    echo ""
+    read -p "Enter search pattern (or press enter for all): " pattern
+    test -z "$pattern" && pattern="."
+    
+    echo -e "${CYAN}Searching with s3grep...${NC}"
+    
+    s3grep --bucket "$bucket" --pattern "$pattern" --prefix "$prefix" 2>/dev/null | \
+    grep "$filename" | while IFS=: read -r file_path content; do
+        echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo "$content" | jq '.' 2>/dev/null || echo "$content"
+        echo ""
+    done | less -R
+    
+    echo ""
+    read -p "Press enter to continue..."
+    browse_prefixes "$bucket" "$(dirname "$filepath")/"
+}
+
+# Main menu
+main_menu() {
+    clear
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${PURPLE}           AWS Log Viewer (with s3grep)${NC}"
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    
+    check_aws_auth
+    
+    local bucket="${1:-}"
+    bucket=$(select_bucket "$bucket")
+    
+    echo -e "${GREEN}Selected bucket: $bucket${NC}"
+    echo ""
+    
+    browse_prefixes "$bucket"
+}
+
+# Make script executable and run
+check_dependencies
+main_menu "$@"

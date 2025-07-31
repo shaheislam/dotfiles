@@ -484,10 +484,11 @@ for package in "${PYTHON_BREW_PACKAGES[@]}"; do
   fi
 done
 
-# Install Rust formatters
-echo "=== Installing Rust formatters ==="
+# Install Rust tools
+echo "=== Installing Rust tools ==="
 if command -v cargo &> /dev/null; then
   cargo install stylua
+  cargo install s3grep
 fi
 
 # Install Python MCP servers via pipx
@@ -858,6 +859,8 @@ echo "- Git tools: lazygit, lazydocker"
 echo "- Shell enhancements: atuin, thefuck, starship"
 echo "- Development tools: terraform, node, python, go, rust"
 echo "- Formatters: stylua, prettier, black, isort"
+echo "- Rust tools: s3grep"
+echo "- AWS log tools: aws-log-viewer (interactive s3grep TUI)"
 echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Claude Code: CLI tool with SuperClaude framework"
 echo "- Image display: ueberzugpp, imagemagick"

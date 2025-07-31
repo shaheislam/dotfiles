@@ -33,7 +33,7 @@ export LC_ALL=en_US.UTF-8
 # Paths
 export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-export PATH="$HOME/.cargo/env:$PATH"
+export PATH="$HOME/.cargo/bin:$PATH"
 export PATH="$HOME/.rd/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 
@@ -229,6 +229,186 @@ function aws-sso() {
     
     if ! aws sts get-caller-identity >/dev/null 2>&1; then
         echo "Failed to get credentials"
+    fi
+}
+
+# S3grep wrapper to ensure AWS profile is used
+function s3grep() {
+    if [[ -z "$AWS_PROFILE" ]]; then
+        echo "No AWS profile set. Run 'aws-sso <profile>' first."
+        return 1
+    fi
+    command s3grep "$@"
+}
+
+# AWS Log Analysis Functions (Generic)
+
+# Pretty print s3grep output for JSON logs
+function s3-logs() {
+    local bucket="$1"
+    local pattern="$2"
+    local prefix="$3"
+    
+    if [[ -z "$bucket" || -z "$pattern" ]]; then
+        echo "Usage: s3-logs <bucket> <pattern> [prefix]"
+        echo "Example: s3-logs my-log-bucket '\"eventName\":\"AssumeRole\"' logs/2024/01/"
+        return 1
+    fi
+    
+    local grep_args="--bucket $bucket --pattern $pattern"
+    [[ -n "$prefix" ]] && grep_args="$grep_args --prefix $prefix"
+    
+    s3grep $grep_args 2>/dev/null | while IFS= read -r line; do
+        # Split on .gz: to properly separate filepath from JSON
+        if [[ "$line" =~ ^(.*)\.gz:(.*)$ ]]; then
+            local filepath="${BASH_REMATCH[1]}.gz"
+            local json="${BASH_REMATCH[2]}"
+            local filename=$(basename "$filepath")
+            
+            echo "📄 File: $filename"
+            echo "$json" | jq '.' 2>/dev/null || {
+                echo "Raw content (jq failed):"
+                echo "$json" | head -c 500
+                echo "..."
+            }
+            echo "═══════════════════════════════════════════════════════════════"
+        else
+            echo "Unparsed line: $line"
+        fi
+    done
+}
+
+# Generic GuardDuty log viewer
+function gd-view() {
+    local bucket="$1"
+    local pattern="${2:-\"severity\":}"
+    local prefix="$3"
+    
+    if [[ -z "$bucket" ]]; then
+        echo "Usage: gd-view <bucket> [pattern] [prefix]"
+        echo "Example: gd-view my-guardduty-bucket '\"severity\":[5-9]' AWSLogs/123456/GuardDuty/"
+        return 1
+    fi
+    
+    s3-logs "$bucket" "$pattern" "$prefix" | while read -r line; do
+        if [[ "$line" == "📄 File:"* ]]; then
+            echo "$line"
+        elif [[ "$line" == "═"* ]]; then
+            echo "$line"
+        else
+            echo "$line" | jq -r 'select(.type != null) | 
+                "🔍 \(.type)
+                📊 Severity: \(.severity) | \(.title // "No title")
+                👤 Resource: \(.resource.resourceType // "Unknown")
+                🌍 Region: \(.region // "Unknown")
+                🕐 Time: \(.createdAt // .updatedAt // "Unknown")
+                📝 \(.description // "No description")"' 2>/dev/null || echo "$line"
+        fi
+    done
+}
+
+# Generic CloudTrail log viewer
+function ct-view() {
+    local bucket="$1"
+    local pattern="${2:-.}"
+    local prefix="$3"
+    
+    if [[ -z "$bucket" ]]; then
+        echo "Usage: ct-view <bucket> [pattern] [prefix]"
+        echo "Example: ct-view my-cloudtrail-bucket AssumeRole AWSLogs/"
+        return 1
+    fi
+    
+    local grep_args="--bucket $bucket --pattern $pattern"
+    [[ -n "$prefix" ]] && grep_args="$grep_args --prefix $prefix"
+    
+    s3grep $grep_args 2>/dev/null | while IFS= read -r line; do
+        # Split on .gz: to properly separate filepath from JSON
+        if [[ "$line" =~ ^(.*)\.gz:(.*)$ ]]; then
+            local filepath="${BASH_REMATCH[1]}.gz"
+            local json="${BASH_REMATCH[2]}"
+            local filename=$(basename "$filepath")
+            
+            echo "📄 File: $filename"
+            echo "$json" | jq -r '
+                if .Records then 
+                    .Records[] | "🔐 \(.eventName // "Unknown") | \(.eventSource // "Unknown")
+👤 User: \(.userIdentity.userName // .userIdentity.arn // .userIdentity.principalId // "System")
+🌍 IP: \(.sourceIPAddress // "N/A") | Region: \(.awsRegion // "N/A")  
+🕐 Time: \(.eventTime // "Unknown")
+───────────────────────────────────────────────────────────────"
+                else 
+                    "🔐 Event: \(.eventName // "Unknown") | Source: \(.eventSource // "Unknown")
+👤 User: \(.userIdentity.userName // .userIdentity.arn // .userIdentity.principalId // "System")  
+🌍 IP: \(.sourceIPAddress // "N/A") | Region: \(.awsRegion // "N/A")
+🕐 Time: \(.eventTime // "Unknown")
+───────────────────────────────────────────────────────────────"
+                end' 2>/dev/null || {
+                    echo "Raw JSON (jq failed):"
+                    echo "$json" | head -c 500
+                    echo "..."
+                }
+            echo ""
+        else
+            echo "$line"
+        fi
+    done
+}
+
+# List S3 bucket contents with date filtering
+function s3-dates() {
+    local bucket="$1"
+    local prefix="$2"
+    local days="${3:-20}"
+    
+    if [[ -z "$bucket" ]]; then
+        echo "Usage: s3-dates <bucket> [prefix] [days-to-show]"
+        echo "Example: s3-dates my-log-bucket AWSLogs/ 10"
+        return 1
+    fi
+    
+    echo "📅 Available dates in s3://$bucket/$prefix:"
+    aws s3 ls "s3://$bucket/$prefix" --recursive 2>/dev/null \
+        | grep -E '20[0-9]{2}/[0-9]{2}/[0-9]{2}/' \
+        | awk '{print $4}' \
+        | grep -oE '20[0-9]{2}/[0-9]{2}/[0-9]{2}' \
+        | sort | uniq | tail -"$days"
+}
+
+# Quick log analysis
+function logs() {
+    local pattern="$1"
+    local bucket="$2"
+    
+    if [[ -z "$pattern" ]]; then
+        echo "Usage: logs <pattern> [bucket]"
+        echo "Examples:"
+        echo "  logs AssumeRole                    # Search in default buckets"
+        echo "  logs '\"severity\":[5-9]' my-bucket  # Search specific bucket"
+        echo ""
+        echo "Common patterns:"
+        echo "  AssumeRole           - Role assumptions"
+        echo "  CreateBucket         - Bucket creation events"
+        echo "  UnauthorizedAccess   - GuardDuty unauthorized access"
+        echo "  '\"severity\":[5-9]'  - GuardDuty medium+ severity"
+        echo "  root                 - Root account usage"
+        return 1
+    fi
+    
+    if [[ -n "$bucket" ]]; then
+        s3-logs "$bucket" "$pattern"
+    else
+        echo "Searching common log buckets..."
+        
+        if aws s3 ls s3://petlab-centralize-logging/ >/dev/null 2>&1; then
+            echo "🔍 Searching CloudTrail logs..."
+            s3-logs petlab-centralize-logging "$pattern" "AWSLogs/" | head -10
+        fi
+        
+        if aws s3 ls s3://petlab-guardduty-logging/ >/dev/null 2>&1; then
+            echo "🔍 Searching GuardDuty logs..."
+            s3-logs petlab-guardduty-logging "$pattern" "AWSLogs/" | head -10
+        fi
     fi
 }
 

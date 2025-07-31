@@ -551,5 +551,208 @@
     "tool_name": "Bash",
     "command": "fish -c \"source ~/.config/fish/config.fish\"",
     "description": null
+  },
+  {
+    "timestamp": "2025-07-31T13:26:38.861711",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish\"",
+    "description": "Reload fish configuration"
+  },
+  {
+    "timestamp": "2025-07-31T13:26:44.125005",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "which s3grep",
+    "description": "Check if s3grep is in PATH"
+  },
+  {
+    "timestamp": "2025-07-31T13:26:49.657722",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.cargo/bin/s3grep",
+    "description": "Check if s3grep exists in cargo bin"
+  },
+  {
+    "timestamp": "2025-07-31T13:26:55.982030",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "echo $PATH | tr ':' '\\n' | grep cargo",
+    "description": "Check if cargo bin is in PATH"
+  },
+  {
+    "timestamp": "2025-07-31T13:27:06.524759",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"echo \\$PATH | tr ':' '\\n' | grep cargo\"",
+    "description": "Check cargo path in fish"
+  },
+  {
+    "timestamp": "2025-07-31T13:27:13.209915",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"which s3grep\"",
+    "description": "Check s3grep in fish shell"
+  },
+  {
+    "timestamp": "2025-07-31T13:27:19.012722",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "echo $PATH",
+    "description": "Display current PATH"
+  },
+  {
+    "timestamp": "2025-07-31T13:27:27.777430",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export PATH=\"$HOME/.cargo/bin:$PATH\" && which s3grep",
+    "description": "Add cargo bin to PATH and check s3grep"
+  },
+  {
+    "timestamp": "2025-07-31T13:27:38.053425",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "s3grep --help | head -10",
+    "description": "Test s3grep command"
+  },
+  {
+    "timestamp": "2025-07-31T13:27:46.052001",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "~/.cargo/bin/s3grep --help | head -10",
+    "description": "Test s3grep with full path"
+  },
+  {
+    "timestamp": "2025-07-31T13:33:21.461168",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "aws sts get-caller-identity",
+    "description": "Check if AWS SSO session is active"
+  },
+  {
+    "timestamp": "2025-07-31T13:33:29.212962",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "aws sso login --profile default",
+    "description": "Login to AWS SSO"
+  },
+  {
+    "timestamp": "2025-07-31T13:34:02.851023",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "s3grep --help | grep -i profile",
+    "description": "Check if s3grep supports AWS profile"
+  },
+  {
+    "timestamp": "2025-07-31T13:34:07.519839",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "~/.cargo/bin/s3grep --help | grep -A5 -B5 -i profile",
+    "description": "Check s3grep profile support"
+  },
+  {
+    "timestamp": "2025-07-31T13:34:12.935686",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "~/.cargo/bin/s3grep --help",
+    "description": "Get full s3grep help"
+  },
+  {
+    "timestamp": "2025-07-31T13:34:19.271085",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=petlab && aws sts get-caller-identity",
+    "description": "Test AWS profile"
+  },
+  {
+    "timestamp": "2025-07-31T13:34:44.888296",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=petlab && ~/.cargo/bin/s3grep --bucket tino-pl-pet-pet-images --pattern images --prefix logs/ -q | head -10",
+    "description": "Test s3grep with AWS profile"
+  },
+  {
+    "timestamp": "2025-07-31T13:34:55.564922",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=petlab && ~/.cargo/bin/s3grep --bucket tino-pl-pet-pet-images --pattern images | head -20",
+    "description": "Test s3grep with progress"
+  },
+  {
+    "timestamp": "2025-07-31T13:35:42.026690",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish\"",
+    "description": "Reload fish config"
+  },
+  {
+    "timestamp": "2025-07-31T13:36:14.672608",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "echo $AWS_PROFILE",
+    "description": "Check current AWS profile"
+  },
+  {
+    "timestamp": "2025-07-31T13:36:24.029921",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=petlab && export PATH=\"$HOME/.cargo/bin:$PATH\" && s3grep --bucket tino-pl-pet-pet-images --pattern \"images\" --prefix \"logs/\" | head -5",
+    "description": "Test s3grep with profile set"
+  },
+  {
+    "timestamp": "2025-07-31T13:36:31.414566",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=petlab && aws s3 ls s3://tino-pl-pet-pet-images/ | head -10",
+    "description": "List bucket contents"
+  },
+  {
+    "timestamp": "2025-07-31T13:37:00.277496",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=petlab && export PATH=\"$HOME/.cargo/bin:$PATH\" && s3grep --bucket tino-pl-pet-pet-images --pattern \".\" | head -5",
+    "description": "Search for any content in s3"
+  },
+  {
+    "timestamp": "2025-07-31T13:37:30.314777",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=logging && aws sts get-caller-identity",
+    "description": "Check logging profile credentials"
+  },
+  {
+    "timestamp": "2025-07-31T13:37:41.379229",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=logging && aws s3 ls s3://petlab-centralize-logging/ --recursive | head -20",
+    "description": "List contents of centralize-logging bucket"
+  },
+  {
+    "timestamp": "2025-07-31T13:37:54.547855",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=logging && export PATH=\"$HOME/.cargo/bin:$PATH\" && s3grep --bucket petlab-centralize-logging --pattern \"AssumeRole\" --prefix \"AWSLogs/077624256399/CloudTrail/us-east-1/2023/06/25/\" 2>&1 | head -20",
+    "description": "Search for AssumeRole events in CloudTrail logs"
+  },
+  {
+    "timestamp": "2025-07-31T13:38:15.069430",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=logging && export PATH=\"$HOME/.cargo/bin:$PATH\" && s3grep --bucket petlab-centralize-logging --pattern \"CreateBucket\" --prefix \"AWSLogs/\" -c 4 2>&1 | grep -v \"Processed\" | head -10",
+    "description": "Search for CreateBucket events with fewer concurrent tasks"
+  },
+  {
+    "timestamp": "2025-07-31T13:40:24.069285",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "export AWS_PROFILE=logging && export PATH=\"$HOME/.cargo/bin:$PATH\" && s3grep --bucket petlab-centralize-logging --pattern \"CreateBucket\" --prefix \"AWSLogs/077624256399/CloudTrail/us-east-1/2023/06/25/\" -c 4 -q 2>&1 | head -5",
+    "description": "Search with more specific prefix and quiet mode"
+  },
+  {
+    "timestamp": "2025-07-31T14:17:57.849624",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "chmod +x /Users/shahe/dotfiles/scripts/aws-log-viewer",
+    "description": "Make the aws-log-viewer script executable"
   }
 ]
