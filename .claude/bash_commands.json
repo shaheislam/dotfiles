@@ -754,5 +754,117 @@
     "tool_name": "Bash",
     "command": "chmod +x /Users/shahe/dotfiles/scripts/aws-log-viewer",
     "description": "Make the aws-log-viewer script executable"
+  },
+  {
+    "timestamp": "2025-07-31T14:44:17.070682",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"complete -C 'ct-view '\"",
+    "description": "Test if Fish recognizes ct-view completions"
+  },
+  {
+    "timestamp": "2025-07-31T14:45:04.972731",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish; complete -C 'ct-view '\"",
+    "description": "Test ct-view completions after reloading Fish config"
+  },
+  {
+    "timestamp": "2025-07-31T14:45:29.953190",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "rm -f /Users/shahe/dotfiles/.config/fish/completions/aws-logs.fish /Users/shahe/dotfiles/.config/fish/completions/ssmc.fish /Users/shahe/dotfiles/.config/fish/completions/aws-sso.fish /Users/shahe/dotfiles/.config/fish/completions/aws-log-viewer.fish",
+    "description": "Remove separate completion files since we integrated them into main config"
+  },
+  {
+    "timestamp": "2025-07-31T14:45:41.581958",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish; complete -C 'ct-view '\"",
+    "description": "Test ct-view completions after integrating into main config"
+  },
+  {
+    "timestamp": "2025-07-31T14:45:48.026480",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=test\nfunction __fish_complete_aws_s3_buckets\n    echo 'bucket1'\n    echo 'bucket2'\n    echo 'logging-bucket'\nend\ncomplete -f -c ct-view -n 'test (count (commandline -opc)) -eq 2' -a '(__fish_complete_aws_s3_buckets)' -d 'CloudTrail S3 bucket'\ncomplete -C 'ct-view '\n\"",
+    "description": "Test completions with simplified setup"
+  },
+  {
+    "timestamp": "2025-07-31T14:46:12.767951",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nsource ~/.config/fish/config.fish\nexport AWS_PROFILE=petlab\ncomplete -C 'ct-view '\n\"",
+    "description": "Test ct-view completions with AWS_PROFILE set"
+  },
+  {
+    "timestamp": "2025-07-31T14:46:20.538235",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nsource ~/.config/fish/config.fish\nexport AWS_PROFILE=petlab\necho 'Command line parts:'\ncomplete -C 'ct-view ' | head -5\necho '---'  \necho 'Testing condition:'\ntest (count (string split ' ' 'ct-view ')) -eq 2; and echo 'condition matches' || echo 'condition fails'\n\"",
+    "description": "Debug Fish completion system behavior"
+  },
+  {
+    "timestamp": "2025-07-31T14:46:26.904752",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\necho 'Testing bucket function:'\naws s3 ls 2>/dev/null | awk '{print $3}' | head -3\n\"",
+    "description": "Test if AWS S3 bucket listing works"
+  },
+  {
+    "timestamp": "2025-07-31T14:46:51.646023",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\nsource ~/.config/fish/config.fish\ncomplete -C 'ct-view '\n\"",
+    "description": "Test ct-view completions after clearing defaults"
+  },
+  {
+    "timestamp": "2025-07-31T14:46:59.369649",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\nfunction test_completion\n    echo 'bucket1'\n    echo 'bucket2' \nend\ncomplete -c ct-view -e\ncomplete -c ct-view -f -a '(test_completion)' -d 'Test bucket'\ncomplete -C 'ct-view '\n\"",
+    "description": "Test with minimal completion setup"
+  },
+  {
+    "timestamp": "2025-07-31T14:47:19.239034",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\nsource ~/.config/fish/config.fish\ncomplete -C 'ct-view '\n\"",
+    "description": "Test simplified ct-view completions"
+  },
+  {
+    "timestamp": "2025-07-31T14:47:25.384175",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\n# Test if function exists\ntype -q __fish_complete_aws_s3_buckets; and echo 'Function exists' || echo 'Function missing'\n# Test if function works\n__fish_complete_aws_s3_buckets | head -3\n\"",
+    "description": "Debug the helper function directly"
+  },
+  {
+    "timestamp": "2025-07-31T14:47:53.087899",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\nsource ~/.config/fish/config.fish\ncomplete -C 'ct-view '\n\"",
+    "description": "Test ct-view completions with functions moved outside interactive block"
+  },
+  {
+    "timestamp": "2025-07-31T14:48:00.930512",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\nsource ~/.config/fish/config.fish\necho '=== ssmc completions ==='\ncomplete -C 'ssmc '\necho ''\necho '=== logs completions ==='  \ncomplete -C 'logs '\n\"",
+    "description": "Test ssmc and logs completions"
+  },
+  {
+    "timestamp": "2025-07-31T14:49:00.570729",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\nsource ~/.config/fish/config.fish\necho 'Testing ct-view completion:'\ncomplete -C 'ct-view ' | head -5\necho ''\necho 'Testing if function is available:'\ntype -t ct-view\n\"",
+    "description": "Verify ct-view completions and function availability"
+  },
+  {
+    "timestamp": "2025-07-31T14:49:12.209723",
+    "session_id": "3f45e3de-d558-43fe-929c-289ad05a6e3a",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nexport AWS_PROFILE=petlab\nsource ~/.config/fish/config.fish\necho 'After sourcing config:'\necho '1. Function available:'\ntype -t ct-view\necho '2. Function works:'\nct-view 2>&1 | head -2\necho '3. Completions work:'\ncomplete -C 'ct-view ' | head -3\n\"",
+    "description": "Verify everything works after sourcing config"
   }
 ]

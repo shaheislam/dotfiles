@@ -1,6 +1,39 @@
 # Fish Shell Configuration
 # Integrated configuration combining dotfiles setup with extended functionality
 
+# Helper functions for completions (available in all sessions)
+function __fish_complete_aws_s3_buckets
+    if test -n "$AWS_PROFILE"
+        aws s3 ls 2>/dev/null | awk '{print $3}' | head -20
+    end
+end
+
+function __fish_complete_aws_profiles
+    aws configure list-profiles 2>/dev/null
+end
+
+# Completions for AWS functions - simple approach that works
+complete -c ct-view -e
+complete -c ct-view -f -a "(__fish_complete_aws_s3_buckets)" -d "CloudTrail S3 bucket"
+
+complete -c gd-view -e  
+complete -c gd-view -f -a "(__fish_complete_aws_s3_buckets)" -d "GuardDuty S3 bucket"
+
+complete -c s3-logs -e
+complete -c s3-logs -f -a "(__fish_complete_aws_s3_buckets)" -d "S3 bucket name"
+
+complete -c s3-dates -e
+complete -c s3-dates -f -a "(__fish_complete_aws_s3_buckets)" -d "S3 bucket name"
+
+complete -c logs -e
+complete -c logs -f -a "AssumeRole CreateBucket RunInstances UnauthorizedAccess root" -d "Search pattern"
+
+complete -c ssmc -e
+complete -c ssmc -f -a "(__fish_complete_aws_profiles)" -d "AWS profile name"
+
+complete -c aws-sso -e
+complete -c aws-sso -f -a "(__fish_complete_aws_profiles)" -d "AWS SSO profile name"
+
 # Only run in interactive sessions
 if status is-interactive
     # Set key bindings for better autocomplete
@@ -472,6 +505,7 @@ if status is-interactive
             end
         end
     end
+
 
     # Set environment variables
     set -gx EDITOR nvim
