@@ -62,6 +62,10 @@ brew "gh"
 brew "pipx"
 brew "gemini-cli"
 
+# Security Tools
+tap "vet-run/vet"
+brew "vet-run/vet/vet-run"
+
 # Nerd Fonts
 cask "font-jetbrains-mono-nerd-font"
 cask "font-fira-code-nerd-font"

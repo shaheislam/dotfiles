@@ -12,27 +12,31 @@ function __fish_complete_aws_profiles
     aws configure list-profiles 2>/dev/null
 end
 
-# Completions for AWS functions - simple approach that works
+# Completions for AWS functions with descriptions
 complete -c ct-view -e
-complete -c ct-view -f -a "(__fish_complete_aws_s3_buckets)" -d "CloudTrail S3 bucket"
+complete -c ct-view -f -a "(__fish_complete_aws_s3_buckets)" -d "Search and analyze AWS CloudTrail logs in S3 buckets"
 
 complete -c gd-view -e  
-complete -c gd-view -f -a "(__fish_complete_aws_s3_buckets)" -d "GuardDuty S3 bucket"
+complete -c gd-view -f -a "(__fish_complete_aws_s3_buckets)" -d "Search and analyze AWS GuardDuty security findings in S3"
 
 complete -c s3-logs -e
-complete -c s3-logs -f -a "(__fish_complete_aws_s3_buckets)" -d "S3 bucket name"
+complete -c s3-logs -f -a "(__fish_complete_aws_s3_buckets)" -d "Search and format JSON logs from S3 buckets using s3grep"
 
 complete -c s3-dates -e
-complete -c s3-dates -f -a "(__fish_complete_aws_s3_buckets)" -d "S3 bucket name"
+complete -c s3-dates -f -a "(__fish_complete_aws_s3_buckets)" -d "List available dates in S3 log buckets with filtering"
+
+complete -c s3-browse -e
+complete -c s3-browse -f -a "(__fish_complete_aws_s3_buckets)" -d "Interactive browser for exploring S3 log buckets"
 
 complete -c logs -e
-complete -c logs -f -a "AssumeRole CreateBucket RunInstances UnauthorizedAccess root" -d "Search pattern"
+complete -c logs -f -a "AssumeRole CreateBucket RunInstances UnauthorizedAccess root" -d "Quick AWS log search with auto-detection of common buckets"
 
 complete -c ssmc -e
-complete -c ssmc -f -a "(__fish_complete_aws_profiles)" -d "AWS profile name"
+complete -c ssmc -f -a "(__fish_complete_aws_profiles)" -d "Connect to EC2 instances via AWS SSM with interactive selection"
 
 complete -c aws-sso -e
-complete -c aws-sso -f -a "(__fish_complete_aws_profiles)" -d "AWS SSO profile name"
+complete -c aws-sso -f -a "(__fish_complete_aws_profiles)" -d "Authenticate with AWS SSO and export credentials to environment"
+
 
 # Only run in interactive sessions
 if status is-interactive
@@ -169,6 +173,9 @@ if status is-interactive
     alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
     alias tk="tmux kill-server"
 
+    # Security aliases
+    alias vetf="vet --force"  # Force execution (use with caution)
+
     # Git worktree aliases
     alias gwta="git worktree add"
     alias gwtab="git worktree add -b"
@@ -186,7 +193,7 @@ if status is-interactive
         end
     end
 
-        function ssmc
+        function ssmc --description "Connect to EC2 instances via AWS SSM with interactive selection"
         set -l profile $argv[1]
         if test -z "$profile"
             set profile "petlab"  # Default profile
@@ -260,7 +267,7 @@ if status is-interactive
     end
 
     # AWS SSO function (enhanced version)
-    function aws-sso
+    function aws-sso --description "Authenticate with AWS SSO and export credentials to environment"
         set -l profile $argv[1]
         if test -z "$profile"
             set profile "petlab"
@@ -288,7 +295,7 @@ if status is-interactive
     # AWS Log Analysis Functions (Generic)
     
     # Pretty print s3grep output for JSON logs
-    function s3-logs
+    function s3-logs --description "Search and format JSON logs from S3 buckets using s3grep"
         set -l bucket $argv[1]
         set -l pattern $argv[2]
         set -l prefix $argv[3]
@@ -324,7 +331,7 @@ if status is-interactive
     end
 
     # Generic GuardDuty log viewer with custom bucket
-    function gd-view
+    function gd-view --description "Search and analyze AWS GuardDuty security findings in S3"
         set -l bucket $argv[1]
         set -l pattern $argv[2]
         set -l prefix $argv[3]
@@ -356,7 +363,7 @@ if status is-interactive
     end
 
     # Generic CloudTrail log viewer
-    function ct-view
+    function ct-view --description "Search and analyze AWS CloudTrail logs in S3 buckets"
         set -l bucket $argv[1]
         set -l pattern $argv[2]
         set -l prefix $argv[3]
@@ -407,7 +414,7 @@ if status is-interactive
     end
 
     # List S3 bucket contents with date filtering
-    function s3-dates
+    function s3-dates --description "List available dates in S3 log buckets with filtering"
         set -l bucket $argv[1]
         set -l prefix $argv[2]
         set -l days $argv[3]
@@ -429,7 +436,7 @@ if status is-interactive
     end
 
     # Interactive S3 log browser
-    function s3-browse
+    function s3-browse --description "Interactive browser for exploring S3 log buckets"
         set -l bucket $argv[1]
         
         if test -z "$bucket"
@@ -466,7 +473,7 @@ if status is-interactive
     end
 
     # Quick log analysis with auto-detection
-    function logs
+    function logs --description "Quick AWS log search with auto-detection of common buckets"
         set -l pattern $argv[1]
         set -l bucket $argv[2]
         

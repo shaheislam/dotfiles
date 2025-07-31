@@ -128,6 +128,9 @@ alias tr="clear; tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect
 alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
 alias tk="tmux kill-server"
 
+# Security aliases
+alias vetf="vet --force"  # Force execution (use with caution)
+
 # Git worktree aliases
 alias gwta="git worktree add"
 alias gwtab="git worktree add -b"
