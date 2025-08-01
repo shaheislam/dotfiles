@@ -1853,5 +1853,68 @@
     "tool_name": "Bash",
     "command": "granted console --firefox --url --color green --icon tree labs",
     "description": "Test with explicit color and icon parameters"
+  },
+  {
+    "timestamp": "2025-08-01T13:12:35.078309",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume logging && granted console --firefox --url",
+    "description": "Test Firefox console URL generation for logging profile"
+  },
+  {
+    "timestamp": "2025-08-01T13:12:48.633639",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "echo \"Current AWS_PROFILE: $AWS_PROFILE\" && env | grep GRANTED",
+    "description": "Check actual profile name and Granted variables"
+  },
+  {
+    "timestamp": "2025-08-01T13:12:54.755422",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "grep -i \"logging\" /Users/shahe/dotfiles/.granted/firefox-profiles",
+    "description": "Check if logging profile is in the config file"
+  },
+  {
+    "timestamp": "2025-08-01T13:13:01.021411",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume logging && granted console --firefox --url --color purple --icon circle",
+    "description": "Test with explicit color and icon for logging profile"
+  },
+  {
+    "timestamp": "2025-08-01T13:13:23.909246",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted --version",
+    "description": "Check Granted version"
+  },
+  {
+    "timestamp": "2025-08-01T13:13:28.784914",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted doctor",
+    "description": "Run Granted diagnostics"
+  },
+  {
+    "timestamp": "2025-08-01T13:13:49.096247",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "source ~/.config/fish/config.fish",
+    "description": "Reload Fish configuration with new functions"
+  },
+  {
+    "timestamp": "2025-08-01T13:16:05.147780",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "ls -la .vscode/ 2>/dev/null || echo \"No .vscode directory found\"",
+    "description": "Check for VS Code workspace settings"
+  },
+  {
+    "timestamp": "2025-08-01T13:16:17.623879",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "echo 'Add this to VS Code user settings (Cmd+Shift+P -> \"Preferences: Open User Settings (JSON)\"):'\necho '{\n  \"python.terminal.activateEnvironment\": false\n}'",
+    "description": "Show VS Code setting to disable auto-activation"
   }
 ]

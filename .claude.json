@@ -13,7 +13,7 @@
     "enter-to-steer-in-relatime": 7,
     "todo-list": 8
   },
-  "promptQueueUseCount": 1,
+  "promptQueueUseCount": 2,
   "userID": "314417c69db0f64abd403f0ca54cdf0f2ea9d7cbc1fcd01fe195ba27806c9dad",
   "fallbackAvailableWarningThreshold": 0.2,
   "projects": {
@@ -179,6 +179,18 @@
     "/Users/shahe/dotfiles": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "Whenevr I open a new shell in vscode I see\\\n\\\nsource /Users/shahe/work/playground/venv/bin/activate.fish\n\n╭╴󰊠 shahe  …/dotfiles  main  $!⇡  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:15 󰊨\n╰─▶ source /Users/shahe/work/playground/venv/bin/activate.fish\n\n╭╴󰊠 shahe  …/dotfiles  main  $!⇡    v3.13.5  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:15 󰊨\\\n\\\nIs this an issue with my fish or wezterm config?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Undo this change I dont like it",
+          "pastedContents": {}
+        },
+        {
+          "display": "Logging doesn't appear to show in my URL for friefox",
+          "pastedContents": {}
+        },
         {
           "display": "In Firefox my granted containers only shows labs and i cant see any icons, how should this be working?",
           "pastedContents": {}
