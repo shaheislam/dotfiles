@@ -169,8 +169,8 @@ if status is-interactive
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
     alias save="~/sesh.sh save"
     alias rest="~/sesh.sh restore"
-    alias tr="clear; tmux new -A -s main \; run-shell ~/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
-    alias ts="tmux run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh"
+    alias tr="clear; tmux new -A -s main"
+    alias ts="tmux run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'"
     alias tk="tmux kill-server"
 
     # Security aliases
@@ -283,6 +283,39 @@ if status is-interactive
         end
     end
 
+    # Granted AWS credential management function
+    # Override the assume binary with a function that sources the fish script
+    function assume --description "Assume AWS role using Granted"
+        # Use the symlinked fish script from homebrew
+        if test -f /opt/homebrew/bin/assume.fish
+            source /opt/homebrew/bin/assume.fish $argv
+        else
+            echo "Error: Could not find assume.fish script. Please reinstall granted."
+            return 1
+        end
+    end
+    
+    # Enable Granted completions for Fish shell
+    if command -v granted &> /dev/null
+        # Generate granted completions if not already installed
+        if not test -f "$HOME/.config/fish/completions/granted.fish"
+            granted completion --shell fish 2>/dev/null
+        end
+        # The completions will be auto-loaded by Fish from the completions directory
+    end
+
+    
+    # Show current AWS account
+    function aws-whoami --description "Show current AWS account and identity"
+        if test -n "$AWS_PROFILE"
+            echo "Current profile: $AWS_PROFILE"
+            aws sts get-caller-identity --output table
+        else
+            echo "No AWS profile currently set"
+        end
+    end
+    
+    
     # S3grep wrapper to ensure AWS profile is used
     function s3grep
         if test -z "$AWS_PROFILE"

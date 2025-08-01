@@ -6,6 +6,9 @@ tap "nikitabobko/tap"
 tap "oven-sh/bun"
 tap "morantron/tmux-fingers"
 
+# Taps for AWS tools
+tap "common-fate/granted"
+
 # CLI Tools
 brew "zsh-vi-mode"
 brew "bat"
@@ -42,6 +45,7 @@ brew "go"
 brew "rust"
 brew "crystal"
 brew "awscli"
+brew "granted"
 brew "kubectl"
 brew "azure-cli"
 brew "imagemagick"

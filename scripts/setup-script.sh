@@ -188,6 +188,15 @@ else
   echo "AWS Session Manager Plugin already installed"
 fi
 
+# Install Granted for AWS credential management
+if ! command -v granted &> /dev/null; then
+  echo "Installing Granted for AWS credential management..."
+  brew tap common-fate/granted
+  brew install granted
+else
+  echo "Granted already installed"
+fi
+
 # Install SketchyBar (status bar) - needs special handling
 if ! command -v sketchybar &> /dev/null; then
   echo "=== Installing SketchyBar ==="
@@ -717,6 +726,15 @@ function aws-sso() {
     export AWS_PROFILE="$profile"
     aws sts get-caller-identity >/dev/null 2>&1 || echo "Failed to get credentials"
 }
+
+# Granted AWS credential management alias and completions
+# Granted needs an alias to export environment variables
+alias assume="source assume"
+
+# Enable Granted completions for Zsh shell
+if command -v granted &> /dev/null 2>&1; then
+    eval "$(granted completion --shell zsh)" 2>/dev/null || true
+fi
 
 # Source powerlevel10k config if using it
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh

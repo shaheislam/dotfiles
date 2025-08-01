@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(steampipe query:*)",
@@ -22,7 +23,9 @@
       "Bash(export AWS_PROFILE=petlab)",
       "Bash(aws s3 ls:*)",
       "Bash(export AWS_PROFILE=logging)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "WebFetch(domain:docs.commonfate.io)",
+      "WebFetch(domain:github.com)"
     ]
   },
   "enableAllProjectMcpServers": true,
