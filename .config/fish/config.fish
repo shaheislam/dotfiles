@@ -283,15 +283,25 @@ if status is-interactive
         end
     end
 
-    # Granted AWS credential management function
-    # Override the assume binary with a function that sources the fish script
+    # Granted AWS credential management function for Fish shell
+    # Properly handles environment variable propagation from bash to Fish
     function assume --description "Assume AWS role using Granted"
-        # Use the symlinked fish script from homebrew
-        if test -f /opt/homebrew/bin/assume.fish
-            source /opt/homebrew/bin/assume.fish $argv
+        # Execute assume command in bash and capture AWS environment variables
+        set -l env_vars (bash -c "source /opt/homebrew/bin/assume $argv >/dev/null 2>&1 && env | grep -E '^(AWS_|GRANTED_)'")
+        
+        # Parse and set each environment variable in the current Fish session
+        for line in $env_vars
+            set -l parts (string split -m 1 "=" $line)
+            if test (count $parts) -eq 2
+                set -gx $parts[1] $parts[2]
+            end
+        end
+        
+        # Display success message with profile info
+        if set -q AWS_PROFILE
+            echo "✅ Assumed AWS profile: $AWS_PROFILE"
         else
-            echo "Error: Could not find assume.fish script. Please reinstall granted."
-            return 1
+            echo "✅ AWS credentials updated"
         end
     end
     

@@ -1,0 +1,70 @@
+# Firefox Profile Color and Icon Configuration for Granted
+# This file defines color and icon mappings for different AWS profiles
+# when using the Granted Firefox addon.
+#
+# Format: aws-profile-name=color:icon
+#
+# Available Colors:
+# blue, turquoise, green, yellow, orange, red, pink, purple
+#
+# Available Icons:
+# fingerprint, briefcase, dollar, cart, circle, gift, vacation, 
+# food, fruit, pet, tree, chill
+#
+# Usage:
+# 1. Create Firefox profiles using: granted browser set firefox
+# 2. Install the Granted Firefox addon
+# 3. Profiles will automatically use the configured colors and icons
+
+# Production environments - Red for danger/critical
+production=red:briefcase
+prod=red:briefcase
+prd=red:briefcase
+
+# Staging environments - Yellow for caution
+staging=yellow:cart
+stage=yellow:cart
+stg=yellow:cart
+
+# Development environments - Green for safe
+development=green:tree
+dev=green:tree
+develop=green:tree
+
+# Testing environments - Turquoise for testing
+test=turquoise:circle
+testing=turquoise:circle
+qa=turquoise:circle
+
+# Sandbox environments - Blue for experimentation
+sandbox=blue:chill
+sb=blue:chill
+playground=blue:chill
+
+# Security accounts - Purple for security focus
+security=purple:fingerprint
+sec=purple:fingerprint
+audit=purple:fingerprint
+
+# Billing/Finance accounts - Orange for financial
+billing=orange:dollar
+finance=orange:dollar
+cost=orange:dollar
+
+# Personal/Pet projects - Pink for personal
+personal=pink:pet
+pet=pink:pet
+petlab=pink:pet
+
+# Shared services - Various colors for organization
+shared=turquoise:gift
+common=turquoise:gift
+platform=blue:briefcase
+
+# Monitoring/Logging - Purple for observability
+monitoring=purple:circle
+logs=purple:circle
+observability=purple:circle
+
+# Default fallback - Blue circle for unmatched profiles
+default=blue:circle
