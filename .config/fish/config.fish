@@ -341,7 +341,6 @@ if status is-interactive
                         set -gx $parts[1] $parts[2]
                     end
                 end
-                echo "✅ Assumed AWS profile: $selected_profile"
             else
                 echo "No profile selected"
             end
@@ -360,12 +359,6 @@ if status is-interactive
             end
         end
         
-        # Display success message with profile info
-        if set -q AWS_PROFILE
-            echo "✅ Assumed AWS profile: $AWS_PROFILE"
-        else
-            echo "✅ AWS credentials updated"
-        end
     end
     
     # Enable Granted completions for Fish shell

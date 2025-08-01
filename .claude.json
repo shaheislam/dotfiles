@@ -180,6 +180,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "✅ Assumed AWS profile: labs I don't need this logging when i run assume please remove it",
+          "pastedContents": {}
+        },
+        {
           "display": "It just hangs \\\n\\\n╭╴󰊠 shahe  …/dotfiles  main  $!?  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:31 󰊨\n╰─▶ assume\n",
           "pastedContents": {}
         },
