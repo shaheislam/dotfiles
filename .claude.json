@@ -180,6 +180,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "In Firefox my granted containers only shows labs and i cant see any icons, how should this be working?",
+          "pastedContents": {}
+        },
+        {
           "display": "My Wezterm is having an error now\\\n\\\nsyntax error: [string \"/Users/shahe/.config/wezterm/wezterm.lua\"]:79:\nunexpected symbol near '}'\n",
           "pastedContents": {}
         },

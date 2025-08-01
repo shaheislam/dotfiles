@@ -55,15 +55,19 @@ cost=orange:dollar
 personal=pink:pet
 pet=pink:pet
 petlab=pink:pet
+labs=green:tree
 
 # Shared services - Various colors for organization
 shared=turquoise:gift
 common=turquoise:gift
 platform=blue:briefcase
+management=blue:briefcase
+AWSAdministratorAccess-154805902702=red:fingerprint
 
 # Monitoring/Logging - Purple for observability
 monitoring=purple:circle
 logs=purple:circle
+logging=purple:circle
 observability=purple:circle
 
 # Default fallback - Blue circle for unmatched profiles

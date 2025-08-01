@@ -46,7 +46,8 @@
       "Bash(functions:*)",
       "Bash(granted settings shell fish)",
       "Bash(granted:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(aws configure:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

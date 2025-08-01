@@ -1790,5 +1790,68 @@
     "tool_name": "Bash",
     "command": "assume security && echo \"AWS_PROFILE: $AWS_PROFILE\" && aws s3 ls",
     "description": "Test assume function with security profile"
+  },
+  {
+    "timestamp": "2025-08-01T13:08:07.142872",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "aws configure list-profiles",
+    "description": "List all AWS profiles"
+  },
+  {
+    "timestamp": "2025-08-01T13:08:33.965510",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.granted/",
+    "description": "Check Granted config directory"
+  },
+  {
+    "timestamp": "2025-08-01T13:08:38.817070",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "scripts/granted-setup.sh list-profiles",
+    "description": "List configured profiles to verify the changes"
+  },
+  {
+    "timestamp": "2025-08-01T13:08:56.241347",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted browser set firefox",
+    "description": "Refresh Firefox browser integration"
+  },
+  {
+    "timestamp": "2025-08-01T13:09:01.170890",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted browser",
+    "description": "Check current browser setting"
+  },
+  {
+    "timestamp": "2025-08-01T13:09:06.579661",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted console --help",
+    "description": "Check console command help"
+  },
+  {
+    "timestamp": "2025-08-01T13:09:11.150474",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted console --firefox --url labs",
+    "description": "Test generating Firefox console URL for labs profile"
+  },
+  {
+    "timestamp": "2025-08-01T13:09:18.913846",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume labs && granted console --firefox --url",
+    "description": "Assume labs profile first, then try console command"
+  },
+  {
+    "timestamp": "2025-08-01T13:09:38.732582",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted console --firefox --url --color green --icon tree labs",
+    "description": "Test with explicit color and icon parameters"
   }
 ]
