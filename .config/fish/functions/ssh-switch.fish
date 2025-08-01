@@ -120,7 +120,7 @@ function ssh-switch --description "Switch between SSH keys for GitHub"
             # Warn if there's a potential mismatch
             if string match -q "*shaheislam/*" $remote_url; and test "$key" != "personal"
                 echo "⚠️  Warning: This is a personal repository but you switched to $key"
-            else if string match -q "*DFE-Digital/*" $remote_url -o "*dfe-*" $remote_url; and test "$key" != "dfe"
+            else if begin; string match -q "*DFE-Digital/*" $remote_url; or string match -q "*dfe-*" $remote_url; end; and test "$key" != "dfe"
                 echo "⚠️  Warning: This is a DFE repository but you switched to $key"
             end
         end
