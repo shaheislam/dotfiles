@@ -1916,5 +1916,229 @@
     "tool_name": "Bash",
     "command": "echo 'Add this to VS Code user settings (Cmd+Shift+P -> \"Preferences: Open User Settings (JSON)\"):'\necho '{\n  \"python.terminal.activateEnvironment\": false\n}'",
     "description": "Show VS Code setting to disable auto-activation"
+  },
+  {
+    "timestamp": "2025-08-01T13:18:21.332263",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume labs",
+    "description": "Test assume with labs profile"
+  },
+  {
+    "timestamp": "2025-08-01T13:18:52.368539",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.config/fish/completions/ | grep granted",
+    "description": "Check if Granted completions are installed"
+  },
+  {
+    "timestamp": "2025-08-01T13:18:57.094141",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "grep -A5 -B5 \"assume\" ~/.config/fish/completions/granted.fish | head -20",
+    "description": "Check assume completions in the file"
+  },
+  {
+    "timestamp": "2025-08-01T13:19:02.064850",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "grep -A10 \"assume fish shell completion\" ~/.config/fish/completions/granted.fish",
+    "description": "Check assume completion details"
+  },
+  {
+    "timestamp": "2025-08-01T13:19:06.699700",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "grep -C5 \"complete.*assume\" ~/.config/fish/completions/granted.fish",
+    "description": "Look for assume completion commands"
+  },
+  {
+    "timestamp": "2025-08-01T13:19:12.276578",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "grep -A20 \"__fish_assume_profiles\\|__fish_granted_profiles\" ~/.config/fish/completions/granted.fish",
+    "description": "Look for profile completion functions"
+  },
+  {
+    "timestamp": "2025-08-01T13:19:25.133543",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"complete -c assume\"",
+    "description": "Test if assume completions are working"
+  },
+  {
+    "timestamp": "2025-08-01T13:19:29.839698",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "aws configure list-profiles",
+    "description": "Test that the completion function will work"
+  },
+  {
+    "timestamp": "2025-08-01T13:21:23.242934",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume logging && granted console --firefox --url 2>&1 | head -5",
+    "description": "Test logging profile console access"
+  },
+  {
+    "timestamp": "2025-08-01T13:21:34.912834",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume prod && granted console --firefox --url 2>&1 | head -5",
+    "description": "Test prod profile console access"
+  },
+  {
+    "timestamp": "2025-08-01T13:22:08.564226",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume labs && granted console --firefox --url --container-name labs 2>&1 | tail -1",
+    "description": "Test with custom container name for labs"
+  },
+  {
+    "timestamp": "2025-08-01T13:23:46.699992",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "exec fish",
+    "description": "Restart Fish shell to reload configuration"
+  },
+  {
+    "timestamp": "2025-08-01T13:23:55.849864",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "assume -c logging",
+    "description": "Test assume with console flag for logging"
+  },
+  {
+    "timestamp": "2025-08-01T13:24:43.078085",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "exec fish",
+    "description": "Restart Fish shell"
+  },
+  {
+    "timestamp": "2025-08-01T13:26:03.401491",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"assume labs\"",
+    "description": "Test assume command with labs profile"
+  },
+  {
+    "timestamp": "2025-08-01T13:26:31.461199",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"assume labs\"",
+    "description": "Test assume command with suppressed prompts"
+  },
+  {
+    "timestamp": "2025-08-01T13:26:44.978480",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"assume labs\"",
+    "description": "Test assume command with printf to bypass prompt"
+  },
+  {
+    "timestamp": "2025-08-01T13:26:49.957419",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "granted --help | grep -i alias",
+    "description": "Check for alias-related flags in granted"
+  },
+  {
+    "timestamp": "2025-08-01T13:26:54.323038",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "echo 'n' | /opt/homebrew/bin/assume --help 2>&1 | head -20",
+    "description": "Check assume command help for options"
+  },
+  {
+    "timestamp": "2025-08-01T13:27:01.430969",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.zshenv",
+    "description": "Check if zshenv exists"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:20.536357",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"complete -C 'assume '\"",
+    "description": "Test Fish completions for assume command"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:24.820112",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"type assume\"",
+    "description": "Check what the assume command is in Fish"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:29.104614",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"functions -q assume && echo 'Function exists' || echo 'Function not found'\"",
+    "description": "Check if assume function exists in Fish"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:35.162372",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nsource /Users/shahe/dotfiles/.config/fish/config.fish\nfunctions -q assume && echo 'Function loaded successfully' || echo 'Function failed to load'\n\"",
+    "description": "Source the config and test if function loads"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:40.216845",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -n /Users/shahe/dotfiles/.config/fish/config.fish",
+    "description": "Check Fish config syntax"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:45.063080",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"\nfunction assume --description 'Test assume function'\n    echo 'Test assume function called with args:' \\$argv\nend\nfunctions -q assume && echo 'Test function loaded successfully'\ntype assume\n\"",
+    "description": "Test a simple assume function"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:55.347481",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -i -c \"type assume\" 2>/dev/null || echo \"Function not available\"",
+    "description": "Test assume function in interactive Fish"
+  },
+  {
+    "timestamp": "2025-08-01T13:28:59.625719",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -i -c \"complete -C 'assume '\"",
+    "description": "Test assume completions in interactive Fish"
+  },
+  {
+    "timestamp": "2025-08-01T13:29:04.749782",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -i -c \"assume labs\" 2>&1",
+    "description": "Test assume labs in interactive Fish"
+  },
+  {
+    "timestamp": "2025-08-01T13:29:11.565015",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -i -c \"echo 'Testing assume -c labs (this will try to open Firefox)'; assume -c labs\" 2>&1",
+    "description": "Test assume console functionality"
+  },
+  {
+    "timestamp": "2025-08-01T13:31:00.466395",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish && echo 'Config reloaded'\"",
+    "description": "Reload Fish configuration"
+  },
+  {
+    "timestamp": "2025-08-01T13:31:57.631213",
+    "session_id": "8ffc9da2-4da6-442e-81f0-7cea3b6b36a4",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish && echo 'Config reloaded successfully'\"",
+    "description": "Reload Fish configuration with new interactive selection"
   }
 ]

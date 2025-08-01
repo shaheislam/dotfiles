@@ -180,6 +180,34 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "It just hangs \\\n\\\n╭╴󰊠 shahe  …/dotfiles  main  $!?  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:31 󰊨\n╰─▶ assume\n",
+          "pastedContents": {}
+        },
+        {
+          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!?  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:30 󰊨\n╰─▶ assume\n✅ Assumed AWS profile: logging\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:30 󰊨 0s\n╰─▶ \n\\\nIt doesn't give me a dynamic option",
+          "pastedContents": {}
+        },
+        {
+          "display": "I don't want .zshenv my assume command isn't giving my a list of profiles to assume and it was previously",
+          "pastedContents": {}
+        },
+        {
+          "display": "╰─▶ assume -c logging\n[i] To assume roles with Granted, we need to add an alias to your shell profile (https://docs.commonfate.io/granted/internals/shell-alias)\n? Install fish alias at /Users/shahe/.config/fish/config.fish Yes\n\n[✔] Added the Granted alias to /Users/shahe/.config/fish/config.fish\n[!] Shell restart required to apply changes: please open a new terminal window and re-run your command.\n[✘] The specified item could not be found in the keyring\n",
+          "pastedContents": {}
+        },
+        {
+          "display": "Why do only assume -c security, assume -c petlab and assume -c labs show as granted containers, logging and prod ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Granted should autocomplete the available profiles",
+          "pastedContents": {}
+        },
+        {
+          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:17 󰊨 5s\n╰─▶ assume\n✅ AWS credentials updated\n\n╭╴󰊠 shahe  …/dotfiles  main  $!  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:17 󰊨 2s\n╰─▶ assume\\\n\\\nNot seeing anything else",
+          "pastedContents": {}
+        },
+        {
           "display": "Whenevr I open a new shell in vscode I see\\\n\\\nsource /Users/shahe/work/playground/venv/bin/activate.fish\n\n╭╴󰊠 shahe  …/dotfiles  main  $!⇡  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:15 󰊨\n╰─▶ source /Users/shahe/work/playground/venv/bin/activate.fish\n\n╭╴󰊠 shahe  …/dotfiles  main  $!⇡    v3.13.5  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:15 󰊨\\\n\\\nIs this an issue with my fish or wezterm config?",
           "pastedContents": {}
         },
