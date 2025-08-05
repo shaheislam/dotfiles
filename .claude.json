@@ -1,75 +1,219 @@
 {
-  "numStartups": 8,
+  "numStartups": 18,
   "installMethod": "unknown",
   "autoUpdates": true,
+  "preferredNotifChannel": "terminal_bell",
   "tipsHistory": {
     "ide-hotkey": 1,
-    "custom-agents": 2,
     "new-user-warmup": 2,
     "memory-command": 3,
     "theme-command": 4,
     "shift-enter": 5,
     "prompt-queue": 6,
     "enter-to-steer-in-relatime": 7,
-    "todo-list": 8
+    "todo-list": 8,
+    "vscode-command-install": 9,
+    "# for memory": 10,
+    "install-github-app": 11,
+    "permissions": 12,
+    "drag-and-drop-images": 13,
+    "double-esc": 14,
+    "continue": 15,
+    "custom-commands": 16
   },
-  "promptQueueUseCount": 2,
-  "userID": "314417c69db0f64abd403f0ca54cdf0f2ea9d7cbc1fcd01fe195ba27806c9dad",
-  "fallbackAvailableWarningThreshold": 0.2,
+  "promptQueueUseCount": 5,
+  "firstStartTime": "2025-06-24T21:00:13.516Z",
+  "userID": "9131cdd71980ad07ea2851d6c686761adca72a6d91be89be2db0a91b32b509ee",
   "projects": {
-    "/Users/shaheislam/dotfiles": {
+    "/Users/mohammedislam/dotfiles": {
       "allowedTools": [],
       "history": [
         {
-          "display": "That worked, do you need to clean anything up?",
+          "display": "Create an alias cap for cd /Users/mohammedislam/Documents/Remote Vault ",
           "pastedContents": {}
         },
         {
-          "display": "Now neither work",
+          "display": "Have you updated the zsh fish and setup script",
           "pastedContents": {}
         },
         {
-          "display": "I want it so that the right arrow key will only populte the cmdline with the cmd whereas enter executes it directly, currently i only have the latter",
+          "display": "52 󰊨\n╰─▶ ccusage \nfish: Unknown command: ccusage\n\n╭╴󰊠 mohammedislam  …/dotfiles  main  ✘!   00:52 󰊨\n╰─▶ exec fish\n\n╭╴󰊠 mohammedislam  …/dotfiles  main  ✘!   00:52 󰊨\n╰─▶ ccusage\nfish: Unknown command: ccusage\n",
           "pastedContents": {}
         },
         {
-          "display": "No improvement",
+          "display": "https://github.com/ryoppippi/ccusage are the installation steps for this included in the setup-script? I cant seem to use it",
           "pastedContents": {}
         },
         {
-          "display": "When i hit ctrl-r and enter on a command it doesn't actually  run nothing happens... I have the atuin search settings working properly but i cant execute the commands",
+          "display": "No i dont use cursor remove all cursor references i want code to open vscode",
           "pastedContents": {}
         },
         {
-          "display": "What is the zoxide database for?",
+          "display": "╭╴󰊠 mohammedislam  …/dotfiles  main     00:44 󰊨\n╰─▶ code .\nCursor is not installed or not found in the expected location.\n\n╭╴󰊠 mohammedislam  …/dotfiles  main     00:44 󰊨\n╰─▶\\\n\\\nHow can i prevent this error from occuring",
           "pastedContents": {}
         },
         {
-          "display": "I seem to be having issues with my zoxide can you correct this?",
+          "display": "I have removed vscode insiders to remove all references to it",
           "pastedContents": {}
         },
         {
-          "display": "Can you remove the left and right arrow keys for this",
+          "display": "╭╴󰊠 mohammedislam  …/Library/Application Support/Code   00:28 󰊨 48m32s\n╰─▶ sudo rm -f /usr/local/bin/code\nPassword:\n=== Async Backtrace (panic occurred in tokio runtime) ===\n[no accessible async backtrace]\n------- TASK DUMP TREE -------\n\n=== End Async Backtrace ===\n\nThe application panicked (crashed).\nMessage:  called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: \"No such file or directory\" }\nLocation: /Users/brew/Library/Caches/Homebrew/cargo_cache/registry/src/index.crates.io-1949cf8c6b5b557f/path-dedot-3.1.1/src/unsafe_cwd.rs:19\n\nBacktrace omitted. Run with RUST_BACKTRACE=1 environment variable to display it.\nRun with RUST_BACKTRACE=full to include source snippets.\n",
           "pastedContents": {}
         },
         {
-          "display": "That works you can remove and debugging and test files",
+          "display": "EACCES: permission denied, unlink '/usr/local/bin/code'",
           "pastedContents": {}
         },
         {
-          "display": "Try to implement this from scratch",
+          "display": "Are these changes included now in the configs and setup-script is required so they will not be required again",
           "pastedContents": {}
         },
         {
-          "display": "/clear ",
+          "display": "I want tr to enter the last tmux session ",
           "pastedContents": {}
         },
         {
-          "display": "/mcp ",
+          "display": "[Pasted text #1 +40 lines] this doesn't seem to work right",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": " main  !   00:28 󰊨 0s\n╰─▶ tmux\n[server exited]\n\n╭╴󰊠 mohammedislam  …/dotfiles  main  !   00:28 󰊨 17s\n╰─▶ tr\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nerror creating  (No such file or directory)\nno server running on /private/tmp/tmux-501/default\n/Users/mohammedislam/.tmux/plugins/tmux-resurrect/scripts/restore.sh: line 155: [: -ne: unary operator expected\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nerror creating  (No such file or directory)\nno server running on /private/tmp/tmux-501/default\n/Users/mohammedislam/.tmux/plugins/tmux-resurrect/scripts/restore.sh: line 155: [: -ne: unary operator expected\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\nno server running on /private/tmp/tmux-501/default\n\n╭╴󰊠 mohammedislam  …/dotfiles  main  !"
+            }
+          }
+        },
+        {
+          "display": "How can i add aliases for tmux tr tmux restore ts tmux save and tks tmux kill server",
           "pastedContents": {}
         },
         {
-          "display": "I have done this using stow",
+          "display": "It is working now, modify the setup-script with whatever changes necessary so it works out of the box",
+          "pastedContents": {}
+        },
+        {
+          "display": "Run these aagin ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Tmux plugins still aren't working",
+          "pastedContents": {}
+        },
+        {
+          "display": "starship is no longer working",
+          "pastedContents": {}
+        },
+        {
+          "display": "my fish is not loading in new tmux windows now and i cannoy use y to yank ",
+          "pastedContents": {}
+        },
+        {
+          "display": "My which key plugin doesn't appear to work",
+          "pastedContents": {}
+        },
+        {
+          "display": "Check all of the tmux plugins are installed properly",
+          "pastedContents": {}
+        },
+        {
+          "display": "Yes",
+          "pastedContents": {}
+        },
+        {
+          "display": "╭╴󰊠 mohammedislam  …/dotfiles/scripts  main  ⇣   23:48 󰊨\n╰─▶ ./build_tmux_fingers.sh \nBuilding tmux-fingers plugin...\ndocker build . -t fingers\nmake: docker: No such file or directory\nmake: *** [default] Error 1\n✗ Failed to build tmux-fingers\nTry running: cd /Users/mohammedislam/.tmux/plugins/tmux-fingers && make clean && make\n\n╭╴󰊠 mohammedislam  …/dotfiles/scripts  main  ⇣   23:49 󰊨 0s",
+          "pastedContents": {}
+        },
+        {
+          "display": "Do my dotfiles contain the alais for tk tr ts for tmux?",
+          "pastedContents": {}
+        },
+        {
+          "display": "    {\n        \"key\": \"cmd+t\",\n        \"command\": \"workbench.action.terminal.newInActiveWorkspace\",\n        \"args\": {\n            \"location\": \"editor\"\n        }\n    },\\\n\\\nI have this in my keybindings however cmd+t creates a new terminal in the terminal location not the editor?",
+          "pastedContents": {}
+        },
+        {
+          "display": "add .vscode/extensions/ to gitignore",
+          "pastedContents": {}
+        },
+        {
+          "display": "[Pasted text #1 +8 lines] undo this change and remove any reference to cursor for the alias",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "╭╴󰊠 mohammedislam  ~   23:14 󰊨\n╰─▶ code ~/dotfiles/\nfish: Unknown command: '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'\n- (line 1):\nfunction code --wraps '/Applications/Visual\\\\ Studio\\\\ Code.app/Contents/Resources/app/bin/code' --description 'alias code=/Applications/Visual\\\\ Studio\\\\ Code.app/Contents/Resources/app/bin/code';  /Applications/Visual\\ Studio\\ Code.app/Contents/Resources/app/bin/code $argv\n                                                                                                                                                                                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^\nin function 'code' with arguments '/Users/mohammedislam/dotfiles/'\n\n╭╴󰊠 mohammedislam  ~   23:14 󰊨"
+            }
+          }
+        },
+        {
+          "display": "╰─▶ code .\nCursor is not installed or not found in the expected location.\n\n╭╴󰊠 mohammedislam  …/dotfiles  main     23:13 󰊨\n╰─▶\nI am not using cursor anymore only vscode",
+          "pastedContents": {}
+        },
+        {
+          "display": "No it isn't working for some reason",
+          "pastedContents": {}
+        },
+        {
+          "display": "cmd + escape is not opening the claude extension for me",
+          "pastedContents": {}
+        },
+        {
+          "display": "Unable to resolve your shell environment: Unterminated string in JSON at position 8166 (line 1 column 8167)",
+          "pastedContents": {}
+        },
+        {
+          "display": "/exit",
+          "pastedContents": {}
+        },
+        {
+          "display": "Are you sure that is required?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Double check it all makes sense",
+          "pastedContents": {}
+        },
+        {
+          "display": "There were also issues with stow which you corrected, looking at the git diff make changes to prevent these issues from occuring again",
+          "pastedContents": {}
+        },
+        {
+          "display": "Create the improved version ",
+          "pastedContents": {}
+        },
+        {
+          "display": "That works, please check the setup script and make any changes to futureproof and prevent these issues from occuring in the future",
+          "pastedContents": {}
+        },
+        {
+          "display": "/exit",
+          "pastedContents": {}
+        },
+        {
+          "display": "That works, please check the setup script and make any changes to futureproof and prevent these issues from occuring in the future",
+          "pastedContents": {}
+        },
+        {
+          "display": "I have done this but startship still isn't loading",
+          "pastedContents": {}
+        },
+        {
+          "display": "It opens correctly but does not load starship",
+          "pastedContents": {}
+        },
+        {
+          "display": "Do you need to update the setup-script at all to ensure this works first time around in the future?",
+          "pastedContents": {}
+        },
+        {
+          "display": "No use stow, and resolve the tmux config issue to use stow also. ",
+          "pastedContents": {}
+        },
+        {
+          "display": "This should be handled via stow . --adopt or something similar?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Check why my starship isn't loading for my terminals",
           "pastedContents": {}
         }
       ],
@@ -81,88 +225,225 @@
       "projectOnboardingSeenCount": 0,
       "hasClaudeMdExternalIncludesApproved": false,
       "hasClaudeMdExternalIncludesWarningShown": false,
-      "lastTotalWebSearchRequests": 0,
       "hasCompletedProjectOnboarding": true,
       "exampleFiles": [
-        "src/main.py",
-        "server.js",
-        "app.js",
-        "index.tsx",
-        "models.py"
+        "init.lua",
+        "config.fish",
+        "custom.lua",
+        "setup-script.sh",
+        "Brewfile"
       ],
-      "exampleFilesGeneratedAt": 1753818485044,
-      "lastCost": 0.001512,
-      "lastAPIDuration": 1488,
-      "lastDuration": 2932,
-      "lastLinesAdded": 0,
-      "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 1815,
-      "lastTotalOutputTokens": 15,
-      "lastTotalCacheCreationInputTokens": 0,
-      "lastTotalCacheReadInputTokens": 0,
-      "lastSessionId": "85ea2141-2c20-4f8d-9b99-74194e96cb79"
+      "exampleFilesGeneratedAt": 1750798903807,
+      "lastCost": 6.769005000000004,
+      "lastAPIDuration": 676030,
+      "lastDuration": 1172847,
+      "lastLinesAdded": 36,
+      "lastLinesRemoved": 26,
+      "lastTotalInputTokens": 51141,
+      "lastTotalOutputTokens": 13980,
+      "lastTotalCacheCreationInputTokens": 55720,
+      "lastTotalCacheReadInputTokens": 3180860,
+      "lastSessionId": "f88c933c-dc07-4de6-a1ec-ce00081d01ed"
     },
-    "/Users/shaheislam/work/teacher-services-cloud": {
+    "/Users/mohammedislam/Library/Application Support/Code": {
       "allowedTools": [],
       "history": [
         {
-          "display": "My C-g global switch for history isn't working properly, but C-d and C-s are",
+          "display": "/exit",
           "pastedContents": {}
         },
         {
-          "display": "Make the ssh-switch function more resilient so this error doesn't occur again",
+          "display": "Remove all of these for me so i can reset vscode",
           "pastedContents": {}
         },
         {
-          "display": "╰─▶ ssh-switch dfe\nsed: /Users/shaheislam/.ssh/config: in-place editing only works for regular files\nSwitched to DFE SSH key (shaheislamdfe)\nHi shaheislamdfe! You've successfully authenticated, but GitHub does not provide shell access.\n\n╭╴󰊠 shaheislam  …/dotfiles  main  !⇡    @euw1  󰠅 s189-test  s189d01-tsc-cluster6-aks   16:37 󰊨 1s\n╰─▶ git push origin\nERROR: Repository not found.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n\n💡 gpo => git push origin\n",
+          "display": "Which paths on macos should i delete to reset visual studio code",
+          "pastedContents": {}
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "lastCost": 1.1123676999999998,
+      "lastAPIDuration": 147574,
+      "lastDuration": 580531,
+      "lastLinesAdded": 0,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 12058,
+      "lastTotalOutputTokens": 3510,
+      "lastTotalCacheCreationInputTokens": 21868,
+      "lastTotalCacheReadInputTokens": 308601,
+      "lastSessionId": "3149584d-c5cc-4794-ac18-bf7e9ddada03"
+    },
+    "/Users/mohammedislam/work/mo-service": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "hint: Waiting for your editor to close the file... Error detected while processing /Users/mohammedislam/.vimrc:\nline  107:\nE185: Cannot find color scheme 'tokyonight'\nPress ENTER or type command to continue",
           "pastedContents": {}
         },
         {
-          "display": "Do you need to clean anything up before i commit this?",
+          "display": "╰─▶ stow .\nWARNING! stowing . would cause conflicts:\n  * cannot stow dotfiles/.config/fish/fish_variables over existing target .config/fish/fish_variables since neither a link nor a directory and --adopt not specified\nAll operations aborted.\n",
           "pastedContents": {}
         },
         {
-          "display": "That worked, what change did you make?",
+          "display": "/login ",
           "pastedContents": {}
         },
         {
-          "display": "ctrl-r takes me there but i cant scroll up or down the commands with the arrow keys, but it works fine in vscode",
+          "display": "╭╴󰊠 mohammedislam  …/dotfiles  main  !   14:43 󰊨\n╰─▶ stow .\nWARNING! stowing . would cause conflicts:\n  * cannot stow dotfiles/.config/fish/fish_variables over existing target .config/fish/fish_variables since neither a link nor a directory and --adopt not specified\nAll operations aborted.",
           "pastedContents": {}
         },
         {
-          "display": "Now ctrl -r opens atuin directly which i dont want",
+          "display": "Why is my vim not working?",
           "pastedContents": {}
         },
         {
-          "display": "My arrow button doesn't work in wezterm when i am searching history using ctrl-r but works fine in vscode wezterm integrated terminal",
+          "display": "╰─▶ git commit --amend\nhint: Waiting for your editor to close the file... Error detected while processing /Users/mohammedislam/.vimrc:\nline  107:\nE185: Cannot find color scheme 'tokyonight'\nPress ENTER or type command to continue\nerror: there was a problem with the editor 'vi'\nPlease supply the message using either -m or -F option.\n",
+          "pastedContents": {}
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "lastCost": 0.6388942,
+      "lastAPIDuration": 665851,
+      "lastDuration": 1479790,
+      "lastLinesAdded": 0,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 13962,
+      "lastTotalOutputTokens": 1463,
+      "lastTotalCacheCreationInputTokens": 18994,
+      "lastTotalCacheReadInputTokens": 134765,
+      "lastSessionId": "b3d9b910-294f-46a3-bc41-87faa828fa35"
+    },
+    "/Users/mohammedislam/work": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "/exit",
           "pastedContents": {}
         },
         {
-          "display": "Can you apply the label drops from development and test.prometheus.yml changes to production.prometheus.yml",
+          "display": "Create a script that will git clone all of the following to this directory [Pasted text #1 +338 lines] with the ssh url as an example - ssh://git@bitbucket.bics-collaboration.homeoffice.gov.uk/cpt/andrews-service.git with 'andrews-service' changing",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "andrews-service    \n\nRepositorycasey-service    \n\nRepositorycassie-service    \n\nMARKED FOR DELETION\nRepositorycc-attested-pipeline-dsab    \n\nRepo for service lists to test attester in core cloud\nRepositorycc-attested-pipeline-nc    \n\n(CC NC) Contains the service lists for teams in the nc tenant in core cloud (SIP), used in the attestation process.\nRepositorycc-attested-pipeline-pfm    \n\nAttester list repo for platform accounts in core cloud\nRepositorycc-test-code    \n\ntest-terraform code for CC\nRepositorychelsea-service    \n\nMarked for Deletion\nRepositorycodie-service    \n\nCodie's test service\nRepositorycommon-pipeline-manager    \n\nController for onboarded services and manifest version rollout\nRepositorycore-cloud-service    \n\nService repo for testing manifest automation in Core Cloud\nRepositorycpt-ansible-playbook    \n\nRepositorycpt-attested-pipeline-dev    \n\n(DEV) Contains the service lists for teams in concourse-dev, used in the attestation process.\nRepositorycpt-attested-pipeline-dev-ew2    \n\n(DEV London) Contains the service lists for teams in concourse-dev, used in the attestation process.\nRepositorycpt-attested-pipeline-np    \n\n(NP Ireland) Contains the service lists for teams in concourse-np, used in the attestation process.\nRepositorycpt-attested-pipeline-np-dsab    \n\n(NP DSAB) Contains the service lists for teams in concourse-np-dsab, used in the attestation process.\nRepositorycpt-attested-pipeline-np-ew2    \n\n(NP London) Contains the service lists for teams in concourse-np-ew2, used in the attestation process.\nRepositorycpt-attested-pipeline-perf-ew2    \n\nRepositorycpt-attested-pipeline-pr    \n\n(PR Ireland) Contains the service lists for teams in concourse-np, used in the attestation process.\nRepositorycpt-attested-pipeline-pr-dsab    \n\n(PR DSAB) Contains the service lists for teams in concourse-pr-dsab, used in the attestation proc\nRepositorycpt-attested-pipeline-pr-ew2    \n\n(PR London) Contains the service lists for teams in concourse-np-ew2, used in the attestation process.\nRepositorycpt-attester    \n\nRepositorycpt-aws-codepipeline    \n\nRepository for CPT's AWS CodePipeline infrastructure\nRepositorycpt-cdk-apigateway-lambda-stack    \n\nPatterns -> CPT\nRepositorycpt-cdk-bootstrap    \n\nservice repo for deploying cdk bootstrapping policies and stacks\nRepositorycpt-cdk-bootstrap-stack    \n\nPatterns -> CPT\nRepositorycpt-cdk-dynatrace-lambda-extension-stack    \n\nPatterns -> CPT\nRepositorycpt-cdk-lambda-logs-exporter-extension-stack    \n\nPatterns -> CPT\nRepositorycpt-cdk-lambda-wrapper-internal-extension-stack    \n\nPatterns -> CPT\nRepositorycpt-cdk-pipelines-stack    \n\nPatterns -> CPT\nRepositorycpt-cdk-vault-lambda-stack    \n\nPatterns -> CPT\nRepositorycpt-cli    \n\nCPT CLI Tool - idea for a downloadable CLI tool that can automate creation of your service repository\nRepositorycpt-codeartifact    \n\nThis repository contains components/parts for the AWS CodeArtifact service\nRepositorycpt-concourse-efs-update    \n\nMARKED FOR DELETION - No longer in use (see common-pipeline-manager)\nRepositorycpt-concourse-pipelines    \n\nCPT Concourse Pipeline ymls\nRepositorycpt-concourse-resources    \n\nCPT Concourse Task and Resource images\nRepositorycpt-demo    \n\nRepositorycpt-dependency-track    \n\nRepositorycpt-dynatrace-client    \n\nPatterns -> CPT Dynatrace Client written in Golang\nRepositorycpt-example-imagebuilder    \n\nThis is the example repo for ImageBuilder PoC. This contains the components, recipe and the Concourse pipelines\nRepositorycpt-example-repo    \n\nExample repo of CPT features [Please do not copy from this repo, this is an example to be referred to only]\nRepositorycpt-image-builder-concourse-cc    \n\nRepo to store image builder terraform for use in core cloud\nRepositorycpt-image-builder-service    \n\nForkcpt-jenkins    \n\nRepositorycpt-jenkins-resources    \n\nCPT Jenkins shared resources\nRepositorycpt-jenkins-worker    \n\nCPT Jenkins worker base image\nRepositorycpt-jenkins-worker-core    \n\nCPT Jenkins worker core image\nRepositorycpt-library-helm    \n\nCPT Helm Library Chart\nRepositorycpt-monitoring    \n\nMonitoring configuration for CPT owned services\nRepositorycpt-multi-repo-helm    \n\nRepositorycpt-multi-repo-oci    \n\nmulti repo example housing OCI\nRepositorycpt-oci-images    \n\nOCI Images maintained by Common Pipeline Team\nRepositorycpt-pipeline-common    \n\nCPT Pipeline Service\nRepositorycpt-pipeline-test    \n\nRepositorycpt-reference-service    \n\n[MARKED FOR DELETION - DO NOT USE]\nRepositorycpt-release-recorder    \n\nRepositorycpt-releases-prod    \n\nRepositorycpt-releases-prp1    \n\nRepositorycpt-releases-prp3    \n\nRepositorycpt-releases-prp4    \n\nRepositorycpt-releases-prp-test    \n\nRepo for testing release-manager changes and updates\nRepositorycpt-renovate    \n\nRepository containing CPT configurations for renovate\nRepositorycpt-sai-config    \n\nSlack Automation Interface configuration\nRepositorycpt-serverless    \n\nSandbox of the common pipeline for SIP team\nRepositorycpt-serverless-examples    \n\nService using manifest-v2 that includes CPT example serverless applications\nRepositorycpt-service-example    \n\nRepositorycpt-sonarqube-community    \n\nMigration of legacy sonarqube community edition, brought to the common. pipeline\nRepositorycpt-sonarqube-datacentre    \n\nService repo to implement Sonarqube Datacentre edition in the Common Pipeline.\nRepositorycpt-spring-boot-keycloak-adapter    \n\nPatterns -> CPT\nRepositorycpt-terraform-asg    \n\nAWS Auto Scaling Group pattern (pattern a)\nRepositorycpt-terraform-attester-cc    \n\nRepositorycpt-terraform-aurora-serverless-v2    \n\nRepositorycpt-terraform-cloudfront    \n\nPrototype module used as a basis to agree a common pattern and standard going forward.\nRepositorycpt-terraform-concourse    \n\nPrototype module used as a basis to agree a common pattern and standard going forward. [core cloud compatible]\nRepositorycpt-terraform-concourse-provisioner    \n\nConcourse used to provision infrastructure resources into Core Cloud accounts\nRepositorycpt-terraform-dynamodb    \n\nDynamoDB pattern for use with the CP or TF versions > 1\nRepositorycpt-terraform-dynamodb-state-locking    \n\nRepositorycpt-terraform-ec2-image-builder    \n\nEC2 Image Builder prototype for EBSA and CC\nRepositorycpt-terraform-ec2-image-builder-containers    \n\nRepositorycpt-terraform-ec2-image-builder-vpce    \n\nPattern to create the required VPC endpoint for EC2 Image Builder (please see: https://bitbucket.bics-collaboration.homeoffice.gov.uk/projects/CPT/repos/cpt-terraform-ec2-image-builder/browse)\nRepositorycpt-terraform-efs    \n\nPrototype module used as a basis to agree a common pattern and standard going forward.\nRepositorycpt-terraform-elasticsearch    \n\nSet to be DEPRECATED - Should now move over to the Opensearch pattern.\nForkcpt-terraform-opensearch    \n\nPrototype module used as a basis to agree a common pattern and standard going forward.\nRepositorycpt-terraform-patterns-service    \n\nService repo to implement cpt-terraform patterns for testing in the Common Pipeline.\nRepositorycpt-terraform-provision    \n\nCPT Terraform Provision Repo\nRepositorycpt-terraform-provision-cc    \n\nCPT Terraform Provision Repo Core Cloud\nRepositorycpt-terraform-rds    \n\nPrototype module used as a basis to agree a common pattern and standard going forward.\nRepositorycpt-terraform-rds-service    \n\nService repo to implement cpt-terraform-rds for testing in the CP.\nRepositorycpt-terraform-redis    \n\nPrototype module used as a basis to agree a common pattern and standard going forward.\nRepositorycpt-terraform-sqs    \n\nRepo containing the Common Pipeline SQS pattern\nRepositorycpt-tests    \n\nFunctional tests for Common Pipeline\nRepositorycpt-webhook-manager    \n\nRepositorycpt-workspace-provision    \n\nRepository for storing scripts for automating required configuration on workspaces\nRepositoryctf-test    \n\nTest service for CAB CTF pipeline demonstration\nRepositoryctf-test-syed    \n\nRepositorydehul-service    \n\nRepositoryfbisc-oci-kubernetes-healthcheck    \n\n(IMAGE) Dockerfile and required files to build fbisc-k8s-hc\nRepositoryJackF-service    \n\nRepositoryJacks-service    \n\nForkjenkins-master    \n\nForkjenkins-slave    \n\nRepositoryjenny-service    \n\nRepositoryjo-service    \n\nRepositoryjosh-service    \n\nMarked for Deletion\nRepositoryjunaid-service    \n\nService repo for Junaid\nForklcdo-library-helm    \n\nLCDO library chart to house all logic\nRepositorymanifest-v2    \n\nManifest v2 , consolidating parts and components into 1 big pipelines\nRepositorymatt-service    \n\nmatt-service testing service\nRepositorymax-service    \n\nRepositorymax-temp-soon-to-deleted    \n\nRepositorymo-service    \n\nRepositoryqat-controlled-services    \n\nQAT controlled services definitions\nRepositoryqat-controlled-services-bk    \n\npoc repo for qat manifest controls\nRepositoryqat-sandbox    \n\nRepositoryraveena-service    \n\nraveena's test service\nRepositoryrelease-manager    \n\nRepositorysandbox-service    \n\nExample service repo to be used as a sandbox for the common pipeline\nRepositoryservice-repo    \n\nService repository for automated testing in cpt-tests\nRepositorysolanki-service    \n\nRepositorysophie-service    \n\nRepositoryterrarun    \n\nTerrarun: CPT's new terraform tooling binary\nRepositorytest-v1-service    \n\nwill be cleared down just for testing\nRepositoryvault-token-renewer    \n\nRepository containing a helm chart that deploys a cronjob to renew vault tokens\nRepositorywebhook-test    \n\nshort term - webhook test poc\nRepositorywills-service    \n\nTesting service repo for testing CP\nNo more repositories"
+            }
+          }
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "lastCost": 0.65873835,
+      "lastAPIDuration": 38498,
+      "lastDuration": 135364,
+      "lastLinesAdded": 194,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 3948,
+      "lastTotalOutputTokens": 2335,
+      "lastTotalCacheCreationInputTokens": 22529,
+      "lastTotalCacheReadInputTokens": 42752,
+      "lastTotalWebSearchRequests": 0,
+      "lastSessionId": "6fc6d65e-c30b-4f84-87af-e567c6742193"
+    },
+    "/Users/mohammedislam/work/cpt-oci-images": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "https://github.com/hashicorp/vault-lambda-extension this is the extension being unstalled",
           "pastedContents": {}
         },
         {
-          "display": "Does the grafana dashboard changes make sense in the context of the label drops",
+          "display": "I have given you all the information you need",
           "pastedContents": {}
         },
         {
-          "display": "Yes please",
+          "display": "\nCritical Severity\nTarget     Type     Package     Link\nHigh Severity\nTarget     Type     Package     Link\nextensions/vault-lambda-extension     gobinary     golang.org/x/crypto:v0.33.0     CVE-2025-22869\nMedium Severity\nTarget     Type     Package     Link\nextensions/vault-lambda-extension     gobinary     github.com/go-jose/go-jose/v4:v4.0.4     CVE-2025-27144\nextensions/vault-lambda-extension     gobinary     golang.org/x/net:v0.35.0     CVE-2025-22870\nextensions/vault-lambda-extensi\\\non     gobinary     golang.org/x/net:v0.35.0     CVE-2025-22872\\\n\\\nI am seeing vulns here but none when i run locally [Pasted text #1 +61 lines] How can i debug the disparity here?",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "╰─▶ trivy image golang:1.23-alpine\n2025-08-05T11:16:54+01:00       INFO    [vuln] Vulnerability scanning is enabled\n2025-08-05T11:16:54+01:00       INFO    [secret] Secret scanning is enabled\n2025-08-05T11:16:54+01:00       INFO    [secret] If your scanning is slow, please try '--scanners vuln' to disable secret scanning\n2025-08-05T11:16:54+01:00       INFO    [secret] Please see also https://trivy.dev/v0.65/docs/scanner/secret#recommendation for faster secret detection\n2025-08-05T11:16:55+01:00       INFO    Detected OS     family=\"alpine\" version=\"3.22.1\"\n2025-08-05T11:16:55+01:00       INFO    [alpine] Detecting vulnerabilities...   os_version=\"3.22\" repository=\"3.22\" pkg_num=17\n2025-08-05T11:16:55+01:00       INFO    Number of language-specific files       num=20\n2025-08-05T11:16:55+01:00       INFO    [gobinary] Detecting vulnerabilities...\n\nReport Summary\n\n┌──────────────────────────────────────────────┬──────────┬─────────────────┬─────────┐\n│                    Target                    │   Type   │ Vulnerabilities │ Secrets │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ golang:1.23-alpine (alpine 3.22.1)           │  alpine  │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/bin/go                          │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/bin/gofmt                       │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/addr2line  │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/asm        │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/buildid    │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/cgo        │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/compile    │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/covdata    │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/cover      │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/doc        │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/fix        │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/link       │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/nm         │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/objdump    │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/pack       │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/pprof      │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/preprofile │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/test2json  │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/trace      │ gobinary │        0        │    -    │\n├──────────────────────────────────────────────┼──────────┼─────────────────┼─────────┤\n│ usr/local/go/pkg/tool/linux_amd64/vet        │ gobinary │        0        │    -    │\n└──────────────────────────────────────────────┴──────────┴─────────────────┴─────────┘\nLegend:\n- '-': Not scanned\n- '0': Clean (no security findings detected)\n\n"
+            }
+          }
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": false,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": [
+        "main.go",
+        "Dockerfile",
+        "config.yaml",
+        "Changelog.md",
+        "Dockerfile"
+      ],
+      "exampleFilesGeneratedAt": 1754389114878,
+      "lastCost": 0.9615055499999999,
+      "lastAPIDuration": 85410,
+      "lastDuration": 687659,
+      "lastLinesAdded": 1,
+      "lastLinesRemoved": 1,
+      "lastTotalInputTokens": 5391,
+      "lastTotalOutputTokens": 2484,
+      "lastTotalCacheCreationInputTokens": 23941,
+      "lastTotalCacheReadInputTokens": 221766,
+      "lastTotalWebSearchRequests": 0,
+      "lastSessionId": "c2e97732-ab02-48a3-a192-df53d7d92b6f"
+    },
+    "/Users/mohammedislam/.config/bat/themes": {
+      "allowedTools": [],
+      "history": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": false,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false
+    },
+    "/Users/mohammedislam/work/manifest-v2": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "╭╴󰊠 mohammedislam  …/dotfiles  main  !?   12:27 󰊨\n╰─▶ stow . --adopt\nWARNING! stowing . would cause conflicts:\n  * existing target is not owned by stow: .ssh/config\nAll operations aborted.\\\n\\\nRemove any symlinks here so i can run stow",
           "pastedContents": {}
         },
         {
-          "display": "Has the label drop been applied to platform-test and test.prometheus.yml",
+          "display": "╭╴󰊠 mohammedislam  …/dotfiles  main  !?   12:25 󰊨\n╰─▶ stow . --adopt\nWARNING! stowing . would cause conflicts:\n  * existing target is not owned by stow: .ssh/config\nAll operations aborted.",
           "pastedContents": {}
         },
         {
-          "display": "Based on my updated requests in @cluster/terraform_kubernetes/config/prometheus/development.prometheus.yml does the nginx nexgen dashboard need to be updated? @cluster/terraform_kubernetes/config/dashboards/nginx-ingress-controller.json ",
+          "display": "\n╭╴󰊠 mohammedislam  …/manifest-v2  main     v1.24.5   12:24 󰊨\n╰─▶ fish: Unknown command: atuin_fzf_search\n\n\n╭╴󰊠 mohammedislam  …/manifest-v2  main     v1.24.5   12:24 󰊨\n╰─▶ echo $SHELL\n/opt/homebrew/bin/fish\n\n╭╴󰊠 mohammedislam  …/manifest-v2  main     v1.24.5   12:24 󰊨\n╰─▶ \n",
           "pastedContents": {}
         },
         {
-          "display": "/clear ",
-          "pastedContents": {}
-        },
-        {
-          "display": "Give me the command for the regenerate validation token so i can add it to my notes",
+          "display": "╭╴󰊠 mohammedislam  …/dotfiles  main  !?   12:23 󰊨\n╰─▶ fish: Unknown command: atuin_fzf_search",
           "pastedContents": {}
         }
       ],
@@ -171,141 +452,31 @@
       "enabledMcpjsonServers": [],
       "disabledMcpjsonServers": [],
       "hasTrustDialogAccepted": false,
-      "ignorePatterns": [],
-      "projectOnboardingSeenCount": 0,
-      "hasClaudeMdExternalIncludesApproved": false,
-      "hasClaudeMdExternalIncludesWarningShown": false
-    },
-    "/Users/shahe/dotfiles": {
-      "allowedTools": [],
-      "history": [
-        {
-          "display": "✅ Assumed AWS profile: labs I don't need this logging when i run assume please remove it",
-          "pastedContents": {}
-        },
-        {
-          "display": "It just hangs \\\n\\\n╭╴󰊠 shahe  …/dotfiles  main  $!?  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:31 󰊨\n╰─▶ assume\n",
-          "pastedContents": {}
-        },
-        {
-          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!?  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:30 󰊨\n╰─▶ assume\n✅ Assumed AWS profile: logging\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:30 󰊨 0s\n╰─▶ \n\\\nIt doesn't give me a dynamic option",
-          "pastedContents": {}
-        },
-        {
-          "display": "I don't want .zshenv my assume command isn't giving my a list of profiles to assume and it was previously",
-          "pastedContents": {}
-        },
-        {
-          "display": "╰─▶ assume -c logging\n[i] To assume roles with Granted, we need to add an alias to your shell profile (https://docs.commonfate.io/granted/internals/shell-alias)\n? Install fish alias at /Users/shahe/.config/fish/config.fish Yes\n\n[✔] Added the Granted alias to /Users/shahe/.config/fish/config.fish\n[!] Shell restart required to apply changes: please open a new terminal window and re-run your command.\n[✘] The specified item could not be found in the keyring\n",
-          "pastedContents": {}
-        },
-        {
-          "display": "Why do only assume -c security, assume -c petlab and assume -c labs show as granted containers, logging and prod ",
-          "pastedContents": {}
-        },
-        {
-          "display": "Granted should autocomplete the available profiles",
-          "pastedContents": {}
-        },
-        {
-          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:17 󰊨 5s\n╰─▶ assume\n✅ AWS credentials updated\n\n╭╴󰊠 shahe  …/dotfiles  main  $!  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:17 󰊨 2s\n╰─▶ assume\\\n\\\nNot seeing anything else",
-          "pastedContents": {}
-        },
-        {
-          "display": "Whenevr I open a new shell in vscode I see\\\n\\\nsource /Users/shahe/work/playground/venv/bin/activate.fish\n\n╭╴󰊠 shahe  …/dotfiles  main  $!⇡  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:15 󰊨\n╰─▶ source /Users/shahe/work/playground/venv/bin/activate.fish\n\n╭╴󰊠 shahe  …/dotfiles  main  $!⇡    v3.13.5  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   13:15 󰊨\\\n\\\nIs this an issue with my fish or wezterm config?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Undo this change I dont like it",
-          "pastedContents": {}
-        },
-        {
-          "display": "Logging doesn't appear to show in my URL for friefox",
-          "pastedContents": {}
-        },
-        {
-          "display": "In Firefox my granted containers only shows labs and i cant see any icons, how should this be working?",
-          "pastedContents": {}
-        },
-        {
-          "display": "My Wezterm is having an error now\\\n\\\nsyntax error: [string \"/Users/shahe/.config/wezterm/wezterm.lua\"]:79:\nunexpected symbol near '}'\n",
-          "pastedContents": {}
-        },
-        {
-          "display": "It's working now please clean it up!",
-          "pastedContents": {}
-        },
-        {
-          "display": "Why are you adding variables manually?",
-          "pastedContents": {}
-        },
-        {
-          "display": "[Pasted text #1 +27 lines] This is not working in fish",
-          "pastedContents": {
-            "1": {
-              "id": 1,
-              "type": "text",
-              "content": "\n╭╴󰊠 shahe  …/dotfiles  main  $!?  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:49 󰊨\n╰─▶ source /Users/shahe/work/playground/venv/bin/activate.fish\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:49 󰊨\n╰─▶ assume logging\n[✔] [logging](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:49 󰊨 1s\n╰─▶ aws s3 ls\n2023-06-25 21:31:58 petlab-centralize-logging\n2023-06-25 23:31:14 petlab-config-logging\n2023-07-03 19:12:08 petlab-guardduty-logging\n\n╭╴�� shahe  …/dotfiles  main  $!?    v3.13.5    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:49 󰊨 0s\n╰─▶ assume security\n[✔] [security](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:49 󰊨 1s\n╰─▶ aws s3 ls\n2023-06-25 21:31:58 petlab-centralize-logging\n2023-06-25 23:31:14 petlab-config-logging\n2023-07-03 19:12:08 petlab-guardduty-logging\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:50 󰊨 0s\n╰─▶ "
-            }
-          }
-        },
-        {
-          "display": "run aws s3 ls to confirm the outputs are different after switching between profiles",
-          "pastedContents": {}
-        },
-        {
-          "display": "[Pasted text #1 +22 lines]",
-          "pastedContents": {
-            "1": {
-              "id": 1,
-              "type": "text",
-              "content": "╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:43 󰊨\n╰─▶ assume security\n[✔] [security](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    SEC@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:43 󰊨 1s\n╰─▶ aws s3 ls\n2024-01-25 12:29:54 aws-sam-cli-managed-default-samclisourcebucket-quhyqvx40gys\n2024-01-25 14:42:59 petlab-aws-sam-cli\n2023-11-14 08:57:14 petlab-compliance-reports\n2023-07-18 02:30:49 petlab-security-logs\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    SEC@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:43 󰊨 0s\n╰─▶ assume labs\n[✔] [labs](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    SEC@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:44 󰊨 1s\n╰─▶ aws s3 ls\n2024-01-25 12:29:54 aws-sam-cli-managed-default-samclisourcebucket-quhyqvx40gys\n2024-01-25 14:42:59 petlab-aws-sam-cli\n2023-11-14 08:57:14 petlab-compliance-reports\n2023-07-18 02:30:49 petlab-security-logs"
-            }
-          }
-        },
-        {
-          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    SEC@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:43 󰊨 1s\n╰─▶ aws s3 ls\n2024-01-25 12:29:54 aws-sam-cli-managed-default-samclisourcebucket-quhyqvx40gys\n2024-01-25 14:42:59 petlab-aws-sam-cli\n2023-11-14 08:57:14 petlab-compliance-reports\n2023-07-18 02:30:49 petlab-security-logs\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    SEC@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:43 󰊨 0s\n╰─▶ assume labs\n[✔] [labs](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    SEC@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:44 󰊨 1s\\\n\\\nGranted doesn't seem to update it properly",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can you integrate aws-sso into the assume command? Does granted do this by default? I seem to have to run aws-sso first before running assume",
-          "pastedContents": {}
-        },
-        {
-          "display": " Fish needs to be updated too? Thats the shell i use",
-          "pastedContents": {}
-        },
-        {
-          "display": "No the shell prompted is fine its the actual command that isnt working\\\n\\\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:26 󰊨 1s\n╰─▶ assume labs\n[✔] [labs](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:26 󰊨 1s\n╰─▶ aws s3 ls\n2023-06-25 21:31:58 petlab-centralize-logging\n2023-06-25 23:31:14 petlab-config-logging\n2023-07-03 19:12:08 petlab-guardduty-logging\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:27 󰊨 0s",
-          "pastedContents": {}
-        },
-        {
-          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:26 󰊨\n╰─▶ assume labs\n[✔] [labs](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    labs@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:26 󰊨 0s\n╰─▶ assume logging\n[✔] [logging](us-east-1) session credentials will expire in 12 hours\nopen terminal failed: not a terminal\n\n╭╴󰊠 shahe  …/dotfiles  main  $!?    v3.13.5    labs@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:26 󰊨 0s\n╰─▶ \\\n\\\nThe first time works fine but after that it doesnt seem to override to the new profile and stays on the first one",
-          "pastedContents": {}
-        }
-      ],
-      "mcpContextUris": [],
-      "mcpServers": {},
-      "enabledMcpjsonServers": [],
-      "disabledMcpjsonServers": [],
-      "hasTrustDialogAccepted": true,
-      "projectOnboardingSeenCount": 0,
+      "projectOnboardingSeenCount": 1,
       "hasClaudeMdExternalIncludesApproved": false,
       "hasClaudeMdExternalIncludesWarningShown": false,
-      "lastTotalWebSearchRequests": 0,
       "exampleFiles": [
-        "setup-script.sh",
-        "config.fish",
-        "config.json",
-        "lazy-lock.json",
-        "bash_commands.json"
+        "branch-watcher.yaml",
+        "rtl.go",
+        "linter/config.go",
+        "manifest.go",
+        "cdk-deploy.tpl"
       ],
-      "exampleFilesGeneratedAt": 1754047589746,
-      "hasCompletedProjectOnboarding": true
+      "exampleFilesGeneratedAt": 1754392997623
     }
   },
-  "firstStartTime": "2025-07-29T19:34:12.733Z",
-  "isQualifiedForDataSharing": false,
+  "shiftEnterKeyBindingInstalled": true,
+  "hasCompletedOnboarding": true,
+  "lastOnboardingVersion": "1.0.34",
+  "cachedChangelog": "# Changelog\n\n## 1.0.68\n\n- Fix incorrect model names being used for certain commands like `/pr-comments`\n- Windows: improve permissions checks for allow / deny tools and project trust. This may create a new project entry in `.claude.json` - manually merge the history field if desired.\n- Windows: improve sub-process spawning to eliminate \"No such file or directory\" when running commands like pnpm\n- Enhanced /doctor command with CLAUDE.md and MCP tool context for self-serve debugging\n- SDK: Added canUseTool callback support for tool confirmation\n- Added `disableAllHooks` setting\n- Improved file suggestions performance in large repos\n\n## 1.0.65\n\n- IDE: Fixed connection stability issues and error handling for diagnostics\n- Windows: Fixed shell environment setup for users without .bashrc files\n\n## 1.0.64\n\n- Agents: Added model customization support - you can now specify which model an agent should use\n- Agents: Fixed unintended access to the recursive agent tool\n- Hooks: Added systemMessage field to hook JSON output for displaying warnings and context\n- SDK: Fixed user input tracking across multi-turn conversations\n- Added hidden files to file search and @-mention suggestions\n\n## 1.0.63\n\n- Windows: Fixed file search, @agent mentions, and custom slash commands functionality\n\n## 1.0.62\n\n- Added @-mention support with typeahead for custom agents. @<your-custom-agent> to invoke it\n- Hooks: Added SessionStart hook for new session initialization\n- /add-dir command now supports typeahead for directory paths\n- Improved network connectivity check reliability\n\n## 1.0.61\n\n- Transcript mode (Ctrl+R): Changed Esc to exit transcript mode rather than interrupt\n- Settings: Added `--settings` flag to load settings from a JSON file\n- Settings: Fixed resolution of settings files paths that are symlinks\n- OTEL: Fixed reporting of wrong organization after authentication changes\n- Slash commands: Fixed permissions checking for allowed-tools with Bash\n- IDE: Added support for pasting images in VSCode MacOS using ⌘+V\n- IDE: Added `CLAUDE_CODE_AUTO_CONNECT_IDE=false` for disabling IDE auto-connection\n- Added `CLAUDE_CODE_SHELL_PREFIX` for wrapping Claude and user-provided shell commands run by Claude Code\n\n## 1.0.60\n\n- You can now create custom subagents for specialized tasks! Run /agents to get started\n\n## 1.0.59\n\n- SDK: Added tool confirmation support with canUseTool callback\n- SDK: Allow specifying env for spawned process\n- Hooks: Exposed PermissionDecision to hooks (including \"ask\")\n- Hooks: UserPromptSubmit now supports additionalContext in advanced JSON output\n- Fixed issue where some Max users that specified Opus would still see fallback to Sonnet\n\n## 1.0.58\n\n- Added support for reading PDFs\n- MCP: Improved server health status display in 'claude mcp list'\n- Hooks: Added CLAUDE_PROJECT_DIR env var for hook commands\n\n## 1.0.57\n\n- Added support for specifying a model in slash commands\n- Improved permission messages to help Claude understand allowed tools\n- Fix: Remove trailing newlines from bash output in terminal wrapping\n\n## 1.0.56\n\n- Windows: Enabled shift+tab for mode switching on versions of Node.js that support terminal VT mode\n- Fixes for WSL IDE detection\n- Fix an issue causing awsRefreshHelper changes to .aws directory not to be picked up\n\n## 1.0.55\n\n- Clarified knowledge cutoff for Opus 4 and Sonnet 4 models\n- Windows: fixed Ctrl+Z crash\n- SDK: Added ability to capture error logging\n- Add --system-prompt-file option to override system prompt in print mode\n\n## 1.0.54\n\n- Hooks: Added UserPromptSubmit hook and the current working directory to hook inputs\n- Custom slash commands: Added argument-hint to frontmatter\n- Windows: OAuth uses port 45454 and properly constructs browser URL\n- Windows: mode switching now uses alt + m, and plan mode renders properly\n- Shell: Switch to in-memory shell snapshot to fix file-related errors\n\n## 1.0.53\n\n- Updated @-mention file truncation from 100 lines to 2000 lines\n- Add helper script settings for AWS token refresh: awsAuthRefresh (for foreground operations like aws sso login) and awsCredentialExport (for background operation with STS-like response).\n\n## 1.0.52\n\n- Added support for MCP server instructions\n\n## 1.0.51\n\n- Added support for native Windows (requires Git for Windows)\n- Added support for Bedrock API keys through environment variable AWS_BEARER_TOKEN_BEDROCK\n- Settings: /doctor can now help you identify and fix invalid setting files\n- `--append-system-prompt` can now be used in interactive mode, not just --print/-p.\n- Increased auto-compact warning threshold from 60% to 80%\n- Fixed an issue with handling user directories with spaces for shell snapshots\n- OTEL resource now includes os.type, os.version, host.arch, and wsl.version (if running on Windows Subsystem for Linux)\n- Custom slash commands: Fixed user-level commands in subdirectories\n- Plan mode: Fixed issue where rejected plan from sub-task would get discarded\n\n## 1.0.48\n\n- Fixed a bug in v1.0.45 where the app would sometimes freeze on launch\n- Added progress messages to Bash tool based on the last 5 lines of command output\n- Added expanding variables support for MCP server configuration\n- Moved shell snapshots from /tmp to ~/.claude for more reliable Bash tool calls\n- Improved IDE extension path handling when Claude Code runs in WSL\n- Hooks: Added a PreCompact hook\n- Vim mode: Added c, f/F, t/T\n\n## 1.0.45\n\n- Redesigned Search (Grep) tool with new tool input parameters and features\n- Disabled IDE diffs for notebook files, fixing \"Timeout waiting after 1000ms\" error\n- Fixed config file corruption issue by enforcing atomic writes\n- Updated prompt input undo to Ctrl+\\_ to avoid breaking existing Ctrl+U behavior, matching zsh's undo shortcut\n- Stop Hooks: Fixed transcript path after /clear and fixed triggering when loop ends with tool call\n- Custom slash commands: Restored namespacing in command names based on subdirectories. For example, .claude/commands/frontend/component.md is now /frontend:component, not /component.\n\n## 1.0.44\n\n- New /export command lets you quickly export a conversation for sharing\n- MCP: resource_link tool results are now supported\n- MCP: tool annotations and tool titles now display in /mcp view\n- Changed Ctrl+Z to suspend Claude Code. Resume by running `fg`. Prompt input undo is now Ctrl+U.\n\n## 1.0.43\n\n- Fixed a bug where the theme selector was saving excessively\n- Hooks: Added EPIPE system error handling\n\n## 1.0.42\n\n- Added tilde (`~`) expansion support to `/add-dir` command\n\n## 1.0.41\n\n- Hooks: Split Stop hook triggering into Stop and SubagentStop\n- Hooks: Enabled optional timeout configuration for each command\n- Hooks: Added \"hook_event_name\" to hook input\n- Fixed a bug where MCP tools would display twice in tool list\n- New tool parameters JSON for Bash tool in `tool_decision` event\n\n## 1.0.40\n\n- Fixed a bug causing API connection errors with UNABLE_TO_GET_ISSUER_CERT_LOCALLY if `NODE_EXTRA_CA_CERTS` was set\n\n## 1.0.39\n\n- New Active Time metric in OpenTelemetry logging\n\n## 1.0.38\n\n- Released hooks. Special thanks to community input in https://github.com/anthropics/claude-code/issues/712. Docs: https://docs.anthropic.com/en/docs/claude-code/hooks\n\n## 1.0.37\n\n- Remove ability to set `Proxy-Authorization` header via ANTHROPIC_AUTH_TOKEN or apiKeyHelper\n\n## 1.0.36\n\n- Web search now takes today's date into context\n- Fixed a bug where stdio MCP servers were not terminating properly on exit\n\n## 1.0.35\n\n- Added support for MCP OAuth Authorization Server discovery\n\n## 1.0.34\n\n- Fixed a memory leak causing a MaxListenersExceededWarning message to appear\n\n## 1.0.33\n\n- Improved logging functionality with session ID support\n- Added prompt input undo functionality (Ctrl+Z and vim 'u' command)\n- Improvements to plan mode\n\n## 1.0.32\n\n- Updated loopback config for litellm\n- Added forceLoginMethod setting to bypass login selection screen\n\n## 1.0.31\n\n- Fixed a bug where ~/.claude.json would get reset when file contained invalid JSON\n\n## 1.0.30\n\n- Custom slash commands: Run bash output, @-mention files, enable thinking with thinking keywords\n- Improved file path autocomplete with filename matching\n- Added timestamps in Ctrl-r mode and fixed Ctrl-c handling\n- Enhanced jq regex support for complex filters with pipes and select\n\n## 1.0.29\n\n- Improved CJK character support in cursor navigation and rendering\n\n## 1.0.28\n\n- Slash commands: Fix selector display during history navigation\n- Resizes images before upload to prevent API size limit errors\n- Added XDG_CONFIG_HOME support to configuration directory\n- Performance optimizations for memory usage\n- New attributes (terminal.type, language) in OpenTelemetry logging\n\n## 1.0.27\n\n- Streamable HTTP MCP servers are now supported\n- Remote MCP servers (SSE and HTTP) now support OAuth\n- MCP resources can now be @-mentioned\n- /resume slash command to switch conversations within Claude Code\n\n## 1.0.25\n\n- Slash commands: moved \"project\" and \"user\" prefixes to descriptions\n- Slash commands: improved reliability for command discovery\n- Improved support for Ghostty\n- Improved web search reliability\n\n## 1.0.24\n\n- Improved /mcp output\n- Fixed a bug where settings arrays got overwritten instead of merged\n\n## 1.0.23\n\n- Released TypeScript SDK: import @anthropic-ai/claude-code to get started\n- Released Python SDK: pip install claude-code-sdk to get started\n\n## 1.0.22\n\n- SDK: Renamed `total_cost` to `total_cost_usd`\n\n## 1.0.21\n\n- Improved editing of files with tab-based indentation\n- Fix for tool_use without matching tool_result errors\n- Fixed a bug where stdio MCP server processes would linger after quitting Claude Code\n\n## 1.0.18\n\n- Added --add-dir CLI argument for specifying additional working directories\n- Added streaming input support without require -p flag\n- Improved startup performance and session storage performance\n- Added CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR environment variable to freeze working directory for bash commands\n- Added detailed MCP server tools display (/mcp)\n- MCP authentication and permission improvements\n- Added auto-reconnection for MCP SSE connections on disconnect\n- Fixed issue where pasted content was lost when dialogs appeared\n\n## 1.0.17\n\n- We now emit messages from sub-tasks in -p mode (look for the parent_tool_use_id property)\n- Fixed crashes when the VS Code diff tool is invoked multiple times quickly\n- MCP server list UI improvements\n- Update Claude Code process title to display \"claude\" instead of \"node\"\n\n## 1.0.11\n\n- Claude Code can now also be used with a Claude Pro subscription\n- Added /upgrade for smoother switching to Claude Max plans\n- Improved UI for authentication from API keys and Bedrock/Vertex/external auth tokens\n- Improved shell configuration error handling\n- Improved todo list handling during compaction\n\n## 1.0.10\n\n- Added markdown table support\n- Improved streaming performance\n\n## 1.0.8\n\n- Fixed Vertex AI region fallback when using CLOUD_ML_REGION\n- Increased default otel interval from 1s -> 5s\n- Fixed edge cases where MCP_TIMEOUT and MCP_TOOL_TIMEOUT weren't being respected\n- Fixed a regression where search tools unnecessarily asked for permissions\n- Added support for triggering thinking non-English languages\n- Improved compacting UI\n\n## 1.0.7\n\n- Renamed /allowed-tools -> /permissions\n- Migrated allowedTools and ignorePatterns from .claude.json -> settings.json\n- Deprecated claude config commands in favor of editing settings.json\n- Fixed a bug where --dangerously-skip-permissions sometimes didn't work in --print mode\n- Improved error handling for /install-github-app\n- Bugfixes, UI polish, and tool reliability improvements\n\n## 1.0.6\n\n- Improved edit reliability for tab-indented files\n- Respect CLAUDE_CONFIG_DIR everywhere\n- Reduced unnecessary tool permission prompts\n- Added support for symlinks in @file typeahead\n- Bugfixes, UI polish, and tool reliability improvements\n\n## 1.0.4\n\n- Fixed a bug where MCP tool errors weren't being parsed correctly\n\n## 1.0.1\n\n- Added `DISABLE_INTERLEAVED_THINKING` to give users the option to opt out of interleaved thinking.\n- Improved model references to show provider-specific names (Sonnet 3.7 for Bedrock, Sonnet 4 for Console)\n- Updated documentation links and OAuth process descriptions\n\n## 1.0.0\n\n- Claude Code is now generally available\n- Introducing Sonnet 4 and Opus 4 models\n\n## 0.2.125\n\n- Breaking change: Bedrock ARN passed to `ANTHROPIC_MODEL` or `ANTHROPIC_SMALL_FAST_MODEL` should no longer contain an escaped slash (specify `/` instead of `%2F`)\n- Removed `DEBUG=true` in favor of `ANTHROPIC_LOG=debug`, to log all requests\n\n## 0.2.117\n\n- Breaking change: --print JSON output now returns nested message objects, for forwards-compatibility as we introduce new metadata fields\n- Introduced settings.cleanupPeriodDays\n- Introduced CLAUDE_CODE_API_KEY_HELPER_TTL_MS env var\n- Introduced --debug mode\n\n## 0.2.108\n\n- You can now send messages to Claude while it works to steer Claude in real-time\n- Introduced BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS env vars\n- Fixed a bug where thinking was not working in -p mode\n- Fixed a regression in /cost reporting\n- Deprecated MCP wizard interface in favor of other MCP commands\n- Lots of other bugfixes and improvements\n\n## 0.2.107\n\n- CLAUDE.md files can now import other files. Add @path/to/file.md to ./CLAUDE.md to load additional files on launch\n\n## 0.2.106\n\n- MCP SSE server configs can now specify custom headers\n- Fixed a bug where MCP permission prompt didn't always show correctly\n\n## 0.2.105\n\n- Claude can now search the web\n- Moved system & account status to /status\n- Added word movement keybindings for Vim\n- Improved latency for startup, todo tool, and file edits\n\n## 0.2.102\n\n- Improved thinking triggering reliability\n- Improved @mention reliability for images and folders\n- You can now paste multiple large chunks into one prompt\n\n## 0.2.100\n\n- Fixed a crash caused by a stack overflow error\n- Made db storage optional; missing db support disables --continue and --resume\n\n## 0.2.98\n\n- Fixed an issue where auto-compact was running twice\n\n## 0.2.96\n\n- Claude Code can now also be used with a Claude Max subscription (https://claude.ai/upgrade)\n\n## 0.2.93\n\n- Resume conversations from where you left off from with \"claude --continue\" and \"claude --resume\"\n- Claude now has access to a Todo list that helps it stay on track and be more organized\n\n## 0.2.82\n\n- Added support for --disallowedTools\n- Renamed tools for consistency: LSTool -> LS, View -> Read, etc.\n\n## 0.2.75\n\n- Hit Enter to queue up additional messages while Claude is working\n- Drag in or copy/paste image files directly into the prompt\n- @-mention files to directly add them to context\n- Run one-off MCP servers with `claude --mcp-config <path-to-file>`\n- Improved performance for filename auto-complete\n\n## 0.2.74\n\n- Added support for refreshing dynamically generated API keys (via apiKeyHelper), with a 5 minute TTL\n- Task tool can now perform writes and run bash commands\n\n## 0.2.72\n\n- Updated spinner to indicate tokens loaded and tool usage\n\n## 0.2.70\n\n- Network commands like curl are now available for Claude to use\n- Claude can now run multiple web queries in parallel\n- Pressing ESC once immediately interrupts Claude in Auto-accept mode\n\n## 0.2.69\n\n- Fixed UI glitches with improved Select component behavior\n- Enhanced terminal output display with better text truncation logic\n\n## 0.2.67\n\n- Shared project permission rules can be saved in .claude/settings.json\n\n## 0.2.66\n\n- Print mode (-p) now supports streaming output via --output-format=stream-json\n- Fixed issue where pasting could trigger memory or bash mode unexpectedly\n\n## 0.2.63\n\n- Fixed an issue where MCP tools were loaded twice, which caused tool call errors\n\n## 0.2.61\n\n- Navigate menus with vim-style keys (j/k) or bash/emacs shortcuts (Ctrl+n/p) for faster interaction\n- Enhanced image detection for more reliable clipboard paste functionality\n- Fixed an issue where ESC key could crash the conversation history selector\n\n## 0.2.59\n\n- Copy+paste images directly into your prompt\n- Improved progress indicators for bash and fetch tools\n- Bugfixes for non-interactive mode (-p)\n\n## 0.2.54\n\n- Quickly add to Memory by starting your message with '#'\n- Press ctrl+r to see full output for long tool results\n- Added support for MCP SSE transport\n\n## 0.2.53\n\n- New web fetch tool lets Claude view URLs that you paste in\n- Fixed a bug with JPEG detection\n\n## 0.2.50\n\n- New MCP \"project\" scope now allows you to add MCP servers to .mcp.json files and commit them to your repository\n\n## 0.2.49\n\n- Previous MCP server scopes have been renamed: previous \"project\" scope is now \"local\" and \"global\" scope is now \"user\"\n\n## 0.2.47\n\n- Press Tab to auto-complete file and folder names\n- Press Shift + Tab to toggle auto-accept for file edits\n- Automatic conversation compaction for infinite conversation length (toggle with /config)\n\n## 0.2.44\n\n- Ask Claude to make a plan with thinking mode: just say 'think' or 'think harder' or even 'ultrathink'\n\n## 0.2.41\n\n- MCP server startup timeout can now be configured via MCP_TIMEOUT environment variable\n- MCP server startup no longer blocks the app from starting up\n\n## 0.2.37\n\n- New /release-notes command lets you view release notes at any time\n- `claude config add/remove` commands now accept multiple values separated by commas or spaces\n\n## 0.2.36\n\n- Import MCP servers from Claude Desktop with `claude mcp add-from-claude-desktop`\n- Add MCP servers as JSON strings with `claude mcp add-json <n> <json>`\n\n## 0.2.34\n\n- Vim bindings for text input - enable with /vim or /config\n\n## 0.2.32\n\n- Interactive MCP setup wizard: Run \"claude mcp add\" to add MCP servers with a step-by-step interface\n- Fix for some PersistentShell issues\n\n## 0.2.31\n\n- Custom slash commands: Markdown files in .claude/commands/ directories now appear as custom slash commands to insert prompts into your conversation\n- MCP debug mode: Run with --mcp-debug flag to get more information about MCP server errors\n\n## 0.2.30\n\n- Added ANSI color theme for better terminal compatibility\n- Fixed issue where slash command arguments weren't being sent properly\n- (Mac-only) API keys are now stored in macOS Keychain\n\n## 0.2.26\n\n- New /approved-tools command for managing tool permissions\n- Word-level diff display for improved code readability\n- Fuzzy matching for slash commands\n\n## 0.2.21\n\n- Fuzzy matching for /commands\n",
+  "changelogLastFetched": 1754392996501,
+  "lastReleaseNotesSeen": "1.0.34",
+  "subscriptionNoticeCount": 0,
+  "hasAvailableSubscription": false,
+  "fallbackAvailableWarningThreshold": 0.5,
+  "hasIdeOnboardingBeenShown": {
+    "vscode": true
+  },
   "oauthAccount": {
     "accountUuid": "a0bf6723-237b-4c0f-b443-4517c62eb468",
     "emailAddress": "shahe.islam@thepetlabco.com",
@@ -314,12 +485,188 @@
     "workspaceRole": null,
     "organizationName": "shahe.islam@thepetlabco.com's Organization"
   },
-  "shiftEnterKeyBindingInstalled": true,
-  "hasCompletedOnboarding": true,
-  "lastOnboardingVersion": "1.0.62",
-  "cachedChangelog": "# Changelog\n\n## 1.0.65\n\n- IDE: Fixed connection stability issues and error handling for diagnostics\n- Windows: Fixed shell environment setup for users without .bashrc files\n\n## 1.0.64\n\n- Agents: Added model customization support - you can now specify which model an agent should use\n- Agents: Fixed unintended access to the recursive agent tool\n- Hooks: Added systemMessage field to hook JSON output for displaying warnings and context\n- SDK: Fixed user input tracking across multi-turn conversations\n- Added hidden files to file search and @-mention suggestions\n\n## 1.0.63\n\n- Windows: Fixed file search, @agent mentions, and custom slash commands functionality\n\n## 1.0.62\n\n- Added @-mention support with typeahead for custom agents. @<your-custom-agent> to invoke it\n- Hooks: Added SessionStart hook for new session initialization\n- /add-dir command now supports typeahead for directory paths\n- Improved network connectivity check reliability\n\n## 1.0.61\n\n- Transcript mode (Ctrl+R): Changed Esc to exit transcript mode rather than interrupt\n- Settings: Added `--settings` flag to load settings from a JSON file\n- Settings: Fixed resolution of settings files paths that are symlinks\n- OTEL: Fixed reporting of wrong organization after authentication changes\n- Slash commands: Fixed permissions checking for allowed-tools with Bash\n- IDE: Added support for pasting images in VSCode MacOS using ⌘+V\n- IDE: Added `CLAUDE_CODE_AUTO_CONNECT_IDE=false` for disabling IDE auto-connection\n- Added `CLAUDE_CODE_SHELL_PREFIX` for wrapping Claude and user-provided shell commands run by Claude Code\n\n## 1.0.60\n\n- You can now create custom subagents for specialized tasks! Run /agents to get started\n\n## 1.0.59\n\n- SDK: Added tool confirmation support with canUseTool callback\n- SDK: Allow specifying env for spawned process\n- Hooks: Exposed PermissionDecision to hooks (including \"ask\")\n- Hooks: UserPromptSubmit now supports additionalContext in advanced JSON output\n- Fixed issue where some Max users that specified Opus would still see fallback to Sonnet\n\n## 1.0.58\n\n- Added support for reading PDFs\n- MCP: Improved server health status display in 'claude mcp list'\n- Hooks: Added CLAUDE_PROJECT_DIR env var for hook commands\n\n## 1.0.57\n\n- Added support for specifying a model in slash commands\n- Improved permission messages to help Claude understand allowed tools\n- Fix: Remove trailing newlines from bash output in terminal wrapping\n\n## 1.0.56\n\n- Windows: Enabled shift+tab for mode switching on versions of Node.js that support terminal VT mode\n- Fixes for WSL IDE detection\n- Fix an issue causing awsRefreshHelper changes to .aws directory not to be picked up\n\n## 1.0.55\n\n- Clarified knowledge cutoff for Opus 4 and Sonnet 4 models\n- Windows: fixed Ctrl+Z crash\n- SDK: Added ability to capture error logging\n- Add --system-prompt-file option to override system prompt in print mode\n\n## 1.0.54\n\n- Hooks: Added UserPromptSubmit hook and the current working directory to hook inputs\n- Custom slash commands: Added argument-hint to frontmatter\n- Windows: OAuth uses port 45454 and properly constructs browser URL\n- Windows: mode switching now uses alt + m, and plan mode renders properly\n- Shell: Switch to in-memory shell snapshot to fix file-related errors\n\n## 1.0.53\n\n- Updated @-mention file truncation from 100 lines to 2000 lines\n- Add helper script settings for AWS token refresh: awsAuthRefresh (for foreground operations like aws sso login) and awsCredentialExport (for background operation with STS-like response).\n\n## 1.0.52\n\n- Added support for MCP server instructions\n\n## 1.0.51\n\n- Added support for native Windows (requires Git for Windows)\n- Added support for Bedrock API keys through environment variable AWS_BEARER_TOKEN_BEDROCK\n- Settings: /doctor can now help you identify and fix invalid setting files\n- `--append-system-prompt` can now be used in interactive mode, not just --print/-p.\n- Increased auto-compact warning threshold from 60% to 80%\n- Fixed an issue with handling user directories with spaces for shell snapshots\n- OTEL resource now includes os.type, os.version, host.arch, and wsl.version (if running on Windows Subsystem for Linux)\n- Custom slash commands: Fixed user-level commands in subdirectories\n- Plan mode: Fixed issue where rejected plan from sub-task would get discarded\n\n## 1.0.48\n\n- Fixed a bug in v1.0.45 where the app would sometimes freeze on launch\n- Added progress messages to Bash tool based on the last 5 lines of command output\n- Added expanding variables support for MCP server configuration\n- Moved shell snapshots from /tmp to ~/.claude for more reliable Bash tool calls\n- Improved IDE extension path handling when Claude Code runs in WSL\n- Hooks: Added a PreCompact hook\n- Vim mode: Added c, f/F, t/T\n\n## 1.0.45\n\n- Redesigned Search (Grep) tool with new tool input parameters and features\n- Disabled IDE diffs for notebook files, fixing \"Timeout waiting after 1000ms\" error\n- Fixed config file corruption issue by enforcing atomic writes\n- Updated prompt input undo to Ctrl+\\_ to avoid breaking existing Ctrl+U behavior, matching zsh's undo shortcut\n- Stop Hooks: Fixed transcript path after /clear and fixed triggering when loop ends with tool call\n- Custom slash commands: Restored namespacing in command names based on subdirectories. For example, .claude/commands/frontend/component.md is now /frontend:component, not /component.\n\n## 1.0.44\n\n- New /export command lets you quickly export a conversation for sharing\n- MCP: resource_link tool results are now supported\n- MCP: tool annotations and tool titles now display in /mcp view\n- Changed Ctrl+Z to suspend Claude Code. Resume by running `fg`. Prompt input undo is now Ctrl+U.\n\n## 1.0.43\n\n- Fixed a bug where the theme selector was saving excessively\n- Hooks: Added EPIPE system error handling\n\n## 1.0.42\n\n- Added tilde (`~`) expansion support to `/add-dir` command\n\n## 1.0.41\n\n- Hooks: Split Stop hook triggering into Stop and SubagentStop\n- Hooks: Enabled optional timeout configuration for each command\n- Hooks: Added \"hook_event_name\" to hook input\n- Fixed a bug where MCP tools would display twice in tool list\n- New tool parameters JSON for Bash tool in `tool_decision` event\n\n## 1.0.40\n\n- Fixed a bug causing API connection errors with UNABLE_TO_GET_ISSUER_CERT_LOCALLY if `NODE_EXTRA_CA_CERTS` was set\n\n## 1.0.39\n\n- New Active Time metric in OpenTelemetry logging\n\n## 1.0.38\n\n- Released hooks. Special thanks to community input in https://github.com/anthropics/claude-code/issues/712. Docs: https://docs.anthropic.com/en/docs/claude-code/hooks\n\n## 1.0.37\n\n- Remove ability to set `Proxy-Authorization` header via ANTHROPIC_AUTH_TOKEN or apiKeyHelper\n\n## 1.0.36\n\n- Web search now takes today's date into context\n- Fixed a bug where stdio MCP servers were not terminating properly on exit\n\n## 1.0.35\n\n- Added support for MCP OAuth Authorization Server discovery\n\n## 1.0.34\n\n- Fixed a memory leak causing a MaxListenersExceededWarning message to appear\n\n## 1.0.33\n\n- Improved logging functionality with session ID support\n- Added prompt input undo functionality (Ctrl+Z and vim 'u' command)\n- Improvements to plan mode\n\n## 1.0.32\n\n- Updated loopback config for litellm\n- Added forceLoginMethod setting to bypass login selection screen\n\n## 1.0.31\n\n- Fixed a bug where ~/.claude.json would get reset when file contained invalid JSON\n\n## 1.0.30\n\n- Custom slash commands: Run bash output, @-mention files, enable thinking with thinking keywords\n- Improved file path autocomplete with filename matching\n- Added timestamps in Ctrl-r mode and fixed Ctrl-c handling\n- Enhanced jq regex support for complex filters with pipes and select\n\n## 1.0.29\n\n- Improved CJK character support in cursor navigation and rendering\n\n## 1.0.28\n\n- Slash commands: Fix selector display during history navigation\n- Resizes images before upload to prevent API size limit errors\n- Added XDG_CONFIG_HOME support to configuration directory\n- Performance optimizations for memory usage\n- New attributes (terminal.type, language) in OpenTelemetry logging\n\n## 1.0.27\n\n- Streamable HTTP MCP servers are now supported\n- Remote MCP servers (SSE and HTTP) now support OAuth\n- MCP resources can now be @-mentioned\n- /resume slash command to switch conversations within Claude Code\n\n## 1.0.25\n\n- Slash commands: moved \"project\" and \"user\" prefixes to descriptions\n- Slash commands: improved reliability for command discovery\n- Improved support for Ghostty\n- Improved web search reliability\n\n## 1.0.24\n\n- Improved /mcp output\n- Fixed a bug where settings arrays got overwritten instead of merged\n\n## 1.0.23\n\n- Released TypeScript SDK: import @anthropic-ai/claude-code to get started\n- Released Python SDK: pip install claude-code-sdk to get started\n\n## 1.0.22\n\n- SDK: Renamed `total_cost` to `total_cost_usd`\n\n## 1.0.21\n\n- Improved editing of files with tab-based indentation\n- Fix for tool_use without matching tool_result errors\n- Fixed a bug where stdio MCP server processes would linger after quitting Claude Code\n\n## 1.0.18\n\n- Added --add-dir CLI argument for specifying additional working directories\n- Added streaming input support without require -p flag\n- Improved startup performance and session storage performance\n- Added CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR environment variable to freeze working directory for bash commands\n- Added detailed MCP server tools display (/mcp)\n- MCP authentication and permission improvements\n- Added auto-reconnection for MCP SSE connections on disconnect\n- Fixed issue where pasted content was lost when dialogs appeared\n\n## 1.0.17\n\n- We now emit messages from sub-tasks in -p mode (look for the parent_tool_use_id property)\n- Fixed crashes when the VS Code diff tool is invoked multiple times quickly\n- MCP server list UI improvements\n- Update Claude Code process title to display \"claude\" instead of \"node\"\n\n## 1.0.11\n\n- Claude Code can now also be used with a Claude Pro subscription\n- Added /upgrade for smoother switching to Claude Max plans\n- Improved UI for authentication from API keys and Bedrock/Vertex/external auth tokens\n- Improved shell configuration error handling\n- Improved todo list handling during compaction\n\n## 1.0.10\n\n- Added markdown table support\n- Improved streaming performance\n\n## 1.0.8\n\n- Fixed Vertex AI region fallback when using CLOUD_ML_REGION\n- Increased default otel interval from 1s -> 5s\n- Fixed edge cases where MCP_TIMEOUT and MCP_TOOL_TIMEOUT weren't being respected\n- Fixed a regression where search tools unnecessarily asked for permissions\n- Added support for triggering thinking non-English languages\n- Improved compacting UI\n\n## 1.0.7\n\n- Renamed /allowed-tools -> /permissions\n- Migrated allowedTools and ignorePatterns from .claude.json -> settings.json\n- Deprecated claude config commands in favor of editing settings.json\n- Fixed a bug where --dangerously-skip-permissions sometimes didn't work in --print mode\n- Improved error handling for /install-github-app\n- Bugfixes, UI polish, and tool reliability improvements\n\n## 1.0.6\n\n- Improved edit reliability for tab-indented files\n- Respect CLAUDE_CONFIG_DIR everywhere\n- Reduced unnecessary tool permission prompts\n- Added support for symlinks in @file typeahead\n- Bugfixes, UI polish, and tool reliability improvements\n\n## 1.0.4\n\n- Fixed a bug where MCP tool errors weren't being parsed correctly\n\n## 1.0.1\n\n- Added `DISABLE_INTERLEAVED_THINKING` to give users the option to opt out of interleaved thinking.\n- Improved model references to show provider-specific names (Sonnet 3.7 for Bedrock, Sonnet 4 for Console)\n- Updated documentation links and OAuth process descriptions\n\n## 1.0.0\n\n- Claude Code is now generally available\n- Introducing Sonnet 4 and Opus 4 models\n\n## 0.2.125\n\n- Breaking change: Bedrock ARN passed to `ANTHROPIC_MODEL` or `ANTHROPIC_SMALL_FAST_MODEL` should no longer contain an escaped slash (specify `/` instead of `%2F`)\n- Removed `DEBUG=true` in favor of `ANTHROPIC_LOG=debug`, to log all requests\n\n## 0.2.117\n\n- Breaking change: --print JSON output now returns nested message objects, for forwards-compatibility as we introduce new metadata fields\n- Introduced settings.cleanupPeriodDays\n- Introduced CLAUDE_CODE_API_KEY_HELPER_TTL_MS env var\n- Introduced --debug mode\n\n## 0.2.108\n\n- You can now send messages to Claude while it works to steer Claude in real-time\n- Introduced BASH_DEFAULT_TIMEOUT_MS and BASH_MAX_TIMEOUT_MS env vars\n- Fixed a bug where thinking was not working in -p mode\n- Fixed a regression in /cost reporting\n- Deprecated MCP wizard interface in favor of other MCP commands\n- Lots of other bugfixes and improvements\n\n## 0.2.107\n\n- CLAUDE.md files can now import other files. Add @path/to/file.md to ./CLAUDE.md to load additional files on launch\n\n## 0.2.106\n\n- MCP SSE server configs can now specify custom headers\n- Fixed a bug where MCP permission prompt didn't always show correctly\n\n## 0.2.105\n\n- Claude can now search the web\n- Moved system & account status to /status\n- Added word movement keybindings for Vim\n- Improved latency for startup, todo tool, and file edits\n\n## 0.2.102\n\n- Improved thinking triggering reliability\n- Improved @mention reliability for images and folders\n- You can now paste multiple large chunks into one prompt\n\n## 0.2.100\n\n- Fixed a crash caused by a stack overflow error\n- Made db storage optional; missing db support disables --continue and --resume\n\n## 0.2.98\n\n- Fixed an issue where auto-compact was running twice\n\n## 0.2.96\n\n- Claude Code can now also be used with a Claude Max subscription (https://claude.ai/upgrade)\n\n## 0.2.93\n\n- Resume conversations from where you left off from with \"claude --continue\" and \"claude --resume\"\n- Claude now has access to a Todo list that helps it stay on track and be more organized\n\n## 0.2.82\n\n- Added support for --disallowedTools\n- Renamed tools for consistency: LSTool -> LS, View -> Read, etc.\n\n## 0.2.75\n\n- Hit Enter to queue up additional messages while Claude is working\n- Drag in or copy/paste image files directly into the prompt\n- @-mention files to directly add them to context\n- Run one-off MCP servers with `claude --mcp-config <path-to-file>`\n- Improved performance for filename auto-complete\n\n## 0.2.74\n\n- Added support for refreshing dynamically generated API keys (via apiKeyHelper), with a 5 minute TTL\n- Task tool can now perform writes and run bash commands\n\n## 0.2.72\n\n- Updated spinner to indicate tokens loaded and tool usage\n\n## 0.2.70\n\n- Network commands like curl are now available for Claude to use\n- Claude can now run multiple web queries in parallel\n- Pressing ESC once immediately interrupts Claude in Auto-accept mode\n\n## 0.2.69\n\n- Fixed UI glitches with improved Select component behavior\n- Enhanced terminal output display with better text truncation logic\n\n## 0.2.67\n\n- Shared project permission rules can be saved in .claude/settings.json\n\n## 0.2.66\n\n- Print mode (-p) now supports streaming output via --output-format=stream-json\n- Fixed issue where pasting could trigger memory or bash mode unexpectedly\n\n## 0.2.63\n\n- Fixed an issue where MCP tools were loaded twice, which caused tool call errors\n\n## 0.2.61\n\n- Navigate menus with vim-style keys (j/k) or bash/emacs shortcuts (Ctrl+n/p) for faster interaction\n- Enhanced image detection for more reliable clipboard paste functionality\n- Fixed an issue where ESC key could crash the conversation history selector\n\n## 0.2.59\n\n- Copy+paste images directly into your prompt\n- Improved progress indicators for bash and fetch tools\n- Bugfixes for non-interactive mode (-p)\n\n## 0.2.54\n\n- Quickly add to Memory by starting your message with '#'\n- Press ctrl+r to see full output for long tool results\n- Added support for MCP SSE transport\n\n## 0.2.53\n\n- New web fetch tool lets Claude view URLs that you paste in\n- Fixed a bug with JPEG detection\n\n## 0.2.50\n\n- New MCP \"project\" scope now allows you to add MCP servers to .mcp.json files and commit them to your repository\n\n## 0.2.49\n\n- Previous MCP server scopes have been renamed: previous \"project\" scope is now \"local\" and \"global\" scope is now \"user\"\n\n## 0.2.47\n\n- Press Tab to auto-complete file and folder names\n- Press Shift + Tab to toggle auto-accept for file edits\n- Automatic conversation compaction for infinite conversation length (toggle with /config)\n\n## 0.2.44\n\n- Ask Claude to make a plan with thinking mode: just say 'think' or 'think harder' or even 'ultrathink'\n\n## 0.2.41\n\n- MCP server startup timeout can now be configured via MCP_TIMEOUT environment variable\n- MCP server startup no longer blocks the app from starting up\n\n## 0.2.37\n\n- New /release-notes command lets you view release notes at any time\n- `claude config add/remove` commands now accept multiple values separated by commas or spaces\n\n## 0.2.36\n\n- Import MCP servers from Claude Desktop with `claude mcp add-from-claude-desktop`\n- Add MCP servers as JSON strings with `claude mcp add-json <n> <json>`\n\n## 0.2.34\n\n- Vim bindings for text input - enable with /vim or /config\n\n## 0.2.32\n\n- Interactive MCP setup wizard: Run \"claude mcp add\" to add MCP servers with a step-by-step interface\n- Fix for some PersistentShell issues\n\n## 0.2.31\n\n- Custom slash commands: Markdown files in .claude/commands/ directories now appear as custom slash commands to insert prompts into your conversation\n- MCP debug mode: Run with --mcp-debug flag to get more information about MCP server errors\n\n## 0.2.30\n\n- Added ANSI color theme for better terminal compatibility\n- Fixed issue where slash command arguments weren't being sent properly\n- (Mac-only) API keys are now stored in macOS Keychain\n\n## 0.2.26\n\n- New /approved-tools command for managing tool permissions\n- Word-level diff display for improved code readability\n- Fuzzy matching for slash commands\n\n## 0.2.21\n\n- Fuzzy matching for /commands\n",
-  "changelogLastFetched": 1754047588976,
-  "lastReleaseNotesSeen": "1.0.65",
-  "subscriptionNoticeCount": 0,
-  "hasAvailableSubscription": false
+  "isQualifiedForDataSharing": false,
+  "mcpServers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/mohammedislam/Desktop",
+        "/Users/mohammedislam/Downloads"
+      ],
+      "env": {}
+    },
+    "git": {
+      "type": "stdio",
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-git",
+        "/Users/mohammedislam/dotfiles"
+      ],
+      "env": {}
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {}
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {}
+    },
+    "browser-tools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@agentdeskai/browser-tools-mcp@1.2.0"
+      ],
+      "env": {}
+    },
+    "puppeteer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {}
+    },
+    "fetch": {
+      "type": "stdio",
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-fetch"
+      ],
+      "env": {}
+    },
+    "duckduckgo": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "duckduckgo-mcp-server"
+      ],
+      "env": {}
+    },
+    "sqlite": {
+      "type": "stdio",
+      "command": "pipx",
+      "args": [
+        "run",
+        "mcp-server-sqlite",
+        "/Users/mohammedislam/Documents/databases"
+      ],
+      "env": {}
+    },
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-postgres"
+      ],
+      "env": {}
+    },
+    "slack": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-slack"
+      ],
+      "env": {}
+    },
+    "airbnb": {
+      "type": "stdio",
+      "command": "npx @openbnb/mcp-server-airbnb --ignore-robots-txt",
+      "args": [],
+      "env": {}
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "aws-documentation": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.aws-documentation-mcp-server@latest"
+      ],
+      "env": {}
+    },
+    "aws-cdk": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.cdk-mcp-server@latest"
+      ],
+      "env": {}
+    },
+    "aws-terraform": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.terraform-mcp-server@latest"
+      ],
+      "env": {}
+    },
+    "aws-cost-analysis": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.cost-analysis-mcp-server@latest"
+      ],
+      "env": {}
+    },
+    "aws-iam": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.iam-mcp-server@latest"
+      ],
+      "env": {}
+    },
+    "aws-cloudformation": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.cfn-mcp-server@latest"
+      ],
+      "env": {}
+    },
+    "aws-dynamodb": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.dynamodb-mcp-server@latest"
+      ],
+      "env": {}
+    },
+    "aws-lambda": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "awslabs.lambda-tool-mcp-server@latest"
+      ],
+      "env": {}
+    }
+  }
 }

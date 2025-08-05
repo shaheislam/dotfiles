@@ -1,18 +1,5 @@
-[user]
-    email = mohammed.islam2@bp.com
-	name  = Mohammed Islam
-
-[alias]
-	branches = for-each-ref --sort=-committerdate refs/heads/ --format='%(authordate:short) %(color:red)%(objectname:short) %(color:yellow)%(refname:short)%(color:reset) (%(color:green)%(committerdate:relative)%(color:reset))'
-	lg = log --all --graph --decorate --oneline
-	st = status
-	co = checkout
-	ci = commit -m
-	amend = commit --amend
-	unstage = reset HEAD --
-	last = log -1 HEAD
-	undo = reset HEAD~1 --mixed
-	whoami = config user.name
-	whomail = config user.email
 [core]
-	excludesfile = /Users/shahe/.gitignore_global
+	excludesfile = /Users/mohammedislam/.gitignore_global
+[user]
+	email = shahedulislam94@gmail.com
+	name = Mohammed Islam

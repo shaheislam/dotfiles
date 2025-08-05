@@ -107,25 +107,13 @@ function aws-sso() {
 }
 
 # Granted AWS credential management alias and completions
-# Granted needs an alias to export environment variables to current shell
-alias assume="source /opt/homebrew/bin/assume"
+# Granted needs an alias to export environment variables
+alias assume="source assume"
 
 # Enable Granted completions for Zsh shell
 if command -v granted &> /dev/null 2>&1; then
     eval "$(granted completion --shell zsh)" 2>/dev/null || true
 fi
-
-
-# Show current AWS account
-function aws-whoami() {
-    if [[ -n "$AWS_PROFILE" ]]; then
-        echo "Current profile: $AWS_PROFILE"
-        aws sts get-caller-identity --output table
-    else
-        echo "No AWS profile currently set"
-    fi
-}
-
 
 # Source powerlevel10k config if using it
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh

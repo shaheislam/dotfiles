@@ -1,0 +1,12 @@
+# Files to ignore when stowing
+\.git
+\.gitignore
+\.gitmodules
+README.*
+LICENSE
+.*\.swp
+.*\.bak
+.*\.orig
+scripts/
+homebrew/
+CLAUDE\.md
