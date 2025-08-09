@@ -2140,5 +2140,103 @@
     "tool_name": "Bash",
     "command": "fish -c \"source ~/.config/fish/config.fish && echo 'Config reloaded successfully'\"",
     "description": "Reload Fish configuration with new interactive selection"
+  },
+  {
+    "timestamp": "2025-08-05T18:07:48.679164",
+    "session_id": "ff2b973f-e28f-41f2-bffd-3e4603e5267f",
+    "tool_name": "Bash",
+    "command": "chmod +x /Users/shahe/dotfiles/upload-images-to-s3.sh",
+    "description": "Make the upload script executable"
+  },
+  {
+    "timestamp": "2025-08-05T18:28:41.829157",
+    "session_id": "ff2b973f-e28f-41f2-bffd-3e4603e5267f",
+    "tool_name": "Bash",
+    "command": "chmod +x /Users/shahe/dotfiles/sync-images-to-s3.sh",
+    "description": "Make the sync script executable"
+  },
+  {
+    "timestamp": "2025-08-09T18:24:53.166702",
+    "session_id": "5b7202d7-0ad3-4811-a67a-35c864013019",
+    "tool_name": "Bash",
+    "command": "jq -r '.[] | .command' ~/.claude/bash_commands.json | head -200 | sort | uniq -c | sort -rn | head -50",
+    "description": "Analyze most frequent commands"
+  },
+  {
+    "timestamp": "2025-08-09T18:25:12.473998",
+    "session_id": "5b7202d7-0ad3-4811-a67a-35c864013019",
+    "tool_name": "Bash",
+    "command": "jq -r '.[] | .command' ~/.claude/bash_commands.json | grep -E \"^(git|aws|npm|brew|docker|stow|cd|ls|find|grep)\" | head -100 | cut -d' ' -f1-3 | sort | uniq -c | sort -rn | head -30",
+    "description": "Analyze command patterns by prefix"
+  },
+  {
+    "timestamp": "2025-08-09T18:25:20.624879",
+    "session_id": "5b7202d7-0ad3-4811-a67a-35c864013019",
+    "tool_name": "Bash",
+    "command": "jq -r '.[] | .command' ~/.claude/bash_commands.json 2>/dev/null | grep -E \"(chmod|cat|echo|export|source|rm|mv|ln)\" | head -50",
+    "description": "Analyze file operations and environment setup"
+  },
+  {
+    "timestamp": "2025-08-09T18:29:45.043984",
+    "session_id": "47929f7f-bffc-4549-b702-b9f0eba4c24b",
+    "tool_name": "Bash",
+    "command": "mkdir -p /Users/shahe/.claude/commands",
+    "description": "Create commands directory"
+  },
+  {
+    "timestamp": "2025-08-09T18:36:15.387842",
+    "session_id": "47929f7f-bffc-4549-b702-b9f0eba4c24b",
+    "tool_name": "Bash",
+    "command": "tail -30 /Users/shahe/dotfiles/.claude.json",
+    "description": "Check end of .claude.json file"
+  },
+  {
+    "timestamp": "2025-08-09T18:46:54.072125",
+    "session_id": "e9b01fb9-3b12-4583-a6eb-d18f6e6f316e",
+    "tool_name": "Bash",
+    "command": "ps aux | grep -i mcp | grep -v grep",
+    "description": "Find running MCP server processes"
+  },
+  {
+    "timestamp": "2025-08-09T18:46:58.368458",
+    "session_id": "e9b01fb9-3b12-4583-a6eb-d18f6e6f316e",
+    "tool_name": "Bash",
+    "command": "pkill -f \"mcp-server\" && pkill -f \"browser-tools-mcp\" && pkill -f \"sequential-thinking\" && pkill -f \"playwright\" && pkill -f \"puppeteer\" && pkill -f \"duckduckgo\" && pkill -f \"linear-mcp\" && pkill -f \"exa-mcp\" && pkill -f \"github.*mcp\" && pkill -f \"awslabs\"",
+    "description": "Kill all MCP server processes"
+  },
+  {
+    "timestamp": "2025-08-09T18:47:26.973682",
+    "session_id": "e9b01fb9-3b12-4583-a6eb-d18f6e6f316e",
+    "tool_name": "Bash",
+    "command": "pkill -f \"mcp-server\" || true; pkill -f \"browser-tools-mcp\" || true; pkill -f \"sequential-thinking\" || true; pkill -f \"playwright.*mcp\" || true; pkill -f \"puppeteer\" || true; pkill -f \"duckduckgo.*mcp\" || true; pkill -f \"linear-mcp\" || true; pkill -f \"exa-mcp\" || true; pkill -f \"github.*mcp\" || true; pkill -f \"awslabs\" || true",
+    "description": "Kill MCP processes with error handling"
+  },
+  {
+    "timestamp": "2025-08-09T18:47:31.617456",
+    "session_id": "e9b01fb9-3b12-4583-a6eb-d18f6e6f316e",
+    "tool_name": "Bash",
+    "command": "sleep 2 && ps aux | grep -i mcp | grep -v grep",
+    "description": "Verify MCP processes are killed"
+  },
+  {
+    "timestamp": "2025-08-09T18:47:42.462275",
+    "session_id": "e9b01fb9-3b12-4583-a6eb-d18f6e6f316e",
+    "tool_name": "Bash",
+    "command": "claude code --config-file ~/.config/claude-code/config.json --restart-mcp-servers",
+    "description": "Restart MCP servers using Claude Code"
+  },
+  {
+    "timestamp": "2025-08-09T18:48:16.679390",
+    "session_id": "e9b01fb9-3b12-4583-a6eb-d18f6e6f316e",
+    "tool_name": "Bash",
+    "command": "assume labs",
+    "description": "Switch to AWS profile labs using granted"
+  },
+  {
+    "timestamp": "2025-08-09T18:48:37.861665",
+    "session_id": "e9b01fb9-3b12-4583-a6eb-d18f6e6f316e",
+    "tool_name": "Bash",
+    "command": "aws sts get-caller-identity",
+    "description": "Verify AWS credentials are working"
   }
 ]

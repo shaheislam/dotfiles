@@ -48,7 +48,8 @@
       "Bash(granted:*)",
       "Bash(rm:*)",
       "Bash(aws configure:*)",
-      "Bash(exec fish)"
+      "Bash(exec fish)",
+      "Bash(pkill:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
