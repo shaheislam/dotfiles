@@ -1,0 +1,7 @@
+[
+  {
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "blocked_command": "claude mcp add linear npx linear-mcp-server --env LINEAR_API_KEY",
+    "suggested_command": "claude mcp add linear bunx linear-mcp-server --env LINEAR_API_KEY"
+  }
+]

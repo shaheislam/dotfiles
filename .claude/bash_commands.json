@@ -2238,5 +2238,152 @@
     "tool_name": "Bash",
     "command": "aws sts get-caller-identity",
     "description": "Verify AWS credentials are working"
+  },
+  {
+    "timestamp": "2025-08-10T23:44:56.628610",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "which direnv",
+    "description": "Check if direnv is installed"
+  },
+  {
+    "timestamp": "2025-08-10T23:45:15.122610",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "direnv allow",
+    "description": "Allow direnv to load the .envrc file"
+  },
+  {
+    "timestamp": "2025-08-10T23:50:02.377440",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "echo $LINEAR_API_KEY",
+    "description": "Check if the Linear API key is loaded"
+  },
+  {
+    "timestamp": "2025-08-10T23:50:05.394375",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "direnv status",
+    "description": "Check direnv status"
+  },
+  {
+    "timestamp": "2025-08-10T23:50:14.405297",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "direnv reload",
+    "description": "Reload direnv configuration"
+  },
+  {
+    "timestamp": "2025-08-10T23:51:37.191429",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "echo $LINEAR_API_KEY",
+    "description": "Check if Linear API key is now loaded"
+  },
+  {
+    "timestamp": "2025-08-10T23:52:19.418112",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "find /Users/shahe/.config -name \"*claude*\" -type f 2>/dev/null",
+    "description": "Find Claude config files in .config"
+  },
+  {
+    "timestamp": "2025-08-10T23:53:27.698064",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude config list",
+    "description": "Check Claude Code configuration"
+  },
+  {
+    "timestamp": "2025-08-10T23:53:36.837286",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude --help | grep -A5 -B5 mcp",
+    "description": "Check Claude Code MCP configuration options"
+  },
+  {
+    "timestamp": "2025-08-10T23:53:43.419565",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp list",
+    "description": "List current MCP servers in Claude Code"
+  },
+  {
+    "timestamp": "2025-08-10T23:54:36.306446",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp add linear npx linear-mcp-server --env LINEAR_API_KEY",
+    "description": "Add Linear MCP server to Claude Code"
+  },
+  {
+    "timestamp": "2025-08-10T23:54:40.462251",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp add linear bunx linear-mcp-server --env LINEAR_API_KEY",
+    "description": "Add Linear MCP server using bunx"
+  },
+  {
+    "timestamp": "2025-08-10T23:54:48.324189",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp add linear bunx linear-mcp-server -e LINEAR_API_KEY=${LINEAR_API_KEY}",
+    "description": "Add Linear MCP server with environment variable"
+  },
+  {
+    "timestamp": "2025-08-10T23:54:55.435328",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp list | grep linear",
+    "description": "Check if Linear MCP server is added"
+  },
+  {
+    "timestamp": "2025-08-10T23:55:55.690301",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp remove linear",
+    "description": "Remove the Linear MCP server"
+  },
+  {
+    "timestamp": "2025-08-10T23:56:03.911654",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "echo $LINEAR_API_KEY",
+    "description": "Check current Linear API key"
+  },
+  {
+    "timestamp": "2025-08-10T23:56:11.597624",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp add linear bunx linear-mcp-server -e LINEAR_API_KEY=\"lin_api_1e4aOVcc4yBSnHuCUHeCIXfWsEqSqVzpJDP6Y8lY\"",
+    "description": "Add Linear MCP server with API key"
+  },
+  {
+    "timestamp": "2025-08-10T23:56:18.644728",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude mcp list | grep linear",
+    "description": "Check Linear MCP server status"
+  },
+  {
+    "timestamp": "2025-08-10T23:57:11.497916",
+    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
+    "tool_name": "Bash",
+    "command": "claude --version",
+    "description": "Check Claude Code version and force reload"
+  },
+  {
+    "timestamp": "2025-08-10T23:59:35.616985",
+    "session_id": "aa971c3a-cbb4-482a-bf3a-662f47a21d8e",
+    "tool_name": "Bash",
+    "command": "claude mcp list | grep linear",
+    "description": "Check Linear MCP server status"
+  },
+  {
+    "timestamp": "2025-08-11T00:00:59.799288",
+    "session_id": "1f2ae839-ae85-45ee-8aa0-b48310a5e1dc",
+    "tool_name": "Bash",
+    "command": "claude mcp list | grep -i linear",
+    "description": "Check for Linear MCP server"
   }
 ]

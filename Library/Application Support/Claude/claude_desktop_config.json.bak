@@ -61,7 +61,7 @@
         "linear-mcp-server"
       ],
       "env": {
-        "LINEAR_API_KEY": "${LINEAR_API_KEY}"
+        "LINEAR_API_KEY": "your-linear-api-key-here"
       }
     },
     "exa": {
@@ -80,6 +80,9 @@
         "-y",
         "@playwright/mcp@latest"
       ]
+    },
+    "google-flights": {
+      "command": "/Users/shahe/.config/mcp-servers/google-flights-mcp/run-server.sh"
     }
   }
 }

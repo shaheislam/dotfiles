@@ -49,7 +49,10 @@
       "Bash(rm:*)",
       "Bash(aws configure:*)",
       "Bash(exec fish)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(claude config list)",
+      "Bash(claude mcp:*)",
+      "mcp__linear__linear_search_issues"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1,14 +1,14 @@
 {
-  "numStartups": 23,
+  "numStartups": 27,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
   "tipsHistory": {
-    "ide-hotkey": 1,
+    "ide-hotkey": 24,
     "new-user-warmup": 2,
     "memory-command": 3,
     "theme-command": 4,
-    "shift-enter": 5,
+    "shift-enter": 26,
     "prompt-queue": 6,
     "enter-to-steer-in-relatime": 7,
     "todo-list": 8,
@@ -23,7 +23,7 @@
     "shift-tab": 22,
     "custom-agents": 23
   },
-  "promptQueueUseCount": 6,
+  "promptQueueUseCount": 9,
   "firstStartTime": "2025-06-24T21:00:13.516Z",
   "userID": "9131cdd71980ad07ea2851d6c686761adca72a6d91be89be2db0a91b32b509ee",
   "projects": {
@@ -470,6 +470,62 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Add the .envrc file to the gitignore",
+          "pastedContents": {}
+        },
+        {
+          "display": "/add-dir ~/dotfiles",
+          "pastedContents": {}
+        },
+        {
+          "display": "/add-dir ~/work/dotfiles",
+          "pastedContents": {}
+        },
+        {
+          "display": "Give dummy values",
+          "pastedContents": {}
+        },
+        {
+          "display": "Create a ticket in linear for me",
+          "pastedContents": {}
+        },
+        {
+          "display": "try now ",
+          "pastedContents": {}
+        },
+        {
+          "display": "/exit ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Create a test issue for me",
+          "pastedContents": {}
+        },
+        {
+          "display": "Add it to claude code aswell",
+          "pastedContents": {}
+        },
+        {
+          "display": "Create a test task in linear to test this",
+          "pastedContents": {}
+        },
+        {
+          "display": "Will this make the linear MCP work ",
+          "pastedContents": {}
+        },
+        {
+          "display": "https://linear.app/developers How can i generate the API key in the UI?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can i have an .envrc file with direnv activating it? ",
+          "pastedContents": {}
+        },
+        {
+          "display": "How can i add an API key for linear so the MCP server can use it?",
+          "pastedContents": {}
+        },
+        {
           "display": "/aws-profile labs",
           "pastedContents": {}
         },
@@ -559,7 +615,18 @@
         }
       ],
       "mcpContextUris": [],
-      "mcpServers": {},
+      "mcpServers": {
+        "linear": {
+          "type": "stdio",
+          "command": "bunx",
+          "args": [
+            "linear-mcp-server"
+          ],
+          "env": {
+            "LINEAR_API_KEY": "lin_api_1e4aOVcc4yBSnHuCUHeCIXfWsEqSqVzpJDP6Y8lY"
+          }
+        }
+      },
       "enabledMcpjsonServers": [],
       "disabledMcpjsonServers": [],
       "hasTrustDialogAccepted": true,

@@ -13,3 +13,6 @@
 
 # macOS
 .DS_Store
+
+# Environment files
+.envrc
