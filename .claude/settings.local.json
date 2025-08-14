@@ -52,7 +52,10 @@
       "Bash(pkill:*)",
       "Bash(claude config list)",
       "Bash(claude mcp:*)",
-      "mcp__linear__linear_search_issues"
+      "mcp__linear__linear_search_issues",
+      "Bash(steampipe plugin:*)",
+      "Bash(gcloud auth:*)",
+      "Bash(gcloud projects list:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

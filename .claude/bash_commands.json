@@ -2385,5 +2385,348 @@
     "tool_name": "Bash",
     "command": "claude mcp list | grep -i linear",
     "description": "Check for Linear MCP server"
+  },
+  {
+    "timestamp": "2025-08-11T14:19:36.651535",
+    "session_id": "230ca125-441b-4575-a1e8-4053ee29882d",
+    "tool_name": "Bash",
+    "command": "steampipe plugin list | grep -i gcp",
+    "description": "Check if GCP plugin is installed"
+  },
+  {
+    "timestamp": "2025-08-11T14:19:54.422135",
+    "session_id": "230ca125-441b-4575-a1e8-4053ee29882d",
+    "tool_name": "Bash",
+    "command": "steampipe plugin install gcp",
+    "description": "Install GCP plugin for Steampipe"
+  },
+  {
+    "timestamp": "2025-08-11T14:20:17.231689",
+    "session_id": "230ca125-441b-4575-a1e8-4053ee29882d",
+    "tool_name": "Bash",
+    "command": "gcloud auth application-default login",
+    "description": "Set up GCP authentication for Steampipe"
+  },
+  {
+    "timestamp": "2025-08-11T14:20:28.178842",
+    "session_id": "230ca125-441b-4575-a1e8-4053ee29882d",
+    "tool_name": "Bash",
+    "command": "cat ~/.config/steampipe/config/gcp.spc",
+    "description": "Check GCP plugin configuration"
+  },
+  {
+    "timestamp": "2025-08-11T14:23:57.592953",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "which gcloud",
+    "description": "Check if gcloud is installed"
+  },
+  {
+    "timestamp": "2025-08-11T14:24:02.300913",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "gcloud auth application-default login",
+    "description": "Set up application default credentials for GCP"
+  },
+  {
+    "timestamp": "2025-08-11T14:26:20.031198",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "gcloud projects list --format=\"table(projectId,name)\" | head -5",
+    "description": "List GCP projects to verify access"
+  },
+  {
+    "timestamp": "2025-08-11T14:26:41.732085",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "gcloud auth list",
+    "description": "Check available GCP accounts"
+  },
+  {
+    "timestamp": "2025-08-11T14:26:51.874048",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "cat << 'EOF'\n# Once you've authenticated with:\ngcloud auth login\ngcloud auth application-default login\n\n# You can query GCP resources with Steampipe:\n\n# List all compute instances\nsteampipe query \"select name, machine_type, status from gcp_compute_instance\"\n\n# List all storage buckets\nsteampipe query \"select name, location, storage_class from gcp_storage_bucket\"\n\n# Find public buckets\nsteampipe query \"select name from gcp_storage_bucket where iam_policy::text like '%allUsers%'\"\n\n# List all projects\nsteampipe query \"select project_id, name, lifecycle_state from gcp_project\"\n\n# Find compute instances without deletion protection\nsteampipe query \"select name, zone from gcp_compute_instance where deletion_protection = false\"\nEOF",
+    "description": "Show example GCP Steampipe queries"
+  },
+  {
+    "timestamp": "2025-08-11T14:32:02.279528",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "gcloud auth application-default login",
+    "description": "Set up application default credentials for Steampipe"
+  },
+  {
+    "timestamp": "2025-08-11T14:33:16.477084",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select project_id, name, lifecycle_state from gcp_project limit 5\"",
+    "description": "Test GCP query - list projects"
+  },
+  {
+    "timestamp": "2025-08-11T14:33:32.170301",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, location, storage_class from gcp_storage_bucket limit 5\"",
+    "description": "Test GCP query - list storage buckets"
+  },
+  {
+    "timestamp": "2025-08-11T14:33:46.010832",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "cat << 'EOF'\n# Security-focused queries:\n\n# Find publicly accessible storage buckets\nsteampipe query \"select name from gcp_storage_bucket where iam_policy::text like '%allUsers%'\"\n\n# Find compute instances without deletion protection\nsteampipe query \"select name, zone from gcp_compute_instance where deletion_protection = false\"\n\n# List service accounts with keys\nsteampipe query \"select email, display_name from gcp_service_account\"\n\n# BigQuery datasets and tables\nsteampipe query \"select dataset_id, project_id, location from gcp_bigquery_dataset\"\n\n# Cloud Functions\nsteampipe query \"select name, status, runtime from gcp_cloudfunctions_function\"\n\n# Find unused disks\nsteampipe query \"select name, size_gb, zone from gcp_compute_disk where users is null\"\nEOF",
+    "description": "Show more GCP Steampipe query examples"
+  },
+  {
+    "timestamp": "2025-08-11T14:36:11.950930",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select dataset_id, location, creation_time from gcp_bigquery_dataset limit 5\"",
+    "description": "Read-only query: List BigQuery datasets"
+  },
+  {
+    "timestamp": "2025-08-11T14:36:24.532017",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select count(*) as total_buckets from gcp_storage_bucket\"",
+    "description": "Read-only query: Count total storage buckets"
+  },
+  {
+    "timestamp": "2025-08-11T14:36:35.276180",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select storage_class, count(*) as count from gcp_storage_bucket group by storage_class\"",
+    "description": "Read-only query: Bucket distribution by storage class"
+  },
+  {
+    "timestamp": "2025-08-11T14:42:31.303660",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, project_number, create_time from gcp_project\"",
+    "description": "Read-only: Get project details"
+  },
+  {
+    "timestamp": "2025-08-11T14:42:44.731827",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, machine_type_family, status, zone from gcp_compute_instance\"",
+    "description": "Read-only: List compute instances"
+  },
+  {
+    "timestamp": "2025-08-11T14:42:53.214433",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, machine_type, status, zone, creation_timestamp from gcp_compute_instance limit 20\"",
+    "description": "Read-only: List compute instances with correct columns"
+  },
+  {
+    "timestamp": "2025-08-11T14:43:09.715998",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select count(*) as total_datasets from gcp_bigquery_dataset\"",
+    "description": "Read-only: Count BigQuery datasets"
+  },
+  {
+    "timestamp": "2025-08-11T14:43:23.644235",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select location, count(*) as dataset_count from gcp_bigquery_dataset group by location order by dataset_count desc\"",
+    "description": "Read-only: BigQuery datasets by location"
+  },
+  {
+    "timestamp": "2025-08-11T14:43:41.526348",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select count(*) as total_functions from gcp_cloudfunctions_function\"",
+    "description": "Read-only: Count Cloud Functions"
+  },
+  {
+    "timestamp": "2025-08-11T14:43:54.748972",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select runtime, count(*) as count from gcp_cloudfunctions_function group by runtime order by count desc\"",
+    "description": "Read-only: Cloud Functions by runtime"
+  },
+  {
+    "timestamp": "2025-08-11T14:44:06.434695",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select count(*) as total_services from gcp_cloudrun_service\"",
+    "description": "Read-only: Count Cloud Run services"
+  },
+  {
+    "timestamp": "2025-08-11T14:44:23.704847",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select count(*) as total_service_accounts from gcp_service_account\"",
+    "description": "Read-only: Count service accounts"
+  },
+  {
+    "timestamp": "2025-08-11T14:44:35.127547",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, self_link from gcp_compute_network\"",
+    "description": "Read-only: List VPC networks"
+  },
+  {
+    "timestamp": "2025-08-11T14:44:46.172964",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select count(*) as total_disks from gcp_compute_disk\"",
+    "description": "Read-only: Count compute disks"
+  },
+  {
+    "timestamp": "2025-08-11T14:44:57.013072",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select uniform_bucket_level_access_enabled, count(*) as count from gcp_storage_bucket group by uniform_bucket_level_access_enabled\"",
+    "description": "Read-only: Check bucket security settings"
+  },
+  {
+    "timestamp": "2025-08-11T14:45:05.596221",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select size_gb, users, creation_timestamp from gcp_compute_disk\"",
+    "description": "Read-only: Disk details"
+  },
+  {
+    "timestamp": "2025-08-11T14:45:23.636644",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, available_memory_mb, trigger from gcp_cloudfunctions_function limit 10\"",
+    "description": "Read-only: Sample Cloud Functions details"
+  },
+  {
+    "timestamp": "2025-08-11T14:45:33.937116",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, available_memory_mb, runtime, region from gcp_cloudfunctions_function limit 10\"",
+    "description": "Read-only: Cloud Functions with memory and region"
+  },
+  {
+    "timestamp": "2025-08-11T14:45:43.359992",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, available_memory_mb, runtime, status from gcp_cloudfunctions_function where status = 'ACTIVE' limit 10\"",
+    "description": "Read-only: Active Cloud Functions"
+  },
+  {
+    "timestamp": "2025-08-11T14:48:35.166357",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select email, display_name, disabled from gcp_service_account order by email\"",
+    "description": "Read-only: List service accounts with status"
+  },
+  {
+    "timestamp": "2025-08-11T14:48:56.505752",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, can_ip_forward, enable_display, shielded_instance_config from gcp_compute_instance\"",
+    "description": "Read-only: Check compute instance security settings"
+  },
+  {
+    "timestamp": "2025-08-11T14:49:06.077691",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, can_ip_forward, deletion_protection, shielded_instance_config from gcp_compute_instance\"",
+    "description": "Read-only: Check compute instance security settings"
+  },
+  {
+    "timestamp": "2025-08-11T14:49:22.806469",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, public_access_prevention, versioning_enabled from gcp_storage_bucket limit 10\"",
+    "description": "Read-only: Check bucket security and versioning"
+  },
+  {
+    "timestamp": "2025-08-11T14:49:31.709909",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, versioning_enabled, encryption from gcp_storage_bucket limit 10\"",
+    "description": "Read-only: Check bucket versioning and encryption"
+  },
+  {
+    "timestamp": "2025-08-11T14:49:41.954795",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, versioning_enabled, default_kms_key_name from gcp_storage_bucket limit 10\"",
+    "description": "Read-only: Check bucket versioning and KMS encryption"
+  },
+  {
+    "timestamp": "2025-08-11T14:49:58.238722",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select dataset_id, default_encryption_configuration from gcp_bigquery_dataset where default_encryption_configuration is not null limit 5\"",
+    "description": "Read-only: Check BigQuery dataset encryption"
+  },
+  {
+    "timestamp": "2025-08-11T14:50:08.382315",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select dataset_id, location, creation_time from gcp_bigquery_dataset order by creation_time desc limit 5\"",
+    "description": "Read-only: Recent BigQuery datasets"
+  },
+  {
+    "timestamp": "2025-08-11T14:50:28.514685",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, https_trigger_security_level, ingress_settings from gcp_cloudfunctions_function limit 10\"",
+    "description": "Read-only: Check Cloud Functions security settings"
+  },
+  {
+    "timestamp": "2025-08-11T14:50:38.037906",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, service_account_email, environment_variables from gcp_cloudfunctions_function limit 5\"",
+    "description": "Read-only: Check Cloud Functions service accounts"
+  },
+  {
+    "timestamp": "2025-08-11T14:50:47.926703",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, service_account_email from gcp_cloudfunctions_function limit 10\"",
+    "description": "Read-only: Check Cloud Functions service accounts"
+  },
+  {
+    "timestamp": "2025-08-11T14:51:05.594391",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select name, direction, action, source_ranges from gcp_compute_firewall\"",
+    "description": "Read-only: Check firewall rules"
+  },
+  {
+    "timestamp": "2025-08-11T14:51:18.953238",
+    "session_id": "10660811-186c-453a-9e8e-7d53d6543aab",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select count(*) as total_disks, sum(size_gb) as total_size_gb from gcp_compute_disk\"",
+    "description": "Read-only: Disk usage summary"
+  },
+  {
+    "timestamp": "2025-08-11T17:06:57.933362",
+    "session_id": "3da43ea5-84c2-4db3-b399-d5292f0fb963",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select distribution_id, domain_name, tags from aws_cloudfront_distribution where tags ? 'waf-vpn-only-cloudfront-rules'\"",
+    "description": "Query CloudFront distributions with VPN-only WAF tag"
+  },
+  {
+    "timestamp": "2025-08-11T17:07:07.129129",
+    "session_id": "3da43ea5-84c2-4db3-b399-d5292f0fb963",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select id, domain_name, tags from aws_cloudfront_distribution where tags ? 'waf-vpn-only-cloudfront-rules'\"",
+    "description": "Query CloudFront distributions with VPN-only WAF tag using correct column name"
+  },
+  {
+    "timestamp": "2025-08-11T17:07:15.629583",
+    "session_id": "3da43ea5-84c2-4db3-b399-d5292f0fb963",
+    "tool_name": "Bash",
+    "command": "aws sso login",
+    "description": "Refresh AWS SSO credentials"
+  },
+  {
+    "timestamp": "2025-08-11T17:07:28.582802",
+    "session_id": "3da43ea5-84c2-4db3-b399-d5292f0fb963",
+    "tool_name": "Bash",
+    "command": "steampipe query \"select id, domain_name, tags from aws_cloudfront_distribution where tags ? 'waf-vpn-only-cloudfront-rules'\"",
+    "description": "Query CloudFront distributions with VPN-only WAF tag"
   }
 ]
