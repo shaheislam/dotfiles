@@ -179,8 +179,8 @@ if status is-interactive
     # Git worktree aliases
     alias gwta="git worktree add"
     alias gwtab="git worktree add -b"
-    alias gwtl="git worktree list"
-    alias gwtr="git worktree remove"
+    # alias gwtl="git worktree list"  # Replaced with fzf function below
+    # alias gwtr="git worktree remove"  # Replaced with fzf function below
     alias gwtp="git worktree prune"
     alias gwtm="git worktree move"
 
@@ -654,6 +654,44 @@ if status is-interactive
         set branch $argv[1]
         set repo (basename (git rev-parse --show-toplevel))
         git worktree add -b $branch ../$repo-$branch
+    end
+
+    # Enhanced git worktree functions with fzf
+    function gwtl --description "List git worktrees or switch to one with fzf"
+        set -l worktrees (git worktree list 2>/dev/null)
+        
+        if test -z "$worktrees"
+            echo "No git worktrees found"
+            return 1
+        end
+        
+        # If stdout is a terminal, use fzf for selection
+        if isatty stdout
+            set -l selected (echo "$worktrees" | fzf --height=40% --reverse --prompt="Switch to worktree: " | awk '{print $1}')
+            if test -n "$selected"
+                cd "$selected"
+                echo "Switched to: $selected"
+            end
+        else
+            # Non-interactive mode, just list
+            echo "$worktrees"
+        end
+    end
+
+    function gwtr --description "Remove git worktree with fzf selection"
+        set -l worktrees (git worktree list 2>/dev/null | grep -v '(bare)')
+        
+        if test -z "$worktrees"
+            echo "No git worktrees to remove"
+            return 1
+        end
+        
+        set -l selected (echo "$worktrees" | fzf --height=40% --reverse --prompt="Remove worktree: " | awk '{print $1}')
+        
+        if test -n "$selected"
+            echo "Removing worktree: $selected"
+            git worktree remove "$selected"
+        end
     end
 
     # Custom Atuin wrapper functions for different filter modes
