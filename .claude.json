@@ -472,6 +472,26 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Selected bucket: petlab-config-logging\nUsing default prefix: AWSLogs/\nSearching CloudTrail events in petlab-config-logging...\nPattern: CreateBucket\nPrefix: AWSLogs/\\\n\\\nWhat if i want to search within a specific path and you allow me to fzf into the paths and then set the search? Similar to how s3-browse works",
+          "pastedContents": {}
+        },
+        {
+          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!    labs@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:32 󰊨\n╰─▶ ct-view CreateBucket\nNo S3 buckets found",
+          "pastedContents": {}
+        },
+        {
+          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!    LOG@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   12:28 󰊨 4s\n╰─▶ gd-view '\"severity\":[5-9]'\nSearching GuardDuty findings in \"severity\":[5-9]...\\\n\\\nThese don't seem to work right, what if I only want to search a path within a bucket?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is it possible to integrate fzf with these?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Are there any other aws related functions I have for example looking at guardduty or cloudtrail or cloudwatch? ",
+          "pastedContents": {}
+        },
+        {
           "display": "Dont need a validation script just tell me in the UI what commands to run after reloading the shell to sanity check the changes",
           "pastedContents": {}
         },

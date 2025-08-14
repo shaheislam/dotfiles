@@ -2763,5 +2763,12 @@
     "tool_name": "Bash",
     "command": "echo $TERM_PROGRAM",
     "description": "Check which terminal program is being used"
+  },
+  {
+    "timestamp": "2025-08-14T12:32:30.983319",
+    "session_id": "05aca05b-a689-45ea-9e16-ef72ed9efbaa",
+    "tool_name": "Bash",
+    "command": "aws sts get-caller-identity",
+    "description": "Check current AWS identity"
   }
 ]

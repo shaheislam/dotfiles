@@ -517,19 +517,108 @@ if status is-interactive
         end
     end
 
-    # Generic GuardDuty log viewer with custom bucket
+    # GuardDuty log viewer with FZF bucket and path selection
     function gd-view --description "Search and analyze AWS GuardDuty security findings in S3"
-        set -l bucket $argv[1]
-        set -l pattern $argv[2]
-        set -l prefix $argv[3]
+        set -l bucket ""
+        set -l pattern ""
+        set -l prefix ""
         
-        if test -z "$bucket"
-            echo "Usage: gd-view <bucket> [pattern] [prefix]"
-            echo "Example: gd-view my-guardduty-bucket '\"severity\":[5-9]' AWSLogs/123456/GuardDuty/"
-            return 1
+        # Parse arguments - if first arg doesn't look like a bucket name, treat it as pattern
+        if test (count $argv) -ge 1
+            # Check if first arg looks like a search pattern (contains quotes, brackets, colons, etc.)
+            if string match -q "*[\"':{\[\]]*" -- $argv[1]; or string match -q "*severity*" -- $argv[1]
+                # First arg is a pattern, need to select bucket
+                set pattern $argv[1]
+                set prefix $argv[2]
+            else
+                # First arg is a bucket
+                set bucket $argv[1]
+                set pattern $argv[2]
+                set prefix $argv[3]
+            end
         end
         
-        test -z "$pattern"; and set pattern '"severity":'
+        # If no bucket specified, use fzf to select
+        if test -z "$bucket"
+            # Use fzf to select bucket containing GuardDuty logs
+            set -l buckets (aws s3 ls 2>/dev/null | grep -E "(guard|security|threat|finding)" | awk '{print $3}')
+            
+            if test -z "$buckets"
+                # Fallback to all buckets if no GuardDuty-specific ones found
+                set buckets (aws s3 ls 2>/dev/null | awk '{print $3}')
+            end
+            
+            if test -z "$buckets"
+                echo "No S3 buckets found"
+                return 1
+            end
+            
+            set bucket (printf '%s\n' $buckets | fzf --prompt="Select GuardDuty bucket: " --height=40% --border)
+            test -z "$bucket"; and return 0
+            
+            echo "Selected bucket: $bucket"
+        end
+        
+        # Interactive prefix selection if not provided
+        if test -z "$prefix"
+            echo "Browsing bucket structure..."
+            set -l current_path ""
+            
+            while true
+                # List prefixes at current level
+                set -l prefixes
+                if test -z "$current_path"
+                    set prefixes (aws s3 ls s3://$bucket/ 2>/dev/null | grep PRE | awk '{print $2}')
+                else
+                    set prefixes (aws s3 ls s3://$bucket/$current_path 2>/dev/null | grep PRE | awk '{print $2}')
+                end
+                
+                if test -z "$prefixes"
+                    # No more subdirectories, use current path
+                    set prefix $current_path
+                    break
+                end
+                
+                # Add options for navigation
+                set -l options "📁 Use current path: $current_path"
+                if test -n "$current_path"
+                    set options $options "⬆️  Go up one level"
+                end
+                set options $options $prefixes
+                
+                set -l selected (printf '%s\n' $options | fzf --prompt="Navigate to prefix (or use current): " --height=40% --border)
+                
+                if test -z "$selected"
+                    # User cancelled
+                    return 0
+                else if string match -q "📁 Use current path:*" "$selected"
+                    # Use current path
+                    set prefix $current_path
+                    break
+                else if string match -q "⬆️  Go up one level" "$selected"
+                    # Go up one directory level
+                    set current_path (string replace -r '/[^/]+/$' '/' $current_path)
+                    if test "$current_path" = "/"
+                        set current_path ""
+                    end
+                else
+                    # Navigate into selected directory
+                    set current_path "$current_path$selected"
+                end
+            end
+            
+            echo "Selected prefix: $prefix"
+        end
+        
+        # Get search pattern if not provided
+        if test -z "$pattern"
+            read -P "Enter search pattern (default: \"severity\":): " pattern
+            test -z "$pattern"; and set pattern '"severity":'
+        end
+        
+        echo "Searching GuardDuty findings in $bucket..."
+        echo "Pattern: $pattern"
+        test -n "$prefix"; and echo "Prefix: $prefix"
         
         s3-logs $bucket "$pattern" "$prefix" | while read -l line
             if string match -q "📄 File:*" "$line"
@@ -549,19 +638,108 @@ if status is-interactive
         end
     end
 
-    # Generic CloudTrail log viewer
+    # CloudTrail log viewer with FZF bucket and path selection
     function ct-view --description "Search and analyze AWS CloudTrail logs in S3 buckets"
-        set -l bucket $argv[1]
-        set -l pattern $argv[2]
-        set -l prefix $argv[3]
+        set -l bucket ""
+        set -l pattern ""
+        set -l prefix ""
         
-        if test -z "$bucket"
-            echo "Usage: ct-view <bucket> [pattern] [prefix]"
-            echo "Example: ct-view my-cloudtrail-bucket AssumeRole AWSLogs/"
-            return 1
+        # Parse arguments - if first arg is not a bucket, assume it's a pattern
+        if test (count $argv) -ge 1
+            # Check if first arg is likely a bucket name (no special chars, looks like S3 naming)
+            if string match -q "*-*" -- $argv[1]; and not string match -q "*[/:\"']*" -- $argv[1]
+                # Looks like a bucket name
+                set bucket $argv[1]
+                set pattern $argv[2]
+                set prefix $argv[3]
+            else
+                # First arg is probably a pattern (event name, etc.)
+                set pattern $argv[1]
+                set prefix $argv[2]
+            end
         end
         
-        test -z "$pattern"; and set pattern "."
+        # If no bucket specified, use fzf to select
+        if test -z "$bucket"
+            # Use fzf to select bucket containing CloudTrail logs
+            set -l buckets (aws s3 ls 2>/dev/null | grep -E "(trail|cloudtrail|audit|log|central)" | awk '{print $3}')
+            
+            if test -z "$buckets"
+                # Fallback to all buckets if no CloudTrail-specific ones found
+                set buckets (aws s3 ls 2>/dev/null | awk '{print $3}')
+            end
+            
+            if test -z "$buckets"
+                echo "No S3 buckets found"
+                return 1
+            end
+            
+            set bucket (printf '%s\n' $buckets | fzf --prompt="Select CloudTrail bucket: " --height=40% --border)
+            test -z "$bucket"; and return 0
+            
+            echo "Selected bucket: $bucket"
+        end
+        
+        # Interactive prefix selection if not provided
+        if test -z "$prefix"
+            echo "Browsing bucket structure..."
+            set -l current_path ""
+            
+            while true
+                # List prefixes at current level
+                set -l prefixes
+                if test -z "$current_path"
+                    set prefixes (aws s3 ls s3://$bucket/ 2>/dev/null | grep PRE | awk '{print $2}')
+                else
+                    set prefixes (aws s3 ls s3://$bucket/$current_path 2>/dev/null | grep PRE | awk '{print $2}')
+                end
+                
+                if test -z "$prefixes"
+                    # No more subdirectories, use current path
+                    set prefix $current_path
+                    break
+                end
+                
+                # Add options for navigation
+                set -l options "📁 Use current path: $current_path"
+                if test -n "$current_path"
+                    set options $options "⬆️  Go up one level"
+                end
+                set options $options $prefixes
+                
+                set -l selected (printf '%s\n' $options | fzf --prompt="Navigate to prefix (or use current): " --height=40% --border)
+                
+                if test -z "$selected"
+                    # User cancelled
+                    return 0
+                else if string match -q "📁 Use current path:*" "$selected"
+                    # Use current path
+                    set prefix $current_path
+                    break
+                else if string match -q "⬆️  Go up one level" "$selected"
+                    # Go up one directory level
+                    set current_path (string replace -r '/[^/]+/$' '/' $current_path)
+                    if test "$current_path" = "/"
+                        set current_path ""
+                    end
+                else
+                    # Navigate into selected directory
+                    set current_path "$current_path$selected"
+                end
+            end
+            
+            echo "Selected prefix: $prefix"
+        end
+        
+        # Get search pattern if not provided
+        if test -z "$pattern"
+            read -P "Enter search pattern (or press enter for all): " pattern
+            test -z "$pattern"; and set pattern "."
+        end
+        
+        echo "Searching CloudTrail events in $bucket..."
+        echo "Pattern: $pattern"
+        test -n "$prefix"; and echo "Prefix: $prefix"
         
         set -l grep_args --bucket $bucket --pattern "$pattern"
         test -n "$prefix"; and set grep_args $grep_args --prefix "$prefix"
