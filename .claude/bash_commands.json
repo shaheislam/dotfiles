@@ -2728,5 +2728,40 @@
     "tool_name": "Bash",
     "command": "steampipe query \"select id, domain_name, tags from aws_cloudfront_distribution where tags ? 'waf-vpn-only-cloudfront-rules'\"",
     "description": "Query CloudFront distributions with VPN-only WAF tag"
+  },
+  {
+    "timestamp": "2025-08-14T11:54:32.908062",
+    "session_id": "30777c4d-7809-4e80-8de5-c0f2cd140de8",
+    "tool_name": "Bash",
+    "command": "echo $TERM",
+    "description": "Check terminal type"
+  },
+  {
+    "timestamp": "2025-08-14T11:54:40.325390",
+    "session_id": "30777c4d-7809-4e80-8de5-c0f2cd140de8",
+    "tool_name": "Bash",
+    "command": "tmux list-keys | grep -i \"send.*I\"",
+    "description": "Check tmux key bindings for 'I'"
+  },
+  {
+    "timestamp": "2025-08-14T11:54:52.264644",
+    "session_id": "30777c4d-7809-4e80-8de5-c0f2cd140de8",
+    "tool_name": "Bash",
+    "command": "locale | grep -i utf",
+    "description": "Check locale settings"
+  },
+  {
+    "timestamp": "2025-08-14T11:55:33.332686",
+    "session_id": "30777c4d-7809-4e80-8de5-c0f2cd140de8",
+    "tool_name": "Bash",
+    "command": "fish -c \"bind\" | grep -i \"\\\\\\\\e\"",
+    "description": "Check Fish key bindings for escape sequences"
+  },
+  {
+    "timestamp": "2025-08-14T11:55:40.306378",
+    "session_id": "30777c4d-7809-4e80-8de5-c0f2cd140de8",
+    "tool_name": "Bash",
+    "command": "echo $TERM_PROGRAM",
+    "description": "Check which terminal program is being used"
   }
 ]
