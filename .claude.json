@@ -860,6 +860,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Scan my other functions tell me if there is anything else i can integrate with fzf",
+          "pastedContents": {}
+        },
+        {
           "display": "Undo this change it makes it worse",
           "pastedContents": {}
         },
