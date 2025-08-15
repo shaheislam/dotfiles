@@ -1,15 +1,32 @@
 # Tmux plugin manager and plugins
 .tmux/plugins/
 
-# Claude Code files
-.claude/ide/*.lock
-.claude/todos/*.json
-.claude/shell-snapshots/*.sh
-.claude/audio_hook.log
-.claude/bash_commands.json
-.claude/hooks/logs/
+# Claude Code - ignore frequently changing files but keep important configs
+# Ignore session data and caches
+.claude/ide/
+.claude/todos/
+.claude/shell-snapshots/
 .claude/projects/
 .claude/statsig/
+.claude/logs/
+.claude/usage/
+.claude/backups/
+.claude/audio/
+
+# Ignore frequently changing log and data files
+.claude/audio_hook.log
+.claude/bash_commands.json
+.claude/bun_enforcement.json
+.claude/.superclaude-metadata.json
+.claude/settings.local.json
+
+# Keep these directories and files (they're tracked):
+# .claude/agents/        - Agent configurations
+# .claude/commands/      - Custom commands
+# .claude/hooks/         - Hook scripts
+# .claude/templates/     - Templates
+# .claude/*.md           - Documentation files
+# .claude/settings.json  - Main settings
 
 # macOS
 .DS_Store

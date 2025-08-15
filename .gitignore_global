@@ -55,8 +55,8 @@ node_modules/
 # Ignore CLAUDE.md files in the work directory
 work/**/CLAUDE.md
 
-# Claude files and folders (exclude from dotfiles repo)
-.claude
+# Claude Code - session data and cache (ignore in all repos)
+.claude/
 
 # CLAUDE.md files - prevent commits outside allowed directories
 # Block all CLAUDE.md files by default
