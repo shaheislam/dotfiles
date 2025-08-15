@@ -49,4 +49,3 @@ test_recursive.unittest = ['.recursive']
 if __name__ == '__main__':
     import test_appliance
     test_appliance.run(globals())
-

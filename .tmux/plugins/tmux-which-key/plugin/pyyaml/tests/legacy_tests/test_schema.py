@@ -149,4 +149,3 @@ test_implicit_resolver.unittest = ['.schema', '.schema-skip']
 if __name__ == '__main__':
     import test_appliance
     test_appliance.run(globals())
-

@@ -17,7 +17,7 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 
 **Purpose**: Official library documentation, code examples, best practices, localization standards
 
-**Activation Patterns**: 
+**Activation Patterns**:
 - Automatic: External library imports detected, framework-specific questions, scribe persona active
 - Manual: `--c7`, `--context7` flags
 - Smart: Commands detect need for official documentation patterns
@@ -222,4 +222,3 @@ MCP (Model Context Protocol) server integration and orchestration system for Cla
 - Graceful Fallback: Fallback gracefully when servers unavailable
 - Loop Integration: Sequential for iterative analysis, Context7 for improvement patterns
 - Dependency Orchestration: Manage inter-server dependencies and data flow
-

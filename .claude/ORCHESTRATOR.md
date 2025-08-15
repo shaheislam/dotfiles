@@ -177,7 +177,7 @@ wave-activation:
   automatic: "complexity >= 0.7"
   explicit: "--wave-mode, --force-waves"
   override: "--single-wave, --wave-dry-run"
-  
+
 wave-strategies:
   progressive: "Incremental enhancement"
   systematic: "Methodical analysis"
@@ -509,17 +509,17 @@ orchestrator_config:
   cache_ttl: 3600
   parallel_operations: true
   max_parallel: 3
-  
+
   # Intelligence
   learning_enabled: true
   confidence_threshold: 0.7
   pattern_detection: aggressive
-  
+
   # Resource Management
   token_reserve: 10%
   emergency_threshold: 90%
   compression_threshold: 75%
-  
+
   # Wave Mode Settings
   wave_mode:
     enable_auto_detection: true

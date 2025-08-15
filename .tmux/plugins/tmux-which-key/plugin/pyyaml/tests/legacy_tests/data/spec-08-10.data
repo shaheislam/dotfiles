@@ -11,5 +11,5 @@ block styles:
       - entry # Plain
       # Mapping entry:
       - key: value
-    mapping: 
+    mapping:
       key: value

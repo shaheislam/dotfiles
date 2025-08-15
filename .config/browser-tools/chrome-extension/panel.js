@@ -166,12 +166,12 @@ function createConnectionBanner() {
   const banner = document.createElement("div");
   banner.id = "connection-banner";
   banner.style.cssText = `
-    padding: 6px 0px; 
+    padding: 6px 0px;
     margin-bottom: 4px;
-    width: 40%; 
-    display: flex; 
+    width: 40%;
+    display: flex;
     flex-direction: column;
-    align-items: flex-start; 
+    align-items: flex-start;
     background-color:rgba(0,0,0,0);
     border-radius: 11px;
     font-size: 11px;
@@ -226,13 +226,13 @@ function createConnectionBanner() {
   const indicator = document.createElement("div");
   indicator.id = "banner-status-indicator";
   indicator.style.cssText = `
-    width: 6px; 
-    height: 6px; 
+    width: 6px;
+    height: 6px;
     position: relative;
     top: 1px;
-    border-radius: 50%; 
-    background-color: #ccc; 
-    margin-right: 8px; 
+    border-radius: 50%;
+    background-color: #ccc;
+    margin-right: 8px;
     flex-shrink: 0;
     transition: background-color 0.3s ease;
   `;

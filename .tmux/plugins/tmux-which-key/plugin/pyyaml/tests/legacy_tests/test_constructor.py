@@ -301,4 +301,3 @@ if __name__ == '__main__':
     sys.modules['test_constructor'] = sys.modules['__main__']
     import test_appliance
     test_appliance.run(globals())
-

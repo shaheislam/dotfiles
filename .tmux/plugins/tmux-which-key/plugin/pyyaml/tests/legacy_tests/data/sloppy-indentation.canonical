@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-!!map { 
+!!map {
     ? !!str "in the block context"
     : !!map {
         ? !!str "indentation should be kept"

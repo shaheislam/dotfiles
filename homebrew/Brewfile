@@ -10,6 +10,7 @@ tap "morantron/tmux-fingers"
 tap "common-fate/granted"
 
 # CLI Tools
+brew "pre-commit"
 brew "zsh-vi-mode"
 brew "bat"
 brew "git-delta"

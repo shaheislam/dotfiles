@@ -156,4 +156,3 @@ complex: "Resource-intensive with comprehensive analysis"
 
 ### Wave-Enabled Commands
 7 commands: `/analyze`, `/build`, `/design`, `/implement`, `/improve`, `/task`, `/workflow`
-

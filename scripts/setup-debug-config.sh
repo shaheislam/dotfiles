@@ -25,19 +25,19 @@ copy_template() {
     local template_file="$TEMPLATES_DIR/${template_name}.json"
     local target_dir="$PROJECT_DIR/.vscode"
     local target_file="$target_dir/launch.json"
-    
+
     if [[ ! -f "$template_file" ]]; then
         echo "❌ Template '$template_name' not found!"
         show_templates
         exit 1
     fi
-    
+
     # Create .vscode directory if it doesn't exist
     mkdir -p "$target_dir"
-    
+
     # Copy template
     cp "$template_file" "$target_file"
-    
+
     echo "✅ Debug configuration '$template_name' copied to $target_file"
     echo "💡 You can now customize it for your specific project needs!"
 }

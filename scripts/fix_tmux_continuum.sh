@@ -7,7 +7,7 @@ CONTINUUM_FILE="$HOME/.tmux/plugins/tmux-continuum/continuum.tmux"
 
 if [ -f "$CONTINUUM_FILE" ]; then
     echo "Fixing tmux-continuum debug output..."
-    
+
     # Check if the set -x line exists and is not commented
     if grep -q "^set -x" "$CONTINUUM_FILE"; then
         # Comment out the debug line

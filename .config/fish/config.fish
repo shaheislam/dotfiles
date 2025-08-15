@@ -16,7 +16,7 @@ end
 complete -c ct-view -e
 complete -c ct-view -f -a "(__fish_complete_aws_s3_buckets)" -d "Search and analyze AWS CloudTrail logs in S3 buckets"
 
-complete -c gd-view -e  
+complete -c gd-view -e
 complete -c gd-view -f -a "(__fish_complete_aws_s3_buckets)" -d "Search and analyze AWS GuardDuty security findings in S3"
 
 complete -c s3-logs -e
@@ -194,21 +194,21 @@ if status is-interactive
     # Enhanced GitHub Gist management with fzf
     function gisls --description "List and manage GitHub gists with fzf"
         set -l gists (gh gist list --limit 100 2>/dev/null)
-        
+
         if test -z "$gists"
             echo "No gists found"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $gists | fzf --prompt="Select gist (ENTER=view, CTRL-E=edit, CTRL-D=delete): " \
             --height=40% --border \
             --header="ENTER=view | CTRL-E=edit | CTRL-D=delete" \
             --bind='ctrl-e:execute(echo edit {})+abort' \
             --bind='ctrl-d:execute(echo delete {})+abort')
-        
+
         if test -n "$selected"
             set -l gist_id (echo $selected | awk '{print $1}')
-            
+
             # Check if user wants to edit or delete
             if string match -q "edit *" "$selected"
                 set gist_id (echo $selected | awk '{print $2}' | awk '{print $1}')
@@ -230,14 +230,14 @@ if status is-interactive
 
     function gisdel --description "Delete GitHub gists with fzf selection"
         set -l gists (gh gist list --limit 100 2>/dev/null)
-        
+
         if test -z "$gists"
             echo "No gists found"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $gists | fzf --multi --prompt="Select gists to delete (TAB for multiple): " --height=40% --border)
-        
+
         if test -n "$selected"
             for gist in $selected
                 set -l gist_id (echo $gist | awk '{print $1}')
@@ -314,14 +314,14 @@ if status is-interactive
     # Enhanced git branch deletion with fzf
     function gx --description "Interactively delete git branches with fzf"
         set -l branches (git branch --list | grep -v "^[ *]*main\$" | sed 's/^[* ]*//')
-        
+
         if test -z "$branches"
             echo "No branches to delete (main is protected)"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $branches | fzf --multi --prompt="Select branches to delete (TAB to select multiple): " --height=40% --border)
-        
+
         if test -n "$selected"
             for branch in $selected
                 echo "Deleting branch: $branch"
@@ -343,7 +343,7 @@ if status is-interactive
     # AWS SSO function with fzf selection
     function aws-sso --description "Authenticate with AWS SSO with fzf profile selection"
         set -l profile $argv[1]
-        
+
         if test -z "$profile"
             # Use fzf to select profile
             set -l profiles (aws configure list-profiles 2>/dev/null)
@@ -351,7 +351,7 @@ if status is-interactive
                 echo "No AWS profiles configured"
                 return 1
             end
-            
+
             set profile (printf '%s\n' $profiles | fzf --prompt="Select AWS SSO profile: " --height=40% --border)
             test -z "$profile"; and return 0
         end
@@ -386,7 +386,7 @@ if status is-interactive
                         set -gx $parts[1] $parts[2]
                     end
                 end
-                
+
                 # Then open console with profile-specific container names and colors
                 switch $profile
                     case labs
@@ -407,7 +407,7 @@ if status is-interactive
                 return
             end
         end
-        
+
         # If no arguments provided, use interactive selection
         if test (count $argv) -eq 0
             # Get available profiles and use fzf for selection
@@ -416,10 +416,10 @@ if status is-interactive
                 echo "No AWS profiles found"
                 return 1
             end
-            
+
             # Use fzf for interactive selection
             set -l selected_profile (printf '%s\n' $profiles | fzf --prompt="Select AWS profile: " --height=40% --border)
-            
+
             if test -n "$selected_profile"
                 # Assume the selected profile
                 set -l env_vars (printf 'n\n' | bash -c "source /opt/homebrew/bin/assume $selected_profile >/dev/null 2>&1 && env | grep -E '^(AWS_|GRANTED_)'")
@@ -434,11 +434,11 @@ if status is-interactive
             end
             return
         end
-        
+
         # Regular assume functionality with specific profile
         # Execute assume command in bash and capture AWS environment variables
         set -l env_vars (printf 'n\n' | bash -c "source /opt/homebrew/bin/assume $argv >/dev/null 2>&1 && env | grep -E '^(AWS_|GRANTED_)'")
-        
+
         # Parse and set each environment variable in the current Fish session
         for line in $env_vars
             set -l parts (string split -m 1 "=" $line)
@@ -446,9 +446,9 @@ if status is-interactive
                 set -gx $parts[1] $parts[2]
             end
         end
-        
+
     end
-    
+
     # Enable Granted completions for Fish shell
     if command -v granted &> /dev/null
         # Generate granted completions if not already installed
@@ -458,7 +458,7 @@ if status is-interactive
         # The completions will be auto-loaded by Fish from the completions directory
     end
 
-    
+
     # Show current AWS account
     function aws-whoami --description "Show current AWS account and identity"
         if test -n "$AWS_PROFILE"
@@ -468,8 +468,8 @@ if status is-interactive
             echo "No AWS profile currently set"
         end
     end
-    
-    
+
+
     # S3grep wrapper to ensure AWS profile is used
     function s3grep
         if test -z "$AWS_PROFILE"
@@ -480,22 +480,22 @@ if status is-interactive
     end
 
     # AWS Log Analysis Functions (Generic)
-    
+
     # Pretty print s3grep output for JSON logs
     function s3-logs --description "Search and format JSON logs from S3 buckets using s3grep"
         set -l bucket $argv[1]
         set -l pattern $argv[2]
         set -l prefix $argv[3]
-        
+
         if test -z "$bucket" -o -z "$pattern"
             echo "Usage: s3-logs <bucket> <pattern> [prefix]"
             echo "Example: s3-logs my-log-bucket '\"eventName\":\"AssumeRole\"' logs/2024/01/"
             return 1
         end
-        
+
         set -l grep_args --bucket $bucket --pattern "$pattern"
         test -n "$prefix"; and set grep_args $grep_args --prefix "$prefix"
-        
+
         s3grep $grep_args 2>/dev/null | while read -l line
             # Split on .gz: to properly separate filepath from JSON
             set -l parts (string split -m 1 ".gz:" $line)
@@ -503,7 +503,7 @@ if status is-interactive
                 set -l filepath $parts[1].gz
                 set -l json $parts[2]
                 set -l filename (basename $filepath)
-                
+
                 echo "📄 File: $filename"
                 echo $json | jq '.' 2>/dev/null || begin
                     echo "Raw content (jq failed):"
@@ -522,7 +522,7 @@ if status is-interactive
         set -l bucket ""
         set -l pattern ""
         set -l prefix ""
-        
+
         # Parse arguments - if first arg doesn't look like a bucket name, treat it as pattern
         if test (count $argv) -ge 1
             # Check if first arg looks like a search pattern (contains quotes, brackets, colons, etc.)
@@ -537,33 +537,33 @@ if status is-interactive
                 set prefix $argv[3]
             end
         end
-        
+
         # If no bucket specified, use fzf to select
         if test -z "$bucket"
             # Use fzf to select bucket containing GuardDuty logs
             set -l buckets (aws s3 ls 2>/dev/null | grep -E "(guard|security|threat|finding)" | awk '{print $3}')
-            
+
             if test -z "$buckets"
                 # Fallback to all buckets if no GuardDuty-specific ones found
                 set buckets (aws s3 ls 2>/dev/null | awk '{print $3}')
             end
-            
+
             if test -z "$buckets"
                 echo "No S3 buckets found"
                 return 1
             end
-            
+
             set bucket (printf '%s\n' $buckets | fzf --prompt="Select GuardDuty bucket: " --height=40% --border)
             test -z "$bucket"; and return 0
-            
+
             echo "Selected bucket: $bucket"
         end
-        
+
         # Interactive prefix selection if not provided
         if test -z "$prefix"
             echo "Browsing bucket structure..."
             set -l current_path ""
-            
+
             while true
                 # List prefixes at current level
                 set -l prefixes
@@ -572,22 +572,22 @@ if status is-interactive
                 else
                     set prefixes (aws s3 ls s3://$bucket/$current_path 2>/dev/null | grep PRE | awk '{print $2}')
                 end
-                
+
                 if test -z "$prefixes"
                     # No more subdirectories, use current path
                     set prefix $current_path
                     break
                 end
-                
+
                 # Add options for navigation
                 set -l options "📁 Use current path: $current_path"
                 if test -n "$current_path"
                     set options $options "⬆️  Go up one level"
                 end
                 set options $options $prefixes
-                
+
                 set -l selected (printf '%s\n' $options | fzf --prompt="Navigate to prefix (or use current): " --height=40% --border)
-                
+
                 if test -z "$selected"
                     # User cancelled
                     return 0
@@ -606,20 +606,20 @@ if status is-interactive
                     set current_path "$current_path$selected"
                 end
             end
-            
+
             echo "Selected prefix: $prefix"
         end
-        
+
         # Get search pattern if not provided
         if test -z "$pattern"
             read -P "Enter search pattern (default: \"severity\":): " pattern
             test -z "$pattern"; and set pattern '"severity":'
         end
-        
+
         echo "Searching GuardDuty findings in $bucket..."
         echo "Pattern: $pattern"
         test -n "$prefix"; and echo "Prefix: $prefix"
-        
+
         s3-logs $bucket "$pattern" "$prefix" | while read -l line
             if string match -q "📄 File:*" "$line"
                 echo $line
@@ -627,7 +627,7 @@ if status is-interactive
                 echo $line
             else
                 # Try to parse as GuardDuty finding
-                echo $line | jq -r 'select(.type != null) | 
+                echo $line | jq -r 'select(.type != null) |
                     "🔍 \(.type)
                     📊 Severity: \(.severity) | \(.title // "No title")
                     👤 Resource: \(.resource.resourceType // "Unknown")
@@ -643,7 +643,7 @@ if status is-interactive
         set -l bucket ""
         set -l pattern ""
         set -l prefix ""
-        
+
         # Parse arguments - if first arg is not a bucket, assume it's a pattern
         if test (count $argv) -ge 1
             # Check if first arg is likely a bucket name (no special chars, looks like S3 naming)
@@ -658,33 +658,33 @@ if status is-interactive
                 set prefix $argv[2]
             end
         end
-        
+
         # If no bucket specified, use fzf to select
         if test -z "$bucket"
             # Use fzf to select bucket containing CloudTrail logs
             set -l buckets (aws s3 ls 2>/dev/null | grep -E "(trail|cloudtrail|audit|log|central)" | awk '{print $3}')
-            
+
             if test -z "$buckets"
                 # Fallback to all buckets if no CloudTrail-specific ones found
                 set buckets (aws s3 ls 2>/dev/null | awk '{print $3}')
             end
-            
+
             if test -z "$buckets"
                 echo "No S3 buckets found"
                 return 1
             end
-            
+
             set bucket (printf '%s\n' $buckets | fzf --prompt="Select CloudTrail bucket: " --height=40% --border)
             test -z "$bucket"; and return 0
-            
+
             echo "Selected bucket: $bucket"
         end
-        
+
         # Interactive prefix selection if not provided
         if test -z "$prefix"
             echo "Browsing bucket structure..."
             set -l current_path ""
-            
+
             while true
                 # List prefixes at current level
                 set -l prefixes
@@ -693,22 +693,22 @@ if status is-interactive
                 else
                     set prefixes (aws s3 ls s3://$bucket/$current_path 2>/dev/null | grep PRE | awk '{print $2}')
                 end
-                
+
                 if test -z "$prefixes"
                     # No more subdirectories, use current path
                     set prefix $current_path
                     break
                 end
-                
+
                 # Add options for navigation
                 set -l options "📁 Use current path: $current_path"
                 if test -n "$current_path"
                     set options $options "⬆️  Go up one level"
                 end
                 set options $options $prefixes
-                
+
                 set -l selected (printf '%s\n' $options | fzf --prompt="Navigate to prefix (or use current): " --height=40% --border)
-                
+
                 if test -z "$selected"
                     # User cancelled
                     return 0
@@ -727,23 +727,23 @@ if status is-interactive
                     set current_path "$current_path$selected"
                 end
             end
-            
+
             echo "Selected prefix: $prefix"
         end
-        
+
         # Get search pattern if not provided
         if test -z "$pattern"
             read -P "Enter search pattern (or press enter for all): " pattern
             test -z "$pattern"; and set pattern "."
         end
-        
+
         echo "Searching CloudTrail events in $bucket..."
         echo "Pattern: $pattern"
         test -n "$prefix"; and echo "Prefix: $prefix"
-        
+
         set -l grep_args --bucket $bucket --pattern "$pattern"
         test -n "$prefix"; and set grep_args $grep_args --prefix "$prefix"
-        
+
         s3grep $grep_args 2>/dev/null | while read -l line
             # Split on first colon after s3://
             set -l parts (string split -m 1 ".gz:" $line)
@@ -751,18 +751,18 @@ if status is-interactive
                 set -l filepath $parts[1].gz
                 set -l json $parts[2]
                 set -l filename (basename $filepath)
-                
+
                 echo "📄 File: $filename"
                 echo $json | jq -r '
-                    if .Records then 
+                    if .Records then
                         .Records[] | "🔐 \(.eventName // "Unknown") | \(.eventSource // "Unknown")
 👤 User: \(.userIdentity.userName // .userIdentity.arn // .userIdentity.principalId // "System")
-🌍 IP: \(.sourceIPAddress // "N/A") | Region: \(.awsRegion // "N/A")  
+🌍 IP: \(.sourceIPAddress // "N/A") | Region: \(.awsRegion // "N/A")
 🕐 Time: \(.eventTime // "Unknown")
 ───────────────────────────────────────────────────────────────"
-                    else 
+                    else
                         "🔐 Event: \(.eventName // "Unknown") | Source: \(.eventSource // "Unknown")
-👤 User: \(.userIdentity.userName // .userIdentity.arn // .userIdentity.principalId // "System")  
+👤 User: \(.userIdentity.userName // .userIdentity.arn // .userIdentity.principalId // "System")
 🌍 IP: \(.sourceIPAddress // "N/A") | Region: \(.awsRegion // "N/A")
 🕐 Time: \(.eventTime // "Unknown")
 ───────────────────────────────────────────────────────────────"
@@ -783,7 +783,7 @@ if status is-interactive
         set -l bucket $argv[1]
         set -l prefix $argv[2]
         set -l days $argv[3]
-        
+
         if test -z "$bucket"
             # Use fzf to select bucket if not provided
             set -l buckets (aws s3 ls 2>/dev/null | awk '{print $3}')
@@ -791,39 +791,39 @@ if status is-interactive
                 echo "No S3 buckets found"
                 return 1
             end
-            
+
             set bucket (printf '%s\n' $buckets | fzf --prompt="Select S3 bucket: " --height=40% --border)
             test -z "$bucket"; and return 0
         end
-        
+
         test -z "$days"; and set days 30
-        
+
         echo "📅 Fetching dates from s3://$bucket/$prefix..."
         set -l dates (aws s3 ls s3://$bucket/$prefix --recursive 2>/dev/null \
             | grep -E '20[0-9]{2}/[0-9]{2}/[0-9]{2}/' \
             | awk '{print $4}' \
             | grep -oE '20[0-9]{2}/[0-9]{2}/[0-9]{2}' \
             | sort -r | uniq | head -$days)
-        
+
         if test -z "$dates"
             echo "No dates found in bucket"
             return 1
         end
-        
+
         # Use fzf to select a date to explore
         set -l selected_date (printf '%s\n' $dates | fzf --prompt="Select date to explore: " --height=40% --border)
-        
+
         if test -n "$selected_date"
             echo "Exploring logs for date: $selected_date"
             set -l date_path (string replace -a "/" "/" $selected_date)
-            
+
             # List files for selected date
             echo "Files for $selected_date:"
             set -l files (aws s3 ls s3://$bucket/$prefix --recursive 2>/dev/null | grep "$date_path" | awk '{print $4}' | head -20)
-            
+
             if test -n "$files"
                 set -l selected_file (printf '%s\n' $files | fzf --prompt="Select file to view: " --height=40% --border)
-                
+
                 if test -n "$selected_file"
                     echo "Viewing: $selected_file"
                     aws s3 cp s3://$bucket/$selected_file - 2>/dev/null | head -100 | jq '.' 2>/dev/null || aws s3 cp s3://$bucket/$selected_file - 2>/dev/null | head -100
@@ -837,7 +837,7 @@ if status is-interactive
     # Interactive S3 log browser with fzf
     function s3-browse --description "Interactive browser for exploring S3 log buckets with fzf"
         set -l bucket $argv[1]
-        
+
         if test -z "$bucket"
             # Use fzf to select from available buckets
             set -l buckets (aws s3 ls 2>/dev/null | awk '{print $3}')
@@ -845,29 +845,29 @@ if status is-interactive
                 echo "No S3 buckets found"
                 return 1
             end
-            
+
             set bucket (printf '%s\n' $buckets | fzf --prompt="Select S3 bucket: " --height=40% --border)
             test -z "$bucket"; and return 0
         end
-        
+
         echo "S3 Log Browser: $bucket"
         echo "======================"
-        
+
         # Use fzf to select prefix
         set -l prefixes (aws s3 ls s3://$bucket/ 2>/dev/null | grep PRE | awk '{print $2}')
-        
+
         if test -n "$prefixes"
             set -l prefix (printf '%s\n' $prefixes | fzf --prompt="Select prefix to explore: " --height=40% --border)
             test -z "$prefix"; and return 0
-            
+
             # Use fzf to select from recent files or enter custom pattern
             echo "Fetching recent files in $prefix..."
             set -l files (aws s3 ls s3://$bucket/$prefix --recursive 2>/dev/null | tail -20 | awk '{print $4}')
-            
+
             if test -n "$files"
                 echo "Recent files found. Select one to view or press ESC to search with pattern."
                 set -l selected_file (printf '%s\n' $files | fzf --prompt="Select file or ESC for pattern search: " --height=40% --border)
-                
+
                 if test -n "$selected_file"
                     # View specific file
                     echo "Viewing: $selected_file"
@@ -875,11 +875,11 @@ if status is-interactive
                     return 0
                 end
             end
-            
+
             # Pattern search
             read -P "Enter search pattern (or press enter for all): " pattern
             test -z "$pattern"; and set pattern "."
-            
+
             echo "Searching..."
             s3-logs $bucket "$pattern" "$prefix" | head -50
         else
@@ -891,7 +891,7 @@ if status is-interactive
     function logs --description "Quick AWS log search with fzf bucket selection"
         set -l pattern $argv[1]
         set -l bucket $argv[2]
-        
+
         if test -z "$pattern"
             echo "Usage: logs <pattern> [bucket]"
             echo "Examples:"
@@ -906,18 +906,18 @@ if status is-interactive
             echo "  root                 - Root account usage"
             return 1
         end
-        
+
         if test -z "$bucket"
             # Use fzf to select bucket or search all log buckets
             set -l log_buckets (aws s3 ls 2>/dev/null | grep -E "(log|trail|guard|audit)" | awk '{print $3}')
-            
+
             if test -n "$log_buckets"
                 # Add option to search all
                 set -l options "Search all log buckets"
                 set options $options $log_buckets
-                
+
                 set -l selected (printf '%s\n' $options | fzf --prompt="Select bucket to search: " --height=40% --border)
-                
+
                 if test "$selected" = "Search all log buckets"
                     echo "Searching all log buckets..."
                     for b in $log_buckets
@@ -932,13 +932,13 @@ if status is-interactive
             else
                 # Fallback to known buckets
                 echo "No log buckets found, trying default buckets..."
-                
+
                 # Try CloudTrail bucket
                 if aws s3 ls s3://petlab-centralize-logging/ >/dev/null 2>&1
                     echo "🔍 Searching CloudTrail logs..."
                     s3-logs petlab-centralize-logging "$pattern" "AWSLogs/" | head -10
                 end
-                
+
                 # Try GuardDuty bucket
                 if aws s3 ls s3://petlab-guardduty-logging/ >/dev/null 2>&1
                     echo "🔍 Searching GuardDuty logs..."
@@ -999,37 +999,37 @@ if status is-interactive
     # Git checkout with fzf
     function gco --description "Git checkout branch/tag with fzf"
         set -l branches (git branch -a 2>/dev/null | grep -v HEAD | sed 's/.* //' | sed 's|remotes/[^/]*/||' | sort -u)
-        
+
         if test -z "$branches"
             echo "No branches found"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $branches | fzf --prompt="Checkout branch: " --height=40% --border)
-        
+
         if test -n "$selected"
             git checkout $selected
         end
     end
-    
+
     # Git stash management with fzf
     function gstash --description "Manage git stashes with fzf"
         set -l stashes (git stash list 2>/dev/null)
-        
+
         if test -z "$stashes"
             echo "No stashes found"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $stashes | fzf --prompt="Select stash (ENTER=apply, CTRL-P=pop, CTRL-D=drop): " \
             --height=40% --border \
             --header="ENTER=apply | CTRL-P=pop | CTRL-D=drop" \
             --bind='ctrl-p:execute(echo pop {})+abort' \
             --bind='ctrl-d:execute(echo drop {})+abort')
-        
+
         if test -n "$selected"
             set -l stash_id (echo $selected | cut -d: -f1)
-            
+
             if string match -q "pop *" "$selected"
                 set stash_id (echo $selected | awk '{print $2}' | cut -d: -f1)
                 echo "Popping stash: $stash_id"
@@ -1048,26 +1048,26 @@ if status is-interactive
             end
         end
     end
-    
+
     # Docker container management with fzf
     function dps --description "Select Docker container with fzf for various operations"
         set -l containers (docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}" | tail -n +2)
-        
+
         if test -z "$containers"
             echo "No Docker containers found"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $containers | fzf --prompt="Select container (ENTER=logs, CTRL-S=shell, CTRL-R=restart, CTRL-D=delete): " \
             --height=40% --border \
             --header="ENTER=logs | CTRL-S=shell | CTRL-R=restart | CTRL-D=delete" \
             --bind='ctrl-s:execute(echo shell {})+abort' \
             --bind='ctrl-r:execute(echo restart {})+abort' \
             --bind='ctrl-d:execute(echo delete {})+abort')
-        
+
         if test -n "$selected"
             set -l container_id (echo $selected | awk '{print $1}')
-            
+
             if string match -q "shell *" "$selected"
                 set container_id (echo $selected | awk '{print $2}')
                 echo "Opening shell in container: $container_id"
@@ -1090,21 +1090,21 @@ if status is-interactive
             end
         end
     end
-    
+
     # Docker image management with fzf
     function dimg --description "Select Docker image with fzf for various operations"
         set -l images (docker images --format "table {{.ID}}\t{{.Repository}}:{{.Tag}}\t{{.Size}}" | tail -n +2)
-        
+
         if test -z "$images"
             echo "No Docker images found"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $images | fzf --multi --prompt="Select images (TAB for multiple, ENTER=run, CTRL-D=delete): " \
             --height=40% --border \
             --header="ENTER=run | CTRL-D=delete (TAB for multiple)" \
             --bind='ctrl-d:execute(echo delete {})+abort')
-        
+
         if test -n "$selected"
             if string match -q "delete *" "$selected"
                 # Handle deletion
@@ -1134,14 +1134,14 @@ if status is-interactive
             echo "Not in a git repository"
             return 1
         end
-        
+
         set -l worktrees (git worktree list 2>/dev/null)
-        
+
         if test -z "$worktrees"
             echo "No git worktrees found"
             return 1
         end
-        
+
         # If stdout is a terminal, use fzf for selection
         if isatty stdout
             set -l selected (printf '%s\n' $worktrees | fzf --height=40% --reverse --prompt="Switch to worktree: " | awk '{print $1}')
@@ -1161,16 +1161,16 @@ if status is-interactive
             echo "Not in a git repository"
             return 1
         end
-        
+
         set -l worktrees (git worktree list 2>/dev/null | grep -v '(bare)')
-        
+
         if test -z "$worktrees"
             echo "No git worktrees to remove"
             return 1
         end
-        
+
         set -l selected (printf '%s\n' $worktrees | fzf --height=40% --reverse --prompt="Remove worktree: " | awk '{print $1}')
-        
+
         if test -n "$selected"
             echo "Removing worktree: $selected"
             git worktree remove "$selected"
@@ -1285,5 +1285,3 @@ if status is-interactive
     bind \cr atuin_fzf_search
     bind -M insert \cr atuin_fzf_search
 end
-
-

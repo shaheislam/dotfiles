@@ -1,0 +1,67 @@
+# Pre-commit configuration for dotfiles repository
+# Extends the global configuration with dotfiles-specific rules
+
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+default_language_version:
+  python: python3
+
+repos:
+  # Gitleaks - Secret Detection
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  # Pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Shell script checks (important for dotfiles)
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning]
+        exclude: '^\.config/fish/.*\.fish$'  # Fish shell has different syntax
+
+  # YAML (for config files)
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [-c=.config/git/.yamllint]
+        files: \.(yaml|yml)$
+
+# Exclude patterns specific to dotfiles
+exclude: |
+  (?x)^(
+    \.git/|
+    \.venv/|
+    __pycache__/|
+    node_modules/|
+    \.config/nvim/lazy-lock\.json|
+    \.config/tmux/plugins/|
+    \.tmux/plugins/|
+    \.claude/|
+    \.config/vscode/keybindings\.json|
+  )$

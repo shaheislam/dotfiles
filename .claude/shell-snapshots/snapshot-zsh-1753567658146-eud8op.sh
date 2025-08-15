@@ -18,7 +18,7 @@ unalias -a 2>/dev/null || true
 	local -A apre hpre dscrs _oad _mesg
 	local -a isfile _opts __ expl
 	zparseopts -a _opts P:=apre p:=hpre d:=dscrs X+:=expl O:=_oad A:=_oad D:=_oad f=isfile i: S: s: I: x:=_mesg r: R: W: F: M+: E: q e Q n U C J:=__ V:=__ a=__ l=__ k=__ o::=__ 1=__ 2=__
-	_ftb_curcontext=${curcontext#:} 
+	_ftb_curcontext=${curcontext#:}
 	if (( $#_oad != 0 || ! IN_FZF_TAB )) || {
 			-ftb-zstyle -m disabled-on "any"
 		} || (
@@ -33,10 +33,10 @@ unalias -a 2>/dev/null || true
 	local -a __hits __dscr
 	if (( $#dscrs == 1 ))
 	then
-		__dscr=("${(@P)${(v)dscrs}}") 
+		__dscr=("${(@P)${(v)dscrs}}")
 	fi
 	builtin compadd -A __hits -D __dscr "$@"
-	local ret=$? 
+	local ret=$?
 	if (( $#__hits == 0 ))
 	then
 		if is-at-least 5.9 && (( $#_mesg != 0 ))
@@ -45,28 +45,28 @@ unalias -a 2>/dev/null || true
 		fi
 		return $ret
 	fi
-	expl=$expl[2] 
-	[[ -n $expl ]] && _ftb_groups+=$expl 
-	local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX) 
-	local key expanded __tmp_value=$'<\0>' 
+	expl=$expl[2]
+	[[ -n $expl ]] && _ftb_groups+=$expl
+	local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
+	local key expanded __tmp_value=$'<\0>'
 	for key in $keys
 	do
-		expanded=${(P)key} 
+		expanded=${(P)key}
 		if [[ -n $expanded ]]
 		then
-			__tmp_value+=$'\0'$key$'\0'$expanded 
+			__tmp_value+=$'\0'$key$'\0'$expanded
 		fi
 	done
 	if [[ -n $expl ]]
 	then
-		__tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl] 
+		__tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
 	fi
 	if [[ -n $isfile ]]
 	then
-		__tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}} 
+		__tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}}
 	fi
-	_opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile) 
-	__tmp_value+=$'\0args\0'${(pj:\1:)_opts} 
+	_opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
+	__tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 	if (( $+builtins[fzf-tab-compcap-generate] ))
 	then
 		fzf-tab-compcap-generate __hits __dscr __tmp_value
@@ -74,86 +74,86 @@ unalias -a 2>/dev/null || true
 		local dscr word i
 		for i in {1..$#__hits}
 		do
-			word=$__hits[i] dscr=$__dscr[i] 
+			word=$__hits[i] dscr=$__dscr[i]
 			if [[ -n $dscr ]]
 			then
-				dscr=${dscr//$'\n'} 
+				dscr=${dscr//$'\n'}
 			elif [[ -n $word ]]
 			then
-				dscr=$word 
+				dscr=$word
 			fi
-			_ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word 
+			_ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
 		done
 	fi
 	builtin compadd "$@"
 }
 -ftb-complete () {
 	local -Ua _ftb_groups
-	local choice choices _ftb_curcontext continuous_trigger print_query accept_line bs=$'\2' nul=$'\0' 
-	local ret=0 
+	local choice choices _ftb_curcontext continuous_trigger print_query accept_line bs=$'\2' nul=$'\0'
+	local ret=0
 	(( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -i
-	COLUMNS=500 _ftb__main_complete "$@" || ret=$? 
+	COLUMNS=500 _ftb__main_complete "$@" || ret=$?
 	(( $+builtins[fzf-tab-compcap-generate] )) && fzf-tab-compcap-generate -o
 	emulate -L zsh -o extended_glob
-	local _ftb_query _ftb_complist=() _ftb_headers=() command opts 
+	local _ftb_query _ftb_complist=() _ftb_headers=() command opts
 	-ftb-generate-complist
 	-ftb-zstyle -s continuous-trigger continuous_trigger || {
-		[[ $OSTYPE == msys ]] && continuous_trigger=//  || continuous_trigger=/ 
+		[[ $OSTYPE == msys ]] && continuous_trigger=//  || continuous_trigger=/
 	}
 	case $#_ftb_complist in
 		(0) return 1 ;;
-		(1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}") 
+		(1) choices=("EXPECT_KEY" "${_ftb_compcap[1]%$bs*}")
 			if (( _ftb_continue_last ))
 			then
-				choices[1]=$continuous_trigger 
+				choices[1]=$continuous_trigger
 			fi ;;
 		(*) if (( ! _ftb_continue_last )) && [[ $compstate[insert] == *"unambiguous" ]] && [[ -n $compstate[unambiguous] ]] && [[ "$compstate[unambiguous]" != "$compstate[quote]$IPREFIX$PREFIX$compstate[quote]" ]]
 			then
-				compstate[list]= 
-				compstate[insert]=unambiguous 
-				_ftb_finish=1 
+				compstate[list]=
+				compstate[insert]=unambiguous
+				_ftb_finish=1
 				return 0
 			fi
 			-ftb-generate-query
 			-ftb-generate-header
-			-ftb-zstyle -s print-query print_query || print_query=alt-enter 
+			-ftb-zstyle -s print-query print_query || print_query=alt-enter
 			-ftb-zstyle -s accept-line accept_line
-			choices=("${(@f)"$(builtin print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}") 
-			ret=$? 
+			choices=("${(@f)"$(builtin print -rl -- $_ftb_headers $_ftb_complist | -ftb-fzf)"}")
+			ret=$?
 			if [[ $choices[2] == $print_query ]] || [[ -n $choices[1] && $#choices == 1 ]]
 			then
-				local -A v=("${(@0)${_ftb_compcap[1]}}") 
-				local -a args=("${(@ps:\1:)v[args]}") 
-				[[ -z $args[1] ]] && args=() 
-				IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] 
+				local -A v=("${(@0)${_ftb_compcap[1]}}")
+				local -a args=("${(@ps:\1:)v[args]}")
+				[[ -z $args[1] ]] && args=()
+				IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
 				builtin compadd "${args[@]:--Q}" -Q -- $choices[1]
-				compstate[list]= 
-				compstate[insert]= 
+				compstate[list]=
+				compstate[insert]=
 				if (( $#choices[1] > 0 ))
 				then
-					compstate[insert]='1' 
-					[[ $RBUFFER == ' '* ]] || compstate[insert]+=' ' 
+					compstate[insert]='1'
+					[[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
 				fi
-				_ftb_finish=1 
+				_ftb_finish=1
 				return $ret
 			fi
-			choices[1]=() 
-			choices=("${(@)${(@)choices%$nul*}#*$nul}") 
+			choices[1]=()
+			choices=("${(@)${(@)choices%$nul*}#*$nul}")
 			unset CTXT ;;
 	esac
 	if [[ -n $choices[1] && $choices[1] == $continuous_trigger ]]
 	then
-		typeset -gi _ftb_continue=1 
-		typeset -gi _ftb_continue_last=1 
+		typeset -gi _ftb_continue=1
+		typeset -gi _ftb_continue_last=1
 	fi
 	if [[ -n $choices[1] && $choices[1] == $accept_line ]]
 	then
-		typeset -gi _ftb_accept=1 
+		typeset -gi _ftb_accept=1
 	fi
-	choices[1]=() 
-	_ftb_choices=("${(@)choices}") 
-	compstate[list]= 
-	compstate[insert]= 
+	choices[1]=()
+	_ftb_choices=("${(@)choices}")
+	compstate[list]=
+	compstate[insert]=
 	return $ret
 }
 -ftb-fzf () {
@@ -184,58 +184,58 @@ VCS_INFO_formats () {
 	local msg tmp
 	local -i i
 	local -A hook_com
-	hook_com=(action "$1" action_orig "$1" branch "$2" branch_orig "$2" base "$3" base_orig "$3" staged "$4" staged_orig "$4" unstaged "$5" unstaged_orig "$5" revision "$6" revision_orig "$6" misc "$7" misc_orig "$7" vcs "${vcs}" vcs_orig "${vcs}") 
-	hook_com[base-name]="${${hook_com[base]}:t}" 
-	hook_com[base-name_orig]="${hook_com[base-name]}" 
-	hook_com[subdir]="$(VCS_INFO_reposub ${hook_com[base]})" 
-	hook_com[subdir_orig]="${hook_com[subdir]}" 
+	hook_com=(action "$1" action_orig "$1" branch "$2" branch_orig "$2" base "$3" base_orig "$3" staged "$4" staged_orig "$4" unstaged "$5" unstaged_orig "$5" revision "$6" revision_orig "$6" misc "$7" misc_orig "$7" vcs "${vcs}" vcs_orig "${vcs}")
+	hook_com[base-name]="${${hook_com[base]}:t}"
+	hook_com[base-name_orig]="${hook_com[base-name]}"
+	hook_com[subdir]="$(VCS_INFO_reposub ${hook_com[base]})"
+	hook_com[subdir_orig]="${hook_com[subdir]}"
 	: vcs_info-patch-9b9840f2-91e5-4471-af84-9e9a0dc68c1b
 	for tmp in base base-name branch misc revision subdir
 	do
-		hook_com[$tmp]="${hook_com[$tmp]//\%/%%}" 
+		hook_com[$tmp]="${hook_com[$tmp]//\%/%%}"
 	done
 	VCS_INFO_hook 'post-backend'
 	if [[ -n ${hook_com[action]} ]]
 	then
 		zstyle -a ":vcs_info:${vcs}:${usercontext}:${rrn}" actionformats msgs
-		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b|%a]%u%c-' 
+		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b|%a]%u%c-'
 	else
 		zstyle -a ":vcs_info:${vcs}:${usercontext}:${rrn}" formats msgs
-		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b]%u%c-' 
+		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b]%u%c-'
 	fi
 	if [[ -n ${hook_com[staged]} ]]
 	then
 		zstyle -s ":vcs_info:${vcs}:${usercontext}:${rrn}" stagedstr tmp
-		[[ -z ${tmp} ]] && hook_com[staged]='S'  || hook_com[staged]=${tmp} 
+		[[ -z ${tmp} ]] && hook_com[staged]='S'  || hook_com[staged]=${tmp}
 	fi
 	if [[ -n ${hook_com[unstaged]} ]]
 	then
 		zstyle -s ":vcs_info:${vcs}:${usercontext}:${rrn}" unstagedstr tmp
-		[[ -z ${tmp} ]] && hook_com[unstaged]='U'  || hook_com[unstaged]=${tmp} 
+		[[ -z ${tmp} ]] && hook_com[unstaged]='U'  || hook_com[unstaged]=${tmp}
 	fi
 	if [[ ${quiltmode} != 'standalone' ]] && VCS_INFO_hook "pre-addon-quilt"
 	then
 		local REPLY
 		VCS_INFO_quilt addon
-		hook_com[quilt]="${REPLY}" 
+		hook_com[quilt]="${REPLY}"
 		unset REPLY
 	elif [[ ${quiltmode} == 'standalone' ]]
 	then
-		hook_com[quilt]=${hook_com[misc]} 
+		hook_com[quilt]=${hook_com[misc]}
 	fi
-	(( ${#msgs} > maxexports )) && msgs[$(( maxexports + 1 )),-1]=() 
+	(( ${#msgs} > maxexports )) && msgs[$(( maxexports + 1 )),-1]=()
 	for i in {1..${#msgs}}
 	do
 		if VCS_INFO_hook "set-message" $(( $i - 1 )) "${msgs[$i]}"
 		then
 			zformat -f msg ${msgs[$i]} a:${hook_com[action]} b:${hook_com[branch]} c:${hook_com[staged]} i:${hook_com[revision]} m:${hook_com[misc]} r:${hook_com[base-name]} s:${hook_com[vcs]} u:${hook_com[unstaged]} Q:${hook_com[quilt]} R:${hook_com[base]} S:${hook_com[subdir]}
-			msgs[$i]=${msg} 
+			msgs[$i]=${msg}
 		else
-			msgs[$i]=${hook_com[message]} 
+			msgs[$i]=${hook_com[message]}
 		fi
 	done
-	hook_com=() 
-	backend_misc=() 
+	hook_com=()
+	backend_misc=()
 	return 0
 }
 _SUSEconfig () {
@@ -252,7 +252,7 @@ __fzf_git_cat () {
 		echo "$FZF_GIT_CAT"
 		return
 	fi
-	_fzf_git_bat_options="--style='${BAT_STYLE:-full}' --color=$(__fzf_git_color .) --pager=never" 
+	_fzf_git_bat_options="--style='${BAT_STYLE:-full}' --color=$(__fzf_git_color .) --pager=never"
 	if command -v batcat > /dev/null
 	then
 		echo "batcat $_fzf_git_bat_options"
@@ -276,7 +276,7 @@ __fzf_git_color () {
 }
 __fzf_git_pager () {
 	local pager
-	pager="${FZF_GIT_PAGER:-${GIT_PAGER:-$(git config --get core.pager 2>/dev/null)}}" 
+	pager="${FZF_GIT_PAGER:-${GIT_PAGER:-$(git config --get core.pager 2>/dev/null)}}"
 	echo "${pager:-cat}"
 }
 __git_prompt_git () {
@@ -291,7 +291,7 @@ __zoxide_cd () {
 __zoxide_doctor () {
 	[[ ${_ZO_DOCTOR:-1} -ne 0 ]] || return 0
 	[[ ${chpwd_functions[(Ie)__zoxide_hook]:-} -eq 0 ]] || return 0
-	_ZO_DOCTOR=0 
+	_ZO_DOCTOR=0
 	\builtin printf '%s\n' 'zoxide: detected a possible configuration issue.' 'Please ensure that zoxide is initialized right at the end of your shell configuration file (usually ~/.zshrc).' '' 'If the issue persists, consider filing an issue at:' 'https://github.com/ajeetdsouza/zoxide/issues' '' 'Disable this message by setting _ZO_DOCTOR=0.' '' >&2
 }
 __zoxide_hook () {
@@ -426,7 +426,7 @@ _apm () {
 _approximate () {
 	(( ! IN_FZF_TAB )) || unfunction compadd
 	_ftb__approximate
-	(( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd] 
+	(( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd]
 }
 _apt () {
 	# undefined
@@ -505,9 +505,9 @@ _atuin () {
 	builtin autoload -XUz
 }
 _atuin_precmd () {
-	local EXIT="$?" __atuin_precmd_time=${EPOCHREALTIME-} 
+	local EXIT="$?" __atuin_precmd_time=${EPOCHREALTIME-}
 	[[ -z "${ATUIN_HISTORY_ID:-}" ]] && return
-	local duration="" 
+	local duration=""
 	if [[ -n $__atuin_preexec_time && -n $__atuin_precmd_time ]]
 	then
 		printf -v duration %.0f $(((__atuin_precmd_time - __atuin_preexec_time) * 1000000000))
@@ -515,28 +515,28 @@ _atuin_precmd () {
 	(
 		ATUIN_LOG=error atuin history end --exit $EXIT ${duration:+--duration=$duration} -- $ATUIN_HISTORY_ID &
 	) > /dev/null 2>&1
-	export ATUIN_HISTORY_ID="" 
+	export ATUIN_HISTORY_ID=""
 }
 _atuin_preexec () {
 	local id
-	id=$(atuin history start -- "$1") 
-	export ATUIN_HISTORY_ID="$id" 
-	__atuin_preexec_time=${EPOCHREALTIME-} 
+	id=$(atuin history start -- "$1")
+	export ATUIN_HISTORY_ID="$id"
+	__atuin_preexec_time=${EPOCHREALTIME-}
 }
 _atuin_search () {
 	emulate -L zsh
 	zle -I
 	local output
-	output=$(ATUIN_SHELL_ZSH=t ATUIN_LOG=error ATUIN_QUERY=$BUFFER atuin search $* -i 3>&1 1>&2 2>&3) 
+	output=$(ATUIN_SHELL_ZSH=t ATUIN_LOG=error ATUIN_QUERY=$BUFFER atuin search $* -i 3>&1 1>&2 2>&3)
 	zle reset-prompt
 	echo -n ${zle_bracketed_paste[1]} > /dev/tty
 	if [[ -n $output ]]
 	then
-		RBUFFER="" 
-		LBUFFER=$output 
+		RBUFFER=""
+		LBUFFER=$output
 		if [[ $LBUFFER == __atuin_accept__:* ]]
 		then
-			LBUFFER=${LBUFFER#__atuin_accept__:} 
+			LBUFFER=${LBUFFER#__atuin_accept__:}
 			zle accept-line
 		fi
 	fi
@@ -610,40 +610,40 @@ _bash () {
 	builtin autoload -XUz
 }
 _bash_complete () {
-	local ret=1 
+	local ret=1
 	local -a suf matches
 	local -x COMP_POINT COMP_CWORD
 	local -a COMP_WORDS COMPREPLY BASH_VERSINFO
-	local -x COMP_LINE="$words" 
+	local -x COMP_LINE="$words"
 	local -A savejobstates savejobtexts
 	(( COMP_POINT = 1 + ${#${(j. .)words[1,CURRENT-1]}} + $#QIPREFIX + $#IPREFIX + $#PREFIX ))
 	(( COMP_CWORD = CURRENT - 1))
-	COMP_WORDS=("${words[@]}") 
-	BASH_VERSINFO=(2 05b 0 1 release) 
-	savejobstates=(${(kv)jobstates}) 
-	savejobtexts=(${(kv)jobtexts}) 
-	[[ ${argv[${argv[(I)nospace]:-0}-1]} = -o ]] && suf=(-S '') 
-	matches=(${(f)"$(compgen $@ -- ${words[CURRENT]})"}) 
+	COMP_WORDS=("${words[@]}")
+	BASH_VERSINFO=(2 05b 0 1 release)
+	savejobstates=(${(kv)jobstates})
+	savejobtexts=(${(kv)jobtexts})
+	[[ ${argv[${argv[(I)nospace]:-0}-1]} = -o ]] && suf=(-S '')
+	matches=(${(f)"$(compgen $@ -- ${words[CURRENT]})"})
 	if [[ -n $matches ]]
 	then
 		if [[ ${argv[${argv[(I)filenames]:-0}-1]} = -o ]]
 		then
-			compset -P '*/' && matches=(${matches##*/}) 
-			compset -S '/*' && matches=(${matches%%/*}) 
-			compadd -f "${suf[@]}" -a matches && ret=0 
+			compset -P '*/' && matches=(${matches##*/})
+			compset -S '/*' && matches=(${matches%%/*})
+			compadd -f "${suf[@]}" -a matches && ret=0
 		else
-			compadd "${suf[@]}" - "${(@)${(Q@)matches}:#*\ }" && ret=0 
-			compadd -S ' ' - ${${(M)${(Q)matches}:#*\ }% } && ret=0 
+			compadd "${suf[@]}" - "${(@)${(Q@)matches}:#*\ }" && ret=0
+			compadd -S ' ' - ${${(M)${(Q)matches}:#*\ }% } && ret=0
 		fi
 	fi
 	if (( ret ))
 	then
 		if [[ ${argv[${argv[(I)default]:-0}-1]} = -o ]]
 		then
-			_default "${suf[@]}" && ret=0 
+			_default "${suf[@]}" && ret=0
 		elif [[ ${argv[${argv[(I)dirnames]:-0}-1]} = -o ]]
 		then
-			_directories "${suf[@]}" && ret=0 
+			_directories "${suf[@]}" && ret=0
 		fi
 	fi
 	return ret
@@ -797,21 +797,21 @@ _call_function () {
 	builtin autoload -XUz
 }
 _call_program () {
-	local -xi COLUMNS=999 
-	local curcontext="${curcontext}" tmp err_fd=-1 clocale='_comp_locale;' 
+	local -xi COLUMNS=999
+	local curcontext="${curcontext}" tmp err_fd=-1 clocale='_comp_locale;'
 	local -a prefix
 	if [[ "$1" = -p ]]
 	then
 		shift
 		if (( $#_comp_priv_prefix ))
 		then
-			curcontext="${curcontext%:*}/${${(@M)_comp_priv_prefix:#^*[^\\]=*}[1]}:" 
-			zstyle -t ":completion:${curcontext}:${1}" gain-privileges && prefix=($_comp_priv_prefix) 
+			curcontext="${curcontext%:*}/${${(@M)_comp_priv_prefix:#^*[^\\]=*}[1]}:"
+			zstyle -t ":completion:${curcontext}:${1}" gain-privileges && prefix=($_comp_priv_prefix)
 		fi
 	elif [[ "$1" = -l ]]
 	then
 		shift
-		clocale='' 
+		clocale=''
 	fi
 	if (( ${debug_fd:--1} > 2 )) || [[ ! -t 2 ]]
 	then
@@ -1709,56 +1709,56 @@ _fstat () {
 _ftb__approximate () {
 	[[ _matcher_num -gt 1 || "${#:-$PREFIX$SUFFIX}" -le 1 ]] && return 1
 	local _comp_correct _correct_expl _correct_group comax cfgacc match
-	local oldcontext="${curcontext}" opm="$compstate[pattern_match]" 
+	local oldcontext="${curcontext}" opm="$compstate[pattern_match]"
 	local dounfunction
-	integer ret=1 
+	integer ret=1
 	if [[ "$1" = -a* ]]
 	then
-		cfgacc="${1[3,-1]}" 
+		cfgacc="${1[3,-1]}"
 	elif [[ "$1" = -a ]]
 	then
-		cfgacc="$2" 
+		cfgacc="$2"
 	else
-		zstyle -s ":completion:${curcontext}:" max-errors cfgacc || cfgacc='2 numeric' 
+		zstyle -s ":completion:${curcontext}:" max-errors cfgacc || cfgacc='2 numeric'
 	fi
 	if [[ "$cfgacc" = *numeric* && ${NUMERIC:-1} -ne 1 ]]
 	then
 		[[ "$cfgacc" = *not-numeric* ]] && return 1
-		comax="${NUMERIC:-1}" 
+		comax="${NUMERIC:-1}"
 	else
-		comax="${cfgacc//[^0-9]}" 
+		comax="${cfgacc//[^0-9]}"
 	fi
 	[[ "$comax" -lt 1 ]] && return 1
 	_tags corrections original
 	{
 		if (( ! $+functions[compadd] ))
 		then
-			dounfunction=1 
+			dounfunction=1
 			compadd () {
-				local ppre="$argv[(I)-p]" 
+				local ppre="$argv[(I)-p]"
 				[[ ${argv[(I)-[a-zA-Z]#U[a-zA-Z]#]} -eq 0 && "${#:-$PREFIX$SUFFIX}" -le _comp_correct ]] && return
 				if [[ "$PREFIX" = \~* && ( ppre -eq 0 || "$argv[ppre+1]" != \~* ) ]]
 				then
-					PREFIX="~(#a${_comp_correct})${PREFIX[2,-1]}" 
+					PREFIX="~(#a${_comp_correct})${PREFIX[2,-1]}"
 				else
-					PREFIX="(#a${_comp_correct})$PREFIX" 
+					PREFIX="(#a${_comp_correct})$PREFIX"
 				fi
-				(( $_correct_group && ${${argv[1,(r)-(|-)]}[(I)-*[JV]]} )) && _correct_expl[_correct_group]=${argv[1,(r)-(-|)][(R)-*[JV]]} 
+				(( $_correct_group && ${${argv[1,(r)-(|-)]}[(I)-*[JV]]} )) && _correct_expl[_correct_group]=${argv[1,(r)-(-|)][(R)-*[JV]]}
 				builtin compadd "$_correct_expl[@]" "$@"
 			}
 		fi
-		_comp_correct=1 
-		[[ -z "$compstate[pattern_match]" ]] && compstate[pattern_match]='*' 
+		_comp_correct=1
+		[[ -z "$compstate[pattern_match]" ]] && compstate[pattern_match]='*'
 		while [[ _comp_correct -le comax ]]
 		do
-			curcontext="${oldcontext/(#b)([^:]#:[^:]#:)/${match[1][1,-2]}-${_comp_correct}:}" 
+			curcontext="${oldcontext/(#b)([^:]#:[^:]#:)/${match[1][1,-2]}-${_comp_correct}:}"
 			_description corrections _correct_expl corrections "e:$_comp_correct" "o:$PREFIX$SUFFIX"
-			_correct_group="$_correct_expl[(I)-*[JV]]" 
+			_correct_group="$_correct_expl[(I)-*[JV]]"
 			if _complete
 			then
 				if zstyle -t ":completion:${curcontext}:" insert-unambiguous && [[ "${#compstate[unambiguous]}" -ge "${#:-$PREFIX$SUFFIX}" ]]
 				then
-					compstate[pattern_insert]=unambiguous 
+					compstate[pattern_insert]=unambiguous
 				elif _requested original && {
 						[[ compstate[nmatches] -gt 1 ]] || zstyle -t ":completion:${curcontext}:" original
 					}
@@ -1766,10 +1766,10 @@ _ftb__approximate () {
 					local expl
 					_description -V original expl original
 					builtin compadd "$expl[@]" -U -Q - "$PREFIX$SUFFIX"
-					[[ "$compstate[list]" != list* ]] && compstate[list]="$compstate[list] force" 
+					[[ "$compstate[list]" != list* ]] && compstate[list]="$compstate[list] force"
 				fi
-				compstate[pattern_match]="$opm" 
-				ret=0 
+				compstate[pattern_match]="$opm"
+				ret=0
 				break
 			fi
 			[[ "${#:-$PREFIX$SUFFIX}" -le _comp_correct+1 ]] && break
@@ -1779,24 +1779,24 @@ _ftb__approximate () {
 		[[ -n $dounfunction ]] && (( $+functions[compadd] )) && unfunction compadd
 	}
 	(( ret == 0 )) && return 0
-	compstate[pattern_match]="$opm" 
+	compstate[pattern_match]="$opm"
 	return 1
 }
 _ftb__main_complete () {
-	local IFS=$' \t\n\0' 
+	local IFS=$' \t\n\0'
 	eval "$_comp_setup"
-	local func funcs ret=1 tmp _compskip format nm call match min max i num _completers _completer _completer_num curtag _comp_force_list _matchers _matcher _c_matcher _matcher_num _comp_tags _comp_mesg mesg str context state state_descr line opt_args val_args curcontext="$curcontext" _last_nmatches=-1 _last_menu_style _def_menu_style _menu_style sel _tags_level=0 _saved_exact="${compstate[exact]}" _saved_lastprompt="${compstate[last_prompt]}" _saved_list="${compstate[list]}" _saved_insert="${compstate[insert]}" _saved_colors="$ZLS_COLORS" _saved_colors_set=${+ZLS_COLORS} _ambiguous_color='' 
+	local func funcs ret=1 tmp _compskip format nm call match min max i num _completers _completer _completer_num curtag _comp_force_list _matchers _matcher _c_matcher _matcher_num _comp_tags _comp_mesg mesg str context state state_descr line opt_args val_args curcontext="$curcontext" _last_nmatches=-1 _last_menu_style _def_menu_style _menu_style sel _tags_level=0 _saved_exact="${compstate[exact]}" _saved_lastprompt="${compstate[last_prompt]}" _saved_list="${compstate[list]}" _saved_insert="${compstate[insert]}" _saved_colors="$ZLS_COLORS" _saved_colors_set=${+ZLS_COLORS} _ambiguous_color=''
 	local _comp_priv_prefix
 	unset _comp_priv_prefix
 	local -a precommands
-	local -ar builtin_precommands=(- builtin eval exec nocorrect noglob time) 
+	local -ar builtin_precommands=(- builtin eval exec nocorrect noglob time)
 	typeset -U _lastdescr _comp_ignore _comp_colors
 	{
-		[[ -z "$curcontext" ]] && curcontext=::: 
-		zstyle -s ":completion:${curcontext}:" insert-tab tmp || tmp=yes 
+		[[ -z "$curcontext" ]] && curcontext=:::
+		zstyle -s ":completion:${curcontext}:" insert-tab tmp || tmp=yes
 		if [[ ( "$tmp" = *pending(|[[:blank:]]*) && PENDING -gt 0 ) || ( "$tmp" = *pending=(#b)([0-9]##)(|[[:blank:]]*) && PENDING -ge $match[1] ) ]]
 		then
-			compstate[insert]=tab 
+			compstate[insert]=tab
 			return 0
 		fi
 		if [[ "$compstate[insert]" = tab* ]]
@@ -1808,49 +1808,49 @@ _ftb__main_complete () {
 					return 0
 				fi
 			fi
-			compstate[insert]="${compstate[insert]//tab /}" 
+			compstate[insert]="${compstate[insert]//tab /}"
 		fi
 		if [[ "$compstate[pattern_match]" = "*" && "$_lastcomp[unambiguous]" = "$PREFIX" && -n "$_lastcomp[unambiguous_cursor]" ]]
 		then
-			integer upos="$_lastcomp[unambiguous_cursor]" 
-			SUFFIX="$PREFIX[upos,-1]$SUFFIX" 
-			PREFIX="$PREFIX[1,upos-1]" 
+			integer upos="$_lastcomp[unambiguous_cursor]"
+			SUFFIX="$PREFIX[upos,-1]$SUFFIX"
+			PREFIX="$PREFIX[1,upos-1]"
 		fi
 		if [[ -z "$compstate[quote]" ]]
 		then
 			if [[ -o equals ]] && compset -P 1 '='
 			then
-				compstate[context]=equal 
+				compstate[context]=equal
 			elif [[ "$PREFIX" != */* && "$PREFIX[1]" = '~' ]]
 			then
 				if [[ "$PREFIX" = '~['[^\]]# ]]
 				then
 					compset -p 2
 					compset -S '\]*'
-					compstate[context]=subscript 
+					compstate[context]=subscript
 					[[ -n $_comps[-subscript-] ]] && $_comps[-subscript-] && return
 				else
 					compset -p 1
-					compstate[context]=tilde 
+					compstate[context]=tilde
 				fi
 			fi
 		fi
 		_setup default
-		_def_menu_style=("$_last_menu_style[@]") 
-		_last_menu_style=() 
+		_def_menu_style=("$_last_menu_style[@]")
+		_last_menu_style=()
 		if zstyle -s ":completion:${curcontext}:default" list-prompt tmp
 		then
-			LISTPROMPT="$tmp" 
+			LISTPROMPT="$tmp"
 			zmodload -i zsh/complist
 		fi
 		if zstyle -s ":completion:${curcontext}:default" select-prompt tmp
 		then
-			MENUPROMPT="$tmp" 
+			MENUPROMPT="$tmp"
 			zmodload -i zsh/complist
 		fi
 		if zstyle -s ":completion:${curcontext}:default" select-scroll tmp
 		then
-			MENUSCROLL="$tmp" 
+			MENUSCROLL="$tmp"
 			zmodload -i zsh/complist
 		fi
 		if (( $# ))
@@ -1859,19 +1859,19 @@ _ftb__main_complete () {
 			then
 				if [[ $# -lt 3 ]]
 				then
-					_completers=() 
+					_completers=()
 				else
-					_completers=("$2") 
-					call=yes 
+					_completers=("$2")
+					call=yes
 				fi
 			else
-				_completers=("$@") 
+				_completers=("$@")
 			fi
 		else
-			zstyle -a ":completion:${curcontext}:" completer _completers || _completers=(_complete _ignored) 
+			zstyle -a ":completion:${curcontext}:" completer _completers || _completers=(_complete _ignored)
 		fi
-		_completer_num=1 
-		integer SECONDS=0 
+		_completer_num=1
+		integer SECONDS=0
 		TRAPINT () {
 			zle -M "Killed by signal in ${funcstack[2]} after ${SECONDS}s"
 			zle -R
@@ -1882,8 +1882,8 @@ _ftb__main_complete () {
 			zle -R
 			return 131
 		}
-		funcs=("$compprefuncs[@]") 
-		compprefuncs=() 
+		funcs=("$compprefuncs[@]")
+		compprefuncs=()
 		for func in "$funcs[@]"
 		do
 			"$func"
@@ -1892,42 +1892,42 @@ _ftb__main_complete () {
 		do
 			if [[ -n "$call" ]]
 			then
-				_completer="${tmp}" 
+				_completer="${tmp}"
 			elif [[ "$tmp" = *:-* ]]
 			then
-				_completer="${${tmp%:*}[2,-1]//_/-}${tmp#*:}" 
-				tmp="${tmp%:*}" 
+				_completer="${${tmp%:*}[2,-1]//_/-}${tmp#*:}"
+				tmp="${tmp%:*}"
 			elif [[ $tmp = *:* ]]
 			then
-				_completer="${tmp#*:}" 
-				tmp="${tmp%:*}" 
+				_completer="${tmp#*:}"
+				tmp="${tmp%:*}"
 			else
-				_completer="${tmp[2,-1]//_/-}" 
+				_completer="${tmp[2,-1]//_/-}"
 			fi
-			curcontext="${curcontext/:[^:]#:/:${_completer}:}" 
+			curcontext="${curcontext/:[^:]#:/:${_completer}:}"
 			zstyle -t ":completion:${curcontext}:" show-completer && zle -R "Trying completion for :completion:${curcontext}"
-			zstyle -a ":completion:${curcontext}:" matcher-list _matchers || _matchers=('') 
-			_matcher_num=1 
-			_matcher='' 
+			zstyle -a ":completion:${curcontext}:" matcher-list _matchers || _matchers=('')
+			_matcher_num=1
+			_matcher=''
 			for _c_matcher in "$_matchers[@]"
 			do
 				if [[ "$_c_matcher" == +* ]]
 				then
-					_matcher="$_matcher $_c_matcher[2,-1]" 
+					_matcher="$_matcher $_c_matcher[2,-1]"
 				else
-					_matcher="$_c_matcher" 
+					_matcher="$_c_matcher"
 				fi
-				_comp_mesg= 
+				_comp_mesg=
 				if [[ -n "$call" ]]
 				then
 					if "${(@)argv[3,-1]}"
 					then
-						ret=0 
+						ret=0
 						break 2
 					fi
 				elif "$tmp"
 				then
-					ret=0 
+					ret=0
 					break 2
 				fi
 				(( _matcher_num++ ))
@@ -1935,82 +1935,82 @@ _ftb__main_complete () {
 			[[ -n "$_comp_mesg" ]] && break
 			(( _completer_num++ ))
 		done
-		curcontext="${curcontext/:[^:]#:/::}" 
+		curcontext="${curcontext/:[^:]#:/::}"
 		if [[ $compstate[old_list] = keep ]]
 		then
-			nm=$_lastcomp[nmatches] 
+			nm=$_lastcomp[nmatches]
 		else
-			nm=$compstate[nmatches] 
+			nm=$compstate[nmatches]
 		fi
 		if [[ $compstate[old_list] = keep || nm -gt 1 ]]
 		then
-			[[ _last_nmatches -ge 0 && _last_nmatches -ne nm ]] && _menu_style=("$_last_menu_style[@]" "$_menu_style[@]") 
-			tmp=$(( compstate[list_lines] + BUFFERLINES + 1 )) 
-			_menu_style=("$_menu_style[@]" "$_def_menu_style[@]") 
+			[[ _last_nmatches -ge 0 && _last_nmatches -ne nm ]] && _menu_style=("$_last_menu_style[@]" "$_menu_style[@]")
+			tmp=$(( compstate[list_lines] + BUFFERLINES + 1 ))
+			_menu_style=("$_menu_style[@]" "$_def_menu_style[@]")
 			if [[ "$compstate[list]" = *list(| *) && tmp -gt LINES && ( -n "$_menu_style[(r)select=long-list]" || -n "$_menu_style[(r)(yes|true|on|1)=long-list]" ) ]]
 			then
-				compstate[insert]=menu 
+				compstate[insert]=menu
 			elif [[ "$compstate[insert]" = "$_saved_insert" ]]
 			then
 				if [[ -n "$compstate[insert]" && -n "$_menu_style[(r)(yes|true|1|on)=long]" && tmp -gt LINES ]]
 				then
-					compstate[insert]=menu 
+					compstate[insert]=menu
 				else
-					sel=("${(@M)_menu_style:#(yes|true|1|on)*}") 
+					sel=("${(@M)_menu_style:#(yes|true|1|on)*}")
 					if (( $#sel ))
 					then
-						min=9999999 
+						min=9999999
 						for i in "$sel[@]"
 						do
 							if [[ "$i" = *\=[0-9]* ]]
 							then
-								num="${i#*\=}" 
-								[[ num -lt 0 ]] && num=0 
+								num="${i#*\=}"
+								[[ num -lt 0 ]] && num=0
 							elif [[ "$i" != *\=* ]]
 							then
-								num=0 
+								num=0
 							else
-								num=9999999 
+								num=9999999
 							fi
-							[[ num -lt min ]] && min="$num" 
+							[[ num -lt min ]] && min="$num"
 							(( min )) || break
 						done
 					fi
-					sel=("${(@M)_menu_style:#(no|false|0|off)*}") 
+					sel=("${(@M)_menu_style:#(no|false|0|off)*}")
 					if (( $#sel ))
 					then
-						max=9999999 
+						max=9999999
 						for i in "$sel[@]"
 						do
 							if [[ "$i" = *\=[0-9]* ]]
 							then
-								num="${i#*\=}" 
-								[[ num -lt 0 ]] && num=0 
+								num="${i#*\=}"
+								[[ num -lt 0 ]] && num=0
 							elif [[ "$i" != *\=* ]]
 							then
-								num=0 
+								num=0
 							else
-								num=9999999 
+								num=9999999
 							fi
-							[[ num -lt max ]] && max="$num" 
+							[[ num -lt max ]] && max="$num"
 							(( max )) || break
 						done
 					fi
 					if [[ ( -n "$min" && nm -ge min && ( -z "$max" || nm -lt max ) ) || ( -n "$_menu_style[(r)auto*]" && "$compstate[insert]" = automenu ) ]]
 					then
-						compstate[insert]=menu 
+						compstate[insert]=menu
 					elif [[ -n "$max" && nm -ge max ]]
 					then
-						compstate[insert]=unambiguous 
+						compstate[insert]=unambiguous
 					elif [[ -n "$_menu_style[(r)auto*]" && "$compstate[insert]" != automenu ]]
 					then
-						compstate[insert]=automenu-unambiguous 
+						compstate[insert]=automenu-unambiguous
 					fi
 				fi
 			fi
 			if [[ "$compstate[insert]" = *menu* ]]
 			then
-				[[ "$MENUSELECT" = 00 ]] && MENUSELECT=0 
+				[[ "$MENUSELECT" = 00 ]] && MENUSELECT=0
 				if [[ -n "$_menu_style[(r)no-select*]" ]]
 				then
 					unset MENUSELECT
@@ -2019,32 +2019,32 @@ _ftb__main_complete () {
 					if [[ tmp -gt LINES ]]
 					then
 						zmodload -i zsh/complist
-						MENUSELECT=00 
+						MENUSELECT=00
 					fi
 				fi
 				if [[ "$MENUSELECT" != 00 ]]
 				then
-					sel=("${(@M)_menu_style:#select*}") 
+					sel=("${(@M)_menu_style:#select*}")
 					if (( $#sel ))
 					then
-						min=9999999 
+						min=9999999
 						for i in "$sel[@]"
 						do
 							if [[ "$i" = *\=[0-9]* ]]
 							then
-								num="${i#*\=}" 
-								[[ num -lt 0 ]] && num=0 
+								num="${i#*\=}"
+								[[ num -lt 0 ]] && num=0
 							elif [[ "$i" != *\=* ]]
 							then
-								num=0 
+								num=0
 							else
-								num=9999999 
+								num=9999999
 							fi
-							[[ num -lt min ]] && min="$num" 
+							[[ num -lt min ]] && min="$num"
 							(( min )) || break
 						done
 						zmodload -i zsh/complist
-						MENUSELECT="$min" 
+						MENUSELECT="$min"
 					else
 						unset MENUSELECT
 					fi
@@ -2053,14 +2053,14 @@ _ftb__main_complete () {
 				then
 					if [[ -n "$_menu_style[(r)interactive*]" ]]
 					then
-						MENUMODE=interactive 
+						MENUMODE=interactive
 					elif [[ -n "$_menu_style[(r)search*]" ]]
 					then
 						if [[ -n "$_menu_style[(r)*backward*]" ]]
 						then
-							MENUMODE=search-backward 
+							MENUMODE=search-backward
 						else
-							MENUMODE=search-forward 
+							MENUMODE=search-forward
 						fi
 					else
 						unset MENUMODE
@@ -2069,13 +2069,13 @@ _ftb__main_complete () {
 			fi
 		elif [[ nm -lt 1 && -n "$_comp_mesg" ]]
 		then
-			compstate[insert]='' 
-			compstate[list]='list force' 
+			compstate[insert]=''
+			compstate[list]='list force'
 		elif [[ nm -eq 0 && -z "$_comp_mesg" && $#_lastdescr -ne 0 && $compstate[old_list] != keep ]] && zstyle -s ":completion:${curcontext}:warnings" format format
 		then
-			compstate[list]='list force' 
-			compstate[insert]='' 
-			tmp=("\`${(@)^_lastdescr:#}'") 
+			compstate[list]='list force'
+			compstate[insert]=''
+			tmp=("\`${(@)^_lastdescr:#}'")
 			case $#tmp in
 				(1) str="$tmp[1]"  ;;
 				(2) str="$tmp[1] or $tmp[2]"  ;;
@@ -2087,43 +2087,43 @@ _ftb__main_complete () {
 		fi
 		if [[ -n "$_ambiguous_color" ]]
 		then
-			local toquote='[=\(\)\|~^?*[\]#<>]' 
-			local prefix=${${compstate[unambiguous]}[1,${compstate[unambiguous_cursor]}-1]} 
-			[[ -n $prefix ]] && _comp_colors+=("=(#i)${prefix[1,-2]//?/(}${prefix[1,-2]//(#m)?/${MATCH/$~toquote/\\$MATCH}|)}${prefix[-1]//(#m)$~toquote/\\$MATCH}(#b)(?|)*==$_ambiguous_color") 
+			local toquote='[=\(\)\|~^?*[\]#<>]'
+			local prefix=${${compstate[unambiguous]}[1,${compstate[unambiguous_cursor]}-1]}
+			[[ -n $prefix ]] && _comp_colors+=("=(#i)${prefix[1,-2]//?/(}${prefix[1,-2]//(#m)?/${MATCH/$~toquote/\\$MATCH}|)}${prefix[-1]//(#m)$~toquote/\\$MATCH}(#b)(?|)*==$_ambiguous_color")
 		fi
-		[[ "$_comp_force_list" = always || ( "$_comp_force_list" = ?* && nm -ge _comp_force_list ) ]] && compstate[list]="${compstate[list]//messages} force" 
+		[[ "$_comp_force_list" = always || ( "$_comp_force_list" = ?* && nm -ge _comp_force_list ) ]] && compstate[list]="${compstate[list]//messages} force"
 	} always {
 		if [[ "$compstate[old_list]" = keep ]]
 		then
 			if [[ $_saved_colors_set = 1 ]]
 			then
-				ZLS_COLORS="$_saved_colors" 
+				ZLS_COLORS="$_saved_colors"
 			else
 				unset ZLS_COLORS
 			fi
 		elif (( $#_comp_colors ))
 		then
-			ZLS_COLORS="${(j.:.)_comp_colors}" 
+			ZLS_COLORS="${(j.:.)_comp_colors}"
 		else
 			unset ZLS_COLORS
 		fi
 	}
-	funcs=("$comppostfuncs[@]") 
-	comppostfuncs=() 
+	funcs=("$comppostfuncs[@]")
+	comppostfuncs=()
 	for func in "$funcs[@]"
 	do
 		"$func"
 	done
-	_lastcomp=("${(@kv)compstate}") 
-	_lastcomp[nmatches]=$nm 
-	_lastcomp[completer]="$_completer" 
-	_lastcomp[prefix]="$PREFIX" 
-	_lastcomp[suffix]="$SUFFIX" 
-	_lastcomp[iprefix]="$IPREFIX" 
-	_lastcomp[isuffix]="$ISUFFIX" 
-	_lastcomp[qiprefix]="$QIPREFIX" 
-	_lastcomp[qisuffix]="$QISUFFIX" 
-	_lastcomp[tags]="$_comp_tags" 
+	_lastcomp=("${(@kv)compstate}")
+	_lastcomp[nmatches]=$nm
+	_lastcomp[completer]="$_completer"
+	_lastcomp[prefix]="$PREFIX"
+	_lastcomp[suffix]="$SUFFIX"
+	_lastcomp[iprefix]="$IPREFIX"
+	_lastcomp[isuffix]="$ISUFFIX"
+	_lastcomp[qiprefix]="$QIPREFIX"
+	_lastcomp[qisuffix]="$QISUFFIX"
+	_lastcomp[tags]="$_comp_tags"
 	return ret
 }
 _functions () {
@@ -2151,23 +2151,23 @@ _fw_update () {
 	builtin autoload -XUz
 }
 _fzf-tab-apply () {
-	local choice bs=$'\2' 
+	local choice bs=$'\2'
 	for choice in "$_ftb_choices[@]"
 	do
-		local -A v=("${(@0)${_ftb_compcap[(r)${(b)choice}$bs*]#*$bs}}") 
-		local -a args=("${(@ps:\1:)v[args]}") 
-		[[ -z $args[1] ]] && args=() 
-		IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX] 
+		local -A v=("${(@0)${_ftb_compcap[(r)${(b)choice}$bs*]#*$bs}}")
+		local -a args=("${(@ps:\1:)v[args]}")
+		[[ -z $args[1] ]] && args=()
+		IPREFIX=$v[IPREFIX] PREFIX=$v[PREFIX] SUFFIX=$v[SUFFIX] ISUFFIX=$v[ISUFFIX]
 		builtin compadd "${args[@]:--Q}" -Q -- "$v[word]"
 	done
-	compstate[list]= 
+	compstate[list]=
 	if (( $#_ftb_choices == 1 ))
 	then
-		compstate[insert]='1' 
-		[[ $RBUFFER == ' '* ]] || compstate[insert]+=' ' 
+		compstate[insert]='1'
+		[[ $RBUFFER == ' '* ]] || compstate[insert]+=' '
 	elif (( $#_ftb_choices > 1 ))
 	then
-		compstate[insert]='all' 
+		compstate[insert]='all'
 	fi
 }
 _gcc () {
@@ -2394,48 +2394,48 @@ _history () {
 }
 _history-substring-search-begin () {
 	setopt localoptions extendedglob
-	_history_substring_search_refresh_display= 
-	_history_substring_search_query_highlight= 
+	_history_substring_search_refresh_display=
+	_history_substring_search_query_highlight=
 	if [[ -n $BUFFER && $BUFFER == ${_history_substring_search_result:-} ]]
 	then
 		return
 	fi
-	_history_substring_search_result='' 
+	_history_substring_search_result=''
 	if [[ -z $BUFFER ]]
 	then
-		_history_substring_search_query= 
-		_history_substring_search_query_parts=() 
-		_history_substring_search_raw_matches=() 
+		_history_substring_search_query=
+		_history_substring_search_query_parts=()
+		_history_substring_search_raw_matches=()
 	else
-		_history_substring_search_query=$BUFFER 
+		_history_substring_search_query=$BUFFER
 		if [[ -n $HISTORY_SUBSTRING_SEARCH_FUZZY ]]
 		then
-			_history_substring_search_query_parts=(${=_history_substring_search_query}) 
+			_history_substring_search_query_parts=(${=_history_substring_search_query})
 		else
-			_history_substring_search_query_parts=(${==_history_substring_search_query}) 
+			_history_substring_search_query_parts=(${==_history_substring_search_query})
 		fi
-		local search_pattern="${(j:*:)_history_substring_search_query_parts[@]//(#m)[\][()|\\*?#<>~^]/\\$MATCH}*" 
+		local search_pattern="${(j:*:)_history_substring_search_query_parts[@]//(#m)[\][()|\\*?#<>~^]/\\$MATCH}*"
 		if [[ -z $HISTORY_SUBSTRING_SEARCH_PREFIXED ]]
 		then
-			search_pattern="*${search_pattern}" 
+			search_pattern="*${search_pattern}"
 		fi
-		_history_substring_search_raw_matches=(${(k)history[(R)(#$HISTORY_SUBSTRING_SEARCH_GLOBBING_FLAGS)${search_pattern}]}) 
+		_history_substring_search_raw_matches=(${(k)history[(R)(#$HISTORY_SUBSTRING_SEARCH_GLOBBING_FLAGS)${search_pattern}]})
 	fi
-	_history_substring_search_raw_match_index=0 
-	_history_substring_search_matches=() 
-	_history_substring_search_unique_filter=() 
+	_history_substring_search_raw_match_index=0
+	_history_substring_search_matches=()
+	_history_substring_search_unique_filter=()
 	if [[ $WIDGET == history-substring-search-down ]]
 	then
-		_history_substring_search_match_index=1 
+		_history_substring_search_match_index=1
 	else
-		_history_substring_search_match_index=0 
+		_history_substring_search_match_index=0
 	fi
 }
 _history-substring-search-down-buffer () {
 	local buflines XRBUFFER xrbuflines
-	buflines=(${(f)BUFFER}) 
-	XRBUFFER="x"$RBUFFER 
-	xrbuflines=(${(f)XRBUFFER}) 
+	buflines=(${(f)BUFFER})
+	XRBUFFER="x"$RBUFFER
+	xrbuflines=(${(f)XRBUFFER})
 	if [[ $#buflines -gt 1 && $CURSOR -ne $#BUFFER && $#xrbuflines -ne 1 ]]
 	then
 		zle down-line-or-history
@@ -2448,8 +2448,8 @@ _history-substring-search-down-history () {
 	then
 		if [[ $HISTNO -eq 1 && -z $BUFFER ]]
 		then
-			BUFFER=${history[1]} 
-			_history_substring_search_refresh_display=1 
+			BUFFER=${history[1]}
+			_history_substring_search_refresh_display=1
 		else
 			zle down-line-or-history
 		fi
@@ -2458,7 +2458,7 @@ _history-substring-search-down-history () {
 	return 1
 }
 _history-substring-search-down-search () {
-	_history_substring_search_refresh_display=1 
+	_history_substring_search_refresh_display=1
 	if [[ $_history_substring_search_match_index -lt 1 ]]
 	then
 		_history-substring-search-not-found
@@ -2466,10 +2466,10 @@ _history-substring-search-down-search () {
 	fi
 	if _history-substring-search-has-prev
 	then
-		_history_substring_search_match_index+=-1 
+		_history_substring_search_match_index+=-1
 		_history-substring-search-found
 	else
-		_history_substring_search_match_index+=-1 
+		_history_substring_search_match_index+=-1
 		_history-substring-search-not-found
 	fi
 	if [[ -o HIST_IGNORE_ALL_DUPS || -n $HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE ]]
@@ -2483,37 +2483,37 @@ _history-substring-search-down-search () {
 }
 _history-substring-search-end () {
 	setopt localoptions extendedglob
-	local highlight_memo= 
-	_history_substring_search_result=$BUFFER 
+	local highlight_memo=
+	_history_substring_search_result=$BUFFER
 	if [[ $_history_substring_search_zsh_5_9 -eq 1 ]]
 	then
-		highlight_memo='memo=history-substring-search' 
+		highlight_memo='memo=history-substring-search'
 	fi
 	if [[ $_history_substring_search_refresh_display -eq 1 ]]
 	then
 		if [[ -n $highlight_memo ]]
 		then
-			region_highlight=("${(@)region_highlight:#*${highlight_memo}*}") 
+			region_highlight=("${(@)region_highlight:#*${highlight_memo}*}")
 		else
-			region_highlight=() 
+			region_highlight=()
 		fi
-		CURSOR=${#BUFFER} 
+		CURSOR=${#BUFFER}
 	fi
 	_zsh_highlight
 	if [[ -n $_history_substring_search_query_highlight ]]
 	then
-		local highlight_start_index=0 
-		local highlight_end_index=0 
+		local highlight_start_index=0
+		local highlight_end_index=0
 		local query_part
 		for query_part in $_history_substring_search_query_parts
 		do
-			local escaped_query_part=${query_part//(#m)[\][()|\\*?#<>~^]/\\$MATCH} 
-			local query_part_match_index="${${BUFFER:$highlight_start_index}[(i)(#$HISTORY_SUBSTRING_SEARCH_GLOBBING_FLAGS)${escaped_query_part}]}" 
+			local escaped_query_part=${query_part//(#m)[\][()|\\*?#<>~^]/\\$MATCH}
+			local query_part_match_index="${${BUFFER:$highlight_start_index}[(i)(#$HISTORY_SUBSTRING_SEARCH_GLOBBING_FLAGS)${escaped_query_part}]}"
 			if [[ $query_part_match_index -le ${#BUFFER:$highlight_start_index} ]]
 			then
-				highlight_start_index=$(( $highlight_start_index + $query_part_match_index )) 
-				highlight_end_index=$(( $highlight_start_index + ${#query_part} )) 
-				region_highlight+=("$(($highlight_start_index - 1)) $(($highlight_end_index - 1)) ${_history_substring_search_query_highlight}${highlight_memo:+,$highlight_memo}") 
+				highlight_start_index=$(( $highlight_start_index + $query_part_match_index ))
+				highlight_end_index=$(( $highlight_start_index + ${#query_part} ))
+				region_highlight+=("$(($highlight_start_index - 1)) $(($highlight_end_index - 1)) ${_history_substring_search_query_highlight}${highlight_memo:+,$highlight_memo}")
 			fi
 		done
 	fi
@@ -2521,13 +2521,13 @@ _history-substring-search-end () {
 	then
 		zle -R
 		read -k -t ${HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_TIMEOUT:-1} && zle -U -- "$REPLY"
-		region_highlight=("${(@)region_highlight:#*${highlight_memo}*}") 
+		region_highlight=("${(@)region_highlight:#*${highlight_memo}*}")
 	fi
 	return 0
 }
 _history-substring-search-found () {
-	BUFFER=$history[$_history_substring_search_matches[$_history_substring_search_match_index]] 
-	_history_substring_search_query_highlight=$HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND 
+	BUFFER=$history[$_history_substring_search_matches[$_history_substring_search_match_index]]
+	_history_substring_search_query_highlight=$HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND
 }
 _history-substring-search-has-next () {
 	if [[ $_history_substring_search_match_index -lt $#_history_substring_search_matches ]]
@@ -2547,14 +2547,14 @@ _history-substring-search-has-prev () {
 	fi
 }
 _history-substring-search-not-found () {
-	BUFFER=$_history_substring_search_query 
-	_history_substring_search_query_highlight=$HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND 
+	BUFFER=$_history_substring_search_query
+	_history_substring_search_query_highlight=$HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_NOT_FOUND
 }
 _history-substring-search-up-buffer () {
 	local buflines XLBUFFER xlbuflines
-	buflines=(${(f)BUFFER}) 
-	XLBUFFER=$LBUFFER"x" 
-	xlbuflines=(${(f)XLBUFFER}) 
+	buflines=(${(f)BUFFER})
+	XLBUFFER=$LBUFFER"x"
+	xlbuflines=(${(f)XLBUFFER})
 	if [[ $#buflines -gt 1 && $CURSOR -ne $#BUFFER && $#xlbuflines -ne 1 ]]
 	then
 		zle up-line-or-history
@@ -2567,7 +2567,7 @@ _history-substring-search-up-history () {
 	then
 		if [[ $HISTNO -eq 1 ]]
 		then
-			BUFFER= 
+			BUFFER=
 		else
 			zle up-line-or-history
 		fi
@@ -2576,7 +2576,7 @@ _history-substring-search-up-history () {
 	return 1
 }
 _history-substring-search-up-search () {
-	_history_substring_search_refresh_display=1 
+	_history_substring_search_refresh_display=1
 	if [[ $_history_substring_search_match_index -gt $#_history_substring_search_matches ]]
 	then
 		_history-substring-search-not-found
@@ -2584,10 +2584,10 @@ _history-substring-search-up-search () {
 	fi
 	if _history-substring-search-has-next
 	then
-		_history_substring_search_match_index+=1 
+		_history_substring_search_match_index+=1
 		_history-substring-search-found
 	else
-		_history_substring_search_match_index+=1 
+		_history_substring_search_match_index+=1
 		_history-substring-search-not-found
 	fi
 	if [[ -o HIST_IGNORE_ALL_DUPS || -n $HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE ]]
@@ -2610,19 +2610,19 @@ _history_modifiers () {
 _history_substring_search_process_raw_matches () {
 	while [[ $_history_substring_search_raw_match_index -lt $#_history_substring_search_raw_matches ]]
 	do
-		_history_substring_search_raw_match_index+=1 
-		local index=${_history_substring_search_raw_matches[$_history_substring_search_raw_match_index]} 
+		_history_substring_search_raw_match_index+=1
+		local index=${_history_substring_search_raw_matches[$_history_substring_search_raw_match_index]}
 		if [[ ! -o HIST_IGNORE_ALL_DUPS && -n $HISTORY_SUBSTRING_SEARCH_ENSURE_UNIQUE ]]
 		then
-			local entry=${history[$index]} 
+			local entry=${history[$index]}
 			if [[ -z ${_history_substring_search_unique_filter[$entry]} ]]
 			then
-				_history_substring_search_unique_filter[$entry]=1 
-				_history_substring_search_matches+=($index) 
+				_history_substring_search_unique_filter[$entry]=1
+				_history_substring_search_matches+=($index)
 				return 0
 			fi
 		else
-			_history_substring_search_matches+=($index) 
+			_history_substring_search_matches+=($index)
 			return 0
 		fi
 	done
@@ -3425,7 +3425,7 @@ _oldlist () {
 }
 _omz () {
 	local -a cmds subcmds
-	cmds=('changelog:Print the changelog' 'help:Usage information' 'plugin:Manage plugins' 'pr:Manage Oh My Zsh Pull Requests' 'reload:Reload the current zsh session' 'theme:Manage themes' 'update:Update Oh My Zsh' 'version:Show the version') 
+	cmds=('changelog:Print the changelog' 'help:Usage information' 'plugin:Manage plugins' 'pr:Manage Oh My Zsh Pull Requests' 'reload:Reload the current zsh session' 'theme:Manage themes' 'update:Update Oh My Zsh' 'version:Show the version')
 	if (( CURRENT == 2 ))
 	then
 		_describe 'command' cmds
@@ -3433,13 +3433,13 @@ _omz () {
 	then
 		case "$words[2]" in
 			(changelog) local -a refs
-				refs=("${(@f)$(builtin cd -q "$ZSH"; command git for-each-ref --format="%(refname:short):%(subject)" refs/heads refs/tags)}") 
+				refs=("${(@f)$(builtin cd -q "$ZSH"; command git for-each-ref --format="%(refname:short):%(subject)" refs/heads refs/tags)}")
 				_describe 'command' refs ;;
-			(plugin) subcmds=('disable:Disable plugin(s)' 'enable:Enable plugin(s)' 'info:Get plugin information' 'list:List plugins' 'load:Load plugin(s)') 
+			(plugin) subcmds=('disable:Disable plugin(s)' 'enable:Enable plugin(s)' 'info:Get plugin information' 'list:List plugins' 'load:Load plugin(s)')
 				_describe 'command' subcmds ;;
-			(pr) subcmds=('clean:Delete all Pull Request branches' 'test:Test a Pull Request') 
+			(pr) subcmds=('clean:Delete all Pull Request branches' 'test:Test a Pull Request')
 				_describe 'command' subcmds ;;
-			(theme) subcmds=('list:List themes' 'set:Set a theme in your .zshrc file' 'use:Load a theme') 
+			(theme) subcmds=('list:List themes' 'set:Set a theme in your .zshrc file' 'use:Load a theme')
 				_describe 'command' subcmds ;;
 		esac
 	elif (( CURRENT == 4 ))
@@ -3448,20 +3448,20 @@ _omz () {
 			(plugin::(disable|enable|load)) local -aU valid_plugins
 				if [[ "${words[3]}" = disable ]]
 				then
-					valid_plugins=($plugins) 
+					valid_plugins=($plugins)
 				else
-					valid_plugins=("$ZSH"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t) "$ZSH_CUSTOM"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t)) 
-					[[ "${words[3]}" = enable ]] && valid_plugins=(${valid_plugins:|plugins}) 
+					valid_plugins=("$ZSH"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t) "$ZSH_CUSTOM"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t))
+					[[ "${words[3]}" = enable ]] && valid_plugins=(${valid_plugins:|plugins})
 				fi
 				_describe 'plugin' valid_plugins ;;
 			(plugin::info) local -aU plugins
-				plugins=("$ZSH"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t) "$ZSH_CUSTOM"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t)) 
+				plugins=("$ZSH"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t) "$ZSH_CUSTOM"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t))
 				_describe 'plugin' plugins ;;
 			(plugin::list) local -a opts
-				opts=('--enabled:List enabled plugins only') 
+				opts=('--enabled:List enabled plugins only')
 				_describe -o 'options' opts ;;
 			(theme::(set|use)) local -aU themes
-				themes=("$ZSH"/themes/*.zsh-theme(-.N:t:r) "$ZSH_CUSTOM"/**/*.zsh-theme(-.N:r:gs:"$ZSH_CUSTOM"/themes/:::gs:"$ZSH_CUSTOM"/:::)) 
+				themes=("$ZSH"/themes/*.zsh-theme(-.N:t:r) "$ZSH_CUSTOM"/**/*.zsh-theme(-.N:r:gs:"$ZSH_CUSTOM"/themes/:::gs:"$ZSH_CUSTOM"/:::))
 				_describe 'theme' themes ;;
 		esac
 	elif (( CURRENT > 4 ))
@@ -3470,21 +3470,21 @@ _omz () {
 			(plugin::(enable|disable|load)) local -aU valid_plugins
 				if [[ "${words[3]}" = disable ]]
 				then
-					valid_plugins=($plugins) 
+					valid_plugins=($plugins)
 				else
-					valid_plugins=("$ZSH"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t) "$ZSH_CUSTOM"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t)) 
-					[[ "${words[3]}" = enable ]] && valid_plugins=(${valid_plugins:|plugins}) 
+					valid_plugins=("$ZSH"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t) "$ZSH_CUSTOM"/plugins/*/{_*,*.plugin.zsh}(-.N:h:t))
+					[[ "${words[3]}" = enable ]] && valid_plugins=(${valid_plugins:|plugins})
 				fi
 				local -a args
-				args=(${words[4,$(( CURRENT - 1))]}) 
-				valid_plugins=(${valid_plugins:|args}) 
+				args=(${words[4,$(( CURRENT - 1))]})
+				valid_plugins=(${valid_plugins:|args})
 				_describe 'plugin' valid_plugins ;;
 		esac
 	fi
 	return 0
 }
 _omz::changelog () {
-	local version=${1:-HEAD} format=${3:-"--text"} 
+	local version=${1:-HEAD} format=${3:-"--text"}
 	if (
 			builtin cd -q "$ZSH"
 			! command git show-ref --verify refs/heads/$version && ! command git show-ref --verify refs/tags/$version && ! command git rev-parse --verify "${version}^{commit}"
@@ -3529,8 +3529,8 @@ EOF
 }
 _omz::log () {
 	setopt localoptions nopromptsubst
-	local logtype=$1 
-	local logname=${3:-${${functrace[1]#_}%:*}} 
+	local logtype=$1
+	local logname=${3:-${${functrace[1]#_}%:*}}
 	if [[ $logtype = debug && -z $_OMZ_DEBUG ]]
 	then
 		return
@@ -3559,7 +3559,7 @@ Available commands:
 EOF
 		return 1
 	}
-	local command="$1" 
+	local command="$1"
 	shift
 	$0::$command "$@"
 }
@@ -3577,7 +3577,7 @@ _omz::plugin::disable () {
 			_omz::log warn "plugin '$plugin' is not enabled."
 			continue
 		fi
-		dis_plugins+=("$plugin") 
+		dis_plugins+=("$plugin")
 	done
 	if [[ ${#dis_plugins} -eq 0 ]]
 	then
@@ -3593,7 +3593,7 @@ _omz::plugin::disable () {
 
   gsub(/^(${(j:|:)dis_plugins})\)/, \")\")          # with BOL and closing parenthesis
   gsub(/\((${(j:|:)dis_plugins})$/, \"(\")          # with opening parenthesis and EOL
-" 
+"
 	local awk_script="
 # if plugins=() is in oneline form, substitute disabled plugins and go to next line
 /^[ \t]*plugins=\([^#]+\).*\$/ {
@@ -3625,12 +3625,12 @@ multi == 1 && length(\$0) > 0 {
 }
 
 { print \$0 }
-" 
-	local zdot="${ZDOTDIR:-$HOME}" 
-	local zshrc="${${:-"${zdot}/.zshrc"}:A}" 
+"
+	local zdot="${ZDOTDIR:-$HOME}"
+	local zshrc="${${:-"${zdot}/.zshrc"}:A}"
 	awk "$awk_script" "$zshrc" > "$zdot/.zshrc.new" && command cp -f "$zshrc" "$zdot/.zshrc.bck" && command mv -f "$zdot/.zshrc.new" "$zshrc"
 	[[ $? -eq 0 ]] || {
-		local ret=$? 
+		local ret=$?
 		_omz::log error "error disabling plugins."
 		return $ret
 	}
@@ -3657,7 +3657,7 @@ _omz::plugin::enable () {
 			_omz::log warn "plugin '$plugin' is already enabled."
 			continue
 		fi
-		add_plugins+=("$plugin") 
+		add_plugins+=("$plugin")
 	done
 	if [[ ${#add_plugins} -eq 0 ]]
 	then
@@ -3706,12 +3706,12 @@ multi == 1 && /^[^#]*/ {
 }
 
 { print \$0 }
-" 
-	local zdot="${ZDOTDIR:-$HOME}" 
-	local zshrc="${${:-"${zdot}/.zshrc"}:A}" 
+"
+	local zdot="${ZDOTDIR:-$HOME}"
+	local zshrc="${${:-"${zdot}/.zshrc"}:A}"
 	awk "$awk_script" "$zshrc" > "$zdot/.zshrc.new" && command cp -f "$zshrc" "$zdot/.zshrc.bck" && command mv -f "$zdot/.zshrc.new" "$zshrc"
 	[[ $? -eq 0 ]] || {
-		local ret=$? 
+		local ret=$?
 		_omz::log error "error enabling plugins."
 		return $ret
 	}
@@ -3766,15 +3766,15 @@ _omz::plugin::list () {
 		do
 			if [[ -d "${ZSH_CUSTOM}/plugins/${plugin}" ]]
 			then
-				custom_plugins+=("${plugin}") 
+				custom_plugins+=("${plugin}")
 			elif [[ -d "${ZSH}/plugins/${plugin}" ]]
 			then
-				builtin_plugins+=("${plugin}") 
+				builtin_plugins+=("${plugin}")
 			fi
 		done
 	else
-		custom_plugins=("$ZSH_CUSTOM"/plugins/*(-/N:t)) 
-		builtin_plugins=("$ZSH"/plugins/*(-/N:t)) 
+		custom_plugins=("$ZSH_CUSTOM"/plugins/*(-/N:t))
+		builtin_plugins=("$ZSH"/plugins/*(-/N:t))
 	fi
 	if [[ ! -t 1 ]]
 	then
@@ -3799,15 +3799,15 @@ _omz::plugin::load () {
 		echo "Usage: ${(j: :)${(s.::.)0#_}} <plugin> [...]" >&2
 		return 1
 	fi
-	local plugin base has_completion=0 
+	local plugin base has_completion=0
 	for plugin in "$@"
 	do
 		if [[ -d "$ZSH_CUSTOM/plugins/$plugin" ]]
 		then
-			base="$ZSH_CUSTOM/plugins/$plugin" 
+			base="$ZSH_CUSTOM/plugins/$plugin"
 		elif [[ -d "$ZSH/plugins/$plugin" ]]
 		then
-			base="$ZSH/plugins/$plugin" 
+			base="$ZSH/plugins/$plugin"
 		else
 			_omz::log warn "plugin '$plugin' not found"
 			continue
@@ -3818,11 +3818,11 @@ _omz::plugin::load () {
 			continue
 		elif (( ! ${fpath[(Ie)$base]} ))
 		then
-			fpath=("$base" $fpath) 
+			fpath=("$base" $fpath)
 		fi
 		local -a comp_files
-		comp_files=($base/_*(N)) 
-		has_completion=$(( $#comp_files > 0 )) 
+		comp_files=($base/_*(N))
+		has_completion=$(( $#comp_files > 0 ))
 		if [[ -f "$base/$plugin.plugin.zsh" ]]
 		then
 			source "$base/$plugin.plugin.zsh"
@@ -3846,7 +3846,7 @@ Available commands:
 EOF
 		return 1
 	}
-	local command="$1" 
+	local command="$1"
 	shift
 	$0::$command "$@"
 }
@@ -3855,8 +3855,8 @@ _omz::pr::clean () {
 		set -e
 		builtin cd -q "$ZSH"
 		local fmt branches
-		fmt="%(color:bold blue)%(align:18,right)%(refname:short)%(end)%(color:reset) %(color:dim bold red)%(objectname:short)%(color:reset) %(color:yellow)%(contents:subject)" 
-		branches="$(command git for-each-ref --sort=-committerdate --color --format="$fmt" "refs/heads/ohmyzsh/pull-*")" 
+		fmt="%(color:bold blue)%(align:18,right)%(refname:short)%(end)%(color:reset) %(color:dim bold red)%(objectname:short)%(color:reset) %(color:yellow)%(contents:subject)"
+		branches="$(command git for-each-ref --sort=-committerdate --color --format="$fmt" "refs/heads/ohmyzsh/pull-*")"
 		if [[ -z "$branches" ]]
 		then
 			_omz::log info "there are no Pull Request branches to remove."
@@ -3875,7 +3875,7 @@ _omz::pr::clean () {
 _omz::pr::test () {
 	if [[ "$1" = https://* ]]
 	then
-		1="${1:t}" 
+		1="${1:t}"
 	fi
 	if ! [[ -n "$1" && "$1" =~ ^[[:digit:]]+$ ]]
 	then
@@ -3893,9 +3893,9 @@ _omz::pr::test () {
 		command git remote -v | while read remote url _
 		do
 			case "$url" in
-				(https://github.com/ohmyzsh/ohmyzsh(|.git)) found=1 
+				(https://github.com/ohmyzsh/ohmyzsh(|.git)) found=1
 					break ;;
-				(git@github.com:ohmyzsh/ohmyzsh(|.git)) found=1 
+				(git@github.com:ohmyzsh/ohmyzsh(|.git)) found=1
 					break ;;
 			esac
 		done
@@ -3911,8 +3911,8 @@ _omz::pr::test () {
 		_omz::log info "rebasing PR #$1..."
 		local ret gpgsign
 		{
-			gpgsign=$(command git config --local commit.gpgsign 2>/dev/null)  || ret=$? 
-			[[ $ret -ne 129 ]] || gpgsign=$(command git config commit.gpgsign 2>/dev/null) 
+			gpgsign=$(command git config --local commit.gpgsign 2>/dev/null)  || ret=$?
+			[[ $ret -ne 129 ]] || gpgsign=$(command git config commit.gpgsign 2>/dev/null)
 			command git config commit.gpgsign false
 			command git rebase master ohmyzsh/pull-$1 || {
 				command git rebase --abort &> /dev/null
@@ -3945,7 +3945,7 @@ _omz::pr::test () {
 }
 _omz::reload () {
 	command rm -f $_comp_dumpfile $ZSH_COMPDUMP
-	local zsh="${ZSH_ARGZERO:-${functrace[-1]%:*}}" 
+	local zsh="${ZSH_ARGZERO:-${functrace[-1]%:*}}"
 	[[ "$zsh" = -* || -o login ]] && exec -l "${zsh#-}" || exec "$zsh"
 }
 _omz::theme () {
@@ -3962,14 +3962,14 @@ Available commands:
 EOF
 		return 1
 	}
-	local command="$1" 
+	local command="$1"
 	shift
 	$0::$command "$@"
 }
 _omz::theme::list () {
 	local -a custom_themes builtin_themes
-	custom_themes=("$ZSH_CUSTOM"/**/*.zsh-theme(-.N:r:gs:"$ZSH_CUSTOM"/themes/:::gs:"$ZSH_CUSTOM"/:::)) 
-	builtin_themes=("$ZSH"/themes/*.zsh-theme(-.N:t:r)) 
+	custom_themes=("$ZSH_CUSTOM"/**/*.zsh-theme(-.N:r:gs:"$ZSH_CUSTOM"/themes/:::gs:"$ZSH_CUSTOM"/:::))
+	builtin_themes=("$ZSH"/themes/*.zsh-theme(-.N:t:r))
 	if [[ ! -t 1 ]]
 	then
 		print -l ${(q-)custom_themes} ${(q-)builtin_themes}
@@ -4015,9 +4015,9 @@ END {
   # If no ZSH_THEME= line was found, return an error
   if (!set) exit 1
 }
-' 
-	local zdot="${ZDOTDIR:-$HOME}" 
-	local zshrc="${${:-"${zdot}/.zshrc"}:A}" 
+'
+	local zdot="${ZDOTDIR:-$HOME}"
+	local zshrc="${${:-"${zdot}/.zshrc"}:A}"
 	awk "$awk_script" "$zshrc" > "$zdot/.zshrc.new" || {
 		cat <<EOF
 ZSH_THEME="$1" # set by \`omz\`
@@ -4026,7 +4026,7 @@ EOF
 		cat "$zdot/.zshrc"
 	} > "$zdot/.zshrc.new" && command cp -f "$zshrc" "$zdot/.zshrc.bck" && command mv -f "$zdot/.zshrc.new" "$zshrc"
 	[[ $? -eq 0 ]] || {
-		local ret=$? 
+		local ret=$?
 		_omz::log error "error setting theme."
 		return $ret
 	}
@@ -4058,7 +4058,7 @@ _omz::theme::use () {
 		_omz::log error "%B$1%b theme not found"
 		return 1
 	fi
-	ZSH_THEME="$1" 
+	ZSH_THEME="$1"
 	[[ $1 = random ]] || unset RANDOM_THEME
 }
 _omz::update () {
@@ -4071,19 +4071,19 @@ _omz::update () {
 		_omz::log error "for more information see https://github.com/ohmyzsh/ohmyzsh/wiki/FAQ#how-do-i-update-oh-my-zsh"
 		return 1
 	}
-	local last_commit=$(builtin cd -q "$ZSH"; git rev-parse HEAD 2>/dev/null) 
+	local last_commit=$(builtin cd -q "$ZSH"; git rev-parse HEAD 2>/dev/null)
 	[[ $? -eq 0 ]] || {
 		_omz::log error "\`$ZSH\` is not a git directory. Aborting..."
 		return 1
 	}
-	zstyle -s ':omz:update' verbose verbose_mode || verbose_mode=default 
+	zstyle -s ':omz:update' verbose verbose_mode || verbose_mode=default
 	ZSH="$ZSH" command zsh -f "$ZSH/tools/upgrade.sh" -i -v $verbose_mode || return $?
 	zmodload zsh/datetime
 	echo "LAST_EPOCH=$(( EPOCHSECONDS / 60 / 60 / 24 ))" >| "${ZSH_CACHE_DIR}/.zsh-update"
 	command rm -rf "$ZSH/log/update.lock"
 	if [[ "$(builtin cd -q "$ZSH"; git rev-parse HEAD)" != "$last_commit" ]]
 	then
-		local zsh="${ZSH_ARGZERO:-${functrace[-1]%:*}}" 
+		local zsh="${ZSH_ARGZERO:-${functrace[-1]%:*}}"
 		[[ "$zsh" = -* || -o login ]] && exec -l "${zsh#-}" || exec "$zsh"
 	fi
 }
@@ -4091,19 +4091,19 @@ _omz::version () {
 	(
 		builtin cd -q "$ZSH"
 		local version
-		version=$(command git describe --tags HEAD 2>/dev/null)  || version=$(command git symbolic-ref --quiet --short HEAD 2>/dev/null)  || version=$(command git name-rev --no-undefined --name-only --exclude="remotes/*" HEAD 2>/dev/null)  || version="<detached>" 
-		local commit=$(command git rev-parse --short HEAD 2>/dev/null) 
+		version=$(command git describe --tags HEAD 2>/dev/null)  || version=$(command git symbolic-ref --quiet --short HEAD 2>/dev/null)  || version=$(command git name-rev --no-undefined --name-only --exclude="remotes/*" HEAD 2>/dev/null)  || version="<detached>"
+		local commit=$(command git rev-parse --short HEAD 2>/dev/null)
 		printf "%s (%s)\n" "$version" "$commit"
 	)
 }
 _omz_async_callback () {
 	emulate -L zsh
-	local fd=$1 
-	local err=$2 
+	local fd=$1
+	local err=$2
 	if [[ -z "$err" || "$err" == "hup" ]]
 	then
-		local handler="${(k)_OMZ_ASYNC_FDS[(r)$fd]}" 
-		local old_output="${_OMZ_ASYNC_OUTPUT[$handler]}" 
+		local handler="${(k)_OMZ_ASYNC_FDS[(r)$fd]}"
+		local old_output="${_OMZ_ASYNC_OUTPUT[$handler]}"
 		IFS= read -r -u $fd -d '' "_OMZ_ASYNC_OUTPUT[$handler]"
 		if [[ "$old_output" != "${_OMZ_ASYNC_OUTPUT[$handler]}" ]]
 		then
@@ -4113,19 +4113,19 @@ _omz_async_callback () {
 		exec {fd}<&-
 	fi
 	zle -F "$fd"
-	_OMZ_ASYNC_FDS[$handler]=-1 
-	_OMZ_ASYNC_PIDS[$handler]=-1 
+	_OMZ_ASYNC_FDS[$handler]=-1
+	_OMZ_ASYNC_PIDS[$handler]=-1
 }
 _omz_async_request () {
 	setopt localoptions noksharrays unset
-	local -i ret=$? 
+	local -i ret=$?
 	typeset -gA _OMZ_ASYNC_FDS _OMZ_ASYNC_PIDS _OMZ_ASYNC_OUTPUT
 	local handler
 	for handler in ${_omz_async_functions}
 	do
 		(( ${+functions[$handler]} )) || continue
-		local fd=${_OMZ_ASYNC_FDS[$handler]:--1} 
-		local pid=${_OMZ_ASYNC_PIDS[$handler]:--1} 
+		local fd=${_OMZ_ASYNC_FDS[$handler]:--1}
+		local pid=${_OMZ_ASYNC_PIDS[$handler]:--1}
 		if (( fd != -1 && pid != -1 )) && {
 				true <&$fd
 			} 2> /dev/null
@@ -4139,8 +4139,8 @@ _omz_async_request () {
 				kill -TERM $pid 2> /dev/null
 			fi
 		fi
-		_OMZ_ASYNC_FDS[$handler]=-1 
-		_OMZ_ASYNC_PIDS[$handler]=-1 
+		_OMZ_ASYNC_FDS[$handler]=-1
+		_OMZ_ASYNC_PIDS[$handler]=-1
 		exec {fd}< <(
       # Tell parent process our PID
       builtin echo ${sysparams[pid]}
@@ -4149,7 +4149,7 @@ _omz_async_request () {
       # Run the async function handler
       $handler
     )
-		_OMZ_ASYNC_FDS[$handler]=$fd 
+		_OMZ_ASYNC_FDS[$handler]=$fd
 		is-at-least 5.8 || command true
 		read -u $fd "_OMZ_ASYNC_PIDS[$handler]"
 		zle -F "$fd" _omz_async_callback
@@ -4158,24 +4158,24 @@ _omz_async_request () {
 _omz_diag_dump_check_core_commands () {
 	builtin echo "Core command check:"
 	local redefined name builtins externals reserved_words
-	redefined=() 
-	reserved_words=(do done esac then elif else fi for case if while function repeat time until select coproc nocorrect foreach end '!' '[[' '{' '}') 
-	builtins=(alias autoload bg bindkey break builtin bye cd chdir command comparguments compcall compctl compdescribe compfiles compgroups compquote comptags comptry compvalues continue dirs disable disown echo echotc echoti emulate enable eval exec exit false fc fg functions getln getopts hash jobs kill let limit log logout noglob popd print printf pushd pushln pwd r read rehash return sched set setopt shift source suspend test times trap true ttyctl type ulimit umask unalias unfunction unhash unlimit unset unsetopt vared wait whence where which zcompile zle zmodload zparseopts zregexparse zstyle) 
+	redefined=()
+	reserved_words=(do done esac then elif else fi for case if while function repeat time until select coproc nocorrect foreach end '!' '[[' '{' '}')
+	builtins=(alias autoload bg bindkey break builtin bye cd chdir command comparguments compcall compctl compdescribe compfiles compgroups compquote comptags comptry compvalues continue dirs disable disown echo echotc echoti emulate enable eval exec exit false fc fg functions getln getopts hash jobs kill let limit log logout noglob popd print printf pushd pushln pwd r read rehash return sched set setopt shift source suspend test times trap true ttyctl type ulimit umask unalias unfunction unhash unlimit unset unsetopt vared wait whence where which zcompile zle zmodload zparseopts zregexparse zstyle)
 	if is-at-least 5.1
 	then
-		reserved_word+=(declare export integer float local readonly typeset) 
+		reserved_word+=(declare export integer float local readonly typeset)
 	else
-		builtins+=(declare export integer float local readonly typeset) 
+		builtins+=(declare export integer float local readonly typeset)
 	fi
-	builtins_fatal=(builtin command local) 
-	externals=(zsh) 
+	builtins_fatal=(builtin command local)
+	externals=(zsh)
 	for name in $reserved_words
 	do
 		if [[ $(builtin whence -w $name) != "$name: reserved" ]]
 		then
 			builtin echo "reserved word '$name' has been redefined"
 			builtin which $name
-			redefined+=$name 
+			redefined+=$name
 		fi
 	done
 	for name in $builtins
@@ -4184,7 +4184,7 @@ _omz_diag_dump_check_core_commands () {
 		then
 			builtin echo "builtin '$name' has been redefined"
 			builtin which $name
-			redefined+=$name 
+			redefined+=$name
 		fi
 	done
 	for name in $externals
@@ -4193,7 +4193,7 @@ _omz_diag_dump_check_core_commands () {
 		then
 			builtin echo "command '$name' has been redefined"
 			builtin which $name
-			redefined+=$name 
+			redefined+=$name
 		fi
 	done
 	if [[ -n "$redefined" ]]
@@ -4204,7 +4204,7 @@ _omz_diag_dump_check_core_commands () {
 	fi
 }
 _omz_diag_dump_echo_file_w_header () {
-	local file=$1 
+	local file=$1
 	if [[ -f $file || -h $file ]]
 	then
 		builtin echo "========== $file =========="
@@ -4240,25 +4240,25 @@ _omz_diag_dump_one_big_text () {
 	builtin echo
 	_omz_diag_dump_os_specific_version
 	builtin echo
-	programs=(sh zsh ksh bash sed cat grep ls find git posh) 
-	local progfile="" extra_str="" sha_str="" 
+	programs=(sh zsh ksh bash sed cat grep ls find git posh)
+	local progfile="" extra_str="" sha_str=""
 	for program in $programs
 	do
-		extra_str="" sha_str="" 
-		progfile=$(builtin which $program) 
+		extra_str="" sha_str=""
+		progfile=$(builtin which $program)
 		if [[ $? == 0 ]]
 		then
 			if [[ -e $progfile ]]
 			then
 				if builtin whence shasum &> /dev/null
 				then
-					sha_str=($(command shasum $progfile)) 
-					sha_str=$sha_str[1] 
-					extra_str+=" SHA $sha_str" 
+					sha_str=($(command shasum $progfile))
+					sha_str=$sha_str[1]
+					extra_str+=" SHA $sha_str"
 				fi
 				if [[ -h "$progfile" ]]
 				then
-					extra_str+=" ( -> ${progfile:A} )" 
+					extra_str+=" ( -> ${progfile:A} )"
 				fi
 			fi
 			builtin printf '%-9s %-20s %s\n' "$program is" "$progfile" "$extra_str"
@@ -4322,10 +4322,10 @@ _omz_diag_dump_one_big_text () {
 	builtin echo
 	if [[ -e $ZSH_CUSTOM ]]
 	then
-		local custom_dir=$ZSH_CUSTOM 
+		local custom_dir=$ZSH_CUSTOM
 		if [[ -h $custom_dir ]]
 		then
-			custom_dir=$(builtin cd $custom_dir && pwd -P) 
+			custom_dir=$(builtin cd $custom_dir && pwd -P)
 		fi
 		builtin echo "oh-my-zsh custom dir:"
 		builtin echo "   $ZSH_CUSTOM ($custom_dir)"
@@ -4343,10 +4343,10 @@ _omz_diag_dump_one_big_text () {
 		command infocmp -L
 		builtin echo
 	fi
-	local zdotdir=${ZDOTDIR:-$HOME} 
+	local zdotdir=${ZDOTDIR:-$HOME}
 	builtin echo "Zsh configuration files:"
 	local cfgfile cfgfiles
-	cfgfiles=(/etc/zshenv /etc/zprofile /etc/zshrc /etc/zlogin /etc/zlogout $zdotdir/.zshenv $zdotdir/.zprofile $zdotdir/.zshrc $zdotdir/.zlogin $zdotdir/.zlogout ~/.zsh.pre-oh-my-zsh /etc/bashrc /etc/profile ~/.bashrc ~/.profile ~/.bash_profile ~/.bash_logout) 
+	cfgfiles=(/etc/zshenv /etc/zprofile /etc/zshrc /etc/zlogin /etc/zlogout $zdotdir/.zshenv $zdotdir/.zprofile $zdotdir/.zshrc $zdotdir/.zlogin $zdotdir/.zlogout ~/.zsh.pre-oh-my-zsh /etc/bashrc /etc/profile ~/.bashrc ~/.profile ~/.bash_profile ~/.bash_logout)
 	command ls -lad $cfgfiles 2>&1
 	builtin echo
 	if [[ $verbose -ge 1 ]]
@@ -4360,7 +4360,7 @@ _omz_diag_dump_one_big_text () {
 	builtin echo "Zsh compdump files:"
 	local dumpfile dumpfiles
 	command ls -lad $zdotdir/.zcompdump*
-	dumpfiles=($zdotdir/.zcompdump*(N)) 
+	dumpfiles=($zdotdir/.zcompdump*(N))
 	if [[ $verbose -ge 2 ]]
 	then
 		for dumpfile in $dumpfiles
@@ -4372,8 +4372,8 @@ _omz_diag_dump_one_big_text () {
 _omz_diag_dump_os_specific_version () {
 	local osname osver version_file version_files
 	case "$OSTYPE" in
-		(darwin*) osname=$(command sw_vers -productName) 
-			osver=$(command sw_vers -productVersion) 
+		(darwin*) osname=$(command sw_vers -productName)
+			osver=$(command sw_vers -productVersion)
 			builtin echo "OS Version: $osname $osver build $(sw_vers -buildVersion)" ;;
 		(cygwin) command systeminfo | command head -n 4 | command tail -n 2 ;;
 	esac
@@ -4381,7 +4381,7 @@ _omz_diag_dump_os_specific_version () {
 	then
 		builtin echo "OS Release: $(command lsb_release -s -d)"
 	fi
-	version_files=(/etc/*-release(N) /etc/*-version(N) /etc/*_version(N)) 
+	version_files=(/etc/*-release(N) /etc/*-version(N) /etc/*_version(N))
 	for version_file in $version_files
 	do
 		builtin echo "$version_file:"
@@ -4399,20 +4399,20 @@ _omz_git_prompt_info () {
 	local upstream
 	if (( ${+ZSH_THEME_GIT_SHOW_UPSTREAM} ))
 	then
-		upstream=$(__git_prompt_git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}" 2>/dev/null)  && upstream=" -> ${upstream}" 
+		upstream=$(__git_prompt_git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}" 2>/dev/null)  && upstream=" -> ${upstream}"
 	fi
 	echo "${ZSH_THEME_GIT_PROMPT_PREFIX}${ref:gs/%/%%}${upstream:gs/%/%%}$(parse_git_dirty)${ZSH_THEME_GIT_PROMPT_SUFFIX}"
 }
 _omz_git_prompt_status () {
 	[[ "$(__git_prompt_git config --get oh-my-zsh.hide-status 2>/dev/null)" = 1 ]] && return
 	local -A prefix_constant_map
-	prefix_constant_map=('\?\? ' 'UNTRACKED' 'A  ' 'ADDED' 'M  ' 'MODIFIED' 'MM ' 'MODIFIED' ' M ' 'MODIFIED' 'AM ' 'MODIFIED' ' T ' 'MODIFIED' 'R  ' 'RENAMED' ' D ' 'DELETED' 'D  ' 'DELETED' 'UU ' 'UNMERGED' 'ahead' 'AHEAD' 'behind' 'BEHIND' 'diverged' 'DIVERGED' 'stashed' 'STASHED') 
+	prefix_constant_map=('\?\? ' 'UNTRACKED' 'A  ' 'ADDED' 'M  ' 'MODIFIED' 'MM ' 'MODIFIED' ' M ' 'MODIFIED' 'AM ' 'MODIFIED' ' T ' 'MODIFIED' 'R  ' 'RENAMED' ' D ' 'DELETED' 'D  ' 'DELETED' 'UU ' 'UNMERGED' 'ahead' 'AHEAD' 'behind' 'BEHIND' 'diverged' 'DIVERGED' 'stashed' 'STASHED')
 	local -A constant_prompt_map
-	constant_prompt_map=('UNTRACKED' "$ZSH_THEME_GIT_PROMPT_UNTRACKED" 'ADDED' "$ZSH_THEME_GIT_PROMPT_ADDED" 'MODIFIED' "$ZSH_THEME_GIT_PROMPT_MODIFIED" 'RENAMED' "$ZSH_THEME_GIT_PROMPT_RENAMED" 'DELETED' "$ZSH_THEME_GIT_PROMPT_DELETED" 'UNMERGED' "$ZSH_THEME_GIT_PROMPT_UNMERGED" 'AHEAD' "$ZSH_THEME_GIT_PROMPT_AHEAD" 'BEHIND' "$ZSH_THEME_GIT_PROMPT_BEHIND" 'DIVERGED' "$ZSH_THEME_GIT_PROMPT_DIVERGED" 'STASHED' "$ZSH_THEME_GIT_PROMPT_STASHED") 
+	constant_prompt_map=('UNTRACKED' "$ZSH_THEME_GIT_PROMPT_UNTRACKED" 'ADDED' "$ZSH_THEME_GIT_PROMPT_ADDED" 'MODIFIED' "$ZSH_THEME_GIT_PROMPT_MODIFIED" 'RENAMED' "$ZSH_THEME_GIT_PROMPT_RENAMED" 'DELETED' "$ZSH_THEME_GIT_PROMPT_DELETED" 'UNMERGED' "$ZSH_THEME_GIT_PROMPT_UNMERGED" 'AHEAD' "$ZSH_THEME_GIT_PROMPT_AHEAD" 'BEHIND' "$ZSH_THEME_GIT_PROMPT_BEHIND" 'DIVERGED' "$ZSH_THEME_GIT_PROMPT_DIVERGED" 'STASHED' "$ZSH_THEME_GIT_PROMPT_STASHED")
 	local status_constants
-	status_constants=(UNTRACKED ADDED MODIFIED RENAMED DELETED STASHED UNMERGED AHEAD BEHIND DIVERGED) 
+	status_constants=(UNTRACKED ADDED MODIFIED RENAMED DELETED STASHED UNMERGED AHEAD BEHIND DIVERGED)
 	local status_text
-	status_text="$(__git_prompt_git status --porcelain -b 2> /dev/null)" 
+	status_text="$(__git_prompt_git status --porcelain -b 2> /dev/null)"
 	if [[ $? -eq 128 ]]
 	then
 		return 1
@@ -4420,31 +4420,31 @@ _omz_git_prompt_status () {
 	local -A statuses_seen
 	if __git_prompt_git rev-parse --verify refs/stash &> /dev/null
 	then
-		statuses_seen[STASHED]=1 
+		statuses_seen[STASHED]=1
 	fi
 	local status_lines
-	status_lines=("${(@f)${status_text}}") 
+	status_lines=("${(@f)${status_text}}")
 	if [[ "$status_lines[1]" =~ "^## [^ ]+ \[(.*)\]" ]]
 	then
 		local branch_statuses
-		branch_statuses=("${(@s/,/)match}") 
+		branch_statuses=("${(@s/,/)match}")
 		for branch_status in $branch_statuses
 		do
 			if [[ ! $branch_status =~ "(behind|diverged|ahead) ([0-9]+)?" ]]
 			then
 				continue
 			fi
-			local last_parsed_status=$prefix_constant_map[$match[1]] 
-			statuses_seen[$last_parsed_status]=$match[2] 
+			local last_parsed_status=$prefix_constant_map[$match[1]]
+			statuses_seen[$last_parsed_status]=$match[2]
 		done
 	fi
 	for status_prefix in ${(k)prefix_constant_map}
 	do
-		local status_constant="${prefix_constant_map[$status_prefix]}" 
-		local status_regex=$'(^|\n)'"$status_prefix" 
+		local status_constant="${prefix_constant_map[$status_prefix]}"
+		local status_regex=$'(^|\n)'"$status_prefix"
 		if [[ "$status_text" =~ $status_regex ]]
 		then
-			statuses_seen[$status_constant]=1 
+			statuses_seen[$status_constant]=1
 		fi
 	done
 	local status_prompt
@@ -4452,8 +4452,8 @@ _omz_git_prompt_status () {
 	do
 		if (( ${+statuses_seen[$status_constant]} ))
 		then
-			local next_display=$constant_prompt_map[$status_constant] 
-			status_prompt="$next_display$status_prompt" 
+			local next_display=$constant_prompt_map[$status_constant]
+			status_prompt="$next_display$status_prompt"
 		fi
 	done
 	echo $status_prompt
@@ -4465,7 +4465,7 @@ _omz_register_handler () {
 	then
 		return
 	fi
-	_omz_async_functions+=("$1") 
+	_omz_async_functions+=("$1")
 	if (( ! ${precmd_functions[(Ie)_omz_async_request]} )) && (( ${+functions[_omz_async_request]}))
 	then
 		autoload -Uz add-zsh-hook
@@ -4473,18 +4473,18 @@ _omz_register_handler () {
 	fi
 }
 _omz_source () {
-	local context filepath="$1" 
+	local context filepath="$1"
 	case "$filepath" in
 		(lib/*) context="lib:${filepath:t:r}"  ;;
 		(plugins/*) context="plugins:${filepath:h:t}"  ;;
 	esac
-	local disable_aliases=0 
-	zstyle -T ":omz:${context}" aliases || disable_aliases=1 
+	local disable_aliases=0
+	zstyle -T ":omz:${context}" aliases || disable_aliases=1
 	local -A aliases_pre galiases_pre
 	if (( disable_aliases ))
 	then
-		aliases_pre=("${(@kv)aliases}") 
-		galiases_pre=("${(@kv)galiases}") 
+		aliases_pre=("${(@kv)aliases}")
+		galiases_pre=("${(@kv)galiases}")
 	fi
 	if [[ -f "$ZSH_CUSTOM/$filepath" ]]
 	then
@@ -4497,13 +4497,13 @@ _omz_source () {
 	then
 		if (( #aliases_pre ))
 		then
-			aliases=("${(@kv)aliases_pre}") 
+			aliases=("${(@kv)aliases_pre}")
 		else
 			(( #aliases )) && unalias "${(@k)aliases}"
 		fi
 		if (( #galiases_pre ))
 		then
-			galiases=("${(@kv)galiases_pre}") 
+			galiases=("${(@kv)galiases_pre}")
 		else
 			(( #galiases )) && unalias "${(@k)galiases}"
 		fi
@@ -6230,25 +6230,25 @@ _zsh-mime-handler () {
 	builtin autoload -XUz
 }
 _zsh_autosuggest_accept () {
-	local -i retval max_cursor_pos=$#BUFFER 
+	local -i retval max_cursor_pos=$#BUFFER
 	if [[ "$KEYMAP" = "vicmd" ]]
 	then
-		max_cursor_pos=$((max_cursor_pos - 1)) 
+		max_cursor_pos=$((max_cursor_pos - 1))
 	fi
 	if (( $CURSOR != $max_cursor_pos || !$#POSTDISPLAY ))
 	then
 		_zsh_autosuggest_invoke_original_widget $@
 		return
 	fi
-	BUFFER="$BUFFER$POSTDISPLAY" 
+	BUFFER="$BUFFER$POSTDISPLAY"
 	unset POSTDISPLAY
 	_zsh_autosuggest_invoke_original_widget $@
-	retval=$? 
+	retval=$?
 	if [[ "$KEYMAP" = "vicmd" ]]
 	then
-		CURSOR=$(($#BUFFER - 1)) 
+		CURSOR=$(($#BUFFER - 1))
 	else
-		CURSOR=$#BUFFER 
+		CURSOR=$#BUFFER
 	fi
 	return $retval
 }
@@ -6298,9 +6298,9 @@ _zsh_autosuggest_async_response () {
 }
 _zsh_autosuggest_bind_widget () {
 	typeset -gA _ZSH_AUTOSUGGEST_BIND_COUNTS
-	local widget=$1 
-	local autosuggest_action=$2 
-	local prefix=$ZSH_AUTOSUGGEST_ORIGINAL_WIDGET_PREFIX 
+	local widget=$1
+	local autosuggest_action=$2
+	local prefix=$ZSH_AUTOSUGGEST_ORIGINAL_WIDGET_PREFIX
 	local -i bind_count
 	case $widgets[$widget] in
 		(user:_zsh_autosuggest_(bound|orig)_*) bind_count=$((_ZSH_AUTOSUGGEST_BIND_COUNTS[$widget]))  ;;
@@ -6321,7 +6321,7 @@ _zsh_autosuggest_bind_widgets () {
 	emulate -L zsh
 	local widget
 	local ignore_widgets
-	ignore_widgets=(.\* _\* ${_ZSH_AUTOSUGGEST_BUILTIN_ACTIONS/#/autosuggest-} $ZSH_AUTOSUGGEST_ORIGINAL_WIDGET_PREFIX\* $ZSH_AUTOSUGGEST_IGNORE_WIDGETS) 
+	ignore_widgets=(.\* _\* ${_ZSH_AUTOSUGGEST_BUILTIN_ACTIONS/#/autosuggest-} $ZSH_AUTOSUGGEST_ORIGINAL_WIDGET_PREFIX\* $ZSH_AUTOSUGGEST_IGNORE_WIDGETS)
 	for widget in ${${(f)"$(builtin zle -la)"}:#${(j:|:)~ignore_widgets}}
 	do
 		if [[ -n ${ZSH_AUTOSUGGEST_CLEAR_WIDGETS[(r)$widget]} ]]
@@ -6345,7 +6345,7 @@ _zsh_autosuggest_capture_completion_async () {
 	_zsh_autosuggest_capture_setup
 	zmodload zsh/parameter 2> /dev/null || return
 	autoload +X _complete
-	functions[_original_complete]=$functions[_complete] 
+	functions[_original_complete]=$functions[_complete]
 	_complete () {
 		unset 'compstate[vared]'
 		_original_complete "$@"
@@ -6358,8 +6358,8 @@ _zsh_autosuggest_capture_completion_sync () {
 }
 _zsh_autosuggest_capture_completion_widget () {
 	local -a +h comppostfuncs
-	comppostfuncs=(_zsh_autosuggest_capture_postcompletion) 
-	CURSOR=$#BUFFER 
+	comppostfuncs=(_zsh_autosuggest_capture_postcompletion)
+	CURSOR=$#BUFFER
 	zle -- ${(k)widgets[(r)completion:.complete-word:_main_complete]}
 	if is-at-least 5.0.3
 	then
@@ -6368,7 +6368,7 @@ _zsh_autosuggest_capture_completion_widget () {
 	echo -nE - $'\0'$BUFFER$'\0'
 }
 _zsh_autosuggest_capture_postcompletion () {
-	compstate[insert]=1 
+	compstate[insert]=1
 	unset 'compstate[list]'
 }
 _zsh_autosuggest_capture_setup () {
@@ -6404,7 +6404,7 @@ _zsh_autosuggest_escape_command () {
 	echo -E "${1//(#m)[\"\'\\()\[\]|*?~]/\\$MATCH}"
 }
 _zsh_autosuggest_execute () {
-	BUFFER="$BUFFER$POSTDISPLAY" 
+	BUFFER="$BUFFER$POSTDISPLAY"
 	unset POSTDISPLAY
 	_zsh_autosuggest_invoke_original_widget "accept-line"
 }
@@ -6422,7 +6422,7 @@ _zsh_autosuggest_fetch_suggestion () {
 	typeset -g suggestion
 	local -a strategies
 	local strategy
-	strategies=(${=ZSH_AUTOSUGGEST_STRATEGY}) 
+	strategies=(${=ZSH_AUTOSUGGEST_STRATEGY})
 	for strategy in $strategies
 	do
 		_zsh_autosuggest_strategy_$strategy "$1"
@@ -6434,8 +6434,8 @@ _zsh_autosuggest_highlight_apply () {
 	typeset -g _ZSH_AUTOSUGGEST_LAST_HIGHLIGHT
 	if (( $#POSTDISPLAY ))
 	then
-		typeset -g _ZSH_AUTOSUGGEST_LAST_HIGHLIGHT="$#BUFFER $(($#BUFFER + $#POSTDISPLAY)) $ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE" 
-		region_highlight+=("$_ZSH_AUTOSUGGEST_LAST_HIGHLIGHT") 
+		typeset -g _ZSH_AUTOSUGGEST_LAST_HIGHLIGHT="$#BUFFER $(($#BUFFER + $#POSTDISPLAY)) $ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE"
+		region_highlight+=("$_ZSH_AUTOSUGGEST_LAST_HIGHLIGHT")
 	else
 		unset _ZSH_AUTOSUGGEST_LAST_HIGHLIGHT
 	fi
@@ -6444,17 +6444,17 @@ _zsh_autosuggest_highlight_reset () {
 	typeset -g _ZSH_AUTOSUGGEST_LAST_HIGHLIGHT
 	if [[ -n "$_ZSH_AUTOSUGGEST_LAST_HIGHLIGHT" ]]
 	then
-		region_highlight=("${(@)region_highlight:#$_ZSH_AUTOSUGGEST_LAST_HIGHLIGHT}") 
+		region_highlight=("${(@)region_highlight:#$_ZSH_AUTOSUGGEST_LAST_HIGHLIGHT}")
 		unset _ZSH_AUTOSUGGEST_LAST_HIGHLIGHT
 	fi
 }
 _zsh_autosuggest_incr_bind_count () {
-	typeset -gi bind_count=$((_ZSH_AUTOSUGGEST_BIND_COUNTS[$1]+1)) 
-	_ZSH_AUTOSUGGEST_BIND_COUNTS[$1]=$bind_count 
+	typeset -gi bind_count=$((_ZSH_AUTOSUGGEST_BIND_COUNTS[$1]+1))
+	_ZSH_AUTOSUGGEST_BIND_COUNTS[$1]=$bind_count
 }
 _zsh_autosuggest_invoke_original_widget () {
 	(( $# )) || return 0
-	local original_widget_name="$1" 
+	local original_widget_name="$1"
 	shift
 	if (( ${+widgets[$original_widget_name]} ))
 	then
@@ -6464,20 +6464,20 @@ _zsh_autosuggest_invoke_original_widget () {
 _zsh_autosuggest_modify () {
 	local -i retval
 	local -i KEYS_QUEUED_COUNT
-	local orig_buffer="$BUFFER" 
-	local orig_postdisplay="$POSTDISPLAY" 
+	local orig_buffer="$BUFFER"
+	local orig_postdisplay="$POSTDISPLAY"
 	unset POSTDISPLAY
 	_zsh_autosuggest_invoke_original_widget $@
-	retval=$? 
+	retval=$?
 	emulate -L zsh
 	if (( $PENDING > 0 || $KEYS_QUEUED_COUNT > 0 ))
 	then
-		POSTDISPLAY="$orig_postdisplay" 
+		POSTDISPLAY="$orig_postdisplay"
 		return $retval
 	fi
 	if [[ "$BUFFER" = "$orig_buffer"* && "$orig_postdisplay" = "${BUFFER:$#orig_buffer}"* ]]
 	then
-		POSTDISPLAY="${orig_postdisplay:$(($#BUFFER - $#orig_buffer))}" 
+		POSTDISPLAY="${orig_postdisplay:$(($#BUFFER - $#orig_buffer))}"
 		return $retval
 	fi
 	if (( ${+_ZSH_AUTOSUGGEST_DISABLED} ))
@@ -6495,21 +6495,21 @@ _zsh_autosuggest_modify () {
 }
 _zsh_autosuggest_partial_accept () {
 	local -i retval cursor_loc
-	local original_buffer="$BUFFER" 
-	BUFFER="$BUFFER$POSTDISPLAY" 
+	local original_buffer="$BUFFER"
+	BUFFER="$BUFFER$POSTDISPLAY"
 	_zsh_autosuggest_invoke_original_widget $@
-	retval=$? 
-	cursor_loc=$CURSOR 
+	retval=$?
+	cursor_loc=$CURSOR
 	if [[ "$KEYMAP" = "vicmd" ]]
 	then
-		cursor_loc=$((cursor_loc + 1)) 
+		cursor_loc=$((cursor_loc + 1))
 	fi
 	if (( $cursor_loc > $#original_buffer ))
 	then
-		POSTDISPLAY="${BUFFER[$(($cursor_loc + 1)),$#BUFFER]}" 
-		BUFFER="${BUFFER[1,$cursor_loc]}" 
+		POSTDISPLAY="${BUFFER[$(($cursor_loc + 1)),$#BUFFER]}"
+		BUFFER="${BUFFER[1,$cursor_loc]}"
 	else
-		BUFFER="$original_buffer" 
+		BUFFER="$original_buffer"
 	fi
 	return $retval
 }
@@ -6521,7 +6521,7 @@ _zsh_autosuggest_start () {
 	_zsh_autosuggest_bind_widgets
 }
 _zsh_autosuggest_strategy_atuin () {
-	suggestion=$(ATUIN_QUERY="$1" atuin search --cmd-only --limit 1 --search-mode prefix) 
+	suggestion=$(ATUIN_QUERY="$1" atuin search --cmd-only --limit 1 --search-mode prefix)
 }
 _zsh_autosuggest_strategy_completion () {
 	emulate -L zsh
@@ -6540,7 +6540,7 @@ _zsh_autosuggest_strategy_completion () {
 	fi
 	{
 		zpty -r $ZSH_AUTOSUGGEST_COMPLETIONS_PTY_NAME line '*'$'\0''*'$'\0'
-		suggestion="${${(@0)line}[2]}" 
+		suggestion="${${(@0)line}[2]}"
 	} always {
 		zpty -d $ZSH_AUTOSUGGEST_COMPLETIONS_PTY_NAME
 	}
@@ -6548,44 +6548,44 @@ _zsh_autosuggest_strategy_completion () {
 _zsh_autosuggest_strategy_history () {
 	emulate -L zsh
 	setopt EXTENDED_GLOB
-	local prefix="${1//(#m)[\\*?[\]<>()|^~#]/\\$MATCH}" 
-	local pattern="$prefix*" 
+	local prefix="${1//(#m)[\\*?[\]<>()|^~#]/\\$MATCH}"
+	local pattern="$prefix*"
 	if [[ -n $ZSH_AUTOSUGGEST_HISTORY_IGNORE ]]
 	then
-		pattern="($pattern)~($ZSH_AUTOSUGGEST_HISTORY_IGNORE)" 
+		pattern="($pattern)~($ZSH_AUTOSUGGEST_HISTORY_IGNORE)"
 	fi
-	typeset -g suggestion="${history[(r)$pattern]}" 
+	typeset -g suggestion="${history[(r)$pattern]}"
 }
 _zsh_autosuggest_strategy_match_prev_cmd () {
 	emulate -L zsh
 	setopt EXTENDED_GLOB
-	local prefix="${1//(#m)[\\*?[\]<>()|^~#]/\\$MATCH}" 
-	local pattern="$prefix*" 
+	local prefix="${1//(#m)[\\*?[\]<>()|^~#]/\\$MATCH}"
+	local pattern="$prefix*"
 	if [[ -n $ZSH_AUTOSUGGEST_HISTORY_IGNORE ]]
 	then
-		pattern="($pattern)~($ZSH_AUTOSUGGEST_HISTORY_IGNORE)" 
+		pattern="($pattern)~($ZSH_AUTOSUGGEST_HISTORY_IGNORE)"
 	fi
 	local history_match_keys
-	history_match_keys=(${(k)history[(R)$~pattern]}) 
-	local histkey="${history_match_keys[1]}" 
-	local prev_cmd="$(_zsh_autosuggest_escape_command "${history[$((HISTCMD-1))]}")" 
+	history_match_keys=(${(k)history[(R)$~pattern]})
+	local histkey="${history_match_keys[1]}"
+	local prev_cmd="$(_zsh_autosuggest_escape_command "${history[$((HISTCMD-1))]}")"
 	for key in "${(@)history_match_keys[1,200]}"
 	do
 		[[ $key -gt 1 ]] || break
 		if [[ "${history[$((key - 1))]}" == "$prev_cmd" ]]
 		then
-			histkey="$key" 
+			histkey="$key"
 			break
 		fi
 	done
-	typeset -g suggestion="$history[$histkey]" 
+	typeset -g suggestion="$history[$histkey]"
 }
 _zsh_autosuggest_suggest () {
 	emulate -L zsh
-	local suggestion="$1" 
+	local suggestion="$1"
 	if [[ -n "$suggestion" ]] && (( $#BUFFER ))
 	then
-		POSTDISPLAY="${suggestion#$BUFFER}" 
+		POSTDISPLAY="${suggestion#$BUFFER}"
 	else
 		unset POSTDISPLAY
 	fi
@@ -6602,7 +6602,7 @@ _zsh_autosuggest_widget_accept () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_accept $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6611,7 +6611,7 @@ _zsh_autosuggest_widget_clear () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_clear $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6620,7 +6620,7 @@ _zsh_autosuggest_widget_disable () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_disable $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6629,7 +6629,7 @@ _zsh_autosuggest_widget_enable () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_enable $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6638,7 +6638,7 @@ _zsh_autosuggest_widget_execute () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_execute $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6647,7 +6647,7 @@ _zsh_autosuggest_widget_fetch () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_fetch $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6656,7 +6656,7 @@ _zsh_autosuggest_widget_modify () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_modify $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6665,7 +6665,7 @@ _zsh_autosuggest_widget_partial_accept () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_partial_accept $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6674,7 +6674,7 @@ _zsh_autosuggest_widget_suggest () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_suggest $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
@@ -6683,13 +6683,13 @@ _zsh_autosuggest_widget_toggle () {
 	local -i retval
 	_zsh_autosuggest_highlight_reset
 	_zsh_autosuggest_toggle $@
-	retval=$? 
+	retval=$?
 	_zsh_autosuggest_highlight_apply
 	zle -R
 	return $retval
 }
 _zsh_highlight () {
-	local ret=$? 
+	local ret=$?
 	typeset -r ret
 	(( ${+region_highlight[@]} )) || {
 		echo 'zsh-syntax-highlighting: error: $region_highlight is not defined' >&2
@@ -6697,25 +6697,25 @@ _zsh_highlight () {
 		return $ret
 	}
 	(( ${+zsh_highlight__memo_feature} )) || {
-		region_highlight+=(" 0 0 fg=red, memo=zsh-syntax-highlighting") 
+		region_highlight+=(" 0 0 fg=red, memo=zsh-syntax-highlighting")
 		case ${region_highlight[-1]} in
 			("0 0 fg=red") integer -gr zsh_highlight__memo_feature=0  ;;
 			("0 0 fg=red memo=zsh-syntax-highlighting") integer -gr zsh_highlight__memo_feature=1  ;;
 			(" 0 0 fg=red, memo=zsh-syntax-highlighting")  ;&
 			(*) if is-at-least 5.9
 				then
-					integer -gr zsh_highlight__memo_feature=1 
+					integer -gr zsh_highlight__memo_feature=1
 				else
-					integer -gr zsh_highlight__memo_feature=0 
+					integer -gr zsh_highlight__memo_feature=0
 				fi ;;
 		esac
-		region_highlight[-1]=() 
+		region_highlight[-1]=()
 	}
 	if (( zsh_highlight__memo_feature ))
 	then
-		region_highlight=("${(@)region_highlight:#*memo=zsh-syntax-highlighting*}") 
+		region_highlight=("${(@)region_highlight:#*memo=zsh-syntax-highlighting*}")
 	else
-		region_highlight=() 
+		region_highlight=()
 	fi
 	if [[ $WIDGET == zle-isearch-update ]] && {
 			$zsh_highlight__pat_static_bug || ! (( $+ISEARCHMATCH_ACTIVE ))
@@ -6726,11 +6726,11 @@ _zsh_highlight () {
 	local -A zsyh_user_options
 	if zmodload -e zsh/parameter
 	then
-		zsyh_user_options=("${(kv)options[@]}") 
+		zsyh_user_options=("${(kv)options[@]}")
 	else
 		local canonical_options onoff option raw_options
-		raw_options=(${(f)"$(emulate -R zsh; set -o)"}) 
-		canonical_options=(${${${(M)raw_options:#*off}%% *}#no} ${${(M)raw_options:#*on}%% *}) 
+		raw_options=(${(f)"$(emulate -R zsh; set -o)"})
+		canonical_options=(${${${(M)raw_options:#*off}%% *}#no} ${${(M)raw_options:#*on}%% *})
 		for option in "${canonical_options[@]}"
 		do
 			[[ -o $option ]]
@@ -6754,40 +6754,40 @@ _zsh_highlight () {
 		local highlighter
 		for highlighter in $ZSH_HIGHLIGHT_HIGHLIGHTERS
 		do
-			cache_place="_zsh_highlight__highlighter_${highlighter}_cache" 
+			cache_place="_zsh_highlight__highlighter_${highlighter}_cache"
 			typeset -ga ${cache_place}
 			if ! type "_zsh_highlight_highlighter_${highlighter}_predicate" >&/dev/null
 			then
 				echo "zsh-syntax-highlighting: warning: disabling the ${(qq)highlighter} highlighter as it has not been loaded" >&2
-				ZSH_HIGHLIGHT_HIGHLIGHTERS=(${ZSH_HIGHLIGHT_HIGHLIGHTERS:#${highlighter}}) 
+				ZSH_HIGHLIGHT_HIGHLIGHTERS=(${ZSH_HIGHLIGHT_HIGHLIGHTERS:#${highlighter}})
 			elif "_zsh_highlight_highlighter_${highlighter}_predicate"
 			then
-				region_highlight_copy=("${region_highlight[@]}") 
-				region_highlight=() 
+				region_highlight_copy=("${region_highlight[@]}")
+				region_highlight=()
 				{
 					"_zsh_highlight_highlighter_${highlighter}_paint"
 				} always {
 					: ${(AP)cache_place::="${region_highlight[@]}"}
 				}
-				region_highlight=("${region_highlight_copy[@]}") 
+				region_highlight=("${region_highlight_copy[@]}")
 			fi
-			region_highlight+=("${(@P)cache_place}") 
+			region_highlight+=("${(@P)cache_place}")
 		done
 		() {
 			(( REGION_ACTIVE )) || return
 			integer min max
 			if (( MARK > CURSOR ))
 			then
-				min=$CURSOR max=$MARK 
+				min=$CURSOR max=$MARK
 			else
-				min=$MARK max=$CURSOR 
+				min=$MARK max=$CURSOR
 			fi
 			if (( REGION_ACTIVE == 1 ))
 			then
 				[[ $KEYMAP = vicmd ]] && (( max++ ))
 			elif (( REGION_ACTIVE == 2 ))
 			then
-				local needle=$'\n' 
+				local needle=$'\n'
 				(( min = ${BUFFER[(Ib:min:)$needle]} ))
 				(( max = ${BUFFER[(ib:max:)$needle]} - 1 ))
 			fi
@@ -6798,8 +6798,8 @@ _zsh_highlight () {
 		(( $+SUFFIX_ACTIVE )) && (( SUFFIX_ACTIVE )) && _zsh_highlight_apply_zle_highlight suffix bold "$SUFFIX_START" "$SUFFIX_END"
 		return $ret
 	} always {
-		typeset -g _ZSH_HIGHLIGHT_PRIOR_BUFFER="$BUFFER" 
-		typeset -gi _ZSH_HIGHLIGHT_PRIOR_CURSOR=$CURSOR 
+		typeset -g _ZSH_HIGHLIGHT_PRIOR_BUFFER="$BUFFER"
+		typeset -gi _ZSH_HIGHLIGHT_PRIOR_CURSOR=$CURSOR
 	}
 }
 _zsh_highlight__function_callable_p () {
@@ -6831,7 +6831,7 @@ _zsh_highlight__is_function_p () {
 }
 _zsh_highlight__zle-line-finish () {
 	() {
-		local -h -r WIDGET=zle-line-finish 
+		local -h -r WIDGET=zle-line-finish
 		_zsh_highlight
 	}
 }
@@ -6841,27 +6841,27 @@ _zsh_highlight__zle-line-pre-redraw () {
 _zsh_highlight_add_highlight () {
 	local -i start end
 	local highlight
-	start=$1 
-	end=$2 
+	start=$1
+	end=$2
 	shift 2
 	for highlight
 	do
 		if (( $+ZSH_HIGHLIGHT_STYLES[$highlight] ))
 		then
-			region_highlight+=("$start $end $ZSH_HIGHLIGHT_STYLES[$highlight], memo=zsh-syntax-highlighting") 
+			region_highlight+=("$start $end $ZSH_HIGHLIGHT_STYLES[$highlight], memo=zsh-syntax-highlighting")
 			break
 		fi
 	done
 }
 _zsh_highlight_apply_zle_highlight () {
-	local entry="$1" default="$2" 
-	integer first="$3" second="$4" 
-	local region="${zle_highlight[(r)${entry}:*]-}" 
+	local entry="$1" default="$2"
+	integer first="$3" second="$4"
+	local region="${zle_highlight[(r)${entry}:*]-}"
 	if [[ -z "$region" ]]
 	then
-		region=$default 
+		region=$default
 	else
-		region="${region#${entry}:}" 
+		region="${region#${entry}:}"
 		if [[ -z "$region" ]] || [[ "$region" == none ]]
 		then
 			return
@@ -6870,14 +6870,14 @@ _zsh_highlight_apply_zle_highlight () {
 	integer start end
 	if (( first < second ))
 	then
-		start=$first end=$second 
+		start=$first end=$second
 	else
-		start=$second end=$first 
+		start=$second end=$first
 	fi
-	region_highlight+=("$start $end $region, memo=zsh-syntax-highlighting") 
+	region_highlight+=("$start $end $region, memo=zsh-syntax-highlighting")
 }
 _zsh_highlight_bind_widgets () {
-	
+
 }
 _zsh_highlight_brackets_match () {
 	case $BUFFER[$1] in
@@ -6898,26 +6898,26 @@ _zsh_highlight_cursor_moved () {
 }
 _zsh_highlight_highlighter_brackets_paint () {
 	local char style
-	local -i bracket_color_size=${#ZSH_HIGHLIGHT_STYLES[(I)bracket-level-*]} buflen=${#BUFFER} level=0 matchingpos pos 
+	local -i bracket_color_size=${#ZSH_HIGHLIGHT_STYLES[(I)bracket-level-*]} buflen=${#BUFFER} level=0 matchingpos pos
 	local -A levelpos lastoflevel matching
-	pos=0 
+	pos=0
 	for char in ${(s..)BUFFER}
 	do
 		(( ++pos ))
 		case $char in
-			(["([{"]) levelpos[$pos]=$((++level)) 
+			(["([{"]) levelpos[$pos]=$((++level))
 				lastoflevel[$level]=$pos  ;;
 			([")]}"]) if (( level > 0 ))
 				then
-					matchingpos=$lastoflevel[$level] 
-					levelpos[$pos]=$((level--)) 
+					matchingpos=$lastoflevel[$level]
+					levelpos[$pos]=$((level--))
 					if _zsh_highlight_brackets_match $matchingpos $pos
 					then
-						matching[$matchingpos]=$pos 
-						matching[$pos]=$matchingpos 
+						matching[$matchingpos]=$pos
+						matching[$pos]=$matchingpos
 					fi
 				else
-					levelpos[$pos]=-1 
+					levelpos[$pos]=-1
 				fi ;;
 		esac
 	done
@@ -6935,10 +6935,10 @@ _zsh_highlight_highlighter_brackets_paint () {
 	done
 	if [[ $WIDGET != zle-line-finish ]]
 	then
-		pos=$((CURSOR + 1)) 
+		pos=$((CURSOR + 1))
 		if (( $+levelpos[$pos] )) && (( $+matching[$pos] ))
 		then
-			local -i otherpos=$matching[$pos] 
+			local -i otherpos=$matching[$pos]
 			_zsh_highlight_add_highlight $((otherpos - 1)) $otherpos cursor-matchingbracket
 		fi
 	fi
@@ -6973,23 +6973,23 @@ _zsh_highlight_highlighter_main_paint () {
 	local flags_sans_argument
 	local flags_solo
 	local -A precommand_options
-	precommand_options=('-' '' 'builtin' '' 'command' :pvV 'exec' a:cl 'noglob' '' 'doas' aCu:Lns 'nice' n: 'pkexec' '' 'sudo' Cgprtu:AEHPSbilns:eKkVv 'stdbuf' ioe: 'eatmydata' '' 'catchsegv' '' 'nohup' '' 'setsid' :wc 'env' u:i 'ionice' cn:t:pPu 'strace' IbeaosXPpEuOS:ACdfhikqrtTvVxyDc 'proxychains' f:q 'torsocks' idq:upaP 'torify' idq:upaP 'ssh-agent' aEPt:csDd:k 'tabbed' gnprtTuU:cdfhs:v 'chronic' :ev 'ifne' :n 'grc' :se 'cpulimit' elp:ivz 'ktrace' fgpt:aBCcdiT) 
+	precommand_options=('-' '' 'builtin' '' 'command' :pvV 'exec' a:cl 'noglob' '' 'doas' aCu:Lns 'nice' n: 'pkexec' '' 'sudo' Cgprtu:AEHPSbilns:eKkVv 'stdbuf' ioe: 'eatmydata' '' 'catchsegv' '' 'nohup' '' 'setsid' :wc 'env' u:i 'ionice' cn:t:pPu 'strace' IbeaosXPpEuOS:ACdfhikqrtTvVxyDc 'proxychains' f:q 'torsocks' idq:upaP 'torify' idq:upaP 'ssh-agent' aEPt:csDd:k 'tabbed' gnprtTuU:cdfhs:v 'chronic' :ev 'ifne' :n 'grc' :se 'cpulimit' elp:ivz 'ktrace' fgpt:aBCcdiT)
 	if [[ $zsyh_user_options[ignorebraces] == on || ${zsyh_user_options[ignoreclosebraces]:-off} == on ]]
 	then
-		local right_brace_is_recognised_everywhere=false 
+		local right_brace_is_recognised_everywhere=false
 	else
-		local right_brace_is_recognised_everywhere=true 
+		local right_brace_is_recognised_everywhere=true
 	fi
 	if [[ $zsyh_user_options[pathdirs] == on ]]
 	then
-		options_to_set+=(PATH_DIRS) 
+		options_to_set+=(PATH_DIRS)
 	fi
-	ZSH_HIGHLIGHT_TOKENS_COMMANDSEPARATOR=('|' '||' ';' '&' '&&' $'\n' '|&' '&!' '&|') 
-	ZSH_HIGHLIGHT_TOKENS_CONTROL_FLOW=($'\x7b' $'\x28' '()' 'while' 'until' 'if' 'then' 'elif' 'else' 'do' 'time' 'coproc' '!') 
+	ZSH_HIGHLIGHT_TOKENS_COMMANDSEPARATOR=('|' '||' ';' '&' '&&' $'\n' '|&' '&!' '&|')
+	ZSH_HIGHLIGHT_TOKENS_CONTROL_FLOW=($'\x7b' $'\x28' '()' 'while' 'until' 'if' 'then' 'elif' 'else' 'do' 'time' 'coproc' '!')
 	if (( $+X_ZSH_HIGHLIGHT_DIRS_BLACKLIST ))
 	then
 		print 'zsh-syntax-highlighting: X_ZSH_HIGHLIGHT_DIRS_BLACKLIST is deprecated. Please use ZSH_HIGHLIGHT_DIRS_BLACKLIST.' >&2
-		ZSH_HIGHLIGHT_DIRS_BLACKLIST=($X_ZSH_HIGHLIGHT_DIRS_BLACKLIST) 
+		ZSH_HIGHLIGHT_DIRS_BLACKLIST=($X_ZSH_HIGHLIGHT_DIRS_BLACKLIST)
 		unset X_ZSH_HIGHLIGHT_DIRS_BLACKLIST
 	fi
 	_zsh_highlight_main_highlighter_highlight_list -$#PREBUFFER '' 1 "$PREBUFFER$BUFFER"
@@ -7001,7 +7001,7 @@ _zsh_highlight_highlighter_main_paint () {
 			return
 		}
 		(( end_ <= 0 )) && continue
-		(( start < 0 )) && start=0 
+		(( start < 0 )) && start=0
 		_zsh_highlight_main_calculate_fallback $style
 		_zsh_highlight_add_highlight $start $end_ $reply
 	done
@@ -7049,11 +7049,11 @@ _zsh_highlight_load_highlighters () {
 	local highlighter highlighter_dir
 	for highlighter_dir in $1/*/(/)
 	do
-		highlighter="${highlighter_dir:t}" 
+		highlighter="${highlighter_dir:t}"
 		[[ -f "$highlighter_dir${highlighter}-highlighter.zsh" ]] && . "$highlighter_dir${highlighter}-highlighter.zsh"
 		if type "_zsh_highlight_highlighter_${highlighter}_paint" &> /dev/null && type "_zsh_highlight_highlighter_${highlighter}_predicate" &> /dev/null
 		then
-			
+
 		elif type "_zsh_highlight_${highlighter}_highlighter" &> /dev/null && type "_zsh_highlight_${highlighter}_highlighter_predicate" &> /dev/null
 		then
 			if false
@@ -7095,36 +7095,36 @@ _zsh_highlight_main__precmd_hook () {
 	then
 		unsetopt warnnestedvar
 	fi
-	_zsh_highlight_main__command_type_cache=() 
+	_zsh_highlight_main__command_type_cache=()
 }
 _zsh_highlight_main__resolve_alias () {
 	if zmodload -e zsh/parameter
 	then
-		REPLY=${aliases[$arg]} 
+		REPLY=${aliases[$arg]}
 	else
-		REPLY="${"$(alias -- $arg)"#*=}" 
+		REPLY="${"$(alias -- $arg)"#*=}"
 	fi
 }
 _zsh_highlight_main__stack_pop () {
 	if [[ $braces_stack[1] == $1 ]]
 	then
-		braces_stack=${braces_stack:1} 
+		braces_stack=${braces_stack:1}
 		if (( $+2 ))
 		then
-			style=$2 
+			style=$2
 		fi
 		return 0
 	else
-		style=unknown-token 
+		style=unknown-token
 		return 1
 	fi
 }
 _zsh_highlight_main__type () {
-	integer -r aliases_allowed=${2-1} 
-	integer may_cache=1 
+	integer -r aliases_allowed=${2-1}
+	integer may_cache=1
 	if (( $+_zsh_highlight_main__command_type_cache ))
 	then
-		REPLY=$_zsh_highlight_main__command_type_cache[(e)$1] 
+		REPLY=$_zsh_highlight_main__command_type_cache[(e)$1]
 		if [[ -n "$REPLY" ]]
 		then
 			return
@@ -7139,49 +7139,49 @@ _zsh_highlight_main__type () {
 	then
 		if (( $+aliases[(e)$1] ))
 		then
-			may_cache=0 
+			may_cache=0
 		fi
 		if (( ${+galiases[(e)$1]} )) && (( aliases_allowed ))
 		then
-			REPLY='global alias' 
+			REPLY='global alias'
 		elif (( $+aliases[(e)$1] )) && (( aliases_allowed ))
 		then
-			REPLY=alias 
+			REPLY=alias
 		elif [[ $1 == *.* && -n ${1%.*} ]] && (( $+saliases[(e)${1##*.}] ))
 		then
-			REPLY='suffix alias' 
+			REPLY='suffix alias'
 		elif (( $reswords[(Ie)$1] ))
 		then
-			REPLY=reserved 
+			REPLY=reserved
 		elif (( $+functions[(e)$1] ))
 		then
-			REPLY=function 
+			REPLY=function
 		elif (( $+builtins[(e)$1] ))
 		then
-			REPLY=builtin 
+			REPLY=builtin
 		elif (( $+commands[(e)$1] ))
 		then
-			REPLY=command 
+			REPLY=command
 		elif {
 				[[ $1 != */* ]] || is-at-least 5.3
 			} && ! (
 				builtin type -w -- "$1"
 			) > /dev/null 2>&1
 		then
-			REPLY=none 
+			REPLY=none
 		fi
 	fi
 	if ! (( $+REPLY ))
 	then
-		REPLY="${$(:; (( aliases_allowed )) || unalias -- "$1" 2>/dev/null; LC_ALL=C builtin type -w -- "$1" 2>/dev/null)##*: }" 
+		REPLY="${$(:; (( aliases_allowed )) || unalias -- "$1" 2>/dev/null; LC_ALL=C builtin type -w -- "$1" 2>/dev/null)##*: }"
 		if [[ $REPLY == 'alias' ]]
 		then
-			may_cache=0 
+			may_cache=0
 		fi
 	fi
 	if (( may_cache )) && (( $+_zsh_highlight_main__command_type_cache ))
 	then
-		_zsh_highlight_main__command_type_cache[(e)$1]=$REPLY 
+		_zsh_highlight_main__command_type_cache[(e)$1]=$REPLY
 	fi
 	[[ -n $REPLY ]]
 	return $?
@@ -7193,44 +7193,44 @@ _zsh_highlight_main_add_many_region_highlights () {
 	done
 }
 _zsh_highlight_main_add_region_highlight () {
-	integer start=$1 end=$2 
+	integer start=$1 end=$2
 	shift 2
 	if (( $#in_alias ))
 	then
-		[[ $1 == unknown-token ]] && alias_style=unknown-token 
+		[[ $1 == unknown-token ]] && alias_style=unknown-token
 		return
 	fi
 	if (( in_param ))
 	then
 		if [[ $1 == unknown-token ]]
 		then
-			param_style=unknown-token 
+			param_style=unknown-token
 		fi
 		if [[ -n $param_style ]]
 		then
 			return
 		fi
-		param_style=$1 
+		param_style=$1
 		return
 	fi
 	(( start += buf_offset ))
 	(( end += buf_offset ))
-	list_highlights+=($start $end $1) 
+	list_highlights+=($start $end $1)
 }
 _zsh_highlight_main_calculate_fallback () {
 	local -A fallback_of
-	fallback_of=(alias arg0 suffix-alias arg0 global-alias dollar-double-quoted-argument builtin arg0 function arg0 command arg0 precommand arg0 hashed-command arg0 autodirectory arg0 arg0_\* arg0 path_prefix path path_pathseparator path path_prefix_pathseparator path_prefix single-quoted-argument{-unclosed,} double-quoted-argument{-unclosed,} dollar-quoted-argument{-unclosed,} back-quoted-argument{-unclosed,} command-substitution{-quoted,,-unquoted,} command-substitution-delimiter{-quoted,,-unquoted,} command-substitution{-delimiter,} process-substitution{-delimiter,} back-quoted-argument{-delimiter,}) 
-	local needle=$1 value 
-	reply=($1) 
+	fallback_of=(alias arg0 suffix-alias arg0 global-alias dollar-double-quoted-argument builtin arg0 function arg0 command arg0 precommand arg0 hashed-command arg0 autodirectory arg0 arg0_\* arg0 path_prefix path path_pathseparator path path_prefix_pathseparator path_prefix single-quoted-argument{-unclosed,} double-quoted-argument{-unclosed,} dollar-quoted-argument{-unclosed,} back-quoted-argument{-unclosed,} command-substitution{-quoted,,-unquoted,} command-substitution-delimiter{-quoted,,-unquoted,} command-substitution{-delimiter,} process-substitution{-delimiter,} back-quoted-argument{-delimiter,})
+	local needle=$1 value
+	reply=($1)
 	while [[ -n ${value::=$fallback_of[(k)$needle]} ]]
 	do
 		unset "fallback_of[$needle]"
-		reply+=($value) 
-		needle=$value 
+		reply+=($value)
+		needle=$value
 	done
 }
 _zsh_highlight_main_highlighter__try_expand_parameter () {
-	local arg="$1" 
+	local arg="$1"
 	unset reply
 	{
 		{
@@ -7245,9 +7245,9 @@ _zsh_highlight_main_highlighter__try_expand_parameter () {
 			fi
 			if [[ ${arg[2]} == '{' ]] && [[ ${arg[-1]} == '}' ]]
 			then
-				parameter_name=${${arg:2}%?} 
+				parameter_name=${${arg:2}%?}
 			else
-				parameter_name=${arg:1} 
+				parameter_name=${arg:1}
 			fi
 			if [[ $res == none ]] && [[ ${parameter_name} =~ ^${~parameter_name_pattern}$ ]] && [[ ${(tP)MATCH} != *special* ]]
 			then
@@ -7256,12 +7256,12 @@ _zsh_highlight_main_highlighter__try_expand_parameter () {
 					("") words=()  ;;
 					(*) if [[ $zsyh_user_options[shwordsplit] == on ]]
 						then
-							words=(${(P)=MATCH}) 
+							words=(${(P)=MATCH})
 						else
-							words=(${(P)MATCH}) 
+							words=(${(P)MATCH})
 						fi ;;
 				esac
-				reply=("${words[@]}") 
+				reply=("${words[@]}")
 			else
 				return 1
 			fi
@@ -7274,37 +7274,37 @@ _zsh_highlight_main_highlighter_check_assign () {
 }
 _zsh_highlight_main_highlighter_check_path () {
 	_zsh_highlight_main_highlighter_expand_path "$1"
-	local expanded_path="$REPLY" tmp_path 
-	integer in_command_position=$2 
+	local expanded_path="$REPLY" tmp_path
+	integer in_command_position=$2
 	if [[ $zsyh_user_options[autocd] == on ]]
 	then
-		integer autocd=1 
+		integer autocd=1
 	else
-		integer autocd=0 
+		integer autocd=0
 	fi
 	if (( in_command_position ))
 	then
-		REPLY=arg0 
+		REPLY=arg0
 	else
-		REPLY=path 
+		REPLY=path
 	fi
 	if [[ ${1[1]} == '=' && $1 == ??* && ${1[2]} != $'\x28' && $zsyh_user_options[equals] == 'on' && $expanded_path[1] != '/' ]]
 	then
-		REPLY=unknown-token 
+		REPLY=unknown-token
 		return 0
 	fi
 	[[ -z $expanded_path ]] && return 1
 	if [[ $expanded_path[1] == / ]]
 	then
-		tmp_path=$expanded_path 
+		tmp_path=$expanded_path
 	else
-		tmp_path=$PWD/$expanded_path 
+		tmp_path=$PWD/$expanded_path
 	fi
-	tmp_path=$tmp_path:a 
+	tmp_path=$tmp_path:a
 	while [[ $tmp_path != / ]]
 	do
 		[[ -n ${(M)ZSH_HIGHLIGHT_DIRS_BLACKLIST:#$tmp_path} ]] && return 1
-		tmp_path=$tmp_path:h 
+		tmp_path=$tmp_path:h
 	done
 	if (( in_command_position ))
 	then
@@ -7314,7 +7314,7 @@ _zsh_highlight_main_highlighter_check_path () {
 			then
 				if [[ -d $expanded_path ]]
 				then
-					REPLY=autodirectory 
+					REPLY=autodirectory
 				fi
 				return 0
 			elif [[ ! -d $expanded_path ]]
@@ -7337,7 +7337,7 @@ _zsh_highlight_main_highlighter_check_path () {
 			then
 				if (( in_command_position && autocd ))
 				then
-					REPLY=autodirectory 
+					REPLY=autodirectory
 				fi
 				return 0
 			fi
@@ -7349,9 +7349,9 @@ _zsh_highlight_main_highlighter_check_path () {
 		local -a tmp
 		if (( in_command_position ))
 		then
-			tmp=(${expanded_path}*(N-*,N-/)) 
+			tmp=(${expanded_path}*(N-*,N-/))
 		else
-			tmp=(${expanded_path}*(N)) 
+			tmp=(${expanded_path}*(N))
 		fi
 		(( ${+tmp[1]} )) && REPLY=path_prefix  && return 0
 	fi
@@ -7364,7 +7364,7 @@ _zsh_highlight_main_highlighter_expand_path () {
 	: ${REPLY:=${(Q)${~1}}}
 }
 _zsh_highlight_main_highlighter_highlight_argument () {
-	local base_style=default i=$1 option_eligible=${2:-1} path_eligible=1 ret start style 
+	local base_style=default i=$1 option_eligible=${2:-1} path_eligible=1 ret start style
 	local -a highlights
 	local -a match mbegin mend
 	local MATCH
@@ -7378,29 +7378,29 @@ _zsh_highlight_main_highlighter_highlight_argument () {
 			then
 				if [[ $arg[i+1] == - ]]
 				then
-					base_style=double-hyphen-option 
+					base_style=double-hyphen-option
 				else
-					base_style=single-hyphen-option 
+					base_style=single-hyphen-option
 				fi
-				path_eligible=0 
+				path_eligible=0
 			fi ;;
 		('=') if [[ $arg[i+1] == $'\x28' ]]
 			then
 				(( i += 2 ))
 				_zsh_highlight_main_highlighter_highlight_list $(( start_pos + i - 1 )) S $has_end $arg[i,-1]
-				ret=$? 
+				ret=$?
 				(( i += REPLY ))
-				highlights+=($(( start_pos + $1 - 1 )) $(( start_pos + i )) process-substitution $(( start_pos + $1 - 1 )) $(( start_pos + $1 + 1 )) process-substitution-delimiter $reply) 
+				highlights+=($(( start_pos + $1 - 1 )) $(( start_pos + i )) process-substitution $(( start_pos + $1 - 1 )) $(( start_pos + $1 + 1 )) process-substitution-delimiter $reply)
 				if (( ret == 0 ))
 				then
-					highlights+=($(( start_pos + i - 1 )) $(( start_pos + i )) process-substitution-delimiter) 
+					highlights+=($(( start_pos + i - 1 )) $(( start_pos + i )) process-substitution-delimiter)
 				fi
 			fi ;;
 	esac
 	(( --i ))
 	while (( ++i <= $#arg ))
 	do
-		i=${arg[(ib.i.)[\\\'\"\`\$\<\>\*\?]]} 
+		i=${arg[(ib.i.)[\\\'\"\`\$\<\>\*\?]]}
 		case "$arg[$i]" in
 			("") break ;;
 			("\\") (( i += 1 ))
@@ -7416,31 +7416,31 @@ _zsh_highlight_main_highlighter_highlight_argument () {
 				highlights+=($reply)  ;;
 			('$') if [[ $arg[i+1] != "'" ]]
 				then
-					path_eligible=0 
+					path_eligible=0
 				fi
 				if [[ $arg[i+1] == "'" ]]
 				then
 					_zsh_highlight_main_highlighter_highlight_dollar_quote $i
 					(( i = REPLY ))
-					highlights+=($reply) 
+					highlights+=($reply)
 					continue
 				elif [[ $arg[i+1] == $'\x28' ]]
 				then
 					if [[ $arg[i+2] == $'\x28' ]] && _zsh_highlight_main_highlighter_highlight_arithmetic $i
 					then
 						(( i = REPLY ))
-						highlights+=($reply) 
+						highlights+=($reply)
 						continue
 					fi
-					start=$i 
+					start=$i
 					(( i += 2 ))
 					_zsh_highlight_main_highlighter_highlight_list $(( start_pos + i - 1 )) S $has_end $arg[i,-1]
-					ret=$? 
+					ret=$?
 					(( i += REPLY ))
-					highlights+=($(( start_pos + start - 1)) $(( start_pos + i )) command-substitution-unquoted $(( start_pos + start - 1)) $(( start_pos + start + 1)) command-substitution-delimiter-unquoted $reply) 
+					highlights+=($(( start_pos + start - 1)) $(( start_pos + i )) command-substitution-unquoted $(( start_pos + start - 1)) $(( start_pos + start + 1)) command-substitution-delimiter-unquoted $reply)
 					if (( ret == 0 ))
 					then
-						highlights+=($(( start_pos + i - 1)) $(( start_pos + i )) command-substitution-delimiter-unquoted) 
+						highlights+=($(( start_pos + i - 1)) $(( start_pos + i )) command-substitution-delimiter-unquoted)
 					fi
 					continue
 				fi
@@ -7454,23 +7454,23 @@ _zsh_highlight_main_highlighter_highlight_argument () {
 				fi ;;
 			([\<\>]) if [[ $arg[i+1] == $'\x28' ]]
 				then
-					start=$i 
+					start=$i
 					(( i += 2 ))
 					_zsh_highlight_main_highlighter_highlight_list $(( start_pos + i - 1 )) S $has_end $arg[i,-1]
-					ret=$? 
+					ret=$?
 					(( i += REPLY ))
-					highlights+=($(( start_pos + start - 1)) $(( start_pos + i )) process-substitution $(( start_pos + start - 1)) $(( start_pos + start + 1 )) process-substitution-delimiter $reply) 
+					highlights+=($(( start_pos + start - 1)) $(( start_pos + i )) process-substitution $(( start_pos + start - 1)) $(( start_pos + start + 1 )) process-substitution-delimiter $reply)
 					if (( ret == 0 ))
 					then
-						highlights+=($(( start_pos + i - 1)) $(( start_pos + i )) process-substitution-delimiter) 
+						highlights+=($(( start_pos + i - 1)) $(( start_pos + i )) process-substitution-delimiter)
 					fi
 					continue
 				fi ;|
 			(*) if $highlight_glob && [[ $zsyh_user_options[multios] == on || $in_redirection -eq 0 ]] && [[ ${arg[$i]} =~ ^[*?] || ${arg:$i-1} =~ ^\<[0-9]*-[0-9]*\> ]]
 				then
-					highlights+=($(( start_pos + i - 1 )) $(( start_pos + i + $#MATCH - 1)) globbing) 
+					highlights+=($(( start_pos + i - 1 )) $(( start_pos + i + $#MATCH - 1)) globbing)
 					(( i += $#MATCH - 1 ))
-					path_eligible=0 
+					path_eligible=0
 				else
 					continue
 				fi ;;
@@ -7482,25 +7482,25 @@ _zsh_highlight_main_highlighter_highlight_argument () {
 		then
 			if [[ $arg[$1,-1] == (p|-) ]]
 			then
-				base_style=redirection 
+				base_style=redirection
 			else
-				base_style=numeric-fd 
+				base_style=numeric-fd
 			fi
 		elif _zsh_highlight_main_highlighter_check_path $arg[$1,-1] 0
 		then
-			base_style=$REPLY 
+			base_style=$REPLY
 			_zsh_highlight_main_highlighter_highlight_path_separators $base_style
-			highlights+=($reply) 
+			highlights+=($reply)
 		fi
 	fi
-	highlights=($(( start_pos + $1 - 1 )) $end_pos $base_style $highlights) 
+	highlights=($(( start_pos + $1 - 1 )) $end_pos $base_style $highlights)
 	_zsh_highlight_main_add_many_region_highlights $highlights
 }
 _zsh_highlight_main_highlighter_highlight_arithmetic () {
 	local -a saved_reply
 	local style
 	integer i j k paren_depth ret
-	reply=() 
+	reply=()
 	for ((i = $1 + 3 ; i <= end_pos - start_pos ; i += 1 )) do
 		(( j = i + start_pos - 1 ))
 		(( k = j + 1 ))
@@ -7519,28 +7519,28 @@ _zsh_highlight_main_highlighter_highlight_arithmetic () {
 				}
 				(( has_end && (len == k) )) && break
 				return 1 ;;
-			('`') saved_reply=($reply) 
+			('`') saved_reply=($reply)
 				_zsh_highlight_main_highlighter_highlight_backtick $i
 				(( i = REPLY ))
-				reply=($saved_reply $reply) 
+				reply=($saved_reply $reply)
 				continue ;;
 			('$') if [[ $arg[i+1] == $'\x28' ]]
 				then
-					saved_reply=($reply) 
+					saved_reply=($reply)
 					if [[ $arg[i+2] == $'\x28' ]] && _zsh_highlight_main_highlighter_highlight_arithmetic $i
 					then
 						(( i = REPLY ))
-						reply=($saved_reply $reply) 
+						reply=($saved_reply $reply)
 						continue
 					fi
 					(( i += 2 ))
 					_zsh_highlight_main_highlighter_highlight_list $(( start_pos + i - 1 )) S $has_end $arg[i,end_pos]
-					ret=$? 
+					ret=$?
 					(( i += REPLY ))
-					reply=($saved_reply $j $(( start_pos + i )) command-substitution-quoted $j $(( j + 2 )) command-substitution-delimiter-quoted $reply) 
+					reply=($saved_reply $j $(( start_pos + i )) command-substitution-quoted $j $(( j + 2 )) command-substitution-delimiter-quoted $reply)
 					if (( ret == 0 ))
 					then
-						reply+=($(( start_pos + i - 1 )) $(( start_pos + i )) command-substitution-delimiter) 
+						reply+=($(( start_pos + i - 1 )) $(( start_pos + i )) command-substitution-delimiter)
 					fi
 					continue
 				else
@@ -7548,36 +7548,36 @@ _zsh_highlight_main_highlighter_highlight_arithmetic () {
 				fi ;;
 			($histchars[1]) if [[ $arg[i+1] != ('='|$'\x28'|$'\x7b'|[[:blank:]]) ]]
 				then
-					style=history-expansion 
+					style=history-expansion
 				else
 					continue
 				fi ;;
 			(*) continue ;;
 		esac
-		reply+=($j $k $style) 
+		reply+=($j $k $style)
 	done
 	if [[ $arg[i] != ')' ]]
 	then
 		(( i-- ))
 	fi
-	style=arithmetic-expansion 
-	reply=($(( start_pos + $1 - 1)) $(( start_pos + i )) arithmetic-expansion $reply) 
-	REPLY=$i 
+	style=arithmetic-expansion
+	reply=($(( start_pos + $1 - 1)) $(( start_pos + i )) arithmetic-expansion $reply)
+	REPLY=$i
 }
 _zsh_highlight_main_highlighter_highlight_backtick () {
-	local buf highlight style=back-quoted-argument-unclosed style_end 
-	local -i arg1=$1 end_ i=$1 last offset=0 start subshell_has_end=0 
+	local buf highlight style=back-quoted-argument-unclosed style_end
+	local -i arg1=$1 end_ i=$1 last offset=0 start subshell_has_end=0
 	local -a highlight_zone highlights offsets
-	reply=() 
-	last=$(( arg1 + 1 )) 
-	while i=$arg[(ib:i+1:)[\\\\\`]] 
+	reply=()
+	last=$(( arg1 + 1 ))
+	while i=$arg[(ib:i+1:)[\\\\\`]]
 	do
 		if (( i > $#arg ))
 		then
-			buf=$buf$arg[last,i] 
-			offsets[i-arg1-offset]='' 
+			buf=$buf$arg[last,i]
+			offsets[i-arg1-offset]=''
 			(( i-- ))
-			subshell_has_end=$(( has_end && (start_pos + i == len) )) 
+			subshell_has_end=$(( has_end && (start_pos + i == len) ))
 			break
 		fi
 		if [[ $arg[i] == '\' ]]
@@ -7585,38 +7585,38 @@ _zsh_highlight_main_highlighter_highlight_backtick () {
 			(( i++ ))
 			if [[ $arg[i] == ('$'|'`'|'\') ]]
 			then
-				buf=$buf$arg[last,i-2] 
+				buf=$buf$arg[last,i-2]
 				(( offset++ ))
-				offsets[i-arg1-offset]=$offset 
+				offsets[i-arg1-offset]=$offset
 			else
-				buf=$buf$arg[last,i-1] 
+				buf=$buf$arg[last,i-1]
 			fi
 		else
-			style=back-quoted-argument 
-			style_end=back-quoted-argument-delimiter 
-			buf=$buf$arg[last,i-1] 
-			offsets[i-arg1-offset]='' 
+			style=back-quoted-argument
+			style_end=back-quoted-argument-delimiter
+			buf=$buf$arg[last,i-1]
+			offsets[i-arg1-offset]=''
 			break
 		fi
-		last=$i 
+		last=$i
 	done
 	_zsh_highlight_main_highlighter_highlight_list 0 '' $subshell_has_end $buf
 	for start end_ highlight in $reply
 	do
-		start=$(( start_pos + arg1 + start + offsets[(Rb:start:)?*] )) 
-		end_=$(( start_pos + arg1 + end_ + offsets[(Rb:end_:)?*] )) 
-		highlights+=($start $end_ $highlight) 
+		start=$(( start_pos + arg1 + start + offsets[(Rb:start:)?*] ))
+		end_=$(( start_pos + arg1 + end_ + offsets[(Rb:end_:)?*] ))
+		highlights+=($start $end_ $highlight)
 		if [[ $highlight == back-quoted-argument-unclosed && $style == back-quoted-argument ]]
 		then
-			style_end=unknown-token 
+			style_end=unknown-token
 		fi
 	done
-	reply=($(( start_pos + arg1 - 1 )) $(( start_pos + i )) $style $(( start_pos + arg1 - 1 )) $(( start_pos + arg1 )) back-quoted-argument-delimiter $highlights) 
+	reply=($(( start_pos + arg1 - 1 )) $(( start_pos + i )) $style $(( start_pos + arg1 - 1 )) $(( start_pos + arg1 )) back-quoted-argument-delimiter $highlights)
 	if (( $#style_end ))
 	then
-		reply+=($(( start_pos + i - 1)) $(( start_pos + i )) $style_end) 
+		reply+=($(( start_pos + i - 1)) $(( start_pos + i )) $style_end)
 	fi
-	REPLY=$i 
+	REPLY=$i
 }
 _zsh_highlight_main_highlighter_highlight_dollar_quote () {
 	local -a match mbegin mend
@@ -7625,17 +7625,17 @@ _zsh_highlight_main_highlighter_highlight_dollar_quote () {
 	local i j k style
 	local AA
 	integer c
-	reply=() 
+	reply=()
 	for ((i = $1 + 2 ; i <= $#arg ; i += 1 )) do
 		(( j = i + start_pos - 1 ))
 		(( k = j + 1 ))
 		case "$arg[$i]" in
 			("'") break ;;
-			("\\") style=back-dollar-quoted-argument 
+			("\\") style=back-dollar-quoted-argument
 				for ((c = i + 1 ; c <= $#arg ; c += 1 )) do
 					[[ "$arg[$c]" != ([0-9xXuUa-fA-F]) ]] && break
 				done
-				AA=$arg[$i+1,$c-1] 
+				AA=$arg[$i+1,$c-1]
 				if [[ "$AA" =~ "^(x|X)[0-9a-fA-F]{1,2}" || "$AA" =~ "^[0-7]{1,3}" || "$AA" =~ "^u[0-9a-fA-F]{1,4}" || "$AA" =~ "^U[0-9a-fA-F]{1,8}" ]]
 				then
 					(( k += $#MATCH ))
@@ -7643,42 +7643,42 @@ _zsh_highlight_main_highlighter_highlight_dollar_quote () {
 				else
 					if (( $#arg > $i+1 )) && [[ $arg[$i+1] == [xXuU] ]]
 					then
-						style=unknown-token 
+						style=unknown-token
 					fi
 					(( k += 1 ))
 					(( i += 1 ))
 				fi ;;
 			(*) continue ;;
 		esac
-		reply+=($j $k $style) 
+		reply+=($j $k $style)
 	done
 	if [[ $arg[i] == "'" ]]
 	then
-		style=dollar-quoted-argument 
+		style=dollar-quoted-argument
 	else
 		(( i-- ))
-		style=dollar-quoted-argument-unclosed 
+		style=dollar-quoted-argument-unclosed
 	fi
-	reply=($(( start_pos + $1 - 1 )) $(( start_pos + i )) $style $reply) 
-	REPLY=$i 
+	reply=($(( start_pos + $1 - 1 )) $(( start_pos + i )) $style $reply)
+	REPLY=$i
 }
 _zsh_highlight_main_highlighter_highlight_double_quote () {
 	local -a breaks match mbegin mend saved_reply
 	local MATCH
-	integer last_break=$(( start_pos + $1 - 1 )) MBEGIN MEND 
+	integer last_break=$(( start_pos + $1 - 1 )) MBEGIN MEND
 	local i j k ret style
-	reply=() 
+	reply=()
 	for ((i = $1 + 1 ; i <= $#arg ; i += 1 )) do
 		(( j = i + start_pos - 1 ))
 		(( k = j + 1 ))
 		case "$arg[$i]" in
 			('"') break ;;
-			('`') saved_reply=($reply) 
+			('`') saved_reply=($reply)
 				_zsh_highlight_main_highlighter_highlight_backtick $i
 				(( i = REPLY ))
-				reply=($saved_reply $reply) 
+				reply=($saved_reply $reply)
 				continue ;;
-			('$') style=dollar-double-quoted-argument 
+			('$') style=dollar-double-quoted-argument
 				if [[ ${arg:$i} =~ ^([A-Za-z_][A-Za-z0-9_]*|[0-9]+) ]]
 				then
 					(( k += $#MATCH ))
@@ -7697,29 +7697,29 @@ _zsh_highlight_main_highlighter_highlight_double_quote () {
 					(( i += 1 ))
 				elif [[ $arg[i+1] == $'\x28' ]]
 				then
-					saved_reply=($reply) 
+					saved_reply=($reply)
 					if [[ $arg[i+2] == $'\x28' ]] && _zsh_highlight_main_highlighter_highlight_arithmetic $i
 					then
 						(( i = REPLY ))
-						reply=($saved_reply $reply) 
+						reply=($saved_reply $reply)
 						continue
 					fi
-					breaks+=($last_break $(( start_pos + i - 1 ))) 
+					breaks+=($last_break $(( start_pos + i - 1 )))
 					(( i += 2 ))
 					_zsh_highlight_main_highlighter_highlight_list $(( start_pos + i - 1 )) S $has_end $arg[i,-1]
-					ret=$? 
+					ret=$?
 					(( i += REPLY ))
-					last_break=$(( start_pos + i )) 
-					reply=($saved_reply $j $(( start_pos + i )) command-substitution-quoted $j $(( j + 2 )) command-substitution-delimiter-quoted $reply) 
+					last_break=$(( start_pos + i ))
+					reply=($saved_reply $j $(( start_pos + i )) command-substitution-quoted $j $(( j + 2 )) command-substitution-delimiter-quoted $reply)
 					if (( ret == 0 ))
 					then
-						reply+=($(( start_pos + i - 1 )) $(( start_pos + i )) command-substitution-delimiter-quoted) 
+						reply+=($(( start_pos + i - 1 )) $(( start_pos + i )) command-substitution-delimiter-quoted)
 					fi
 					continue
 				else
 					continue
 				fi ;;
-			("\\") style=back-double-quoted-argument 
+			("\\") style=back-double-quoted-argument
 				if [[ \\\`\"\$${histchars[1]} == *$arg[$i+1]* ]]
 				then
 					(( k += 1 ))
@@ -7729,74 +7729,74 @@ _zsh_highlight_main_highlighter_highlight_double_quote () {
 				fi ;;
 			($histchars[1]) if [[ $arg[i+1] != ('='|$'\x28'|$'\x7b'|[[:blank:]]) ]]
 				then
-					style=history-expansion 
+					style=history-expansion
 				else
 					continue
 				fi ;;
 			(*) continue ;;
 		esac
-		reply+=($j $k $style) 
+		reply+=($j $k $style)
 	done
 	if [[ $arg[i] == '"' ]]
 	then
-		style=double-quoted-argument 
+		style=double-quoted-argument
 	else
 		(( i-- ))
-		style=double-quoted-argument-unclosed 
+		style=double-quoted-argument-unclosed
 	fi
-	(( last_break != start_pos + i )) && breaks+=($last_break $(( start_pos + i ))) 
-	saved_reply=($reply) 
-	reply=() 
+	(( last_break != start_pos + i )) && breaks+=($last_break $(( start_pos + i )))
+	saved_reply=($reply)
+	reply=()
 	for 1 2 in $breaks
 	do
-		(( $1 != $2 )) && reply+=($1 $2 $style) 
+		(( $1 != $2 )) && reply+=($1 $2 $style)
 	done
-	reply+=($saved_reply) 
-	REPLY=$i 
+	reply+=($saved_reply)
+	REPLY=$i
 }
 _zsh_highlight_main_highlighter_highlight_list () {
-	integer start_pos end_pos=0 buf_offset=$1 has_end=$3 
-	local alias_style param_style last_arg arg buf=$4 highlight_glob=true saw_assignment=false style 
-	local in_array_assignment=false 
-	integer in_param=0 len=$#buf 
+	integer start_pos end_pos=0 buf_offset=$1 has_end=$3
+	local alias_style param_style last_arg arg buf=$4 highlight_glob=true saw_assignment=false style
+	local in_array_assignment=false
+	integer in_param=0 len=$#buf
 	local -a in_alias match mbegin mend list_highlights
 	local -A seen_alias
-	readonly parameter_name_pattern='([A-Za-z_][A-Za-z0-9_]*|[0-9]+)' 
-	list_highlights=() 
-	local braces_stack=$2 
-	local this_word next_word=':start::start_of_pipeline:' 
+	readonly parameter_name_pattern='([A-Za-z_][A-Za-z0-9_]*|[0-9]+)'
+	list_highlights=()
+	local braces_stack=$2
+	local this_word next_word=':start::start_of_pipeline:'
 	integer in_redirection
-	local proc_buf="$buf" 
+	local proc_buf="$buf"
 	local -a args
 	if [[ $zsyh_user_options[interactivecomments] == on ]]
 	then
-		args=(${(zZ+c+)buf}) 
+		args=(${(zZ+c+)buf})
 	else
-		args=(${(z)buf}) 
+		args=(${(z)buf})
 	fi
 	if [[ $braces_stack == 'S' ]] && (( $+args[3] && ! $+args[4] )) && [[ $args[3] == $'\x29' ]] && [[ $args[1] == *'<'* ]] && _zsh_highlight_main__is_redirection $args[1]
 	then
-		highlight_glob=false 
+		highlight_glob=false
 	fi
 	while (( $#args ))
 	do
-		last_arg=$arg 
-		arg=$args[1] 
+		last_arg=$arg
+		arg=$args[1]
 		shift args
 		if (( $#in_alias ))
 		then
 			(( in_alias[1]-- ))
-			in_alias=($in_alias[$in_alias[(i)<1->],-1]) 
+			in_alias=($in_alias[$in_alias[(i)<1->],-1])
 			if (( $#in_alias == 0 ))
 			then
-				seen_alias=() 
+				seen_alias=()
 				_zsh_highlight_main_add_region_highlight $start_pos $end_pos $alias_style
 			else
 				() {
 					local alias_name
 					for alias_name in ${(k)seen_alias[(R)<$#in_alias->]}
 					do
-						seen_alias=("${(@kv)seen_alias[(I)^$alias_name]}") 
+						seen_alias=("${(@kv)seen_alias[(I)^$alias_name]}")
 					done
 				}
 			fi
@@ -7807,51 +7807,51 @@ _zsh_highlight_main_highlighter_highlight_list () {
 			if (( in_param == 0 ))
 			then
 				_zsh_highlight_main_add_region_highlight $start_pos $end_pos $param_style
-				param_style="" 
+				param_style=""
 			fi
 		fi
 		if (( in_redirection == 0 ))
 		then
-			this_word=$next_word 
-			next_word=':regular:' 
+			this_word=$next_word
+			next_word=':regular:'
 		elif (( !in_param ))
 		then
 			(( --in_redirection ))
 		fi
-		style=unknown-token 
+		style=unknown-token
 		if [[ $this_word == *':start:'* ]]
 		then
-			in_array_assignment=false 
+			in_array_assignment=false
 			if [[ $arg == 'noglob' ]]
 			then
-				highlight_glob=false 
+				highlight_glob=false
 			fi
 		fi
 		if (( $#in_alias == 0 && in_param == 0 ))
 		then
 			[[ "$proc_buf" = (#b)(#s)(''([ $'\t']|[\\]$'\n')#)(?|)* ]]
-			integer offset="${#match[1]}" 
+			integer offset="${#match[1]}"
 			(( start_pos = end_pos + offset ))
 			(( end_pos = start_pos + $#arg ))
-			[[ $arg == ';' && ${match[3]} == $'\n' ]] && arg=$'\n' 
-			proc_buf="${proc_buf[offset + $#arg + 1,len]}" 
+			[[ $arg == ';' && ${match[3]} == $'\n' ]] && arg=$'\n'
+			proc_buf="${proc_buf[offset + $#arg + 1,len]}"
 		fi
 		if [[ $zsyh_user_options[interactivecomments] == on && $arg[1] == $histchars[3] ]]
 		then
 			if [[ $this_word == *(':regular:'|':start:')* ]]
 			then
-				style=comment 
+				style=comment
 			else
-				style=unknown-token 
+				style=unknown-token
 			fi
 			_zsh_highlight_main_add_region_highlight $start_pos $end_pos $style
-			in_redirection=1 
+			in_redirection=1
 			continue
 		fi
 		if [[ $this_word == *':start:'* ]] && ! (( in_redirection ))
 		then
 			_zsh_highlight_main__type "$arg" "$(( ! ${+seen_alias[$arg]} ))"
-			local res="$REPLY" 
+			local res="$REPLY"
 			if [[ $res == "alias" ]]
 			then
 				if [[ $arg == ?*=* ]]
@@ -7859,29 +7859,29 @@ _zsh_highlight_main_highlighter_highlight_list () {
 					_zsh_highlight_main_add_region_highlight $start_pos $end_pos unknown-token
 					continue
 				fi
-				seen_alias[$arg]=$#in_alias 
+				seen_alias[$arg]=$#in_alias
 				_zsh_highlight_main__resolve_alias $arg
 				local -a alias_args
 				if [[ $zsyh_user_options[interactivecomments] == on ]]
 				then
-					alias_args=(${(zZ+c+)REPLY}) 
+					alias_args=(${(zZ+c+)REPLY})
 				else
-					alias_args=(${(z)REPLY}) 
+					alias_args=(${(z)REPLY})
 				fi
-				args=($alias_args $args) 
+				args=($alias_args $args)
 				if (( $#in_alias == 0 ))
 				then
-					alias_style=alias 
+					alias_style=alias
 				else
 					(( in_alias[1]-- ))
 				fi
-				in_alias=($(($#alias_args + 1)) $in_alias) 
+				in_alias=($(($#alias_args + 1)) $in_alias)
 				(( in_redirection++ ))
 				continue
 			else
 				_zsh_highlight_main_highlighter_expand_path $arg
 				_zsh_highlight_main__type "$REPLY" 0
-				res="$REPLY" 
+				res="$REPLY"
 			fi
 		fi
 		if _zsh_highlight_main__is_redirection $arg
@@ -7890,13 +7890,13 @@ _zsh_highlight_main_highlighter_highlight_list () {
 			then
 				_zsh_highlight_main_add_region_highlight $start_pos $end_pos unknown-token
 			else
-				in_redirection=2 
+				in_redirection=2
 				_zsh_highlight_main_add_region_highlight $start_pos $end_pos redirection
 			fi
 			continue
 		elif [[ $arg == '{'${~parameter_name_pattern}'}' ]] && _zsh_highlight_main__is_redirection $args[1]
 		then
-			in_redirection=3 
+			in_redirection=3
 			_zsh_highlight_main_add_region_highlight $start_pos $end_pos named-fd
 			continue
 		fi
@@ -7904,7 +7904,7 @@ _zsh_highlight_main_highlighter_highlight_list () {
 		then
 			() {
 				local -a words
-				words=("${reply[@]}") 
+				words=("${reply[@]}")
 				if (( $#words == 0 )) && (( ! in_redirection ))
 				then
 					(( ++in_redirection ))
@@ -7912,10 +7912,10 @@ _zsh_highlight_main_highlighter_highlight_list () {
 					continue
 				else
 					(( in_param = 1 + $#words ))
-					args=($words $args) 
-					arg=$args[1] 
+					args=($words $args)
+					arg=$args[1]
 					_zsh_highlight_main__type "$arg" 0
-					res=$REPLY 
+					res=$REPLY
 				fi
 			}
 		fi
@@ -7932,8 +7932,8 @@ _zsh_highlight_main_highlighter_highlight_list () {
 						fi
 					}
 				then
-					this_word=${this_word//:start:/} 
-					next_word=':sudo_arg:' 
+					this_word=${this_word//:start:/}
+					next_word=':sudo_arg:'
 				elif [[ -n $flags_with_argument ]] && {
 						if [[ -n $flags_sans_argument ]]
 						then
@@ -7943,14 +7943,14 @@ _zsh_highlight_main_highlighter_highlight_list () {
 						fi
 					}
 				then
-					this_word=${this_word//:start:/} 
-					next_word+=':start:' 
-					next_word+=':sudo_opt:' 
+					this_word=${this_word//:start:/}
+					next_word+=':start:'
+					next_word+=':sudo_opt:'
 				elif [[ -n $flags_sans_argument ]] && [[ $arg == '-'[$flags_sans_argument]# ]]
 				then
-					this_word=':sudo_opt:' 
-					next_word+=':start:' 
-					next_word+=':sudo_opt:' 
+					this_word=':sudo_opt:'
+					next_word+=':start:'
+					next_word+=':sudo_opt:'
 				elif [[ -n $flags_solo ]] && {
 						if [[ -n $flags_sans_argument ]]
 						then
@@ -7960,27 +7960,27 @@ _zsh_highlight_main_highlighter_highlight_list () {
 						fi
 					}
 				then
-					this_word=':sudo_opt:' 
-					next_word=':regular:' 
+					this_word=':sudo_opt:'
+					next_word=':regular:'
 				elif [[ $arg == '-'* ]]
 				then
-					this_word=':sudo_opt:' 
-					next_word+=':start:' 
-					next_word+=':sudo_opt:' 
+					this_word=':sudo_opt:'
+					next_word+=':start:'
+					next_word+=':sudo_opt:'
 				else
-					this_word=${this_word//:sudo_opt:/} 
+					this_word=${this_word//:sudo_opt:/}
 				fi
 			elif [[ $this_word == *':sudo_arg:'* ]]
 			then
-				next_word+=':sudo_opt:' 
-				next_word+=':start:' 
+				next_word+=':sudo_opt:'
+				next_word+=':start:'
 			fi
 		fi
 		if [[ -n ${(M)ZSH_HIGHLIGHT_TOKENS_COMMANDSEPARATOR:#"$arg"} ]] && [[ $braces_stack != *T* || $arg != ('||'|'&&') ]]
 		then
 			if _zsh_highlight_main__stack_pop T || _zsh_highlight_main__stack_pop Q
 			then
-				style=unknown-token 
+				style=unknown-token
 			elif $in_array_assignment
 			then
 				case $arg in
@@ -7990,73 +7990,73 @@ _zsh_highlight_main_highlighter_highlight_list () {
 				esac
 			elif [[ $this_word == *':regular:'* ]]
 			then
-				style=commandseparator 
+				style=commandseparator
 			elif [[ $this_word == *':start:'* ]] && [[ $arg == $'\n' ]]
 			then
-				style=commandseparator 
+				style=commandseparator
 			elif [[ $this_word == *':start:'* ]] && [[ $arg == ';' ]] && (( $#in_alias ))
 			then
-				style=commandseparator 
+				style=commandseparator
 			else
-				style=unknown-token 
+				style=unknown-token
 			fi
 			if [[ $arg == $'\n' ]] && $in_array_assignment
 			then
-				next_word=':regular:' 
+				next_word=':regular:'
 			elif [[ $arg == ';' ]] && $in_array_assignment
 			then
-				next_word=':regular:' 
+				next_word=':regular:'
 			else
-				next_word=':start:' 
-				highlight_glob=true 
-				saw_assignment=false 
+				next_word=':start:'
+				highlight_glob=true
+				saw_assignment=false
 				() {
 					local alias_name
 					for alias_name in ${(k)seen_alias[(R)<$#in_alias->]}
 					do
-						seen_alias=("${(@kv)seen_alias[(I)^$alias_name]}") 
+						seen_alias=("${(@kv)seen_alias[(I)^$alias_name]}")
 					done
 				}
 				if [[ $arg != '|' && $arg != '|&' ]]
 				then
-					next_word+=':start_of_pipeline:' 
+					next_word+=':start_of_pipeline:'
 				fi
 			fi
 		elif ! (( in_redirection)) && [[ $this_word == *':always:'* && $arg == 'always' ]]
 		then
-			style=reserved-word 
-			highlight_glob=true 
-			saw_assignment=false 
-			next_word=':start::start_of_pipeline:' 
+			style=reserved-word
+			highlight_glob=true
+			saw_assignment=false
+			next_word=':start::start_of_pipeline:'
 		elif ! (( in_redirection)) && [[ $this_word == *':start:'* ]]
 		then
 			if (( ${+precommand_options[$arg]} )) && _zsh_highlight_main__is_runnable $arg
 			then
-				style=precommand 
+				style=precommand
 				() {
 					set -- "${(@s.:.)precommand_options[$arg]}"
-					flags_with_argument=$1 
-					flags_sans_argument=$2 
-					flags_solo=$3 
+					flags_with_argument=$1
+					flags_sans_argument=$2
+					flags_solo=$3
 				}
-				next_word=${next_word//:regular:/} 
-				next_word+=':sudo_opt:' 
-				next_word+=':start:' 
+				next_word=${next_word//:regular:/}
+				next_word+=':sudo_opt:'
+				next_word+=':start:'
 				if [[ $arg == 'exec' || $arg == 'env' ]]
 				then
-					next_word+=':regular:' 
+					next_word+=':regular:'
 				fi
 			else
 				case $res in
-					(reserved) style=reserved-word 
+					(reserved) style=reserved-word
 						case $arg in
-							(time|nocorrect) next_word=${next_word//:regular:/} 
+							(time|nocorrect) next_word=${next_word//:regular:/}
 								next_word+=':start:'  ;;
 							($'\x7b') braces_stack='Y'"$braces_stack"  ;;
 							($'\x7d') _zsh_highlight_main__stack_pop 'Y' reserved-word
 								if [[ $style == reserved-word ]]
 								then
-									next_word+=':always:' 
+									next_word+=':always:'
 								fi ;;
 							($'\x5b\x5b') braces_stack='T'"$braces_stack"  ;;
 							('do') braces_stack='D'"$braces_stack"  ;;
@@ -8065,36 +8065,36 @@ _zsh_highlight_main_highlighter_highlight_list () {
 							('then') _zsh_highlight_main__stack_pop ':' reserved-word ;;
 							('elif') if [[ ${braces_stack[1]} == '?' ]]
 								then
-									braces_stack=':'"$braces_stack" 
+									braces_stack=':'"$braces_stack"
 								else
-									style=unknown-token 
+									style=unknown-token
 								fi ;;
 							('else') if [[ ${braces_stack[1]} == '?' ]]
 								then
 									:
 								else
-									style=unknown-token 
+									style=unknown-token
 								fi ;;
 							('fi') _zsh_highlight_main__stack_pop '?' ;;
 							('foreach') braces_stack='$'"$braces_stack"  ;;
 							('end') _zsh_highlight_main__stack_pop '$' reserved-word ;;
-							('repeat') in_redirection=2 
+							('repeat') in_redirection=2
 								this_word=':start::regular:'  ;;
 							('!') if [[ $this_word != *':start_of_pipeline:'* ]]
 								then
-									style=unknown-token 
+									style=unknown-token
 								else
-									
+
 								fi ;;
 						esac
 						if $saw_assignment && [[ $style != unknown-token ]]
 						then
-							style=unknown-token 
+							style=unknown-token
 						fi ;;
 					('suffix alias') style=suffix-alias  ;;
 					('global alias') style=global-alias  ;;
 					(alias) : ;;
-					(builtin) style=builtin 
+					(builtin) style=builtin
 						[[ $arg == $'\x5b' ]] && braces_stack='Q'"$braces_stack"  ;;
 					(function) style=function  ;;
 					(command) style=command  ;;
@@ -8102,19 +8102,19 @@ _zsh_highlight_main_highlighter_highlight_list () {
 					(none) if (( ! in_param )) && _zsh_highlight_main_highlighter_check_assign
 						then
 							_zsh_highlight_main_add_region_highlight $start_pos $end_pos assign
-							local i=$(( arg[(i)=] + 1 )) 
-							saw_assignment=true 
+							local i=$(( arg[(i)=] + 1 ))
+							saw_assignment=true
 							if [[ $arg[i] == '(' ]]
 							then
-								in_array_assignment=true 
+								in_array_assignment=true
 								_zsh_highlight_main_add_region_highlight start_pos+i-1 start_pos+i reserved-word
 							else
-								next_word+=':start:' 
+								next_word+=':start:'
 								if (( i <= $#arg ))
 								then
 									() {
-										local highlight_glob=false 
-										[[ $zsyh_user_options[globassign] == on ]] && highlight_glob=true 
+										local highlight_glob=false
+										[[ $zsyh_user_options[globassign] == on ]] && highlight_glob=true
 										_zsh_highlight_main_highlighter_highlight_argument $i
 									}
 								fi
@@ -8122,10 +8122,10 @@ _zsh_highlight_main_highlighter_highlight_list () {
 							continue
 						elif (( ! in_param )) && [[ $arg[0,1] = $histchars[0,1] ]] && (( $#arg[0,2] == 2 ))
 						then
-							style=history-expansion 
+							style=history-expansion
 						elif (( ! in_param )) && [[ $arg[0,1] == $histchars[2,2] ]]
 						then
-							style=history-expansion 
+							style=history-expansion
 						elif (( ! in_param )) && ! $saw_assignment && [[ $arg[1,2] == '((' ]]
 						then
 							_zsh_highlight_main_add_region_highlight $start_pos $((start_pos + 2)) reserved-word
@@ -8136,26 +8136,26 @@ _zsh_highlight_main_highlighter_highlight_list () {
 							continue
 						elif (( ! in_param )) && [[ $arg == '()' ]]
 						then
-							style=reserved-word 
+							style=reserved-word
 						elif (( ! in_param )) && ! $saw_assignment && [[ $arg == $'\x28' ]]
 						then
-							style=reserved-word 
-							braces_stack='R'"$braces_stack" 
+							style=reserved-word
+							braces_stack='R'"$braces_stack"
 						elif (( ! in_param )) && [[ $arg == $'\x29' ]]
 						then
 							if _zsh_highlight_main__stack_pop 'S'
 							then
-								REPLY=$start_pos 
-								reply=($list_highlights) 
+								REPLY=$start_pos
+								reply=($list_highlights)
 								return 0
 							fi
 							_zsh_highlight_main__stack_pop 'R' reserved-word
 						else
 							if _zsh_highlight_main_highlighter_check_path $arg 1
 							then
-								style=$REPLY 
+								style=$REPLY
 							else
-								style=unknown-token 
+								style=unknown-token
 							fi
 						fi ;;
 					(*) _zsh_highlight_main_add_region_highlight $start_pos $end_pos arg0_$res
@@ -8164,60 +8164,60 @@ _zsh_highlight_main_highlighter_highlight_list () {
 			fi
 			if [[ -n ${(M)ZSH_HIGHLIGHT_TOKENS_CONTROL_FLOW:#"$arg"} ]]
 			then
-				next_word=':start::start_of_pipeline:' 
+				next_word=':start::start_of_pipeline:'
 			fi
 		elif _zsh_highlight_main__is_global_alias "$arg"
 		then
-			style=global-alias 
+			style=global-alias
 		else
 			case $arg in
 				($'\x29') if $in_array_assignment
 					then
 						_zsh_highlight_main_add_region_highlight $start_pos $end_pos assign
 						_zsh_highlight_main_add_region_highlight $start_pos $end_pos reserved-word
-						in_array_assignment=false 
-						next_word+=':start:' 
+						in_array_assignment=false
+						next_word+=':start:'
 						continue
 					elif (( in_redirection ))
 					then
-						style=unknown-token 
+						style=unknown-token
 					else
 						if _zsh_highlight_main__stack_pop 'S'
 						then
-							REPLY=$start_pos 
-							reply=($list_highlights) 
+							REPLY=$start_pos
+							reply=($list_highlights)
 							return 0
 						fi
 						_zsh_highlight_main__stack_pop 'R' reserved-word
 					fi ;;
 				($'\x28\x29') if (( in_redirection )) || $in_array_assignment
 					then
-						style=unknown-token 
+						style=unknown-token
 					else
 						if [[ $zsyh_user_options[multifuncdef] == on ]] || false
 						then
-							next_word+=':start::start_of_pipeline:' 
+							next_word+=':start::start_of_pipeline:'
 						fi
-						style=reserved-word 
+						style=reserved-word
 					fi ;;
 				(*) if false
 					then
-						
+
 					elif [[ $arg = $'\x7d' ]] && $right_brace_is_recognised_everywhere
 					then
 						if (( in_redirection )) || $in_array_assignment
 						then
-							style=unknown-token 
+							style=unknown-token
 						else
 							_zsh_highlight_main__stack_pop 'Y' reserved-word
 							if [[ $style == reserved-word ]]
 							then
-								next_word+=':always:' 
+								next_word+=':always:'
 							fi
 						fi
 					elif [[ $arg[0,1] = $histchars[0,1] ]] && (( $#arg[0,2] == 2 ))
 					then
-						style=history-expansion 
+						style=history-expansion
 					elif [[ $arg == $'\x5d\x5d' ]] && _zsh_highlight_main__stack_pop 'T' reserved-word
 					then
 						:
@@ -8235,73 +8235,73 @@ _zsh_highlight_main_highlighter_highlight_list () {
 	(( $#in_alias )) && in_alias=() _zsh_highlight_main_add_region_highlight $start_pos $end_pos $alias_style
 	(( in_param == 1 )) && in_param=0 _zsh_highlight_main_add_region_highlight $start_pos $end_pos $param_style
 	[[ "$proc_buf" = (#b)(#s)(([[:space:]]|\\$'\n')#) ]]
-	REPLY=$(( end_pos + ${#match[1]} - 1 )) 
-	reply=($list_highlights) 
+	REPLY=$(( end_pos + ${#match[1]} - 1 ))
+	reply=($list_highlights)
 	return $(( $#braces_stack > 0 ))
 }
 _zsh_highlight_main_highlighter_highlight_path_separators () {
 	local pos style_pathsep
-	style_pathsep=$1_pathseparator 
-	reply=() 
+	style_pathsep=$1_pathseparator
+	reply=()
 	[[ -z "$ZSH_HIGHLIGHT_STYLES[$style_pathsep]" || "$ZSH_HIGHLIGHT_STYLES[$1]" == "$ZSH_HIGHLIGHT_STYLES[$style_pathsep]" ]] && return 0
 	for ((pos = start_pos; $pos <= end_pos; pos++ )) do
 		if [[ $BUFFER[pos] == / ]]
 		then
-			reply+=($((pos - 1)) $pos $style_pathsep) 
+			reply+=($((pos - 1)) $pos $style_pathsep)
 		fi
 	done
 }
 _zsh_highlight_main_highlighter_highlight_single_quote () {
-	local arg1=$1 i q=\' style 
-	i=$arg[(ib:arg1+1:)$q] 
-	reply=() 
+	local arg1=$1 i q=\' style
+	i=$arg[(ib:arg1+1:)$q]
+	reply=()
 	if [[ $zsyh_user_options[rcquotes] == on ]]
 	then
 		while [[ $arg[i+1] == "'" ]]
 		do
-			reply+=($(( start_pos + i - 1 )) $(( start_pos + i + 1 )) rc-quote) 
+			reply+=($(( start_pos + i - 1 )) $(( start_pos + i + 1 )) rc-quote)
 			(( i++ ))
-			i=$arg[(ib:i+1:)$q] 
+			i=$arg[(ib:i+1:)$q]
 		done
 	fi
 	if [[ $arg[i] == "'" ]]
 	then
-		style=single-quoted-argument 
+		style=single-quoted-argument
 	else
 		(( i-- ))
-		style=single-quoted-argument-unclosed 
+		style=single-quoted-argument-unclosed
 	fi
-	reply=($(( start_pos + arg1 - 1 )) $(( start_pos + i )) $style $reply) 
-	REPLY=$i 
+	reply=($(( start_pos + arg1 - 1 )) $(( start_pos + i )) $style $reply)
+	REPLY=$i
 }
 _zsh_highlight_pattern_highlighter_loop () {
-	local buf="$1" pat="$2" 
+	local buf="$1" pat="$2"
 	local -a match mbegin mend
 	local MATCH
 	integer MBEGIN MEND
 	if [[ "$buf" == (#b)(*)(${~pat})* ]]
 	then
-		region_highlight+=("$((mbegin[2] - 1)) $mend[2] $ZSH_HIGHLIGHT_PATTERNS[$pat], memo=zsh-syntax-highlighting") 
+		region_highlight+=("$((mbegin[2] - 1)) $mend[2] $ZSH_HIGHLIGHT_PATTERNS[$pat], memo=zsh-syntax-highlighting")
 		"$0" "$match[1]" "$pat"
 		return $?
 	fi
 }
 _zsh_highlight_preexec_hook () {
-	typeset -g _ZSH_HIGHLIGHT_PRIOR_BUFFER= 
-	typeset -gi _ZSH_HIGHLIGHT_PRIOR_CURSOR= 
+	typeset -g _ZSH_HIGHLIGHT_PRIOR_BUFFER=
+	typeset -gi _ZSH_HIGHLIGHT_PRIOR_CURSOR=
 }
 _zsh_highlight_regexp_highlighter_loop () {
-	local buf="$1" pat="$2" 
-	integer OFFSET=0 
+	local buf="$1" pat="$2"
+	integer OFFSET=0
 	local MATCH
 	integer MBEGIN MEND
 	local -a match mbegin mend
 	while true
 	do
 		[[ "$buf" =~ "$pat" ]] || return
-		region_highlight+=("$((MBEGIN - 1 + OFFSET)) $((MEND + OFFSET)) $ZSH_HIGHLIGHT_REGEXP[$pat], memo=zsh-syntax-highlighting") 
-		buf="$buf[$(($MEND+1)),-1]" 
-		OFFSET=$((MEND+OFFSET)) 
+		region_highlight+=("$((MBEGIN - 1 + OFFSET)) $((MEND + OFFSET)) $ZSH_HIGHLIGHT_REGEXP[$pat], memo=zsh-syntax-highlighting")
+		buf="$buf[$(($MEND+1)),-1]"
+		OFFSET=$((MEND+OFFSET))
 	done
 }
 _zsh_kubectl_prompt_precmd () {
@@ -8309,30 +8309,30 @@ _zsh_kubectl_prompt_precmd () {
 	zstyle -s ':zsh-kubectl-prompt:' binary binary
 	if ! command -v "$binary" > /dev/null
 	then
-		ZSH_KUBECTL_PROMPT="${binary} command not found" 
+		ZSH_KUBECTL_PROMPT="${binary} command not found"
 		return 1
 	fi
-	kubeconfig="$HOME/.kube/config" 
+	kubeconfig="$HOME/.kube/config"
 	if [[ -n "$KUBECONFIG" ]]
 	then
-		kubeconfig="$KUBECONFIG" 
+		kubeconfig="$KUBECONFIG"
 	fi
 	zstyle -s ':zsh-kubectl-prompt:' modified_time_fmt modified_time_fmt
 	if [[ -z "$modified_time_fmt" ]]
 	then
 		if stat --help > /dev/null 2>&1
 		then
-			modified_time_fmt='-c%y' 
+			modified_time_fmt='-c%y'
 		else
-			modified_time_fmt='-f%m' 
+			modified_time_fmt='-f%m'
 		fi
 		zstyle ':zsh-kubectl-prompt:' modified_time_fmt $modified_time_fmt
 	fi
 	while read -d ":" config
 	do
-		if ! now="${now}$(stat -L $modified_time_fmt "$config" 2>/dev/null)" 
+		if ! now="${now}$(stat -L $modified_time_fmt "$config" 2>/dev/null)"
 		then
-			ZSH_KUBECTL_PROMPT="$config doesn't exist" 
+			ZSH_KUBECTL_PROMPT="$config doesn't exist"
 			return 1
 		fi
 	done <<< "${kubeconfig}:"
@@ -8342,26 +8342,26 @@ _zsh_kubectl_prompt_precmd () {
 		return 0
 	fi
 	zstyle ':zsh-kubectl-prompt:' updated_at "$now"
-	if ! context="$("$binary" config current-context 2>/dev/null)" 
+	if ! context="$("$binary" config current-context 2>/dev/null)"
 	then
-		ZSH_KUBECTL_PROMPT="current-context is not set" 
+		ZSH_KUBECTL_PROMPT="current-context is not set"
 		return 1
 	fi
-	ZSH_KUBECTL_USER="$("$binary" config view -o "jsonpath={.contexts[?(@.name==\"$context\")].context.user}")" 
-	ZSH_KUBECTL_CONTEXT="${context}" 
-	ns="$("$binary" config view -o "jsonpath={.contexts[?(@.name==\"$context\")].context.namespace}")" 
-	[[ -z "$ns" ]] && ns="default" 
-	ZSH_KUBECTL_NAMESPACE="${ns}" 
+	ZSH_KUBECTL_USER="$("$binary" config view -o "jsonpath={.contexts[?(@.name==\"$context\")].context.user}")"
+	ZSH_KUBECTL_CONTEXT="${context}"
+	ns="$("$binary" config view -o "jsonpath={.contexts[?(@.name==\"$context\")].context.namespace}")"
+	[[ -z "$ns" ]] && ns="default"
+	ZSH_KUBECTL_NAMESPACE="${ns}"
 	zstyle -s ':zsh-kubectl-prompt:' preprompt preprompt
 	zstyle -s ':zsh-kubectl-prompt:' postprompt postprompt
 	zstyle -s ':zsh-kubectl-prompt:' namespace namespace
 	if [[ "$namespace" != true ]]
 	then
-		ZSH_KUBECTL_PROMPT="${preprompt}${context}${postprompt}" 
+		ZSH_KUBECTL_PROMPT="${preprompt}${context}${postprompt}"
 		return 0
 	fi
 	zstyle -s ':zsh-kubectl-prompt:' separator separator
-	ZSH_KUBECTL_PROMPT="${preprompt}${context}${separator}${ns}${postprompt}" 
+	ZSH_KUBECTL_PROMPT="${preprompt}${context}${separator}${ns}${postprompt}"
 	return 0
 }
 _zsocket () {
@@ -8387,8 +8387,8 @@ add-zle-hook-widget () {
 add-zsh-hook () {
 	emulate -L zsh
 	local -a hooktypes
-	hooktypes=(chpwd precmd preexec periodic zshaddhistory zshexit zsh_directory_name) 
-	local usage="Usage: add-zsh-hook hook function\nValid hooks are:\n  $hooktypes" 
+	hooktypes=(chpwd precmd preexec periodic zshaddhistory zshexit zsh_directory_name)
+	local usage="Usage: add-zsh-hook hook function\nValid hooks are:\n  $hooktypes"
 	local opt
 	local -a autoopts
 	integer del list help
@@ -8413,8 +8413,8 @@ add-zsh-hook () {
 		print -u$(( 2 - help )) $usage
 		return $(( 1 - help ))
 	fi
-	local hook="${1}_functions" 
-	local fn="$2" 
+	local hook="${1}_functions"
+	local fn="$2"
 	if (( del ))
 	then
 		if (( ${(P)+hook} ))
@@ -8460,11 +8460,11 @@ asdf () {
 	esac
 }
 aws-sso () {
-	local profile=${1:-petlab} 
+	local profile=${1:-petlab}
 	aws sso login --profile "$profile"
 	eval "$(aws configure export-credentials --profile "$profile" --format env)"
-	export AWS_DEFAULT_PROFILE="$profile" 
-	export AWS_PROFILE="$profile" 
+	export AWS_DEFAULT_PROFILE="$profile"
+	export AWS_PROFILE="$profile"
 	if ! aws sts get-caller-identity > /dev/null 2>&1
 	then
 		echo "Failed to get credentials"
@@ -8500,10 +8500,10 @@ bzr_prompt_info () {
 	bzr_branch=$(bzr nick 2>/dev/null)  || return
 	if [[ -n "$bzr_branch" ]]
 	then
-		local bzr_dirty="" 
+		local bzr_dirty=""
 		if [[ -n $(bzr status 2>/dev/null) ]]
 		then
-			bzr_dirty=" %{$fg[red]%}*%{$reset_color%}" 
+			bzr_dirty=" %{$fg[red]%}*%{$reset_color%}"
 		fi
 		printf "%s%s%s%s" "$ZSH_THEME_SCM_PROMPT_PREFIX" "bzr::${bzr_branch##*:}" "$bzr_dirty" "$ZSH_THEME_GIT_PROMPT_SUFFIX"
 	fi
@@ -8524,47 +8524,47 @@ clippaste () {
 colors () {
 	emulate -L zsh
 	typeset -Ag color colour
-	color=(00 none 01 bold 02 faint 22 normal 03 italic 23 no-italic 04 underline 24 no-underline 05 blink 25 no-blink 07 reverse 27 no-reverse 08 conceal 28 no-conceal 30 black 40 bg-black 31 red 41 bg-red 32 green 42 bg-green 33 yellow 43 bg-yellow 34 blue 44 bg-blue 35 magenta 45 bg-magenta 36 cyan 46 bg-cyan 37 white 47 bg-white 39 default 49 bg-default) 
+	color=(00 none 01 bold 02 faint 22 normal 03 italic 23 no-italic 04 underline 24 no-underline 05 blink 25 no-blink 07 reverse 27 no-reverse 08 conceal 28 no-conceal 30 black 40 bg-black 31 red 41 bg-red 32 green 42 bg-green 33 yellow 43 bg-yellow 34 blue 44 bg-blue 35 magenta 45 bg-magenta 36 cyan 46 bg-cyan 37 white 47 bg-white 39 default 49 bg-default)
 	local k
 	for k in ${(k)color}
 	do
-		color[${color[$k]}]=$k 
+		color[${color[$k]}]=$k
 	done
 	for k in ${color[(I)3?]}
 	do
-		color[fg-${color[$k]}]=$k 
+		color[fg-${color[$k]}]=$k
 	done
 	for k in grey gray
 	do
-		color[$k]=${color[black]} 
-		color[fg-$k]=${color[$k]} 
-		color[bg-$k]=${color[bg-black]} 
+		color[$k]=${color[black]}
+		color[fg-$k]=${color[$k]}
+		color[bg-$k]=${color[bg-black]}
 	done
-	colour=(${(kv)color}) 
-	local lc=$'\e[' rc=m 
+	colour=(${(kv)color})
+	local lc=$'\e[' rc=m
 	typeset -Hg reset_color bold_color
-	reset_color="$lc${color[none]}$rc" 
-	bold_color="$lc${color[bold]}$rc" 
+	reset_color="$lc${color[none]}$rc"
+	bold_color="$lc${color[bold]}$rc"
 	typeset -AHg fg fg_bold fg_no_bold
 	for k in ${(k)color[(I)fg-*]}
 	do
-		fg[${k#fg-}]="$lc${color[$k]}$rc" 
-		fg_bold[${k#fg-}]="$lc${color[bold]};${color[$k]}$rc" 
-		fg_no_bold[${k#fg-}]="$lc${color[normal]};${color[$k]}$rc" 
+		fg[${k#fg-}]="$lc${color[$k]}$rc"
+		fg_bold[${k#fg-}]="$lc${color[bold]};${color[$k]}$rc"
+		fg_no_bold[${k#fg-}]="$lc${color[normal]};${color[$k]}$rc"
 	done
 	typeset -AHg bg bg_bold bg_no_bold
 	for k in ${(k)color[(I)bg-*]}
 	do
-		bg[${k#bg-}]="$lc${color[$k]}$rc" 
-		bg_bold[${k#bg-}]="$lc${color[bold]};${color[$k]}$rc" 
-		bg_no_bold[${k#bg-}]="$lc${color[normal]};${color[$k]}$rc" 
+		bg[${k#bg-}]="$lc${color[$k]}$rc"
+		bg_bold[${k#bg-}]="$lc${color[bold]};${color[$k]}$rc"
+		bg_no_bold[${k#bg-}]="$lc${color[normal]};${color[$k]}$rc"
 	done
 }
 compadd () {
 	local -A apre hpre dscrs _oad _mesg
 	local -a isfile _opts __ expl
 	zparseopts -a _opts P:=apre p:=hpre d:=dscrs X+:=expl O:=_oad A:=_oad D:=_oad f=isfile i: S: s: I: x:=_mesg r: R: W: F: M+: E: q e Q n U C J:=__ V:=__ a=__ l=__ k=__ o::=__ 1=__ 2=__
-	_ftb_curcontext=${curcontext#:} 
+	_ftb_curcontext=${curcontext#:}
 	if (( $#_oad != 0 || ! IN_FZF_TAB )) || {
 			-ftb-zstyle -m disabled-on "any"
 		} || (
@@ -8579,10 +8579,10 @@ compadd () {
 	local -a __hits __dscr
 	if (( $#dscrs == 1 ))
 	then
-		__dscr=("${(@P)${(v)dscrs}}") 
+		__dscr=("${(@P)${(v)dscrs}}")
 	fi
 	builtin compadd -A __hits -D __dscr "$@"
-	local ret=$? 
+	local ret=$?
 	if (( $#__hits == 0 ))
 	then
 		if is-at-least 5.9 && (( $#_mesg != 0 ))
@@ -8591,28 +8591,28 @@ compadd () {
 		fi
 		return $ret
 	fi
-	expl=$expl[2] 
-	[[ -n $expl ]] && _ftb_groups+=$expl 
-	local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX) 
-	local key expanded __tmp_value=$'<\0>' 
+	expl=$expl[2]
+	[[ -n $expl ]] && _ftb_groups+=$expl
+	local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
+	local key expanded __tmp_value=$'<\0>'
 	for key in $keys
 	do
-		expanded=${(P)key} 
+		expanded=${(P)key}
 		if [[ -n $expanded ]]
 		then
-			__tmp_value+=$'\0'$key$'\0'$expanded 
+			__tmp_value+=$'\0'$key$'\0'$expanded
 		fi
 	done
 	if [[ -n $expl ]]
 	then
-		__tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl] 
+		__tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
 	fi
 	if [[ -n $isfile ]]
 	then
-		__tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}} 
+		__tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}}
 	fi
-	_opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile) 
-	__tmp_value+=$'\0args\0'${(pj:\1:)_opts} 
+	_opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
+	__tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 	if (( $+builtins[fzf-tab-compcap-generate] ))
 	then
 		fzf-tab-compcap-generate __hits __dscr __tmp_value
@@ -8620,15 +8620,15 @@ compadd () {
 		local dscr word i
 		for i in {1..$#__hits}
 		do
-			word=$__hits[i] dscr=$__dscr[i] 
+			word=$__hits[i] dscr=$__dscr[i]
 			if [[ -n $dscr ]]
 			then
-				dscr=${dscr//$'\n'} 
+				dscr=${dscr//$'\n'}
 			elif [[ -n $word ]]
 			then
-				dscr=$word 
+				dscr=$word
 			fi
-			_ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word 
+			_ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
 		done
 	fi
 	builtin compadd "$@"
@@ -8638,7 +8638,7 @@ compaudit () {
 	builtin autoload -XUz /opt/homebrew/Cellar/zsh/5.9/share/zsh/functions
 }
 compdef () {
-	local opt autol type func delete eval new i ret=0 cmd svc 
+	local opt autol type func delete eval new i ret=0 cmd svc
 	local -a match mbegin mend
 	emulate -L zsh
 	setopt extendedglob
@@ -8659,15 +8659,15 @@ compdef () {
 				fi
 				if [[ "$opt" = p ]]
 				then
-					type=pattern 
+					type=pattern
 				elif [[ "$opt" = P ]]
 				then
-					type=postpattern 
+					type=postpattern
 				elif [[ "$opt" = K ]]
 				then
-					type=widgetkey 
+					type=widgetkey
 				else
-					type=key 
+					type=key
 				fi ;;
 			(d) delete=yes  ;;
 			(e) eval=yes  ;;
@@ -8687,28 +8687,28 @@ compdef () {
 			do
 				if [[ "$1" = *\=* ]]
 				then
-					cmd="${1%%\=*}" 
-					svc="${1#*\=}" 
-					func="$_comps[${_services[(r)$svc]:-$svc}]" 
-					[[ -n ${_services[$svc]} ]] && svc=${_services[$svc]} 
-					[[ -z "$func" ]] && func="${${_patcomps[(K)$svc][1]}:-${_postpatcomps[(K)$svc][1]}}" 
+					cmd="${1%%\=*}"
+					svc="${1#*\=}"
+					func="$_comps[${_services[(r)$svc]:-$svc}]"
+					[[ -n ${_services[$svc]} ]] && svc=${_services[$svc]}
+					[[ -z "$func" ]] && func="${${_patcomps[(K)$svc][1]}:-${_postpatcomps[(K)$svc][1]}}"
 					if [[ -n "$func" ]]
 					then
-						_comps[$cmd]="$func" 
-						_services[$cmd]="$svc" 
+						_comps[$cmd]="$func"
+						_services[$cmd]="$svc"
 					else
 						print -u2 "$0: unknown command or service: $svc"
-						ret=1 
+						ret=1
 					fi
 				else
 					print -u2 "$0: invalid argument: $1"
-					ret=1 
+					ret=1
 				fi
 				shift
 			done
 			return ret
 		fi
-		func="$1" 
+		func="$1"
 		[[ -n "$autol" ]] && autoload -rUz "$func"
 		shift
 		case "$type" in
@@ -8719,8 +8719,8 @@ compdef () {
 						print -u2 "$0: compdef -K requires <widget> <comp-widget> <key>"
 						return 1
 					fi
-					[[ $1 = _* ]] || 1="_$1" 
-					[[ $2 = .* ]] || 2=".$2" 
+					[[ $1 = _* ]] || 1="_$1"
+					[[ $2 = .* ]] || 2=".$2"
 					[[ $2 = .menu-select ]] && zmodload -i zsh/complist
 					zle -C "$1" "$2" "$func"
 					if [[ -n $new ]]
@@ -8759,39 +8759,39 @@ compdef () {
 				do
 					if [[ "$1" = -N ]]
 					then
-						type=normal 
+						type=normal
 					elif [[ "$1" = -p ]]
 					then
-						type=pattern 
+						type=pattern
 					elif [[ "$1" = -P ]]
 					then
-						type=postpattern 
+						type=postpattern
 					else
 						case "$type" in
 							(pattern) if [[ $1 = (#b)(*)=(*) ]]
 								then
-									_patcomps[$match[1]]="=$match[2]=$func" 
+									_patcomps[$match[1]]="=$match[2]=$func"
 								else
-									_patcomps[$1]="$func" 
+									_patcomps[$1]="$func"
 								fi ;;
 							(postpattern) if [[ $1 = (#b)(*)=(*) ]]
 								then
-									_postpatcomps[$match[1]]="=$match[2]=$func" 
+									_postpatcomps[$match[1]]="=$match[2]=$func"
 								else
-									_postpatcomps[$1]="$func" 
+									_postpatcomps[$1]="$func"
 								fi ;;
 							(*) if [[ "$1" = *\=* ]]
 								then
-									cmd="${1%%\=*}" 
-									svc=yes 
+									cmd="${1%%\=*}"
+									svc=yes
 								else
-									cmd="$1" 
-									svc= 
+									cmd="$1"
+									svc=
 								fi
 								if [[ -z "$new" || -z "${_comps[$1]}" ]]
 								then
-									_comps[$cmd]="$func" 
-									[[ -n "$svc" ]] && _services[$cmd]="${1#*\=}" 
+									_comps[$cmd]="$func"
+									[[ -n "$svc" ]] && _services[$cmd]="${1#*\=}"
 								fi ;;
 						esac
 					fi
@@ -8813,12 +8813,12 @@ compdump () {
 	builtin autoload -XUz /opt/homebrew/Cellar/zsh/5.9/share/zsh/functions
 }
 compgen () {
-	local opts prefix suffix job OPTARG OPTIND ret=1 
+	local opts prefix suffix job OPTARG OPTIND ret=1
 	local -a name res results jids
 	local -A shortopts
 	emulate -L sh
 	setopt kshglob noshglob braceexpand nokshautoload
-	shortopts=(a alias b builtin c command d directory e export f file g group j job k keyword u user v variable) 
+	shortopts=(a alias b builtin c command d directory e export f file g group j job k keyword u user v variable)
 	while getopts "o:A:G:C:F:P:S:W:X:abcdefgjkuv" name
 	do
 		case $name in
@@ -8830,13 +8830,13 @@ compgen () {
 					(builtin) results+=("${(k)builtins[@]}" "${(k)dis_builtins[@]}")  ;;
 					(command) results+=("${(k)commands[@]}" "${(k)aliases[@]}" "${(k)builtins[@]}" "${(k)functions[@]}" "${(k)reswords[@]}")  ;;
 					(directory) setopt bareglobqual
-						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N-/)) 
+						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N-/))
 						setopt nobareglobqual ;;
 					(disabled) results+=("${(k)dis_builtins[@]}")  ;;
 					(enabled) results+=("${(k)builtins[@]}")  ;;
 					(export) results+=("${(k)parameters[(R)*export*]}")  ;;
 					(file) setopt bareglobqual
-						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N)) 
+						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N))
 						setopt nobareglobqual ;;
 					(function) results+=("${(k)functions[@]}")  ;;
 					(group) emulate zsh
@@ -8851,15 +8851,15 @@ compgen () {
 						results+=("${res[@]}")  ;;
 					(job) results+=("${savejobtexts[@]%% *}")  ;;
 					(keyword) results+=("${(k)reswords[@]}")  ;;
-					(running) jids=("${(@k)savejobstates[(R)running*]}") 
+					(running) jids=("${(@k)savejobstates[(R)running*]}")
 						for job in "${jids[@]}"
 						do
-							results+=(${savejobtexts[$job]%% *}) 
+							results+=(${savejobtexts[$job]%% *})
 						done ;;
-					(stopped) jids=("${(@k)savejobstates[(R)suspended*]}") 
+					(stopped) jids=("${(@k)savejobstates[(R)suspended*]}")
 						for job in "${jids[@]}"
 						do
-							results+=(${savejobtexts[$job]%% *}) 
+							results+=(${savejobtexts[$job]%% *})
 						done ;;
 					(setopt | shopt) results+=("${(k)options[@]}")  ;;
 					(signal) results+=("SIG${^signals[@]}")  ;;
@@ -8867,16 +8867,16 @@ compgen () {
 					(variable) results+=("${(k)parameters[@]}")  ;;
 					(helptopic)  ;;
 				esac ;;
-			(F) COMPREPLY=() 
+			(F) COMPREPLY=()
 				local -a args
-				args=("${words[0]}" "${@[-1]}" "${words[CURRENT-2]}") 
+				args=("${words[0]}" "${@[-1]}" "${words[CURRENT-2]}")
 				() {
 					typeset -h words
 					$OPTARG "${args[@]}"
 				}
 				results+=("${COMPREPLY[@]}")  ;;
 			(G) setopt nullglob
-				results+=(${~OPTARG}) 
+				results+=(${~OPTARG})
 				unsetopt nullglob ;;
 			(W) results+=(${(Q)~=OPTARG})  ;;
 			(C) results+=($(eval $OPTARG))  ;;
@@ -8884,9 +8884,9 @@ compgen () {
 			(S) suffix="$OPTARG"  ;;
 			(X) if [[ ${OPTARG[0]} = '!' ]]
 				then
-					results=("${(M)results[@]:#${OPTARG#?}}") 
+					results=("${(M)results[@]:#${OPTARG#?}}")
 				else
-					results=("${results[@]:#$OPTARG}") 
+					results=("${results[@]:#$OPTARG}")
 				fi ;;
 		esac
 	done
@@ -8903,7 +8903,7 @@ compinstall () {
 complete () {
 	emulate -L zsh
 	local args void cmd print remove
-	args=("$@") 
+	args=("$@")
 	zparseopts -D -a void o: A: G: W: C: F: P: S: X: a b c d e f g j k u v p=print r=remove
 	if [[ -n $print ]]
 	then
@@ -9028,7 +9028,7 @@ detect-clipboard () {
 		}
 	else
 		_retry_clipboard_detection_or_fail () {
-			local clipcmd="${1}" 
+			local clipcmd="${1}"
 			shift
 			if detect-clipboard
 			then
@@ -9061,8 +9061,8 @@ disable-fzf-tab () {
 	esac
 	unset _ftb_orig_widget _ftb_orig_list_groupded
 	unfunction compadd 2> /dev/null
-	functions[_main_complete]=$functions[_ftb__main_complete] 
-	functions[_approximate]=$functions[_ftb__approximate] 
+	functions[_main_complete]=$functions[_ftb__main_complete]
+	functions[_approximate]=$functions[_ftb__approximate]
 }
 down-line-or-beginning-search () {
 	# undefined
@@ -9078,10 +9078,10 @@ edit-command-line () {
 enable-fzf-tab () {
 	emulate -L zsh -o extended_glob
 	(( ! $+_ftb_orig_widget )) || disable-fzf-tab
-	typeset -g _ftb_orig_widget="${${$(builtin bindkey '^I')##* }:-expand-or-complete}" 
+	typeset -g _ftb_orig_widget="${${$(builtin bindkey '^I')##* }:-expand-or-complete}"
 	if (( ! $+widgets[.fzf-tab-orig-$_ftb_orig_widget] ))
 	then
-		local compinit_widgets=(complete-word delete-char-or-list expand-or-complete expand-or-complete-prefix list-choices menu-complete menu-expand-or-complete reverse-menu-complete) 
+		local compinit_widgets=(complete-word delete-char-or-list expand-or-complete expand-or-complete-prefix list-choices menu-complete menu-expand-or-complete reverse-menu-complete)
 		if [[ $widgets[$_ftb_orig_widget] == builtin && $compinit_widgets[(Ie)$_ftb_orig_widget] != 0 ]]
 		then
 			zle -C .fzf-tab-orig-$_ftb_orig_widget .$_ftb_orig_widget _main_complete
@@ -9090,23 +9090,23 @@ enable-fzf-tab () {
 		fi
 	fi
 	zstyle -t ':completion:*' list-grouped false
-	typeset -g _ftb_orig_list_grouped=$? 
+	typeset -g _ftb_orig_list_grouped=$?
 	zstyle ':completion:*' list-grouped false
 	bindkey -M emacs '^I' fzf-tab-complete
 	bindkey -M viins '^I' fzf-tab-complete
 	bindkey -M emacs '^X.' fzf-tab-debug
 	bindkey -M viins '^X.' fzf-tab-debug
 	autoload +X -Uz _main_complete _approximate
-	functions[compadd]=$functions[-ftb-compadd] 
-	functions[_ftb__main_complete]=$functions[_main_complete] 
+	functions[compadd]=$functions[-ftb-compadd]
+	functions[_ftb__main_complete]=$functions[_main_complete]
 	_main_complete () {
 		-ftb-complete "$@"
 	}
-	functions[_ftb__approximate]=$functions[_approximate] 
+	functions[_ftb__approximate]=$functions[_approximate]
 	_approximate () {
 		(( ! IN_FZF_TAB )) || unfunction compadd
 		_ftb__approximate
-		(( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd] 
+		(( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd]
 	}
 }
 env_default () {
@@ -9125,35 +9125,35 @@ ftb-tmux-popup () {
 	builtin autoload -XUz
 }
 fuck () {
-	TF_PYTHONIOENCODING=$PYTHONIOENCODING 
-	export TF_SHELL=zsh 
-	export TF_ALIAS=fuck 
-	TF_SHELL_ALIASES=$(alias) 
+	TF_PYTHONIOENCODING=$PYTHONIOENCODING
+	export TF_SHELL=zsh
+	export TF_ALIAS=fuck
+	TF_SHELL_ALIASES=$(alias)
 	export TF_SHELL_ALIASES
-	TF_HISTORY="$(fc -ln -10)" 
+	TF_HISTORY="$(fc -ln -10)"
 	export TF_HISTORY
-	export PYTHONIOENCODING=utf-8 
+	export PYTHONIOENCODING=utf-8
 	TF_CMD=$( thefuck THEFUCK_ARGUMENT_PLACEHOLDER $@ )  && eval $TF_CMD
 	unset TF_HISTORY
-	export PYTHONIOENCODING=$TF_PYTHONIOENCODING 
+	export PYTHONIOENCODING=$TF_PYTHONIOENCODING
 	test -n "$TF_CMD" && print -s $TF_CMD
 }
 fzf-tab-complete () {
-	local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0 
+	local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0
 	echoti civis > /dev/tty 2> /dev/null
 	while (( _ftb_continue ))
 	do
-		local _ftb_choices=() _ftb_compcap=() _ftb_finish=0 
-		_ftb_continue=0 
-		local IN_FZF_TAB=1 
+		local _ftb_choices=() _ftb_compcap=() _ftb_finish=0
+		_ftb_continue=0
+		local IN_FZF_TAB=1
 		{
-			zle .fzf-tab-orig-$_ftb_orig_widget || ret=$? 
+			zle .fzf-tab-orig-$_ftb_orig_widget || ret=$?
 			if (( ! ret && ! _ftb_finish ))
 			then
-				zle _fzf-tab-apply || ret=$? 
+				zle _fzf-tab-apply || ret=$?
 			fi
 		} always {
-			IN_FZF_TAB=0 
+			IN_FZF_TAB=0
 		}
 		if (( _ftb_continue ))
 		then
@@ -9170,13 +9170,13 @@ fzf-tab-complete () {
 }
 fzf-tab-debug () {
 	(( $+_ftb_debug_cnt )) || typeset -gi _ftb_debug_cnt
-	local tmp=${TMPPREFIX:-/tmp/zsh}-$$-fzf-tab-$(( ++_ftb_debug_cnt )).log 
-	local -i debug_fd=-1 IN_FZF_TAB=1 
+	local tmp=${TMPPREFIX:-/tmp/zsh}-$$-fzf-tab-$(( ++_ftb_debug_cnt )).log
+	local -i debug_fd=-1 IN_FZF_TAB=1
 	{
 		exec {debug_fd}>&2 2>| $tmp
 		local -a debug_indent
-		debug_indent=('%'{3..20}'(e. .)') 
-		local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> " 
+		debug_indent=('%'{3..20}'(e. .)')
+		local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> "
 		functions -t -- -ftb-complete _fzf-tab-apply fzf-tab-complete
 		{
 			echo $ZSH_NAME $ZSH_VERSION
@@ -9195,36 +9195,36 @@ fzf-tab-debug () {
 	}
 }
 fzf-tab-dummy () {
-	
+
 }
 fzf-tab-lscolors::from-mode () {
 	emulate -L zsh
 	setopt cbases octalzeroes extendedglob
 	[[ -z $2 ]] && return 1
-	local -i reg=0 
+	local -i reg=0
 	local -a codes
-	local -i st_mode=$(($2)) 
+	local -i st_mode=$(($2))
 	case $(( st_mode & 0170000 )) in
 		($(( 0140000 ))) codes=($modecolors[so])  ;;
 		($(( 0120000 ))) if ! (($+3))
 			then
-				REPLY=$modecolors[or] 
+				REPLY=$modecolors[or]
 			elif [[ $modecolors[ln] = target ]]
 			then
 				"$0" "$1" "${@:3}"
 			else
-				REPLY=$modecolors[ln] 
+				REPLY=$modecolors[ln]
 			fi
 			return ;;
-		($(( 0100000 ))) codes=() 
+		($(( 0100000 ))) codes=()
 			reg=1  ;;
 		($(( 0060000 ))) codes=($modecolors[bd])  ;;
 		($(( 0040000 ))) codes=($modecolors[di])  ;;
 		($(( 0020000 ))) codes=($modecolors[cd])  ;;
 		($(( 0010000 ))) codes=($modecolors[pi])  ;;
 	esac
-	(( st_mode & 04000 )) && codes+=($modecolors[su]) 
-	(( st_mode & 02000 )) && codes+=($modecolors[sg]) 
+	(( st_mode & 04000 )) && codes+=($modecolors[su])
+	(( st_mode & 02000 )) && codes+=($modecolors[sg])
 	(( ! reg )) && case $(( st_mode & 01002 )) in
 		($(( 01000 ))) codes+=($modecolors[st])  ;;
 		($(( 00002 ))) codes+=($modecolors[ow])  ;;
@@ -9232,7 +9232,7 @@ fzf-tab-lscolors::from-mode () {
 	esac
 	if (( ! $#codes ))
 	then
-		(( st_mode &  0111 )) && codes+=($modecolors[ex]) 
+		(( st_mode &  0111 )) && codes+=($modecolors[ex])
 	fi
 	[[ -n ${REPLY::=${(j:;:)codes}} ]]
 }
@@ -9243,14 +9243,14 @@ fzf-tab-lscolors::from-name () {
 }
 fzf-tab-lscolors::init () {
 	emulate -L zsh
-	local LS_COLORS=${1:-${LS_COLORS:-$LSCOLORS}} 
-	typeset -gA namecolors=(${(@s:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*}) 
-	typeset -gA modecolors=(${(@Ms:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*}) 
+	local LS_COLORS=${1:-${LS_COLORS:-$LSCOLORS}}
+	typeset -gA namecolors=(${(@s:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*})
+	typeset -gA modecolors=(${(@Ms:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*})
 }
 fzf-tab-lscolors::match-by () {
 	emulate -L zsh
 	setopt extendedglob cbases octalzeroes
-	local arg REPLY name=$1 pfx=${0%::match-by} 
+	local arg REPLY name=$1 pfx=${0%::match-by}
 	shift
 	if ! [[ -v namecolors && -v modecolors ]]
 	then
@@ -9262,7 +9262,7 @@ fzf-tab-lscolors::match-by () {
 		shift
 	else
 		local -a stat lstat
-		declare -ga reply=() 
+		declare -ga reply=()
 	fi
 	zmodload -F zsh/stat b:zstat
 	for arg
@@ -9278,30 +9278,30 @@ fzf-tab-lscolors::match-by () {
 				${pfx}::from-mode "$name" "$lstat[3]" $stat[3]
 				if [[ -n $REPLY || ${2[1]} = L ]]
 				then
-					reply+=("$REPLY") 
+					reply+=("$REPLY")
 				else
 					"$0" "$name" g n
 				fi ;;
 			(s | stat) (($#stat)) || zstat -A stat $name || return 1
 				${pfx}::from-mode $name $stat[3]
-				reply+=("$REPLY") 
+				reply+=("$REPLY")
 				if [[ -n $REPLY || ${arg[1]} = S ]]
 				then
-					reply+=("$REPLY") 
+					reply+=("$REPLY")
 				else
 					"$0" "$name" g n
 				fi ;;
 			(f | follow) (($#lstat)) || zstat -A lstat -L $name || return 1
 				reply+=("$lstat[14]")  ;;
 			(a | all) "$0" "$name" g ${${${arg[1]%a}:+L}:-l}
-				reply+=($lstat[14]) 
+				reply+=($lstat[14])
 				if [[ -n $lstat[14] ]]
 				then
 					if [[ -e $name ]]
 					then
 						"$0" "$name" g ${${${arg[1]%a}:+S}:-s}
 					else
-						reply+=($reply[-2]) 
+						reply+=($reply[-2])
 					fi
 				fi ;;
 			(*) return 2 ;;
@@ -9312,11 +9312,11 @@ gbda () {
 	git branch --no-color --merged | command grep -vE "^([+*]|\s*($(git_main_branch)|$(git_develop_branch))\s*$)" | command xargs git branch --delete 2> /dev/null
 }
 gbds () {
-	local default_branch=$(git_main_branch) 
-	(( ! $? )) || default_branch=$(git_develop_branch) 
+	local default_branch=$(git_main_branch)
+	(( ! $? )) || default_branch=$(git_develop_branch)
 	git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch
 	do
-		local merge_base=$(git merge-base $default_branch $branch) 
+		local merge_base=$(git merge-base $default_branch $branch)
 		if [[ $(git cherry $default_branch $(git commit-tree $(git rev-parse $branch\^{tree}) -p $merge_base -m _)) = -* ]]
 		then
 			git branch -D $branch
@@ -9325,7 +9325,7 @@ gbds () {
 }
 gccd () {
 	setopt localoptions extendedglob
-	local repo="${${@[(r)(ssh://*|git://*|ftp(s)#://*|http(s)#://*|*@*)(.git/#)#]}:-$_}" 
+	local repo="${${@[(r)(ssh://*|git://*|ftp(s)#://*|http(s)#://*|*@*)(.git/#)#]}:-$_}"
 	command git clone --recurse-submodules "$@" || return
 	[[ -d "$_" ]] && cd "$_" || cd "${${repo:t}%.git/#}"
 }
@@ -9347,11 +9347,11 @@ getent () {
 	fi
 }
 ggf () {
-	[[ "$#" != 1 ]] && local b="$(git_current_branch)" 
+	[[ "$#" != 1 ]] && local b="$(git_current_branch)"
 	git push --force origin "${b:=$1}"
 }
 ggfl () {
-	[[ "$#" != 1 ]] && local b="$(git_current_branch)" 
+	[[ "$#" != 1 ]] && local b="$(git_current_branch)"
 	git push --force-with-lease origin "${b:=$1}"
 }
 ggl () {
@@ -9359,7 +9359,7 @@ ggl () {
 	then
 		git pull origin "${*}"
 	else
-		[[ "$#" == 0 ]] && local b="$(git_current_branch)" 
+		[[ "$#" == 0 ]] && local b="$(git_current_branch)"
 		git pull origin "${b:=$1}"
 	fi
 }
@@ -9368,7 +9368,7 @@ ggp () {
 	then
 		git push origin "${*}"
 	else
-		[[ "$#" == 0 ]] && local b="$(git_current_branch)" 
+		[[ "$#" == 0 ]] && local b="$(git_current_branch)"
 		git push origin "${b:=$1}"
 	fi
 }
@@ -9381,7 +9381,7 @@ ggpnp () {
 	fi
 }
 ggu () {
-	[[ "$#" != 1 ]] && local b="$(git_current_branch)" 
+	[[ "$#" != 1 ]] && local b="$(git_current_branch)"
 	git pull --rebase origin "${b:=$1}"
 }
 gis () {
@@ -9395,7 +9395,7 @@ gis () {
 git_commits_ahead () {
 	if __git_prompt_git rev-parse --git-dir &> /dev/null
 	then
-		local commits="$(__git_prompt_git rev-list --count @{upstream}..HEAD 2>/dev/null)" 
+		local commits="$(__git_prompt_git rev-list --count @{upstream}..HEAD 2>/dev/null)"
 		if [[ -n "$commits" && "$commits" != 0 ]]
 		then
 			echo "$ZSH_THEME_GIT_COMMITS_AHEAD_PREFIX$commits$ZSH_THEME_GIT_COMMITS_AHEAD_SUFFIX"
@@ -9405,7 +9405,7 @@ git_commits_ahead () {
 git_commits_behind () {
 	if __git_prompt_git rev-parse --git-dir &> /dev/null
 	then
-		local commits="$(__git_prompt_git rev-list --count HEAD..@{upstream} 2>/dev/null)" 
+		local commits="$(__git_prompt_git rev-list --count HEAD..@{upstream} 2>/dev/null)"
 		if [[ -n "$commits" && "$commits" != 0 ]]
 		then
 			echo "$ZSH_THEME_GIT_COMMITS_BEHIND_PREFIX$commits$ZSH_THEME_GIT_COMMITS_BEHIND_SUFFIX"
@@ -9414,8 +9414,8 @@ git_commits_behind () {
 }
 git_current_branch () {
 	local ref
-	ref=$(__git_prompt_git symbolic-ref --quiet HEAD 2> /dev/null) 
-	local ret=$? 
+	ref=$(__git_prompt_git symbolic-ref --quiet HEAD 2> /dev/null)
+	local ret=$?
 	if [[ $ret != 0 ]]
 	then
 		[[ $ret == 128 ]] && return
@@ -9459,8 +9459,8 @@ git_main_branch () {
 }
 git_previous_branch () {
 	local ref
-	ref=$(__git_prompt_git rev-parse --quiet --symbolic-full-name @{-1} 2> /dev/null) 
-	local ret=$? 
+	ref=$(__git_prompt_git rev-parse --quiet --symbolic-full-name @{-1} 2> /dev/null)
+	local ret=$?
 	if [[ $ret != 0 ]] || [[ -z $ref ]]
 	then
 		return
@@ -9509,30 +9509,30 @@ git_prompt_status () {
 }
 git_remote_status () {
 	local remote ahead behind git_remote_status git_remote_status_detailed
-	remote=${$(__git_prompt_git rev-parse --verify ${hook_com[branch]}@{upstream} --symbolic-full-name 2>/dev/null)/refs\/remotes\/} 
+	remote=${$(__git_prompt_git rev-parse --verify ${hook_com[branch]}@{upstream} --symbolic-full-name 2>/dev/null)/refs\/remotes\/}
 	if [[ -n ${remote} ]]
 	then
-		ahead=$(__git_prompt_git rev-list ${hook_com[branch]}@{upstream}..HEAD 2>/dev/null | wc -l) 
-		behind=$(__git_prompt_git rev-list HEAD..${hook_com[branch]}@{upstream} 2>/dev/null | wc -l) 
+		ahead=$(__git_prompt_git rev-list ${hook_com[branch]}@{upstream}..HEAD 2>/dev/null | wc -l)
+		behind=$(__git_prompt_git rev-list HEAD..${hook_com[branch]}@{upstream} 2>/dev/null | wc -l)
 		if [[ $ahead -eq 0 ]] && [[ $behind -eq 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_EQUAL_REMOTE" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_EQUAL_REMOTE"
 		elif [[ $ahead -gt 0 ]] && [[ $behind -eq 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE" 
-			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE"
+			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}"
 		elif [[ $behind -gt 0 ]] && [[ $ahead -eq 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE" 
-			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE"
+			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}"
 		elif [[ $ahead -gt 0 ]] && [[ $behind -gt 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_DIVERGED_REMOTE" 
-			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_DIVERGED_REMOTE"
+			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}"
 		fi
 		if [[ -n $ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_DETAILED ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_PREFIX${remote:gs/%/%%}$git_remote_status_detailed$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_SUFFIX" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_PREFIX${remote:gs/%/%%}$git_remote_status_detailed$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_SUFFIX"
 		fi
 		echo $git_remote_status
 	fi
@@ -9557,20 +9557,20 @@ grename () {
 	fi
 }
 gunwipall () {
-	local _commit=$(git log --grep='--wip--' --invert-grep --max-count=1 --format=format:%H) 
+	local _commit=$(git log --grep='--wip--' --invert-grep --max-count=1 --format=format:%H)
 	if [[ "$_commit" != "$(git rev-parse HEAD)" ]]
 	then
 		git reset $_commit || return 1
 	fi
 }
 gwtabf () {
-	local branch=$1 
-	local repo=$(basename $(git rev-parse --show-toplevel)) 
+	local branch=$1
+	local repo=$(basename $(git rev-parse --show-toplevel))
 	git worktree add -b $branch ../$repo-$branch
 }
 gwtaf () {
-	local branch=$1 
-	local repo=$(basename $(git rev-parse --show-toplevel)) 
+	local branch=$1
+	local repo=$(basename $(git rev-parse --show-toplevel))
 	git worktree add ../$repo-$branch $branch
 }
 gx () {
@@ -9578,7 +9578,7 @@ gx () {
 }
 handle_completion_insecurities () {
 	local -aU insecure_dirs
-	insecure_dirs=(${(f@):-"$(compaudit 2>/dev/null)"}) 
+	insecure_dirs=(${(f@):-"$(compaudit 2>/dev/null)"})
 	[[ -z "${insecure_dirs}" ]] && return
 	print "[oh-my-zsh] Insecure completion-dependent directories detected:"
 	ls -ld "${(@)insecure_dirs}"
@@ -9615,9 +9615,9 @@ history-substring-search-up () {
 }
 is-at-least () {
 	emulate -L zsh
-	local IFS=".-" min_cnt=0 ver_cnt=0 part min_ver version order 
-	min_ver=(${=1}) 
-	version=(${=2:-$ZSH_VERSION} 0) 
+	local IFS=".-" min_cnt=0 ver_cnt=0 part min_ver version order
+	min_ver=(${=1})
+	version=(${=2:-$ZSH_VERSION} 0)
 	while (( $min_cnt <= ${#min_ver} ))
 	do
 		while [[ "$part" != <-> ]]
@@ -9625,7 +9625,7 @@ is-at-least () {
 			(( ++ver_cnt > ${#version} )) && return 0
 			if [[ ${version[ver_cnt]} = *[0-9][^0-9]* ]]
 			then
-				order=(${version[ver_cnt]} ${min_ver[ver_cnt]}) 
+				order=(${version[ver_cnt]} ${min_ver[ver_cnt]})
 				if [[ ${version[ver_cnt]} = <->* ]]
 				then
 					[[ $order != ${${(On)order}} ]] && return 1
@@ -9634,7 +9634,7 @@ is-at-least () {
 				fi
 				[[ $order[1] != $order[2] ]] && return 0
 			fi
-			part=${version[ver_cnt]##*[^0-9]} 
+			part=${version[ver_cnt]##*[^0-9]}
 		done
 		while true
 		do
@@ -9643,17 +9643,17 @@ is-at-least () {
 		done
 		(( part > min_ver[min_cnt] )) && return 0
 		(( part < min_ver[min_cnt] )) && return 1
-		part='' 
+		part=''
 	done
 }
 is_plugin () {
-	local base_dir=$1 
-	local name=$2 
+	local base_dir=$1
+	local name=$2
 	builtin test -f $base_dir/plugins/$name/$name.plugin.zsh || builtin test -f $base_dir/plugins/$name/_$name
 }
 is_theme () {
-	local base_dir=$1 
-	local name=$2 
+	local base_dir=$1
+	local name=$2
 	builtin test -f $base_dir/$name.zsh-theme
 }
 jenv_prompt_info () {
@@ -9664,7 +9664,7 @@ mkcd () {
 }
 nvm_prompt_info () {
 	which nvm &> /dev/null || return
-	local nvm_prompt=${$(nvm current)#v} 
+	local nvm_prompt=${$(nvm current)#v}
 	echo "${ZSH_THEME_NVM_PROMPT_PREFIX}${nvm_prompt:gs/%/%%}${ZSH_THEME_NVM_PROMPT_SUFFIX}"
 }
 omz () {
@@ -9673,7 +9673,7 @@ omz () {
 		_omz::help
 		return 1
 	}
-	local command="$1" 
+	local command="$1"
 	shift
 	(( ${+functions[_omz::$command]} )) || {
 		_omz::help
@@ -9684,17 +9684,17 @@ omz () {
 omz_diagnostic_dump () {
 	emulate -L zsh
 	builtin echo "Generating diagnostic dump; please be patient..."
-	local thisfcn=omz_diagnostic_dump 
+	local thisfcn=omz_diagnostic_dump
 	local -A opts
 	local opt_verbose opt_noverbose opt_outfile
-	local timestamp=$(date +%Y%m%d-%H%M%S) 
-	local outfile=omz_diagdump_$timestamp.txt 
+	local timestamp=$(date +%Y%m%d-%H%M%S)
+	local outfile=omz_diagdump_$timestamp.txt
 	builtin zparseopts -A opts -D -- "v+=opt_verbose" "V+=opt_noverbose"
-	local verbose n_verbose=${#opt_verbose} n_noverbose=${#opt_noverbose} 
+	local verbose n_verbose=${#opt_verbose} n_noverbose=${#opt_noverbose}
 	(( verbose = 1 + n_verbose - n_noverbose ))
 	if [[ ${#*} > 0 ]]
 	then
-		opt_outfile=$1 
+		opt_outfile=$1
 	fi
 	if [[ ${#*} > 1 ]]
 	then
@@ -9703,7 +9703,7 @@ omz_diagnostic_dump () {
 	fi
 	if [[ -n "$opt_outfile" ]]
 	then
-		outfile="$opt_outfile" 
+		outfile="$opt_outfile"
 	fi
 	_omz_diag_dump_one_big_text &> "$outfile"
 	if [[ $? != 0 ]]
@@ -9743,7 +9743,7 @@ omz_termsupport_cwd () {
 	local URL_HOST URL_PATH
 	URL_HOST="$(omz_urlencode -P $HOST)"  || return 1
 	URL_PATH="$(omz_urlencode -P $PWD)"  || return 1
-	[[ -z "$KONSOLE_PROFILE_NAME" && -z "$KONSOLE_DBUS_SESSION" ]] || URL_HOST="" 
+	[[ -z "$KONSOLE_PROFILE_NAME" && -z "$KONSOLE_DBUS_SESSION" ]] || URL_HOST=""
 	printf "\e]7;file://%s%s\e\\" "${URL_HOST}" "${URL_PATH}"
 }
 omz_termsupport_precmd () {
@@ -9755,10 +9755,10 @@ omz_termsupport_preexec () {
 	emulate -L zsh
 	setopt extended_glob
 	local -a cmdargs
-	cmdargs=("${(z)2}") 
+	cmdargs=("${(z)2}")
 	if [[ "${cmdargs[1]}" = fg ]]
 	then
-		local job_id jobspec="${cmdargs[2]#%}" 
+		local job_id jobspec="${cmdargs[2]#%}"
 		case "$jobspec" in
 			(<->) job_id=${jobspec}  ;;
 			("" | % | +) job_id=${(k)jobstates[(r)*:+:*]}  ;;
@@ -9768,29 +9768,29 @@ omz_termsupport_preexec () {
 		esac
 		if [[ -n "${jobtexts[$job_id]}" ]]
 		then
-			1="${jobtexts[$job_id]}" 
-			2="${jobtexts[$job_id]}" 
+			1="${jobtexts[$job_id]}"
+			2="${jobtexts[$job_id]}"
 		fi
 	fi
-	local CMD="${1[(wr)^(*=*|sudo|ssh|mosh|rake|-*)]:gs/%/%%}" 
-	local LINE="${2:gs/%/%%}" 
+	local CMD="${1[(wr)^(*=*|sudo|ssh|mosh|rake|-*)]:gs/%/%%}"
+	local LINE="${2:gs/%/%%}"
 	title "$CMD" "%100>...>${LINE}%<<"
 }
 omz_urldecode () {
 	emulate -L zsh
-	local encoded_url=$1 
-	local caller_encoding=$langinfo[CODESET] 
-	local LC_ALL=C 
+	local encoded_url=$1
+	local caller_encoding=$langinfo[CODESET]
+	local LC_ALL=C
 	export LC_ALL
-	local tmp=${encoded_url:gs/+/ /} 
-	tmp=${tmp:gs/\\/\\\\/} 
-	tmp=${tmp:gs/%/\\x/} 
-	local decoded="$(printf -- "$tmp")" 
+	local tmp=${encoded_url:gs/+/ /}
+	tmp=${tmp:gs/\\/\\\\/}
+	tmp=${tmp:gs/%/\\x/}
+	local decoded="$(printf -- "$tmp")"
 	local -a safe_encodings
-	safe_encodings=(UTF-8 utf8 US-ASCII) 
+	safe_encodings=(UTF-8 utf8 US-ASCII)
 	if [[ -z ${safe_encodings[(r)$caller_encoding]} ]]
 	then
-		decoded=$(echo -E "$decoded" | iconv -f UTF-8 -t $caller_encoding) 
+		decoded=$(echo -E "$decoded" | iconv -f UTF-8 -t $caller_encoding)
 		if [[ $? != 0 ]]
 		then
 			echo "Error converting string from UTF-8 to $caller_encoding" >&2
@@ -9804,56 +9804,56 @@ omz_urlencode () {
 	setopt norematchpcre
 	local -a opts
 	zparseopts -D -E -a opts r m P
-	local in_str="$@" 
-	local url_str="" 
+	local in_str="$@"
+	local url_str=""
 	local spaces_as_plus
 	if [[ -z $opts[(r)-P] ]]
 	then
-		spaces_as_plus=1 
+		spaces_as_plus=1
 	fi
-	local str="$in_str" 
-	local encoding=$langinfo[CODESET] 
+	local str="$in_str"
+	local encoding=$langinfo[CODESET]
 	local safe_encodings
-	safe_encodings=(UTF-8 utf8 US-ASCII) 
+	safe_encodings=(UTF-8 utf8 US-ASCII)
 	if [[ -z ${safe_encodings[(r)$encoding]} ]]
 	then
-		str=$(echo -E "$str" | iconv -f $encoding -t UTF-8) 
+		str=$(echo -E "$str" | iconv -f $encoding -t UTF-8)
 		if [[ $? != 0 ]]
 		then
 			echo "Error converting string from $encoding to UTF-8" >&2
 			return 1
 		fi
 	fi
-	local i byte ord LC_ALL=C 
+	local i byte ord LC_ALL=C
 	export LC_ALL
-	local reserved=';/?:@&=+$,' 
-	local mark='_.!~*''()-' 
-	local dont_escape="[A-Za-z0-9" 
+	local reserved=';/?:@&=+$,'
+	local mark='_.!~*''()-'
+	local dont_escape="[A-Za-z0-9"
 	if [[ -z $opts[(r)-r] ]]
 	then
-		dont_escape+=$reserved 
+		dont_escape+=$reserved
 	fi
 	if [[ -z $opts[(r)-m] ]]
 	then
-		dont_escape+=$mark 
+		dont_escape+=$mark
 	fi
-	dont_escape+="]" 
-	local url_str="" 
+	dont_escape+="]"
+	local url_str=""
 	for ((i = 1; i <= ${#str}; ++i )) do
-		byte="$str[i]" 
+		byte="$str[i]"
 		if [[ "$byte" =~ "$dont_escape" ]]
 		then
-			url_str+="$byte" 
+			url_str+="$byte"
 		else
 			if [[ "$byte" == " " && -n $spaces_as_plus ]]
 			then
-				url_str+="+" 
+				url_str+="+"
 			elif [[ "$PREFIX" = *com.termux* ]]
 			then
-				url_str+="$byte" 
+				url_str+="$byte"
 			else
-				ord=$(( [##16] #byte )) 
-				url_str+="%$ord" 
+				ord=$(( [##16] #byte ))
+				url_str+="%$ord"
 			fi
 		fi
 	done
@@ -9865,7 +9865,7 @@ open_command () {
 		(darwin*) open_cmd='open'  ;;
 		(cygwin*) open_cmd='cygstart'  ;;
 		(linux*) [[ "$(uname -r)" != *icrosoft* ]] && open_cmd='nohup xdg-open'  || {
-				open_cmd='cmd.exe /c start ""' 
+				open_cmd='cmd.exe /c start ""'
 				[[ -e "$1" ]] && {
 					1="$(wslpath -w "${1:a}")"  || return 1
 				}
@@ -9884,18 +9884,18 @@ open_command () {
 parse_git_dirty () {
 	local STATUS
 	local -a FLAGS
-	FLAGS=('--porcelain') 
+	FLAGS=('--porcelain')
 	if [[ "$(__git_prompt_git config --get oh-my-zsh.hide-dirty)" != "1" ]]
 	then
 		if [[ "${DISABLE_UNTRACKED_FILES_DIRTY:-}" == "true" ]]
 		then
-			FLAGS+='--untracked-files=no' 
+			FLAGS+='--untracked-files=no'
 		fi
 		case "${GIT_STATUS_IGNORE_SUBMODULES:-}" in
 			(git)  ;;
 			(*) FLAGS+="--ignore-submodules=${GIT_STATUS_IGNORE_SUBMODULES:-dirty}"  ;;
 		esac
-		STATUS=$(__git_prompt_git status ${FLAGS} 2> /dev/null | tail -n 1) 
+		STATUS=$(__git_prompt_git status ${FLAGS} 2> /dev/null | tail -n 1)
 	fi
 	if [[ -n $STATUS ]]
 	then
@@ -9905,7 +9905,7 @@ parse_git_dirty () {
 	fi
 }
 prompt_starship_precmd () {
-	STARSHIP_CMD_STATUS=$? STARSHIP_PIPE_STATUS=(${pipestatus[@]}) 
+	STARSHIP_CMD_STATUS=$? STARSHIP_PIPE_STATUS=(${pipestatus[@]})
 	if (( ${+STARSHIP_START_TIME} ))
 	then
 		__starship_get_time && (( STARSHIP_DURATION = STARSHIP_CAPTURED_TIME - STARSHIP_START_TIME ))
@@ -9913,10 +9913,10 @@ prompt_starship_precmd () {
 	else
 		unset STARSHIP_DURATION STARSHIP_CMD_STATUS STARSHIP_PIPE_STATUS
 	fi
-	STARSHIP_JOBS_COUNT=${#jobstates} 
+	STARSHIP_JOBS_COUNT=${#jobstates}
 }
 prompt_starship_preexec () {
-	__starship_get_time && STARSHIP_START_TIME=$STARSHIP_CAPTURED_TIME 
+	__starship_get_time && STARSHIP_START_TIME=$STARSHIP_CAPTURED_TIME
 }
 pyenv_prompt_info () {
 	return 1
@@ -9925,9 +9925,9 @@ rbenv_prompt_info () {
 	return 1
 }
 regexp-replace () {
-	argv=("$1" "$2" "$3") 
-	4=0 
-	[[ -o re_match_pcre ]] && 4=1 
+	argv=("$1" "$2" "$3")
+	4=0
+	[[ -o re_match_pcre ]] && 4=1
 	emulate -L zsh
 	local MATCH MBEGIN MEND
 	local -a match mbegin mend
@@ -9935,43 +9935,43 @@ regexp-replace () {
 	then
 		zmodload zsh/pcre || return 2
 		pcre_compile -- "$2" && pcre_study || return 2
-		4=0 6= 
+		4=0 6=
 		local ZPCRE_OP
 		while pcre_match -b -n $4 -- "${(P)1}"
 		do
-			5=${(e)3} 
-			argv+=(${(s: :)ZPCRE_OP} "$5") 
-			4=$((argv[-2] + (argv[-3] == argv[-2]))) 
+			5=${(e)3}
+			argv+=(${(s: :)ZPCRE_OP} "$5")
+			4=$((argv[-2] + (argv[-3] == argv[-2])))
 		done
 		(($# > 6)) || return
 		set +o multibyte
-		5= 6=1 
+		5= 6=1
 		for 2 3 4 in "$@[7,-1]"
 		do
-			5+=${(P)1[$6,$2]}$4 
-			6=$(($3 + 1)) 
+			5+=${(P)1[$6,$2]}$4
+			6=$(($3 + 1))
 		done
-		5+=${(P)1[$6,-1]} 
+		5+=${(P)1[$6,-1]}
 	else
-		4=${(P)1} 
+		4=${(P)1}
 		while [[ -n $4 ]]
 		do
 			if [[ $4 =~ $2 ]]
 			then
-				5+=${4[1,MBEGIN-1]}${(e)3} 
+				5+=${4[1,MBEGIN-1]}${(e)3}
 				if ((MEND < MBEGIN))
 				then
 					((MEND++))
-					5+=${4[1]} 
+					5+=${4[1]}
 				fi
-				4=${4[MEND+1,-1]} 
-				6=1 
+				4=${4[MEND+1,-1]}
+				6=1
 			else
 				break
 			fi
 		done
 		[[ -n $6 ]] || return
-		5+=$4 
+		5+=$4
 	fi
 	eval $1=\$5
 }
@@ -9981,13 +9981,13 @@ ruby_prompt_info () {
 rvm_prompt_info () {
 	[ -f $HOME/.rvm/bin/rvm-prompt ] || return 1
 	local rvm_prompt
-	rvm_prompt=$($HOME/.rvm/bin/rvm-prompt ${=ZSH_THEME_RVM_PROMPT_OPTIONS} 2>/dev/null) 
+	rvm_prompt=$($HOME/.rvm/bin/rvm-prompt ${=ZSH_THEME_RVM_PROMPT_OPTIONS} 2>/dev/null)
 	[[ -z "${rvm_prompt}" ]] && return 1
 	echo "${ZSH_THEME_RUBY_PROMPT_PREFIX}${rvm_prompt:gs/%/%%}${ZSH_THEME_RUBY_PROMPT_SUFFIX}"
 }
 spectrum_bls () {
 	setopt localoptions nopromptsubst
-	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris} 
+	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris}
 	for code in {000..255}
 	do
 		print -P -- "$code: ${BG[$code]}${ZSH_SPECTRUM_TEXT}%{$reset_color%}"
@@ -9995,38 +9995,38 @@ spectrum_bls () {
 }
 spectrum_ls () {
 	setopt localoptions nopromptsubst
-	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris} 
+	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris}
 	for code in {000..255}
 	do
 		print -P -- "$code: ${FG[$code]}${ZSH_SPECTRUM_TEXT}%{$reset_color%}"
 	done
 }
 ssmc () {
-	local profile=${1:-petlab} 
+	local profile=${1:-petlab}
 	echo "Fetching instances from AWS..."
 	local instances=$(aws ec2 describe-instances \
         --profile "$profile" \
         --filters "Name=instance-state-name,Values=running" \
         --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,LaunchTime]' \
-        --output text 2>/dev/null) 
+        --output text 2>/dev/null)
 	if [ -z "$instances" ]
 	then
 		echo "No running instances found or AWS CLI error"
 		return 1
 	fi
-	local formatted_instances="" 
+	local formatted_instances=""
 	while IFS=$'\t' read -r name instance_id instance_type launch_time
 	do
 		if [ "$name" = "None" ] || [ -z "$name" ]
 		then
-			name="Unnamed" 
+			name="Unnamed"
 		fi
-		formatted_instances+="$name ($instance_type) - $instance_id"$'\n' 
+		formatted_instances+="$name ($instance_type) - $instance_id"$'\n'
 	done <<< "$instances"
-	local selection=$(echo "$formatted_instances" | fzf --prompt="Select EC2 instance: " --height=40% --border) 
+	local selection=$(echo "$formatted_instances" | fzf --prompt="Select EC2 instance: " --height=40% --border)
 	if [ -n "$selection" ]
 	then
-		local instance_id=$(echo "$selection" | grep -o 'i-[a-f0-9]*$') 
+		local instance_id=$(echo "$selection" | grep -o 'i-[a-f0-9]*$')
 		if [ -n "$instance_id" ]
 		then
 			echo "Connecting to instance: $instance_id with profile: $profile"
@@ -10069,19 +10069,19 @@ takegit () {
 }
 takeurl () {
 	local data thedir
-	data="$(mktemp)" 
+	data="$(mktemp)"
 	curl -L "$1" > "$data"
 	tar xf "$data"
-	thedir="$(tar tf "$data" | head -n 1)" 
+	thedir="$(tar tf "$data" | head -n 1)"
 	rm "$data"
 	cd "$thedir"
 }
 takezip () {
 	local data thedir
-	data="$(mktemp)" 
+	data="$(mktemp)"
 	curl -L "$1" > "$data"
 	unzip "$data" -d "./"
-	thedir="$(unzip -l "$data" | awk 'NR==4 {print $4}' | sed 's/\/.*//')" 
+	thedir="$(unzip -l "$data" | awk 'NR==4 {print $4}' | sed 's/\/.*//')"
 	rm "$data"
 	cd "$thedir"
 }
@@ -10165,7 +10165,7 @@ zle-line-init () {
 zrecompile () {
 	setopt localoptions extendedglob noshwordsplit noksharrays
 	local opt check quiet zwc files re file pre ret map tmp mesg pats
-	tmp=() 
+	tmp=()
 	while getopts ":tqp" opt
 	do
 		case $opt in
@@ -10174,7 +10174,7 @@ zrecompile () {
 			(p) pats=yes  ;;
 			(*) if [[ -n $pats ]]
 				then
-					tmp=($tmp $OPTARG) 
+					tmp=($tmp $OPTARG)
 				else
 					print -u2 zrecompile: bad option: -$OPTARG
 					return 1
@@ -10184,27 +10184,27 @@ zrecompile () {
 	shift OPTIND-${#tmp}-1
 	if [[ -n $check ]]
 	then
-		ret=1 
+		ret=1
 	else
-		ret=0 
+		ret=0
 	fi
 	if [[ -n $pats ]]
 	then
 		local end num
 		while (( $# ))
 		do
-			end=$argv[(i)--] 
+			end=$argv[(i)--]
 			if [[ end -le $# ]]
 			then
-				files=($argv[1,end-1]) 
+				files=($argv[1,end-1])
 				shift end
 			else
-				files=($argv) 
-				argv=() 
+				files=($argv)
+				argv=()
 			fi
-			tmp=() 
-			map=() 
-			OPTIND=1 
+			tmp=()
+			map=()
+			OPTIND=1
 			while getopts :MR opt $files
 			do
 				case $opt in
@@ -10214,37 +10214,37 @@ zrecompile () {
 			done
 			shift OPTIND-1 files
 			(( $#files )) || continue
-			files=($files[1] ${files[2,-1]:#*(.zwc|~)}) 
+			files=($files[1] ${files[2,-1]:#*(.zwc|~)})
 			(( $#files )) || continue
-			zwc=${files[1]%.zwc}.zwc 
+			zwc=${files[1]%.zwc}.zwc
 			shift 1 files
-			(( $#files )) || files=(${zwc%.zwc}) 
+			(( $#files )) || files=(${zwc%.zwc})
 			if [[ -f $zwc ]]
 			then
-				num=$(zcompile -t $zwc | wc -l) 
+				num=$(zcompile -t $zwc | wc -l)
 				if [[ num-1 -ne $#files ]]
 				then
-					re=yes 
+					re=yes
 				else
-					re= 
+					re=
 					for file in $files
 					do
 						if [[ $file -nt $zwc ]]
 						then
-							re=yes 
+							re=yes
 							break
 						fi
 					done
 				fi
 			else
-				re=yes 
+				re=yes
 			fi
 			if [[ -n $re ]]
 			then
 				if [[ -n $check ]]
 				then
 					[[ -z $quiet ]] && print $zwc needs re-compilation
-					ret=0 
+					ret=0
 				else
 					[[ -z $quiet ]] && print -n "re-compiling ${zwc}: "
 					if [[ -z "$quiet" ]] && {
@@ -10259,7 +10259,7 @@ zrecompile () {
 						}
 					then
 						[[ -z $quiet ]] && print "re-compiling ${zwc}: failed"
-						ret=1 
+						ret=1
 					fi
 				fi
 			fi
@@ -10268,40 +10268,40 @@ zrecompile () {
 	fi
 	if (( $# ))
 	then
-		argv=(${^argv}/*.zwc(ND) ${^argv}.zwc(ND) ${(M)argv:#*.zwc}) 
+		argv=(${^argv}/*.zwc(ND) ${^argv}.zwc(ND) ${(M)argv:#*.zwc})
 	else
-		argv=(${^fpath}/*.zwc(ND) ${^fpath}.zwc(ND) ${(M)fpath:#*.zwc}) 
+		argv=(${^fpath}/*.zwc(ND) ${^fpath}.zwc(ND) ${(M)fpath:#*.zwc})
 	fi
-	argv=(${^argv%.zwc}.zwc) 
+	argv=(${^argv%.zwc}.zwc)
 	for zwc
 	do
-		files=(${(f)"$(zcompile -t $zwc)"}) 
+		files=(${(f)"$(zcompile -t $zwc)"})
 		if [[ $files[1] = *\(mapped\)* ]]
 		then
-			map=-M 
-			mesg='succeeded (old saved)' 
+			map=-M
+			mesg='succeeded (old saved)'
 		else
-			map=-R 
-			mesg=succeeded 
+			map=-R
+			mesg=succeeded
 		fi
 		if [[ $zwc = */* ]]
 		then
-			pre=${zwc%/*}/ 
+			pre=${zwc%/*}/
 		else
-			pre= 
+			pre=
 		fi
 		if [[ $files[1] != *$ZSH_VERSION ]]
 		then
-			re=yes 
+			re=yes
 		else
-			re= 
+			re=
 		fi
-		files=(${pre}${^files[2,-1]:#/*} ${(M)files[2,-1]:#/*}) 
+		files=(${pre}${^files[2,-1]:#/*} ${(M)files[2,-1]:#/*})
 		[[ -z $re ]] && for file in $files
 		do
 			if [[ $file -nt $zwc ]]
 			then
-				re=yes 
+				re=yes
 				break
 			fi
 		done
@@ -10310,14 +10310,14 @@ zrecompile () {
 			if [[ -n $check ]]
 			then
 				[[ -z $quiet ]] && print $zwc needs re-compilation
-				ret=0 
+				ret=0
 			else
 				[[ -z $quiet ]] && print -n "re-compiling ${zwc}: "
-				tmp=(${^files}(N)) 
+				tmp=(${^files}(N))
 				if [[ $#tmp -ne $#files ]]
 				then
 					[[ -z $quiet ]] && print 'failed (missing files)'
-					ret=1 
+					ret=1
 				else
 					if [[ -z "$quiet" ]] && mv -f $zwc ${zwc}.old && zcompile $map $zwc $files
 					then
@@ -10327,7 +10327,7 @@ zrecompile () {
 						}
 					then
 						[[ -z $quiet ]] && print "re-compiling ${zwc}: failed"
-						ret=1 
+						ret=1
 					fi
 				fi
 			fi
@@ -10343,58 +10343,58 @@ VCS_INFO_formats () {
 	local msg tmp
 	local -i i
 	local -A hook_com
-	hook_com=(action "$1" action_orig "$1" branch "$2" branch_orig "$2" base "$3" base_orig "$3" staged "$4" staged_orig "$4" unstaged "$5" unstaged_orig "$5" revision "$6" revision_orig "$6" misc "$7" misc_orig "$7" vcs "${vcs}" vcs_orig "${vcs}") 
-	hook_com[base-name]="${${hook_com[base]}:t}" 
-	hook_com[base-name_orig]="${hook_com[base-name]}" 
-	hook_com[subdir]="$(VCS_INFO_reposub ${hook_com[base]})" 
-	hook_com[subdir_orig]="${hook_com[subdir]}" 
+	hook_com=(action "$1" action_orig "$1" branch "$2" branch_orig "$2" base "$3" base_orig "$3" staged "$4" staged_orig "$4" unstaged "$5" unstaged_orig "$5" revision "$6" revision_orig "$6" misc "$7" misc_orig "$7" vcs "${vcs}" vcs_orig "${vcs}")
+	hook_com[base-name]="${${hook_com[base]}:t}"
+	hook_com[base-name_orig]="${hook_com[base-name]}"
+	hook_com[subdir]="$(VCS_INFO_reposub ${hook_com[base]})"
+	hook_com[subdir_orig]="${hook_com[subdir]}"
 	: vcs_info-patch-9b9840f2-91e5-4471-af84-9e9a0dc68c1b
 	for tmp in base base-name branch misc revision subdir
 	do
-		hook_com[$tmp]="${hook_com[$tmp]//\%/%%}" 
+		hook_com[$tmp]="${hook_com[$tmp]//\%/%%}"
 	done
 	VCS_INFO_hook 'post-backend'
 	if [[ -n ${hook_com[action]} ]]
 	then
 		zstyle -a ":vcs_info:${vcs}:${usercontext}:${rrn}" actionformats msgs
-		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b|%a]%u%c-' 
+		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b|%a]%u%c-'
 	else
 		zstyle -a ":vcs_info:${vcs}:${usercontext}:${rrn}" formats msgs
-		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b]%u%c-' 
+		(( ${#msgs} < 1 )) && msgs[1]=' (%s)-[%b]%u%c-'
 	fi
 	if [[ -n ${hook_com[staged]} ]]
 	then
 		zstyle -s ":vcs_info:${vcs}:${usercontext}:${rrn}" stagedstr tmp
-		[[ -z ${tmp} ]] && hook_com[staged]='S'  || hook_com[staged]=${tmp} 
+		[[ -z ${tmp} ]] && hook_com[staged]='S'  || hook_com[staged]=${tmp}
 	fi
 	if [[ -n ${hook_com[unstaged]} ]]
 	then
 		zstyle -s ":vcs_info:${vcs}:${usercontext}:${rrn}" unstagedstr tmp
-		[[ -z ${tmp} ]] && hook_com[unstaged]='U'  || hook_com[unstaged]=${tmp} 
+		[[ -z ${tmp} ]] && hook_com[unstaged]='U'  || hook_com[unstaged]=${tmp}
 	fi
 	if [[ ${quiltmode} != 'standalone' ]] && VCS_INFO_hook "pre-addon-quilt"
 	then
 		local REPLY
 		VCS_INFO_quilt addon
-		hook_com[quilt]="${REPLY}" 
+		hook_com[quilt]="${REPLY}"
 		unset REPLY
 	elif [[ ${quiltmode} == 'standalone' ]]
 	then
-		hook_com[quilt]=${hook_com[misc]} 
+		hook_com[quilt]=${hook_com[misc]}
 	fi
-	(( ${#msgs} > maxexports )) && msgs[$(( maxexports + 1 )),-1]=() 
+	(( ${#msgs} > maxexports )) && msgs[$(( maxexports + 1 )),-1]=()
 	for i in {1..${#msgs}}
 	do
 		if VCS_INFO_hook "set-message" $(( $i - 1 )) "${msgs[$i]}"
 		then
 			zformat -f msg ${msgs[$i]} a:${hook_com[action]} b:${hook_com[branch]} c:${hook_com[staged]} i:${hook_com[revision]} m:${hook_com[misc]} r:${hook_com[base-name]} s:${hook_com[vcs]} u:${hook_com[unstaged]} Q:${hook_com[quilt]} R:${hook_com[base]} S:${hook_com[subdir]}
-			msgs[$i]=${msg} 
+			msgs[$i]=${msg}
 		else
-			msgs[$i]=${hook_com[message]} 
+			msgs[$i]=${hook_com[message]}
 		fi
 	done
-	hook_com=() 
-	backend_misc=() 
+	hook_com=()
+	backend_misc=()
 	return 0
 }
 add-zle-hook-widget () {
@@ -10404,8 +10404,8 @@ add-zle-hook-widget () {
 add-zsh-hook () {
 	emulate -L zsh
 	local -a hooktypes
-	hooktypes=(chpwd precmd preexec periodic zshaddhistory zshexit zsh_directory_name) 
-	local usage="Usage: add-zsh-hook hook function\nValid hooks are:\n  $hooktypes" 
+	hooktypes=(chpwd precmd preexec periodic zshaddhistory zshexit zsh_directory_name)
+	local usage="Usage: add-zsh-hook hook function\nValid hooks are:\n  $hooktypes"
 	local opt
 	local -a autoopts
 	integer del list help
@@ -10430,8 +10430,8 @@ add-zsh-hook () {
 		print -u$(( 2 - help )) $usage
 		return $(( 1 - help ))
 	fi
-	local hook="${1}_functions" 
-	local fn="$2" 
+	local hook="${1}_functions"
+	local fn="$2"
 	if (( del ))
 	then
 		if (( ${(P)+hook} ))
@@ -10477,11 +10477,11 @@ asdf () {
 	esac
 }
 aws-sso () {
-	local profile=${1:-petlab} 
+	local profile=${1:-petlab}
 	aws sso login --profile "$profile"
 	eval "$(aws configure export-credentials --profile "$profile" --format env)"
-	export AWS_DEFAULT_PROFILE="$profile" 
-	export AWS_PROFILE="$profile" 
+	export AWS_DEFAULT_PROFILE="$profile"
+	export AWS_PROFILE="$profile"
 	if ! aws sts get-caller-identity > /dev/null 2>&1
 	then
 		echo "Failed to get credentials"
@@ -10517,10 +10517,10 @@ bzr_prompt_info () {
 	bzr_branch=$(bzr nick 2>/dev/null)  || return
 	if [[ -n "$bzr_branch" ]]
 	then
-		local bzr_dirty="" 
+		local bzr_dirty=""
 		if [[ -n $(bzr status 2>/dev/null) ]]
 		then
-			bzr_dirty=" %{$fg[red]%}*%{$reset_color%}" 
+			bzr_dirty=" %{$fg[red]%}*%{$reset_color%}"
 		fi
 		printf "%s%s%s%s" "$ZSH_THEME_SCM_PROMPT_PREFIX" "bzr::${bzr_branch##*:}" "$bzr_dirty" "$ZSH_THEME_GIT_PROMPT_SUFFIX"
 	fi
@@ -10541,47 +10541,47 @@ clippaste () {
 colors () {
 	emulate -L zsh
 	typeset -Ag color colour
-	color=(00 none 01 bold 02 faint 22 normal 03 italic 23 no-italic 04 underline 24 no-underline 05 blink 25 no-blink 07 reverse 27 no-reverse 08 conceal 28 no-conceal 30 black 40 bg-black 31 red 41 bg-red 32 green 42 bg-green 33 yellow 43 bg-yellow 34 blue 44 bg-blue 35 magenta 45 bg-magenta 36 cyan 46 bg-cyan 37 white 47 bg-white 39 default 49 bg-default) 
+	color=(00 none 01 bold 02 faint 22 normal 03 italic 23 no-italic 04 underline 24 no-underline 05 blink 25 no-blink 07 reverse 27 no-reverse 08 conceal 28 no-conceal 30 black 40 bg-black 31 red 41 bg-red 32 green 42 bg-green 33 yellow 43 bg-yellow 34 blue 44 bg-blue 35 magenta 45 bg-magenta 36 cyan 46 bg-cyan 37 white 47 bg-white 39 default 49 bg-default)
 	local k
 	for k in ${(k)color}
 	do
-		color[${color[$k]}]=$k 
+		color[${color[$k]}]=$k
 	done
 	for k in ${color[(I)3?]}
 	do
-		color[fg-${color[$k]}]=$k 
+		color[fg-${color[$k]}]=$k
 	done
 	for k in grey gray
 	do
-		color[$k]=${color[black]} 
-		color[fg-$k]=${color[$k]} 
-		color[bg-$k]=${color[bg-black]} 
+		color[$k]=${color[black]}
+		color[fg-$k]=${color[$k]}
+		color[bg-$k]=${color[bg-black]}
 	done
-	colour=(${(kv)color}) 
-	local lc=$'\e[' rc=m 
+	colour=(${(kv)color})
+	local lc=$'\e[' rc=m
 	typeset -Hg reset_color bold_color
-	reset_color="$lc${color[none]}$rc" 
-	bold_color="$lc${color[bold]}$rc" 
+	reset_color="$lc${color[none]}$rc"
+	bold_color="$lc${color[bold]}$rc"
 	typeset -AHg fg fg_bold fg_no_bold
 	for k in ${(k)color[(I)fg-*]}
 	do
-		fg[${k#fg-}]="$lc${color[$k]}$rc" 
-		fg_bold[${k#fg-}]="$lc${color[bold]};${color[$k]}$rc" 
-		fg_no_bold[${k#fg-}]="$lc${color[normal]};${color[$k]}$rc" 
+		fg[${k#fg-}]="$lc${color[$k]}$rc"
+		fg_bold[${k#fg-}]="$lc${color[bold]};${color[$k]}$rc"
+		fg_no_bold[${k#fg-}]="$lc${color[normal]};${color[$k]}$rc"
 	done
 	typeset -AHg bg bg_bold bg_no_bold
 	for k in ${(k)color[(I)bg-*]}
 	do
-		bg[${k#bg-}]="$lc${color[$k]}$rc" 
-		bg_bold[${k#bg-}]="$lc${color[bold]};${color[$k]}$rc" 
-		bg_no_bold[${k#bg-}]="$lc${color[normal]};${color[$k]}$rc" 
+		bg[${k#bg-}]="$lc${color[$k]}$rc"
+		bg_bold[${k#bg-}]="$lc${color[bold]};${color[$k]}$rc"
+		bg_no_bold[${k#bg-}]="$lc${color[normal]};${color[$k]}$rc"
 	done
 }
 compadd () {
 	local -A apre hpre dscrs _oad _mesg
 	local -a isfile _opts __ expl
 	zparseopts -a _opts P:=apre p:=hpre d:=dscrs X+:=expl O:=_oad A:=_oad D:=_oad f=isfile i: S: s: I: x:=_mesg r: R: W: F: M+: E: q e Q n U C J:=__ V:=__ a=__ l=__ k=__ o::=__ 1=__ 2=__
-	_ftb_curcontext=${curcontext#:} 
+	_ftb_curcontext=${curcontext#:}
 	if (( $#_oad != 0 || ! IN_FZF_TAB )) || {
 			-ftb-zstyle -m disabled-on "any"
 		} || (
@@ -10596,10 +10596,10 @@ compadd () {
 	local -a __hits __dscr
 	if (( $#dscrs == 1 ))
 	then
-		__dscr=("${(@P)${(v)dscrs}}") 
+		__dscr=("${(@P)${(v)dscrs}}")
 	fi
 	builtin compadd -A __hits -D __dscr "$@"
-	local ret=$? 
+	local ret=$?
 	if (( $#__hits == 0 ))
 	then
 		if is-at-least 5.9 && (( $#_mesg != 0 ))
@@ -10608,28 +10608,28 @@ compadd () {
 		fi
 		return $ret
 	fi
-	expl=$expl[2] 
-	[[ -n $expl ]] && _ftb_groups+=$expl 
-	local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX) 
-	local key expanded __tmp_value=$'<\0>' 
+	expl=$expl[2]
+	[[ -n $expl ]] && _ftb_groups+=$expl
+	local -a keys=(apre hpre PREFIX SUFFIX IPREFIX ISUFFIX)
+	local key expanded __tmp_value=$'<\0>'
 	for key in $keys
 	do
-		expanded=${(P)key} 
+		expanded=${(P)key}
 		if [[ -n $expanded ]]
 		then
-			__tmp_value+=$'\0'$key$'\0'$expanded 
+			__tmp_value+=$'\0'$key$'\0'$expanded
 		fi
 	done
 	if [[ -n $expl ]]
 	then
-		__tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl] 
+		__tmp_value+=$'\0group\0'$_ftb_groups[(ie)$expl]
 	fi
 	if [[ -n $isfile ]]
 	then
-		__tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}} 
+		__tmp_value+=$'\0realdir\0'${${(Qe)~${:-$IPREFIX$hpre}}}
 	fi
-	_opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile) 
-	__tmp_value+=$'\0args\0'${(pj:\1:)_opts} 
+	_opts+=("${(@kv)apre}" "${(@kv)hpre}" $isfile)
+	__tmp_value+=$'\0args\0'${(pj:\1:)_opts}
 	if (( $+builtins[fzf-tab-compcap-generate] ))
 	then
 		fzf-tab-compcap-generate __hits __dscr __tmp_value
@@ -10637,15 +10637,15 @@ compadd () {
 		local dscr word i
 		for i in {1..$#__hits}
 		do
-			word=$__hits[i] dscr=$__dscr[i] 
+			word=$__hits[i] dscr=$__dscr[i]
 			if [[ -n $dscr ]]
 			then
-				dscr=${dscr//$'\n'} 
+				dscr=${dscr//$'\n'}
 			elif [[ -n $word ]]
 			then
-				dscr=$word 
+				dscr=$word
 			fi
-			_ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word 
+			_ftb_compcap+=$dscr$'\2'$__tmp_value$'\0word\0'$word
 		done
 	fi
 	builtin compadd "$@"
@@ -10655,7 +10655,7 @@ compaudit () {
 	builtin autoload -XUz /opt/homebrew/Cellar/zsh/5.9/share/zsh/functions
 }
 compdef () {
-	local opt autol type func delete eval new i ret=0 cmd svc 
+	local opt autol type func delete eval new i ret=0 cmd svc
 	local -a match mbegin mend
 	emulate -L zsh
 	setopt extendedglob
@@ -10676,15 +10676,15 @@ compdef () {
 				fi
 				if [[ "$opt" = p ]]
 				then
-					type=pattern 
+					type=pattern
 				elif [[ "$opt" = P ]]
 				then
-					type=postpattern 
+					type=postpattern
 				elif [[ "$opt" = K ]]
 				then
-					type=widgetkey 
+					type=widgetkey
 				else
-					type=key 
+					type=key
 				fi ;;
 			(d) delete=yes  ;;
 			(e) eval=yes  ;;
@@ -10704,28 +10704,28 @@ compdef () {
 			do
 				if [[ "$1" = *\=* ]]
 				then
-					cmd="${1%%\=*}" 
-					svc="${1#*\=}" 
-					func="$_comps[${_services[(r)$svc]:-$svc}]" 
-					[[ -n ${_services[$svc]} ]] && svc=${_services[$svc]} 
-					[[ -z "$func" ]] && func="${${_patcomps[(K)$svc][1]}:-${_postpatcomps[(K)$svc][1]}}" 
+					cmd="${1%%\=*}"
+					svc="${1#*\=}"
+					func="$_comps[${_services[(r)$svc]:-$svc}]"
+					[[ -n ${_services[$svc]} ]] && svc=${_services[$svc]}
+					[[ -z "$func" ]] && func="${${_patcomps[(K)$svc][1]}:-${_postpatcomps[(K)$svc][1]}}"
 					if [[ -n "$func" ]]
 					then
-						_comps[$cmd]="$func" 
-						_services[$cmd]="$svc" 
+						_comps[$cmd]="$func"
+						_services[$cmd]="$svc"
 					else
 						print -u2 "$0: unknown command or service: $svc"
-						ret=1 
+						ret=1
 					fi
 				else
 					print -u2 "$0: invalid argument: $1"
-					ret=1 
+					ret=1
 				fi
 				shift
 			done
 			return ret
 		fi
-		func="$1" 
+		func="$1"
 		[[ -n "$autol" ]] && autoload -rUz "$func"
 		shift
 		case "$type" in
@@ -10736,8 +10736,8 @@ compdef () {
 						print -u2 "$0: compdef -K requires <widget> <comp-widget> <key>"
 						return 1
 					fi
-					[[ $1 = _* ]] || 1="_$1" 
-					[[ $2 = .* ]] || 2=".$2" 
+					[[ $1 = _* ]] || 1="_$1"
+					[[ $2 = .* ]] || 2=".$2"
 					[[ $2 = .menu-select ]] && zmodload -i zsh/complist
 					zle -C "$1" "$2" "$func"
 					if [[ -n $new ]]
@@ -10776,39 +10776,39 @@ compdef () {
 				do
 					if [[ "$1" = -N ]]
 					then
-						type=normal 
+						type=normal
 					elif [[ "$1" = -p ]]
 					then
-						type=pattern 
+						type=pattern
 					elif [[ "$1" = -P ]]
 					then
-						type=postpattern 
+						type=postpattern
 					else
 						case "$type" in
 							(pattern) if [[ $1 = (#b)(*)=(*) ]]
 								then
-									_patcomps[$match[1]]="=$match[2]=$func" 
+									_patcomps[$match[1]]="=$match[2]=$func"
 								else
-									_patcomps[$1]="$func" 
+									_patcomps[$1]="$func"
 								fi ;;
 							(postpattern) if [[ $1 = (#b)(*)=(*) ]]
 								then
-									_postpatcomps[$match[1]]="=$match[2]=$func" 
+									_postpatcomps[$match[1]]="=$match[2]=$func"
 								else
-									_postpatcomps[$1]="$func" 
+									_postpatcomps[$1]="$func"
 								fi ;;
 							(*) if [[ "$1" = *\=* ]]
 								then
-									cmd="${1%%\=*}" 
-									svc=yes 
+									cmd="${1%%\=*}"
+									svc=yes
 								else
-									cmd="$1" 
-									svc= 
+									cmd="$1"
+									svc=
 								fi
 								if [[ -z "$new" || -z "${_comps[$1]}" ]]
 								then
-									_comps[$cmd]="$func" 
-									[[ -n "$svc" ]] && _services[$cmd]="${1#*\=}" 
+									_comps[$cmd]="$func"
+									[[ -n "$svc" ]] && _services[$cmd]="${1#*\=}"
 								fi ;;
 						esac
 					fi
@@ -10830,12 +10830,12 @@ compdump () {
 	builtin autoload -XUz /opt/homebrew/Cellar/zsh/5.9/share/zsh/functions
 }
 compgen () {
-	local opts prefix suffix job OPTARG OPTIND ret=1 
+	local opts prefix suffix job OPTARG OPTIND ret=1
 	local -a name res results jids
 	local -A shortopts
 	emulate -L sh
 	setopt kshglob noshglob braceexpand nokshautoload
-	shortopts=(a alias b builtin c command d directory e export f file g group j job k keyword u user v variable) 
+	shortopts=(a alias b builtin c command d directory e export f file g group j job k keyword u user v variable)
 	while getopts "o:A:G:C:F:P:S:W:X:abcdefgjkuv" name
 	do
 		case $name in
@@ -10847,13 +10847,13 @@ compgen () {
 					(builtin) results+=("${(k)builtins[@]}" "${(k)dis_builtins[@]}")  ;;
 					(command) results+=("${(k)commands[@]}" "${(k)aliases[@]}" "${(k)builtins[@]}" "${(k)functions[@]}" "${(k)reswords[@]}")  ;;
 					(directory) setopt bareglobqual
-						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N-/)) 
+						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N-/))
 						setopt nobareglobqual ;;
 					(disabled) results+=("${(k)dis_builtins[@]}")  ;;
 					(enabled) results+=("${(k)builtins[@]}")  ;;
 					(export) results+=("${(k)parameters[(R)*export*]}")  ;;
 					(file) setopt bareglobqual
-						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N)) 
+						results+=(${IPREFIX}${PREFIX}*${SUFFIX}${ISUFFIX}(N))
 						setopt nobareglobqual ;;
 					(function) results+=("${(k)functions[@]}")  ;;
 					(group) emulate zsh
@@ -10868,15 +10868,15 @@ compgen () {
 						results+=("${res[@]}")  ;;
 					(job) results+=("${savejobtexts[@]%% *}")  ;;
 					(keyword) results+=("${(k)reswords[@]}")  ;;
-					(running) jids=("${(@k)savejobstates[(R)running*]}") 
+					(running) jids=("${(@k)savejobstates[(R)running*]}")
 						for job in "${jids[@]}"
 						do
-							results+=(${savejobtexts[$job]%% *}) 
+							results+=(${savejobtexts[$job]%% *})
 						done ;;
-					(stopped) jids=("${(@k)savejobstates[(R)suspended*]}") 
+					(stopped) jids=("${(@k)savejobstates[(R)suspended*]}")
 						for job in "${jids[@]}"
 						do
-							results+=(${savejobtexts[$job]%% *}) 
+							results+=(${savejobtexts[$job]%% *})
 						done ;;
 					(setopt | shopt) results+=("${(k)options[@]}")  ;;
 					(signal) results+=("SIG${^signals[@]}")  ;;
@@ -10884,16 +10884,16 @@ compgen () {
 					(variable) results+=("${(k)parameters[@]}")  ;;
 					(helptopic)  ;;
 				esac ;;
-			(F) COMPREPLY=() 
+			(F) COMPREPLY=()
 				local -a args
-				args=("${words[0]}" "${@[-1]}" "${words[CURRENT-2]}") 
+				args=("${words[0]}" "${@[-1]}" "${words[CURRENT-2]}")
 				() {
 					typeset -h words
 					$OPTARG "${args[@]}"
 				}
 				results+=("${COMPREPLY[@]}")  ;;
 			(G) setopt nullglob
-				results+=(${~OPTARG}) 
+				results+=(${~OPTARG})
 				unsetopt nullglob ;;
 			(W) results+=(${(Q)~=OPTARG})  ;;
 			(C) results+=($(eval $OPTARG))  ;;
@@ -10901,9 +10901,9 @@ compgen () {
 			(S) suffix="$OPTARG"  ;;
 			(X) if [[ ${OPTARG[0]} = '!' ]]
 				then
-					results=("${(M)results[@]:#${OPTARG#?}}") 
+					results=("${(M)results[@]:#${OPTARG#?}}")
 				else
-					results=("${results[@]:#$OPTARG}") 
+					results=("${results[@]:#$OPTARG}")
 				fi ;;
 		esac
 	done
@@ -10920,7 +10920,7 @@ compinstall () {
 complete () {
 	emulate -L zsh
 	local args void cmd print remove
-	args=("$@") 
+	args=("$@")
 	zparseopts -D -a void o: A: G: W: C: F: P: S: X: a b c d e f g j k u v p=print r=remove
 	if [[ -n $print ]]
 	then
@@ -11045,7 +11045,7 @@ detect-clipboard () {
 		}
 	else
 		_retry_clipboard_detection_or_fail () {
-			local clipcmd="${1}" 
+			local clipcmd="${1}"
 			shift
 			if detect-clipboard
 			then
@@ -11078,8 +11078,8 @@ disable-fzf-tab () {
 	esac
 	unset _ftb_orig_widget _ftb_orig_list_groupded
 	unfunction compadd 2> /dev/null
-	functions[_main_complete]=$functions[_ftb__main_complete] 
-	functions[_approximate]=$functions[_ftb__approximate] 
+	functions[_main_complete]=$functions[_ftb__main_complete]
+	functions[_approximate]=$functions[_ftb__approximate]
 }
 down-line-or-beginning-search () {
 	# undefined
@@ -11095,10 +11095,10 @@ edit-command-line () {
 enable-fzf-tab () {
 	emulate -L zsh -o extended_glob
 	(( ! $+_ftb_orig_widget )) || disable-fzf-tab
-	typeset -g _ftb_orig_widget="${${$(builtin bindkey '^I')##* }:-expand-or-complete}" 
+	typeset -g _ftb_orig_widget="${${$(builtin bindkey '^I')##* }:-expand-or-complete}"
 	if (( ! $+widgets[.fzf-tab-orig-$_ftb_orig_widget] ))
 	then
-		local compinit_widgets=(complete-word delete-char-or-list expand-or-complete expand-or-complete-prefix list-choices menu-complete menu-expand-or-complete reverse-menu-complete) 
+		local compinit_widgets=(complete-word delete-char-or-list expand-or-complete expand-or-complete-prefix list-choices menu-complete menu-expand-or-complete reverse-menu-complete)
 		if [[ $widgets[$_ftb_orig_widget] == builtin && $compinit_widgets[(Ie)$_ftb_orig_widget] != 0 ]]
 		then
 			zle -C .fzf-tab-orig-$_ftb_orig_widget .$_ftb_orig_widget _main_complete
@@ -11107,23 +11107,23 @@ enable-fzf-tab () {
 		fi
 	fi
 	zstyle -t ':completion:*' list-grouped false
-	typeset -g _ftb_orig_list_grouped=$? 
+	typeset -g _ftb_orig_list_grouped=$?
 	zstyle ':completion:*' list-grouped false
 	bindkey -M emacs '^I' fzf-tab-complete
 	bindkey -M viins '^I' fzf-tab-complete
 	bindkey -M emacs '^X.' fzf-tab-debug
 	bindkey -M viins '^X.' fzf-tab-debug
 	autoload +X -Uz _main_complete _approximate
-	functions[compadd]=$functions[-ftb-compadd] 
-	functions[_ftb__main_complete]=$functions[_main_complete] 
+	functions[compadd]=$functions[-ftb-compadd]
+	functions[_ftb__main_complete]=$functions[_main_complete]
 	_main_complete () {
 		-ftb-complete "$@"
 	}
-	functions[_ftb__approximate]=$functions[_approximate] 
+	functions[_ftb__approximate]=$functions[_approximate]
 	_approximate () {
 		(( ! IN_FZF_TAB )) || unfunction compadd
 		_ftb__approximate
-		(( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd] 
+		(( ! IN_FZF_TAB )) || functions[compadd]=$functions[-ftb-compadd]
 	}
 }
 env_default () {
@@ -11142,35 +11142,35 @@ ftb-tmux-popup () {
 	builtin autoload -XUz
 }
 fuck () {
-	TF_PYTHONIOENCODING=$PYTHONIOENCODING 
-	export TF_SHELL=zsh 
-	export TF_ALIAS=fuck 
-	TF_SHELL_ALIASES=$(alias) 
+	TF_PYTHONIOENCODING=$PYTHONIOENCODING
+	export TF_SHELL=zsh
+	export TF_ALIAS=fuck
+	TF_SHELL_ALIASES=$(alias)
 	export TF_SHELL_ALIASES
-	TF_HISTORY="$(fc -ln -10)" 
+	TF_HISTORY="$(fc -ln -10)"
 	export TF_HISTORY
-	export PYTHONIOENCODING=utf-8 
+	export PYTHONIOENCODING=utf-8
 	TF_CMD=$( thefuck THEFUCK_ARGUMENT_PLACEHOLDER $@ )  && eval $TF_CMD
 	unset TF_HISTORY
-	export PYTHONIOENCODING=$TF_PYTHONIOENCODING 
+	export PYTHONIOENCODING=$TF_PYTHONIOENCODING
 	test -n "$TF_CMD" && print -s $TF_CMD
 }
 fzf-tab-complete () {
-	local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0 
+	local -i _ftb_continue=1 _ftb_continue_last=0 _ftb_accept=0 ret=0
 	echoti civis > /dev/tty 2> /dev/null
 	while (( _ftb_continue ))
 	do
-		local _ftb_choices=() _ftb_compcap=() _ftb_finish=0 
-		_ftb_continue=0 
-		local IN_FZF_TAB=1 
+		local _ftb_choices=() _ftb_compcap=() _ftb_finish=0
+		_ftb_continue=0
+		local IN_FZF_TAB=1
 		{
-			zle .fzf-tab-orig-$_ftb_orig_widget || ret=$? 
+			zle .fzf-tab-orig-$_ftb_orig_widget || ret=$?
 			if (( ! ret && ! _ftb_finish ))
 			then
-				zle _fzf-tab-apply || ret=$? 
+				zle _fzf-tab-apply || ret=$?
 			fi
 		} always {
-			IN_FZF_TAB=0 
+			IN_FZF_TAB=0
 		}
 		if (( _ftb_continue ))
 		then
@@ -11187,13 +11187,13 @@ fzf-tab-complete () {
 }
 fzf-tab-debug () {
 	(( $+_ftb_debug_cnt )) || typeset -gi _ftb_debug_cnt
-	local tmp=${TMPPREFIX:-/tmp/zsh}-$$-fzf-tab-$(( ++_ftb_debug_cnt )).log 
-	local -i debug_fd=-1 IN_FZF_TAB=1 
+	local tmp=${TMPPREFIX:-/tmp/zsh}-$$-fzf-tab-$(( ++_ftb_debug_cnt )).log
+	local -i debug_fd=-1 IN_FZF_TAB=1
 	{
 		exec {debug_fd}>&2 2>| $tmp
 		local -a debug_indent
-		debug_indent=('%'{3..20}'(e. .)') 
-		local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> " 
+		debug_indent=('%'{3..20}'(e. .)')
+		local PROMPT4 PS4="${(j::)debug_indent}+%N:%i> "
 		functions -t -- -ftb-complete _fzf-tab-apply fzf-tab-complete
 		{
 			echo $ZSH_NAME $ZSH_VERSION
@@ -11212,36 +11212,36 @@ fzf-tab-debug () {
 	}
 }
 fzf-tab-dummy () {
-	
+
 }
 fzf-tab-lscolors::from-mode () {
 	emulate -L zsh
 	setopt cbases octalzeroes extendedglob
 	[[ -z $2 ]] && return 1
-	local -i reg=0 
+	local -i reg=0
 	local -a codes
-	local -i st_mode=$(($2)) 
+	local -i st_mode=$(($2))
 	case $(( st_mode & 0170000 )) in
 		($(( 0140000 ))) codes=($modecolors[so])  ;;
 		($(( 0120000 ))) if ! (($+3))
 			then
-				REPLY=$modecolors[or] 
+				REPLY=$modecolors[or]
 			elif [[ $modecolors[ln] = target ]]
 			then
 				"$0" "$1" "${@:3}"
 			else
-				REPLY=$modecolors[ln] 
+				REPLY=$modecolors[ln]
 			fi
 			return ;;
-		($(( 0100000 ))) codes=() 
+		($(( 0100000 ))) codes=()
 			reg=1  ;;
 		($(( 0060000 ))) codes=($modecolors[bd])  ;;
 		($(( 0040000 ))) codes=($modecolors[di])  ;;
 		($(( 0020000 ))) codes=($modecolors[cd])  ;;
 		($(( 0010000 ))) codes=($modecolors[pi])  ;;
 	esac
-	(( st_mode & 04000 )) && codes+=($modecolors[su]) 
-	(( st_mode & 02000 )) && codes+=($modecolors[sg]) 
+	(( st_mode & 04000 )) && codes+=($modecolors[su])
+	(( st_mode & 02000 )) && codes+=($modecolors[sg])
 	(( ! reg )) && case $(( st_mode & 01002 )) in
 		($(( 01000 ))) codes+=($modecolors[st])  ;;
 		($(( 00002 ))) codes+=($modecolors[ow])  ;;
@@ -11249,7 +11249,7 @@ fzf-tab-lscolors::from-mode () {
 	esac
 	if (( ! $#codes ))
 	then
-		(( st_mode &  0111 )) && codes+=($modecolors[ex]) 
+		(( st_mode &  0111 )) && codes+=($modecolors[ex])
 	fi
 	[[ -n ${REPLY::=${(j:;:)codes}} ]]
 }
@@ -11260,14 +11260,14 @@ fzf-tab-lscolors::from-name () {
 }
 fzf-tab-lscolors::init () {
 	emulate -L zsh
-	local LS_COLORS=${1:-${LS_COLORS:-$LSCOLORS}} 
-	typeset -gA namecolors=(${(@s:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*}) 
-	typeset -gA modecolors=(${(@Ms:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*}) 
+	local LS_COLORS=${1:-${LS_COLORS:-$LSCOLORS}}
+	typeset -gA namecolors=(${(@s:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*})
+	typeset -gA modecolors=(${(@Ms:=:)${(@s.:.)LS_COLORS}:#[[:alpha:]][[:alpha:]]=*})
 }
 fzf-tab-lscolors::match-by () {
 	emulate -L zsh
 	setopt extendedglob cbases octalzeroes
-	local arg REPLY name=$1 pfx=${0%::match-by} 
+	local arg REPLY name=$1 pfx=${0%::match-by}
 	shift
 	if ! [[ -v namecolors && -v modecolors ]]
 	then
@@ -11279,7 +11279,7 @@ fzf-tab-lscolors::match-by () {
 		shift
 	else
 		local -a stat lstat
-		declare -ga reply=() 
+		declare -ga reply=()
 	fi
 	zmodload -F zsh/stat b:zstat
 	for arg
@@ -11295,30 +11295,30 @@ fzf-tab-lscolors::match-by () {
 				${pfx}::from-mode "$name" "$lstat[3]" $stat[3]
 				if [[ -n $REPLY || ${2[1]} = L ]]
 				then
-					reply+=("$REPLY") 
+					reply+=("$REPLY")
 				else
 					"$0" "$name" g n
 				fi ;;
 			(s | stat) (($#stat)) || zstat -A stat $name || return 1
 				${pfx}::from-mode $name $stat[3]
-				reply+=("$REPLY") 
+				reply+=("$REPLY")
 				if [[ -n $REPLY || ${arg[1]} = S ]]
 				then
-					reply+=("$REPLY") 
+					reply+=("$REPLY")
 				else
 					"$0" "$name" g n
 				fi ;;
 			(f | follow) (($#lstat)) || zstat -A lstat -L $name || return 1
 				reply+=("$lstat[14]")  ;;
 			(a | all) "$0" "$name" g ${${${arg[1]%a}:+L}:-l}
-				reply+=($lstat[14]) 
+				reply+=($lstat[14])
 				if [[ -n $lstat[14] ]]
 				then
 					if [[ -e $name ]]
 					then
 						"$0" "$name" g ${${${arg[1]%a}:+S}:-s}
 					else
-						reply+=($reply[-2]) 
+						reply+=($reply[-2])
 					fi
 				fi ;;
 			(*) return 2 ;;
@@ -11329,11 +11329,11 @@ gbda () {
 	git branch --no-color --merged | command grep -vE "^([+*]|\s*($(git_main_branch)|$(git_develop_branch))\s*$)" | command xargs git branch --delete 2> /dev/null
 }
 gbds () {
-	local default_branch=$(git_main_branch) 
-	(( ! $? )) || default_branch=$(git_develop_branch) 
+	local default_branch=$(git_main_branch)
+	(( ! $? )) || default_branch=$(git_develop_branch)
 	git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch
 	do
-		local merge_base=$(git merge-base $default_branch $branch) 
+		local merge_base=$(git merge-base $default_branch $branch)
 		if [[ $(git cherry $default_branch $(git commit-tree $(git rev-parse $branch\^{tree}) -p $merge_base -m _)) = -* ]]
 		then
 			git branch -D $branch
@@ -11342,7 +11342,7 @@ gbds () {
 }
 gccd () {
 	setopt localoptions extendedglob
-	local repo="${${@[(r)(ssh://*|git://*|ftp(s)#://*|http(s)#://*|*@*)(.git/#)#]}:-$_}" 
+	local repo="${${@[(r)(ssh://*|git://*|ftp(s)#://*|http(s)#://*|*@*)(.git/#)#]}:-$_}"
 	command git clone --recurse-submodules "$@" || return
 	[[ -d "$_" ]] && cd "$_" || cd "${${repo:t}%.git/#}"
 }
@@ -11364,11 +11364,11 @@ getent () {
 	fi
 }
 ggf () {
-	[[ "$#" != 1 ]] && local b="$(git_current_branch)" 
+	[[ "$#" != 1 ]] && local b="$(git_current_branch)"
 	git push --force origin "${b:=$1}"
 }
 ggfl () {
-	[[ "$#" != 1 ]] && local b="$(git_current_branch)" 
+	[[ "$#" != 1 ]] && local b="$(git_current_branch)"
 	git push --force-with-lease origin "${b:=$1}"
 }
 ggl () {
@@ -11376,7 +11376,7 @@ ggl () {
 	then
 		git pull origin "${*}"
 	else
-		[[ "$#" == 0 ]] && local b="$(git_current_branch)" 
+		[[ "$#" == 0 ]] && local b="$(git_current_branch)"
 		git pull origin "${b:=$1}"
 	fi
 }
@@ -11385,7 +11385,7 @@ ggp () {
 	then
 		git push origin "${*}"
 	else
-		[[ "$#" == 0 ]] && local b="$(git_current_branch)" 
+		[[ "$#" == 0 ]] && local b="$(git_current_branch)"
 		git push origin "${b:=$1}"
 	fi
 }
@@ -11398,7 +11398,7 @@ ggpnp () {
 	fi
 }
 ggu () {
-	[[ "$#" != 1 ]] && local b="$(git_current_branch)" 
+	[[ "$#" != 1 ]] && local b="$(git_current_branch)"
 	git pull --rebase origin "${b:=$1}"
 }
 gis () {
@@ -11412,7 +11412,7 @@ gis () {
 git_commits_ahead () {
 	if __git_prompt_git rev-parse --git-dir &> /dev/null
 	then
-		local commits="$(__git_prompt_git rev-list --count @{upstream}..HEAD 2>/dev/null)" 
+		local commits="$(__git_prompt_git rev-list --count @{upstream}..HEAD 2>/dev/null)"
 		if [[ -n "$commits" && "$commits" != 0 ]]
 		then
 			echo "$ZSH_THEME_GIT_COMMITS_AHEAD_PREFIX$commits$ZSH_THEME_GIT_COMMITS_AHEAD_SUFFIX"
@@ -11422,7 +11422,7 @@ git_commits_ahead () {
 git_commits_behind () {
 	if __git_prompt_git rev-parse --git-dir &> /dev/null
 	then
-		local commits="$(__git_prompt_git rev-list --count HEAD..@{upstream} 2>/dev/null)" 
+		local commits="$(__git_prompt_git rev-list --count HEAD..@{upstream} 2>/dev/null)"
 		if [[ -n "$commits" && "$commits" != 0 ]]
 		then
 			echo "$ZSH_THEME_GIT_COMMITS_BEHIND_PREFIX$commits$ZSH_THEME_GIT_COMMITS_BEHIND_SUFFIX"
@@ -11431,8 +11431,8 @@ git_commits_behind () {
 }
 git_current_branch () {
 	local ref
-	ref=$(__git_prompt_git symbolic-ref --quiet HEAD 2> /dev/null) 
-	local ret=$? 
+	ref=$(__git_prompt_git symbolic-ref --quiet HEAD 2> /dev/null)
+	local ret=$?
 	if [[ $ret != 0 ]]
 	then
 		[[ $ret == 128 ]] && return
@@ -11476,8 +11476,8 @@ git_main_branch () {
 }
 git_previous_branch () {
 	local ref
-	ref=$(__git_prompt_git rev-parse --quiet --symbolic-full-name @{-1} 2> /dev/null) 
-	local ret=$? 
+	ref=$(__git_prompt_git rev-parse --quiet --symbolic-full-name @{-1} 2> /dev/null)
+	local ret=$?
 	if [[ $ret != 0 ]] || [[ -z $ref ]]
 	then
 		return
@@ -11526,30 +11526,30 @@ git_prompt_status () {
 }
 git_remote_status () {
 	local remote ahead behind git_remote_status git_remote_status_detailed
-	remote=${$(__git_prompt_git rev-parse --verify ${hook_com[branch]}@{upstream} --symbolic-full-name 2>/dev/null)/refs\/remotes\/} 
+	remote=${$(__git_prompt_git rev-parse --verify ${hook_com[branch]}@{upstream} --symbolic-full-name 2>/dev/null)/refs\/remotes\/}
 	if [[ -n ${remote} ]]
 	then
-		ahead=$(__git_prompt_git rev-list ${hook_com[branch]}@{upstream}..HEAD 2>/dev/null | wc -l) 
-		behind=$(__git_prompt_git rev-list HEAD..${hook_com[branch]}@{upstream} 2>/dev/null | wc -l) 
+		ahead=$(__git_prompt_git rev-list ${hook_com[branch]}@{upstream}..HEAD 2>/dev/null | wc -l)
+		behind=$(__git_prompt_git rev-list HEAD..${hook_com[branch]}@{upstream} 2>/dev/null | wc -l)
 		if [[ $ahead -eq 0 ]] && [[ $behind -eq 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_EQUAL_REMOTE" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_EQUAL_REMOTE"
 		elif [[ $ahead -gt 0 ]] && [[ $behind -eq 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE" 
-			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE"
+			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}"
 		elif [[ $behind -gt 0 ]] && [[ $ahead -eq 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE" 
-			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE"
+			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}"
 		elif [[ $ahead -gt 0 ]] && [[ $behind -gt 0 ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_DIVERGED_REMOTE" 
-			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_DIVERGED_REMOTE"
+			git_remote_status_detailed="$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_AHEAD_REMOTE$((ahead))%{$reset_color%}$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE_COLOR$ZSH_THEME_GIT_PROMPT_BEHIND_REMOTE$((behind))%{$reset_color%}"
 		fi
 		if [[ -n $ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_DETAILED ]]
 		then
-			git_remote_status="$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_PREFIX${remote:gs/%/%%}$git_remote_status_detailed$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_SUFFIX" 
+			git_remote_status="$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_PREFIX${remote:gs/%/%%}$git_remote_status_detailed$ZSH_THEME_GIT_PROMPT_REMOTE_STATUS_SUFFIX"
 		fi
 		echo $git_remote_status
 	fi
@@ -11574,20 +11574,20 @@ grename () {
 	fi
 }
 gunwipall () {
-	local _commit=$(git log --grep='--wip--' --invert-grep --max-count=1 --format=format:%H) 
+	local _commit=$(git log --grep='--wip--' --invert-grep --max-count=1 --format=format:%H)
 	if [[ "$_commit" != "$(git rev-parse HEAD)" ]]
 	then
 		git reset $_commit || return 1
 	fi
 }
 gwtabf () {
-	local branch=$1 
-	local repo=$(basename $(git rev-parse --show-toplevel)) 
+	local branch=$1
+	local repo=$(basename $(git rev-parse --show-toplevel))
 	git worktree add -b $branch ../$repo-$branch
 }
 gwtaf () {
-	local branch=$1 
-	local repo=$(basename $(git rev-parse --show-toplevel)) 
+	local branch=$1
+	local repo=$(basename $(git rev-parse --show-toplevel))
 	git worktree add ../$repo-$branch $branch
 }
 gx () {
@@ -11595,7 +11595,7 @@ gx () {
 }
 handle_completion_insecurities () {
 	local -aU insecure_dirs
-	insecure_dirs=(${(f@):-"$(compaudit 2>/dev/null)"}) 
+	insecure_dirs=(${(f@):-"$(compaudit 2>/dev/null)"})
 	[[ -z "${insecure_dirs}" ]] && return
 	print "[oh-my-zsh] Insecure completion-dependent directories detected:"
 	ls -ld "${(@)insecure_dirs}"
@@ -11632,9 +11632,9 @@ history-substring-search-up () {
 }
 is-at-least () {
 	emulate -L zsh
-	local IFS=".-" min_cnt=0 ver_cnt=0 part min_ver version order 
-	min_ver=(${=1}) 
-	version=(${=2:-$ZSH_VERSION} 0) 
+	local IFS=".-" min_cnt=0 ver_cnt=0 part min_ver version order
+	min_ver=(${=1})
+	version=(${=2:-$ZSH_VERSION} 0)
 	while (( $min_cnt <= ${#min_ver} ))
 	do
 		while [[ "$part" != <-> ]]
@@ -11642,7 +11642,7 @@ is-at-least () {
 			(( ++ver_cnt > ${#version} )) && return 0
 			if [[ ${version[ver_cnt]} = *[0-9][^0-9]* ]]
 			then
-				order=(${version[ver_cnt]} ${min_ver[ver_cnt]}) 
+				order=(${version[ver_cnt]} ${min_ver[ver_cnt]})
 				if [[ ${version[ver_cnt]} = <->* ]]
 				then
 					[[ $order != ${${(On)order}} ]] && return 1
@@ -11651,7 +11651,7 @@ is-at-least () {
 				fi
 				[[ $order[1] != $order[2] ]] && return 0
 			fi
-			part=${version[ver_cnt]##*[^0-9]} 
+			part=${version[ver_cnt]##*[^0-9]}
 		done
 		while true
 		do
@@ -11660,17 +11660,17 @@ is-at-least () {
 		done
 		(( part > min_ver[min_cnt] )) && return 0
 		(( part < min_ver[min_cnt] )) && return 1
-		part='' 
+		part=''
 	done
 }
 is_plugin () {
-	local base_dir=$1 
-	local name=$2 
+	local base_dir=$1
+	local name=$2
 	builtin test -f $base_dir/plugins/$name/$name.plugin.zsh || builtin test -f $base_dir/plugins/$name/_$name
 }
 is_theme () {
-	local base_dir=$1 
-	local name=$2 
+	local base_dir=$1
+	local name=$2
 	builtin test -f $base_dir/$name.zsh-theme
 }
 jenv_prompt_info () {
@@ -11681,7 +11681,7 @@ mkcd () {
 }
 nvm_prompt_info () {
 	which nvm &> /dev/null || return
-	local nvm_prompt=${$(nvm current)#v} 
+	local nvm_prompt=${$(nvm current)#v}
 	echo "${ZSH_THEME_NVM_PROMPT_PREFIX}${nvm_prompt:gs/%/%%}${ZSH_THEME_NVM_PROMPT_SUFFIX}"
 }
 omz () {
@@ -11690,7 +11690,7 @@ omz () {
 		_omz::help
 		return 1
 	}
-	local command="$1" 
+	local command="$1"
 	shift
 	(( ${+functions[_omz::$command]} )) || {
 		_omz::help
@@ -11701,17 +11701,17 @@ omz () {
 omz_diagnostic_dump () {
 	emulate -L zsh
 	builtin echo "Generating diagnostic dump; please be patient..."
-	local thisfcn=omz_diagnostic_dump 
+	local thisfcn=omz_diagnostic_dump
 	local -A opts
 	local opt_verbose opt_noverbose opt_outfile
-	local timestamp=$(date +%Y%m%d-%H%M%S) 
-	local outfile=omz_diagdump_$timestamp.txt 
+	local timestamp=$(date +%Y%m%d-%H%M%S)
+	local outfile=omz_diagdump_$timestamp.txt
 	builtin zparseopts -A opts -D -- "v+=opt_verbose" "V+=opt_noverbose"
-	local verbose n_verbose=${#opt_verbose} n_noverbose=${#opt_noverbose} 
+	local verbose n_verbose=${#opt_verbose} n_noverbose=${#opt_noverbose}
 	(( verbose = 1 + n_verbose - n_noverbose ))
 	if [[ ${#*} > 0 ]]
 	then
-		opt_outfile=$1 
+		opt_outfile=$1
 	fi
 	if [[ ${#*} > 1 ]]
 	then
@@ -11720,7 +11720,7 @@ omz_diagnostic_dump () {
 	fi
 	if [[ -n "$opt_outfile" ]]
 	then
-		outfile="$opt_outfile" 
+		outfile="$opt_outfile"
 	fi
 	_omz_diag_dump_one_big_text &> "$outfile"
 	if [[ $? != 0 ]]
@@ -11760,7 +11760,7 @@ omz_termsupport_cwd () {
 	local URL_HOST URL_PATH
 	URL_HOST="$(omz_urlencode -P $HOST)"  || return 1
 	URL_PATH="$(omz_urlencode -P $PWD)"  || return 1
-	[[ -z "$KONSOLE_PROFILE_NAME" && -z "$KONSOLE_DBUS_SESSION" ]] || URL_HOST="" 
+	[[ -z "$KONSOLE_PROFILE_NAME" && -z "$KONSOLE_DBUS_SESSION" ]] || URL_HOST=""
 	printf "\e]7;file://%s%s\e\\" "${URL_HOST}" "${URL_PATH}"
 }
 omz_termsupport_precmd () {
@@ -11772,10 +11772,10 @@ omz_termsupport_preexec () {
 	emulate -L zsh
 	setopt extended_glob
 	local -a cmdargs
-	cmdargs=("${(z)2}") 
+	cmdargs=("${(z)2}")
 	if [[ "${cmdargs[1]}" = fg ]]
 	then
-		local job_id jobspec="${cmdargs[2]#%}" 
+		local job_id jobspec="${cmdargs[2]#%}"
 		case "$jobspec" in
 			(<->) job_id=${jobspec}  ;;
 			("" | % | +) job_id=${(k)jobstates[(r)*:+:*]}  ;;
@@ -11785,29 +11785,29 @@ omz_termsupport_preexec () {
 		esac
 		if [[ -n "${jobtexts[$job_id]}" ]]
 		then
-			1="${jobtexts[$job_id]}" 
-			2="${jobtexts[$job_id]}" 
+			1="${jobtexts[$job_id]}"
+			2="${jobtexts[$job_id]}"
 		fi
 	fi
-	local CMD="${1[(wr)^(*=*|sudo|ssh|mosh|rake|-*)]:gs/%/%%}" 
-	local LINE="${2:gs/%/%%}" 
+	local CMD="${1[(wr)^(*=*|sudo|ssh|mosh|rake|-*)]:gs/%/%%}"
+	local LINE="${2:gs/%/%%}"
 	title "$CMD" "%100>...>${LINE}%<<"
 }
 omz_urldecode () {
 	emulate -L zsh
-	local encoded_url=$1 
-	local caller_encoding=$langinfo[CODESET] 
-	local LC_ALL=C 
+	local encoded_url=$1
+	local caller_encoding=$langinfo[CODESET]
+	local LC_ALL=C
 	export LC_ALL
-	local tmp=${encoded_url:gs/+/ /} 
-	tmp=${tmp:gs/\\/\\\\/} 
-	tmp=${tmp:gs/%/\\x/} 
-	local decoded="$(printf -- "$tmp")" 
+	local tmp=${encoded_url:gs/+/ /}
+	tmp=${tmp:gs/\\/\\\\/}
+	tmp=${tmp:gs/%/\\x/}
+	local decoded="$(printf -- "$tmp")"
 	local -a safe_encodings
-	safe_encodings=(UTF-8 utf8 US-ASCII) 
+	safe_encodings=(UTF-8 utf8 US-ASCII)
 	if [[ -z ${safe_encodings[(r)$caller_encoding]} ]]
 	then
-		decoded=$(echo -E "$decoded" | iconv -f UTF-8 -t $caller_encoding) 
+		decoded=$(echo -E "$decoded" | iconv -f UTF-8 -t $caller_encoding)
 		if [[ $? != 0 ]]
 		then
 			echo "Error converting string from UTF-8 to $caller_encoding" >&2
@@ -11821,56 +11821,56 @@ omz_urlencode () {
 	setopt norematchpcre
 	local -a opts
 	zparseopts -D -E -a opts r m P
-	local in_str="$@" 
-	local url_str="" 
+	local in_str="$@"
+	local url_str=""
 	local spaces_as_plus
 	if [[ -z $opts[(r)-P] ]]
 	then
-		spaces_as_plus=1 
+		spaces_as_plus=1
 	fi
-	local str="$in_str" 
-	local encoding=$langinfo[CODESET] 
+	local str="$in_str"
+	local encoding=$langinfo[CODESET]
 	local safe_encodings
-	safe_encodings=(UTF-8 utf8 US-ASCII) 
+	safe_encodings=(UTF-8 utf8 US-ASCII)
 	if [[ -z ${safe_encodings[(r)$encoding]} ]]
 	then
-		str=$(echo -E "$str" | iconv -f $encoding -t UTF-8) 
+		str=$(echo -E "$str" | iconv -f $encoding -t UTF-8)
 		if [[ $? != 0 ]]
 		then
 			echo "Error converting string from $encoding to UTF-8" >&2
 			return 1
 		fi
 	fi
-	local i byte ord LC_ALL=C 
+	local i byte ord LC_ALL=C
 	export LC_ALL
-	local reserved=';/?:@&=+$,' 
-	local mark='_.!~*''()-' 
-	local dont_escape="[A-Za-z0-9" 
+	local reserved=';/?:@&=+$,'
+	local mark='_.!~*''()-'
+	local dont_escape="[A-Za-z0-9"
 	if [[ -z $opts[(r)-r] ]]
 	then
-		dont_escape+=$reserved 
+		dont_escape+=$reserved
 	fi
 	if [[ -z $opts[(r)-m] ]]
 	then
-		dont_escape+=$mark 
+		dont_escape+=$mark
 	fi
-	dont_escape+="]" 
-	local url_str="" 
+	dont_escape+="]"
+	local url_str=""
 	for ((i = 1; i <= ${#str}; ++i )) do
-		byte="$str[i]" 
+		byte="$str[i]"
 		if [[ "$byte" =~ "$dont_escape" ]]
 		then
-			url_str+="$byte" 
+			url_str+="$byte"
 		else
 			if [[ "$byte" == " " && -n $spaces_as_plus ]]
 			then
-				url_str+="+" 
+				url_str+="+"
 			elif [[ "$PREFIX" = *com.termux* ]]
 			then
-				url_str+="$byte" 
+				url_str+="$byte"
 			else
-				ord=$(( [##16] #byte )) 
-				url_str+="%$ord" 
+				ord=$(( [##16] #byte ))
+				url_str+="%$ord"
 			fi
 		fi
 	done
@@ -11882,7 +11882,7 @@ open_command () {
 		(darwin*) open_cmd='open'  ;;
 		(cygwin*) open_cmd='cygstart'  ;;
 		(linux*) [[ "$(uname -r)" != *icrosoft* ]] && open_cmd='nohup xdg-open'  || {
-				open_cmd='cmd.exe /c start ""' 
+				open_cmd='cmd.exe /c start ""'
 				[[ -e "$1" ]] && {
 					1="$(wslpath -w "${1:a}")"  || return 1
 				}
@@ -11901,18 +11901,18 @@ open_command () {
 parse_git_dirty () {
 	local STATUS
 	local -a FLAGS
-	FLAGS=('--porcelain') 
+	FLAGS=('--porcelain')
 	if [[ "$(__git_prompt_git config --get oh-my-zsh.hide-dirty)" != "1" ]]
 	then
 		if [[ "${DISABLE_UNTRACKED_FILES_DIRTY:-}" == "true" ]]
 		then
-			FLAGS+='--untracked-files=no' 
+			FLAGS+='--untracked-files=no'
 		fi
 		case "${GIT_STATUS_IGNORE_SUBMODULES:-}" in
 			(git)  ;;
 			(*) FLAGS+="--ignore-submodules=${GIT_STATUS_IGNORE_SUBMODULES:-dirty}"  ;;
 		esac
-		STATUS=$(__git_prompt_git status ${FLAGS} 2> /dev/null | tail -n 1) 
+		STATUS=$(__git_prompt_git status ${FLAGS} 2> /dev/null | tail -n 1)
 	fi
 	if [[ -n $STATUS ]]
 	then
@@ -11922,7 +11922,7 @@ parse_git_dirty () {
 	fi
 }
 prompt_starship_precmd () {
-	STARSHIP_CMD_STATUS=$? STARSHIP_PIPE_STATUS=(${pipestatus[@]}) 
+	STARSHIP_CMD_STATUS=$? STARSHIP_PIPE_STATUS=(${pipestatus[@]})
 	if (( ${+STARSHIP_START_TIME} ))
 	then
 		__starship_get_time && (( STARSHIP_DURATION = STARSHIP_CAPTURED_TIME - STARSHIP_START_TIME ))
@@ -11930,10 +11930,10 @@ prompt_starship_precmd () {
 	else
 		unset STARSHIP_DURATION STARSHIP_CMD_STATUS STARSHIP_PIPE_STATUS
 	fi
-	STARSHIP_JOBS_COUNT=${#jobstates} 
+	STARSHIP_JOBS_COUNT=${#jobstates}
 }
 prompt_starship_preexec () {
-	__starship_get_time && STARSHIP_START_TIME=$STARSHIP_CAPTURED_TIME 
+	__starship_get_time && STARSHIP_START_TIME=$STARSHIP_CAPTURED_TIME
 }
 pyenv_prompt_info () {
 	return 1
@@ -11942,9 +11942,9 @@ rbenv_prompt_info () {
 	return 1
 }
 regexp-replace () {
-	argv=("$1" "$2" "$3") 
-	4=0 
-	[[ -o re_match_pcre ]] && 4=1 
+	argv=("$1" "$2" "$3")
+	4=0
+	[[ -o re_match_pcre ]] && 4=1
 	emulate -L zsh
 	local MATCH MBEGIN MEND
 	local -a match mbegin mend
@@ -11952,43 +11952,43 @@ regexp-replace () {
 	then
 		zmodload zsh/pcre || return 2
 		pcre_compile -- "$2" && pcre_study || return 2
-		4=0 6= 
+		4=0 6=
 		local ZPCRE_OP
 		while pcre_match -b -n $4 -- "${(P)1}"
 		do
-			5=${(e)3} 
-			argv+=(${(s: :)ZPCRE_OP} "$5") 
-			4=$((argv[-2] + (argv[-3] == argv[-2]))) 
+			5=${(e)3}
+			argv+=(${(s: :)ZPCRE_OP} "$5")
+			4=$((argv[-2] + (argv[-3] == argv[-2])))
 		done
 		(($# > 6)) || return
 		set +o multibyte
-		5= 6=1 
+		5= 6=1
 		for 2 3 4 in "$@[7,-1]"
 		do
-			5+=${(P)1[$6,$2]}$4 
-			6=$(($3 + 1)) 
+			5+=${(P)1[$6,$2]}$4
+			6=$(($3 + 1))
 		done
-		5+=${(P)1[$6,-1]} 
+		5+=${(P)1[$6,-1]}
 	else
-		4=${(P)1} 
+		4=${(P)1}
 		while [[ -n $4 ]]
 		do
 			if [[ $4 =~ $2 ]]
 			then
-				5+=${4[1,MBEGIN-1]}${(e)3} 
+				5+=${4[1,MBEGIN-1]}${(e)3}
 				if ((MEND < MBEGIN))
 				then
 					((MEND++))
-					5+=${4[1]} 
+					5+=${4[1]}
 				fi
-				4=${4[MEND+1,-1]} 
-				6=1 
+				4=${4[MEND+1,-1]}
+				6=1
 			else
 				break
 			fi
 		done
 		[[ -n $6 ]] || return
-		5+=$4 
+		5+=$4
 	fi
 	eval $1=\$5
 }
@@ -11998,13 +11998,13 @@ ruby_prompt_info () {
 rvm_prompt_info () {
 	[ -f $HOME/.rvm/bin/rvm-prompt ] || return 1
 	local rvm_prompt
-	rvm_prompt=$($HOME/.rvm/bin/rvm-prompt ${=ZSH_THEME_RVM_PROMPT_OPTIONS} 2>/dev/null) 
+	rvm_prompt=$($HOME/.rvm/bin/rvm-prompt ${=ZSH_THEME_RVM_PROMPT_OPTIONS} 2>/dev/null)
 	[[ -z "${rvm_prompt}" ]] && return 1
 	echo "${ZSH_THEME_RUBY_PROMPT_PREFIX}${rvm_prompt:gs/%/%%}${ZSH_THEME_RUBY_PROMPT_SUFFIX}"
 }
 spectrum_bls () {
 	setopt localoptions nopromptsubst
-	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris} 
+	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris}
 	for code in {000..255}
 	do
 		print -P -- "$code: ${BG[$code]}${ZSH_SPECTRUM_TEXT}%{$reset_color%}"
@@ -12012,38 +12012,38 @@ spectrum_bls () {
 }
 spectrum_ls () {
 	setopt localoptions nopromptsubst
-	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris} 
+	local ZSH_SPECTRUM_TEXT=${ZSH_SPECTRUM_TEXT:-Arma virumque cano Troiae qui primus ab oris}
 	for code in {000..255}
 	do
 		print -P -- "$code: ${FG[$code]}${ZSH_SPECTRUM_TEXT}%{$reset_color%}"
 	done
 }
 ssmc () {
-	local profile=${1:-petlab} 
+	local profile=${1:-petlab}
 	echo "Fetching instances from AWS..."
 	local instances=$(aws ec2 describe-instances \
         --profile "$profile" \
         --filters "Name=instance-state-name,Values=running" \
         --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,LaunchTime]' \
-        --output text 2>/dev/null) 
+        --output text 2>/dev/null)
 	if [ -z "$instances" ]
 	then
 		echo "No running instances found or AWS CLI error"
 		return 1
 	fi
-	local formatted_instances="" 
+	local formatted_instances=""
 	while IFS=$'\t' read -r name instance_id instance_type launch_time
 	do
 		if [ "$name" = "None" ] || [ -z "$name" ]
 		then
-			name="Unnamed" 
+			name="Unnamed"
 		fi
-		formatted_instances+="$name ($instance_type) - $instance_id"$'\n' 
+		formatted_instances+="$name ($instance_type) - $instance_id"$'\n'
 	done <<< "$instances"
-	local selection=$(echo "$formatted_instances" | fzf --prompt="Select EC2 instance: " --height=40% --border) 
+	local selection=$(echo "$formatted_instances" | fzf --prompt="Select EC2 instance: " --height=40% --border)
 	if [ -n "$selection" ]
 	then
-		local instance_id=$(echo "$selection" | grep -o 'i-[a-f0-9]*$') 
+		local instance_id=$(echo "$selection" | grep -o 'i-[a-f0-9]*$')
 		if [ -n "$instance_id" ]
 		then
 			echo "Connecting to instance: $instance_id with profile: $profile"
@@ -12086,19 +12086,19 @@ takegit () {
 }
 takeurl () {
 	local data thedir
-	data="$(mktemp)" 
+	data="$(mktemp)"
 	curl -L "$1" > "$data"
 	tar xf "$data"
-	thedir="$(tar tf "$data" | head -n 1)" 
+	thedir="$(tar tf "$data" | head -n 1)"
 	rm "$data"
 	cd "$thedir"
 }
 takezip () {
 	local data thedir
-	data="$(mktemp)" 
+	data="$(mktemp)"
 	curl -L "$1" > "$data"
 	unzip "$data" -d "./"
-	thedir="$(unzip -l "$data" | awk 'NR==4 {print $4}' | sed 's/\/.*//')" 
+	thedir="$(unzip -l "$data" | awk 'NR==4 {print $4}' | sed 's/\/.*//')"
 	rm "$data"
 	cd "$thedir"
 }
@@ -12182,7 +12182,7 @@ zle-line-init () {
 zrecompile () {
 	setopt localoptions extendedglob noshwordsplit noksharrays
 	local opt check quiet zwc files re file pre ret map tmp mesg pats
-	tmp=() 
+	tmp=()
 	while getopts ":tqp" opt
 	do
 		case $opt in
@@ -12191,7 +12191,7 @@ zrecompile () {
 			(p) pats=yes  ;;
 			(*) if [[ -n $pats ]]
 				then
-					tmp=($tmp $OPTARG) 
+					tmp=($tmp $OPTARG)
 				else
 					print -u2 zrecompile: bad option: -$OPTARG
 					return 1
@@ -12201,27 +12201,27 @@ zrecompile () {
 	shift OPTIND-${#tmp}-1
 	if [[ -n $check ]]
 	then
-		ret=1 
+		ret=1
 	else
-		ret=0 
+		ret=0
 	fi
 	if [[ -n $pats ]]
 	then
 		local end num
 		while (( $# ))
 		do
-			end=$argv[(i)--] 
+			end=$argv[(i)--]
 			if [[ end -le $# ]]
 			then
-				files=($argv[1,end-1]) 
+				files=($argv[1,end-1])
 				shift end
 			else
-				files=($argv) 
-				argv=() 
+				files=($argv)
+				argv=()
 			fi
-			tmp=() 
-			map=() 
-			OPTIND=1 
+			tmp=()
+			map=()
+			OPTIND=1
 			while getopts :MR opt $files
 			do
 				case $opt in
@@ -12231,37 +12231,37 @@ zrecompile () {
 			done
 			shift OPTIND-1 files
 			(( $#files )) || continue
-			files=($files[1] ${files[2,-1]:#*(.zwc|~)}) 
+			files=($files[1] ${files[2,-1]:#*(.zwc|~)})
 			(( $#files )) || continue
-			zwc=${files[1]%.zwc}.zwc 
+			zwc=${files[1]%.zwc}.zwc
 			shift 1 files
-			(( $#files )) || files=(${zwc%.zwc}) 
+			(( $#files )) || files=(${zwc%.zwc})
 			if [[ -f $zwc ]]
 			then
-				num=$(zcompile -t $zwc | wc -l) 
+				num=$(zcompile -t $zwc | wc -l)
 				if [[ num-1 -ne $#files ]]
 				then
-					re=yes 
+					re=yes
 				else
-					re= 
+					re=
 					for file in $files
 					do
 						if [[ $file -nt $zwc ]]
 						then
-							re=yes 
+							re=yes
 							break
 						fi
 					done
 				fi
 			else
-				re=yes 
+				re=yes
 			fi
 			if [[ -n $re ]]
 			then
 				if [[ -n $check ]]
 				then
 					[[ -z $quiet ]] && print $zwc needs re-compilation
-					ret=0 
+					ret=0
 				else
 					[[ -z $quiet ]] && print -n "re-compiling ${zwc}: "
 					if [[ -z "$quiet" ]] && {
@@ -12276,7 +12276,7 @@ zrecompile () {
 						}
 					then
 						[[ -z $quiet ]] && print "re-compiling ${zwc}: failed"
-						ret=1 
+						ret=1
 					fi
 				fi
 			fi
@@ -12285,40 +12285,40 @@ zrecompile () {
 	fi
 	if (( $# ))
 	then
-		argv=(${^argv}/*.zwc(ND) ${^argv}.zwc(ND) ${(M)argv:#*.zwc}) 
+		argv=(${^argv}/*.zwc(ND) ${^argv}.zwc(ND) ${(M)argv:#*.zwc})
 	else
-		argv=(${^fpath}/*.zwc(ND) ${^fpath}.zwc(ND) ${(M)fpath:#*.zwc}) 
+		argv=(${^fpath}/*.zwc(ND) ${^fpath}.zwc(ND) ${(M)fpath:#*.zwc})
 	fi
-	argv=(${^argv%.zwc}.zwc) 
+	argv=(${^argv%.zwc}.zwc)
 	for zwc
 	do
-		files=(${(f)"$(zcompile -t $zwc)"}) 
+		files=(${(f)"$(zcompile -t $zwc)"})
 		if [[ $files[1] = *\(mapped\)* ]]
 		then
-			map=-M 
-			mesg='succeeded (old saved)' 
+			map=-M
+			mesg='succeeded (old saved)'
 		else
-			map=-R 
-			mesg=succeeded 
+			map=-R
+			mesg=succeeded
 		fi
 		if [[ $zwc = */* ]]
 		then
-			pre=${zwc%/*}/ 
+			pre=${zwc%/*}/
 		else
-			pre= 
+			pre=
 		fi
 		if [[ $files[1] != *$ZSH_VERSION ]]
 		then
-			re=yes 
+			re=yes
 		else
-			re= 
+			re=
 		fi
-		files=(${pre}${^files[2,-1]:#/*} ${(M)files[2,-1]:#/*}) 
+		files=(${pre}${^files[2,-1]:#/*} ${(M)files[2,-1]:#/*})
 		[[ -z $re ]] && for file in $files
 		do
 			if [[ $file -nt $zwc ]]
 			then
-				re=yes 
+				re=yes
 				break
 			fi
 		done
@@ -12327,14 +12327,14 @@ zrecompile () {
 			if [[ -n $check ]]
 			then
 				[[ -z $quiet ]] && print $zwc needs re-compilation
-				ret=0 
+				ret=0
 			else
 				[[ -z $quiet ]] && print -n "re-compiling ${zwc}: "
-				tmp=(${^files}(N)) 
+				tmp=(${^files}(N))
 				if [[ $#tmp -ne $#files ]]
 				then
 					[[ -z $quiet ]] && print 'failed (missing files)'
-					ret=1 
+					ret=1
 				else
 					if [[ -z "$quiet" ]] && mv -f $zwc ${zwc}.old && zcompile $map $zwc $files
 					then
@@ -12344,7 +12344,7 @@ zrecompile () {
 						}
 					then
 						[[ -z $quiet ]] && print "re-compiling ${zwc}: failed"
-						ret=1 
+						ret=1
 					fi
 				fi
 			fi

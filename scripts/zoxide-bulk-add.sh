@@ -245,7 +245,7 @@ process_directories() {
     # Create array of directories to avoid pipeline issues
     local dirs=()
     log_verbose "Building directory list..."
-    
+
     while IFS= read -r dir; do
         if [[ -n "$dir" && "$dir" != "$TARGET_DIR" ]]; then
             dirs+=("$dir")
@@ -264,7 +264,7 @@ process_directories() {
         log_verbose "Full path: $dir"
 
         add_to_zoxide "$dir"
-        
+
         # Add small delay to see progress
         sleep 0.1
     done

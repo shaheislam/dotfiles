@@ -1,6 +1,7 @@
 [core]
 	excludesfile = /Users/mohammedislam/.gitignore_global
-	hooksPath = ~/.config/git/hooks
 [user]
 	email = shahedulislam94@gmail.com
 	name = Mohammed Islam
+[init]
+	templateDir = /Users/shaheislam/.config/git

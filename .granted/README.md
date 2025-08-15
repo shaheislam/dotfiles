@@ -14,7 +14,7 @@ assume <TAB>
 
 ### 2. Firefox Browser Integration 🔥
 When you run `assume production` and open AWS console:
-- **Firefox opens** (not Chrome/Safari) 
+- **Firefox opens** (not Chrome/Safari)
 - **Colored container tabs** with icons (requires Firefox addon):
   - `production` → **Red briefcase** 🔴💼
   - `development` → **Green tree** 🟢🌳  
@@ -63,7 +63,7 @@ Main Granted configuration with:
 - **Caching enabled** for performance
 - **Telemetry disabled** for privacy
 
-### `firefox-profiles` 
+### `firefox-profiles`
 Maps AWS profiles to Firefox colors and icons:
 ```
 production=red:briefcase

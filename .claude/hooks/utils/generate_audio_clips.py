@@ -18,7 +18,7 @@ except ImportError:
 def get_openai_key():
     """Get OpenAI API key from shell environment"""
     try:
-        result = subprocess.run(['printenv', 'OPENAI_API_KEY'], 
+        result = subprocess.run(['printenv', 'OPENAI_API_KEY'],
                               capture_output=True, text=True, check=True)
         return result.stdout.strip()
     except subprocess.CalledProcessError:
@@ -30,11 +30,11 @@ def generate_clips():
     """Generate common task completion audio clips"""
     api_key = get_openai_key()
     client = openai.OpenAI(api_key=api_key)
-    
+
     # Create audio directory
     audio_dir = Path(__file__).parent.parent.parent / "audio"
     audio_dir.mkdir(exist_ok=True)
-    
+
     # Common announcement messages
     messages = {
         "task_complete": "Task completed successfully.",
@@ -45,16 +45,16 @@ def generate_clips():
         "ready": "Ready for the next task.",
         "awaiting_instructions": "Awaiting further instructions."
     }
-    
+
     print("Generating audio clips...")
-    
+
     for filename, message in messages.items():
         output_path = audio_dir / f"{filename}.mp3"
-        
+
         if output_path.exists():
             print(f"Skipping {filename} (already exists)")
             continue
-        
+
         try:
             print(f"Generating {filename}...")
             response = client.audio.speech.create(
@@ -62,13 +62,13 @@ def generate_clips():
                 voice="alloy",
                 input=message
             )
-            
+
             response.stream_to_file(str(output_path))
             print(f"Created {output_path}")
-            
+
         except Exception as e:
             print(f"Failed to generate {filename}: {e}")
-    
+
     print("\nAudio clips generated successfully!")
     print(f"Files saved to: {audio_dir}")
 

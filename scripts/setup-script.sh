@@ -32,7 +32,7 @@ run_with_retry() {
     local cmd="$1"
     local description="$2"
     local max_attempts="${3:-1}"
-    
+
     for attempt in $(seq 1 $max_attempts); do
         if eval "$cmd"; then
             log_success "$description"
@@ -329,7 +329,7 @@ install_tmux_plugin() {
 # Install tmux plugins via git submodules (preferred) or individual cloning (fallback)
 if [ -f "$HOME/dotfiles/.gitmodules" ]; then
   echo "Using git submodules for tmux plugins..."
-  cd "$HOME/dotfiles"
+  cd "$HOME/dotfiles" || exit
   git submodule update --init --recursive
   # Reset any modified submodules to their committed state
   git submodule foreach --recursive git reset --hard
@@ -381,7 +381,7 @@ echo "=== Configuring tmux-which-key plugin ==="
 if [ -d "$HOME/.tmux/plugins/tmux-which-key" ]; then
   if command -v python3 &> /dev/null; then
     echo "Setting up tmux-which-key configuration..."
-    cd "$HOME/.tmux/plugins/tmux-which-key"
+    cd "$HOME/.tmux/plugins/tmux-which-key" || exit
     # Copy example config if config.yaml doesn't exist
     if [ ! -f "config.yaml" ]; then
       cp config.example.yaml config.yaml
@@ -412,24 +412,24 @@ if command -v npm &> /dev/null; then
   npm install -g @fsouza/prettierd prettier-plugin-toml
   echo "Installed prettierd and prettier-plugin-toml"
   echo "Using existing prettier from Homebrew"
-  
+
   # Install BrowserTools MCP packages
   echo "Installing BrowserTools MCP packages..."
   npm install -g @agentdeskai/browser-tools-mcp@1.2.0
   npm install -g @agentdeskai/browser-tools-server@1.2.0
   echo "Installed BrowserTools MCP packages"
-  
+
   # Download BrowserTools Chrome extension to dotfiles directory
   echo "Setting up BrowserTools Chrome extension..."
   mkdir -p "$HOME/dotfiles/.config/browser-tools"
-  cd "$HOME/dotfiles/.config/browser-tools"
-  
+  cd "$HOME/dotfiles/.config/browser-tools" || exit
+
   # Download the packaged extension if not already present
   if [ ! -f "BrowserTools-extension.zip" ]; then
     echo "Downloading BrowserTools Chrome extension..."
     curl -L https://github.com/AgentDeskAI/browser-tools-mcp/releases/download/v1.2.0/BrowserTools-1.2.0-extension.zip -o BrowserTools-extension.zip
   fi
-  
+
   # Extract extension if not already extracted
   if [ ! -d "chrome-extension" ]; then
     echo "Extracting BrowserTools Chrome extension..."
@@ -437,7 +437,7 @@ if command -v npm &> /dev/null; then
     # Clean up macOS metadata
     rm -rf __MACOSX
   fi
-  
+
   echo "BrowserTools Chrome extension prepared at ~/dotfiles/.config/browser-tools/chrome-extension"
   echo ""
   echo "⚠️  MANUAL STEP REQUIRED: Install Chrome Extension"
@@ -470,7 +470,7 @@ fi
 # Configure bat with Tokyo Night theme
 echo "=== Configuring bat with Tokyo Night theme ==="
 mkdir -p "$(bat --config-dir)/themes"
-cd "$(bat --config-dir)/themes"
+cd "$(bat --config-dir)/themes" || exit
 curl -O https://raw.githubusercontent.com/folke/tokyonight.nvim/main/extras/sublime/tokyonight_night.tmTheme
 bat cache --build
 echo '--theme="tokyonight_night"' > "$(bat --config-dir)/config"
@@ -504,12 +504,12 @@ fi
 echo "=== Installing Python MCP servers ==="
 if command -v pipx &> /dev/null; then
   echo "Installing Python-based MCP servers..."
-  
+
   # Install MCP servers that are Python-based
   pipx install mcp-server-git || echo "Warning: Failed to install mcp-server-git"
-  pipx install mcp-server-fetch || echo "Warning: Failed to install mcp-server-fetch"  
+  pipx install mcp-server-fetch || echo "Warning: Failed to install mcp-server-fetch"
   pipx install mcp-server-sqlite || echo "Warning: Failed to install mcp-server-sqlite"
-  
+
   echo "Python MCP servers installation complete"
 else
   echo "Warning: pipx not found. Install pipx first via Homebrew"
@@ -529,57 +529,57 @@ fi
 echo "=== Configuring Claude Code MCP servers ==="
 if command -v claude &> /dev/null; then
   echo "Adding MCP servers to Claude Code user scope..."
-  
+
   # Core development tools
   claude mcp add --scope user filesystem npx @modelcontextprotocol/server-filesystem "$HOME/Desktop" "$HOME/Downloads" || echo "Warning: Failed to add filesystem MCP"
   claude mcp add --scope user git pipx run mcp-server-git "$HOME/dotfiles" || echo "Warning: Failed to add git MCP"
   claude mcp add --scope user github npx @modelcontextprotocol/server-github || echo "Warning: Failed to add github MCP"
   claude mcp add --scope user memory npx @modelcontextprotocol/server-memory || echo "Warning: Failed to add memory MCP"
   claude mcp add --scope user sequential-thinking npx @modelcontextprotocol/server-sequential-thinking || echo "Warning: Failed to add sequential-thinking MCP"
-  
+
   # Web and automation tools
   claude mcp add --scope user browser-tools npx @agentdeskai/browser-tools-mcp@1.2.0 || echo "Warning: Failed to add browser-tools MCP"
   claude mcp add --scope user fetch pipx run mcp-server-fetch || echo "Warning: Failed to add fetch MCP"
   claude mcp add --scope user duckduckgo npx duckduckgo-mcp-server || echo "Warning: Failed to add duckduckgo MCP"
-  
+
   # Database tools
   claude mcp add --scope user sqlite pipx run mcp-server-sqlite "$HOME/Documents/databases" || echo "Warning: Failed to add sqlite MCP"
   claude mcp add --scope user postgres npx @modelcontextprotocol/server-postgres || echo "Warning: Failed to add postgres MCP"
-  
+
   # Enterprise integration
   claude mcp add --scope user slack npx @modelcontextprotocol/server-slack || echo "Warning: Failed to add slack MCP"
   claude mcp add --scope user airbnb "npx @openbnb/mcp-server-airbnb --ignore-robots-txt" || echo "Warning: Failed to add airbnb MCP"
-  
+
   # Browser automation (Microsoft Playwright)
   claude mcp add --scope user playwright npx @playwright/mcp@latest || echo "Warning: Failed to add playwright MCP"
-  
+
   # AWS MCP servers (require uv to be installed)
   echo "Adding AWS MCP servers to Claude Code..."
-  
+
   # Core AWS tools (no credentials required)
   claude mcp add --scope user aws-documentation uvx awslabs.aws-documentation-mcp-server@latest || echo "Warning: Failed to add aws-documentation MCP"
   claude mcp add --scope user aws-cdk uvx awslabs.cdk-mcp-server@latest || echo "Warning: Failed to add aws-cdk MCP"
   claude mcp add --scope user aws-terraform uvx awslabs.terraform-mcp-server@latest || echo "Warning: Failed to add aws-terraform MCP"
-  
+
   # AWS services (require AWS credentials)
   claude mcp add --scope user aws-cost-analysis uvx awslabs.cost-analysis-mcp-server@latest || echo "Warning: Failed to add aws-cost-analysis MCP"
   claude mcp add --scope user aws-iam uvx awslabs.iam-mcp-server@latest || echo "Warning: Failed to add aws-iam MCP"
   claude mcp add --scope user aws-cloudformation uvx awslabs.cfn-mcp-server@latest || echo "Warning: Failed to add aws-cloudformation MCP"
   claude mcp add --scope user aws-dynamodb uvx awslabs.dynamodb-mcp-server@latest || echo "Warning: Failed to add aws-dynamodb MCP"
   claude mcp add --scope user aws-lambda uvx awslabs.lambda-tool-mcp-server@latest || echo "Warning: Failed to add aws-lambda MCP"
-  
+
   echo "AWS MCP servers added to Claude Code"
-  
+
   echo "Claude Code MCP configuration complete"
   echo "You can verify with: claude mcp list"
-  
+
   echo ""
   echo "Note: AWS MCP servers are also configured in Claude Desktop config."
   echo "Both Claude Desktop and Claude Code can now use AWS MCP servers."
   echo ""
   echo "Some MCP servers are disabled by default in Claude Desktop:"
   echo "- exa (requires EXA_API_KEY)"
-  echo "- linear (requires LINEAR_API_KEY)"  
+  echo "- linear (requires LINEAR_API_KEY)"
   echo "- slack (requires SLACK_BOT_TOKEN and SLACK_APP_TOKEN)"
   echo "- postgres (requires POSTGRES_CONNECTION_STRING)"
   echo ""
@@ -878,7 +878,7 @@ echo "- Shell enhancements: atuin, thefuck, starship"
 echo "- Development tools: terraform, node, python, go, rust"
 echo "- Formatters: stylua, prettier, black, isort"
 echo "- Rust tools: s3grep"
-echo "- Security tools: vet (safe remote script execution), gitleaks (secret detection)"
+echo "- Security tools: vet (safe remote script execution), gitleaks (secret detection), pre-commit (git hooks framework)"
 echo "- AWS log tools: aws-log-viewer (interactive s3grep TUI)"
 echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Claude Code: CLI tool with SuperClaude framework"
@@ -895,8 +895,9 @@ echo "5. Start sketchybar: 'brew services start sketchybar'"
 echo "6. Restart Claude Desktop to load MCP servers"
 echo "7. Verify Claude Code MCP servers with 'claude mcp list'"
 echo "8. SuperClaude framework is ready via stow symlinks at ~/.claude/"
-echo "9. Gitleaks pre-commit hook is configured globally at ~/.config/git/hooks/"
-echo "10. Your Starship prompt should display beautiful icons!"
+echo "9. Pre-commit framework installed globally with gitleaks and other hooks"
+echo "10. Run 'pre-commit install' in any git repo to enable hooks"
+echo "11. Your Starship prompt should display beautiful icons!"
 echo ""
 
 # Exit with appropriate code

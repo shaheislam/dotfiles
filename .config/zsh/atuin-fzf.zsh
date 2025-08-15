@@ -5,7 +5,7 @@ atuin-fzf-widget() {
     local selected
     local current_buffer="${LBUFFER}"
     local current_dir="${PWD}"
-    
+
     # Run atuin with fzf
     selected=$(
         atuin search --cmd-only --cwd "${current_dir}" 2>/dev/null | \
@@ -19,13 +19,13 @@ atuin-fzf-widget() {
             --bind="ctrl-s:reload(atuin search --cmd-only --filter-mode session 2>/dev/null)+change-header(Mode: session | C-d: dir | C-g: global | C-s: session)" \
             --bind="ctrl-r:reload(atuin search --cmd-only --cwd '${current_dir}' 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session)"
     )
-    
+
     local ret=$?
-    
+
     if [[ -n $selected ]]; then
         LBUFFER="${selected}"
     fi
-    
+
     zle reset-prompt
     return $ret
 }

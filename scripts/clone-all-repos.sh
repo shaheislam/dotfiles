@@ -434,4 +434,3 @@ echo ""
 echo "📁 All repositories are in: $TARGET_DIR"
 echo "🔧 To update all repos later, you can run:"
 echo "   find $TARGET_DIR -type d -name '.git' -exec dirname {} \; | xargs -I {} git -C {} pull"
-

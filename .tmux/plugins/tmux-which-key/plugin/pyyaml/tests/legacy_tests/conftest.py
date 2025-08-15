@@ -127,4 +127,3 @@ def pytest_ignore_collect(path, config):
         if not HAS_LIBYAML_EXT:
             warnings.warn('libyaml extension is not available, skipping libyaml tests')
             return True
-

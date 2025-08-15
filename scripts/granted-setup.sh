@@ -88,16 +88,16 @@ validate_icon() {
 
 setup_granted() {
     log_info "Setting up Granted configuration..."
-    
+
     # Check if Granted is installed
     if ! command -v granted &> /dev/null; then
         log_error "Granted is not installed. Please install it first with: brew install granted"
         exit 1
     fi
-    
+
     # Create config directory
     mkdir -p "$GRANTED_CONFIG_DIR"
-    
+
     # Copy configuration files from dotfiles
     if [[ -f "$DOTFILES_CONFIG_DIR/config" ]]; then
         log_info "Installing Granted configuration..."
@@ -106,7 +106,7 @@ setup_granted() {
     else
         log_warning "Granted config file not found in dotfiles"
     fi
-    
+
     if [[ -f "$DOTFILES_CONFIG_DIR/firefox-profiles" ]]; then
         log_info "Installing Firefox profiles configuration..."
         cp "$DOTFILES_CONFIG_DIR/firefox-profiles" "$FIREFOX_PROFILES_FILE"
@@ -114,7 +114,7 @@ setup_granted() {
     else
         log_warning "Firefox profiles config not found in dotfiles"
     fi
-    
+
     # Generate shell completions
     if command -v fish &> /dev/null; then
         log_info "Generating Fish shell completions..."
@@ -122,11 +122,11 @@ setup_granted() {
         granted completion --shell fish > "$HOME/.config/fish/completions/granted.fish" 2>/dev/null || true
         log_success "Fish completions generated"
     fi
-    
+
     if command -v zsh &> /dev/null; then
         log_info "Zsh completions will be loaded automatically"
     fi
-    
+
     log_success "Granted setup complete!"
     log_info "You can now use 'assume <profile>' to switch AWS profiles"
     log_info "Firefox profiles will use colors and icons as configured"
@@ -136,52 +136,52 @@ set_profile_color() {
     local profile="$1"
     local color="$2"
     local icon="$3"
-    
+
     if [[ -z "$profile" || -z "$color" || -z "$icon" ]]; then
         log_error "Usage: set-profile-color PROFILE COLOR ICON"
         return 1
     fi
-    
+
     if ! validate_color "$color"; then
         log_error "Invalid color: $color"
         log_info "Available colors: $(printf '%s ' "${COLORS[@]}")"
         return 1
     fi
-    
+
     if ! validate_icon "$icon"; then
         log_error "Invalid icon: $icon"
         log_info "Available icons: $(printf '%s ' "${ICONS[@]}")"
         return 1
     fi
-    
+
     # Ensure Firefox profiles file exists
     if [[ ! -f "$FIREFOX_PROFILES_FILE" ]]; then
         log_warning "Firefox profiles file not found, creating..."
         mkdir -p "$GRANTED_CONFIG_DIR"
         touch "$FIREFOX_PROFILES_FILE"
     fi
-    
+
     # Remove existing entry for this profile
     grep -v "^$profile=" "$FIREFOX_PROFILES_FILE" > "$FIREFOX_PROFILES_FILE.tmp" 2>/dev/null || true
-    
+
     # Add new entry
     echo "$profile=$color:$icon" >> "$FIREFOX_PROFILES_FILE.tmp"
-    
+
     # Sort and replace
     sort "$FIREFOX_PROFILES_FILE.tmp" > "$FIREFOX_PROFILES_FILE"
     rm "$FIREFOX_PROFILES_FILE.tmp"
-    
+
     log_success "Set $profile to use $color color with $icon icon"
 }
 
 list_profiles() {
     log_info "Configured Firefox profiles:"
-    
+
     if [[ ! -f "$FIREFOX_PROFILES_FILE" ]]; then
         log_warning "No Firefox profiles configuration found"
         return 1
     fi
-    
+
     while IFS='=' read -r profile config; do
         if [[ -n "$profile" && ! "$profile" =~ ^# ]]; then
             IFS=':' read -r color icon <<< "$config"
@@ -206,22 +206,22 @@ list_colors() {
 
 test_config() {
     log_info "Testing Granted configuration..."
-    
+
     # Check if Granted is installed
     if ! command -v granted &> /dev/null; then
         log_error "Granted is not installed"
         return 1
     fi
-    
+
     log_success "Granted is installed: $(granted --version)"
-    
+
     # Check config files
     if [[ -f "$GRANTED_CONFIG_DIR/config" ]]; then
         log_success "Main configuration file exists"
     else
         log_warning "Main configuration file not found"
     fi
-    
+
     if [[ -f "$FIREFOX_PROFILES_FILE" ]]; then
         log_success "Firefox profiles configuration exists"
         local profile_count=$(grep -c "^[^#]" "$FIREFOX_PROFILES_FILE" 2>/dev/null || echo 0)
@@ -229,7 +229,7 @@ test_config() {
     else
         log_warning "Firefox profiles configuration not found"
     fi
-    
+
     # Test AWS profiles
     log_info "Available AWS profiles:"
     if granted profiles list --no-color 2>/dev/null | head -5; then
@@ -237,7 +237,7 @@ test_config() {
     else
         log_warning "No AWS profiles found or error accessing profiles"
     fi
-    
+
     # Check shell completions
     if [[ -f "$HOME/.config/fish/completions/granted.fish" ]]; then
         log_success "Fish completions installed"
@@ -248,7 +248,7 @@ test_config() {
 
 backup_config() {
     local backup_dir="$HOME/.granted.backup.$(date +%Y%m%d-%H%M%S)"
-    
+
     if [[ -d "$GRANTED_CONFIG_DIR" ]]; then
         log_info "Backing up Granted configuration to $backup_dir"
         cp -r "$GRANTED_CONFIG_DIR" "$backup_dir"

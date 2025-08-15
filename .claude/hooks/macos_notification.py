@@ -11,11 +11,11 @@ def send_notification(title, message, sound=None):
     try:
         # Base AppleScript command
         script = f'display notification "{message}" with title "{title}"'
-        
+
         # Add sound if specified
         if sound:
             script += f' sound name "{sound}"'
-        
+
         subprocess.run(
             ["osascript", "-e", script],
             capture_output=True,
@@ -30,11 +30,11 @@ def main():
     try:
         # Read input data from stdin
         input_data = json.load(sys.stdin)
-        
+
         # Get notification details
         notification_type = input_data.get("notification_type", "info")
         message = input_data.get("message", "Claude Code notification")
-        
+
         # Customize notification based on type
         if notification_type == "error":
             title = "🚨 Claude Code Error"
@@ -48,17 +48,17 @@ def main():
         else:
             title = "🤖 Claude Code"
             sound = "Blow"
-        
+
         # Truncate long messages
         if len(message) > 100:
             message = message[:97] + "..."
-        
+
         # Send the notification
         send_notification(title, message, sound)
-        
+
         # Also log to console for debugging
         print(f"📢 Notification sent: {title} - {message}")
-        
+
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON input: {e}", file=sys.stderr)
         sys.exit(1)

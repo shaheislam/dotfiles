@@ -1,5 +1,5 @@
 # Tabs do's and don'ts:
-# comment: 	
+# comment:
 quoted: "Quoted		"
 block: |
   void main() {

@@ -1,6 +1,6 @@
 ---
 in the block context:
-    indentation should be kept: { 
+    indentation should be kept: {
     but in the flow context: [
 it may be violated]
 }

@@ -41,4 +41,3 @@ test_representer_types.unittest = ['.code']
 if __name__ == '__main__':
     import test_appliance
     test_appliance.run(globals())
-
