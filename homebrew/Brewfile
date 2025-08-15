@@ -9,6 +9,11 @@ tap "morantron/tmux-fingers"
 # Taps for AWS tools
 tap "common-fate/granted"
 
+# Taps for DevOps tools
+tap "fluxcd/tap"
+tap "fairwindsops/tap"
+# tap "gruntwork-io/tap" # Not available via tap - removed
+
 # CLI Tools
 brew "pre-commit"
 brew "zsh-vi-mode"
@@ -72,10 +77,92 @@ brew "gh"
 brew "pipx"
 brew "gemini-cli"
 
-# Security Tools
+# Security & DevSecOps Tools
 tap "vet-run/vet"
+tap "aquasecurity/trivy"
+tap "anchore/grype"
+tap "anchore/syft"
 brew "vet-run/vet/vet-run"
 brew "gitleaks"
+brew "trivy"
+brew "cosign"
+brew "syft"
+brew "grype"
+brew "tfsec"
+brew "checkov"
+brew "semgrep"
+brew "nuclei"
+brew "sops"
+brew "age"
+brew "hadolint"
+
+# Observability & Monitoring Tools
+brew "k9s"
+brew "stern"
+brew "dive"
+brew "ctop"
+brew "duf"
+brew "gping"
+brew "hyperfine"
+brew "oha"
+brew "glances"
+brew "lnav"
+
+# DevOps/SRE Essentials
+brew "helm"
+brew "kustomize"
+brew "velero"
+brew "argocd"
+brew "fluxcd/tap/flux"
+brew "terragrunt"
+brew "tflint"
+brew "infracost"
+# brew "cloud-nuke" # Not available - install manually via go
+
+# Network & Connectivity Tools
+brew "mtr"
+brew "nmap"
+brew "tcpdump"
+brew "httpie"
+brew "curlie"
+brew "xh"
+brew "grpcurl"
+cask "ngrok"
+# cask "wireshark" # Requires sudo - install manually
+
+# Better File/System Tools
+brew "dust"
+brew "sd"
+brew "choose"
+brew "tokei"
+brew "ncdu"
+
+# Infrastructure Tools
+brew "pulumi"
+# brew "packer" # License changed to BUSL - install manually if needed
+# brew "vault" # License changed to BUSL - install manually if needed
+# brew "consul" # License changed to BUSL - install manually if needed
+# brew "nomad" # License changed to BUSL - install manually if needed
+
+# Container Tools
+brew "podman"
+# brew "buildah" # Not available on macOS
+brew "skopeo"
+
+# Performance & Debugging Tools
+brew "flamegraph"
+brew "wrk"
+brew "watchexec"
+brew "entr"
+
+# CI/CD & Automation Tools
+brew "act"
+brew "commitizen"
+# brew "semantic-release" # Install via npm instead
+
+# Development Tools
+brew "just"
+brew "task"
 
 # Nerd Fonts
 cask "font-jetbrains-mono-nerd-font"

@@ -56,7 +56,8 @@
       "Bash(steampipe plugin:*)",
       "Bash(gcloud auth:*)",
       "Bash(gcloud projects list:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(brew bundle install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

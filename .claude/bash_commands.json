@@ -33,5 +33,75 @@
     "tool_name": "Bash",
     "command": "brew install htop btop bandwhich procs doggo",
     "description": "Install the monitoring and networking tools"
+  },
+  {
+    "timestamp": "2025-08-15T02:42:49.052621",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && brew bundle install --file=homebrew/Brewfile",
+    "description": "Install all tools from Brewfile"
+  },
+  {
+    "timestamp": "2025-08-15T02:48:35.129911",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "brew link --overwrite pnpm",
+    "description": "Fix pnpm linking issue"
+  },
+  {
+    "timestamp": "2025-08-15T02:49:45.596390",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && brew bundle install --file=homebrew/Brewfile --no-lock",
+    "description": "Continue installing all tools from Brewfile"
+  },
+  {
+    "timestamp": "2025-08-15T02:49:54.348344",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && brew bundle install --file=homebrew/Brewfile",
+    "description": "Install all tools from Brewfile in background"
+  },
+  {
+    "timestamp": "2025-08-15T02:56:49.409517",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "source ~/.config/fish/config.fish 2>/dev/null; echo \"Testing killp function:\"; type killp 2>/dev/null | head -5",
+    "description": "Test killp function availability"
+  },
+  {
+    "timestamp": "2025-08-15T02:56:56.587316",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "grep -n \"^function killp\" ~/.config/fish/config.fish",
+    "description": "Check if killp function is defined"
+  },
+  {
+    "timestamp": "2025-08-15T02:57:03.085197",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "grep -n \"^function \" ~/.config/fish/config.fish | head -10",
+    "description": "List the first 10 function definitions"
+  },
+  {
+    "timestamp": "2025-08-15T02:57:10.431834",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.config/fish/functions/ | head -10",
+    "description": "List Fish functions directory"
+  },
+  {
+    "timestamp": "2025-08-15T02:57:17.562291",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish; which k9s\"",
+    "description": "Test if k9s was installed"
+  },
+  {
+    "timestamp": "2025-08-15T02:57:24.515391",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish; which trivy\"",
+    "description": "Test if trivy was installed"
   }
 ]

@@ -173,6 +173,55 @@ if status is-interactive
     alias dig="doggo"  # Modern DNS lookup
     alias dns="doggo"  # Alternative DNS alias
 
+    # Security & DevSecOps Tools
+    alias scan="trivy"  # Vulnerability scanner
+    alias vuln="grype"  # Container vulnerability scanner
+    alias sbom="syft"  # Generate SBOM
+    alias tfscan="tfsec"  # Terraform security scanner
+    alias iacscan="checkov"  # IaC security scanner
+    alias semscan="semgrep"  # Static analysis
+    alias dockerlint="hadolint"  # Dockerfile linter
+
+    # Kubernetes & Container Tools
+    alias k="kubectl"  # Kubernetes CLI shorthand
+    alias kx="kubie ctx"  # Switch kubernetes context
+    alias kns="kubie ns"  # Switch namespace
+    alias kdive="dive"  # Docker image explorer
+    alias kctop="ctop"  # Container metrics
+
+    # Better File/System Tools
+    alias du="dust"  # Better disk usage
+    alias ncdu="ncdu --color dark"  # NCurses disk usage
+    alias sed="sd"  # Better sed replacement
+    alias cut="choose"  # Better cut/awk
+    alias loc="tokei"  # Code statistics
+    alias duf="duf"  # Better df
+
+    # Network Tools
+    alias http="xh"  # Friendly HTTP client
+    alias grpc="grpcurl"  # gRPC client
+    alias trace="mtr"  # Better traceroute
+    alias ping="gping"  # Ping with graph
+    alias bench="hyperfine"  # Command benchmarking
+    alias load="oha"  # HTTP load testing
+
+    # Infrastructure Tools
+    alias tf="terraform"  # Terraform shorthand
+    alias tg="terragrunt"  # Terragrunt shorthand
+    alias tfdoc="terraform-docs"  # Terraform docs
+    alias tfcost="infracost"  # Infrastructure cost
+
+    # Monitoring & Performance
+    alias mon="glances"  # System monitoring
+    alias logs="lnav"  # Log navigator
+    alias flame="flamegraph"  # Performance visualization
+
+    # Development Tools
+    alias watch="watchexec"  # Execute on file change
+    alias j="just"  # Command runner
+    alias t="task"  # Task runner
+    alias act="act --container-architecture linux/amd64"  # GitHub Actions locally with ARM64 compatibility
+
     # Utility aliases
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
     alias save="~/sesh.sh save"
@@ -1569,6 +1618,320 @@ if status is-interactive
     # Up arrow - directory search (default behavior)
     bind \e\[A _atuin_search_directory
     bind -M insert \e\[A _atuin_search_directory
+
+    # ==================== DevOps/SRE FZF Integrations ====================
+
+    # Kubernetes context and namespace switcher with fzf
+    function kctx --description "Switch Kubernetes context with fzf"
+        if not command -v kubectl >/dev/null
+            echo "kubectl not installed"
+            return 1
+        end
+
+        set -l contexts (kubectl config get-contexts -o name 2>/dev/null)
+        if test -z "$contexts"
+            echo "No Kubernetes contexts found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $contexts | fzf \
+            --prompt="Select Kubernetes context: " \
+            --height=40% \
+            --border \
+            --preview='kubectl config view --minify --context={} | head -20')
+
+        if test -n "$selected"
+            kubectl config use-context $selected
+            echo "Switched to context: $selected"
+        end
+    end
+
+    function kns --description "Switch Kubernetes namespace with fzf"
+        if not command -v kubectl >/dev/null
+            echo "kubectl not installed"
+            return 1
+        end
+
+        set -l namespaces (kubectl get namespaces -o name 2>/dev/null | cut -d/ -f2)
+        if test -z "$namespaces"
+            echo "No namespaces found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $namespaces | fzf \
+            --prompt="Select namespace: " \
+            --height=40% \
+            --border \
+            --preview='kubectl get pods -n {} 2>/dev/null | head -20')
+
+        if test -n "$selected"
+            kubectl config set-context --current --namespace=$selected
+            echo "Switched to namespace: $selected"
+        end
+    end
+
+    # Pod selector with fzf
+    function kpod --description "Select Kubernetes pod with fzf"
+        if not command -v kubectl >/dev/null
+            echo "kubectl not installed"
+            return 1
+        end
+
+        set -l pods (kubectl get pods --no-headers 2>/dev/null)
+        if test -z "$pods"
+            echo "No pods found in current namespace"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $pods | fzf \
+            --prompt="Select pod (ENTER=describe, CTRL-L=logs, CTRL-E=exec, CTRL-D=delete): " \
+            --height=80% \
+            --border \
+            --header="NAME READY STATUS RESTARTS AGE" \
+            --bind='ctrl-l:execute(kubectl logs {1})' \
+            --bind='ctrl-e:execute(kubectl exec -it {1} -- /bin/sh)' \
+            --bind='ctrl-d:execute(kubectl delete pod {1})' \
+            --preview='kubectl describe pod {1}')
+
+        if test -n "$selected"
+            set -l pod_name (echo $selected | awk '{print $1}')
+            kubectl describe pod $pod_name
+        end
+    end
+
+    # Docker container selector with fzf
+    function dcon --description "Select Docker container with fzf"
+        if not command -v docker >/dev/null
+            echo "Docker not installed"
+            return 1
+        end
+
+        set -l containers (docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}" | tail -n +2)
+        if test -z "$containers"
+            echo "No running containers found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $containers | fzf \
+            --prompt="Select container (ENTER=logs, CTRL-E=exec, CTRL-S=stop, CTRL-R=restart): " \
+            --height=80% \
+            --border \
+            --bind='ctrl-e:execute(docker exec -it {1} /bin/sh)' \
+            --bind='ctrl-s:execute(docker stop {1})' \
+            --bind='ctrl-r:execute(docker restart {1})' \
+            --preview='docker logs --tail 50 {1}')
+
+        if test -n "$selected"
+            set -l container_id (echo $selected | awk '{print $1}')
+            docker logs --tail 100 -f $container_id
+        end
+    end
+
+    # Terraform workspace selector
+    function tfw --description "Switch Terraform workspace with fzf"
+        if not command -v terraform >/dev/null
+            echo "Terraform not installed"
+            return 1
+        end
+
+        if not test -d .terraform
+            echo "Not in a Terraform directory (no .terraform folder)"
+            return 1
+        end
+
+        set -l workspaces (terraform workspace list | sed 's/^[* ] //')
+        if test -z "$workspaces"
+            echo "No Terraform workspaces found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $workspaces | fzf \
+            --prompt="Select Terraform workspace: " \
+            --height=40% \
+            --border)
+
+        if test -n "$selected"
+            terraform workspace select $selected
+            echo "Switched to workspace: $selected"
+        end
+    end
+
+    # Helm release selector
+    function helmr --description "Select Helm release with fzf"
+        if not command -v helm >/dev/null
+            echo "Helm not installed"
+            return 1
+        end
+
+        set -l releases (helm list --all-namespaces --output json 2>/dev/null | jq -r '.[] | "\(.namespace)\t\(.name)\t\(.status)\t\(.chart)"')
+        if test -z "$releases"
+            echo "No Helm releases found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $releases | fzf \
+            --prompt="Select Helm release (ENTER=status, CTRL-V=values, CTRL-D=delete): " \
+            --height=80% \
+            --border \
+            --header="NAMESPACE NAME STATUS CHART" \
+            --bind='ctrl-v:execute(helm get values {2} -n {1})' \
+            --bind='ctrl-d:execute(helm delete {2} -n {1})' \
+            --preview='helm status {2} -n {1}')
+
+        if test -n "$selected"
+            set -l namespace (echo $selected | awk '{print $1}')
+            set -l release (echo $selected | awk '{print $2}')
+            helm status $release -n $namespace
+        end
+    end
+
+    # AWS profile switcher with fzf
+    function awsp --description "Switch AWS profile with fzf"
+        set -l profiles (aws configure list-profiles 2>/dev/null)
+        if test -z "$profiles"
+            echo "No AWS profiles found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $profiles | fzf \
+            --prompt="Select AWS profile: " \
+            --height=40% \
+            --border \
+            --preview='aws configure list --profile {}')
+
+        if test -n "$selected"
+            set -gx AWS_PROFILE $selected
+            echo "Switched to AWS profile: $selected"
+            aws sts get-caller-identity
+        end
+    end
+
+    # Security scanning with fzf
+    function secsan --description "Run security scans with fzf selection"
+        set -l tools "trivy image" "trivy fs ." "trivy config ." "grype ." "tfsec ." "checkov -d ." "semgrep --config=auto ." "hadolint Dockerfile"
+
+        set -l selected (printf '%s\n' $tools | fzf \
+            --prompt="Select security scan to run: " \
+            --height=40% \
+            --border)
+
+        if test -n "$selected"
+            echo "Running: $selected"
+            eval $selected
+        end
+    end
+
+    # Network port scanner with fzf
+    function portscan --description "Scan ports with nmap and fzf"
+        if not command -v nmap >/dev/null
+            echo "nmap not installed"
+            return 1
+        end
+
+        echo "Enter target (IP or hostname):"
+        read target
+
+        if test -z "$target"
+            echo "No target specified"
+            return 1
+        end
+
+        set -l scan_types "Quick scan (-F)" "Top 100 ports" "Common ports (1-1024)" "All ports (-p-)" "Service detection (-sV)" "OS detection (-O)"
+
+        set -l selected (printf '%s\n' $scan_types | fzf \
+            --prompt="Select scan type: " \
+            --height=40% \
+            --border)
+
+        switch "$selected"
+            case "Quick scan*"
+                sudo nmap -F $target
+            case "Top 100*"
+                sudo nmap --top-ports 100 $target
+            case "Common ports*"
+                sudo nmap -p 1-1024 $target
+            case "All ports*"
+                sudo nmap -p- $target
+            case "Service detection*"
+                sudo nmap -sV $target
+            case "OS detection*"
+                sudo nmap -O $target
+        end
+    end
+
+    # Log viewer with fzf
+    function logsf --description "View logs with fzf and lnav"
+        set -l log_files (find /var/log $HOME/logs . -name "*.log" -type f 2>/dev/null | head -50)
+
+        if test -z "$log_files"
+            echo "No log files found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $log_files | fzf \
+            --prompt="Select log file to view: " \
+            --height=60% \
+            --border \
+            --preview='tail -50 {}' \
+            --preview-window=right:60%:wrap)
+
+        if test -n "$selected"
+            if command -v lnav >/dev/null
+                lnav $selected
+            else
+                less +F $selected
+            end
+        end
+    end
+
+    # Performance benchmarking with fzf
+    function benchf --description "Benchmark commands with hyperfine"
+        if not command -v hyperfine >/dev/null
+            echo "hyperfine not installed"
+            return 1
+        end
+
+        echo "Enter first command to benchmark:"
+        read cmd1
+        echo "Enter second command to benchmark (or press Enter to skip):"
+        read cmd2
+
+        if test -z "$cmd1"
+            echo "No command specified"
+            return 1
+        end
+
+        if test -n "$cmd2"
+            hyperfine --warmup 3 "$cmd1" "$cmd2"
+        else
+            hyperfine --warmup 3 "$cmd1"
+        end
+    end
+
+    # Infrastructure cost estimation with fzf
+    function tfcostf --description "Estimate infrastructure costs with infracost"
+        if not command -v infracost >/dev/null
+            echo "infracost not installed"
+            return 1
+        end
+
+        set -l actions "breakdown" "diff" "configure"
+
+        set -l selected (printf '%s\n' $actions | fzf \
+            --prompt="Select infracost action: " \
+            --height=40% \
+            --border)
+
+        switch "$selected"
+            case "breakdown"
+                infracost breakdown --path .
+            case "diff"
+                infracost diff --path .
+            case "configure"
+                infracost configure
+        end
+    end
+
 end
 
 # Note: Additional git+fzf functionality is provided in conf.d/plugins.fish

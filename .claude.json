@@ -903,6 +903,22 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Can you set it to use this flag by default --container-architecture linux/amd64 as most github runners are linux based",
+          "pastedContents": {}
+        },
+        {
+          "display": "╰─▶ act\nINFO[0000] Using docker host 'unix:///Users/shaheislam/.docker/run/docker.sock', and daemon socket 'unix:///Users/shaheislam/.docker/run/docker.sock' \nWARN  ⚠ You are using Apple M-series chip and you have not specified container architecture, you might encounter issues while running act. If so, try running it with '--container-architecture linux/amd64'. ⚠  \nError: stat /Users/shaheislam/dotfiles/.github/workflows: no such file or directory\n",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can you install all of these including fzf functionality where possible",
+          "pastedContents": {}
+        },
+        {
+          "display": "As a senior devops / sre / software / observability / security / devsecops engineer am i missing any useful tools from my dotfiles",
+          "pastedContents": {}
+        },
+        {
           "display": "Can you add fzf integration for ps",
           "pastedContents": {}
         },
