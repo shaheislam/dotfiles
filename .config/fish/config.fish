@@ -1103,7 +1103,7 @@ if status is-interactive
 
     # System monitoring helper functions with fzf integration
     function killp --description "Kill process with fzf selection"
-        set -l processes (procs --color=never | tail -n +2)
+        set -l processes (procs --color=disable | tail -n +2)
 
         if test -z "$processes"
             echo "No processes found"
@@ -1200,13 +1200,13 @@ if status is-interactive
 
     function procmon --description "Interactive process monitor with fzf"
         while true
-            set -l selected (procs --color=never | fzf \
+            set -l selected (procs --color=disable | fzf \
                 --prompt="Process Monitor (ENTER=details, CTRL-K=kill, CTRL-R=refresh, ESC=exit): " \
                 --height=100% \
                 --border \
                 --header-lines=1 \
-                --bind='ctrl-k:execute(kill -9 {1})+reload(procs --color=never)' \
-                --bind='ctrl-r:reload(procs --color=never)' \
+                --bind='ctrl-k:execute(kill -9 {1})+reload(procs --color=disable)' \
+                --bind='ctrl-r:reload(procs --color=disable)' \
                 --preview='procs {1} --tree' \
                 --preview-window=right:50%:wrap)
 
