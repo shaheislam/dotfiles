@@ -903,6 +903,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Can you add fzf integration for ps",
+          "pastedContents": {}
+        },
+        {
           "display": "╭╴󰊠 shaheislam  …/dotfiles  main  !⇡    @euw1  󰠅 s189-test  s189t01-tsc-test-aks(bat-qa)   02:06 󰊨\n╰─▶ killp\nerror: invalid value 'never' for '--color <COLOR>'\n  [possible values: auto, always, disable]\n\nFor more information, try '--help'.\nNo processes found\n\\\n\\\nAlso procmon and portmon don't seem to be working perfectly",
           "pastedContents": {}
         },
