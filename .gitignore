@@ -33,3 +33,4 @@
 
 # Environment files
 .envrc
+.env

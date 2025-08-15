@@ -409,14 +409,14 @@ echo "=== Installing Node.js global packages ==="
 
 if command -v npm &> /dev/null; then
   # Only install prettierd - use existing Homebrew prettier
-  npm install -g @fsouza/prettierd prettier-plugin-toml
+  bun install -g @fsouza/prettierd prettier-plugin-toml || npm install -g @fsouza/prettierd prettier-plugin-toml
   echo "Installed prettierd and prettier-plugin-toml"
   echo "Using existing prettier from Homebrew"
 
   # Install BrowserTools MCP packages
   echo "Installing BrowserTools MCP packages..."
-  npm install -g @agentdeskai/browser-tools-mcp@1.2.0
-  npm install -g @agentdeskai/browser-tools-server@1.2.0
+  bun install -g @agentdeskai/browser-tools-mcp@1.2.0 || npm install -g @agentdeskai/browser-tools-mcp@1.2.0
+  bun install -g @agentdeskai/browser-tools-server@1.2.0 || npm install -g @agentdeskai/browser-tools-server@1.2.0
   echo "Installed BrowserTools MCP packages"
 
   # Download BrowserTools Chrome extension to dotfiles directory
@@ -520,9 +520,26 @@ fi
 echo "=== Installing Claude Code CLI ==="
 if ! command -v claude &> /dev/null; then
   echo "Installing Claude Code CLI via npm..."
-  npm install -g @anthropic-ai/claude-code || echo "Warning: Failed to install Claude Code CLI"
+  bun install -g @anthropic-ai/claude-code || npm install -g @anthropic-ai/claude-code || echo "Warning: Failed to install Claude Code CLI"
+  
+  # Install Claude Code Router for alternative AI providers
+  echo "Installing Claude Code Router..."
+  npm install -g @musistudio/claude-code-router || echo "Warning: Failed to install Claude Code Router"
 else
   echo "Claude Code CLI already installed"
+  # Still install Claude Code Router if not present
+  if ! command -v ccr &> /dev/null; then
+    echo "Installing Claude Code Router..."
+    bun install -g @musistudio/claude-code-router || npm install -g @musistudio/claude-code-router || echo "Warning: Failed to install Claude Code Router"
+  fi
+fi
+
+# Setup Claude Code Router configuration
+if [ -f "$HOME/dotfiles/.config/claude-code-router/config.json" ] && [ ! -f "$HOME/.claude-code-router/config.json" ]; then
+  echo "Setting up Claude Code Router configuration..."
+  mkdir -p "$HOME/.claude-code-router"
+  ln -s "$HOME/dotfiles/.config/claude-code-router/config.json" "$HOME/.claude-code-router/config.json"
+  echo "Claude Code Router configuration linked from dotfiles"
 fi
 
 # Configure Claude Code MCP servers (user scope)

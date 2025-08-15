@@ -3,6 +3,7 @@
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
+  "editorMode": "vim",
   "tipsHistory": {
     "ide-hotkey": 32,
     "new-user-warmup": 2,
@@ -472,6 +473,74 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "If i have the .env file set now do i still need \\\n\\\n        .config/claude-code-router/\n        .config/direnv/\n        scripts/ccr-with-env.sh\n        scripts/check-claude-subscription.sh\n        scripts/setup-claude-code-router.sh",
+          "pastedContents": {}
+        },
+        {
+          "display": "Create .env not .env.example ",
+          "pastedContents": {}
+        },
+        {
+          "display": "I'll create it here for simplicity of access but add it to my .gitignore ",
+          "pastedContents": {}
+        },
+        {
+          "display": "I'll load it from .env then, if i set this in ~/dotfiles and it syncs via Stow then it should be picked up by claude-router?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Where should i create the ennvironment file with the API keys?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Where shu]",
+          "pastedContents": {}
+        },
+        {
+          "display": "Arent you overcomplicating this? Isn't there a way to have a default set of env variabls always loaded to a shell and claude code router can pick those up dynamically?",
+          "pastedContents": {}
+        },
+        {
+          "display": "/vim ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is there a way to load global envrc instead of setting the API key in the config",
+          "pastedContents": {}
+        },
+        {
+          "display": "Testing",
+          "pastedContents": {}
+        },
+        {
+          "display": "/model ",
+          "pastedContents": {}
+        },
+        {
+          "display": "How can I check that I am using my max subscription using ccr for claude models",
+          "pastedContents": {}
+        },
+        {
+          "display": "/status ",
+          "pastedContents": {}
+        },
+        {
+          "display": "/model ",
+          "pastedContents": {}
+        },
+        {
+          "display": "/model deepseek",
+          "pastedContents": {}
+        },
+        {
+          "display": "https://claudelog.com/claude-code-mcps/claude-code-router/ - Can you set this up?",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "Add export _ZO_DOCTOR=0 and also make the zoxide init to the end of your .zshrc file change too",
           "pastedContents": {}
         },
@@ -820,7 +889,17 @@
         "utils.py",
         "controller.py"
       ],
-      "exampleFilesGeneratedAt": 1754760030951
+      "exampleFilesGeneratedAt": 1754760030951,
+      "lastCost": 0,
+      "lastAPIDuration": 0,
+      "lastDuration": 1469377,
+      "lastLinesAdded": 0,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 0,
+      "lastTotalOutputTokens": 0,
+      "lastTotalCacheCreationInputTokens": 0,
+      "lastTotalCacheReadInputTokens": 0,
+      "lastSessionId": "beb0d016-b27e-44de-885d-4b62cec07149"
     },
     "/Users/shahe/work/devops-utils": {
       "allowedTools": [],
@@ -1349,5 +1428,6 @@
     "workspaceRole": null,
     "organizationName": "shahe.islam@thepetlabco.com's Organization"
   },
-  "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z"
+  "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
+  "recommendedSubscription": ""
 }

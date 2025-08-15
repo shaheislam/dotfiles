@@ -3,5 +3,10 @@
     "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
     "blocked_command": "claude mcp add linear npx linear-mcp-server --env LINEAR_API_KEY",
     "suggested_command": "claude mcp add linear bunx linear-mcp-server --env LINEAR_API_KEY"
+  },
+  {
+    "session_id": "c2f7f381-84d5-467e-b0ad-425a3e716526",
+    "blocked_command": "cd ~/dotfiles && npm install -g @musistudio/claude-code-router 2>&1",
+    "suggested_command": "cd ~/dotfiles && bun install -g @musistudio/claude-code-router 2>&1"
   }
 ]

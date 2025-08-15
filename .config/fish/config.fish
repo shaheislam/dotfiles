@@ -51,6 +51,12 @@ if status is-interactive
 
     # Additional environment variables from extended config
     set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
+    
+    # API Keys for Claude Code Router
+    # Load from ~/dotfiles/.env if it exists (after stow symlink)
+    if test -f ~/.env
+        export (grep -v '^#' ~/.env | xargs -L 1)
+    end
 
     # Path configuration - combining both configs
     fish_add_path /opt/homebrew/bin
@@ -221,6 +227,10 @@ if status is-interactive
     alias j="just"  # Command runner
     alias t="task"  # Task runner
     alias act="act --container-architecture linux/amd64"  # GitHub Actions locally with ARM64 compatibility
+    
+    # AI Tools
+    alias ccr="ccr code"  # Claude Code Router - reads env vars automatically
+    alias claude-router="ccr code"  # Alternative alias for Claude Code Router
 
     # Utility aliases
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"

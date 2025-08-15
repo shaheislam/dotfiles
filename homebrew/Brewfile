@@ -77,6 +77,9 @@ brew "gh"
 brew "pipx"
 brew "gemini-cli"
 
+# AI Tools
+# Claude Code Router - installed via npm globally in setup script
+
 # Security & DevSecOps Tools
 tap "vet-run/vet"
 tap "aquasecurity/trivy"
