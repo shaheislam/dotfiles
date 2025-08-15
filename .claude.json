@@ -903,6 +903,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Do you need to clean those files up now?",
+          "pastedContents": {}
+        },
+        {
+          "display": "https://github.com/gitleaks/gitleaks - How would I set this up as part of a precommit hook globally",
+          "pastedContents": {}
+        },
+        {
           "display": "Scan my other functions tell me if there is anything else i can integrate with fzf",
           "pastedContents": {}
         },
@@ -1021,7 +1029,7 @@
   "lastReleaseNotesSeen": "1.0.72",
   "subscriptionNoticeCount": 0,
   "hasAvailableSubscription": false,
-  "fallbackAvailableWarningThreshold": 0.2,
+  "fallbackAvailableWarningThreshold": 0.5,
   "hasIdeOnboardingBeenShown": {
     "vscode": true
   },
@@ -1220,7 +1228,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1755167347248
+      "timestamp": 1755216376271
     }
   }
 }

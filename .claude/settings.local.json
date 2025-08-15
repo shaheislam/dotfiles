@@ -55,7 +55,8 @@
       "mcp__linear__linear_search_issues",
       "Bash(steampipe plugin:*)",
       "Bash(gcloud auth:*)",
-      "Bash(gcloud projects list:*)"
+      "Bash(gcloud projects list:*)",
+      "Bash(git config:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

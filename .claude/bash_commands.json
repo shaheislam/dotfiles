@@ -2770,5 +2770,96 @@
     "tool_name": "Bash",
     "command": "aws sts get-caller-identity",
     "description": "Check current AWS identity"
+  },
+  {
+    "timestamp": "2025-08-15T01:06:40.875730",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "git config --global --list | grep -E \"core\\.(hooksPath|hookspath)\" || echo \"No global hooks path configured\"",
+    "description": "Check current global git hooks configuration"
+  },
+  {
+    "timestamp": "2025-08-15T01:06:56.149261",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "brew list | grep gitleaks || echo \"Gitleaks not installed\"",
+    "description": "Check if gitleaks is installed"
+  },
+  {
+    "timestamp": "2025-08-15T01:08:03.549916",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "mkdir -p .config/git/hooks",
+    "description": "Create git hooks directory"
+  },
+  {
+    "timestamp": "2025-08-15T01:09:00.528101",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "chmod +x .config/git/hooks/pre-commit",
+    "description": "Make pre-commit hook executable"
+  },
+  {
+    "timestamp": "2025-08-15T01:11:22.065911",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "brew install gitleaks",
+    "description": "Install gitleaks via Homebrew"
+  },
+  {
+    "timestamp": "2025-08-15T01:12:09.403710",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && stow . --adopt",
+    "description": "Apply dotfiles symlinks including git hooks"
+  },
+  {
+    "timestamp": "2025-08-15T01:12:14.893337",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "ls -la ~/.config/git/hooks/",
+    "description": "Check if git hooks are properly symlinked"
+  },
+  {
+    "timestamp": "2025-08-15T01:12:21.775192",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && echo 'test_api_key = \"sk-1234567890abcdef1234567890abcdef\"' > test_secret.txt && git add test_secret.txt",
+    "description": "Create test file with fake secret and stage it"
+  },
+  {
+    "timestamp": "2025-08-15T01:12:35.178530",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && git commit -m \"Test gitleaks pre-commit hook\"",
+    "description": "Attempt to commit the file with a secret to test the hook"
+  },
+  {
+    "timestamp": "2025-08-15T01:12:47.049550",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && git rm --cached test_secret.txt && rm test_secret.txt",
+    "description": "Remove the test secret file"
+  },
+  {
+    "timestamp": "2025-08-15T01:14:15.452291",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && git status",
+    "description": "Check current git status"
+  },
+  {
+    "timestamp": "2025-08-15T01:14:22.936861",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && git add .gitconfig homebrew/Brewfile scripts/setup-script.sh .config/git/",
+    "description": "Stage gitleaks-related changes"
+  },
+  {
+    "timestamp": "2025-08-15T01:14:37.318034",
+    "session_id": "62a7a112-6d00-472d-9f4a-00d47f0c2fec",
+    "tool_name": "Bash",
+    "command": "cd ~/dotfiles && git commit -m \"feat: Add gitleaks as global pre-commit hook for secret detection\n\n- Added gitleaks to Brewfile for installation\n- Created global git hooks directory structure (.config/git/hooks/)\n- Implemented pre-commit hook script with colored output and clear messaging\n- Configured git to use global hooks path (~/.config/git/hooks)\n- Updated setup script to include gitleaks in security tools list\n- Hook automatically scans staged files for secrets before allowing commits\n- Can be bypassed with --no-verify if absolutely necessary\n- Supports .gitleaks.toml for custom exceptions\"",
+    "description": "Commit gitleaks setup changes"
   }
 ]
