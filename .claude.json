@@ -903,6 +903,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Can youintegrate fzf into any of these new tools",
+          "pastedContents": {}
+        },
+        {
+          "display": "htop/btop - Better process viewers\nbandwhich - Network utilization by process\nprocs - Modern ps replacement with search and highlighting\ndog - Modern dig alternative for DNS lookups\n\ncan youn set these up",
+          "pastedContents": {}
+        },
+        {
           "display": "Yes switch",
           "pastedContents": {}
         },

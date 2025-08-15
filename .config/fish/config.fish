@@ -163,6 +163,16 @@ if status is-interactive
     alias gispub="gis"
     alias gispriv="gh gist create"
 
+    # System monitoring aliases
+    alias top="btop"  # Use btop as default process viewer
+    alias htop="htop --tree"  # Show htop with tree view by default
+    alias ps="procs"  # Use procs as modern ps replacement
+    alias pst="procs --tree"  # Process tree view
+    alias psg="procs | grep"  # Search processes
+    alias net="sudo bandwhich"  # Network monitoring (requires sudo)
+    alias dig="doggo"  # Modern DNS lookup
+    alias dns="doggo"  # Alternative DNS alias
+
     # Utility aliases
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
     alias save="~/sesh.sh save"
@@ -1089,6 +1099,229 @@ if status is-interactive
                 docker logs -f $container_id
             end
         end
+    end
+
+    # System monitoring helper functions with fzf integration
+    function killp --description "Kill process with fzf selection"
+        set -l processes (procs --color=never | tail -n +2)
+
+        if test -z "$processes"
+            echo "No processes found"
+            return 1
+        end
+
+        set -l selected (printf '%s\n' $processes | fzf --multi \
+            --prompt="Select process to kill (TAB for multiple): " \
+            --height=80% \
+            --border \
+            --header="PID | User | CPU% | MEM% | Command" \
+            --preview='echo {}' \
+            --preview-window=down:3:wrap)
+
+        if test -n "$selected"
+            for proc in $selected
+                set -l pid (echo $proc | awk '{print $1}')
+                set -l cmd (echo $proc | awk '{$1=$2=$3=$4=""; print $0}' | sed 's/^    //')
+                if test -n "$pid"
+                    echo "Killing PID $pid: $cmd"
+                    kill -9 $pid
+                end
+            end
+        end
+    end
+
+    function port --description "Show what's listening on a given port (with fzf if no port specified)"
+        if test -z "$argv[1]"
+            # No port specified, use fzf to select from all listening ports
+            set -l all_ports (sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | tail -n +2 | awk '{print $9}' | cut -d: -f2 | sort -nu)
+
+            if test -z "$all_ports"
+                echo "No listening ports found"
+                return 1
+            end
+
+            set -l selected_port (printf '%s\n' $all_ports | fzf --prompt="Select port to inspect: " --height=40% --border)
+
+            if test -n "$selected_port"
+                echo "Port $selected_port:"
+                sudo lsof -iTCP:$selected_port -sTCP:LISTEN
+            end
+        else
+            sudo lsof -iTCP:$argv[1] -sTCP:LISTEN
+        end
+    end
+
+    function ports --description "Show all listening ports with fzf filtering"
+        set -l port_info (sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | tail -n +2)
+
+        if test -z "$port_info"
+            echo "No listening ports found"
+            return 1
+        end
+
+        printf '%s\n' $port_info | fzf \
+            --prompt="Filter listening ports (ESC to exit): " \
+            --height=80% \
+            --border \
+            --header="COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
+            --preview='echo {} | awk "{print \"Process: \" \$1 \"\\nPID: \" \$2 \"\\nUser: \" \$3 \"\\nPort: \" \$9}"' \
+            --preview-window=right:40%:wrap
+    end
+
+    function mem --description "Show memory usage by process with fzf filtering"
+        procs --sortd mem | fzf \
+            --prompt="Filter processes by memory (ESC to exit): " \
+            --height=80% \
+            --border \
+            --header-lines=1 \
+            --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nMemory: \" \$4 \"\\nCPU: \" \$3 \"\\nCommand: \"}" && echo {} | cut -d" " -f5-' \
+            --preview-window=right:40%:wrap
+    end
+
+    function cpu --description "Show CPU usage by process with fzf filtering"
+        procs --sortd cpu | fzf \
+            --prompt="Filter processes by CPU (ESC to exit): " \
+            --height=80% \
+            --border \
+            --header-lines=1 \
+            --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nCPU: \" \$3 \"\\nMemory: \" \$4 \"\\nCommand: \"}" && echo {} | cut -d" " -f5-' \
+            --preview-window=right:40%:wrap
+    end
+
+    function netstat-tuln --description "Show all listening ports (netstat style) with fzf"
+        sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | fzf \
+            --prompt="Filter network connections: " \
+            --height=80% \
+            --border \
+            --header-lines=1 \
+            --preview='echo {} | awk "{print \"Process: \" \$1 \"\\nPID: \" \$2 \"\\nPort: \" \$9}"' \
+            --preview-window=down:3:wrap
+    end
+
+    function procmon --description "Interactive process monitor with fzf"
+        while true
+            set -l selected (procs --color=never | fzf \
+                --prompt="Process Monitor (ENTER=details, CTRL-K=kill, CTRL-R=refresh, ESC=exit): " \
+                --height=100% \
+                --border \
+                --header-lines=1 \
+                --bind='ctrl-k:execute(kill -9 {1})+reload(procs --color=never)' \
+                --bind='ctrl-r:reload(procs --color=never)' \
+                --preview='procs {1} --tree' \
+                --preview-window=right:50%:wrap)
+
+            if test -z "$selected"
+                break
+            end
+
+            set -l pid (echo $selected | awk '{print $1}')
+            echo "Details for PID $pid:"
+            procs $pid --tree
+            read -P "Press Enter to continue..."
+        end
+    end
+
+    function portmon --description "Interactive port monitor with fzf"
+        while true
+            set -l selected (sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | fzf \
+                --prompt="Port Monitor (ENTER=details, CTRL-K=kill process, CTRL-R=refresh, ESC=exit): " \
+                --height=100% \
+                --border \
+                --header-lines=1 \
+                --bind='ctrl-k:execute(kill -9 {2})+reload(sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null)' \
+                --bind='ctrl-r:reload(sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null)' \
+                --preview='echo "Process: {1}\nPID: {2}\nUser: {3}\nPort: {9}"' \
+                --preview-window=down:4:wrap)
+
+            if test -z "$selected"
+                break
+            end
+
+            set -l pid (echo $selected | awk '{print $2}')
+            echo "Details for PID $pid:"
+            sudo lsof -p $pid
+            read -P "Press Enter to continue..."
+        end
+    end
+
+    function dnslookup --description "Perform DNS lookup with fzf record type selection"
+        if test -z "$argv[1]"
+            echo "Usage: dnslookup <domain> [record_type]"
+            echo "Example: dnslookup google.com"
+            echo "Example: dnslookup google.com MX"
+            return 1
+        end
+
+        set -l domain $argv[1]
+        set -l record_type $argv[2]
+
+        if test -z "$record_type"
+            # Use fzf to select record type
+            set -l types "ALL (Show all types)" "A (IPv4 Address)" "AAAA (IPv6 Address)" "MX (Mail Exchange)" "TXT (Text Records)" "NS (Name Servers)" "CNAME (Canonical Name)" "SOA (Start of Authority)" "PTR (Pointer)"
+            set -l selected (printf '%s\n' $types | fzf --prompt="Select DNS record type: " --height=40% --border)
+
+            if test -z "$selected"
+                return 0
+            end
+
+            set record_type (echo $selected | cut -d' ' -f1)
+        end
+
+        if test "$record_type" = "ALL"
+            # Show all common record types
+            echo "🔍 A Records:"
+            doggo $domain A
+            echo ""
+            echo "🔍 AAAA Records:"
+            doggo $domain AAAA
+            echo ""
+            echo "🔍 MX Records:"
+            doggo $domain MX
+            echo ""
+            echo "🔍 TXT Records:"
+            doggo $domain TXT
+            echo ""
+            echo "🔍 NS Records:"
+            doggo $domain NS
+        else
+            echo "🔍 $record_type Records for $domain:"
+            doggo $domain $record_type
+        end
+    end
+
+    function topmon --description "Interactive top-like monitor with btop/htop selection"
+        set -l monitors "btop (Beautiful Resource Monitor)" "htop (Interactive Process Viewer)" "procs (Modern Process Viewer)"
+        set -l selected (printf '%s\n' $monitors | fzf --prompt="Select monitor: " --height=30% --border)
+
+        if test -n "$selected"
+            switch $selected
+                case "*btop*"
+                    btop
+                case "*htop*"
+                    htop
+                case "*procs*"
+                    procs --watch --watch-interval 1
+            end
+        end
+    end
+
+    function sysinfo --description "Show system information summary"
+        echo "🖥️  System Information"
+        echo "===================="
+        fastfetch --logo none --structure "OS:Kernel:Uptime:CPU:Memory:Disk"
+        echo ""
+        echo "📊 Process Summary"
+        echo "=================="
+        procs --tree | head -20
+        echo ""
+        echo "🌐 Network Activity"
+        echo "=================="
+        if command -v bandwhich >/dev/null
+            echo "Run 'net' (sudo bandwhich) for detailed network monitoring"
+        end
+        echo ""
+        echo "Listening Ports:"
+        ports | head -10
     end
 
     # Docker image management with fzf
