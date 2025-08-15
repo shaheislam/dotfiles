@@ -69,6 +69,7 @@ brew "gemini-cli"
 # Security Tools
 tap "vet-run/vet"
 brew "vet-run/vet/vet-run"
+brew "gitleaks"
 
 # Nerd Fonts
 cask "font-jetbrains-mono-nerd-font"

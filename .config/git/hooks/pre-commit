@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+# Gitleaks pre-commit hook
+# This hook runs gitleaks to detect secrets before committing
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if gitleaks is installed
+if ! command -v gitleaks &> /dev/null; then
+    echo -e "${YELLOW}⚠️  Warning: gitleaks is not installed${NC}"
+    echo "Install it with: brew install gitleaks"
+    echo "Skipping secret detection..."
+    exit 0
+fi
+
+echo "🔍 Running gitleaks to check for secrets..."
+
+# Run gitleaks protect to check staged changes
+# --staged-changes only checks staged files
+# --verbose provides more detailed output
+# --redact hides the actual secret values in output
+gitleaks protect --staged --verbose --redact
+
+# Capture the exit code
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -eq 0 ]; then
+    echo -e "${GREEN}✅ No secrets detected. Proceeding with commit.${NC}"
+    exit 0
+elif [ $EXIT_CODE -eq 1 ]; then
+    echo -e "${RED}❌ Secrets detected! Commit blocked.${NC}"
+    echo -e "${RED}Please remove the secrets before committing.${NC}"
+    echo ""
+    echo "To bypass this check (NOT recommended), use:"
+    echo "  git commit --no-verify"
+    echo ""
+    echo "To configure gitleaks exceptions, create a .gitleaks.toml file"
+    exit 1
+else
+    echo -e "${YELLOW}⚠️  Gitleaks encountered an error (exit code: $EXIT_CODE)${NC}"
+    echo "Check the output above for details."
+    exit $EXIT_CODE
+fi
