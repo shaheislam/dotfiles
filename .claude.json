@@ -472,6 +472,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Add export _ZO_DOCTOR=0 and also make the zoxide init to the end of your .zshrc file change too",
+          "pastedContents": {}
+        },
+        {
           "display": "⏺ Bash(cd ~/dotfiles && git check-ignore\n      .claude/agents/devops-security-auditor.md)\n  ⎿  Error: zoxide: detected a possible configuration issue.\n     Please ensure that zoxide is initialized right at the end of \n     your shell configuration file (usually ~/.zshrc).\n\n     If the issue persists, consider filing an issue at:\n     https://github.com/ajeetdsouza/zoxide/issues\n\n     Disable this message by setting _ZO_DOCTOR=0.\\\n\\\nWhy does this error occur?",
           "pastedContents": {}
         },

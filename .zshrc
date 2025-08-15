@@ -38,9 +38,11 @@ if [ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]; the
 fi
 
 # Initialize tools
-eval "$(zoxide init zsh)"
 eval "$(direnv hook zsh)"
 eval "$(atuin init zsh)"
+
+# Disable zoxide doctor warnings
+export _ZO_DOCTOR=0
 
 # Source asdf
 if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
@@ -117,3 +119,6 @@ fi
 
 # Source powerlevel10k config if using it
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# Initialize zoxide (must be at the end)
+eval "$(zoxide init zsh)"
