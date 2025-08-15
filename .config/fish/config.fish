@@ -1087,14 +1087,14 @@ if status is-interactive
             --bind='ctrl-d:execute(echo drop {})+abort')
 
         if test -n "$selected"
-            set -l stash_id (echo $selected | cut -d: -f1)
+            set -l stash_id (echo $selected | command cut -d: -f1)
 
             if string match -q "pop *" "$selected"
-                set stash_id (echo $selected | awk '{print $2}' | cut -d: -f1)
+                set stash_id (echo $selected | awk '{print $2}' | command cut -d: -f1)
                 echo "Popping stash: $stash_id"
                 git stash pop $stash_id
             else if string match -q "drop *" "$selected"
-                set stash_id (echo $selected | awk '{print $2}' | cut -d: -f1)
+                set stash_id (echo $selected | awk '{print $2}' | command cut -d: -f1)
                 read -P "Drop stash $stash_id? (y/N): " confirm
                 if test "$confirm" = "y"
                     git stash drop $stash_id
@@ -1243,7 +1243,7 @@ if status is-interactive
     function port --description "Show what's listening on a given port (with fzf if no port specified)"
         if test -z "$argv[1]"
             # No port specified, use fzf to select from all listening ports
-            set -l all_ports (sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | tail -n +2 | awk '{print $9}' | cut -d: -f2 | sort -nu)
+            set -l all_ports (sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | tail -n +2 | awk '{print $9}' | command cut -d: -f2 | sort -nu)
 
             if test -z "$all_ports"
                 echo "No listening ports found"
@@ -1284,7 +1284,7 @@ if status is-interactive
             --height=80% \
             --border \
             --header-lines=1 \
-            --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nMemory: \" \$4 \"\\nCPU: \" \$3 \"\\nCommand: \"}" && echo {} | cut -d" " -f5-' \
+            --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nMemory: \" \$4 \"\\nCPU: \" \$3 \"\\nCommand: \"}" && echo {} | command cut -d" " -f5-' \
             --preview-window=right:40%:wrap
     end
 
@@ -1294,7 +1294,7 @@ if status is-interactive
             --height=80% \
             --border \
             --header-lines=1 \
-            --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nCPU: \" \$3 \"\\nMemory: \" \$4 \"\\nCommand: \"}" && echo {} | cut -d" " -f5-' \
+            --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nCPU: \" \$3 \"\\nMemory: \" \$4 \"\\nCommand: \"}" && echo {} | command cut -d" " -f5-' \
             --preview-window=right:40%:wrap
     end
 
@@ -1354,6 +1354,30 @@ if status is-interactive
         end
     end
 
+    # Alternative version that doesn't require sudo (shows only your processes)
+    function myports --description "Monitor your own ports (no sudo required)"
+        while true
+            set -l selected (lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null | fzf \
+                --prompt="Your Ports (ENTER=details, CTRL-K=kill, CTRL-R=refresh, ESC=exit): " \
+                --height=100% \
+                --border \
+                --header-lines=1 \
+                --bind='ctrl-k:execute(kill -9 {2})+reload(lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null)' \
+                --bind='ctrl-r:reload(lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null)' \
+                --preview='echo "Process: {1}\nPID: {2}\nUser: {3}\nPort: {9}"' \
+                --preview-window=down:4:wrap)
+
+            if test -z "$selected"
+                break
+            end
+
+            set -l pid (echo $selected | awk '{print $2}')
+            echo "Details for PID $pid:"
+            lsof -p $pid
+            read -P "Press Enter to continue..."
+        end
+    end
+
     function dnslookup --description "Perform DNS lookup with fzf record type selection"
         if test -z "$argv[1]"
             echo "Usage: dnslookup <domain> [record_type]"
@@ -1374,7 +1398,7 @@ if status is-interactive
                 return 0
             end
 
-            set record_type (echo $selected | cut -d' ' -f1)
+            set record_type (echo $selected | command cut -d' ' -f1)
         end
 
         if test "$record_type" = "ALL"
@@ -1652,7 +1676,7 @@ if status is-interactive
             return 1
         end
 
-        set -l namespaces (kubectl get namespaces -o name 2>/dev/null | cut -d/ -f2)
+        set -l namespaces (kubectl get namespaces -o name 2>/dev/null | command cut -d/ -f2)
         if test -z "$namespaces"
             echo "No namespaces found"
             return 1

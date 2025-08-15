@@ -103,5 +103,68 @@
     "tool_name": "Bash",
     "command": "fish -c \"source ~/.config/fish/config.fish; which trivy\"",
     "description": "Test if trivy was installed"
+  },
+  {
+    "timestamp": "2025-08-15T21:19:51.401996",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "brew list | grep -i proc",
+    "description": "Check if procs is installed via brew"
+  },
+  {
+    "timestamp": "2025-08-15T21:32:09.055902",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "which procs",
+    "description": "Check if procs is installed"
+  },
+  {
+    "timestamp": "2025-08-15T21:32:13.186966",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "procs --version",
+    "description": "Check procs version"
+  },
+  {
+    "timestamp": "2025-08-15T21:32:22.508523",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "fish -c \"which procs\"",
+    "description": "Check if Fish can find procs"
+  },
+  {
+    "timestamp": "2025-08-15T21:32:27.209334",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "fish -c \"procs --version\"",
+    "description": "Test procs in Fish shell"
+  },
+  {
+    "timestamp": "2025-08-15T21:32:33.035787",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish; type killp\"",
+    "description": "Check killp function definition"
+  },
+  {
+    "timestamp": "2025-08-15T21:32:38.206223",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "fish -c \"source ~/.config/fish/config.fish 2>&1\"",
+    "description": "Source config and check for errors"
+  },
+  {
+    "timestamp": "2025-08-15T21:33:52.150962",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "brew info choose-rust",
+    "description": "Check for choose-rust package info"
+  },
+  {
+    "timestamp": "2025-08-15T21:40:50.253968",
+    "session_id": "59b14ac0-eef0-43bd-90ba-878c44083ac9",
+    "tool_name": "Bash",
+    "command": "chmod +x /Users/shahe/dotfiles/scripts/setup-passwordless-lsof.sh",
+    "description": "Make the script executable"
   }
 ]
