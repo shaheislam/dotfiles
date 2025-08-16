@@ -1,5 +1,5 @@
 {
-  "numStartups": 32,
+  "numStartups": 40,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
@@ -9,24 +9,24 @@
     "new-user-warmup": 2,
     "memory-command": 30,
     "theme-command": 30,
-    "shift-enter": 26,
+    "shift-enter": 36,
     "prompt-queue": 6,
     "enter-to-steer-in-relatime": 30,
     "todo-list": 30,
     "vscode-command-install": 9,
-    "# for memory": 30,
-    "install-github-app": 30,
-    "permissions": 30,
-    "drag-and-drop-images": 30,
+    "# for memory": 40,
+    "install-github-app": 40,
+    "permissions": 40,
+    "drag-and-drop-images": 40,
     "double-esc": 30,
     "continue": 30,
     "custom-commands": 32,
     "shift-tab": 32,
-    "custom-agents": 23,
+    "custom-agents": 38,
     "status-line": 30,
     "paste-images-mac": 30
   },
-  "promptQueueUseCount": 10,
+  "promptQueueUseCount": 13,
   "firstStartTime": "2025-06-24T21:00:13.516Z",
   "userID": "9131cdd71980ad07ea2851d6c686761adca72a6d91be89be2db0a91b32b509ee",
   "projects": {
@@ -473,6 +473,132 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "remove the launcher script its not required just update the config.json",
+          "pastedContents": {}
+        },
+        {
+          "display": "Update the api_key to use OPENROUTER_API_KEY for the openrouter model",
+          "pastedContents": {}
+        },
+        {
+          "display": "test",
+          "pastedContents": {}
+        },
+        {
+          "display": "/model ",
+          "pastedContents": {}
+        },
+        {
+          "display": "test",
+          "pastedContents": {}
+        },
+        {
+          "display": "huh",
+          "pastedContents": {}
+        },
+        {
+          "display": "Now change the api_key to match the environment variable call again",
+          "pastedContents": {}
+        },
+        {
+          "display": "Move the folder from claude-code-router to ~/dotfiles/.claude-code-router/config.json then when i symlink with stow it will be correct",
+          "pastedContents": {}
+        },
+        {
+          "display": "The issue is the location it needs to be in ~/.claude-code-router/config.json",
+          "pastedContents": {}
+        },
+        {
+          "display": "test prompt",
+          "pastedContents": {}
+        },
+        {
+          "display": "[Pasted text #1 +7 lines] Same thing, do i need to run a specific command to use openrouter?",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "> test prompt\n  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 1 seconds… (attempt 1/10)\n  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 1 seconds… (attempt 2/10)\n  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 2 seconds… (attempt 3/10)\n\n· Vibing… (6s · ↑ 0 tokens · esc to interrupt)\n\n╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮"
+            }
+          }
+        },
+        {
+          "display": "test prompt",
+          "pastedContents": {}
+        },
+        {
+          "display": "But it is - ╰─▶ echo \"Current shell env:\" && env | grep -i openrouter\nCurrent shell env:\nOPENROUTER_API_KEY=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",
+          "pastedContents": {}
+        },
+        {
+          "display": "> test prompt\n  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 9 seconds… (attempt 5/10)",
+          "pastedContents": {}
+        },
+        {
+          "display": "test prompt",
+          "pastedContents": {}
+        },
+        {
+          "display": "Then in that case just remove the alias",
+          "pastedContents": {}
+        },
+        {
+          "display": "But we've already confirmed the environment variables are available in the shell",
+          "pastedContents": {}
+        },
+        {
+          "display": "Environment Variable Interpolation\n\nClaude Code Router supports environment variable interpolation for secure API key management. You can reference environment variables in your config.json using either $VAR_NAME or ${VAR_NAME} syntax:\n\n{\n  \"OPENAI_API_KEY\": \"$OPENAI_API_KEY\",\n  \"GEMINI_API_KEY\": \"${GEMINI_API_KEY}\",\n  \"Providers\": [\n    {\n      \"name\": \"openai\",\n      \"api_base_url\": \"https://api.openai.com/v1/chat/completions\",\n      \"api_key\": \"$OPENAI_API_KEY\",\n      \"models\": [\"gpt-5\", \"gpt-5-mini\"]\n    }\n  ]\n}\n\nThis allows you to keep sensitive API keys in environment variables instead of hardcoding them in configuration files. The interpolation works recursively through nested objects and arrays.\\\n\\\nThis should work...",
+          "pastedContents": {}
+        },
+        {
+          "display": "{\n  \"OPENAI_API_KEY\": \"$OPENAI_API_KEY\",\n  \"GEMINI_API_KEY\": \"${GEMINI_API_KEY}\",\n  \"Providers\": [\n    {\n      \"name\": \"openai\",\n      \"api_base_url\": \"https://api.openai.com/v1/chat/completions\",\n      \"api_key\": \"$OPENAI_API_KEY\",\n      \"models\": [\"gpt-5\", \"gpt-5-mini\"]\n    }\n  ]\n}\\\n\\\nCan you try setting up the interpolation this way?",
+          "pastedContents": {}
+        },
+        {
+          "display": "is it possible ccr doesnt have permissions to read the environment variables - ⏺ Read(.env)\n  ⎿  Error: Permission to read /Users/shahe/dotfiles/.env has been \n     denied.",
+          "pastedContents": {}
+        },
+        {
+          "display": "  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 2 seconds… (attempt 3/10) i still get this ",
+          "pastedContents": {}
+        },
+        {
+          "display": "test",
+          "pastedContents": {}
+        },
+        {
+          "display": "/model openrouter",
+          "pastedContents": {}
+        },
+        {
+          "display": "/model ",
+          "pastedContents": {}
+        },
+        {
+          "display": "[Pasted text #1 +134 lines]",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "Environment Variable Interpolation\n\nClaude Code Router supports environment variable interpolation for secure API key management. You can reference environment variables in your config.json using either $VAR_NAME or ${VAR_NAME} syntax:\n\n{\n  \"OPENAI_API_KEY\": \"$OPENAI_API_KEY\",\n  \"GEMINI_API_KEY\": \"${GEMINI_API_KEY}\",\n  \"Providers\": [\n    {\n      \"name\": \"openai\",\n      \"api_base_url\": \"https://api.openai.com/v1/chat/completions\",\n      \"api_key\": \"$OPENAI_API_KEY\",\n      \"models\": [\"gpt-5\", \"gpt-5-mini\"]\n    }\n  ]\n}\n\nThis allows you to keep sensitive API keys in environment variables instead of hardcoding them in configuration files. The interpolation works recursively through nested objects and arrays.\n\nHere is a comprehensive example:\n\n{\n  \"APIKEY\": \"your-secret-key\",\n  \"PROXY_URL\": \"http://127.0.0.1:7890\",\n  \"LOG\": true,\n  \"API_TIMEOUT_MS\": 600000,\n  \"NON_INTERACTIVE_MODE\": false,\n  \"Providers\": [\n    {\n      \"name\": \"openrouter\",\n      \"api_base_url\": \"https://openrouter.ai/api/v1/chat/completions\",\n      \"api_key\": \"sk-xxx\",\n      \"models\": [\n        \"google/gemini-2.5-pro-preview\",\n        \"anthropic/claude-sonnet-4\",\n        \"anthropic/claude-3.5-sonnet\",\n        \"anthropic/claude-3.7-sonnet:thinking\"\n      ],\n      \"transformer\": {\n        \"use\": [\"openrouter\"]\n      }\n    },\n    {\n      \"name\": \"deepseek\",\n      \"api_base_url\": \"https://api.deepseek.com/chat/completions\",\n      \"api_key\": \"sk-xxx\",\n      \"models\": [\"deepseek-chat\", \"deepseek-reasoner\"],\n      \"transformer\": {\n        \"use\": [\"deepseek\"],\n        \"deepseek-chat\": {\n          \"use\": [\"tooluse\"]\n        }\n      }\n    },\n    {\n      \"name\": \"ollama\",\n      \"api_base_url\": \"http://localhost:11434/v1/chat/completions\",\n      \"api_key\": \"ollama\",\n      \"models\": [\"qwen2.5-coder:latest\"]\n    },\n    {\n      \"name\": \"gemini\",\n      \"api_base_url\": \"https://generativelanguage.googleapis.com/v1beta/models/\",\n      \"api_key\": \"sk-xxx\",\n      \"models\": [\"gemini-2.5-flash\", \"gemini-2.5-pro\"],\n      \"transformer\": {\n        \"use\": [\"gemini\"]\n      }\n    },\n    {\n      \"name\": \"volcengine\",\n      \"api_base_url\": \"https://ark.cn-beijing.volces.com/api/v3/chat/completions\",\n      \"api_key\": \"sk-xxx\",\n      \"models\": [\"deepseek-v3-250324\", \"deepseek-r1-250528\"],\n      \"transformer\": {\n        \"use\": [\"deepseek\"]\n      }\n    },\n    {\n      \"name\": \"modelscope\",\n      \"api_base_url\": \"https://api-inference.modelscope.cn/v1/chat/completions\",\n      \"api_key\": \"\",\n      \"models\": [\"Qwen/Qwen3-Coder-480B-A35B-Instruct\", \"Qwen/Qwen3-235B-A22B-Thinking-2507\"],\n      \"transformer\": {\n        \"use\": [\n          [\n            \"maxtoken\",\n            {\n              \"max_tokens\": 65536\n            }\n          ],\n          \"enhancetool\"\n        ],\n        \"Qwen/Qwen3-235B-A22B-Thinking-2507\": {\n          \"use\": [\"reasoning\"]\n        }\n      }\n    },\n    {\n      \"name\": \"dashscope\",\n      \"api_base_url\": \"https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions\",\n      \"api_key\": \"\",\n      \"models\": [\"qwen3-coder-plus\"],\n      \"transformer\": {\n        \"use\": [\n          [\n            \"maxtoken\",\n            {\n              \"max_tokens\": 65536\n            }\n          ],\n          \"enhancetool\"\n        ]\n      }\n    },\n    {\n      \"name\": \"aihubmix\",\n      \"api_base_url\": \"https://aihubmix.com/v1/chat/completions\",\n      \"api_key\": \"sk-\",\n      \"models\": [\n        \"Z/glm-4.5\",\n        \"claude-opus-4-20250514\",\n        \"gemini-2.5-pro\"\n      ]\n    }\n  ],\n  \"Router\": {\n    \"default\": \"deepseek,deepseek-chat\",\n    \"background\": \"ollama,qwen2.5-coder:latest\",\n    \"think\": \"deepseek,deepseek-reasoner\",\n    \"longContext\": \"openrouter,google/gemini-2.5-pro-preview\",\n    \"longContextThreshold\": 60000,\n    \"webSearch\": \"gemini,gemini-2.5-flash\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "display": "Thats loading now but when i enter ccr and run a prompt i get \\\n\\\n[Pasted text #1 +6 lines]",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "\n> test prompt\n  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 1 seconds… (attempt 1/10)\n  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 1 seconds… (attempt 2/10)\n  ⎿  API Error (401 {\"error\":{\"message\":\"Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}Error: Error from provider(401): {\\\"error\\\":{\\\"message\\\":\\\"No auth credentials found\\\",\\\"code\\\":401}}\\n    at bt (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74721:11)\\n    at u0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74779:11)\\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\\n    at async o0 (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:74746:84)\",\"type\":\"api_error\",\"code\":\"provider_response_error\"}}) · Retrying in 2 seconds… (attempt 3/10)\n\n✽ Undulating… (6s · ↑ 0 tokens · esc to interrupt)"
+            }
+          }
+        },
+        {
+          "display": "I have ran stow . --adopt but \\\n\\\n╰─▶ printenv | grep OPEN does not return the OPENROUTER_API_KEY",
+          "pastedContents": {}
+        },
+        {
           "display": "If i have the .env file set now do i still need \\\n\\\n        .config/claude-code-router/\n        .config/direnv/\n        scripts/ccr-with-env.sh\n        scripts/check-claude-subscription.sh\n        scripts/setup-claude-code-router.sh",
           "pastedContents": {}
         },
@@ -786,78 +912,6 @@
         {
           "display": "This isn't the same as what I'm trying to achieve, is it?\\\n\\\nhttps://docs.anthropic.com/en/docs/claude-code/common-workflows#add-command-arguments-with-%24arguments I want to create custom prompts that can take arguments",
           "pastedContents": {}
-        },
-        {
-          "display": "https://docs.anthropic.com/en/docs/claude-code/common-workflows#add-command-arguments-with-%24arguments\\\n\\\nTake a look at my global search hiistory for most frequently used commands and see if you can create any argument based prompts for me to accelerate my workflows",
-          "pastedContents": {}
-        },
-        {
-          "display": "Include all image files in the directory not just jpeg and jpg",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can you make a new script similar to this one which uses sync",
-          "pastedContents": {}
-        },
-        {
-          "display": "Would cancelling my existing script cause any issues?",
-          "pastedContents": {}
-        },
-        {
-          "display": "But it wouldn't affect any existing objects in the bucket, would it?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Why is AWS Sync only mostly safe, compared to very safe? ",
-          "pastedContents": {}
-        },
-        {
-          "display": "What are the downsides of using the sync command?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can the AWS CLI upload files in parallel? ",
-          "pastedContents": {}
-        },
-        {
-          "display": "Use sh specific syntax",
-          "pastedContents": {}
-        },
-        {
-          "display": "root@ip-10-2-4-37:/var/www/subscription/public/images/uploads/pets# ./upload-images-to-s3.sh\n�� Starting image upload to S3 bucket: prod-pl-pet-pet-images\n📁 Source directory: /var/www/subscription/public/images/uploads/pets\n================================================\n📷 Found 13483 image file(s) to upload\n\n./upload-images-to-s3.sh: line 79: syntax error near unexpected token `2'\n",
-          "pastedContents": {}
-        },
-        {
-          "display": "Is this script definitely safe?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Write me a script that will loop through the files in the directory which are all either *.jpg or *.jpeg and copy them to the S3 bucket named prod-pl-pet-pet-images",
-          "pastedContents": {}
-        },
-        {
-          "display": "╰─▶ aws iam list-attached-role-policies --role-name petlab-sub-prod-role\n{\n    \"AttachedPolicies\": [\n        {\n            \"PolicyName\": \"AmazonSSMManagedInstanceCore\",\n            \"PolicyArn\": \"arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore\"\n        },\n        {\n            \"PolicyName\": \"SecretsManagerReadWrite\",\n            \"PolicyArn\": \"arn:aws:iam::aws:policy/SecretsManagerReadWrite\"\n        },\n        {\n            \"PolicyName\": \"AmazonS3FullAccess\",\n            \"PolicyArn\": \"arn:aws:iam::aws:policy/AmazonS3FullAccess\"\n        },\n        {\n            \"PolicyName\": \"AmazonSSMPatchAssociation\",\n            \"PolicyArn\": \"arn:aws:iam::aws:policy/AmazonSSMPatchAssociation\"\n        }\n    ]\n}\\\n\\\nSo this means I can push the images directly to S3 from the EC2 machine?",
-          "pastedContents": {}
-        },
-        {
-          "display": "╰─▶ aws ec2 describe-instances --instance-ids i-0392ce6680abadc74 --query 'Reservations[0].Instances[0].IamInstanceProfile'\n{\n    \"Arn\": \"arn:aws:iam::325875666703:instance-profile/petlab-sub-prod-role\",\n    \"Id\": \"AIPAUXX5UB4H2WGS2N3RU\"\n}\n\\\n\\\nSo the EC2 instance does have a role how can I query the IAM role itself and what permissions it has relating to S3",
-          "pastedContents": {}
-        },
-        {
-          "display": "Why would it activate during history searching though because I'm not actually changing directory until I hit enter?",
-          "pastedContents": {}
-        },
-        {
-          "display": "So if my shell is fish direnv will acticvate on any directory change, right?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Take a look at my config files and check if the direnv hook is set ",
-          "pastedContents": {}
-        },
-        {
-          "display": "/clear ",
-          "pastedContents": {}
         }
       ],
       "mcpContextUris": [],
@@ -889,21 +943,15 @@
         "utils.py",
         "controller.py"
       ],
-      "exampleFilesGeneratedAt": 1754760030951,
-      "lastCost": 0,
-      "lastAPIDuration": 0,
-      "lastDuration": 1469377,
-      "lastLinesAdded": 0,
-      "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 0,
-      "lastTotalOutputTokens": 0,
-      "lastTotalCacheCreationInputTokens": 0,
-      "lastTotalCacheReadInputTokens": 0,
-      "lastSessionId": "beb0d016-b27e-44de-885d-4b62cec07149"
+      "exampleFilesGeneratedAt": 1754760030951
     },
     "/Users/shahe/work/devops-utils": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "test prompt",
+          "pastedContents": {}
+        },
         {
           "display": "Write a quick readme on the purpose of this script for a junior engineer",
           "pastedContents": {}
@@ -925,17 +973,17 @@
         "promote.sh"
       ],
       "exampleFilesGeneratedAt": 1754417198896,
-      "lastCost": 0.25730935,
-      "lastAPIDuration": 30108,
-      "lastDuration": 53867333,
+      "lastTotalWebSearchRequests": 0,
+      "lastCost": 0,
+      "lastAPIDuration": 0,
+      "lastDuration": 422028,
       "lastLinesAdded": 0,
       "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 457,
-      "lastTotalOutputTokens": 906,
-      "lastTotalCacheCreationInputTokens": 56461,
-      "lastTotalCacheReadInputTokens": 107316,
-      "lastTotalWebSearchRequests": 0,
-      "lastSessionId": "ee168f7b-367d-4d60-b279-2d5eb8acf243"
+      "lastTotalInputTokens": 0,
+      "lastTotalOutputTokens": 0,
+      "lastTotalCacheCreationInputTokens": 0,
+      "lastTotalCacheReadInputTokens": 0,
+      "lastSessionId": "b190a639-117d-4b2e-ae6d-0e9a6771a284"
     },
     "/Users/shahe/work/petlab-aws-domains": {
       "allowedTools": [],
@@ -1417,9 +1465,11 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1755289009099
+      "timestamp": 1755300266561
     }
   },
+  "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
+  "recommendedSubscription": "",
   "oauthAccount": {
     "accountUuid": "a0bf6723-237b-4c0f-b443-4517c62eb468",
     "emailAddress": "shahe.islam@thepetlabco.com",
@@ -1427,7 +1477,5 @@
     "organizationRole": "admin",
     "workspaceRole": null,
     "organizationName": "shahe.islam@thepetlabco.com's Organization"
-  },
-  "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
-  "recommendedSubscription": ""
+  }
 }

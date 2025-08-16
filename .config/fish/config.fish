@@ -55,7 +55,12 @@ if status is-interactive
     # API Keys for Claude Code Router
     # Load from ~/dotfiles/.env if it exists (after stow symlink)
     if test -f ~/.env
-        export (grep -v '^#' ~/.env | xargs -L 1)
+        for line in (cat ~/.env | grep -v '^#' | grep -v '^$')
+            set pair (string split -m 1 '=' $line)
+            set key (string replace 'export ' '' $pair[1])
+            set value (string trim -c '"' $pair[2])
+            set -gx $key $value
+        end
     end
 
     # Path configuration - combining both configs
@@ -229,8 +234,8 @@ if status is-interactive
     alias act="act --container-architecture linux/amd64"  # GitHub Actions locally with ARM64 compatibility
     
     # AI Tools
-    alias ccr="ccr code"  # Claude Code Router - reads env vars automatically
-    alias claude-router="ccr code"  # Alternative alias for Claude Code Router
+    # Use 'ccr code' or just 'ccr' to start Claude Code Router
+    alias claude-router="command ccr code"  # Alternative alias for Claude Code Router
 
     # Utility aliases
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
