@@ -3,14 +3,14 @@
 format = """
 [╭╴](fg:arrow)\
 $os\
-[󰊠](fg:color_fg0)\
+[](fg:color_fg0)\
 $username\
-[](bg:color_yellow fg:color_orange)\
+[](bg:color_yellow fg:color_orange)\
 $directory\
-[](fg:color_yellow bg:color_aqua)\
+[](fg:color_yellow bg:color_aqua)\
 $git_branch\
 $git_status\
-[](fg:color_aqua bg:color_blue)\
+[](fg:color_aqua bg:color_blue)\
 $c\
 $rust\
 $golang\
@@ -20,16 +20,16 @@ $java\
 $kotlin\
 $haskell\
 $python\
-[](fg:color_blue bg:color_bg3)\
+[](fg:color_blue bg:color_bg3)\
 $docker_context\
 $conda\
 $aws\
 $azure\
 $kubernetes\
+[](fg:color_purple bg:color_bg1)\
 $terraform\
-[](fg:color_bg3 bg:color_bg1)\
 $time\
-[](fg:color_bg1)\
+[](fg:color_bg1)\
 $cmd_duration
 [╰─](fg:arrow)$character\
 """
