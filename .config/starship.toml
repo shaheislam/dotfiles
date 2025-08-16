@@ -4,8 +4,6 @@ format = """
 [╭╴](fg:arrow)\
 $os\
 [󰊠](fg:color_fg0)\
-$username\
-[](bg:color_yellow fg:color_orange)\
 $directory\
 [](fg:color_yellow bg:color_aqua)\
 $git_branch\
@@ -20,11 +18,11 @@ $java\
 $kotlin\
 $haskell\
 $python\
-[](fg:color_blue bg:color_bg3)\
+[](fg:color_blue bg:color_orange)\
 $docker_context\
 $conda\
 $aws\
-[](fg:color_bg3 bg:color_purple)\
+[](fg:color_orange bg:color_purple)\
 $azure\
 $kubernetes\
 [](fg:color_purple bg:color_bg1)\
@@ -168,8 +166,8 @@ format = '[[ $symbol( $environment) ](fg:color_white bg:color_bg3)]($style)'
 
 [aws]
 symbol = ""
-style = "bg:color_bg3"
-format = '[[ $symbol$profile(@$region) ](fg:color_white bg:color_bg3)]($style)'
+style = "bg:color_orange"
+format = '[[ $symbol$profile(@$region) ](fg:color_black bg:color_orange)]($style)'
 force_display = false
 
 [aws.region_aliases]
