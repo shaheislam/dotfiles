@@ -81,6 +81,8 @@ if status is-interactive
     # Initialize tools
     if command -v starship >/dev/null
         starship init fish | source
+        # Enable transient prompt for cleaner terminal history
+        enable_transience
     end
 
     if command -v zoxide >/dev/null
