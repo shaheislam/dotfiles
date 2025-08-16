@@ -473,6 +473,26 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "You can remove the safari specific things as i use firefox",
+          "pastedContents": {}
+        },
+        {
+          "display": "Add this script and apply it",
+          "pastedContents": {}
+        },
+        {
+          "display": "What does the MacOS defaults script do?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Isnt that the same as the killp I am using?",
+          "pastedContents": {}
+        },
+        {
+          "display": "github.com/snelling-a/dotfiles/ - Anylyse this dotfiles repo and tell me if I'm missing anything useful I could add to mine",
+          "pastedContents": {}
+        },
+        {
           "display": "for my dotfiles do you think it would be worth having a github actions workflow",
           "pastedContents": {}
         },
@@ -897,26 +917,6 @@
         },
         {
           "display": "gcloud-cli should be installed now",
-          "pastedContents": {}
-        },
-        {
-          "display": "can i use steampipe to query GCP",
-          "pastedContents": {}
-        },
-        {
-          "display": "/clear ",
-          "pastedContents": {}
-        },
-        {
-          "display": "Add the .envrc file to the gitignore",
-          "pastedContents": {}
-        },
-        {
-          "display": "/add-dir ~/dotfiles",
-          "pastedContents": {}
-        },
-        {
-          "display": "/add-dir ~/work/dotfiles",
           "pastedContents": {}
         }
       ],
