@@ -58,7 +58,8 @@
       "Bash(gcloud projects list:*)",
       "Bash(git config:*)",
       "Bash(brew bundle install:*)",
-      "WebFetch(domain:claudelog.com)"
+      "WebFetch(domain:claudelog.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   },
   "enableAllProjectMcpServers": true,
