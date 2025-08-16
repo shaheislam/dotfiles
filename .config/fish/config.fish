@@ -152,11 +152,225 @@ if status is-interactive
     alias ls="eza"
     alias la="eza -al"
     alias l="eza -hal"
-    alias cat="bat"
     alias k=kubectl
-    alias kubectl=kubecolor
     alias vi=nvim
     alias vim=nvim
+    
+    # Yazi shell wrapper for directory navigation
+    function yy --description "Navigate with yazi and change directory on exit"
+        set tmp (mktemp -t "yazi-cwd.XXXXXX")
+        yazi $argv --cwd-file="$tmp"
+        if set cwd (command cat -- "$tmp"); and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
+            cd -- "$cwd"
+        end
+        rm -f -- "$tmp"
+    end
+    
+    # Splash log colorizer integration
+    # Automatically pipe common log-producing commands through splash
+    if command -v splash >/dev/null
+        # Docker commands
+        function docker --description "Docker with colored logs"
+            if test "$argv[1]" = "logs"
+                command docker $argv | splash
+            else if test "$argv[1]" = "compose"; and test "$argv[2]" = "logs"
+                command docker $argv | splash
+            else
+                command docker $argv
+            end
+        end
+        
+        # Kubectl commands with kubecolor and splash
+        function kubectl --description "Kubectl with kubecolor and colored logs"
+            if test "$argv[1]" = "logs"
+                # Use regular kubectl for logs and pipe through splash
+                command kubectl $argv | splash
+            else if command -v kubecolor >/dev/null
+                # Use kubecolor for other kubectl commands
+                kubecolor $argv
+            else
+                # Fallback to regular kubectl
+                command kubectl $argv
+            end
+        end
+        
+        # Systemctl/journalctl logs
+        function journalctl --description "Journalctl with colored output"
+            command journalctl $argv | splash
+        end
+        
+        # Tail with splash for log files
+        function tail --description "Tail with automatic log colorization"
+            # Check if we're tailing a log file or using -f flag
+            if string match -q -- "*-f*" "$argv"; or string match -q -- "*.log" "$argv"
+                command tail $argv | splash
+            else
+                command tail $argv
+            end
+        end
+        
+        # Cat for log files
+        function cat --description "Cat with automatic log colorization"
+            # Check if we're viewing a log file
+            if string match -q -- "*.log" "$argv"; or string match -q -- "*.json" "$argv"
+                command cat $argv | splash
+            else
+                # Use bat for other files if available, otherwise regular cat
+                if command -v bat >/dev/null
+                    bat $argv
+                else
+                    command cat $argv
+                end
+            end
+        end
+        
+        # Less for log files (using process substitution)
+        function less --description "Less with automatic log colorization"
+            if string match -q -- "*.log" "$argv"; or string match -q -- "*.json" "$argv"
+                command cat $argv | splash | command less -R
+            else
+                command less $argv
+            end
+        end
+        
+        # Terraform commands that produce logs
+        function terraform --description "Terraform with colored output"
+            if test "$argv[1]" = "plan"; or test "$argv[1]" = "apply"; or test "$argv[1]" = "destroy"
+                command terraform $argv | splash
+            else
+                command terraform $argv
+            end
+        end
+        
+        # Go commands
+        function go --description "Go with colored output for logs"
+            # Check for SPLASH_ARGS environment variable for custom splash options
+            if test "$argv[1]" = "run"; or test "$argv[1]" = "test"; or test "$argv[1]" = "build"
+                if set -q SPLASH_ARGS
+                    # Use custom splash arguments if set
+                    command go $argv 2>&1 | splash $SPLASH_ARGS
+                else
+                    # Default splash without arguments
+                    command go $argv 2>&1 | splash
+                end
+            else
+                command go $argv
+            end
+        end
+        
+        # npm/yarn/pnpm commands
+        function npm --description "npm with colored logs"
+            if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
+                command npm $argv 2>&1 | splash
+            else
+                command npm $argv
+            end
+        end
+        
+        function yarn --description "yarn with colored logs"
+            if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
+                command yarn $argv 2>&1 | splash
+            else
+                command yarn $argv
+            end
+        end
+        
+        function pnpm --description "pnpm with colored logs"
+            if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
+                command pnpm $argv 2>&1 | splash
+            else
+                command pnpm $argv
+            end
+        end
+        
+        # Helper function to manually colorize any command
+        function logs --description "Run any command with splash colorization"
+            $argv | splash
+        end
+        
+        # Alias for quick log viewing with search
+        function logsearch --description "View logs with highlighted search term"
+            if test (count $argv) -lt 2
+                echo "Usage: logsearch <file> <search-term>"
+                return 1
+            end
+            cat $argv[1] | splash -s $argv[2]
+        end
+        
+        # Helper functions for highlighted command output
+        function gos --description "Run go command with highlighted search term"
+            if test (count $argv) -lt 2
+                echo "Usage: gos <search-term> <go-command>"
+                echo "Example: gos ERROR go test ./..."
+                return 1
+            end
+            set -l search_term $argv[1]
+            set -e argv[1]
+            command go $argv 2>&1 | splash -s "$search_term"
+        end
+        
+        function gor --description "Run go command with regex highlighting"
+            if test (count $argv) -lt 2
+                echo "Usage: gor <regex> <go-command>"
+                echo "Example: gor 'FAIL|ERROR' go test ./..."
+                return 1
+            end
+            set -l regex $argv[1]
+            set -e argv[1]
+            command go $argv 2>&1 | splash -r "$regex"
+        end
+        
+        # Generic helper for any command with search highlighting
+        function runs --description "Run any command with splash search highlighting"
+            if test (count $argv) -lt 2
+                echo "Usage: runs <search-term> <command...>"
+                echo "Example: runs ERROR npm test"
+                return 1
+            end
+            set -l search_term $argv[1]
+            set -e argv[1]
+            $argv 2>&1 | splash -s "$search_term"
+        end
+        
+        function runr --description "Run any command with splash regex highlighting"
+            if test (count $argv) -lt 2
+                echo "Usage: runr <regex> <command...>"
+                echo "Example: runr '[45]\\d\\d' curl api.example.com"
+                return 1
+            end
+            set -l regex $argv[1]
+            set -e argv[1]
+            $argv 2>&1 | splash -r "$regex"
+        end
+        
+        # Function to set splash arguments for the current session
+        function splash-set --description "Set splash arguments for automatic commands"
+            if test (count $argv) -eq 0
+                if set -q SPLASH_ARGS
+                    echo "Current SPLASH_ARGS: $SPLASH_ARGS"
+                else
+                    echo "No SPLASH_ARGS set"
+                end
+                echo ""
+                echo "Usage: splash-set <args>"
+                echo "Examples:"
+                echo "  splash-set -s ERROR        # Highlight ERROR in all auto-splash commands"
+                echo "  splash-set -r '[45]\\d\\d'  # Highlight 4xx and 5xx HTTP codes"
+                echo "  splash-set --dark          # Force dark theme"
+                echo "  splash-set ''              # Clear splash arguments"
+            else if test "$argv[1]" = ""
+                set -e SPLASH_ARGS
+                echo "SPLASH_ARGS cleared"
+            else
+                set -gx SPLASH_ARGS $argv
+                echo "SPLASH_ARGS set to: $argv"
+            end
+        end
+        
+        # Alias for convenience
+        alias splash-clear="splash-set ''"
+    end
+    
     alias n=nvim
     alias lg=lazygit
     alias ld=lazydocker

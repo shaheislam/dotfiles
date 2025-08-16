@@ -14,6 +14,9 @@ tap "fluxcd/tap"
 tap "fairwindsops/tap"
 # tap "gruntwork-io/tap" # Not available via tap - removed
 
+# Tap for Splash log colorizer
+tap "joshi4/splash"
+
 # CLI Tools
 brew "pre-commit"
 brew "zsh-vi-mode"
@@ -36,6 +39,10 @@ brew "thefuck"
 brew "atuin"
 brew "lazygit"
 brew "lazydocker"
+brew "yazi"
+brew "ffmpegthumbnailer"  # For video thumbnails in yazi
+brew "unar"  # For archive preview in yazi
+brew "splash"  # Log colorizer
 brew "fish"
 brew "terraform"
 brew "terraform-docs"
