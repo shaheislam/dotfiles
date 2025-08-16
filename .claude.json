@@ -5,7 +5,7 @@
   "preferredNotifChannel": "terminal_bell",
   "editorMode": "vim",
   "tipsHistory": {
-    "ide-hotkey": 32,
+    "ide-hotkey": 40,
     "new-user-warmup": 2,
     "memory-command": 30,
     "theme-command": 30,
@@ -18,13 +18,13 @@
     "install-github-app": 40,
     "permissions": 40,
     "drag-and-drop-images": 40,
-    "double-esc": 30,
-    "continue": 30,
+    "double-esc": 40,
+    "continue": 40,
     "custom-commands": 32,
     "shift-tab": 32,
     "custom-agents": 38,
     "status-line": 30,
-    "paste-images-mac": 30
+    "paste-images-mac": 40
   },
   "promptQueueUseCount": 13,
   "firstStartTime": "2025-06-24T21:00:13.516Z",
@@ -473,6 +473,28 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Strip the config.json to figure out what the issue is",
+          "pastedContents": {}
+        },
+        {
+          "display": "╭╴󰊠 shahe  …/dotfiles  main  $!    labs@use1  arn:aws:eks:us-east-1:154805902702:cluster/petlab-labs-eks   01:15 󰊨\n╰─▶ ccr code\nService not running, starting service...\nService startup timeout, please manually run `ccr start` to start the service",
+          "pastedContents": {}
+        },
+        {
+          "display": "Clean it up and then symlink the entire ~/dotfiles using stow . --adopt",
+          "pastedContents": {}
+        },
+        {
+          "display": "Thats made progress but now it asks me for the details when i load it shouldnt it be automatic?\\\n\\\n[Pasted text #1 +21 lines]",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "╰─▶ ccr code\nEnter Provider Name: \nEnter Provider API KEY: \nEnter Provider URL: \nEnter MODEL Name: \nnode:internal/fs/promises:642\n  return new FileHandle(await PromisePrototypeThen(\n                        ^\n\nError: ENOENT: no such file or directory, open '/Users/shahe/.claude-code-router/config.json'\n    at async open (node:internal/fs/promises:642:25)\n    at async Object.writeFile (node:internal/fs/promises:1249:14)\n    at async writeConfigFile (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:1395:7)\n    at async readConfigFile (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:1356:11)\n    at async executeCodeCommand (/Users/shahe/.bun/install/global/node_modules/@musistudio/claude-code-router/dist/cli.js:77889:18) {\n  errno: -2,\n  code: 'ENOENT',\n  syscall: 'open',\n  path: '/Users/shahe/.claude-code-router/config.json'\n}\n\nNode.js v24.6.0"
+            }
+          }
+        },
+        {
           "display": "remove the launcher script its not required just update the config.json",
           "pastedContents": {}
         },
@@ -895,22 +917,6 @@
         },
         {
           "display": "How can i add an API key for linear so the MCP server can use it?",
-          "pastedContents": {}
-        },
-        {
-          "display": "/aws-profile labs",
-          "pastedContents": {}
-        },
-        {
-          "display": "/mcp-restart ",
-          "pastedContents": {}
-        },
-        {
-          "display": "These don't show up in Claude when i hit / ",
-          "pastedContents": {}
-        },
-        {
-          "display": "This isn't the same as what I'm trying to achieve, is it?\\\n\\\nhttps://docs.anthropic.com/en/docs/claude-code/common-workflows#add-command-arguments-with-%24arguments I want to create custom prompts that can take arguments",
           "pastedContents": {}
         }
       ],
