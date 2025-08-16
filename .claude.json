@@ -473,6 +473,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "curl https://cursor.com/install -fsS | bash Add this to the setup script",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "Strip the config.json to figure out what the issue is",
           "pastedContents": {}
         },
@@ -909,14 +917,6 @@
         },
         {
           "display": "https://linear.app/developers How can i generate the API key in the UI?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can i have an .envrc file with direnv activating it? ",
-          "pastedContents": {}
-        },
-        {
-          "display": "How can i add an API key for linear so the MCP server can use it?",
           "pastedContents": {}
         }
       ],

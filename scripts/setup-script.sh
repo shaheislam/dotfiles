@@ -159,6 +159,14 @@ else
   brew install --cask visual-studio-code
 fi
 
+# Install Cursor
+if app_installed "Cursor"; then
+  echo "Cursor already installed"
+else
+  echo "Installing Cursor..."
+  curl https://cursor.com/install -fsS | bash || log_error "Failed to install Cursor"
+fi
+
 # Install ueberzugpp (for image display in terminals like iTerm2)
 if ! command -v ueberzugpp &> /dev/null; then
   echo "=== Installing ueberzugpp for image display ==="
