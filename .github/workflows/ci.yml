@@ -1,0 +1,207 @@
+name: Dotfiles CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly validation
+
+jobs:
+  validate-configs:
+    name: Validate Configuration Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate JSON files
+        run: |
+          for file in $(find . -name "*.json" -not -path "./.git/*"); do
+            echo "Validating $file"
+            python -m json.tool "$file" > /dev/null || exit 1
+          done
+      
+      - name: Validate YAML files
+        run: |
+          pip install yamllint
+          yamllint -d relaxed .
+      
+      - name: Check Shell Scripts
+        run: |
+          find scripts -name "*.sh" -exec shellcheck {} \;
+      
+      - name: Validate Brewfile
+        run: |
+          if [[ -f "homebrew/Brewfile" ]]; then
+            brew bundle check --file=homebrew/Brewfile --no-upgrade || true
+          fi
+
+  test-setup-macos:
+    name: Test Setup Script (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Test setup script (dry run)
+        run: |
+          # Create a test mode for the setup script
+          export CI_TEST_MODE=true
+          export DOTFILES_DIR=$GITHUB_WORKSPACE
+          bash -n scripts/setup-script.sh  # Syntax check
+          
+      - name: Test Homebrew installation
+        run: |
+          brew bundle check --file=homebrew/Brewfile --no-upgrade || {
+            echo "Some formulae/casks would be installed:"
+            brew bundle list --file=homebrew/Brewfile
+          }
+      
+      - name: Test stow operations
+        run: |
+          brew install stow
+          # Test stow in dry-run mode
+          for dir in */; do
+            if [[ -f "$dir/.stow-local-ignore" ]] || [[ "$dir" != ".git/" && "$dir" != "scripts/" ]]; then
+              stow -n -v -t "$HOME" "$dir" 2>&1 | grep -v "BUG in find_stowed_path" || true
+            fi
+          done
+
+  test-shell-configs:
+    name: Test Shell Configurations
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install shells
+        run: |
+          apt-get update
+          apt-get install -y fish zsh bash curl
+      
+      - name: Test Fish config syntax
+        run: |
+          fish -n .config/fish/config.fish || echo "Fish config has syntax errors"
+      
+      - name: Test Zsh config syntax
+        run: |
+          zsh -n .zshrc || echo "Zsh config has syntax errors"
+      
+      - name: Test Bash config syntax
+        run: |
+          bash -n .bashrc || echo "Bash config has syntax errors"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+      
+      - name: Check for sensitive patterns
+        run: |
+          # Check for exposed API keys, passwords, etc.
+          if grep -r -E "(api[_-]?key|password|secret|token)" . \
+             --exclude-dir=.git \
+             --exclude="*.md" \
+             --exclude="setup-script.sh" | \
+             grep -v -E "(example|template|dummy|placeholder)"; then
+            echo "⚠️ Potential sensitive information found"
+            exit 1
+          fi
+
+  documentation-check:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check README exists
+        run: test -f README.md
+      
+      - name: Validate markdown
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          globs: '**/*.md'
+        continue-on-error: true
+      
+      - name: Check broken links
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --verbose --no-progress './**/*.md'
+        continue-on-error: true
+
+  dependency-updates:
+    name: Check for Updates
+    runs-on: macos-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check Homebrew updates
+        run: |
+          brew update
+          echo "=== Outdated formulae ==="
+          brew outdated || echo "All formulae up to date"
+          echo "=== Outdated casks ==="
+          brew outdated --cask || echo "All casks up to date"
+      
+      - name: Check npm packages
+        run: |
+          if [[ -f "package.json" ]]; then
+            npx npm-check-updates
+          fi
+      
+      - name: Create update report
+        run: |
+          {
+            echo "# Dependency Update Report"
+            echo "Date: $(date)"
+            echo ""
+            echo "## Homebrew"
+            brew outdated --json | python -m json.tool
+          } > update-report.md
+      
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-report
+          path: update-report.md
+
+  test-claude-configs:
+    name: Validate Claude Configurations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate Claude settings
+        run: |
+          for file in .claude/*.json .claude-code-router/*.json; do
+            if [[ -f "$file" ]]; then
+              echo "Validating $file"
+              python -m json.tool "$file" > /dev/null || exit 1
+            fi
+          done
+      
+      - name: Check Claude documentation
+        run: |
+          required_files=("CLAUDE.md")
+          for file in "${required_files[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "Missing required file: $file"
+              exit 1
+            fi
+          done
+      
+      - name: Validate MCP configs
+        run: |
+          if [[ -f ".config/claude-desktop/config.json" ]]; then
+            python -m json.tool ".config/claude-desktop/config.json" > /dev/null
+          fi

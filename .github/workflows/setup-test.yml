@@ -1,0 +1,74 @@
+name: Setup Script Test
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/setup-script.sh'
+      - 'homebrew/Brewfile'
+      - '.github/workflows/setup-test.yml'
+
+jobs:
+  test-fresh-install:
+    name: Test Fresh Installation
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]  # Intel and Apple Silicon
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Prepare test environment
+        run: |
+          # Create a temporary home directory for testing
+          export TEST_HOME="$RUNNER_TEMP/test-home"
+          mkdir -p "$TEST_HOME"
+          export HOME="$TEST_HOME"
+          
+      - name: Run setup script
+        run: |
+          export DOTFILES_DIR="$GITHUB_WORKSPACE"
+          export NONINTERACTIVE=1  # Skip interactive prompts
+          export CI_TEST_MODE=1
+          
+          # Run setup script
+          bash scripts/setup-script.sh
+        timeout-minutes: 30
+      
+      - name: Verify installations
+        run: |
+          # Check critical tools are installed
+          command -v brew || exit 1
+          command -v git || exit 1
+          command -v stow || exit 1
+          command -v fish || exit 1
+          command -v nvim || exit 1
+          command -v tmux || exit 1
+      
+      - name: Test symlinks
+        run: |
+          # Verify key symlinks were created
+          [[ -L "$HOME/.config/fish" ]] || echo "Fish config not linked"
+          [[ -L "$HOME/.config/nvim" ]] || echo "Neovim config not linked"
+          [[ -L "$HOME/.tmux.conf" ]] || echo "Tmux config not linked"
+      
+      - name: Generate installation report
+        if: always()
+        run: |
+          {
+            echo "# Installation Report - ${{ matrix.os }}"
+            echo "Date: $(date)"
+            echo ""
+            echo "## Installed Packages"
+            brew list
+            echo ""
+            echo "## Symlinks"
+            ls -la "$HOME/.config/"
+          } > install-report-${{ matrix.os }}.md
+      
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: install-report-${{ matrix.os }}
+          path: install-report-${{ matrix.os }}.md

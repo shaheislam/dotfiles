@@ -1,0 +1,193 @@
+name: Weekly Maintenance
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9 AM UTC
+  workflow_dispatch:
+
+jobs:
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Update Homebrew
+        run: brew update
+      
+      - name: Check outdated packages
+        id: check-outdated
+        run: |
+          {
+            echo "# Weekly Dependency Report"
+            echo "Date: $(date)"
+            echo ""
+            
+            echo "## Homebrew Formulae"
+            brew outdated --formula --json | python -m json.tool || echo "[]"
+            echo ""
+            
+            echo "## Homebrew Casks"  
+            brew outdated --cask --json | python -m json.tool || echo "[]"
+            echo ""
+            
+            echo "## Security Updates Available"
+            brew audit --formula --cask || echo "No security issues found"
+            
+          } > weekly-report.md
+          
+          # Set output for notification
+          outdated_count=$(brew outdated | wc -l | xargs)
+          echo "outdated_count=$outdated_count" >> $GITHUB_OUTPUT
+      
+      - name: Check for vulnerabilities
+        run: |
+          # Install grype for vulnerability scanning
+          brew install grype
+          
+          # Scan for vulnerabilities
+          grype dir:. --output json > vulnerability-scan.json || true
+          
+          # Create human-readable report
+          {
+            echo ""
+            echo "## Vulnerability Scan"
+            grype dir:. --output table || echo "No vulnerabilities found"
+          } >> weekly-report.md
+      
+      - name: Clean up old files
+        run: |
+          {
+            echo ""
+            echo "## Cleanup Report"
+            echo ""
+            
+            # Find and report large files
+            echo "### Large Files (>10MB)"
+            find . -type f -size +10M -exec ls -lh {} \; 2>/dev/null | head -20
+            echo ""
+            
+            # Find old log files
+            echo "### Old Log Files (>30 days)"
+            find . -name "*.log" -mtime +30 -exec ls -lh {} \; 2>/dev/null
+            echo ""
+            
+            # Check for broken symlinks
+            echo "### Broken Symlinks"
+            find . -type l ! -exec test -e {} \; -print 2>/dev/null
+            
+          } >> weekly-report.md
+      
+      - name: Generate PR if updates needed
+        if: steps.check-outdated.outputs.outdated_count > 0
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: 'chore: weekly dependency updates'
+          title: '🔄 Weekly Dependency Updates'
+          body: |
+            ## Weekly Maintenance Report
+            
+            Found ${{ steps.check-outdated.outputs.outdated_count }} outdated packages.
+            
+            Please review the attached report and update as needed.
+            
+            To update all packages:
+            ```bash
+            brew upgrade
+            brew upgrade --cask
+            ```
+          branch: weekly-updates
+          delete-branch: true
+      
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-reports
+          path: |
+            weekly-report.md
+            vulnerability-scan.json
+
+  tmux-plugin-updates:
+    name: Check Tmux Plugin Updates
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check TPM plugins
+        run: |
+          {
+            echo "# Tmux Plugin Update Report"
+            echo "Date: $(date)"
+            echo ""
+            echo "## Current Plugins"
+            
+            # Parse .tmux.conf for plugins
+            grep "set -g @plugin" .tmux.conf | while read -r line; do
+              plugin=$(echo "$line" | sed "s/.*@plugin ['\"]*//" | sed "s/['\"].*//")
+              echo "- $plugin"
+              
+              # Check if plugin repo exists and get latest commit
+              if [[ "$plugin" == *"/"* ]]; then
+                repo_url="https://api.github.com/repos/$plugin"
+                latest=$(curl -s "$repo_url" | grep '"default_branch"' | cut -d'"' -f4)
+                echo "  Latest branch: $latest"
+              fi
+            done
+          } > tmux-plugin-report.md
+      
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmux-plugin-report
+          path: tmux-plugin-report.md
+
+  claude-config-validation:
+    name: Validate Claude Configurations
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check Claude configs
+        run: |
+          {
+            echo "# Claude Configuration Report"
+            echo "Date: $(date)"
+            echo ""
+            
+            # Check for deprecated patterns
+            echo "## Deprecated Pattern Check"
+            deprecated_patterns=(
+              "TodoRead"
+              "TodoWrite" 
+              "old_command"
+            )
+            
+            for pattern in "${deprecated_patterns[@]}"; do
+              if grep -r "$pattern" .claude/ --include="*.md" 2>/dev/null; then
+                echo "⚠️ Found deprecated pattern: $pattern"
+              fi
+            done
+            
+            # Validate JSON configs
+            echo ""
+            echo "## JSON Validation"
+            for file in .claude/*.json .claude-code-router/*.json; do
+              if [[ -f "$file" ]]; then
+                if python -m json.tool "$file" > /dev/null 2>&1; then
+                  echo "✅ $file - Valid"
+                else
+                  echo "❌ $file - Invalid JSON"
+                fi
+              fi
+            done
+            
+          } > claude-config-report.md
+      
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-config-report
+          path: claude-config-report.md

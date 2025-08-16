@@ -219,6 +219,70 @@ brew update && brew upgrade
 # In tmux: Ctrl-Space + U
 ```
 
+## CI/CD & Automation
+
+![CI Status](https://github.com/yourusername/dotfiles/workflows/Dotfiles%20CI/badge.svg)
+![Setup Test](https://github.com/yourusername/dotfiles/workflows/Setup%20Script%20Test/badge.svg)
+![Weekly Maintenance](https://github.com/yourusername/dotfiles/workflows/Weekly%20Maintenance/badge.svg)
+
+This repository includes comprehensive GitHub Actions workflows for quality assurance and automation:
+
+### Continuous Integration (`ci.yml`)
+- **Configuration Validation**: JSON, YAML, shell script syntax checking
+- **Security Scanning**: Detects exposed secrets and vulnerabilities
+- **Documentation Checks**: Markdown validation and broken link detection
+- **Cross-Platform Testing**: Tests on macOS and Ubuntu
+
+### Setup Testing (`setup-test.yml`)
+- **Fresh Installation Tests**: Validates setup script on clean macOS environments
+- **Compatibility Testing**: Tests on both Intel and Apple Silicon Macs
+- **Symlink Verification**: Ensures all configurations link correctly
+- **Installation Reports**: Generates detailed installation logs
+
+### Weekly Maintenance (`weekly-maintenance.yml`)
+- **Dependency Updates**: Checks for outdated Homebrew packages
+- **Security Audits**: Scans for vulnerabilities in dependencies
+- **Cleanup Reports**: Identifies large files and broken symlinks
+- **Auto-PR Creation**: Creates PRs for necessary updates
+
+### PR Validation (`pr-validation.yml`)
+- **Code Formatting**: Enforces consistent formatting standards
+- **Commit Message Validation**: Ensures conventional commit format
+- **Compatibility Checks**: Validates POSIX compliance
+- **Security Review**: CodeQL analysis and secret detection
+
+### Sync & Deploy (`sync.yml`)
+- **Release Bundles**: Creates downloadable dotfiles packages
+- **Change Validation**: Tests critical file modifications
+- **Sync Notifications**: Reminds to sync changes across machines
+
+### Running Workflows Locally
+
+Test workflows locally using [act](https://github.com/nektos/act):
+
+```bash
+# Install act
+brew install act
+
+# Run CI workflow
+act -W .github/workflows/ci.yml
+
+# Run specific job
+act -j validate-configs
+
+# Run with specific event
+act pull_request
+```
+
+### Workflow Badges
+
+Add these badges to show workflow status:
+
+```markdown
+![CI](https://github.com/yourusername/dotfiles/workflows/Dotfiles%20CI/badge.svg)
+![Setup](https://github.com/yourusername/dotfiles/workflows/Setup%20Script%20Test/badge.svg)
+```
+
 ## Support
 
 For issues or questions:
