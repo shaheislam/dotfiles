@@ -29,7 +29,7 @@ $kubernetes\
 $terraform\
 [](fg:color_bg3 bg:color_bg1)\
 $time\
-[󰊨](fg:color_bg1)\
+[](fg:color_bg1)\
 $cmd_duration
 [╰─](fg:arrow)$character\
 """
@@ -100,11 +100,11 @@ truncation_symbol = "…/"
 [git_branch]
 symbol = ""
 style = "bg:color_aqua"
-format = '[ $symbol$branch ](fg:color_black bg:color_aqua)'
+format = '[ $symbol$branch ]($style fg:color_black)'
 
 [git_status]
 style = "bg:color_aqua"
-format = '[ $all_status$ahead_behind ](fg:color_black bg:color_aqua)'
+format = '[$all_status$ahead_behind ]($style fg:color_black)'
 
 [nodejs]
 symbol = ""
@@ -160,7 +160,6 @@ format = '[[ $symbol( $context) ](fg:color_white bg:color_bg3)]($style)'
 style = "bg:color_bg3"
 format = '[[ $symbol( $environment) ](fg:color_white bg:color_bg3)]($style)'
 
-# Integrate your original cloud/DevOps tools with the new style
 [aws]
 symbol = "  "
 style = "bg:color_bg3"
