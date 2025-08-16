@@ -473,6 +473,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "/agents ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Write me 3 Markdown files using 3 sub agents for the pros and cons of\\\n\\\n1. Pokemon Yellow\\\n2. Pokemon Red\\\n3. Pokemon Blue",
+          "pastedContents": {}
+        },
+        {
           "display": "curl https://cursor.com/install -fsS | bash Add this to the setup script",
           "pastedContents": {}
         },
@@ -909,14 +917,6 @@
         },
         {
           "display": "Create a test task in linear to test this",
-          "pastedContents": {}
-        },
-        {
-          "display": "Will this make the linear MCP work ",
-          "pastedContents": {}
-        },
-        {
-          "display": "https://linear.app/developers How can i generate the API key in the UI?",
           "pastedContents": {}
         }
       ],
