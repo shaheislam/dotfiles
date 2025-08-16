@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Patch for Dracula tmux theme to show RAM as percentage only
+
+patch_ram_script() {
+  local ram_script="$HOME/.tmux/plugins/dracula/scripts/ram_info.sh"
+  
+  # Check if the script exists
+  if [ ! -f "$ram_script" ]; then
+    echo "Dracula RAM script not found. Install Dracula theme first."
+    return 1
+  fi
+  
+  # Check if already patched
+  if grep -q "# Calculate percentage" "$ram_script"; then
+    echo "RAM script already patched for percentage display"
+    return 0
+  fi
+  
+  # Backup original
+  cp "$ram_script" "$ram_script.bak.$(date +%Y%m%d)"
+  
+  # Apply patch for Darwin (macOS)
+  sed -i '' '/Darwin)/,/;;/c\
+    Darwin)\
+      # Get used memory blocks with vm_stat, multiply by page size to get size in bytes, then convert to MiB\
+      used_mem=$(vm_stat | grep '"'"' active\\|wired\\|compressor\\|speculative'"'"' | sed '"'"'s/[^0-9]//g'"'"' | paste -sd '"'"' '"'"' - | awk -v pagesize=$(pagesize) '"'"'{printf "%d\\n", ($1+$2+$3+$5) * pagesize / 1048576}'"'"')\
+      # Get total memory in MiB\
+      total_mem_bytes=$(sysctl -n hw.memsize)\
+      total_mem_mib=$((total_mem_bytes / 1048576))\
+      # Calculate percentage\
+      percentage=$((used_mem * 100 / total_mem_mib))\
+      echo "${percentage}%"\
+      ;;' "$ram_script"
+  
+  echo "RAM script patched to show percentage only"
+}
+
+# Run the patch
+patch_ram_script

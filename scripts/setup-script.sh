@@ -357,6 +357,15 @@ else
   install_tmux_plugin "tmux-sidebar" "https://github.com/tmux-plugins/tmux-sidebar"
   install_tmux_plugin "tmux-fingers" "https://github.com/Morantron/tmux-fingers"
   install_tmux_plugin "tmux-battery" "https://github.com/tmux-plugins/tmux-battery"
+  install_tmux_plugin "dracula" "https://github.com/dracula/tmux"
+fi
+
+# Apply Dracula theme customizations
+echo "=== Applying Dracula theme customizations ==="
+if [ -f "$(pwd)/scripts/setup-tmux-dracula.sh" ]; then
+  bash "$(pwd)/scripts/setup-tmux-dracula.sh"
+else
+  echo "Warning: setup-tmux-dracula.sh script not found"
 fi
 
 # Create tmux config directory if it doesn't exist
