@@ -1,6 +1,6 @@
-# FLAGS.md - SuperClaude Flag Reference
+# FLAGS.md - Flag Reference
 
-Flag system for Claude Code SuperClaude framework with auto-activation and conflict resolution.
+Flag system for Claude Code framework with auto-activation and conflict resolution.
 
 ## Flag System Architecture
 
@@ -187,7 +187,7 @@ Flag system for Claude Code SuperClaude framework with auto-activation and confl
 
 **`--introspect` / `--introspection`**
 - Deep transparency mode exposing thinking process
-- Auto-activates: SuperClaude framework work, complex debugging
+- Auto-activates: Framework work, complex debugging
 - Transparency markers: 🤔 Thinking, 🎯 Decision, ⚡ Action, 📊 Check, 💡 Learning
 - Conversational reflection with shared uncertainties
 

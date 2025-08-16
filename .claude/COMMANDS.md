@@ -1,6 +1,6 @@
-# COMMANDS.md - SuperClaude Command Execution Framework
+# COMMANDS.md - Command Execution Framework
 
-Command execution framework for Claude Code SuperClaude integration.
+Command execution framework for Claude Code integration.
 
 ## Command System Architecture
 

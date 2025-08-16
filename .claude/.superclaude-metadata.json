@@ -20,17 +20,18 @@
   },
   "framework": {
     "components": [
-      "core"
+      "core",
+      "agents"
     ],
     "description": "AI-enhanced development framework for Claude Code",
     "installation_type": "global",
-    "name": "SuperClaude",
-    "version": "3.0.0"
+    "name": "Claude Code Framework",
+    "version": "3.1.0"
   },
-  "superclaude": {
+  "agents": {
     "auto_update": false,
     "enabled": true,
     "profile": "default",
-    "version": "3.0.0"
+    "version": "3.1.0"
   }
 }

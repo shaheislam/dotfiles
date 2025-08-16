@@ -1,6 +1,6 @@
-# ORCHESTRATOR.md - SuperClaude Intelligent Routing System
+# ORCHESTRATOR.md - Intelligent Routing System
 
-Intelligent routing system for Claude Code SuperClaude framework.
+Intelligent routing system for Claude Code framework.
 
 ## 🧠 Detection Engine
 

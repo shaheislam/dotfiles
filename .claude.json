@@ -473,6 +473,22 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Make this change and remove superclaude in the process",
+          "pastedContents": {}
+        },
+        {
+          "display": "Will the flags still be interchangable?",
+          "pastedContents": {}
+        },
+        {
+          "display": "So flags will work with the sub agents the way they did with superclaude?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can you move superclaude into individual /agents?",
+          "pastedContents": {}
+        },
+        {
           "display": "/agents ",
           "pastedContents": {}
         },
@@ -901,22 +917,6 @@
         },
         {
           "display": "try now ",
-          "pastedContents": {}
-        },
-        {
-          "display": "/exit ",
-          "pastedContents": {}
-        },
-        {
-          "display": "Create a test issue for me",
-          "pastedContents": {}
-        },
-        {
-          "display": "Add it to claude code aswell",
-          "pastedContents": {}
-        },
-        {
-          "display": "Create a test task in linear to test this",
           "pastedContents": {}
         }
       ],

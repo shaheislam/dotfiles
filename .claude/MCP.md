@@ -1,6 +1,6 @@
-# MCP.md - SuperClaude MCP Server Reference
+# MCP.md - MCP Server Reference
 
-MCP (Model Context Protocol) server integration and orchestration system for Claude Code SuperClaude framework.
+MCP (Model Context Protocol) server integration and orchestration system for Claude Code framework.
 
 ## Server Selection Algorithm
 

@@ -1,6 +1,6 @@
-# RULES.md - SuperClaude Framework Actionable Rules
+# RULES.md - Actionable Rules
 
-Simple actionable rules for Claude Code SuperClaude framework operation.
+Simple actionable rules for Claude Code framework operation.
 
 ## Core Operational Rules
 

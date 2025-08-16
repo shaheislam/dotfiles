@@ -1,10 +1,10 @@
-# SuperClaude Entry Point
+# Claude Code Configuration
 
 @COMMANDS.md
 @FLAGS.md
 @PRINCIPLES.md
 @RULES.md
 @MCP.md
-@PERSONAS.md
+@AGENTS.md
 @ORCHESTRATOR.md
 @MODES.md
