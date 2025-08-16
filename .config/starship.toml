@@ -167,7 +167,7 @@ style = "bg:color_bg3"
 format = '[[ $symbol( $environment) ](fg:color_white bg:color_bg3)]($style)'
 
 [aws]
-symbol = "  "
+symbol = ""
 style = "bg:color_bg3"
 format = '[[ $symbol$profile(@$region) ](fg:color_white bg:color_bg3)]($style)'
 force_display = false
