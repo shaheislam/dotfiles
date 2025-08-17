@@ -72,6 +72,7 @@ if status is-interactive
     fish_add_path $HOME/.cargo/bin
     fish_add_path $HOME/.rd/bin
     fish_add_path $HOME/.bun/bin
+    fish_add_path $HOME/dotfiles/scripts/bin
 
     # Add VSCode bin to PATH if it exists
     if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
@@ -157,6 +158,8 @@ if status is-interactive
     alias k=kubectl
     alias vi=nvim
     alias vim=nvim
+    alias tmp="tmpmail --generate"  # Quick temp email generation
+    alias tmpm="tmpmail"  # Check temp mailbox
     
     # Yazi shell wrapper for directory navigation
     function yy --description "Navigate with yazi and change directory on exit"

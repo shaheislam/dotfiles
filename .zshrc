@@ -31,6 +31,7 @@ source $ZSH/oh-my-zsh.sh
 export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
+export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 
 # Add VSCode bin to PATH
 if [ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]; then

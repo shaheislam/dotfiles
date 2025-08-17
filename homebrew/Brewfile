@@ -78,6 +78,8 @@ brew "tealdeer"
 brew "glow"
 brew "jq"
 brew "yq"
+brew "w3m"       # For tmpmail HTML email rendering
+brew "curl"      # For tmpmail API calls
 brew "shellcheck"
 brew "shfmt"
 brew "gh"
