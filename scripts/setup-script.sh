@@ -538,7 +538,7 @@ echo "=== Installing Claude Code CLI ==="
 if ! command -v claude &> /dev/null; then
   echo "Installing Claude Code CLI via npm..."
   bun install -g @anthropic-ai/claude-code || npm install -g @anthropic-ai/claude-code || echo "Warning: Failed to install Claude Code CLI"
-  
+
   # Install Claude Code Router for alternative AI providers
   echo "Installing Claude Code Router..."
   npm install -g @musistudio/claude-code-router || echo "Warning: Failed to install Claude Code Router"
@@ -845,6 +845,33 @@ fi
 echo "=== Configuring global gitignore ==="
 git config --global core.excludesfile ~/.gitignore_global
 echo "Global gitignore configured to use ~/.gitignore_global"
+
+# Setup pre-commit hooks for dotfiles repository
+echo "=== Setting up pre-commit hooks ==="
+if command -v pre-commit &> /dev/null; then
+    # Check if we're in the dotfiles directory
+    if [ -d "$HOME/dotfiles/.git" ]; then
+        # Use a subshell to avoid changing the working directory
+        (
+            cd "$HOME/dotfiles" || exit 1
+            # Check if pre-commit hooks are already installed
+            if [ ! -f ".git/hooks/pre-commit" ] || ! grep -q "pre-commit" ".git/hooks/pre-commit" 2>/dev/null; then
+                echo "Installing pre-commit hooks in dotfiles repository..."
+                pre-commit install
+                echo "Pre-commit hooks installed successfully!"
+            else
+                echo "Pre-commit hooks already installed in dotfiles repository"
+            fi
+            # Run pre-commit on all files to ensure everything is clean
+            echo "Running initial pre-commit checks..."
+            pre-commit run --all-files || true
+        )
+    else
+        echo "Warning: Dotfiles directory not found at ~/dotfiles, skipping pre-commit setup"
+    fi
+else
+    echo "Warning: pre-commit not found. Install it with 'brew install pre-commit'"
+fi
 
 # Configure Claude Code
 echo "=== Configuring Claude Code ==="
