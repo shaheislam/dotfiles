@@ -160,6 +160,7 @@ if status is-interactive
     alias vim=nvim
     alias tmp="tmpmail --generate"  # Quick temp email generation
     alias tmpm="tmpmail"  # Check temp mailbox
+    alias altair="open -a 'Altair GraphQL Client'"  # Open Altair GraphQL Client
     
     # Yazi shell wrapper for directory navigation
     function yy --description "Navigate with yazi and change directory on exit"

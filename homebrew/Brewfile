@@ -189,4 +189,5 @@ cask "visual-studio-code"
 cask "aerospace"
 cask "session-manager-plugin"
 cask "raycast"
+cask "altair-graphql-client"  # GraphQL IDE for testing and development
 brew "sketchybar"
