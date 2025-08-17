@@ -22,8 +22,9 @@ $python\
 $docker_context\
 $conda\
 $aws\
-[](fg:color_orange bg:color_purple)\
+[](fg:color_orange bg:color_bg3)\
 $azure\
+[](fg:color_bg3 bg:color_purple)\
 $kubernetes\
 [](fg:color_purple bg:color_bg1)\
 $terraform\
@@ -187,7 +188,7 @@ prod = "PROD"
 logging = "LOG"
 
 [azure]
-symbol = "󰠅 "
+symbol = ""
 style = "bg:color_bg3"
 format = '[[ $symbol$subscription ](fg:color_white bg:color_bg3)]($style)'
 disabled = false
