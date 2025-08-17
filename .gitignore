@@ -12,6 +12,7 @@
 .claude/usage/
 .claude/backups/
 .claude/audio/
+.claude/hooks/logs/
 
 # Ignore frequently changing log and data files
 .claude/audio_hook.log
