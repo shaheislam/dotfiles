@@ -63,7 +63,8 @@
       "Bash(mv:*)"
     ],
     "additionalDirectories": [
-      "/Users/shaheislam/obsidian/"
+      "/Users/shaheislam/obsidian/",
+      "/Users/shahe/obsidian/"
     ]
   },
   "enableAllProjectMcpServers": true,
