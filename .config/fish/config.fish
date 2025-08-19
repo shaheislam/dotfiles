@@ -51,7 +51,7 @@ if status is-interactive
 
     # Additional environment variables from extended config
     set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
-    
+
     # API Keys for Claude Code Router
     # Load from ~/dotfiles/.env if it exists (after stow symlink)
     if test -f ~/.env
@@ -161,7 +161,7 @@ if status is-interactive
     alias tmp="tmpmail --generate"  # Quick temp email generation
     alias tmpm="tmpmail"  # Check temp mailbox
     alias altair="open -a 'Altair GraphQL Client'"  # Open Altair GraphQL Client
-    
+
     # Yazi shell wrapper for directory navigation
     function yy --description "Navigate with yazi and change directory on exit"
         set tmp (mktemp -t "yazi-cwd.XXXXXX")
@@ -171,7 +171,7 @@ if status is-interactive
         end
         rm -f -- "$tmp"
     end
-    
+
     # Splash log colorizer integration
     # Automatically pipe common log-producing commands through splash
     if command -v splash >/dev/null
@@ -185,7 +185,7 @@ if status is-interactive
                 command docker $argv
             end
         end
-        
+
         # Kubectl commands with kubecolor and splash
         function kubectl --description "Kubectl with kubecolor and colored logs"
             if test "$argv[1]" = "logs"
@@ -199,12 +199,12 @@ if status is-interactive
                 command kubectl $argv
             end
         end
-        
+
         # Systemctl/journalctl logs
         function journalctl --description "Journalctl with colored output"
             command journalctl $argv | splash
         end
-        
+
         # Tail with splash for log files
         function tail --description "Tail with automatic log colorization"
             # Check if we're tailing a log file or using -f flag
@@ -214,7 +214,7 @@ if status is-interactive
                 command tail $argv
             end
         end
-        
+
         # Cat for log files
         function cat --description "Cat with automatic log colorization"
             # Check if we're viewing a log file
@@ -229,7 +229,7 @@ if status is-interactive
                 end
             end
         end
-        
+
         # Less for log files (using process substitution)
         function less --description "Less with automatic log colorization"
             if string match -q -- "*.log" "$argv"; or string match -q -- "*.json" "$argv"
@@ -238,7 +238,7 @@ if status is-interactive
                 command less $argv
             end
         end
-        
+
         # Terraform commands that produce logs
         function terraform --description "Terraform with colored output"
             if test "$argv[1]" = "plan"; or test "$argv[1]" = "apply"; or test "$argv[1]" = "destroy"
@@ -247,7 +247,7 @@ if status is-interactive
                 command terraform $argv
             end
         end
-        
+
         # Go commands
         function go --description "Go with colored output for logs"
             # Check for SPLASH_ARGS environment variable for custom splash options
@@ -263,7 +263,7 @@ if status is-interactive
                 command go $argv
             end
         end
-        
+
         # npm/yarn/pnpm commands
         function npm --description "npm with colored logs"
             if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
@@ -272,7 +272,7 @@ if status is-interactive
                 command npm $argv
             end
         end
-        
+
         function yarn --description "yarn with colored logs"
             if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
                 command yarn $argv 2>&1 | splash
@@ -280,7 +280,7 @@ if status is-interactive
                 command yarn $argv
             end
         end
-        
+
         function pnpm --description "pnpm with colored logs"
             if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
                 command pnpm $argv 2>&1 | splash
@@ -288,12 +288,12 @@ if status is-interactive
                 command pnpm $argv
             end
         end
-        
+
         # Helper function to manually colorize any command
         function logs --description "Run any command with splash colorization"
             $argv | splash
         end
-        
+
         # Alias for quick log viewing with search
         function logsearch --description "View logs with highlighted search term"
             if test (count $argv) -lt 2
@@ -302,7 +302,7 @@ if status is-interactive
             end
             cat $argv[1] | splash -s $argv[2]
         end
-        
+
         # Helper functions for highlighted command output
         function gos --description "Run go command with highlighted search term"
             if test (count $argv) -lt 2
@@ -314,7 +314,7 @@ if status is-interactive
             set -e argv[1]
             command go $argv 2>&1 | splash -s "$search_term"
         end
-        
+
         function gor --description "Run go command with regex highlighting"
             if test (count $argv) -lt 2
                 echo "Usage: gor <regex> <go-command>"
@@ -325,7 +325,7 @@ if status is-interactive
             set -e argv[1]
             command go $argv 2>&1 | splash -r "$regex"
         end
-        
+
         # Generic helper for any command with search highlighting
         function runs --description "Run any command with splash search highlighting"
             if test (count $argv) -lt 2
@@ -337,7 +337,7 @@ if status is-interactive
             set -e argv[1]
             $argv 2>&1 | splash -s "$search_term"
         end
-        
+
         function runr --description "Run any command with splash regex highlighting"
             if test (count $argv) -lt 2
                 echo "Usage: runr <regex> <command...>"
@@ -348,7 +348,7 @@ if status is-interactive
             set -e argv[1]
             $argv 2>&1 | splash -r "$regex"
         end
-        
+
         # Function to set splash arguments for the current session
         function splash-set --description "Set splash arguments for automatic commands"
             if test (count $argv) -eq 0
@@ -372,11 +372,11 @@ if status is-interactive
                 echo "SPLASH_ARGS set to: $argv"
             end
         end
-        
+
         # Alias for convenience
         alias splash-clear="splash-set ''"
     end
-    
+
     alias n=nvim
     alias lg=lazygit
     alias ld=lazydocker
@@ -452,7 +452,7 @@ if status is-interactive
     alias j="just"  # Command runner
     alias t="task"  # Task runner
     alias act="act --container-architecture linux/amd64"  # GitHub Actions locally with ARM64 compatibility
-    
+
     # AI Tools
     # Use 'ccr code' or just 'ccr' to start Claude Code Router
     alias claude-router="command ccr code"  # Alternative alias for Claude Code Router

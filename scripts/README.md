@@ -50,7 +50,7 @@ tmpmail --recent
 tmpmail --help
 ```
 
-**Notes:** 
+**Notes:**
 - Modified to work on macOS by using `pbcopy` instead of `xclip` for clipboard operations
 - Uses Mail.tm API for reliable temporary email service
 - Stores account credentials temporarily in `/tmp/tmpmail-tm/` directory

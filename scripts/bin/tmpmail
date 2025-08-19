@@ -40,47 +40,47 @@ EOF
 
 generate_email() {
     echo "Generating temporary email address..."
-    
+
     # Get available domain
     domain=$(curl -sL "$api_base/domains" | jq -r '.["hydra:member"][0].domain' 2>/dev/null)
-    
+
     if [ -z "$domain" ]; then
         echo "Error: Could not fetch domain. API might be down."
         exit 1
     fi
-    
+
     # Generate random username
     username=$(cat /dev/urandom | LC_ALL=C tr -dc 'a-z0-9' | fold -w 10 | head -n 1)
     email="${username}@${domain}"
     password=$(cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1)
-    
+
     # Create account
     account_data=$(curl -sL "$api_base/accounts" \
         -H "Content-Type: application/json" \
         -d "{\"address\":\"$email\",\"password\":\"$password\"}" 2>/dev/null)
-    
+
     if [ -z "$account_data" ] || ! echo "$account_data" | jq -e '.id' >/dev/null 2>&1; then
         echo "Error: Could not create account. API response: $account_data"
         exit 1
     fi
-    
+
     # Save account info
     echo "$account_data" | jq ". + {password: \"$password\"}" > "$tmpmail_account"
-    
+
     # Get auth token
     token_response=$(curl -sL "$api_base/token" \
         -H "Content-Type: application/json" \
         -d "{\"address\":\"$email\",\"password\":\"$password\"}" 2>/dev/null)
-    
+
     token=$(echo "$token_response" | jq -r '.token' 2>/dev/null)
-    
+
     if [ -z "$token" ]; then
         echo "Error: Could not get auth token"
         exit 1
     fi
-    
+
     echo "$token" > "$tmpmail_token"
-    
+
     echo "Generated: $email"
     echo "Email address saved. Use 'tmpmail' to check inbox."
 }
@@ -90,35 +90,35 @@ get_current_email() {
         echo "No email address found. Generate one with: tmpmail -g"
         exit 1
     fi
-    
+
     jq -r '.address' "$tmpmail_account" 2>/dev/null
 }
 
 check_inbox() {
     email=$(get_current_email)
-    
+
     if [ ! -f "$tmpmail_token" ]; then
         echo "No auth token found. Generate new email with: tmpmail -g"
         exit 1
     fi
-    
+
     token=$(cat "$tmpmail_token")
-    
+
     echo "[ Inbox for $email ]"
     echo ""
-    
+
     # Get messages
     messages=$(curl -sL "$api_base/messages" \
         -H "Authorization: Bearer $token" 2>/dev/null)
-    
+
     if ! echo "$messages" | jq -e '.["hydra:member"]' >/dev/null 2>&1; then
         echo "No new mail"
         return
     fi
-    
+
     # Parse and display messages
     message_count=$(echo "$messages" | jq '.["hydra:member"] | length' 2>/dev/null || echo 0)
-    
+
     if [ "$message_count" -eq 0 ]; then
         echo "No new mail"
     else
@@ -131,23 +131,23 @@ view_message() {
         echo "Error: Please provide message ID"
         exit 1
     fi
-    
+
     if [ ! -f "$tmpmail_token" ]; then
         echo "No auth token found. Generate new email with: tmpmail -g"
         exit 1
     fi
-    
+
     token=$(cat "$tmpmail_token")
-    
+
     # Get full message
     message=$(curl -sL "$api_base/messages/$1" \
         -H "Authorization: Bearer $token" 2>/dev/null)
-    
+
     if ! echo "$message" | jq -e '.id' >/dev/null 2>&1; then
         echo "Error: Could not fetch message"
         exit 1
     fi
-    
+
     # Display message
     echo "From: $(echo "$message" | jq -r '.from.address')"
     echo "Subject: $(echo "$message" | jq -r '.subject')"
@@ -155,7 +155,7 @@ view_message() {
     echo ""
     echo "Message:"
     echo "--------"
-    
+
     # Try to display text content, fallback to HTML
     text=$(echo "$message" | jq -r '.text' 2>/dev/null)
     if [ "$text" != "null" ] && [ -n "$text" ]; then
@@ -175,19 +175,19 @@ view_recent() {
         echo "No auth token found. Generate new email with: tmpmail -g"
         exit 1
     fi
-    
+
     token=$(cat "$tmpmail_token")
-    
+
     # Get most recent message ID
     recent_id=$(curl -sL "$api_base/messages" \
         -H "Authorization: Bearer $token" 2>/dev/null | \
         jq -r '.["hydra:member"][0].id' 2>/dev/null)
-    
+
     if [ -z "$recent_id" ] || [ "$recent_id" = "null" ]; then
         echo "No messages in inbox"
         exit 0
     fi
-    
+
     view_message "$recent_id"
 }
 

@@ -882,6 +882,22 @@ else
     echo "Claude Code not found, skipping configuration"
 fi
 
+# Clone personal repositories
+echo "=== Cloning personal repositories ==="
+
+# Clone Obsidian vault if it doesn't exist
+if [ ! -d "$HOME/obsidian" ]; then
+  echo "Cloning Obsidian vault..."
+  if git clone git@github.com:shaheislam/obsidian.git "$HOME/obsidian"; then
+    log_success "Obsidian vault cloned successfully"
+  else
+    log_warning "Failed to clone Obsidian vault - you may need to set up SSH keys first"
+    log_info "You can manually clone it later with: git clone git@github.com:shaheislam/obsidian.git ~/obsidian"
+  fi
+else
+  log_info "Obsidian vault already exists at ~/obsidian"
+fi
+
 # Setup SSH config
 echo "=== Setting up SSH configuration ==="
 if [ -f "$HOME/dotfiles/.ssh/config" ] && [ ! -L "$HOME/.ssh/config" ]; then
@@ -947,6 +963,7 @@ echo "- Claude Code: CLI tool with SuperClaude framework"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
+echo "- Personal repositories: Obsidian vault at ~/obsidian"
 echo ""
 echo "Next steps:"
 echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"

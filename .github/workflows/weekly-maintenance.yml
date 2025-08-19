@@ -9,13 +9,13 @@ jobs:
   dependency-audit:
     name: Dependency Audit
     runs-on: macos-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Update Homebrew
         run: brew update
-      
+
       - name: Check outdated packages
         id: check-outdated
         run: |
@@ -23,62 +23,62 @@ jobs:
             echo "# Weekly Dependency Report"
             echo "Date: $(date)"
             echo ""
-            
+
             echo "## Homebrew Formulae"
             brew outdated --formula --json | python -m json.tool || echo "[]"
             echo ""
-            
-            echo "## Homebrew Casks"  
+
+            echo "## Homebrew Casks"
             brew outdated --cask --json | python -m json.tool || echo "[]"
             echo ""
-            
+
             echo "## Security Updates Available"
             brew audit --formula --cask || echo "No security issues found"
-            
+
           } > weekly-report.md
-          
+
           # Set output for notification
           outdated_count=$(brew outdated | wc -l | xargs)
           echo "outdated_count=$outdated_count" >> $GITHUB_OUTPUT
-      
+
       - name: Check for vulnerabilities
         run: |
           # Install grype for vulnerability scanning
           brew install grype
-          
+
           # Scan for vulnerabilities
           grype dir:. --output json > vulnerability-scan.json || true
-          
+
           # Create human-readable report
           {
             echo ""
             echo "## Vulnerability Scan"
             grype dir:. --output table || echo "No vulnerabilities found"
           } >> weekly-report.md
-      
+
       - name: Clean up old files
         run: |
           {
             echo ""
             echo "## Cleanup Report"
             echo ""
-            
+
             # Find and report large files
             echo "### Large Files (>10MB)"
             find . -type f -size +10M -exec ls -lh {} \; 2>/dev/null | head -20
             echo ""
-            
+
             # Find old log files
             echo "### Old Log Files (>30 days)"
             find . -name "*.log" -mtime +30 -exec ls -lh {} \; 2>/dev/null
             echo ""
-            
+
             # Check for broken symlinks
             echo "### Broken Symlinks"
             find . -type l ! -exec test -e {} \; -print 2>/dev/null
-            
+
           } >> weekly-report.md
-      
+
       - name: Generate PR if updates needed
         if: steps.check-outdated.outputs.outdated_count > 0
         uses: peter-evans/create-pull-request@v5
@@ -87,11 +87,11 @@ jobs:
           title: '🔄 Weekly Dependency Updates'
           body: |
             ## Weekly Maintenance Report
-            
+
             Found ${{ steps.check-outdated.outputs.outdated_count }} outdated packages.
-            
+
             Please review the attached report and update as needed.
-            
+
             To update all packages:
             ```bash
             brew upgrade
@@ -99,7 +99,7 @@ jobs:
             ```
           branch: weekly-updates
           delete-branch: true
-      
+
       - name: Upload reports
         uses: actions/upload-artifact@v4
         with:
@@ -111,10 +111,10 @@ jobs:
   tmux-plugin-updates:
     name: Check Tmux Plugin Updates
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Check TPM plugins
         run: |
           {
@@ -122,12 +122,12 @@ jobs:
             echo "Date: $(date)"
             echo ""
             echo "## Current Plugins"
-            
+
             # Parse .tmux.conf for plugins
             grep "set -g @plugin" .tmux.conf | while read -r line; do
               plugin=$(echo "$line" | sed "s/.*@plugin ['\"]*//" | sed "s/['\"].*//")
               echo "- $plugin"
-              
+
               # Check if plugin repo exists and get latest commit
               if [[ "$plugin" == *"/"* ]]; then
                 repo_url="https://api.github.com/repos/$plugin"
@@ -136,7 +136,7 @@ jobs:
               fi
             done
           } > tmux-plugin-report.md
-      
+
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
@@ -146,31 +146,31 @@ jobs:
   claude-config-validation:
     name: Validate Claude Configurations
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Check Claude configs
         run: |
           {
             echo "# Claude Configuration Report"
             echo "Date: $(date)"
             echo ""
-            
+
             # Check for deprecated patterns
             echo "## Deprecated Pattern Check"
             deprecated_patterns=(
               "TodoRead"
-              "TodoWrite" 
+              "TodoWrite"
               "old_command"
             )
-            
+
             for pattern in "${deprecated_patterns[@]}"; do
               if grep -r "$pattern" .claude/ --include="*.md" 2>/dev/null; then
                 echo "⚠️ Found deprecated pattern: $pattern"
               fi
             done
-            
+
             # Validate JSON configs
             echo ""
             echo "## JSON Validation"
@@ -183,9 +183,9 @@ jobs:
                 fi
               fi
             done
-            
+
           } > claude-config-report.md
-      
+
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:

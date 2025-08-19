@@ -2,9 +2,9 @@ name: Dotfiles CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     - cron: '0 0 * * 0'  # Weekly validation
 
@@ -14,23 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Validate JSON files
         run: |
           for file in $(find . -name "*.json" -not -path "./.git/*"); do
             echo "Validating $file"
             python -m json.tool "$file" > /dev/null || exit 1
           done
-      
+
       - name: Validate YAML files
         run: |
           pip install yamllint
           yamllint -d relaxed .
-      
+
       - name: Check Shell Scripts
         run: |
           find scripts -name "*.sh" -exec shellcheck {} \;
-      
+
       - name: Validate Brewfile
         run: |
           if [[ -f "homebrew/Brewfile" ]]; then
@@ -42,21 +42,21 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Test setup script (dry run)
         run: |
           # Create a test mode for the setup script
           export CI_TEST_MODE=true
           export DOTFILES_DIR=$GITHUB_WORKSPACE
           bash -n scripts/setup-script.sh  # Syntax check
-          
+
       - name: Test Homebrew installation
         run: |
           brew bundle check --file=homebrew/Brewfile --no-upgrade || {
             echo "Some formulae/casks would be installed:"
             brew bundle list --file=homebrew/Brewfile
           }
-      
+
       - name: Test stow operations
         run: |
           brew install stow
@@ -74,20 +74,20 @@ jobs:
       image: ubuntu:latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install shells
         run: |
           apt-get update
           apt-get install -y fish zsh bash curl
-      
+
       - name: Test Fish config syntax
         run: |
           fish -n .config/fish/config.fish || echo "Fish config has syntax errors"
-      
+
       - name: Test Zsh config syntax
         run: |
           zsh -n .zshrc || echo "Zsh config has syntax errors"
-      
+
       - name: Test Bash config syntax
         run: |
           bash -n .bashrc || echo "Bash config has syntax errors"
@@ -97,14 +97,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Check for secrets
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
-      
+
       - name: Check for sensitive patterns
         run: |
           # Check for exposed API keys, passwords, etc.
@@ -122,16 +122,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Check README exists
         run: test -f README.md
-      
+
       - name: Validate markdown
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
           globs: '**/*.md'
         continue-on-error: true
-      
+
       - name: Check broken links
         uses: lycheeverse/lychee-action@v1
         with:
@@ -144,7 +144,7 @@ jobs:
     if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Check Homebrew updates
         run: |
           brew update
@@ -152,13 +152,13 @@ jobs:
           brew outdated || echo "All formulae up to date"
           echo "=== Outdated casks ==="
           brew outdated --cask || echo "All casks up to date"
-      
+
       - name: Check npm packages
         run: |
           if [[ -f "package.json" ]]; then
             npx npm-check-updates
           fi
-      
+
       - name: Create update report
         run: |
           {
@@ -168,7 +168,7 @@ jobs:
             echo "## Homebrew"
             brew outdated --json | python -m json.tool
           } > update-report.md
-      
+
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
@@ -180,7 +180,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Validate Claude settings
         run: |
           for file in .claude/*.json .claude-code-router/*.json; do
@@ -189,7 +189,7 @@ jobs:
               python -m json.tool "$file" > /dev/null || exit 1
             fi
           done
-      
+
       - name: Check Claude documentation
         run: |
           required_files=("CLAUDE.md")
@@ -199,7 +199,7 @@ jobs:
               exit 1
             fi
           done
-      
+
       - name: Validate MCP configs
         run: |
           if [[ -f ".config/claude-desktop/config.json" ]]; then

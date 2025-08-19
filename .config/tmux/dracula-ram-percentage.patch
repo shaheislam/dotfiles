@@ -3,22 +3,22 @@
 
 patch_ram_script() {
   local ram_script="$HOME/.tmux/plugins/dracula/scripts/ram_info.sh"
-  
+
   # Check if the script exists
   if [ ! -f "$ram_script" ]; then
     echo "Dracula RAM script not found. Install Dracula theme first."
     return 1
   fi
-  
+
   # Check if already patched
   if grep -q "# Calculate percentage" "$ram_script"; then
     echo "RAM script already patched for percentage display"
     return 0
   fi
-  
+
   # Backup original
   cp "$ram_script" "$ram_script.bak.$(date +%Y%m%d)"
-  
+
   # Apply patch for Darwin (macOS)
   sed -i '' '/Darwin)/,/;;/c\
     Darwin)\
@@ -31,7 +31,7 @@ patch_ram_script() {
       percentage=$((used_mem * 100 / total_mem_mib))\
       echo "${percentage}%"\
       ;;' "$ram_script"
-  
+
   echo "RAM script patched to show percentage only"
 }
 

@@ -21,10 +21,10 @@ if grep -q "# Calculate percentage" "$RAM_SCRIPT" 2>/dev/null; then
   echo "✓ RAM script already patched"
 else
   echo "Patching RAM script for percentage display..."
-  
+
   # Backup original
   cp "$RAM_SCRIPT" "$RAM_SCRIPT.bak.$(date +%Y%m%d)" 2>/dev/null || true
-  
+
   # Create temporary file with patched content
   cat > /tmp/ram_info_patch.sh << 'EOF'
 #!/usr/bin/env bash
@@ -100,11 +100,11 @@ main()
 #run main driver
 main
 EOF
-  
+
   # Replace the original script
   mv /tmp/ram_info_patch.sh "$RAM_SCRIPT"
   chmod +x "$RAM_SCRIPT"
-  
+
   echo "✓ RAM script patched successfully"
 fi
 

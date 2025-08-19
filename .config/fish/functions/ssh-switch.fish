@@ -108,7 +108,7 @@ function ssh-switch --description "Switch between SSH keys for GitHub"
     # Show current SSH agent state
     echo ""
     echo "Current SSH agent keys:"
-    ssh-add -l | sed 's/^/  /'
+    ssh-add -l 2>/dev/null | sed 's/^/  /' || echo "  No keys loaded"
 
     # Check if we're in a git repository and warn about potential mismatches
     if git rev-parse --git-dir >/dev/null 2>&1
