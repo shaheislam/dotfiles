@@ -382,9 +382,10 @@ if status is-interactive
     alias ld=lazydocker
     alias fixterm="stty sane"
 
-    # Obsidian Aliases
-    alias obs="cd '/Users/shaheislam/Library/Mobile Documents/iCloud~md~obsidian/Documents/Engineering'"
-    alias obsplb="cd '/Users/shahe/Documents/Local Vault'"
+    # Obsidian Alias - automatically open nvim after cd
+    function obs --description "Navigate to Obsidian vault and open nvim"
+        cd ~/obsidian && nvim .
+    end
 
     # Kubernetes aliases
     alias kctx="kubie ctx"
