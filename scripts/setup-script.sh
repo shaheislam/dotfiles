@@ -846,32 +846,8 @@ echo "=== Configuring global gitignore ==="
 git config --global core.excludesfile ~/.gitignore_global
 echo "Global gitignore configured to use ~/.gitignore_global"
 
-# Setup pre-commit hooks for dotfiles repository
-echo "=== Setting up pre-commit hooks ==="
-if command -v pre-commit &> /dev/null; then
-    # Check if we're in the dotfiles directory
-    if [ -d "$HOME/dotfiles/.git" ]; then
-        # Use a subshell to avoid changing the working directory
-        (
-            cd "$HOME/dotfiles" || exit 1
-            # Check if pre-commit hooks are already installed
-            if [ ! -f ".git/hooks/pre-commit" ] || ! grep -q "pre-commit" ".git/hooks/pre-commit" 2>/dev/null; then
-                echo "Installing pre-commit hooks in dotfiles repository..."
-                pre-commit install
-                echo "Pre-commit hooks installed successfully!"
-            else
-                echo "Pre-commit hooks already installed in dotfiles repository"
-            fi
-            # Run pre-commit on all files to ensure everything is clean
-            echo "Running initial pre-commit checks..."
-            pre-commit run --all-files || true
-        )
-    else
-        echo "Warning: Dotfiles directory not found at ~/dotfiles, skipping pre-commit setup"
-    fi
-else
-    echo "Warning: pre-commit not found. Install it with 'brew install pre-commit'"
-fi
+# Pre-commit hooks removed from dotfiles setup
+# Users can manually install pre-commit if needed for specific projects
 
 # Configure Claude Code
 echo "=== Configuring Claude Code ==="
@@ -956,7 +932,7 @@ echo "- Shell enhancements: atuin, thefuck, starship"
 echo "- Development tools: terraform, node, python, go, rust"
 echo "- Formatters: stylua, prettier, black, isort"
 echo "- Rust tools: s3grep"
-echo "- Security tools: vet (safe remote script execution), gitleaks (secret detection), pre-commit (git hooks framework)"
+echo "- Security tools: vet (safe remote script execution), gitleaks (secret detection)"
 echo "- AWS log tools: aws-log-viewer (interactive s3grep TUI)"
 echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Claude Code: CLI tool with SuperClaude framework"
@@ -974,8 +950,8 @@ echo "5. Start sketchybar: 'brew services start sketchybar'"
 echo "6. Restart Claude Desktop to load MCP servers"
 echo "7. Verify Claude Code MCP servers with 'claude mcp list'"
 echo "8. SuperClaude framework is ready via stow symlinks at ~/.claude/"
-echo "9. Pre-commit framework installed globally with gitleaks and other hooks"
-echo "10. Run 'pre-commit install' in any git repo to enable hooks"
+echo "9. Fish shell is your default shell with great aliases and functions"
+echo "10. Start coding!"
 echo "11. Your Starship prompt should display beautiful icons!"
 echo ""
 

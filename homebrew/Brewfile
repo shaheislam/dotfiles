@@ -18,7 +18,6 @@ tap "fairwindsops/tap"
 tap "joshi4/splash"
 
 # CLI Tools
-brew "pre-commit"
 brew "zsh-vi-mode"
 brew "bat"
 brew "git-delta"
@@ -44,6 +43,7 @@ brew "ffmpegthumbnailer"  # For video thumbnails in yazi
 brew "unar"  # For archive preview in yazi
 brew "splash"  # Log colorizer
 brew "fish"
+brew "fswatch"  # For Obsidian auto-sync
 brew "terraform"
 brew "terraform-docs"
 brew "asdf"

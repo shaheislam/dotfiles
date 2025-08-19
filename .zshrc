@@ -1,5 +1,3 @@
-# shellcheck shell=bash
-# shellcheck disable=SC2034,SC2296,SC1090,SC2046,SC2148
 KEYTIMEOUT=500
 
 # Enable Powerlevel10k instant prompt (or starship)
