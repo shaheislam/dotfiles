@@ -382,9 +382,13 @@ if status is-interactive
     alias ld=lazydocker
     alias fixterm="stty sane"
 
-    # Obsidian Alias - automatically open nvim after cd
+    # Obsidian Aliases
     function obs --description "Navigate to Obsidian vault and open nvim"
         cd ~/obsidian && nvim .
+    end
+    
+    function todo --description "Navigate to Obsidian vault and open TODO.md"
+        cd ~/obsidian && nvim TODO.md
     end
 
     # Kubernetes aliases
