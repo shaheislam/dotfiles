@@ -152,8 +152,10 @@ return {
   },
 
   -- Auto-detect filetypes for DevOps files
+  -- Note: This is built into Neovim, not a plugin
   {
-    "vim.filetype",
+    "folke/lazy.nvim", -- Dummy plugin to hold the config
+    priority = 1000,
     config = function()
       vim.filetype.add({
         extension = {

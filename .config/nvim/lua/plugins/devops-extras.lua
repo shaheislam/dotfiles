@@ -8,6 +8,7 @@ return {
   {
     "mfussenegger/nvim-dap",
     dependencies = {
+      "nvim-neotest/nvim-nio", -- Required dependency for nvim-dap-ui
       "rcarriga/nvim-dap-ui",
       "theHamsta/nvim-dap-virtual-text",
       "nvim-telescope/telescope-dap.nvim",
@@ -32,16 +33,18 @@ return {
   -- ============== CLOUD PROVIDERS ==============
   
   -- AWS CloudFormation support
-  {
-    "kddnewton/vim-cloudformation",
-    ft = { "cloudformation", "cfn", "yaml" },
-  },
+  -- TEMPORARILY DISABLED: GitHub authentication issues
+  -- {
+  --   "kddnewton/vim-cloudformation",
+  --   ft = { "cloudformation", "cfn", "yaml" },
+  -- },
 
-  -- Azure ARM templates
-  {
-    "fourjay/vim-azurearmtemplate",
-    ft = { "json", "arm" },
-  },
+  -- Azure ARM templates  
+  -- TEMPORARILY DISABLED: GitHub authentication issues
+  -- {
+  --   "fourjay/vim-azurearmtemplate",
+  --   ft = { "json", "arm" },
+  -- },
 
   -- GCP Config Connector
   {
@@ -64,10 +67,11 @@ return {
   },
 
   -- GitLab CI
-  {
-    "Tirke/vim-gitlab-ci",
-    ft = { "yaml", "gitlab-ci" },
-  },
+  -- TEMPORARILY DISABLED: GitHub authentication issues
+  -- {
+  --   "Tirke/vim-gitlab-ci",
+  --   ft = { "yaml", "gitlab-ci" },
+  -- },
 
   -- Jenkins
   {
@@ -78,16 +82,18 @@ return {
   -- ============== MONITORING & OBSERVABILITY ==============
   
   -- Prometheus & PromQL
-  {
-    "saibing/vim-prometheus",
-    ft = { "prometheus", "promql" },
-  },
+  -- TEMPORARILY DISABLED: GitHub authentication issues
+  -- {
+  --   "saibing/vim-prometheus",
+  --   ft = { "prometheus", "promql" },
+  -- },
 
   -- Grafana dashboard JSON
-  {
-    "grafana/vim-grafana",
-    ft = { "json", "grafana" },
-  },
+  -- TEMPORARILY DISABLED: GitHub authentication issues
+  -- {
+  --   "grafana/vim-grafana",
+  --   ft = { "json", "grafana" },
+  -- },
 
   -- Log file highlighting
   {
@@ -232,10 +238,11 @@ return {
   },
 
   -- SSH config files
-  {
-    "noahfrederick/vim-ssh-config",
-    ft = { "sshconfig", "sshdconfig" },
-  },
+  -- TEMPORARILY DISABLED: GitHub authentication issues
+  -- {
+  --   "noahfrederick/vim-ssh-config",
+  --   ft = { "sshconfig", "sshdconfig" },
+  -- },
 
   -- Systemd unit files
   {
