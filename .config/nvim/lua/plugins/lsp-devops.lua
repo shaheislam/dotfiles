@@ -211,18 +211,4 @@ return {
     version = false,
   },
 
-  -- GitHub Copilot for DevOps productivity
-  {
-    "github/copilot.vim",
-    event = "InsertEnter",
-    config = function()
-      vim.g.copilot_filetypes = {
-        ["*"] = true,
-        ["terraform"] = true,
-        ["yaml"] = true,
-        ["dockerfile"] = true,
-        ["helm"] = true,
-      }
-    end,
-  },
 }
