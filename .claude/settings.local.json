@@ -60,7 +60,12 @@
       "Bash(brew bundle install:*)",
       "WebFetch(domain:claudelog.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(~/.tmux/plugins/tpm/bin/install_plugins:*)",
+      "Bash(~/.tmux/plugins/tmux-session-wizard/session-wizard.tmux:*)",
+      "Bash(tmux list-keys:*)",
+      "Bash(~/.tmux/plugins/tmux-session-wizard/bin/t:*)",
+      "Bash(zoxide query:*)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",

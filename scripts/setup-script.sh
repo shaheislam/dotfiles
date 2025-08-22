@@ -356,6 +356,7 @@ else
   install_tmux_plugin "tmux-pain-control" "https://github.com/tmux-plugins/tmux-pain-control"
   install_tmux_plugin "tmux-sidebar" "https://github.com/tmux-plugins/tmux-sidebar"
   install_tmux_plugin "tmux-fingers" "https://github.com/Morantron/tmux-fingers"
+  install_tmux_plugin "tmux-session-wizard" "https://github.com/27medkamal/tmux-session-wizard"
   install_tmux_plugin "tmux-battery" "https://github.com/tmux-plugins/tmux-battery"
   install_tmux_plugin "dracula" "https://github.com/dracula/tmux"
 fi
@@ -391,6 +392,24 @@ fi
 
 # tmux-fingers is now installed via Homebrew (see Brewfile)
 
+# Configure tmux-session-wizard plugin
+echo "=== Configuring tmux-session-wizard plugin ==="
+# Verify dependencies for tmux-session-wizard
+if ! command -v zoxide &> /dev/null; then
+  log_warning "zoxide not found. tmux-session-wizard requires zoxide for directory jumping."
+  log_info "Install with: brew install zoxide"
+fi
+if ! command -v fzf &> /dev/null; then
+  log_warning "fzf not found. tmux-session-wizard requires fzf for fuzzy finding."
+  log_info "Install with: brew install fzf"
+fi
+# Ensure the session-wizard executable is properly configured
+if [ -d "$HOME/.tmux/plugins/tmux-session-wizard" ]; then
+  chmod +x "$HOME/.tmux/plugins/tmux-session-wizard/bin/t" 2>/dev/null || true
+  log_success "tmux-session-wizard plugin configured. Use Prefix+T to activate."
+else
+  log_info "tmux-session-wizard will be installed when you run TPM (Prefix+I in tmux)"
+fi
 
 # Configure tmux-which-key plugin
 echo "=== Configuring tmux-which-key plugin ==="
