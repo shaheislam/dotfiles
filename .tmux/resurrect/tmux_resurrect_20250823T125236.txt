@@ -1,0 +1,4 @@
+pane	main	1	1	:*	1	~	:/Users/shahe	1	fish	:-fish
+pane	main	1	1	:*	2	~	:/Users/shahe	0	fish	:-fish
+window	main	1	:fish	1	:*	223b,175x49,0,0{87x49,0,0,1,87x49,88,0,2}	:
+state	main	

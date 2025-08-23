@@ -1,40 +1,39 @@
 #!/bin/bash
 
-# Smart tmux launcher that restores sessions if needed
-# Works with continuum auto-restore
+# Smart tmux launcher that properly restores sessions
+# Manually triggers resurrect restore since continuum auto-restore is unreliable
 
 # Check if tmux server is already running
 if tmux has-session 2>/dev/null; then
     # Server is running, just attach to main or create it
     tmux new-session -A -s main
 else
-    # No server running - this is a fresh start
+    # No server running - fresh start, manually restore
     echo "Starting tmux with session restoration..."
     
-    # Start tmux server without attaching (allows auto-restore to run)
-    tmux start-server
+    # Start a temporary session to run the restore
+    tmux new-session -d -s temp-restore
     
-    # Give continuum time to auto-restore
-    sleep 2
+    # Manually trigger resurrect restore
+    tmux run-shell "$HOME/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
     
-    # Check if any sessions were restored
-    if tmux has-session 2>/dev/null; then
-        # Sessions were restored! Check if main exists
-        if tmux has-session -t main 2>/dev/null; then
-            # Attach to main
-            tmux attach -t main
-        else
-            # Attach to the first available session
-            first_session=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | head -1)
-            if [ -n "$first_session" ]; then
-                tmux attach -t "$first_session"
-            else
-                # Shouldn't happen, but create main as fallback
-                tmux new-session -s main
-            fi
-        fi
+    # Give it a moment to restore
+    sleep 1
+    
+    # Kill the temp session
+    tmux kill-session -t temp-restore 2>/dev/null
+    
+    # Now attach to main or first available session
+    if tmux has-session -t main 2>/dev/null; then
+        tmux attach -t main
     else
-        # No sessions were restored, create main
-        tmux new-session -s main
+        # Attach to first available session
+        first_session=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | head -1)
+        if [ -n "$first_session" ]; then
+            tmux attach -t "$first_session"
+        else
+            # No sessions restored, create main
+            tmux new-session -s main
+        fi
     fi
 fi
