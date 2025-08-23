@@ -1,0 +1,12 @@
+pane	main	1	1	:*	1	~/obsidian	:/Users/shahe/obsidian	1	fish	:-fish
+pane	main	1	1	:*	2	✳ System Context	:/Users/shahe/dotfiles	0	node	:-fish
+pane	main	2	0	:	1	~/obsidian	:/Users/shahe/obsidian	0	fish	:-fish
+pane	main	2	0	:	2	MacBookPro	:/Users/shahe	1	fish	:claude 
+pane	main	3	0	:-	1	~/obsidian	:/Users/shahe/obsidian	1	fish	:-fish
+pane	main	3	0	:-	2	MacBookPro	:/Users/shahe	0	fish	:claude 
+pane	terraform-aws-cloudfront	1	1	:*	1	~/w/terraform-aws-cloudfront	:/Users/shahe/work/terraform-aws-cloudfront	1	fish	:-fish
+window	main	1	:fish	1	:*	e9fa,175x49,0,0{89x49,0,0,1,85x49,90,0,2}	:
+window	main	2	:fish	0	:	e22c,175x49,0,0[175x34,0,0,3,175x14,0,35,4]	:
+window	main	3	:fish	0	:-	42f1,175x49,0,0{104x49,0,0,5,70x49,105,0,6}	:
+window	terraform-aws-cloudfront	1	:fish	1	:*	d2c4,175x49,0,0,7	:
+state		
