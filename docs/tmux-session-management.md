@@ -1,59 +1,61 @@
 # Tmux Session Management Guide
 
 ## Overview
-Your tmux setup includes multiple session management tools, each optimized for different workflows.
+Your tmux setup uses a single, unified session manager that integrates tmux sessions, tmuxinator templates, and recent directories.
 
 ## Quick Reference
 
 | Keybinding | Tool | Description |
 |------------|------|-------------|
-| `Ctrl-Space + T` | Enhanced Wizard | Sessions + Tmuxinator + Zoxide (recommended) |
-| `Ctrl-Space + S` | Session Manager | Alternative view with compact display |
-| `Ctrl-Space + o` | tmux-sessionx | Fast session switcher (no preview) |
-| `Ctrl-Space + W` | Original Wizard | Basic session wizard without tmuxinator |
+| `Ctrl-Space + S` | Session Manager | Unified interface for all session management |
 
-## Tools Breakdown
+## Session Manager
 
-### Enhanced Session Wizard (`Ctrl-Space + T`)
-**Location**: `~/dotfiles/scripts/tmux-wizard-enhanced.sh`
-
-The primary session management tool that combines:
-- **[SESSION]** - Existing tmux sessions with window count
-- **[TMUXINATOR]** - Pre-configured project templates
-- **[ZOXIDE]** - Recently accessed directories
-
-**Features**:
-- Unified interface with clear labels
-- Create new sessions by typing a name
-- Launch complex layouts via tmuxinator
-- Quick access to recent directories
-
-### Session Manager (`Ctrl-Space + S`)
 **Location**: `~/dotfiles/scripts/tmux-session-manager.sh`
 
-Alternative interface with:
-- **[S]** - Sessions (compact view)
-- **[T]** - Tmuxinator templates
-- **[Z]** - Zoxide directories
+The session manager provides a unified interface with three types of entries:
+- **[S]** - Existing tmux sessions with window count
+- **[T]** - Tmuxinator project templates
+- **[Z]** - Recently accessed directories (via zoxide)
 
-**Features**:
-- Larger popup window (80% x 80%)
-- Compact prefix notation
-- Same functionality, different view
+### Features
+- Large popup window (80% x 80%)
+- Clear prefix notation for entry types
+- Type any path to create a session in that directory
+- Type a name to create a new named session
+- Launch complex layouts via tmuxinator
+- Quick access to recent directories
+- Fast fuzzy search with fzf
+- Supports tilde expansion for home directory
 
-### tmux-sessionx (`Ctrl-Space + o`)
-**Location**: Plugin at `~/.tmux/plugins/tmux-sessionx`
+## Usage Examples
 
-Fast session switcher optimized for performance:
-- No preview for faster loading
-- Tree mode disabled by default
-- Custom paths limited to essential directories
-- Tmuxinator integration enabled
+### Quick Session Switch
+1. Press `Ctrl-Space + S`
+2. Type to filter existing sessions (marked with `[S]`)
+3. Press Enter to switch
 
-### Original Session Wizard (`Ctrl-Space + W`)
-**Location**: Plugin at `~/.tmux/plugins/tmux-session-wizard`
+### Launch Tmuxinator Project
+1. Press `Ctrl-Space + S`
+2. Select a `[T]` entry (tmuxinator template)
+3. Press Enter to launch the full layout
 
-Basic session management without tmuxinator integration.
+### Create Session from Recent Directory
+1. Press `Ctrl-Space + S`
+2. Select a `[Z]` entry (recent directory from zoxide)
+3. Press Enter to create/switch to session
+
+### Create Session from Any Path
+1. Press `Ctrl-Space + S`
+2. Type a full path (e.g., `~/work/project` or `/usr/local/bin`)
+3. Press Enter to create a session in that directory
+   - Session name will be based on the directory name
+   - Supports tilde expansion (`~` for home directory)
+
+### Create New Named Session
+1. Press `Ctrl-Space + S`
+2. Type a session name (without slashes)
+3. Press Enter to create a new session with that name
 
 ## Tmuxinator Templates
 
@@ -87,28 +89,6 @@ root: ~/projects/<project-name>
 # Usage: tmuxinator start dev project-name
 ```
 
-## Usage Examples
-
-### Quick Session Switch
-1. Press `Ctrl-Space + T`
-2. Type to filter existing sessions
-3. Press Enter to switch
-
-### Launch Tmuxinator Project
-1. Press `Ctrl-Space + T`
-2. Select a `[TMUXINATOR]` entry
-3. Press Enter to launch the full layout
-
-### Create Session from Directory
-1. Press `Ctrl-Space + T`
-2. Select a `[ZOXIDE]` directory
-3. Press Enter to create/switch to session
-
-### Create New Session
-1. Press `Ctrl-Space + T`
-2. Type a new session name
-3. Press Enter to create
-
 ## Command Line Usage
 
 ```bash
@@ -120,35 +100,44 @@ tmuxinator list               # List all templates
 tmuxinator new project-name   # Create new template
 ```
 
-## Performance Optimization
+## Creating New Templates
 
-The sessionx plugin (`Ctrl-Space + o`) is configured for speed:
-- Preview disabled: `@sessionx-preview-enabled 'false'`
-- Tree mode off: `@sessionx-tree-mode 'off'`
-- Limited custom paths: Only essential directories
-- Zoxide mode enabled for recent directories
-
-## Troubleshooting
-
-### Sessions Not Showing
-- The scripts include proper PATH setup for homebrew
-- All commands use standard paths (`/opt/homebrew/bin`)
-- tmux server connection is automatic
-
-### Slow Performance
-- Use `Ctrl-Space + o` (sessionx) for fastest switching
-- Preview and tree modes are disabled by default
-- Large directories are excluded from custom paths
-
-### Creating New Templates
+To create a new tmuxinator template:
 ```bash
 tmuxinator new project-name
-# Edit ~/.config/tmuxinator/project-name.yml
+# This opens ~/.config/tmuxinator/project-name.yml in your editor
+```
+
+Example template:
+```yaml
+name: myproject
+root: ~/work/myproject
+
+windows:
+  - editor:
+      layout: main-vertical
+      panes:
+        - nvim
+        - # empty pane for commands
+  
+  - server:
+      panes:
+        - npm run dev
+  
+  - git:
+      panes:
+        - lazygit
 ```
 
 ## Configuration Files
 
 - **Tmux config**: `~/.tmux.conf`
-- **Enhanced wizard**: `~/dotfiles/scripts/tmux-wizard-enhanced.sh`
-- **Session manager**: `~/dotfiles/scripts/tmux-session-manager.sh`
+- **Session manager script**: `~/dotfiles/scripts/tmux-session-manager.sh`
 - **Tmuxinator configs**: `~/.config/tmuxinator/*.yml`
+
+## Tips
+
+- The session manager shows sessions first, then tmuxinator templates, then recent directories
+- Session names are automatically cleaned (spaces and dots replaced with underscores)
+- The `*` symbol indicates the currently attached session
+- Use fuzzy search to quickly find what you need
