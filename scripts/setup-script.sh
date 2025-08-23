@@ -411,6 +411,22 @@ else
   log_info "tmux-session-wizard will be installed when you run TPM (Prefix+I in tmux)"
 fi
 
+# Configure tmux-sessionx plugin
+if [ -d "$HOME/.tmux/plugins/tmux-sessionx" ]; then
+  log_success "tmux-sessionx plugin configured. Use Prefix+o to activate."
+else
+  log_info "tmux-sessionx will be installed when you run TPM (Prefix+I in tmux)"
+fi
+
+# Setup tmuxinator configuration directory
+echo "=== Setting up tmuxinator configuration ==="
+if ! [ -d "$HOME/.config/tmuxinator" ]; then
+  mkdir -p "$HOME/.config/tmuxinator"
+  log_success "Created tmuxinator configuration directory"
+else
+  log_info "Tmuxinator configuration directory already exists"
+fi
+
 # Configure tmux-which-key plugin
 echo "=== Configuring tmux-which-key plugin ==="
 # The plugin will be in ~/.tmux/plugins after stow creates the symlink

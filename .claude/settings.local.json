@@ -65,7 +65,17 @@
       "Bash(~/.tmux/plugins/tmux-session-wizard/session-wizard.tmux:*)",
       "Bash(tmux list-keys:*)",
       "Bash(~/.tmux/plugins/tmux-session-wizard/bin/t:*)",
-      "Bash(zoxide query:*)"
+      "Bash(zoxide query:*)",
+      "Bash(gem list)",
+      "Bash(~/.tmux/plugins/tmux-sessionx/sessionx.tmux)",
+      "Bash(tmuxinator list:*)",
+      "Bash(/Users/shahe/dotfiles/scripts/tmux-wizard-enhanced.sh:*)",
+      "Bash(tmux display-message:*)",
+      "Bash(tmux unbind-key:*)",
+      "Bash(tmux bind-key:*)",
+      "Bash(tmux display-popup:*)",
+      "Bash(bash:*)",
+      "Bash(/opt/homebrew/bin/tmux list-sessions)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",

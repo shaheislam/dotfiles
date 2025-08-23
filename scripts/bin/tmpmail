@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#
+
 # tmpmail - Temporary email using Mail.tm API
 # A simple temporary email client for macOS and Linux
 #
@@ -65,7 +65,7 @@ generate_email() {
     fi
 
     # Save account info
-    echo "$account_data" | jq ". + {password: \"$password\"}" > "$tmpmail_account"
+    echo "$account_data" | jq ". + {password: \"$password\"}" >"$tmpmail_account"
 
     # Get auth token
     token_response=$(curl -sL "$api_base/token" \
@@ -79,7 +79,7 @@ generate_email() {
         exit 1
     fi
 
-    echo "$token" > "$tmpmail_token"
+    echo "$token" >"$tmpmail_token"
 
     echo "Generated: $email"
     echo "Email address saved. Use 'tmpmail' to check inbox."
@@ -180,7 +180,7 @@ view_recent() {
 
     # Get most recent message ID
     recent_id=$(curl -sL "$api_base/messages" \
-        -H "Authorization: Bearer $token" 2>/dev/null | \
+        -H "Authorization: Bearer $token" 2>/dev/null |
         jq -r '.["hydra:member"][0].id' 2>/dev/null)
 
     if [ -z "$recent_id" ] || [ "$recent_id" = "null" ]; then
@@ -199,29 +199,29 @@ copy_email() {
 
 # Main
 case "$1" in
-    --generate|-g)
-        generate_email
-        ;;
-    --copy|-c)
-        copy_email
-        ;;
-    --recent|-r)
-        view_recent
-        ;;
-    --view|-v)
-        view_message "$2"
-        ;;
-    --help|-h)
-        usage
-        ;;
-    --version)
-        echo "$version"
-        ;;
-    "")
-        check_inbox
-        ;;
-    *)
-        # Assume it's a message ID
-        view_message "$1"
-        ;;
+--generate | -g)
+    generate_email
+    ;;
+--copy | -c)
+    copy_email
+    ;;
+--recent | -r)
+    view_recent
+    ;;
+--view | -v)
+    view_message "$2"
+    ;;
+--help | -h)
+    usage
+    ;;
+--version)
+    echo "$version"
+    ;;
+"")
+    check_inbox
+    ;;
+*)
+    # Assume it's a message ID
+    view_message "$1"
+    ;;
 esac
