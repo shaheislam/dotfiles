@@ -110,13 +110,17 @@ restore_from_trash() {
         fi
     '
     
+    # Tokyo Night color theme for fzf
+    local FZF_COLORS="--color=fg:#c0caf5,bg:#1a1b26,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8"
+    
     # Select trash file to restore
     local selected=$(ls -t "$TRASH_DIR"/*.txt 2>/dev/null | \
         fzf --reverse \
             --header "Select session to restore from trash (ESC to cancel)" \
             --preview "bash -c '$preview_cmd'" \
             --preview-window="right:50%:wrap" \
-            --height=100%)
+            --height=100% \
+            $FZF_COLORS)
     
     if [ -n "$selected" ] && [ -f "$selected" ]; then
         # Extract session name from filename

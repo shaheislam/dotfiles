@@ -66,6 +66,9 @@ if [[ -n "$query" ]] && ([[ "$query" == /* ]] || [[ "$query" == ~* ]]); then
 fi
 '
 
+# Tokyo Night color theme for fzf
+FZF_COLORS="--color=fg:#c0caf5,bg:#1a1b26,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8"
+
 # Use fzf for session/path selection
 RESULT=$(
   initial_list | fzf \
@@ -75,6 +78,7 @@ RESULT=$(
   --height=100% \
   --print-query \
   --bind "tab:reload(bash -c '$reload_cmd')" \
+  $FZF_COLORS \
   | tail -n 1
 )
 
