@@ -58,7 +58,9 @@ select_bucket() {
 
     if [ -z "$bucket" ]; then
         echo -e "${YELLOW}Select a bucket:${NC}"
-        bucket=$(aws s3 ls | awk '{print $3}' | fzf --height=40% --reverse --prompt="Bucket: ")
+        # Tokyo Night color theme for fzf
+        FZF_COLORS="--color=fg:#c0caf5,bg:#1a1b26,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8"
+        bucket=$(aws s3 ls | awk '{print $3}' | fzf --height=40% --reverse --prompt="Bucket: " $FZF_COLORS)
     fi
 
     if [ -z "$bucket" ]; then
@@ -84,13 +86,16 @@ browse_prefixes() {
         return 1
     fi
 
+    # Tokyo Night color theme for fzf
+    local FZF_COLORS="--color=fg:#c0caf5,bg:#1a1b26,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8"
+    
     local selection=$(
         {
             [ -n "$current_prefix" ] && echo "../ (Go back)"
             echo "🔍 Search in current directory"
             echo "$prefixes" | sed 's/^/[DIR] /'
             echo "$files" | head -10 | sed 's/^/[FILE] /'
-        } | fzf --height=80% --reverse --prompt="Select: " --header="Navigate with arrows, Enter to select"
+        } | fzf --height=80% --reverse --prompt="Select: " --header="Navigate with arrows, Enter to select" $FZF_COLORS
     )
 
     if [ -z "$selection" ]; then

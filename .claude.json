@@ -11,8 +11,8 @@
     "theme-command": 73,
     "shift-enter": 73,
     "prompt-queue": 6,
-    "enter-to-steer-in-relatime": 54,
-    "todo-list": 54,
+    "enter-to-steer-in-relatime": 74,
+    "todo-list": 74,
     "vscode-command-install": 9,
     "# for memory": 64,
     "install-github-app": 68,
@@ -1938,6 +1938,14 @@
     "/Users/shaheislam/obsidian": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "Are there any other scripts at all that might need the tokyo night theme",
+          "pastedContents": {}
+        },
+        {
+          "display": "Are there any other parts of tmux that might need tokyo night theme adding to?",
+          "pastedContents": {}
+        },
         {
           "display": "Can you set my fzf for tmux session search to use the tokyo night color theme too",
           "pastedContents": {}
