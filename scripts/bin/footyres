@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Footyres - Football Results CLI Tool
+# Wrapper script for the Python football scraper
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FOOTYRES_DIR="$SCRIPT_DIR/../footyres"
+VENV_DIR="$FOOTYRES_DIR/venv"
+
+# Check if the footyres directory exists
+if [ ! -d "$FOOTYRES_DIR" ]; then
+    echo "Error: footyres directory not found at $FOOTYRES_DIR"
+    echo "Please run the setup script first."
+    exit 1
+fi
+
+# Check if virtual environment exists, create if not
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Setting up footyres for first use..."
+    cd "$FOOTYRES_DIR"
+    python3 -m venv venv
+    source "$VENV_DIR/bin/activate"
+    pip install -q --upgrade pip
+    pip install -q -r requirements.txt
+    echo "Setup complete!"
+    echo ""
+fi
+
+# Activate virtual environment and run the script
+cd "$FOOTYRES_DIR"
+source "$VENV_DIR/bin/activate"
+python football_scraper.py "$@"

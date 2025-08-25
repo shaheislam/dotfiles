@@ -671,6 +671,22 @@ else
   echo "This will symlink ~/.claude/ to your dotfiles/.claude/ directory"
 fi
 
+# Install footyres (football results CLI)
+echo "=== Installing footyres ==="
+if [ ! -d "$HOME/dotfiles/scripts/footyres" ]; then
+  echo "Cloning footyres repository..."
+  cd "$HOME/dotfiles/scripts" && git clone https://github.com/kubblai/footyres.git
+  echo "footyres repository cloned to scripts/footyres"
+else
+  echo "footyres already installed"
+fi
+
+# Ensure footyres script is executable
+if [ -f "$HOME/dotfiles/scripts/bin/footyres" ]; then
+  chmod +x "$HOME/dotfiles/scripts/bin/footyres"
+  echo "footyres wrapper script is ready"
+fi
+
 # Setup atuin
 if command -v atuin &> /dev/null && [ ! -f "$HOME/.local/share/atuin/key" ]; then
   echo "=== Setting up Atuin ==="
@@ -975,6 +991,7 @@ echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
 echo "- Personal repositories: Obsidian vault at ~/obsidian"
+echo "- Sports tools: footyres (football results CLI)"
 echo ""
 echo "Next steps:"
 echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"

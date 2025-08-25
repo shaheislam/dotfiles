@@ -381,6 +381,7 @@ if status is-interactive
     alias lg=lazygit
     alias ld=lazydocker
     alias fixterm="stty sane"
+    alias footyres="$HOME/dotfiles/scripts/bin/footyres"  # Football results CLI
 
     # Obsidian Aliases
     function obs --description "Navigate to Obsidian vault and open nvim"
