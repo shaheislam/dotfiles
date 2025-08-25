@@ -1095,6 +1095,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "The plugin is loaded and the <leader>ai works but when I hit enter it seems slow and then the output is complete garbage",
+          "pastedContents": {}
+        },
+        {
+          "display": "Kai neovim is loaded in lazyvim but has an orange icon next to it when all of the others have a blue icon",
+          "pastedContents": {}
+        },
+        {
           "display": "I have added these files now how can i test the kai-neovim plugin?",
           "pastedContents": {}
         },

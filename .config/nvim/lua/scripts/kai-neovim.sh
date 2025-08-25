@@ -12,35 +12,8 @@ if ! command -v claude &> /dev/null; then
     exit 1
 fi
 
-# Read the CLAUDE.md files for additional context (project-specific rules for Kai)
-GLOBAL_CLAUDE_MD=""
-LOCAL_CLAUDE_MD=""
-
-if [ -f "$HOME/.claude/CLAUDE.md" ]; then
-    GLOBAL_CLAUDE_MD=$(cat "$HOME/.claude/CLAUDE.md")
-fi
-
-# Find the nearest CLAUDE.md in the project
-CURRENT_DIR=$(pwd)
-while [ "$CURRENT_DIR" != "/" ]; do
-    if [ -f "$CURRENT_DIR/CLAUDE.md" ]; then
-        LOCAL_CLAUDE_MD=$(cat "$CURRENT_DIR/CLAUDE.md")
-        break
-    fi
-    CURRENT_DIR=$(dirname "$CURRENT_DIR")
-done
-
 # Regular text enhancement request - let Kai determine the action
-FULL_PROMPT="You are Kai, an AI assistant integrated into Neovim. 
-
-CRITICAL CONTEXT FROM CLAUDE.md FILES (FOLLOW THESE RULES EXACTLY):
-==================================================
-GLOBAL CLAUDE.md:
-$GLOBAL_CLAUDE_MD
-
-PROJECT CLAUDE.md:
-$LOCAL_CLAUDE_MD
-==================================================
+FULL_PROMPT="You are an AI assistant integrated into Neovim.
 
 CURRENT EDITING CONTEXT:
 $(cat "$CONTEXT_FILE")
@@ -76,7 +49,11 @@ IMPORTANT INSTRUCTIONS:
 User instruction: $PROMPT"
 
 # Get the response with action marker
-RESPONSE=$(echo "$FULL_PROMPT" | claude -p)  # Using claude CLI to communicate with Kai
+# Using a temporary file to avoid shell escaping issues
+TEMP_PROMPT_FILE=$(mktemp)
+echo "$FULL_PROMPT" > "$TEMP_PROMPT_FILE"
+RESPONSE=$(claude < "$TEMP_PROMPT_FILE" 2>/dev/null)
+rm -f "$TEMP_PROMPT_FILE"
 
 # Output the response
 echo "$RESPONSE"
