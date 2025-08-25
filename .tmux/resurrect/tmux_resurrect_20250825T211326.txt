@@ -1,0 +1,20 @@
+pane	2	1	0	:	1	~/obsidian	:/Users/shaheislam/obsidian	1	fish	:/opt/homebrew/bin/fish
+pane	2	2	1	:*	1	~/dotfiles	:/Users/shaheislam/dotfiles	0	fish	:/opt/homebrew/bin/fish
+pane	2	2	1	:*	2	Shahes-MacBook-Pro.local	:/Users/shaheislam/obsidian	1	fish	:claude 
+pane	2	3	0	:-	1	~/obsidian	:/Users/shaheislam/obsidian	0	fish	:/opt/homebrew/bin/fish
+pane	2	3	0	:-	2	Shahes-MacBook-Pro.local	:/Users/shaheislam/obsidian	1	fish	:claude 
+pane	main	1	1	:*	1	~/obsidian	:/Users/shaheislam	0	fish	:-fish
+pane	main	1	1	:*	2	✳ System Context	:/Users/shaheislam	1	fish	:-fish
+pane	main	2	0	:	1	~/obsidian	:/Users/shaheislam	0	fish	:-fish
+pane	main	2	0	:	2	MacBookPro	:/Users/shaheislam/obsidian	1	fish	:claude 
+pane	main	3	0	:	1	~/obsidian	:/Users/shaheislam	0	fish	:-fish
+pane	main	3	0	:	2	MacBookPro	:/Users/shaheislam/obsidian	1	fish	:claude 
+pane	terraform-aws-cloudfront	1	1	:*	1	~/w/terraform-aws-cloudfront	:/Users/shaheislam	1	fish	:-fish
+window	2	1	:fish	0	:	c524,201x56,0,0,7	:
+window	2	2	:obsidian	1	:*	2abd,201x56,0,0{120x56,0,0,8,80x56,121,0,9}	off
+window	2	3	:logs	0	:-	e208,201x56,0,0{120x56,0,0,10,80x56,121,0,11}	off
+window	main	1	:fish	1	:*	69f6,175x49,0,0{89x49,0,0,0,85x49,90,0,1}	:
+window	main	2	:fish	0	:	622a,175x49,0,0[175x34,0,0,2,175x14,0,35,3]	:
+window	main	3	:fish	0	:	c2ee,175x49,0,0{104x49,0,0,4,70x49,105,0,5}	:
+window	terraform-aws-cloudfront	1	:[tmux]	1	:*	d2c3,175x49,0,0,6	:
+state	2	
