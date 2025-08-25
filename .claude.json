@@ -5,7 +5,7 @@
   "preferredNotifChannel": "terminal_bell",
   "editorMode": "vim",
   "tipsHistory": {
-    "ide-hotkey": 40,
+    "ide-hotkey": 58,
     "new-user-warmup": 2,
     "memory-command": 45,
     "theme-command": 50,
@@ -17,14 +17,14 @@
     "# for memory": 54,
     "install-github-app": 56,
     "permissions": 57,
-    "drag-and-drop-images": 40,
+    "drag-and-drop-images": 58,
     "double-esc": 40,
     "continue": 40,
     "custom-commands": 47,
     "shift-tab": 42,
     "custom-agents": 54,
     "status-line": 55,
-    "paste-images-mac": 40,
+    "paste-images-mac": 58,
     "git-worktrees": 54
   },
   "promptQueueUseCount": 20,
@@ -1094,6 +1094,18 @@
     "/Users/shaheislam/dotfiles": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "Yes that worked, is there anything you need to clean up?",
+          "pastedContents": {}
+        },
+        {
+          "display": "No I want you to check if there are any native cli args for stern which do color output",
+          "pastedContents": {}
+        },
+        {
+          "display": "No dont do that just make sure stern output is colorized",
+          "pastedContents": {}
+        },
         {
           "display": "❯ ssh-switch dfe\nIdentity added: /Users/shaheislam/.ssh/shaheislamdfe (shaheislam@Shahes-MacBook-Pro.local)\n✓ Loaded DFE SSH key\n⚠ SSH config not found at ../dotfiles/.ssh/config\n\nSwitched to DFE SSH key (shaheislamdfe)\nHi shaheislamdfe! You've successfully authenticated, but GitHub does not provide shell access.\n\nCurrent SSH agent keys:\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n  No keys loaded\n\nCurrent repository: technical-guidance\\\n\\\n❯ ssh-switch personal\nIdentity added: /Users/shaheislam/.ssh/shaheislam-github (shaheislam@Shahes-MacBook-Pro.local)\n✓ Loaded personal SSH key\nerror: unexpected argument '-i' found\n\n  tip: to pass '-i' as a value, use '-- -i'\n\nUsage: sd [OPTIONS] <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n✓ Updated SSH config\n\nSwitched to personal SSH key (shaheislam)\nHi shaheislam! You've successfully authenticated, but GitHub does not provide shell access.\n\nCurrent SSH agent keys:\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n  No keys loaded\n\nCurrent repository: dotfiles\\\n\\\nWhy am i getting these errors? The function works but shows these errors",
           "pastedContents": {}

@@ -75,7 +75,8 @@
       "Bash(tmux bind-key:*)",
       "Bash(tmux display-popup:*)",
       "Bash(bash:*)",
-      "Bash(/opt/homebrew/bin/tmux list-sessions)"
+      "Bash(/opt/homebrew/bin/tmux list-sessions)",
+      "Bash(stern:*)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",
