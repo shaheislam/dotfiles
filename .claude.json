@@ -1095,6 +1095,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "❯ ssh-switch dfe\nIdentity added: /Users/shaheislam/.ssh/shaheislamdfe (shaheislam@Shahes-MacBook-Pro.local)\n✓ Loaded DFE SSH key\n⚠ SSH config not found at ../dotfiles/.ssh/config\n\nSwitched to DFE SSH key (shaheislamdfe)\nHi shaheislamdfe! You've successfully authenticated, but GitHub does not provide shell access.\n\nCurrent SSH agent keys:\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n  No keys loaded\n\nCurrent repository: technical-guidance\\\n\\\n❯ ssh-switch personal\nIdentity added: /Users/shaheislam/.ssh/shaheislam-github (shaheislam@Shahes-MacBook-Pro.local)\n✓ Loaded personal SSH key\nerror: unexpected argument '-i' found\n\n  tip: to pass '-i' as a value, use '-- -i'\n\nUsage: sd [OPTIONS] <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n✓ Updated SSH config\n\nSwitched to personal SSH key (shaheislam)\nHi shaheislam! You've successfully authenticated, but GitHub does not provide shell access.\n\nCurrent SSH agent keys:\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n  No keys loaded\n\nCurrent repository: dotfiles\\\n\\\nWhy am i getting these errors? The function works but shows these errors",
+          "pastedContents": {}
+        },
+        {
           "display": "Remove the precommit hookes and config related to this",
           "pastedContents": {}
         },

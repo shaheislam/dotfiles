@@ -44,7 +44,7 @@ function ssh-switch --description "Switch between SSH keys for GitHub"
 
             # Update the config file
             if test -f $config_file
-                sed -i '' 's|IdentityFile ~/.ssh/shaheislamdfe|IdentityFile ~/.ssh/shaheislam-github|' $config_file
+                /usr/bin/sed -i '' 's|IdentityFile ~/.ssh/shaheislamdfe|IdentityFile ~/.ssh/shaheislam-github|' $config_file
                 echo "✓ Updated SSH config"
             else
                 echo "⚠ SSH config not found at $config_file"
@@ -76,7 +76,7 @@ function ssh-switch --description "Switch between SSH keys for GitHub"
 
             # Update the config file
             if test -f $config_file
-                sed -i '' 's|IdentityFile ~/.ssh/shaheislam-github|IdentityFile ~/.ssh/shaheislamdfe|' $config_file
+                /usr/bin/sed -i '' 's|IdentityFile ~/.ssh/shaheislam-github|IdentityFile ~/.ssh/shaheislamdfe|' $config_file
                 echo "✓ Updated SSH config"
             else
                 echo "⚠ SSH config not found at $config_file"
@@ -108,7 +108,14 @@ function ssh-switch --description "Switch between SSH keys for GitHub"
     # Show current SSH agent state
     echo ""
     echo "Current SSH agent keys:"
-    ssh-add -l 2>/dev/null | sed 's/^/  /' || echo "  No keys loaded"
+    set -l ssh_keys (ssh-add -l 2>/dev/null)
+    if test -n "$ssh_keys"
+        for key in $ssh_keys
+            echo "  $key"
+        end
+    else
+        echo "  No keys loaded"
+    end
 
     # Check if we're in a git repository and warn about potential mismatches
     if git rev-parse --git-dir >/dev/null 2>&1
