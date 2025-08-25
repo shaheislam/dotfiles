@@ -1095,6 +1095,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "💡 gp => git push\n❯ git status\nOn branch main\nYour branch is up to date with 'origin/main'.\n\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n  (commit or discard the untracked or modified content in submodules)\n        modified:   .config/browser-tools/browser-tools-mcp (modified content)\n        modified:   scripts/footyres (modified content)\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\\\n\\\nWhy are these not being commited and is there a way to hide them from git if they cannot be commited?",
+          "pastedContents": {}
+        },
+        {
           "display": "In that case nothing needs to change",
           "pastedContents": {}
         },
