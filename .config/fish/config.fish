@@ -131,15 +131,20 @@ if status is-interactive
     set -gx FZF_CTRL_T_COMMAND "$FZF_DEFAULT_COMMAND"
     set -gx FZF_ALT_C_COMMAND "fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 
-    # FZF theme colors (keeping the nice blue/purple theme)
-    set -l fg "#CBE0F0"
-    set -l bg "#011628"
-    set -l bg_highlight "#143652"
-    set -l purple "#B388FF"
-    set -l blue "#06BCE4"
-    set -l cyan "#2CF9ED"
+    # FZF theme colors - Tokyo Night theme to match tmux and other tools
+    set -l fg "#c0caf5"          # Foreground
+    set -l bg "#1a1b26"          # Background
+    set -l bg_highlight "#283457" # Current Line/Selection
+    set -l purple "#9d7cd8"       # Purple
+    set -l blue "#7aa2f7"         # Blue
+    set -l cyan "#7dcfff"         # Cyan
+    set -l green "#9ece6a"        # Green
+    set -l orange "#ff9e64"       # Orange
+    set -l red "#f7768e"          # Red
+    set -l yellow "#e0af68"       # Yellow
+    set -l magenta "#bb9af7"      # Magenta
 
-    set -gx FZF_DEFAULT_OPTS "--color=fg:$fg,bg:$bg,hl:$purple,fg+:$fg,bg+:$bg_highlight,hl+:$purple,info:$blue,prompt:$cyan,pointer:$cyan,marker:$cyan,spinner:$cyan,header:$cyan"
+    set -gx FZF_DEFAULT_OPTS "--color=fg:$fg,bg:$bg,hl:$blue,fg+:$fg,bg+:$bg_highlight,hl+:$magenta,info:$yellow,prompt:$cyan,pointer:$blue,marker:$green,spinner:$cyan,header:$purple"
 
     # Disable fish greeting
     set -g fish_greeting ""
