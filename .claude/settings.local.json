@@ -76,7 +76,9 @@
       "Bash(tmux display-popup:*)",
       "Bash(bash:*)",
       "Bash(/opt/homebrew/bin/tmux list-sessions)",
-      "Bash(stern:*)"
+      "Bash(stern:*)",
+      "WebFetch(domain:danielmiessler.com)",
+      "WebSearch"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",

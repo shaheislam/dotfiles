@@ -1,5 +1,5 @@
 {
-  "numStartups": 58,
+  "numStartups": 60,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
@@ -7,7 +7,7 @@
   "tipsHistory": {
     "ide-hotkey": 58,
     "new-user-warmup": 2,
-    "memory-command": 45,
+    "memory-command": 60,
     "theme-command": 50,
     "shift-enter": 46,
     "prompt-queue": 6,
@@ -18,16 +18,16 @@
     "install-github-app": 56,
     "permissions": 57,
     "drag-and-drop-images": 58,
-    "double-esc": 40,
-    "continue": 40,
+    "double-esc": 60,
+    "continue": 60,
     "custom-commands": 47,
-    "shift-tab": 42,
+    "shift-tab": 60,
     "custom-agents": 54,
     "status-line": 55,
     "paste-images-mac": 58,
     "git-worktrees": 54
   },
-  "promptQueueUseCount": 20,
+  "promptQueueUseCount": 21,
   "firstStartTime": "2025-06-24T21:00:13.516Z",
   "userID": "9131cdd71980ad07ea2851d6c686761adca72a6d91be89be2db0a91b32b509ee",
   "projects": {
@@ -1095,6 +1095,22 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Can you read the shell script and plugin code from the article, or do I need to provide it to you?",
+          "pastedContents": {}
+        },
+        {
+          "display": "No I want you to do exactly whats specified in the link I have provided",
+          "pastedContents": {}
+        },
+        {
+          "display": "https://danielmiessler.com/blog/neovim-claude-ai-plugin Install this to my neovim config so that I can use it, I am using lazyvim so you may need to modify the lua so it's in the lazyvim format",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "Yes that worked, is there anything you need to clean up?",
           "pastedContents": {}
         },
@@ -1730,6 +1746,62 @@
         "README.md"
       ],
       "exampleFilesGeneratedAt": 1755951366171
+    },
+    "/Users/shaheislam/work/teacher-services-cloud": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": [
+        "ingress_controller.tf",
+        "variables.tf",
+        "konduit.sh",
+        "deploy-cluster.yml",
+        "Makefile"
+      ],
+      "exampleFilesGeneratedAt": 1756133948687
+    },
+    "/Users/shaheislam/work/apply-for-teacher-training": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "I see the following error in the test jobs for the workflow \\\n\\\n[Pasted text #1 +17 lines]",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "\n          # /usr/local/bundle/bundler/gems/rspec-retry-306b42b8d585/lib/rspec/retry.rb:55:in 'block in RSpec::Retry#run'\n          # /usr/local/bundle/bundler/gems/rspec-retry-306b42b8d585/lib/rspec/retry.rb:52:in 'RSpec::Retry#run'\n          # /usr/local/bundle/bundler/gems/rspec-retry-306b42b8d585/lib/rspec_ext/rspec_ext.rb:14:in 'RSpec::Core::Example::Procsy#run_with_retry'\n          # ------------------\n          # --- Caused by: ---\n          # Selenium::WebDriver::Error::WebDriverError:\n          #   \n\n     1.2) Failure/Error: example.run\n\n          Selenium::WebDriver::Error::SessionNotCreatedError:\n            session not created: Chrome failed to start: exited normally.\n              (session not created: DevToolsActivePort file doesn't exist)\n              (The process started from chrome location /usr/bin/chromium-browser is no longer running, so ChromeDriver is assuming that Chrome has crashed.)\n          # /usr/local/bundle/gems/selenium-webdriver-4.35.0/lib/selenium/webdriver/remote/response.rb:63:in 'Selenium::WebDriver::Remote::Response#add_cause'\n\n"
+            }
+          }
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 1,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": [
+        "app/models/pool/candidates.rb",
+        "app/models/pool/invite.rb",
+        "app/models/application_form.rb",
+        "app/controllers/provider_interface/candidate_pool/candidates_controller.rb",
+        "app/models/provider_interface/candidate_pool_filter.rb"
+      ],
+      "exampleFilesGeneratedAt": 1756134308477
     }
   },
   "shiftEnterKeyBindingInstalled": true,
@@ -1931,7 +2003,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1755948846475
+      "timestamp": 1756133947546
     }
   },
   "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
