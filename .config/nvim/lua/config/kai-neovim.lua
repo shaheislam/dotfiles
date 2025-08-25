@@ -34,27 +34,36 @@ end
 
 -- Main function to handle Kai Neovim integration
 function M.kai_enhance()
+  -- FIRST: Check if we have a visual selection before doing anything else
+  -- This must happen before any input() calls or mode changes
+  local has_visual_selection = false
+  local selection = ""
+  local start_row, end_row, start_col, end_col = 0, 0, 0, 0
+  
+  -- Check if there's a visual selection by looking at the marks
+  local mark_start = vim.fn.getpos("'<")
+  local mark_end = vim.fn.getpos("'>")
+  
+  -- If marks exist and are different, we have a selection
+  if mark_start[2] ~= 0 and mark_end[2] ~= 0 and 
+     (mark_start[2] ~= mark_end[2] or mark_start[3] ~= mark_end[3]) then
+    has_visual_selection = true
+    selection = get_visual_selection()
+    start_row, start_col = mark_start[2], mark_start[3]
+    end_row, end_col = mark_end[2], mark_end[3]
+  end
+  
   -- Set up subtle blue highlight for the input prompt
   vim.cmd('highlight KaiPrompt guifg=#e0e0e0 guibg=#1a1a2e')
   
   -- Get the prompt from user with custom highlighting
   vim.cmd('echohl KaiPrompt')
-  local prompt = vim.fn.input("🤖 Kai: ")
+  local prompt = vim.fn.input("[AI] Kai: ")
   vim.cmd('echohl None')
   
   if prompt == "" then
     print("No instruction provided.")
     return
-  end
-  
-  -- Check if we're in visual mode
-  local mode = vim.fn.mode()
-  local is_visual = mode == 'v' or mode == 'V' or mode == ''
-  
-  -- Get selection if in visual mode, empty string otherwise
-  local selection = ""
-  if is_visual then
-    selection = get_visual_selection()
   end
   
   -- Get current file path
@@ -77,11 +86,8 @@ function M.kai_enhance()
   -- Add cursor position
   f:write("CURSOR POSITION: Line " .. cursor_row .. ", Column " .. cursor_col .. "\n\n")
   
-  if is_visual then
+  if has_visual_selection then
     -- Include selection information when text is selected
-    local _, start_row, start_col, _ = unpack(vim.fn.getpos("'<"))
-    local _, end_row, end_col, _ = unpack(vim.fn.getpos("'>"))
-    
     f:write("SELECTED TEXT (Lines " .. start_row .. "-" .. end_row .. "):\n" .. selection .. "\n\n")
     f:write("MODE: User has selected specific text. Focus on this selection within the context of the entire buffer.\n\n")
   else
@@ -161,31 +167,34 @@ function M.kai_enhance()
   end
   
   -- Perform the appropriate action based on the marker
-  if is_visual then
+  if has_visual_selection then
     if action == "[ACTION:REPLACE]" then
-      -- Replace the selection
+      -- Replace the selection using the captured marks
       local save_reg = vim.fn.getreg('"')
       local save_regtype = vim.fn.getregtype('"')
       
-      vim.fn.setreg('"', content, mode == 'V' and 'V' or 'v')
-      vim.cmd('normal! gv"_d')  -- Delete selection without affecting registers
-      vim.cmd('normal! P')      -- Paste before cursor
+      -- Set cursor to start of selection
+      vim.api.nvim_win_set_cursor(0, {start_row, start_col - 1})
+      -- Reselect the original selection
+      vim.cmd('normal! v')
+      vim.api.nvim_win_set_cursor(0, {end_row, end_col - 1})
+      
+      vim.fn.setreg('"', content, 'v')
+      vim.cmd('normal! "_d')  -- Delete selection without affecting registers
+      vim.cmd('normal! P')    -- Paste before cursor
       
       vim.fn.setreg('"', save_reg, save_regtype)
       
     elseif action == "[ACTION:INSERT_AFTER]" then
       -- Insert after the selection
-      vim.cmd('normal! gv')  -- Reselect
-      vim.cmd('normal! o')   -- Go to end of selection
-      vim.cmd('normal! ')    -- Exit visual mode
+      vim.api.nvim_win_set_cursor(0, {end_row, end_col})
       
       -- Insert a newline and the content
-      local row, col = unpack(vim.api.nvim_win_get_cursor(0))
       local content_lines_new = vim.split(content, '\n', { plain = true })
       
       -- Insert empty line first, then content
-      vim.api.nvim_buf_set_lines(0, row, row, false, {""})
-      vim.api.nvim_buf_set_lines(0, row + 1, row + 1, false, content_lines_new)
+      vim.api.nvim_buf_set_lines(0, end_row, end_row, false, {""})
+      vim.api.nvim_buf_set_lines(0, end_row + 1, end_row + 1, false, content_lines_new)
     end
   else
     -- Normal mode - insert at cursor position
