@@ -9,7 +9,7 @@
     "new-user-warmup": 2,
     "memory-command": 60,
     "theme-command": 50,
-    "shift-enter": 46,
+    "shift-enter": 60,
     "prompt-queue": 6,
     "enter-to-steer-in-relatime": 54,
     "todo-list": 54,
@@ -1095,6 +1095,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "I have added these files now how can i test the kai-neovim plugin?",
+          "pastedContents": {}
+        },
+        {
           "display": "Can you read the shell script and plugin code from the article, or do I need to provide it to you?",
           "pastedContents": {}
         },
@@ -1337,13 +1341,13 @@
       "hasClaudeMdExternalIncludesApproved": false,
       "hasClaudeMdExternalIncludesWarningShown": false,
       "exampleFiles": [
-        "claude.json",
+        "scripts/setup-script.sh",
+        "config.fish",
         "settings.local.json",
-        "bash_commands.json",
-        "audio_hook.log",
-        "statsig.session_id.2656274335"
+        "Brewfile",
+        "starship.toml"
       ],
-      "exampleFilesGeneratedAt": 1755167350146,
+      "exampleFilesGeneratedAt": 1756135979963,
       "hasCompletedProjectOnboarding": true,
       "lastTotalWebSearchRequests": 0
     },
@@ -1802,6 +1806,26 @@
         "app/models/provider_interface/candidate_pool_filter.rb"
       ],
       "exampleFilesGeneratedAt": 1756134308477
+    },
+    "/Users/shaheislam/obsidian": {
+      "allowedTools": [],
+      "history": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": false,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": [
+        "TODO.md",
+        "status-watcher.sh",
+        "setup-auto-commit.sh",
+        "test-note-3.md",
+        "test-auto-commit.md"
+      ],
+      "exampleFilesGeneratedAt": 1756135833017
     }
   },
   "shiftEnterKeyBindingInstalled": true,

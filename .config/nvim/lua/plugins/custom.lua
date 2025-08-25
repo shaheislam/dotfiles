@@ -236,4 +236,17 @@ return {
       { "<leader>fp", "<cmd>Telescope projects<cr>", desc = "Projects" },
     },
   },
+
+  -- Kai-Neovim Claude AI Integration
+  {
+    dir = vim.fn.stdpath("config") .. "/lua/config",
+    name = "kai-neovim",
+    lazy = false,
+    config = function()
+      require("config.kai-neovim").setup()
+    end,
+    keys = {
+      { "<leader>ai", mode = { "n", "v" }, desc = "Kai AI Assistant (Claude)" }
+    },
+  },
 }

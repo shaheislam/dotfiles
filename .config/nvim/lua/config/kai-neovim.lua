@@ -94,7 +94,7 @@ function M.kai_enhance()
   
   -- Call Kai script
   local cmd = string.format(
-    "~/.config/nvim/scripts/kai-neovim.sh %s %s",
+    "~/.config/nvim/lua/scripts/kai-neovim.sh %s %s",
     shell_escape(context_file),
     shell_escape(prompt)
   )
