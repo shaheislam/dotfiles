@@ -1095,6 +1095,18 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "In that case nothing needs to change",
+          "pastedContents": {}
+        },
+        {
+          "display": "My global gitignore doesn't seem to work, in certain git directories .claude is always picked up, how can I fix this so that .claude is always ignored for any directory except ~/dotfiles",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "/mcp-restart ",
           "pastedContents": {}
         },

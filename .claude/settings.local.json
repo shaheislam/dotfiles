@@ -86,7 +86,8 @@
       "Bash(ln:*)",
       "Bash(git rm:*)",
       "Bash(~/dotfiles/scripts/footyres/footyres.sh:*)",
-      "Bash(scripts/footyres/footyres.sh:*)"
+      "Bash(scripts/footyres/footyres.sh:*)",
+      "Bash(git check-ignore:*)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",
