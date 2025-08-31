@@ -97,7 +97,9 @@
       "Bash(brew install:*)",
       "Read(/Users/shahe/**)",
       "Bash(/Users/shahe/dotfiles/scripts/compile-cv.sh:*)",
-      "Bash(brew list:*)"
+      "Bash(brew list:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",

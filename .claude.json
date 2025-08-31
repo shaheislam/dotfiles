@@ -1,5 +1,5 @@
 {
-  "numStartups": 84,
+  "numStartups": 85,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
@@ -1438,6 +1438,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "❯ claude\nPath /Users/shaheislam/obsidian/ was not found.\n╭─────────────────────────────────────────────────────────────────────────────────────╮\nWhy does it try and expand this? It should be using the ${HOME} directory, is it not?",
+          "pastedContents": {}
+        },
+        {
           "display": "How can i check on the EC2 instance itself there there is no cryptomining actiity?",
           "pastedContents": {}
         },
@@ -2241,7 +2245,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1756654922990
+      "timestamp": 1756670820903
     }
   },
   "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
