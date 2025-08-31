@@ -99,10 +99,13 @@
       "Bash(/Users/shahe/dotfiles/scripts/compile-cv.sh:*)",
       "Bash(brew list:*)",
       "Bash(cat:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(claude)",
+      "Bash(claude project list:*)",
+      "Bash(timeout:*)",
+      "Bash(claude config get:*)"
     ],
     "additionalDirectories": [
-      "/Users/shaheislam/obsidian/",
       "/Users/shahe/obsidian/"
     ]
   },

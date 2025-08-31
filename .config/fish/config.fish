@@ -92,6 +92,8 @@ if status is-interactive
     end
 
     if command -v zoxide >/dev/null
+        # Disable zoxide doctor warnings
+        set -x _ZO_DOCTOR 0
         zoxide init fish | source
     end
 

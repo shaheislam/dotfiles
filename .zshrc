@@ -44,6 +44,8 @@ if [ -d "/Applications/Cursor.app/Contents/Resources/app/bin" ]; then
 fi
 
 # Initialize tools
+# Disable zoxide doctor warnings
+export _ZO_DOCTOR=0
 eval "$(zoxide init zsh)"
 eval "$(direnv hook zsh)"
 eval "$(atuin init zsh)"
