@@ -56,7 +56,21 @@ node_modules/
 work/**/CLAUDE.md
 
 # Claude Code - session data and cache (ignore in all repos)
-.claude/
+# But allow specific directories to be tracked
+.claude/*
+!.claude/agents/
+!.claude/commands/
+!.claude/hooks/
+# Still ignore specific subdirectories
+.claude/ide/
+.claude/todos/
+.claude/shell-snapshots/
+.claude/projects/
+.claude/statsig/
+.claude/logs/
+.claude/usage/
+.claude/backups/
+.claude/audio/
 
 # CLAUDE.md files - prevent commits outside allowed directories
 # Block all CLAUDE.md files by default

@@ -94,7 +94,8 @@
       "Bash(export AWS_PROFILE=security)",
       "Bash(aws guardduty get-findings:*)",
       "Bash(aws guardduty list-findings:*)",
-      "Bash(brew install:*)"
+      "Bash(brew install:*)",
+      "Read(/Users/shahe/**)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",

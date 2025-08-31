@@ -1,11 +1,11 @@
 {
-  "numStartups": 83,
+  "numStartups": 84,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
   "editorMode": "vim",
   "tipsHistory": {
-    "ide-hotkey": 58,
+    "ide-hotkey": 84,
     "new-user-warmup": 2,
     "memory-command": 75,
     "theme-command": 73,
@@ -16,8 +16,8 @@
     "vscode-command-install": 9,
     "# for memory": 78,
     "install-github-app": 78,
-    "permissions": 73,
-    "drag-and-drop-images": 73,
+    "permissions": 84,
+    "drag-and-drop-images": 84,
     "double-esc": 75,
     "continue": 75,
     "custom-commands": 78,
@@ -478,6 +478,22 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "I would like the .claude/agents and .claude/commands and .claude/hooks folders to not be gitignored ",
+          "pastedContents": {}
+        },
+        {
+          "display": "I can't see it being added to git ❯ git status\nOn branch main\nYour branch is up to date with 'origin/main'.\n\nChanges to be committed:\n  (use \"git restore --staged <file>...\" to unstage)\n        modified:   .claude.json\n        modified:   .claude/statsig/statsig.last_modified_time.evaluations\n\n\n💡 gst => git status\n\n╭╴󰊠 dotfiles !+  petlab-labs-eks \n╰─▶\n",
+          "pastedContents": {}
+        },
+        {
+          "display": "Where has the slash command been saved in my dotfiles?",
+          "pastedContents": {}
+        },
+        {
+          "display": "I want you to create a slash command prompt for my claude so that it will read a jobdescription.md and skills.md and generate a latex.md template based on a cv.md template populating the latex.md to create an optimal CV template using the jobdescription.md and skills.md to cross refrence relevant skills and specifications to the newly generated CV",
+          "pastedContents": {}
+        },
+        {
           "display": "Have you updated all of my dotfiles to accomodate this change?",
           "pastedContents": {}
         },
@@ -871,22 +887,6 @@
         },
         {
           "display": "Will it automatically run with go commands?",
-          "pastedContents": {}
-        },
-        {
-          "display": "https://github.com/joshi4/splash Is it possible to add this tool and have it so that all commands that it natively supports are automatically parsed through it through my config?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Try now",
-          "pastedContents": {}
-        },
-        {
-          "display": "Help me install yazi https://github.com/sxyazi/yazi",
-          "pastedContents": {}
-        },
-        {
-          "display": "So that number is for the session",
           "pastedContents": {}
         }
       ],
@@ -2241,7 +2241,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1756649161389
+      "timestamp": 1756654922990
     }
   },
   "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
