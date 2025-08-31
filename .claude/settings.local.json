@@ -87,7 +87,14 @@
       "Bash(git rm:*)",
       "Bash(~/dotfiles/scripts/footyres/footyres.sh:*)",
       "Bash(scripts/footyres/footyres.sh:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(assume:*)",
+      "Read(/private/tmp/**)",
+      "Read(/private/tmp/**)",
+      "Bash(export AWS_PROFILE=security)",
+      "Bash(aws guardduty get-findings:*)",
+      "Bash(aws guardduty list-findings:*)",
+      "Bash(brew install:*)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",

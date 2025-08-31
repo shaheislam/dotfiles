@@ -2,17 +2,92 @@
 
 # Auto-generated script to clone all repositories from ~/work
 # Generated on: $(date)
-# Usage: ./clone-all-repos.sh [target_directory]
+# Usage: ./clone-all-repos.sh [target_directory] [--debug]
 
-set -e
+# Check for debug flag
+DEBUG=false
+for arg in "$@"; do
+    if [ "$arg" = "--debug" ] || [ "$arg" = "-d" ]; then
+        DEBUG=true
+    fi
+done
 
-TARGET_DIR="${1:-$HOME/work}"
+# Set error handling based on debug mode
+if [ "$DEBUG" = true ]; then
+    set -ex  # Exit on error and print commands
+    echo "🐛 Debug mode enabled"
+else
+    set -e   # Just exit on error
+fi
+
+# Parse target directory (skip debug flags)
+TARGET_DIR=""
+for arg in "$@"; do
+    if [ "$arg" != "--debug" ] && [ "$arg" != "-d" ]; then
+        TARGET_DIR="$arg"
+        break
+    fi
+done
+TARGET_DIR="${TARGET_DIR:-$HOME/work}"
+
 FAILED_REPOS=()
 
+# Debug function
+debug_log() {
+    if [ "$DEBUG" = true ]; then
+        echo "🔍 DEBUG: $1"
+    fi
+}
+
+# Clone repository function with debug support
+clone_repo() {
+    local repo_name="$1"
+    local git_url="$2"
+    
+    echo "📦 Cloning: $repo_name"
+    debug_log "Checking if directory exists: $repo_name"
+    
+    if [ ! -d "$repo_name" ]; then
+        debug_log "Directory doesn't exist, proceeding with clone"
+        debug_log "Clone command: git clone $git_url $repo_name"
+        debug_log "SSH key check: ssh-add -l | grep -q 'ED25519' && echo 'SSH key loaded' || echo 'No SSH key'"
+        
+        if [ "$DEBUG" = true ]; then
+            # In debug mode, show more detailed git output
+            if GIT_SSH_COMMAND="ssh -v" git clone "$git_url" "$repo_name" 2>&1 | tee /tmp/git-clone-debug.log; then
+                echo "✅ Successfully cloned: $repo_name"
+                debug_log "Clone successful"
+            else
+                local exit_code=$?
+                echo "❌ Failed to clone: $repo_name"
+                debug_log "Clone failed with exit code: $exit_code"
+                debug_log "Check /tmp/git-clone-debug.log for details"
+                FAILED_REPOS+=("$repo_name")
+            fi
+        else
+            if git clone "$git_url" "$repo_name"; then
+                echo "✅ Successfully cloned: $repo_name"
+            else
+                echo "❌ Failed to clone: $repo_name"
+                FAILED_REPOS+=("$repo_name")
+            fi
+        fi
+    else
+        echo "⏭️  Directory $repo_name already exists, skipping..."
+        debug_log "Directory already exists, skipping clone"
+    fi
+    
+    echo ""  # Add spacing between repos
+}
+
 echo "🚀 Cloning repositories to: $TARGET_DIR"
+debug_log "Target directory: $TARGET_DIR"
+debug_log "Current directory: $(pwd)"
+
 echo "📂 Creating target directory if it doesn't exist..."
 mkdir -p "$TARGET_DIR"
 cd "$TARGET_DIR"
+debug_log "Changed to directory: $(pwd)"
 
 echo ""
 echo "========================================"
@@ -21,290 +96,69 @@ echo "========================================"
 echo ""
 
 
-echo "📦 Cloning: access-your-teaching-qualifications"
-if [ ! -d "access-your-teaching-qualifications" ]; then
-    if git clone "git@github.com:DFE-Digital/access-your-teaching-qualifications.git" "access-your-teaching-qualifications"; then
-        echo "✅ Successfully cloned: access-your-teaching-qualifications"
-    else
-        echo "❌ Failed to clone: access-your-teaching-qualifications"
-        FAILED_REPOS+=("access-your-teaching-qualifications")
-    fi
-else
-    echo "⏭️  Directory access-your-teaching-qualifications already exists, skipping..."
-fi
+# Clone all repositories using the new function
+clone_repo "access-your-teaching-qualifications" "git@github.com:DFE-Digital/access-your-teaching-qualifications.git"
+clone_repo "apply-for-qualified-teacher-status" "git@github.com:DFE-Digital/apply-for-qualified-teacher-status.git"
 
 
-echo "📦 Cloning: apply-for-qualified-teacher-status"
-if [ ! -d "apply-for-qualified-teacher-status" ]; then
-    if git clone "git@github.com:DFE-Digital/apply-for-qualified-teacher-status.git" "apply-for-qualified-teacher-status"; then
-        echo "✅ Successfully cloned: apply-for-qualified-teacher-status"
-    else
-        echo "❌ Failed to clone: apply-for-qualified-teacher-status"
-        FAILED_REPOS+=("apply-for-qualified-teacher-status")
-    fi
-else
-    echo "⏭️  Directory apply-for-qualified-teacher-status already exists, skipping..."
-fi
+clone_repo "apply-for-teacher-training" "git@github.com:DFE-Digital/apply-for-teacher-training.git"
 
 
-echo "📦 Cloning: apply-for-teacher-training"
-if [ ! -d "apply-for-teacher-training" ]; then
-    if git clone "git@github.com:DFE-Digital/apply-for-teacher-training.git" "apply-for-teacher-training"; then
-        echo "✅ Successfully cloned: apply-for-teacher-training"
-    else
-        echo "❌ Failed to clone: apply-for-teacher-training"
-        FAILED_REPOS+=("apply-for-teacher-training")
-    fi
-else
-    echo "⏭️  Directory apply-for-teacher-training already exists, skipping..."
-fi
+clone_repo "bat-infrastructure" "git@github.com:DFE-Digital/bat-infrastructure.git"
 
 
-echo "📦 Cloning: bat-infrastructure"
-if [ ! -d "bat-infrastructure" ]; then
-    if git clone "git@github.com:DFE-Digital/bat-infrastructure.git" "bat-infrastructure"; then
-        echo "✅ Successfully cloned: bat-infrastructure"
-    else
-        echo "❌ Failed to clone: bat-infrastructure"
-        FAILED_REPOS+=("bat-infrastructure")
-    fi
-else
-    echo "⏭️  Directory bat-infrastructure already exists, skipping..."
-fi
+clone_repo "check-childrens-barred-list" "git@github.com:DFE-Digital/check-childrens-barred-list.git"
 
 
-echo "📦 Cloning: check-childrens-barred-list"
-if [ ! -d "check-childrens-barred-list" ]; then
-    if git clone "git@github.com:DFE-Digital/check-childrens-barred-list.git" "check-childrens-barred-list"; then
-        echo "✅ Successfully cloned: check-childrens-barred-list"
-    else
-        echo "❌ Failed to clone: check-childrens-barred-list"
-        FAILED_REPOS+=("check-childrens-barred-list")
-    fi
-else
-    echo "⏭️  Directory check-childrens-barred-list already exists, skipping..."
-fi
+clone_repo "claim-additional-payments-for-teaching" "git@github.com:DFE-Digital/claim-additional-payments-for-teaching.git"
 
 
-echo "📦 Cloning: claim-additional-payments-for-teaching"
-if [ ! -d "claim-additional-payments-for-teaching" ]; then
-    if git clone "git@github.com:DFE-Digital/claim-additional-payments-for-teaching.git" "claim-additional-payments-for-teaching"; then
-        echo "✅ Successfully cloned: claim-additional-payments-for-teaching"
-    else
-        echo "❌ Failed to clone: claim-additional-payments-for-teaching"
-        FAILED_REPOS+=("claim-additional-payments-for-teaching")
-    fi
-else
-    echo "⏭️  Directory claim-additional-payments-for-teaching already exists, skipping..."
-fi
+clone_repo "early-careers-framework" "git@github.com:DFE-Digital/early-careers-framework.git"
 
 
-echo "📦 Cloning: early-careers-framework"
-if [ ! -d "early-careers-framework" ]; then
-    if git clone "git@github.com:DFE-Digital/early-careers-framework.git" "early-careers-framework"; then
-        echo "✅ Successfully cloned: early-careers-framework"
-    else
-        echo "❌ Failed to clone: early-careers-framework"
-        FAILED_REPOS+=("early-careers-framework")
-    fi
-else
-    echo "⏭️  Directory early-careers-framework already exists, skipping..."
-fi
+clone_repo "find-a-lost-trn" "git@github.com:DFE-Digital/find-a-lost-trn.git"
 
 
-echo "📦 Cloning: find-a-lost-trn"
-if [ ! -d "find-a-lost-trn" ]; then
-    if git clone "git@github.com:DFE-Digital/find-a-lost-trn.git" "find-a-lost-trn"; then
-        echo "✅ Successfully cloned: find-a-lost-trn"
-    else
-        echo "❌ Failed to clone: find-a-lost-trn"
-        FAILED_REPOS+=("find-a-lost-trn")
-    fi
-else
-    echo "⏭️  Directory find-a-lost-trn already exists, skipping..."
-fi
+clone_repo "get-a-teacher-relocation-payment" "git@github.com:DFE-Digital/get-a-teacher-relocation-payment.git"
 
 
-echo "📦 Cloning: get-a-teacher-relocation-payment"
-if [ ! -d "get-a-teacher-relocation-payment" ]; then
-    if git clone "git@github.com:DFE-Digital/get-a-teacher-relocation-payment.git" "get-a-teacher-relocation-payment"; then
-        echo "✅ Successfully cloned: get-a-teacher-relocation-payment"
-    else
-        echo "❌ Failed to clone: get-a-teacher-relocation-payment"
-        FAILED_REPOS+=("get-a-teacher-relocation-payment")
-    fi
-else
-    echo "⏭️  Directory get-a-teacher-relocation-payment already exists, skipping..."
-fi
+clone_repo "get-an-identity" "git@github.com:DFE-Digital/get-an-identity.git"
 
 
-echo "📦 Cloning: get-an-identity"
-if [ ! -d "get-an-identity" ]; then
-    if git clone "git@github.com:DFE-Digital/get-an-identity.git" "get-an-identity"; then
-        echo "✅ Successfully cloned: get-an-identity"
-    else
-        echo "❌ Failed to clone: get-an-identity"
-        FAILED_REPOS+=("get-an-identity")
-    fi
-else
-    echo "⏭️  Directory get-an-identity already exists, skipping..."
-fi
+clone_repo "get-into-teaching-api" "git@github.com:DFE-Digital/get-into-teaching-api.git"
 
 
-echo "📦 Cloning: get-into-teaching-api"
-if [ ! -d "get-into-teaching-api" ]; then
-    if git clone "git@github.com:DFE-Digital/get-into-teaching-api.git" "get-into-teaching-api"; then
-        echo "✅ Successfully cloned: get-into-teaching-api"
-    else
-        echo "❌ Failed to clone: get-into-teaching-api"
-        FAILED_REPOS+=("get-into-teaching-api")
-    fi
-else
-    echo "⏭️  Directory get-into-teaching-api already exists, skipping..."
-fi
+clone_repo "get-into-teaching-app" "git@github.com:DFE-Digital/get-into-teaching-app.git"
 
 
-echo "📦 Cloning: get-into-teaching-app"
-if [ ! -d "get-into-teaching-app" ]; then
-    if git clone "git@github.com:DFE-Digital/get-into-teaching-app.git" "get-into-teaching-app"; then
-        echo "✅ Successfully cloned: get-into-teaching-app"
-    else
-        echo "❌ Failed to clone: get-into-teaching-app"
-        FAILED_REPOS+=("get-into-teaching-app")
-    fi
-else
-    echo "⏭️  Directory get-into-teaching-app already exists, skipping..."
-fi
+clone_repo "github-actions" "git@github.com:DFE-Digital/github-actions.git"
 
 
-echo "📦 Cloning: github-actions"
-if [ ! -d "github-actions" ]; then
-    if git clone "git@github.com:DFE-Digital/github-actions.git" "github-actions"; then
-        echo "✅ Successfully cloned: github-actions"
-    else
-        echo "❌ Failed to clone: github-actions"
-        FAILED_REPOS+=("github-actions")
-    fi
-else
-    echo "⏭️  Directory github-actions already exists, skipping..."
-fi
+clone_repo "itt-mentor-services" "git@github.com:DFE-Digital/itt-mentor-services.git"
 
 
-echo "📦 Cloning: itt-mentor-services"
-if [ ! -d "itt-mentor-services" ]; then
-    if git clone "git@github.com:DFE-Digital/itt-mentor-services.git" "itt-mentor-services"; then
-        echo "✅ Successfully cloned: itt-mentor-services"
-    else
-        echo "❌ Failed to clone: itt-mentor-services"
-        FAILED_REPOS+=("itt-mentor-services")
-    fi
-else
-    echo "⏭️  Directory itt-mentor-services already exists, skipping..."
-fi
+clone_repo "national-professional-qualification" "git@github.com:DFE-Digital/national-professional-qualification.git"
 
 
-echo "📦 Cloning: national-professional-qualification"
-if [ ! -d "national-professional-qualification" ]; then
-    if git clone "git@github.com:DFE-Digital/national-professional-qualification.git" "national-professional-qualification"; then
-        echo "✅ Successfully cloned: national-professional-qualification"
-    else
-        echo "❌ Failed to clone: national-professional-qualification"
-        FAILED_REPOS+=("national-professional-qualification")
-    fi
-else
-    echo "⏭️  Directory national-professional-qualification already exists, skipping..."
-fi
+clone_repo "npq-registration" "https://github.com/DFE-Digital/npq-registration"
 
 
-echo "📦 Cloning: npq-registration"
-if [ ! -d "npq-registration" ]; then
-    if git clone "https://github.com/DFE-Digital/npq-registration" "npq-registration"; then
-        echo "✅ Successfully cloned: npq-registration"
-    else
-        echo "❌ Failed to clone: npq-registration"
-        FAILED_REPOS+=("npq-registration")
-    fi
-else
-    echo "⏭️  Directory npq-registration already exists, skipping..."
-fi
+clone_repo "publish-teacher-training" "git@github.com:DFE-Digital/publish-teacher-training.git"
 
 
-echo "📦 Cloning: publish-teacher-training"
-if [ ! -d "publish-teacher-training" ]; then
-    if git clone "git@github.com:DFE-Digital/publish-teacher-training.git" "publish-teacher-training"; then
-        echo "✅ Successfully cloned: publish-teacher-training"
-    else
-        echo "❌ Failed to clone: publish-teacher-training"
-        FAILED_REPOS+=("publish-teacher-training")
-    fi
-else
-    echo "⏭️  Directory publish-teacher-training already exists, skipping..."
-fi
+clone_repo "register-early-career-teachers-public" "git@github.com:DFE-Digital/register-early-career-teachers-public.git"
 
 
-echo "📦 Cloning: register-early-career-teachers-public"
-if [ ! -d "register-early-career-teachers-public" ]; then
-    if git clone "git@github.com:DFE-Digital/register-early-career-teachers-public.git" "register-early-career-teachers-public"; then
-        echo "✅ Successfully cloned: register-early-career-teachers-public"
-    else
-        echo "❌ Failed to clone: register-early-career-teachers-public"
-        FAILED_REPOS+=("register-early-career-teachers-public")
-    fi
-else
-    echo "⏭️  Directory register-early-career-teachers-public already exists, skipping..."
-fi
+clone_repo "register-trainee-teachers" "git@github.com:DFE-Digital/register-trainee-teachers.git"
 
 
-echo "📦 Cloning: register-trainee-teachers"
-if [ ! -d "register-trainee-teachers" ]; then
-    if git clone "git@github.com:DFE-Digital/register-trainee-teachers.git" "register-trainee-teachers"; then
-        echo "✅ Successfully cloned: register-trainee-teachers"
-    else
-        echo "❌ Failed to clone: register-trainee-teachers"
-        FAILED_REPOS+=("register-trainee-teachers")
-    fi
-else
-    echo "⏭️  Directory register-trainee-teachers already exists, skipping..."
-fi
+clone_repo "schools-experience" "git@github.com:DFE-Digital/schools-experience.git"
 
 
-echo "📦 Cloning: schools-experience"
-if [ ! -d "schools-experience" ]; then
-    if git clone "git@github.com:DFE-Digital/schools-experience.git" "schools-experience"; then
-        echo "✅ Successfully cloned: schools-experience"
-    else
-        echo "❌ Failed to clone: schools-experience"
-        FAILED_REPOS+=("schools-experience")
-    fi
-else
-    echo "⏭️  Directory schools-experience already exists, skipping..."
-fi
+clone_repo "teacher-pay-calculator" "git@github.com:DFE-Digital/teacher-pay-calculator.git"
 
 
-echo "📦 Cloning: teacher-pay-calculator"
-if [ ! -d "teacher-pay-calculator" ]; then
-    if git clone "git@github.com:DFE-Digital/teacher-pay-calculator.git" "teacher-pay-calculator"; then
-        echo "✅ Successfully cloned: teacher-pay-calculator"
-    else
-        echo "❌ Failed to clone: teacher-pay-calculator"
-        FAILED_REPOS+=("teacher-pay-calculator")
-    fi
-else
-    echo "⏭️  Directory teacher-pay-calculator already exists, skipping..."
-fi
-
-
-echo "📦 Cloning: teacher-services-cloud"
-if [ ! -d "teacher-services-cloud" ]; then
-    if git clone "git@github.com:DFE-Digital/teacher-services-cloud.git" "teacher-services-cloud"; then
-        echo "✅ Successfully cloned: teacher-services-cloud"
-    else
-        echo "❌ Failed to clone: teacher-services-cloud"
-        FAILED_REPOS+=("teacher-services-cloud")
-    fi
-else
-    echo "⏭️  Directory teacher-services-cloud already exists, skipping..."
-fi
+clone_repo "teacher-services-cloud" "git@github.com:DFE-Digital/teacher-services-cloud.git"
 
 
 echo "📦 Cloning: teacher-services-tech-docs"

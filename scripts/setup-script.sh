@@ -159,12 +159,11 @@ else
   brew install --cask visual-studio-code
 fi
 
-# Install Cursor
 if app_installed "Cursor"; then
   echo "Cursor already installed"
 else
   echo "Installing Cursor..."
-  curl https://cursor.com/install -fsS | bash || log_error "Failed to install Cursor"
+  brew install --cask cursor
 fi
 
 # Install ueberzugpp (for image display in terminals like iTerm2)
@@ -744,6 +743,11 @@ if [ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]; the
   export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 fi
 
+# Add Cursor bin to PATH
+if [ -d "/Applications/Cursor.app/Contents/Resources/app/bin" ]; then
+  export PATH="$PATH:/Applications/Cursor.app/Contents/Resources/app/bin"
+fi
+
 # Initialize tools
 eval "$(zoxide init zsh)"
 eval "$(direnv hook zsh)"
@@ -804,6 +808,17 @@ code() {
     open -a "Visual Studio Code" "$@"
   else
     echo "VSCode is not installed or not found in the expected location."
+  fi
+}
+
+# Cursor function
+cursor() {
+  if command -v cursor &> /dev/null; then
+    command cursor "$@"
+  elif [ -d "/Applications/Cursor.app" ]; then
+    open -a "Cursor" "$@"
+  else
+    echo "Cursor is not installed or not found in the expected location."
   fi
 }
 

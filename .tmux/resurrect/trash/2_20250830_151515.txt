@@ -1,0 +1,6 @@
+pane	1	1	1	:*	1	~/dotfiles	:/Users/shahe/dotfiles	1	fish	:-fish
+pane	2	1	1	:*	1	~	:/Users/shahe	0	fish	:-fish
+pane	2	1	1	:*	2	✳ AWS CloudTrail	:/Users/shahe	1	node	:-fish
+window	1	1	:fish	1	:*	c302,166x45,0,0,5	:
+window	2	1	:node	1	:*	45be,125x39,0,0{66x39,0,0,6,58x39,67,0,7}	:
+state	2	

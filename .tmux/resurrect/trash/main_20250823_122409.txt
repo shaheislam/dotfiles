@@ -1,4 +1,0 @@
-pane	main	1	1	:*	1	~	:/Users/shahe	0	fish	:
-pane	main	1	1	:*	2	claude --resume ~	:/Users/shahe	1	fish	:
-window	main	1	:fish	1	:*	2c1b,175x49,0,0{88x49,0,0,1,86x49,89,0,2}	:
-state	main	
