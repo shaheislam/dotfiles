@@ -95,7 +95,9 @@
       "Bash(aws guardduty get-findings:*)",
       "Bash(aws guardduty list-findings:*)",
       "Bash(brew install:*)",
-      "Read(/Users/shahe/**)"
+      "Read(/Users/shahe/**)",
+      "Bash(/Users/shahe/dotfiles/scripts/compile-cv.sh:*)",
+      "Bash(brew list:*)"
     ],
     "additionalDirectories": [
       "/Users/shaheislam/obsidian/",

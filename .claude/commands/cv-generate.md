@@ -11,10 +11,14 @@ Generate an optimized CV in LaTeX format by analyzing job descriptions and match
 This command intelligently analyzes a job description, cross-references it with your skills database, and generates a tailored CV in LaTeX format that highlights the most relevant experience and qualifications.
 
 ## Required Files
-- `jobdescription.md` - The target job description
-- `skills.md` - Your comprehensive skills database
-- `cv.md` - Your master CV template
-- Output: `latex.md` - Generated LaTeX CV optimized for the position
+Default location: `/jobapps/` directory
+
+- `/jobapps/jobdescription.md` - The target job description
+- `/jobapps/skills.md` - Your comprehensive skills database
+- `/jobapps/cv.md` - Your master CV template (or .tex template)
+- `/jobapps/resume.cls` - LaTeX class file (required for PDF compilation)
+- Output: `/jobapps/generated/cv.tex` - Generated LaTeX file
+- Output: `/jobapps/output/CV_[timestamp].pdf` - Compiled PDF (when --format pdf)
 
 ## Workflow
 
@@ -48,7 +52,7 @@ This command intelligently analyzes a job description, cross-references it with 
 ```bash
 /cv-generate
 ```
-Reads from default files in current directory
+Reads from default files in `/jobapps/` directory
 
 ### With Custom Paths
 ```bash
@@ -68,10 +72,11 @@ Reads from default files in current directory
 ## Options
 
 ### Input Options
-- `--job <path>` - Path to job description (default: ./jobdescription.md)
-- `--skills <path>` - Path to skills database (default: ./skills.md)
-- `--template <path>` - Path to CV template (default: ./cv.md)
-- `--output <path>` - Output path for LaTeX CV (default: ./latex.md)
+- `--job <path>` - Path to job description (default: /jobapps/jobdescription.md)
+- `--skills <path>` - Path to skills database (default: /jobapps/skills.md)
+- `--template <path>` - Path to CV template (default: /jobapps/cv.md or cv.tex)
+- `--cls <path>` - Path to resume.cls file (default: /jobapps/resume.cls)
+- `--output <path>` - Output path for generated file (default: /jobapps/generated/cv.tex)
 
 ### Optimization Options
 - `--focus <keywords>` - Comma-separated priority keywords
@@ -86,7 +91,12 @@ Reads from default files in current directory
 - `--cover-letter` - Also generate matching cover letter
 
 ### Output Options
-- `--format <type>` - Output format: latex, markdown, pdf
+- `--format <type>` - Output format: tex (default), pdf (compile to PDF)
+- `--compiler <type>` - LaTeX compiler: pdflatex (default), xelatex, lualatex
+- `--pdf-name <name>` - Custom PDF filename (default: CV_timestamp.pdf)
+- `--pdf-dir <path>` - PDF output directory (default: /jobapps/output/)
+- `--keep-temp` - Keep intermediate LaTeX files after PDF compilation
+- `--open` - Open PDF after compilation
 - `--preview` - Generate preview before finalizing
 - `--variants <n>` - Generate n variations
 - `--explain` - Include explanation of choices made
@@ -143,17 +153,36 @@ Email: | Phone: | LinkedIn: | GitHub:
 [Education details]
 ```
 
-### latex.md (Generated Output)
+### cv.tex (Generated Output)
 ```latex
-\documentclass{article}
+\documentclass{resume}  % Uses custom resume.cls
 \usepackage{[packages]}
+
+\name{[Your Name]}
+\address{[Location]}
+\email{[email]}
+\phone{[phone]}
+\linkedin{[linkedin]}
+\github{[github]}
+
 \begin{document}
+\makecvheader
+
 \section{Professional Summary}
 [Tailored summary based on job requirements]
+
 \section{Relevant Experience}
-[Prioritized and tailored experiences]
+\begin{itemize}
+  \item [Prioritized and tailored experiences]
+  \item [Quantified achievements]
+\end{itemize}
+
 \section{Key Skills}
-[Matched and prioritized skills]
+[Matched and prioritized skills from job description]
+
+\section{Education}
+[Education details]
+
 \end{document}
 ```
 
@@ -183,10 +212,19 @@ Email: | Phone: | LinkedIn: | GitHub:
    - Ensure ATS compatibility
 
 5. **Output LaTeX**
-   - Generate clean LaTeX code
+   - Generate clean LaTeX code to `/jobapps/generated/cv.tex`
    - Include formatting for readability
    - Add comments for customization
-   - Provide compilation instructions
+   - Ensure `\documentclass{resume}` for custom class
+
+6. **PDF Compilation (if --format pdf)**
+   - Copy `resume.cls` to compilation directory
+   - Run LaTeX compiler (pdflatex/xelatex/lualatex)
+   - Execute two passes for proper references
+   - Clean up auxiliary files
+   - Move PDF to `/jobapps/output/` with timestamp
+   - Archive previous versions if needed
+   - Open PDF if `--open` flag is used
 
 ## Advanced Features
 
@@ -218,25 +256,46 @@ Email: | Phone: | LinkedIn: | GitHub:
 ## Example Implementation
 
 ```bash
-# Basic CV generation
+# Basic CV generation (generates .tex file)
 /cv-generate
 
-# For senior position with technical focus
-/cv-generate --style technical --length 2 --focus "architecture,leadership,scalability"
+# Generate and compile to PDF
+/cv-generate --format pdf
 
-# For startup with research
-/cv-generate --company "StartupXYZ" --research --style creative
+# Generate PDF and open it
+/cv-generate --format pdf --open
+
+# Custom PDF name and location
+/cv-generate --format pdf --pdf-name "JohnDoe_SeniorDev_2024" --open
+
+# Use XeLaTeX for better font support
+/cv-generate --format pdf --compiler xelatex
+
+# Use files from a different project directory
+/cv-generate --job @/projects/applications/role1/jobdescription.md --format pdf
+
+# For senior position with technical focus
+/cv-generate --style technical --length 2 --focus "architecture,leadership,scalability" --format pdf
+
+# For startup with research and PDF output
+/cv-generate --company "StartupXYZ" --research --style creative --format pdf --open
 
 # Generate multiple versions
 /cv-generate --variants 3 --explain
 
-# Full optimization pipeline
-/cv-generate --ats --research --gap-analysis --cover-letter --format pdf
+# Full optimization pipeline with PDF
+/cv-generate --ats --research --gap-analysis --cover-letter --format pdf --open
+
+# Batch generation for multiple positions
+/cv-generate --job @/jobapps/google/job.md --pdf-name "CV_Google" --format pdf
+/cv-generate --job @/jobapps/meta/job.md --pdf-name "CV_Meta" --format pdf
+/cv-generate --job @/jobapps/amazon/job.md --pdf-name "CV_Amazon" --format pdf
 ```
 
 ## Error Handling
 
 The command will validate:
+
 - File existence and readability
 - Proper markdown formatting
 - Minimum content requirements
@@ -259,5 +318,23 @@ The command will validate:
 
 **Auto-activates**: analyzer, scribe personas
 **MCP Integration**: Sequential (analysis), Context7 (best practices)
-**Tools**: Read, Write, Grep, Task
+**Tools**: Read, Write, Grep, Task, Bash (for PDF compilation)
 **Category**: Documentation, Career
+**Compilation Script**: Uses `/Users/shahe/dotfiles/scripts/compile-cv.sh` for PDF generation
+
+## Workflow Integration
+
+When `--format pdf` is specified, the command will:
+
+1. Generate the optimized `.tex` file in `/jobapps/generated/`
+2. Execute `/Users/shahe/dotfiles/scripts/compile-cv.sh` with appropriate parameters
+3. Place the final PDF in `/jobapps/output/` with timestamp or custom name
+4. Optionally open the PDF if `--open` flag is provided
+
+The compilation script handles:
+
+- Automatic LaTeX installation if needed
+- Resume.cls file management
+- Multiple compilation passes for references
+- Cleanup of auxiliary files
+- PDF archiving and versioning

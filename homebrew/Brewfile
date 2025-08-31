@@ -168,6 +168,9 @@ brew "wrk"
 brew "watchexec"
 brew "entr"
 
+# Document Processing
+cask "mactex-no-gui"  # LaTeX compiler for CV generation
+
 # CI/CD & Automation Tools
 brew "act"
 brew "commitizen"

@@ -24,11 +24,11 @@
     "shift-tab": 75,
     "custom-agents": 73,
     "status-line": 80,
-    "paste-images-mac": 73,
+    "paste-images-mac": 84,
     "git-worktrees": 78,
     "image-paste": 77
   },
-  "promptQueueUseCount": 27,
+  "promptQueueUseCount": 28,
   "cachedStatsigGates": {
     "tengu_disable_bypass_permissions_mode": false
   },
@@ -478,6 +478,30 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Give me the commands to install these and i will install them directly myself",
+          "pastedContents": {}
+        },
+        {
+          "display": "How can i validate if mactex has been installed?",
+          "pastedContents": {}
+        },
+        {
+          "display": "The CV file itself is actually a .tex file but a resume.cls file is also required for the latex to compile correctly",
+          "pastedContents": {}
+        },
+        {
+          "display": "Would you be able to take the output cv in cv.md which is a latex format and then save it as a Latex compiled PDF in a specific folder so its a ready CV?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Give me examoples or overrides for this slash command",
+          "pastedContents": {}
+        },
+        {
+          "display": "I have all of the md files required for the cv-generate slash command within the folder /jobapps now, can you modify the slash command so this is included",
+          "pastedContents": {}
+        },
+        {
           "display": "I would like the .claude/agents and .claude/commands and .claude/hooks folders to not be gitignored ",
           "pastedContents": {}
         },
@@ -863,30 +887,6 @@
         },
         {
           "display": "My tokyo night tmux theme doesnt load automatically",
-          "pastedContents": {}
-        },
-        {
-          "display": "Its working now",
-          "pastedContents": {}
-        },
-        {
-          "display": "The theme isnt being applied",
-          "pastedContents": {}
-        },
-        {
-          "display": "No its not loading",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can you try and modify the tmux config to use the tokyo night theme instaead - https://github.com/fabioluciano/tmux-tokyo-night",
-          "pastedContents": {}
-        },
-        {
-          "display": "What if i run go commands and then want to highlight a specific word using Splash?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Will it automatically run with go commands?",
           "pastedContents": {}
         }
       ],
