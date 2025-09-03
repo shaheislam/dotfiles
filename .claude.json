@@ -578,6 +578,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Something has changed in the agent.toml now because \n\n\n💡 gst => git status\n❯ git add .\n\n💡 ga => git add\n❯ git commit -m \"update agent.toml 1Pass\"\n[main db0d951] update agent.toml 1Pass\n 2 files changed, 18 insertions(+), 12 deletions(-)\n\n💡 g => git\n❯ git push\nERROR: Repository not found.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n\n💡 gp => git push\n\n╭╴󰊠 dotfiles !⇡1  PROD@use1  petlab-labs-eks  9s\n╰─▶\n\nis trying to authenticate using the key in the DfE vault? It should be using the key in the Private vault",
+          "pastedContents": {}
+        },
+        {
           "display": "Can you include the Cap repo with the key SSH Key CPT Cap",
           "pastedContents": {}
         },
@@ -983,10 +987,6 @@
         },
         {
           "display": "Can you simplify the time display?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Its still showing",
           "pastedContents": {}
         }
       ],

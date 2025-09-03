@@ -29,6 +29,9 @@
 # More examples can be found here:
 #  https://developer.1password.com/docs/ssh/agent/config
 [[ssh-keys]]
+vault = "Private"
+
+[[ssh-keys]]
 vault = "petlab"
 
 [[ssh-keys]]
@@ -36,6 +39,3 @@ vault = "DfE"
 
 [[ssh-keys]]
 vault = "Cap"
-
-[[ssh-keys]]
-vault = "Private"
