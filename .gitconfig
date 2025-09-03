@@ -3,7 +3,7 @@
 [user]
 	email = shahedulislam94@gmail.com
 	name = Mohammed Islam
-	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINul6AslUSv8Wda9xggr4Dt2X77BD4lbDn2TgMww0lfi
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILSrT8Y55Ssu+2nTVaQOiMLG6A96GlEXfAY2NuUIkDLb
 [init]
 	templateDir = /Users/shaheislam/.config/git
 [gpg]
@@ -14,5 +14,14 @@
 [commit]
 	gpgsign = true
 
-[includeIf "gitdir:/Users/shaheislam/work/**/"]
-	path = /Users/shaheislam/work/.gitconfig
+# Include personal config for personal projects
+[includeIf "gitdir:~/dotfiles/"]
+	path = ~/dotfiles/.gitconfig-personal
+[includeIf "gitdir:~/src/personal/"]
+	path = ~/dotfiles/.gitconfig-personal
+	
+# Include DFE config for work projects
+[includeIf "gitdir:~/work/"]
+	path = ~/dotfiles/.gitconfig-dfe
+[includeIf "gitdir:~/src/dfe/"]
+	path = ~/dotfiles/.gitconfig-dfe

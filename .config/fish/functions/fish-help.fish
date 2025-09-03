@@ -11,9 +11,8 @@ function fish-help --description "Show custom Fish commands and features"
     echo "  Up Arrow   - Directory-specific history (native Atuin)"
     echo ""
 
-    echo "🔑 SSH Key Management:"
-    echo "  Using 1Password SSH Agent for all Git operations"
-    echo "  git-check-identity (gci) - Check Git user configuration"
+    echo "🔑 Git Identity Management:"
+    echo "  git-check-identity (gci)     - Check Git user configuration"
     echo ""
 
     echo "🚀 Git Enhancements:"
@@ -40,7 +39,8 @@ function fish-help --description "Show custom Fish commands and features"
 
     echo "💡 Tips:"
     echo "  - In WezTerm, arrow keys work in Ctrl+R history search"
-    echo "  - SSH keys are managed via 1Password SSH agent"
+    echo "  - SSH keys are managed via 1Password SSH agent with host aliases"
+    echo "  - Use git@github.com-personal for personal repos, git@github.com-dfe for work repos"
     echo "  - Git abbreviations: g, ga, gaa, gc, gco, gd, gp, gst, etc."
     echo "  - Kubectl shortcuts: k, kgp, kgs, kgd, kaf, klog, kexec"
 end

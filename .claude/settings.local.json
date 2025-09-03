@@ -120,7 +120,9 @@
       "Bash(test:*)",
       "Bash(git commit:*)",
       "Bash(SSH_AUTH_SOCK=\"$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\" ssh-add -L)",
-      "Bash(SSH_AUTH_SOCK=\"$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\" ssh -T git@github.com-dfe)"
+      "Bash(SSH_AUTH_SOCK=\"$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\" ssh -T git@github.com-dfe)",
+      "WebFetch(domain:developer.1password.com)",
+      "Bash(abbr:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/"
