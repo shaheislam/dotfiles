@@ -1093,6 +1093,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Move it into the dotfiles repo and then it can be symlinked locally using stow",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is the ssh/agent.toml included in my dotfiles? its not being picked up on other devices",
+          "pastedContents": {}
+        },
+        {
           "display": "❯ git push origin 2327-add-storage-account-to-terraform-modules\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\nerror: unexpected argument '-i' found\n\n  tip: to pass '-i' as a value, use '-- -i'\n\nUsage: sd [OPTIONS] <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n🔄 Switched to DFE key priority for DFE repository\nEverything up-to-date\n\n💡 gpo => git push origin\n\n…tions  2327-add-storage-account-…    v24.7.0  @euw1  s189-test  s189d01-tsc-cluster6-aks  1s\n╰─▶\n\nStill seeing this error",
           "pastedContents": {}
         },
