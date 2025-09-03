@@ -21,7 +21,7 @@
     "double-esc": 85,
     "continue": 85,
     "custom-commands": 78,
-    "shift-tab": 75,
+    "shift-tab": 85,
     "custom-agents": 73,
     "status-line": 80,
     "paste-images-mac": 84,
@@ -1092,6 +1092,42 @@
     "/Users/shaheislam/dotfiles": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "The vault name DFE-Digital should be DfE , the signing key is GitHub DfE Signing ",
+          "pastedContents": {}
+        },
+        {
+          "display": "256 SHA256:Ggr8NYOctzCtqxdEKnGay+RQgf65x1t5FOBEPLwvA7Y SSH Key - Github ShaheIslam Personal (ED25519)\n256 SHA256:tAfxsOaXckP4cnCTaQfq1Zq5AP9pdT4yaReNd9OT+H8 GitHub (ED25519)\n",
+          "pastedContents": {}
+        },
+        {
+          "display": "I have created the signing key in 1Pass it is \n\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILSrT8Y55Ssu+2nTVaQOiMLG6A96GlEXfAY2NuUIkDLb",
+          "pastedContents": {}
+        },
+        {
+          "display": "I can create a signing key and provite it to you",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can i have a separate SSH key for signing shahe.islam@education.gov.uk ?",
+          "pastedContents": {}
+        },
+        {
+          "display": "No it should be verified against shahe.islam@education.gov.uk",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is verification enabled for DFE too?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is signing verification set up?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is my SSH Auth Sock working?",
+          "pastedContents": {}
+        },
         {
           "display": "But I only want ~/work on THIS device to use that DFE-Digital, on a different device ~/work would be for a diferent org",
           "pastedContents": {}

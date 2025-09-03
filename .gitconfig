@@ -1,6 +1,3 @@
-[includeIf "gitdir:/Users/shaheislam/work/**/"]
-	path = /Users/shaheislam/work/.gitconfig
-
 [core]
 	excludesfile = /Users/shahe/.gitignore_global
 [user]
@@ -13,5 +10,9 @@
 	format = ssh
 [gpg "ssh"]
 	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+	allowedSignersFile = /Users/shaheislam/.ssh/allowed_signers
 [commit]
 	gpgsign = true
+
+[includeIf "gitdir:/Users/shaheislam/work/**/"]
+	path = /Users/shaheislam/work/.gitconfig
