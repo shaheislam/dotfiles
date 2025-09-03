@@ -3,5 +3,12 @@
 [user]
 	email = shahedulislam94@gmail.com
 	name = Mohammed Islam
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINul6AslUSv8Wda9xggr4Dt2X77BD4lbDn2TgMww0lfi
 [init]
 	templateDir = /Users/shaheislam/.config/git
+[gpg]
+	format = ssh
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+[commit]
+	gpgsign = true
