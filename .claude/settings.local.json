@@ -103,7 +103,14 @@
       "Bash(claude)",
       "Bash(claude project list:*)",
       "Bash(timeout:*)",
-      "Bash(claude config get:*)"
+      "Bash(claude config get:*)",
+      "Read(/Users/shahe/.ssh/**)",
+      "WebFetch(domain:developer.1password.com)",
+      "WebFetch(domain:gist.github.com)",
+      "Bash(SSH_AUTH_SOCK=\"$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\" ssh -T git@github.com)",
+      "Bash(ssh:*)",
+      "Read(/private/tmp/ssh-test/**)",
+      "Read(/private/tmp/ssh-test/test-github/**)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/"

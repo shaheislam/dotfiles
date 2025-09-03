@@ -212,6 +212,14 @@ else
   echo "Granted already installed"
 fi
 
+# Install 1Password CLI for SSH agent integration
+if ! command -v op &> /dev/null; then
+  echo "Installing 1Password CLI for SSH agent integration..."
+  brew install --cask 1password-cli
+else
+  echo "1Password CLI already installed"
+fi
+
 # Install SketchyBar (status bar) - needs special handling
 if ! command -v sketchybar &> /dev/null; then
   echo "=== Installing SketchyBar ==="

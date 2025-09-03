@@ -49,6 +49,10 @@ if status is-interactive
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
+    # 1Password SSH Agent Socket
+    # This enables using SSH keys stored in 1Password
+    set -x SSH_AUTH_SOCK ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
+
     # Additional environment variables from extended config
     set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
 

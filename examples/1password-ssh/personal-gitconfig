@@ -1,0 +1,13 @@
+# Git configuration for personal repositories
+# This file should be placed at ~/src/personal/.gitconfig
+# or any directory where you keep personal projects
+
+[user]
+    email = your.personal@email.com
+    name = Shah E Islam
+
+# Automatically rewrite GitHub URLs to use personal SSH key
+[url "git@github.com-personal:shaheislam/"]
+    insteadOf = git@github.com:shaheislam/
+[url "git@github.com-personal:shaheislam/"]
+    insteadOf = https://github.com/shaheislam/

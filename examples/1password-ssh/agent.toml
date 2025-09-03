@@ -1,0 +1,29 @@
+# 1Password SSH Agent Configuration
+# This file should be placed at: ~/.config/1Password/ssh/agent.toml
+# It controls which SSH keys are offered to SSH servers and in what order
+
+# Personal GitHub SSH Key
+[[ssh-keys]]
+item = "GitHub Personal"
+vault = "Personal"
+
+# DFE GitHub SSH Key (Work)
+[[ssh-keys]]
+item = "GitHub DFE"
+vault = "Work"
+
+# Bitbucket SSH Key for PetLab
+[[ssh-keys]]
+item = "Bitbucket PetLab"
+vault = "Work"
+
+# Alternative: Add all keys from a specific vault
+# [[ssh-keys]]
+# vault = "Personal"
+#
+# [[ssh-keys]]
+# vault = "Work"
+
+# Alternative: Add all keys from a specific account
+# [[ssh-keys]]
+# account = "your-account-name"
