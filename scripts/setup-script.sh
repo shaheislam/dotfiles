@@ -143,6 +143,14 @@ else
   brew install --cask raycast
 fi
 
+# Install Willow Voice Assistant
+if app_installed "Willow"; then
+  echo "Willow already installed"
+else
+  echo "Installing Willow Voice Assistant..."
+  brew install --cask willow
+fi
+
 # Install WezTerm
 if app_installed "WezTerm"; then
   echo "WezTerm already installed"

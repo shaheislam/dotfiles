@@ -195,4 +195,5 @@ cask "aerospace"
 cask "session-manager-plugin"
 cask "raycast"
 cask "altair-graphql-client"  # GraphQL IDE for testing and development
+cask "willow"  # Voice assistant application - https://willowvoice.com/
 brew "sketchybar"
