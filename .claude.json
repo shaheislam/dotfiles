@@ -18,15 +18,16 @@
     "install-github-app": 78,
     "permissions": 84,
     "drag-and-drop-images": 84,
-    "double-esc": 75,
-    "continue": 75,
+    "double-esc": 85,
+    "continue": 85,
     "custom-commands": 78,
     "shift-tab": 75,
     "custom-agents": 73,
     "status-line": 80,
     "paste-images-mac": 84,
     "git-worktrees": 78,
-    "image-paste": 77
+    "image-paste": 77,
+    "ide-upsell-external-terminal": 85
   },
   "promptQueueUseCount": 28,
   "cachedStatsigGates": {
@@ -1091,6 +1092,22 @@
     "/Users/shaheislam/dotfiles": {
       "allowedTools": [],
       "history": [
+        {
+          "display": "But I only want ~/work on THIS device to use that DFE-Digital, on a different device ~/work would be for a diferent org",
+          "pastedContents": {}
+        },
+        {
+          "display": "I want all repos in DFE-Digital to work, teacher-services-cloud is only one repo of many",
+          "pastedContents": {}
+        },
+        {
+          "display": "Shouldn't the host be github.com/DFE-Digital/ ? that's the URL of the git project",
+          "pastedContents": {}
+        },
+        {
+          "display": "💡 gp => git push\n❯ git push origin test\nERROR: Permission to DFE-Digital/access-your-teaching-qualifications.git denied to shaheislam.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n\n💡 gpo => git push origin\n\nWhy am I seeing this error check my gitconfig, ~/dotfiles works but repos inside ~/work/* doesn't",
+          "pastedContents": {}
+        },
         {
           "display": "Can you change it to match the tokyo night theme instead?",
           "pastedContents": {}

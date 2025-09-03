@@ -1,3 +1,6 @@
+[includeIf "gitdir:/Users/shaheislam/work/**/"]
+	path = /Users/shaheislam/work/.gitconfig
+
 [core]
 	excludesfile = /Users/shahe/.gitignore_global
 [user]
