@@ -1,0 +1,68 @@
+name: k8s-azure
+root: ~/
+
+# Optional: Set environment variables
+# pre: |
+#   export KUBECONFIG=~/.kube/config
+#   az login --use-device-code
+
+windows:
+  - main:
+      layout: main-vertical
+      pane_width: 65
+      panes:
+        - # Main working pane - for kubectl commands and manifests
+        - claude  # AI assistant for K8s/Azure help
+
+  - k8s-monitor:
+      layout: even-horizontal
+      panes:
+        - watch kubectl get pods --all-namespaces  # Pod monitoring
+        - watch kubectl get nodes  # Node status
+        - kubectl get events --watch --all-namespaces  # Cluster events
+
+  - k8s-logs:
+      layout: even-vertical
+      panes:
+        - # For following specific pod logs: kubectl logs -f <pod>
+        - stern .  # Multi-pod log tailing (if stern is installed)
+
+  - azure:
+      layout: main-vertical
+      pane_width: 60
+      panes:
+        - # Azure CLI commands
+        - watch az aks list --output table  # Monitor AKS clusters
+
+  - k9s:
+      panes:
+        - k9s  # Interactive K8s dashboard
+
+  - helm:
+      layout: even-horizontal
+      panes:
+        - # Helm commands and chart management
+        - helm list --all-namespaces  # List all releases
+
+  - port-forward:
+      layout: even-vertical
+      panes:
+        - # For port-forwarding: kubectl port-forward svc/service-name 8080:80
+        - # Another port-forward slot
+        - # Third port-forward slot
+
+  - terraform:
+      layout: main-vertical
+      pane_width: 65
+      root: ~/infrastructure  # Change to your IaC directory
+      panes:
+        - # Terraform/OpenTofu commands
+        - # terraform plan output
+
+  - resources:
+      layout: tiled
+      panes:
+        - watch 'kubectl top nodes'  # Node resource usage
+        - watch 'kubectl top pods --all-namespaces | head -20'  # Pod resource usage
+        - # Azure resource monitoring
+        - htop  # Local system resources

@@ -1,0 +1,27 @@
+name: dotfiles
+root: ~/dotfiles
+
+# Optional: Run before creating the session
+# pre: echo "Starting dotfiles session..."
+
+windows:
+  - editor:
+      layout: main-vertical
+      pane_width: 70
+      panes:
+        - nvim
+        - # empty pane for testing/commands
+  
+  - git:
+      panes:
+        - lazygit
+  
+  - shell:
+      panes:
+        - fish
+  
+  - logs:
+      layout: even-horizontal
+      panes:
+        - tail -f ~/.tmux/resurrect/last
+        - # empty pane for monitoring

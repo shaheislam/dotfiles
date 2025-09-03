@@ -1,0 +1,31 @@
+name: dev
+root: ~/projects/<%= @args[0] || "default" %>
+
+# Usage: tmuxinator start dev project-name
+
+windows:
+  - editor:
+      layout: main-vertical
+      pane_width: 70
+      panes:
+        - nvim
+        - # test runner or REPL
+        # - claude  # Uncomment to open Claude Code in this pane
+  
+  - server:
+      layout: even-horizontal
+      panes:
+        - # npm run dev / python manage.py runserver / etc
+        - # logs or monitoring
+  
+  - database:
+      panes:
+        - # database CLI or monitoring
+  
+  - git:
+      panes:
+        - lazygit
+  
+  - shell:
+      panes:
+        - fish

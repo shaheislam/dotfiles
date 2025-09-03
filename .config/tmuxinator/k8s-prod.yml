@@ -1,0 +1,83 @@
+name: k8s-prod
+root: ~/
+
+# Production cluster configuration
+pre: |
+  echo "🚀 Setting up production K8s environment..."
+  # export KUBECONFIG=~/.kube/prod-config
+  # az account set --subscription "Production"
+  # kubectl config use-context prod-cluster
+
+# Optional: startup commands that run in the background
+# pre_window: kubectl proxy --port=8001 &
+
+windows:
+  - control:
+      layout: main-vertical
+      pane_width: 65
+      panes:
+        - # Main kubectl command center
+        - claude  # AI assistant
+
+  - deployments:
+      layout: even-horizontal
+      panes:
+        - watch -n 5 'kubectl get deployments --all-namespaces | grep -v "READY 1/1"'  # Problem deployments
+        - watch kubectl rollout status deployment --all-namespaces  # Rollout status
+        - kubectl get replicasets --all-namespaces --watch  # ReplicaSet changes
+
+  - critical-pods:
+      layout: tiled
+      panes:
+        - watch 'kubectl get pods -n production | grep -v "Running\|Completed"'  # Non-running pods
+        - watch 'kubectl get pods -n ingress-nginx'  # Ingress controllers
+        - watch 'kubectl get pods -n cert-manager'  # Certificate management
+        - watch 'kubectl get pods -n monitoring'  # Monitoring stack
+
+  - incidents:
+      layout: even-vertical
+      panes:
+        - kubectl get events --all-namespaces --watch --field-selector type=Warning  # Warning events only
+        - # For investigating specific pods: kubectl describe pod <pod-name> -n <namespace>
+        - # For debugging: kubectl exec -it <pod> -- /bin/bash
+
+  - logs-prod:
+      layout: even-horizontal
+      panes:
+        - # App logs: kubectl logs -f deployment/app -n production --since=1h
+        - # Error grep: kubectl logs deployment/app -n production | grep ERROR
+        - stern --namespace production --tail 50 .  # All production namespace logs
+
+  - azure-resources:
+      layout: main-vertical
+      pane_width: 70
+      panes:
+        - # Azure operations
+        - watch -n 30 'az aks show -n prod-cluster -g prod-rg --query "powerState"'  # Cluster state
+        - az monitor metrics list --resource <cluster-id> --metric "node.cpu.usage" --interval PT1M  # Metrics
+
+  - k9s-prod:
+      panes:
+        - k9s --context prod-cluster --namespace production  # K9s focused on production
+
+  - services:
+      layout: even-horizontal
+      panes:
+        - watch kubectl get svc --all-namespaces  # All services
+        - watch kubectl get ingress --all-namespaces  # Ingress rules
+        - watch kubectl get endpoints --all-namespaces  # Service endpoints
+
+  - scaling:
+      layout: tiled
+      panes:
+        - watch kubectl get hpa --all-namespaces  # Horizontal pod autoscalers
+        - # Manual scaling: kubectl scale deployment/app --replicas=3 -n production
+        - # Check PDB: kubectl get pdb --all-namespaces
+        - watch 'kubectl top pods -n production --sort-by=memory | head -15'  # Memory hogs
+
+  - security:
+      layout: even-vertical
+      panes:
+        - watch kubectl get networkpolicies --all-namespaces  # Network policies
+        - kubectl get secrets --all-namespaces  # Secrets overview
+        - # Security scanning results or falco logs

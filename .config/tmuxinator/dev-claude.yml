@@ -1,0 +1,31 @@
+name: dev-claude
+root: ~/projects/<%= @args[0] || "default" %>
+
+# Usage: tmuxinator start dev-claude project-name
+# This template includes Claude Code in the editor window
+
+windows:
+  - editor:
+      layout: main-vertical
+      pane_width: 60
+      panes:
+        - nvim
+        - claude  # Claude Code in right pane
+  
+  - server:
+      layout: even-horizontal
+      panes:
+        - # npm run dev / python manage.py runserver / etc
+        - # logs or monitoring
+  
+  - database:
+      panes:
+        - # database CLI or monitoring
+  
+  - git:
+      panes:
+        - lazygit
+  
+  - shell:
+      panes:
+        - fish

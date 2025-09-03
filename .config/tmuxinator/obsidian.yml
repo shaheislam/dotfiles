@@ -1,0 +1,17 @@
+name: obsidian
+root: ~/obsidian
+
+windows:
+  - editor:
+      layout: main-vertical
+      panes:
+        - nvim .
+        - # terminal for git operations
+  
+  - sync:
+      panes:
+        - watch -n 60 'git status && echo "" && echo "Last sync:" && date'
+  
+  - preview:
+      panes:
+        - # markdown preview or other tools
