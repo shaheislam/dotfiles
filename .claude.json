@@ -1093,6 +1093,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "If I am using 1Pass SSH agent can I remove the local keys I have in .ssh",
+          "pastedContents": {}
+        },
+        {
           "display": "Now I have 1Pass SSH installed remove all references to ssh-switch function in my dotfiles as its not longer required",
           "pastedContents": {}
         },
