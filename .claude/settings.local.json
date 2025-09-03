@@ -124,7 +124,8 @@
       "WebFetch(domain:developer.1password.com)",
       "Bash(abbr:*)",
       "Bash(mkdir:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Read(//Users/mohammedislam/.ssh/**)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/"

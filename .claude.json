@@ -26,9 +26,10 @@
     "status-line": 80,
     "paste-images-mac": 84,
     "git-worktrees": 88,
-    "image-paste": 77
+    "image-paste": 77,
+    "ide-upsell-external-terminal": 93
   },
-  "promptQueueUseCount": 31,
+  "promptQueueUseCount": 32,
   "cachedStatsigGates": {
     "tengu_disable_bypass_permissions_mode": false
   },
@@ -2009,6 +2010,29 @@
       "lastTotalCacheCreationInputTokens": 135893,
       "lastTotalCacheReadInputTokens": 0,
       "lastSessionId": "8c0a7e86-5139-48af-9038-a1bb7487ce11"
+    },
+    "/Users/mohammedislam/dotfiles": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "❯ git push origin main\ngit@bitbucket.bics-collaboration.<REDACTED>.gov.uk: Permission denied (publickey).\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n\n💡 gpo => git push origin\n\nThis should be using the SSH Key CPT Cap key in the Cap vault",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": false,
+      "ignorePatterns": [],
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "hasCompletedProjectOnboarding": true
     }
   },
   "shiftEnterKeyBindingInstalled": true,
