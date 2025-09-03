@@ -578,6 +578,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "The key in 1Pass Petlab vault is called SSH Key - Petlab Bitbucket",
+          "pastedContents": {}
+        },
+        {
+          "display": "My SSH key from my petlab vault doesnt seem to be set",
+          "pastedContents": {}
+        },
+        {
           "display": "❯ git commit -m \"test file\"\nerror: 1Password: No SSH private key found for the specified public key:\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILSrT8Y55Ssu+2nTVaQOiMLG6A96GlEXfAY2NuUIkDLb\n\nMake sure the SSH key is saved in your Personal or Private vault (default)\nor added to your SSH agent config file (custom).\n\nSee https://developer.1password.com/docs/ssh/agent/config/ for more information.\n\nfatal: failed to write commit object\n\n💡 g => git\n\n╭╴󰊠 dotfiles !+  PROD@use1  petlab-labs-eks \n╰─▶\n",
           "pastedContents": {}
         },
@@ -979,14 +987,6 @@
         },
         {
           "display": "Can you remove the icones entirely",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can you do the same for RAM and CPU?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can you use icons for cpu and battery?",
           "pastedContents": {}
         }
       ],
