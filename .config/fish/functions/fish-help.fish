@@ -12,12 +12,8 @@ function fish-help --description "Show custom Fish commands and features"
     echo ""
 
     echo "🔑 SSH Key Management:"
-    echo "  ssh-switch <key>  - Switch between SSH keys"
-    echo "    personal        - Personal GitHub (shaheislam)"
-    echo "    dfe            - DFE GitHub (shaheislamdfe)"
-    echo "    petlab         - Bitbucket/PetLab"
-    echo "  ssh-auto (ssa)    - Auto-switch based on current repo"
-    echo "  git-check-identity (gci) - Check if using correct SSH key"
+    echo "  Using 1Password SSH Agent for all Git operations"
+    echo "  git-check-identity (gci) - Check Git user configuration"
     echo ""
 
     echo "🚀 Git Enhancements:"
@@ -44,7 +40,7 @@ function fish-help --description "Show custom Fish commands and features"
 
     echo "💡 Tips:"
     echo "  - In WezTerm, arrow keys work in Ctrl+R history search"
-    echo "  - SSH keys are managed via SSH agent for security"
+    echo "  - SSH keys are managed via 1Password SSH agent"
     echo "  - Git abbreviations: g, ga, gaa, gc, gco, gd, gp, gst, etc."
     echo "  - Kubectl shortcuts: k, kgp, kgs, kgd, kaf, klog, kexec"
 end

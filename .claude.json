@@ -1093,6 +1093,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Now I have 1Pass SSH installed remove all references to ssh-switch function in my dotfiles as its not longer required",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "Actually truncate to 25 characters",
           "pastedContents": {}
         },

@@ -1,4 +1,4 @@
-function git-check-identity --description "Check which SSH key should be used for current repository"
+function git-check-identity --description "Check Git user configuration for current repository"
     # Get the current directory
     set -l current_dir (pwd)
 
@@ -18,44 +18,38 @@ function git-check-identity --description "Check which SSH key should be used fo
 
     echo "Repository: $remote_url"
 
-    # Check current GitHub identity
+    # Check current Git user configuration
     echo ""
-    echo "Current GitHub identity:"
+    echo "Current Git configuration:"
+    set -l git_user (git config user.name)
+    set -l git_email (git config user.email)
+    echo "  User: $git_user"
+    echo "  Email: $git_email"
+    
+    # Check current GitHub identity via 1Password SSH
+    echo ""
+    echo "GitHub authentication (via 1Password SSH):"
     ssh -T git@github.com 2>&1 | grep "Hi" || echo "  Not authenticated"
 
-    # Determine which key should be used based on the repository
+    # Determine recommended configuration based on repository
     if string match -q "*shaheislam/*" $remote_url
         echo ""
         echo "✓ This is a personal repository (shaheislam)"
-        echo "  You should use: ssh-switch personal"
-
-        # Check if current identity matches
-        if ssh -T git@github.com 2>&1 | grep -q "Hi shaheislam!"
-            echo "  ✓ Correct SSH key is active"
-        else
-            echo "  ⚠ Wrong SSH key is active!"
-            echo ""
-            echo "Run: ssh-switch personal"
-        end
+        echo "  Recommended Git config:"
+        echo "    git config user.name 'Shahe Islam'"
+        echo "    git config user.email 'shaheislam@hotmail.co.uk'"
 
     else if string match -q "*DFE-Digital/*" $remote_url; or string match -q "*dfe-*" $remote_url
         echo ""
         echo "✓ This is a DFE repository"
-        echo "  You should use: ssh-switch dfe"
-
-        # Check if current identity matches
-        if ssh -T git@github.com 2>&1 | grep -q "Hi shaheislamdfe!"
-            echo "  ✓ Correct SSH key is active"
-        else
-            echo "  ⚠ Wrong SSH key is active!"
-            echo ""
-            echo "Run: ssh-switch dfe"
-        end
+        echo "  Recommended Git config:"
+        echo "    git config user.name 'Shahe Islam'"
+        echo "    git config user.email 'shahe.islam@education.gov.uk'"
 
     else if string match -q "*bitbucket.org*" $remote_url
         echo ""
         echo "✓ This is a Bitbucket repository"
-        echo "  You should use: ssh-switch petlab"
+        echo "  Using 1Password SSH for authentication"
 
     else
         echo ""
@@ -63,10 +57,15 @@ function git-check-identity --description "Check which SSH key should be used fo
         echo "  Remote: $remote_url"
     end
 
-    # Show current SSH keys
+    # Show 1Password SSH agent status
     echo ""
-    echo "Current SSH agent keys:"
-    ssh-add -l | sed 's/^/  /'
+    echo "1Password SSH Agent:"
+    if test -S "$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+        echo "  ✓ Socket is available"
+        SSH_AUTH_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" ssh-add -l 2>/dev/null | head -1 | sed 's/^/  /' || echo "  No identities available"
+    else
+        echo "  ⚠ Socket not found - check 1Password SSH agent settings"
+    end
 end
 
 # Create an alias for convenience

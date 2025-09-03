@@ -1,39 +1,42 @@
-function git-smart --description "Smart git wrapper that checks SSH key before push/pull"
-    # Check if this is a push or pull operation
-    if test "$argv[1]" = "push" -o "$argv[1]" = "pull" -o "$argv[1]" = "fetch"
+function git-smart --description "Smart git wrapper that checks Git configuration before operations"
+    # Check if this is a push operation
+    if test "$argv[1]" = "push"
         # Get the remote URL
         set -l remote_url (git config --get remote.origin.url 2>/dev/null)
-
+        
         if test -n "$remote_url"
-            # Get current GitHub identity
-            set -l current_identity (ssh -T git@github.com 2>&1 | grep "Hi" | sed 's/Hi \(.*\)!.*/\1/')
-
-            # Check for mismatches
+            # Get current Git configuration
+            set -l git_user (git config user.name)
+            set -l git_email (git config user.email)
+            
+            # Check for configuration mismatches
             set -l mismatch 0
-
+            
             if string match -q "*shaheislam/*" $remote_url
-                if test "$current_identity" != "shaheislam"
-                    echo "⚠️  SSH Key Mismatch Detected!"
+                if test "$git_email" != "shaheislam@hotmail.co.uk"
+                    echo "⚠️  Git Configuration Notice!"
                     echo "   Repository: Personal (shaheislam)"
-                    echo "   Current identity: $current_identity"
+                    echo "   Current email: $git_email"
                     echo ""
-                    echo "   Run: ssh-switch personal"
+                    echo "   Recommended:"
+                    echo "   git config user.email 'shaheislam@hotmail.co.uk'"
                     echo ""
                     set mismatch 1
                 end
-
+                
             else if string match -q "*DFE-Digital/*" $remote_url; or string match -q "*dfe-*" $remote_url
-                if test "$current_identity" != "shaheislamdfe"
-                    echo "⚠️  SSH Key Mismatch Detected!"
+                if test "$git_email" != "shahe.islam@education.gov.uk"
+                    echo "⚠️  Git Configuration Notice!"
                     echo "   Repository: DFE"
-                    echo "   Current identity: $current_identity"
+                    echo "   Current email: $git_email"
                     echo ""
-                    echo "   Run: ssh-switch dfe"
+                    echo "   Recommended:"
+                    echo "   git config user.email 'shahe.islam@education.gov.uk'"
                     echo ""
                     set mismatch 1
                 end
             end
-
+            
             if test $mismatch -eq 1
                 read -P "Continue anyway? [y/N] " -n 1 response
                 echo ""
@@ -44,7 +47,7 @@ function git-smart --description "Smart git wrapper that checks SSH key before p
             end
         end
     end
-
+    
     # Execute the original git command
     command git $argv
 end

@@ -150,13 +150,18 @@ git remote set-url origin git@github.com-dfe:DFE-Digital/repo-name.git
 
 ## Migration from ssh-switch Function
 
-### Gradual Migration
+### Migration Complete
 
-1. **Keep ssh-switch function** during transition period
-2. **Test with one repository** first to ensure everything works
-3. **Move repositories** to the new directory structure gradually
-4. **Update remote URLs** as needed
-5. **Remove ssh-switch** once confirmed working
+The `ssh-switch` function has been removed from the dotfiles as 1Password SSH agent now handles all SSH key management automatically. The following changes have been made:
+
+1. **Removed functions:**
+   - `ssh-switch` - No longer needed as 1Password handles key selection
+   - `ssh-auto` - Automatic switching now handled by 1Password
+
+2. **Updated functions:**
+   - `git-check-identity` - Now shows Git configuration instead of SSH keys
+   - `git-smart` - Checks Git config (user.email) instead of SSH keys
+   - `fish-help` - Updated to reflect 1Password SSH usage
 
 ### Quick Test
 
@@ -174,16 +179,17 @@ ssh -T git@bitbucket.org
 
 You should see Touch ID prompt (or password prompt) from 1Password when connecting.
 
-## Advantages Over ssh-switch
+## Advantages of 1Password SSH
 
-| Feature | ssh-switch | 1Password SSH |
-|---------|------------|---------------|
+| Feature | Old Method (ssh-switch) | 1Password SSH |
+|---------|------------------------|---------------|
 | Manual switching | Required | Automatic |
 | Key storage | Filesystem | Encrypted vault |
 | Authentication | None | Touch ID/Password |
 | Cross-device sync | No | Yes |
 | Private key exposure | On disk | Never exposed |
 | Repository awareness | Warns after switch | Automatic selection |
+| Security | Keys on disk | Keys in secure enclave |
 
 ## Troubleshooting
 
