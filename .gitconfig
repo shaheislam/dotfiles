@@ -3,7 +3,7 @@
 [user]
 	email = shahedulislam94@gmail.com
 	name = Mohammed Islam
-	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILSrT8Y55Ssu+2nTVaQOiMLG6A96GlEXfAY2NuUIkDLb
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILJ1J4G9P8A8e1Fl9mUYJHphTPrrXp8dWEivRRvhu9rV
 [init]
 	templateDir = /Users/shaheislam/.config/git
 [gpg]

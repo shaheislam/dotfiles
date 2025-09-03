@@ -10,7 +10,6 @@ windows:
       panes:
         - nvim
         - # test runner or REPL
-        # - claude  # Uncomment to open Claude Code in this pane
   
   - server:
       layout: even-horizontal
