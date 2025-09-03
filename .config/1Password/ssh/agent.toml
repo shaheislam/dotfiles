@@ -32,4 +32,10 @@
 vault = "petlab"
 
 [[ssh-keys]]
+vault = "DfE"
+
+[[ssh-keys]]
+vault = "Cap"
+
+[[ssh-keys]]
 vault = "Private"

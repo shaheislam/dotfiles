@@ -578,6 +578,18 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Can you include the Cap repo with the key SSH Key CPT Cap",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is the DfE vault also part of this agent.toml?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Has the agent.toml been edited and saved in the dotfiles?",
+          "pastedContents": {}
+        },
+        {
           "display": "The key in 1Pass Petlab vault is called SSH Key - Petlab Bitbucket",
           "pastedContents": {}
         },
@@ -975,18 +987,6 @@
         },
         {
           "display": "Its still showing",
-          "pastedContents": {}
-        },
-        {
-          "display": "The battery part is showing with a heart symbol remove this",
-          "pastedContents": {}
-        },
-        {
-          "display": "CPU and RAM still show",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can you remove the icones entirely",
           "pastedContents": {}
         }
       ],
