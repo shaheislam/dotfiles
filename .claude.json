@@ -1093,6 +1093,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Actually truncate to 25 characters",
+          "pastedContents": {}
+        },
+        {
+          "display": "Now I want you to modify my startship toml so the git branch shows the full length and isn't truncated",
+          "pastedContents": {}
+        },
+        {
           "display": "The vault name DFE-Digital should be DfE , the signing key is GitHub DfE Signing ",
           "pastedContents": {}
         },

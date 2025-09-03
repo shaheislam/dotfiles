@@ -99,8 +99,8 @@ truncation_symbol = ""
 [git_branch]
 symbol = ""
 style = "bg:color_aqua"
-truncation_length = 4
-truncation_symbol = ''
+truncation_length = 25
+truncation_symbol = '…'
 ignore_branches = ['master', 'main']
 format = '[ $symbol$branch ]($style fg:color_black)'
 
