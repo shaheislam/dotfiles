@@ -1093,6 +1093,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "💡 gp => git push\n❯ stow .\nWARNING! stowing . would cause conflicts:\n  * existing target is not owned by stow: .config/1Password/ssh/agent.toml\nAll operations aborted.\n❯ stow . --adopt\nWARNING! stowing . would cause conflicts:\n  * existing target is not owned by stow: .config/1Password/ssh/agent.toml\nAll operations aborted.\n\n╭╴󰊠 dotfiles ?  @euw1  s189-test  s189d01-tsc-cluster6-aks \n╰─▶\n",
+          "pastedContents": {}
+        },
+        {
           "display": "Move it into the dotfiles repo and then it can be symlinked locally using stow",
           "pastedContents": {}
         },
