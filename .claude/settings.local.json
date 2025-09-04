@@ -125,7 +125,8 @@
       "Bash(abbr:*)",
       "Bash(mkdir:*)",
       "Bash(cp:*)",
-      "Read(//Users/mohammedislam/.ssh/**)"
+      "Read(//Users/mohammedislam/.ssh/**)",
+      "Read(//Users/mohammedislam/.config/1Password/ssh/**)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/"
