@@ -126,11 +126,21 @@
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Read(//Users/mohammedislam/.ssh/**)",
-      "Read(//Users/mohammedislam/.config/1Password/ssh/**)"
+      "Read(//Users/mohammedislam/.config/1Password/ssh/**)",
+      "Bash(op:*)",
+      "Read(/Users/shahe/work/devops-interview/**)",
+      "Read(/Users/shahe/work/devops-interview/**)",
+      "Read(/Users/shahe/work/devops-interview/**)",
+      "Read(/Users/shahe/work/devops-interview/**)",
+      "WebFetch(domain:confluence.atlassian.com)",
+      "Read(/Users/shahe/work/devops-interview/**)",
+      "Read(/Users/shahe/work/devops-interview/**)",
+      "Read(/Users/shahe/work/devops-interview/**)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
-      "/Users/mohammedislam/work/mo-service"
+      "/Users/mohammedislam/work/mo-service",
+      "/Users/shahe/work/devops-interview/"
     ]
   },
   "enableAllProjectMcpServers": true,
