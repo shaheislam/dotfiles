@@ -129,7 +129,8 @@
       "Read(//Users/mohammedislam/.config/1Password/ssh/**)"
     ],
     "additionalDirectories": [
-      "/Users/shahe/obsidian/"
+      "/Users/shahe/obsidian/",
+      "/Users/mohammedislam/work/mo-service"
     ]
   },
   "enableAllProjectMcpServers": true,
