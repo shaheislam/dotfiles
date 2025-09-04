@@ -1,0 +1,1 @@
+jobapps/resume.cls

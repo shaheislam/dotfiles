@@ -579,6 +579,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Thats fine because jobapps will be symlinked to the top level anyway",
+          "pastedContents": {}
+        },
+        {
+          "display": "Do you need to have everything you need now? inspect ~/dotfiles/jobapps",
+          "pastedContents": {}
+        },
+        {
           "display": "I have added my work points to skills.md distill it so that it can be used as a set of skills and bullet points of responsibilities to match to the job description. Keep the bullet points / items themselves unchanged and remove duplicates",
           "pastedContents": {}
         },
@@ -993,14 +1001,6 @@
         },
         {
           "display": "❯ tmpmail\n[ Inbox for h0yzdhe6rdy@spam4.me ]\n\nNo new mail\\\n\\\nI have sent an email to this address but it says no new mail",
-          "pastedContents": {}
-        },
-        {
-          "display": "❯ tmpmail\njq: parse error: Invalid numeric literal at line 1, column 10\n[ Inbox for k8jcdxhn9qq@htaccess ]\n\n/Users/shahe/dotfiles/scripts/bin/tmpmail: line 203: [: : integer expression expected\n/Users/shahe/dotfiles/scripts/bin/tmpmail: line 211: [: : integer expression expected\n",
-          "pastedContents": {}
-        },
-        {
-          "display": "https://github.com/sdushantha/tmpmail - Can you install this and add it to my dotfiles?",
           "pastedContents": {}
         }
       ],
