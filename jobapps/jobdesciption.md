@@ -25,3 +25,15 @@ Preferred Skills
     Experience with Private Cloud infrastructure on VMWare or OpenStack
     Previous experience working with Kubernetes Ingress controllers
 
+<RECRUITER>
+    Lorien
+</RECRUITER>
+<DATE>
+    010425
+</DATE>
+<TYPE>
+    PERM
+</TYPE>
+<SALARY>
+    70O
+</SALARY>

@@ -579,6 +579,54 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "/cv-generate ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Actually I want it to be max 2 OR 3 but the last page should be at least 70% filled",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can you ensure that the CV is always a maximum of 2 pages",
+          "pastedContents": {}
+        },
+        {
+          "display": "/cv-generate ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Now i want you to modify cv-generate so that it saves the output under the values <RECRUITER>-<DATE>-<TYPE>-<SALARY>.pdf instead of CV_[timestamp].pdf\n\nThese values will always be there",
+          "pastedContents": {}
+        },
+        {
+          "display": "No i only want the final CV to be output to ~/Documents ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Will it always be saved here? That's the desired behaviour",
+          "pastedContents": {}
+        },
+        {
+          "display": "I want you to save the documents at ~/Documents/jobapps ",
+          "pastedContents": {}
+        },
+        {
+          "display": "/cv-generate ",
+          "pastedContents": {}
+        },
+        {
+          "display": "Add to the /cv-generate slash command prompt that the new CV should always follow the Section and Subsection structure with the same employment company, position and dates, only the items themselves should differ with most recent skills being places at the newest roles and less relevant at the older roles, does that make sense?",
+          "pastedContents": {}
+        },
+        {
+          "display": "What file is /cv-generate using for the Latex template?",
+          "pastedContents": {}
+        },
+        {
+          "display": "/cv-generate ",
+          "pastedContents": {}
+        },
+        {
           "display": "Thats fine because jobapps will be symlinked to the top level anyway",
           "pastedContents": {}
         },
@@ -953,54 +1001,6 @@
         },
         {
           "display": "The issue is\\\n\\\nVAULT_DIR=\"/Users/shahe/obsidian\"\nHOOK_DIR=\"$VAULT_DIR/.git/hooks\"\\\n\\\nIn the auto-commit.sh script for ~/obsidian",
-          "pastedContents": {}
-        },
-        {
-          "display": "When I run ./setup-auto-commit.sh on a different device I get Error not a git repository at /Users/shahe/obsidian. This tells me the value is harded when it should be ${HOME}/obsidian, right?",
-          "pastedContents": {}
-        },
-        {
-          "display": "/add-dir /Users/shahe/obsidian/",
-          "pastedContents": {}
-        },
-        {
-          "display": "How can i count how many commits I have in my ~/dotfiles repo",
-          "pastedContents": {}
-        },
-        {
-          "display": "Add another alias todo which takes me to ~/obsidian and then opens nvim TODO.md",
-          "pastedContents": {}
-        },
-        {
-          "display": "💡 gst => git status\n❯ obs\ncd: The directory '${HOME}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Engineering' does not exist\n\\\nHave you not changed this to cd to ~/obsidian and then nvim . ",
-          "pastedContents": {}
-        },
-        {
-          "display": "❯ git add .\n\n💡 ga => git add\n❯ git commit -m \"gitconfig\"\nNo .pre-commit-config.yaml file was found\n- To temporarily silence this, run `PRE_COMMIT_ALLOW_NO_CONFIG=1 git ...`\n- To permanently silence this, install pre-commit with the --allow-missing-config option\n- To uninstall pre-commit run `pre-commit uninstall`\n\n💡 gcm => git commit -m\n\\\nUnuninstall the precommit stuff its asking about here",
-          "pastedContents": {}
-        },
-        {
-          "display": "My obsidian vault is at ~/obsidian across all my devices now can you remove all of the obspls obsdfe specific aliases and just set obs to be cd ~/obsidian then run nvim . automatically",
-          "pastedContents": {}
-        },
-        {
-          "display": "/clear ",
-          "pastedContents": {}
-        },
-        {
-          "display": "Add https://altairgraphql.dev/docs/ to my dotfiles",
-          "pastedContents": {}
-        },
-        {
-          "display": "Write me a comamnd to give the number of commits in a repo",
-          "pastedContents": {}
-        },
-        {
-          "display": "Mail.tm is working just remove the 1Sec code and keep the Mail.tm version as the main one",
-          "pastedContents": {}
-        },
-        {
-          "display": "❯ tmpmail\n[ Inbox for h0yzdhe6rdy@spam4.me ]\n\nNo new mail\\\n\\\nI have sent an email to this address but it says no new mail",
           "pastedContents": {}
         }
       ],

@@ -11,19 +11,21 @@ Generate an optimized CV in LaTeX format by analyzing job descriptions and match
 This command intelligently analyzes a job description, cross-references it with your skills database, and generates a tailored CV in LaTeX format that highlights the most relevant experience and qualifications.
 
 ## Required Files
-Default location: `/jobapps/` directory
+Default location: `/jobapps/` directory (working files)
 
 - `/jobapps/jobdescription.md` - The target job description
 - `/jobapps/skills.md` - Your comprehensive skills database
 - `/jobapps/cv.md` - Your master CV template (or .tex template)
 - `/jobapps/resume.cls` - LaTeX class file (required for PDF compilation)
-- Output: `/jobapps/generated/cv.tex` - Generated LaTeX file
-- Output: `/jobapps/output/CV_[timestamp].pdf` - Compiled PDF (when --format pdf)
+- Working Output: `/jobapps/generated/cv.tex` - Generated LaTeX file (temporary)
+- **Final Output: `~/Documents/jobapps/output/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.pdf`** - Compiled PDF (when --format pdf)
+- **Final Output: `~/Documents/jobapps/generated/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.tex`** - Final LaTeX file
 
 ## Workflow
 
 ### 1. Analysis Phase
 - Parse job description for key requirements, technologies, and qualifications
+- Extract metadata tags: RECRUITER, DATE, TYPE, SALARY for filename generation
 - Extract skill categories: technical, soft skills, domain expertise
 - Identify priority keywords and phrases
 
@@ -34,17 +36,31 @@ Default location: `/jobapps/` directory
 - Prioritize skills based on frequency and importance in job description
 
 ### 3. CV Generation
-- Select most relevant experiences from master CV
-- Reorder sections based on job priorities
-- Emphasize matching skills and keywords
-- Generate professional summary tailored to position
-- Format in clean, ATS-friendly LaTeX
+- **CRITICAL: Maintain fixed employment structure** - preserve all company names, position titles, and employment dates exactly as in template
+- **PAGE LENGTH REQUIREMENTS**: 
+  - Maximum 3 pages allowed
+  - Prefer 2 pages when possible
+  - If using 3 pages, the third page MUST be at least 70% filled
+  - Never leave a mostly empty final page
+- **Content Optimization Strategy**:
+  - Prioritize most impactful achievements and skills
+  - Use concise bullet points (1-2 lines each)
+  - Adjust content based on available space
+  - If content fits well in 2 pages, keep it at 2
+  - Only expand to 3 pages if you have substantial content
+- Select most relevant bullet points for each role based on job requirements
+- **Skill Distribution Strategy**:
+  - Most recent roles: Populate with highly relevant, cutting-edge skills matching job description
+  - Middle roles: Include supporting skills and relevant achievements
+  - Older roles: Place less relevant but still valuable experiences
+- Generate professional summary tailored to position (3-4 lines)
+- Format in clean, ATS-friendly LaTeX with optimized spacing
 
 ### 4. Optimization
 - Ensure keyword density without stuffing
-- Balance technical and soft skills
-- Highlight quantifiable achievements
-- Maintain professional formatting
+- Balance technical and soft skills across chronological roles
+- Highlight quantifiable achievements in context of each position
+- Maintain professional formatting and employment continuity
 
 ## Usage Examples
 
@@ -81,7 +97,7 @@ Reads from default files in `/jobapps/` directory
 ### Optimization Options
 - `--focus <keywords>` - Comma-separated priority keywords
 - `--style <type>` - CV style: technical, executive, creative, academic
-- `--length <pages>` - Target CV length (1-3 pages)
+- `--length <pages>` - Target CV length (2-3 pages, default: 2, 3rd page must be 70% filled)
 - `--ats` - Optimize for Applicant Tracking Systems
 
 ### Enhancement Options
@@ -93,8 +109,8 @@ Reads from default files in `/jobapps/` directory
 ### Output Options
 - `--format <type>` - Output format: tex (default), pdf (compile to PDF)
 - `--compiler <type>` - LaTeX compiler: pdflatex (default), xelatex, lualatex
-- `--pdf-name <name>` - Custom PDF filename (default: CV_timestamp.pdf)
-- `--pdf-dir <path>` - PDF output directory (default: /jobapps/output/)
+- `--pdf-name <name>` - Custom PDF filename (default: auto-generated from metadata tags)
+- `--pdf-dir <path>` - PDF output directory (default: ~/Documents/jobapps/output/)
 - `--keep-temp` - Keep intermediate LaTeX files after PDF compilation
 - `--open` - Open PDF after compilation
 - `--preview` - Generate preview before finalizing
@@ -115,6 +131,19 @@ Reads from default files in `/jobapps/` directory
 - Task 2
 ## Nice to Have
 - Bonus skill 1
+
+<RECRUITER>
+    recruiter_name
+</RECRUITER>
+<DATE>
+    DDMMYY
+</DATE>
+<TYPE>
+    CONTRACT|PERMANENT
+</TYPE>
+<SALARY>
+    salary_info
+</SALARY>
 ```
 
 ### skills.md
@@ -205,9 +234,19 @@ Email: | Phone: | LinkedIn: | GitHub:
    - Flag missing but learnable skills
 
 4. **Generate Optimized CV**
-   - Create tailored professional summary
-   - Reorder experiences by relevance
-   - Highlight matching achievements
+   - Create tailored professional summary (3-4 lines)
+   - **IMPORTANT: Preserve employment chronology** - Keep all companies, positions, and dates unchanged
+   - **PAGE LENGTH MANAGEMENT**:
+     - Target 2 pages when possible
+     - Allow up to 3 pages if content warrants it
+     - If using 3rd page, ensure it's at least 70% filled
+     - Adjust bullet points per role based on total length:
+       * 2-page CV: 3-5 bullets per recent role, 2-3 for older
+       * 3-page CV: 4-6 bullets per recent role, 3-4 for older
+   - **Intelligently distribute achievements**:
+     - Recent positions: Insert most relevant job-matching bullet points
+     - Earlier positions: Include foundational and supporting experiences
+   - Highlight matching achievements while maintaining role authenticity
    - Format skills section strategically
    - Ensure ATS compatibility
 
@@ -233,6 +272,7 @@ Email: | Phone: | LinkedIn: | GitHub:
 - **Achievement Quantification**: Convert descriptions to quantifiable achievements
 - **Skill Gap Analysis**: Identify skills to develop or emphasize transferable ones
 - **Tone Matching**: Adjust writing style to match company culture
+- **Chronological Intelligence**: Strategically place relevant skills in recent roles while maintaining employment history integrity
 
 ### Multi-Version Generation
 - Generate multiple CV versions for A/B testing
@@ -252,6 +292,8 @@ Email: | Phone: | LinkedIn: | GitHub:
 3. **Rich CV Template**: Include diverse experiences for algorithm to choose from
 4. **Keyword Research**: Add industry-specific terms to skills database
 5. **Quantify Achievements**: Include metrics in CV template for stronger impact
+6. **Employment Structure**: Template must include all employment positions with dates - the generator will only modify bullet points, not the structure
+7. **Page Length Management**: CV will be 2 pages by default, expanding to 3 only if content justifies it (3rd page must be 70% filled)
 
 ## Example Implementation
 
@@ -265,7 +307,11 @@ Email: | Phone: | LinkedIn: | GitHub:
 # Generate PDF and open it
 /cv-generate --format pdf --open
 
-# Custom PDF name and location
+# Auto-generated filename from metadata tags
+/cv-generate --format pdf --open
+# Creates: stottandmay-010425-CONTRACT-60OIR35.pdf
+
+# Custom PDF name override (optional)
 /cv-generate --format pdf --pdf-name "JohnDoe_SeniorDev_2024" --open
 
 # Use XeLaTeX for better font support
@@ -326,10 +372,12 @@ The command will validate:
 
 When `--format pdf` is specified, the command will:
 
-1. Generate the optimized `.tex` file in `/jobapps/generated/`
-2. Execute `/Users/shahe/dotfiles/scripts/compile-cv.sh` with appropriate parameters
-3. Place the final PDF in `/jobapps/output/` with timestamp or custom name
-4. Optionally open the PDF if `--open` flag is provided
+1. Extract metadata from job description (RECRUITER, DATE, TYPE, SALARY)
+2. Generate the optimized `.tex` file in `/jobapps/generated/` (working directory)
+3. Execute `/Users/shahe/dotfiles/scripts/compile-cv.sh` with auto-generated filename
+4. Copy the final PDF to `~/Documents/jobapps/output/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.pdf`
+5. Copy the final `.tex` file to `~/Documents/jobapps/generated/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.tex`
+6. Optionally open the PDF if `--open` flag is provided
 
 The compilation script handles:
 

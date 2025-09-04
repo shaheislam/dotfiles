@@ -1,0 +1,151 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Platform Engineer CV - Lorien Permanent Role
+% Optimized for 2-3 pages with 70% fill requirement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{resume} % Use the custom resume.cls style
+
+\usepackage[left=0.75in,top=0.6in,right=0.75in,bottom=0.6in]{geometry} % Document margins
+\usepackage{fontawesome5} % For icons
+\usepackage{enumitem} % For custom lists
+\usepackage{xcolor} % For colors
+
+% Define custom colors
+\definecolor{iconblue}{RGB}{0, 102, 204}
+
+\newcommand{\tab}[1]{\hspace{.2667\textwidth}\rlap{#1}}
+\newcommand{\itab}[1]{\hspace{0em}\rlap{#1}}
+\name{Mohammed Islam} % Your name
+\address{{\color{iconblue}\faPhone}\ +44 751 234 9133 {\color{iconblue}\faEnvelope}\ mohammed.islam9494@gmail.com }
+
+\begin{document}
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{center}
+{\Large \textbf{Senior Platform Engineer | Cloud Infrastructure \& Kubernetes Specialist}}
+\end{center}
+
+%----------------------------------------------------------------------------------------
+%	PROFILE SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{\faUser\ Summary}
+\smallbreak
+\normalfont Senior Platform Engineer with 7+ years of extensive experience provisioning and maintaining cloud infrastructure and production Kubernetes clusters. Expert in Infrastructure as Code with Terraform, CI/CD pipeline automation, and Unix/Linux system administration. Proven track record of designing and implementing new services to enhance developer experience, improve platform reliability, and optimize costs. AWS certified with hands-on experience in Ansible automation, Python/Golang development, and Grafana observability.
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%	CERTIFICATIONS SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{\faCertificate\ Certifications}
+\begin{itemize}[leftmargin=1em, nosep]
+\item \textbf{AWS Certified Solutions Architect Professional} - Cloud infrastructure expertise
+\item \textbf{AWS Certified DevOps Engineer Professional} - CI/CD and automation specialist
+\item \textbf{HashiCorp Certified: Terraform Associate} - Infrastructure as Code proficiency
+\item \textbf{AWS Certified SysOps Administrator Associate} - Operations and maintenance
+\end{itemize}
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%	CORE TECHNICAL SKILLS SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{\faCode\ Core Technical Skills}
+\smallbreak
+
+\textbf{Cloud Infrastructure \& Kubernetes}
+\begin{itemize}[leftmargin=2em, nosep]
+\item Production Kubernetes management on AWS (EKS), Google Cloud (GKE), and Azure (AKS)
+\item Infrastructure as Code with Terraform and Terragrunt for multi-cloud environments
+\item Unix/Linux system administration (RHEL, Ubuntu, CentOS) with shell scripting automation
+\item CI/CD pipeline implementation with Jenkins, GitLab CI, GitHub Actions, and ArgoCD
+\item Kubernetes Ingress Controllers (Nginx, Traefik) and service mesh configuration
+\end{itemize}
+
+\textbf{Automation \& Development}
+\begin{itemize}[leftmargin=2em, nosep]
+\item Ansible automation for configuration management and infrastructure provisioning
+\item Python and Golang development for automation tools and Kubernetes operators
+\item Grafana observability stack implementation (Prometheus, Loki, Mimir, Tempo)
+\item Agile framework experience with JIRA, Confluence, and ServiceNow
+\end{itemize}
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%	WORK EXPERIENCE SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{\faBriefcase\ Professional Experience}
+\smallbreak
+\begin{rSubsection}{Phillip Morris International}{June 2024 - Present}
+{Senior Platform Engineer - Cloud Infrastructure \& Kubernetes}{London, UK}
+\normalfont
+\item Provision and maintain production Kubernetes clusters using Cluster API with integrated day-2 operations, supporting 50+ development teams with standardized cloud infrastructure
+\item Design and implement new services using Terraform modules and CI/CD pipelines to enhance developer experience, improve platform reliability by 40\%, and optimize infrastructure costs by 30\%
+\item Lead troubleshooting and resolution of complex production issues requiring in-depth Kubernetes and cloud infrastructure investigation, reducing MTTR by 60\%
+\item Developed declarative infrastructure provisioning platform using Terraform and Golang, enabling complete environment deployment through single YAML configurations
+\item Identify opportunities for innovation through new technology adoption, eliminating 80\% of operational toil through automation
+\end{rSubsection}
+
+\begin{rSubsection}{HMRC}{January 2023 - March 2024}
+{Site Reliability Engineer - Platform Squad}{London, UK}
+\normalfont
+\item Provisioned and maintained production EKS clusters with integrated Grafana observability (Prometheus, Loki) for comprehensive monitoring
+\item Built PCI-compliant Ansible playbooks for automated security hardening and configuration management on Linux systems
+\item Implemented Infrastructure as Code using Terraform and CI/CD pipelines with GitHub Actions, reducing deployment time from weeks to hours
+\item Successfully migrated 50+ applications from VM-based infrastructure to containerized Kubernetes environments
+\item Provided technical leadership on infrastructure projects, coaching junior engineers on Kubernetes best practices and architecture design
+\end{rSubsection}
+
+\begin{rSubsection}{William Hill}{June 2022 - January 2023}
+{Site Reliability Engineer - Kubernetes Platform}{Leeds, UK}
+\normalfont
+\item Architected self-service Grafana observability framework (Prometheus, Loki) for production Kubernetes environments
+\item Developed custom Prometheus exporters using Golang for comprehensive AWS service monitoring
+\item Implemented Kubernetes Ingress controllers with advanced routing and load balancing configurations
+\item Optimized cloud infrastructure costs through Kubernetes autoscaling and resource management strategies
+\end{rSubsection}
+
+\begin{rSubsection}{Nationwide Building Society}{September 2017 - June 2022}
+{Site Reliability Engineer - Enterprise Kubernetes Team}{2020 - June 2022}
+\normalfont
+\item Managed production Kubernetes infrastructure on AWS with Terraform and automated CI/CD pipelines
+\item Deployed Karpenter for Kubernetes node autoscaling, reducing infrastructure costs by 60\%
+\item Implemented Kubernetes Ingress controllers and policy enforcement achieving 100\% security compliance
+\item Automated infrastructure management using Terraform, Python, Ansible, and shell scripting
+\end{rSubsection}
+
+\begin{rSubsection}{}{}
+{Platform Engineer - Observability Team}{2018 - 2020}
+\normalfont
+\item Deployed production Grafana observability stack (Loki, Mimir, Tempo) with Kubernetes integration
+\item Implemented KEDA autoscaling for Kubernetes workloads, optimizing resource utilization
+\item Developed Python automation scripts for infrastructure provisioning and monitoring
+\end{rSubsection}
+
+\begin{rSubsection}{}{}
+{Platform Engineer - Digital Transformation}{September 2017 - 2018}
+\normalfont
+\item Led technical team implementing cloud-native applications using Infrastructure as Code
+\item Collaborated with cross-functional teams including software engineering and FinOps
+\end{rSubsection}
+
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+%	EDUCATION SECTION
+%----------------------------------------------------------------------------------------
+
+\begin{rSection}{\faGraduationCap\ Education}
+\smallbreak
+{\bf University of Warwick} \hfill { September 2013 - August 2017} 
+\\ \normalfont Department of Engineering - MEng Systems Engineering  
+\end{rSection}
+
+%----------------------------------------------------------------------------------------
+
+\end{document}
