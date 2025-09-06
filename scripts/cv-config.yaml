@@ -1,0 +1,218 @@
+# CV Generator Configuration
+# This file contains settings and configurations for the CV generation system
+
+# Paths configuration
+paths:
+  jobapps_dir: "~/dotfiles/jobapps"
+  templates_dir: "~/dotfiles/jobapps/templates"
+  generated_dir: "~/dotfiles/jobapps/generated"
+  output_dir: "~/Documents/jobapps/output"
+  archive_dir: "~/Documents/jobapps/archive"
+  skills_db: "~/dotfiles/scripts/skill-mapping.json"
+  resume_cls: "~/dotfiles/jobapps/resume.cls"
+
+# LaTeX compilation settings
+latex:
+  default_compiler: "pdflatex"
+  alternative_compilers:
+    - "xelatex"
+    - "lualatex"
+  compilation_passes: 2
+  cleanup_aux_files: true
+  aux_extensions:
+    - ".aux"
+    - ".log"
+    - ".out"
+    - ".toc"
+    - ".bbl"
+    - ".blg"
+    - ".fls"
+    - ".fdb_latexmk"
+    - ".synctex.gz"
+
+# Output settings
+output:
+  default_format: "pdf"  # pdf or tex
+  naming_pattern: "CV_{recruiter}_{date}_{type}"
+  timestamp_format: "%Y%m%d_%H%M%S"
+  auto_open_pdf: false
+  archive_duplicates: true
+
+# Skill scoring configuration
+scoring:
+  # Weights for different scoring factors
+  weights:
+    keyword_match: 0.4
+    technology_match: 0.3
+    domain_relevance: 0.2
+    experience_level: 0.1
+  
+  # Thresholds for skill inclusion
+  thresholds:
+    minimum_score: 60
+    highlight_score: 85
+    expert_score: 95
+  
+  # Maximum skills to display per category
+  max_skills:
+    cloud_platforms: 5
+    container_orchestration: 6
+    ci_cd_tools: 8
+    monitoring_observability: 10
+    programming_languages: 6
+    infrastructure_as_code: 5
+    security_compliance: 4
+
+# Experience optimization
+experience:
+  max_bullets_recent: 6  # Max bullets for most recent role
+  max_bullets_older: 4   # Max bullets for older roles
+  min_bullets: 2         # Minimum bullets per role
+  prioritize_keywords: true
+  include_quantifiable: true  # Prioritize bullets with metrics
+
+# Template customization
+templates:
+  # Title variations based on job type
+  titles:
+    kubernetes_senior: "Senior Platform Engineer | Kubernetes & Cloud Infrastructure Specialist"
+    kubernetes: "Platform Engineer | Kubernetes & Cloud Infrastructure"
+    devops: "Senior DevOps Engineer | Cloud Infrastructure & Automation"
+    platform: "Senior Platform Engineer | Cloud Infrastructure Specialist"
+    sre: "Site Reliability Engineer | Platform & Observability"
+    cloud_architect: "Cloud Solutions Architect | AWS & Multi-Cloud"
+  
+  # Summary length limits
+  summary:
+    max_length: 800
+    min_length: 400
+    include_certifications: true
+    include_clearance: true
+    include_savings: true
+
+# Certification priorities
+certifications:
+  priority_order:
+    - "AWS Certified Fellow"
+    - "AWS Certified Solutions Architect - Professional"
+    - "AWS Certified DevOps Engineer - Professional"
+    - "AWS Certified Security - Specialty"
+    - "HashiCorp Certified: Terraform Associate"
+    - "Certified Kubernetes Administrator (CKA)"
+    - "Google Cloud Professional Cloud Architect"
+    - "Azure Solutions Architect Expert"
+  
+  max_display: 5
+  group_aws: true  # Group AWS certs together
+
+# Keyword mappings for job analysis
+keywords:
+  technologies:
+    kubernetes:
+      - "k8s"
+      - "container orchestration"
+      - "eks"
+      - "gke"
+      - "aks"
+      - "openshift"
+    terraform:
+      - "infrastructure as code"
+      - "iac"
+      - "hcl"
+      - "terragrunt"
+    aws:
+      - "amazon web services"
+      - "ec2"
+      - "s3"
+      - "lambda"
+      - "cloudformation"
+    monitoring:
+      - "prometheus"
+      - "grafana"
+      - "datadog"
+      - "new relic"
+      - "observability"
+  
+  domains:
+    platform:
+      - "platform engineering"
+      - "infrastructure"
+      - "site reliability"
+      - "sre"
+    security:
+      - "security"
+      - "compliance"
+      - "vulnerability"
+      - "hardening"
+    automation:
+      - "automation"
+      - "ci/cd"
+      - "pipeline"
+      - "deployment"
+
+# Recruiter defaults
+recruiters:
+  default_values:
+    Lorien:
+      typical_rate: "700"
+      preferred_format: "pdf"
+    Experis:
+      typical_rate: "650"
+      preferred_format: "pdf"
+    Hays:
+      typical_rate: "750"
+      preferred_format: "pdf"
+
+# Job type configurations
+job_types:
+  perm:
+    salary_unit: "K"
+    title_suffix: ""
+  contract:
+    salary_unit: "pd"
+    title_suffix: " (Contract)"
+  temp:
+    salary_unit: "pd"
+    title_suffix: " (Temporary)"
+
+# Validation rules
+validation:
+  required_parameters:
+    - "recruiter"
+    - "date"
+    - "type"
+    - "salary"
+  
+  parameter_formats:
+    date: "^\\d{6}$"  # DDMMYY format
+    type: "^(perm|contract|temp)$"
+    salary: "^\\d{2,4}[kK]?$"
+  
+  file_checks:
+    - "jobdesciption.md exists"
+    - "CV.tex template exists"
+    - "resume.cls available"
+
+# Performance optimization
+optimization:
+  parallel_processing: true
+  cache_job_analysis: true
+  cache_ttl: 3600  # Cache for 1 hour
+  max_retries: 3
+  retry_delay: 2
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "~/dotfiles/logs/cv-generator.log"
+  console_output: true
+
+# Feature flags
+features:
+  auto_skill_matching: true
+  smart_bullet_optimization: true
+  dynamic_title_generation: true
+  content_length_optimization: true
+  keyword_highlighting: false  # LaTeX doesn't support easily
+  multi_format_export: false  # Future: DOCX, HTML

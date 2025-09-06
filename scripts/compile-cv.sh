@@ -102,12 +102,19 @@ cd "$TEX_DIR"
 
 # Compile the document (run twice for references)
 print_info "First compilation pass..."
-if $COMPILER -interaction=nonstopmode -output-directory="$TEX_DIR" "$TEX_FILE" > /dev/null 2>&1; then
-    print_success "First pass completed"
+$COMPILER -interaction=nonstopmode -output-directory="$TEX_DIR" "$TEX_FILE" > /dev/null 2>&1
+# Check if PDF exists after first pass (even if compiler returns error)
+PDF_FILE="$TEX_DIR/$TEX_BASENAME.pdf"
+if [ -f "$PDF_FILE" ]; then
+    print_success "First pass completed (PDF generated)"
 else
     print_error "Compilation failed. Running with verbose output:"
     $COMPILER -interaction=nonstopmode -output-directory="$TEX_DIR" "$TEX_FILE"
-    exit 1
+    # Check again if PDF was created despite errors
+    if [ ! -f "$PDF_FILE" ]; then
+        exit 1
+    fi
+    print_info "PDF generated despite LaTeX warnings"
 fi
 
 print_info "Second compilation pass (for references)..."

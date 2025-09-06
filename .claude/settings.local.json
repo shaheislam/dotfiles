@@ -160,7 +160,9 @@
       "Bash(steampipe service status:*)",
       "Bash(steampipe service start:*)",
       "Bash(aws sso login:*)",
-      "Bash(~/dotfiles/scripts/compile-cv.sh:*)"
+      "Bash(~/dotfiles/scripts/compile-cv.sh:*)",
+      "Bash(/Users/shahe/dotfiles/scripts/cv-generate:*)",
+      "Bash(python3:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
