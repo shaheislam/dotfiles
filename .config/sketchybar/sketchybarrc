@@ -1,18 +1,27 @@
-# This is a demo config to showcase some of the most important commands.
-# It is meant to be changed and configured, as it is intentionally kept sparse.
-# For a (much) more advanced configuration example see my dotfiles:
-# https://github.com/FelixKratz/dotfiles
+#!/usr/bin/env sh
+
+# Tokyo Night Color Palette
+export BLACK=0xff1a1b26
+export WHITE=0xffc0caf5
+export RED=0xfff7768e
+export GREEN=0xff9ece6a
+export BLUE=0xff7aa2f7
+export YELLOW=0xffe0af68
+export ORANGE=0xffff9e64
+export MAGENTA=0xffbb9af7
+export GREY=0xff565f89
+export TRANSPARENT=0x00000000
+export BG0=0xff1a1b26
+export BG1=0xff24283b
+export BG2=0xff414868
 
 PLUGIN_DIR="$CONFIG_DIR/plugins"
 
 ##### Bar Appearance #####
-# Configuring the general appearance of the bar.
-# These are only some of the options available. For all options see:
-# https://felixkratz.github.io/SketchyBar/config/bar
-# If you are looking for other colors, see the color picker:
-# https://felixkratz.github.io/SketchyBar/config/tricks#color-picker
-
-sketchybar --bar position=top height=40 blur_radius=30 color=0x40000000
+# Tokyo Night themed bar configuration
+sketchybar --bar position=top height=32 blur_radius=30 color=$BG1 \
+                 sticky=on padding_left=10 padding_right=10 \
+                 topmost=off font_smoothing=on
 
 ##### Changing Defaults #####
 # We now change some default values, which are applied to all further items.
@@ -22,10 +31,10 @@ sketchybar --bar position=top height=40 blur_radius=30 color=0x40000000
 default=(
   padding_left=5
   padding_right=5
-  icon.font="Hack Nerd Font:Bold:17.0"
-  label.font="Hack Nerd Font:Bold:14.0"
-  icon.color=0xffffffff
-  label.color=0xffffffff
+  icon.font="JetBrainsMono Nerd Font:Bold:15.0"
+  label.font="JetBrainsMono Nerd Font:Regular:13.0"
+  icon.color=$WHITE
+  label.color=$WHITE
   icon.padding_left=4
   icon.padding_right=4
   label.padding_left=4
@@ -47,9 +56,9 @@ do
     icon="${SPACE_ICONS[i]}"
     icon.padding_left=7
     icon.padding_right=7
-    background.color=0x40ffffff
+    background.color=$BG2
     background.corner_radius=5
-    background.height=25
+    background.height=20
     label.drawing=off
     script="$PLUGIN_DIR/space.sh"
     click_script="yabai -m space --focus $sid"

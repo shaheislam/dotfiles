@@ -147,7 +147,8 @@
       "Read(/Users/shahe/Downloads/**)",
       "Read(/Users/shahe/.config/atuin/**)",
       "Read(//**)",
-      "Bash(starship:*)"
+      "Bash(starship:*)",
+      "Bash(brew services start:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

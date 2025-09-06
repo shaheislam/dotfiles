@@ -1,5 +1,5 @@
 {
-  "numStartups": 108,
+  "numStartups": 109,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
@@ -579,6 +579,22 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "❯ claude\nPath /Users/mohammedislam/work/mo-service was not found.\n\nExplain to me why I am seeing this error when I hope claude?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Apply this so i can test it out",
+          "pastedContents": {}
+        },
+        {
+          "display": "https://github.com/FelixKratz/SketchyBar - Explain Sketchybar to me and the benefits",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "Can reenable kubernetes as I need it, no symbol is fine though",
           "pastedContents": {}
         },
@@ -985,22 +1001,6 @@
         },
         {
           "display": "Give me examoples or overrides for this slash command",
-          "pastedContents": {}
-        },
-        {
-          "display": "I have all of the md files required for the cv-generate slash command within the folder /jobapps now, can you modify the slash command so this is included",
-          "pastedContents": {}
-        },
-        {
-          "display": "I would like the .claude/agents and .claude/commands and .claude/hooks folders to not be gitignored ",
-          "pastedContents": {}
-        },
-        {
-          "display": "I can't see it being added to git ❯ git status\nOn branch main\nYour branch is up to date with 'origin/main'.\n\nChanges to be committed:\n  (use \"git restore --staged <file>...\" to unstage)\n        modified:   .claude.json\n        modified:   .claude/statsig/statsig.last_modified_time.evaluations\n\n\n💡 gst => git status\n\n╭╴󰊠 dotfiles !+  petlab-labs-eks \n╰─▶\n",
-          "pastedContents": {}
-        },
-        {
-          "display": "Where has the slash command been saved in my dotfiles?",
           "pastedContents": {}
         }
       ],
@@ -2383,7 +2383,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1757163717337
+      "timestamp": 1757169102611
     }
   },
   "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
