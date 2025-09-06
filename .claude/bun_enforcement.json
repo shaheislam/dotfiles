@@ -13,5 +13,30 @@
     "session_id": "91b68ff6-dd87-40d1-9fc6-cae95e622045",
     "blocked_command": "fish -c \"complete -C 'npm run '\" | head -10",
     "suggested_command": "fish -c \"complete -C 'bun run '\" | head -10"
+  },
+  {
+    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
+    "blocked_command": "npm i -g @anthropic-ai/claude-code",
+    "suggested_command": "bun i -g @anthropic-ai/claude-code"
+  },
+  {
+    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
+    "blocked_command": "bunx npm view @anthropic-ai/claude-code version",
+    "suggested_command": "bunx bun view @anthropic-ai/claude-code version"
+  },
+  {
+    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
+    "blocked_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo npm uninstall -g @anthropic-ai/claude-code",
+    "suggested_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo bun uninstall -g @anthropic-ai/claude-code"
+  },
+  {
+    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
+    "blocked_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code\necho \"Cleaned up npm installation\"",
+    "suggested_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code\necho \"Cleaned up bun installation\""
+  },
+  {
+    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
+    "blocked_command": "ls -la /opt/homebrew/lib/node_modules/@anthropic-ai/ 2>/dev/null || echo \"npm directory cleaned up\"",
+    "suggested_command": "ls -la /opt/homebrew/lib/node_modules/@anthropic-ai/ 2>/dev/null || echo \"bun directory cleaned up\""
   }
 ]

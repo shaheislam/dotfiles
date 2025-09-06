@@ -148,7 +148,11 @@
       "Read(/Users/shahe/.config/atuin/**)",
       "Read(//**)",
       "Bash(starship:*)",
-      "Bash(brew services start:*)"
+      "Bash(brew services start:*)",
+      "Bash(PROFILE_DIR=\"/Users/shahe/Library/Application Support/Firefox/Profiles/9zacq58j.default-release\")",
+      "Bash(sudo rm:*)",
+      "Bash(claude migrate-installer:*)",
+      "Bash(claude --version)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
