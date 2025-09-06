@@ -1,3 +1,0 @@
-pane	main	1	1	:*	1	tk ~	:/Users/shahe	1	bash	:-fish
-window	main	1	:bash	1	:*	d2bd,175x49,0,0,0	:
-state	main	

@@ -170,20 +170,20 @@ format = '[$symbol$profile(@$region)]($style) '
 force_display = false
 
 [aws.region_aliases]
-us-west-2    = "usw2"
-us-west-1    = "usw1"
-us-east-2    = "use2"
-us-east-1    = "use1"
+us-west-2 = "usw2"
+us-west-1 = "usw1"
+us-east-2 = "use2"
+us-east-1 = "use1"
 ca-central-1 = "ca"
-eu-west-1    = "euw1"
+eu-west-1 = "euw1"
 eu-central-1 = "euc1"
 
 [aws.profile_aliases]
-petlab = "LABS"
-security = "SEC"
-management = "MGT"
-prod = "PROD"
-logging = "LOG"
+petlab = "labs"
+security = "sec"
+management = "management"
+prod = "prod"
+logging = "logging"
 
 [azure]
 symbol = " "
@@ -233,3 +233,4 @@ vimcmd_symbol = '[N](bold fg:green) >>>'
 vimcmd_replace_one_symbol = '[R](bold fg:mauve)'
 vimcmd_replace_symbol = '[R](bold fg:mauve)'
 vimcmd_visual_symbol = '[V](bold fg:yellow)'
+

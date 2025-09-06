@@ -1,4 +1,0 @@
-pane	main	1	1	:*	1	tk ~	:/Users/shahe	1	bash	:-fish
-pane	main	1	1	:*	2	~/dotfiles	:/Users/shahe/dotfiles	0	fish	:-fish
-window	main	1	:bash	1	:*	223b,175x49,0,0{87x49,0,0,1,87x49,88,0,2}	:
-state	main	

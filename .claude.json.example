@@ -1,0 +1,9 @@
+{
+  "allowedTools": [],
+  "hasTrustDialogAccepted": true,
+  "hasCompletedProjectOnboarding": true,
+  "${HOME}/dotfiles": {
+    "allowedTools": [],
+    "history": []
+  }
+}

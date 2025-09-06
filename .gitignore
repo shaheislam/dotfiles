@@ -1,8 +1,13 @@
 # Tmux plugin manager and plugins
 .tmux/plugins/
 
+# Tmux resurrect session files (these are machine-specific)
+.tmux/resurrect/
+*.resurrect
+
 # Claude Code - ignore frequently changing files but keep important configs
 # Ignore session data and caches
+.claude.json
 .claude/ide/
 .claude/todos/
 .claude/shell-snapshots/
