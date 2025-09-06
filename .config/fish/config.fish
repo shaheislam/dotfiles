@@ -192,6 +192,111 @@ if status is-interactive
     # Disable fish greeting
     set -g fish_greeting ""
 
+    # ==================== Terminal Notifications & Visual Feedback ====================
+    
+    # Command execution time tracking and notifications
+    function __fish_command_timer_preexec --on-event fish_preexec
+        # Store command start time
+        set -g __fish_command_start_time (date +%s)
+        set -g __fish_current_command "$argv"
+    end
+    
+    function __fish_command_timer_postexec --on-event fish_postexec
+        # Calculate command duration
+        if set -q __fish_command_start_time
+            set -l end_time (date +%s)
+            set -l duration (math $end_time - $__fish_command_start_time)
+            
+            # Visual feedback for different duration thresholds
+            if test $duration -gt 30
+                # Commands longer than 30 seconds - urgent notification
+                echo -e "\a" # Terminal bell
+                set_color red --bold
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                echo "⏰ Long command completed! ($(math $duration / 60)m $(math $duration % 60)s)"
+                echo "📝 Command: $__fish_current_command"
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                set_color normal
+                
+                # macOS notification if available
+                if command -v osascript >/dev/null
+                    osascript -e "display notification \"Command completed in $(math $duration / 60)m $(math $duration % 60)s\" with title \"Terminal\" subtitle \"$__fish_current_command\" sound name \"Glass\""
+                end
+                
+            else if test $duration -gt 10
+                # Commands between 10-30 seconds - subtle notification
+                set_color yellow
+                echo "✓ Command completed in {$duration}s"
+                set_color normal
+                echo -e "\a" # Terminal bell (softer)
+                
+            else if test $duration -gt 5
+                # Commands between 5-10 seconds - minimal feedback
+                set_color green
+                echo -n "✓ "
+                set_color normal
+            end
+            
+            # Cleanup
+            set -e __fish_command_start_time
+            set -e __fish_current_command
+        end
+    end
+    
+    # Visual feedback for command success/failure
+    function __fish_command_status_indicator --on-event fish_postexec
+        set -l last_status $status
+        if test $last_status -ne 0
+            # Command failed - visual alert
+            set_color red --bold
+            echo "✗ Command failed with exit code: $last_status"
+            set_color normal
+        end
+    end
+    
+    # Directory change notification with visual feedback
+    function __fish_directory_change_notify --on-variable PWD
+        # Show directory info when changing directories
+        set -l dir_name (basename $PWD)
+        set -l file_count (count (ls -A 2>/dev/null))
+        
+        # Only show for non-home directories
+        if test "$PWD" != "$HOME"
+            set_color blue
+            echo "📁 → $dir_name ($file_count items)"
+            set_color normal
+        end
+    end
+    
+    # Git status notification on directory change
+    function __fish_git_status_notify --on-variable PWD
+        if git rev-parse --git-dir >/dev/null 2>&1
+            set -l branch (git branch --show-current 2>/dev/null)
+            set -l status_count (git status --porcelain 2>/dev/null | wc -l | string trim)
+            
+            if test $status_count -gt 0
+                set_color yellow
+                echo "🔀 Git: $branch ($status_count uncommitted changes)"
+                set_color normal
+            else
+                set_color green
+                echo "🔀 Git: $branch (clean)"
+                set_color normal
+            end
+        end
+    end
+    
+    # Loading indicator for slow commands
+    function __fish_show_loading --description "Show loading animation"
+        set -l chars '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏'
+        set -l i 1
+        while true
+            echo -ne "\r$chars[$i] Loading..."
+            set i (math "($i % 10) + 1")
+            sleep 0.1
+        end
+    end
+
     # thefuck initialization
     if command -v thefuck >/dev/null
         thefuck --alias | source

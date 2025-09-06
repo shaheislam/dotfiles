@@ -579,6 +579,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Can you add the terminal notification and visual feedback please",
+          "pastedContents": {}
+        },
+        {
           "display": "Can you modify my fzf to have the same transparency and aesthetics as wezterm across my dotfiles?",
           "pastedContents": {}
         },
@@ -997,10 +1001,6 @@
         },
         {
           "display": "❯ cursor .\n\\fish: Unknown command: cursor\n\n╭╴󰊠 dotfiles ✘!?  petlab-labs-eks \n╰─▶ \\2to3-3.12\ncursor command is not ",
-          "pastedContents": {}
-        },
-        {
-          "display": "No i want you to add these paths to my dotfiles configs and add cursor as an install to my setup script",
           "pastedContents": {}
         }
       ],
