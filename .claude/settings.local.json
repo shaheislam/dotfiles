@@ -159,7 +159,8 @@
       "WebFetch(domain:steampipe.io)",
       "Bash(steampipe service status:*)",
       "Bash(steampipe service start:*)",
-      "Bash(aws sso login:*)"
+      "Bash(aws sso login:*)",
+      "Bash(~/dotfiles/scripts/compile-cv.sh:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

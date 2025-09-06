@@ -9,7 +9,7 @@ Generate an optimized CV in LaTeX format by analyzing job descriptions and match
 ```
 
 ## Description
-This command intelligently analyzes a job description, cross-references it with your skills database, and generates a tailored CV in LaTeX format that highlights the most relevant experience and qualifications.
+This command intelligently analyzes a job description, cross-references it with your skills database, and generates a tailored CV. It creates both LaTeX source and automatically compiles to PDF format by default, highlighting the most relevant experience and qualifications.
 
 ## Required Files
 Default location: `/jobapps/` directory (working files)
@@ -19,8 +19,8 @@ Default location: `/jobapps/` directory (working files)
 - `/jobapps/cv.md` - Your master CV template (or .tex template)
 - `/jobapps/resume.cls` - LaTeX class file (required for PDF compilation)
 - Working Output: `/jobapps/generated/cv.tex` - Generated LaTeX file (temporary)
-- **Final Output: `~/Documents/jobapps/output/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.pdf`** - Compiled PDF (when --format pdf)
-- **Final Output: `~/Documents/jobapps/generated/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.tex`** - Final LaTeX file
+- **Final PDF Output: `~/Documents/jobapps/output/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.pdf`** - Compiled PDF (default)
+- **Final LaTeX Output: `~/Documents/jobapps/generated/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.tex`** - Final LaTeX source file
 
 ## Workflow
 
@@ -134,7 +134,7 @@ Generate CV for Lorien recruiter, date 01/04/25, permanent role, 70k salary
 - `--cover-letter` - Also generate matching cover letter
 
 ### Output Options
-- `--format <type>` - Output format: tex (default), pdf (compile to PDF)
+- `--format <type>` - Output format: pdf (default), tex (LaTeX only, skip PDF compilation)
 - `--compiler <type>` - LaTeX compiler: pdflatex (default), xelatex, lualatex
 - `--pdf-name <name>` - Custom PDF filename (default: auto-generated from metadata tags)
 - `--pdf-dir <path>` - PDF output directory (default: ~/Documents/jobapps/output/)
@@ -297,13 +297,14 @@ Email: | Phone: | LinkedIn: | GitHub:
    - Add comments for customization
    - Ensure `\documentclass{resume}` for custom class
 
-8. **PDF Compilation (if --format pdf)**
+8. **PDF Compilation (default)**
    - Copy `resume.cls` to compilation directory
    - Run LaTeX compiler (pdflatex/xelatex/lualatex)
    - Execute two passes for proper references
    - Clean up auxiliary files
-   - Move PDF to `/jobapps/output/` with timestamp
+   - Move PDF to `~/Documents/jobapps/output/` with metadata-based filename
    - Archive previous versions if needed
+   - Copy final LaTeX source to `~/Documents/jobapps/generated/`
    - Open PDF if `--open` flag is used
 
 ## Advanced Features
@@ -339,50 +340,50 @@ Email: | Phone: | LinkedIn: | GitHub:
 ## Example Implementation
 
 ```bash
-# Basic CV generation with arguments (generates .tex file)
+# Basic CV generation with arguments (generates PDF by default)
 /cv-generate lorien 010425 perm 70k
 
-# Using named arguments
+# Using named arguments  
 /cv-generate --recruiter=lorien --type=contract --salary=65k
 
-# Generate and compile to PDF with arguments
-/cv-generate stottandmay 020425 contract 60k --format pdf
+# Generate LaTeX only (skip PDF compilation)
+/cv-generate stottandmay 020425 contract 60k --format tex
 
-# Mixed positional and named arguments
-/cv-generate lorien --type=perm --format pdf --open
+# Open PDF after generation
+/cv-generate lorien --type=perm --open
 
-# Auto-generated filename from argument metadata
-/cv-generate lorien 010425 perm 70k --format pdf --open
-# Creates: lorien-010425-PERM-70k.pdf
+# Auto-generated filename from argument metadata (default behavior)
+/cv-generate lorien 010425 perm 70k --open
+# Creates: ~/Documents/jobapps/output/lorien-010425-perm-70k.pdf
 
-# Using defaults from jobdescription.md (legacy mode)
-/cv-generate --format pdf
+# Using defaults from jobdescription.md (legacy mode, generates PDF)
+/cv-generate
 
 # Custom PDF name override (optional)
-/cv-generate lorien 010425 perm 70k --format pdf --pdf-name "JohnDoe_SeniorDev_2024" --open
+/cv-generate lorien 010425 perm 70k --pdf-name "JohnDoe_SeniorDev_2024" --open
 
 # Use XeLaTeX for better font support
-/cv-generate --format pdf --compiler xelatex
+/cv-generate --compiler xelatex
 
 # Use files from a different project directory
-/cv-generate --job @/projects/applications/role1/jobdescription.md --format pdf
+/cv-generate --job @/projects/applications/role1/jobdescription.md
 
 # For senior position with technical focus
-/cv-generate --style technical --length 2 --focus "architecture,leadership,scalability" --format pdf
+/cv-generate --style technical --length 2 --focus "architecture,leadership,scalability"
 
-# For startup with research and PDF output
-/cv-generate --company "StartupXYZ" --research --style creative --format pdf --open
+# For startup with research and automatic PDF generation
+/cv-generate --company "StartupXYZ" --research --style creative --open
 
-# Generate multiple versions
+# Generate multiple versions (all PDFs by default)
 /cv-generate --variants 3 --explain
 
-# Full optimization pipeline with PDF
-/cv-generate --ats --research --gap-analysis --cover-letter --format pdf --open
+# Full optimization pipeline (automatic PDF output)
+/cv-generate --ats --research --gap-analysis --cover-letter --open
 
 # Batch generation for multiple positions
-/cv-generate --job @/jobapps/google/job.md --pdf-name "CV_Google" --format pdf
-/cv-generate --job @/jobapps/meta/job.md --pdf-name "CV_Meta" --format pdf
-/cv-generate --job @/jobapps/amazon/job.md --pdf-name "CV_Amazon" --format pdf
+/cv-generate --job @/jobapps/google/job.md --pdf-name "CV_Google"
+/cv-generate --job @/jobapps/meta/job.md --pdf-name "CV_Meta"
+/cv-generate --job @/jobapps/amazon/job.md --pdf-name "CV_Amazon"
 ```
 
 ## Error Handling
@@ -417,7 +418,7 @@ The command will validate:
 
 ## Workflow Integration
 
-When `--format pdf` is specified, the command will:
+By default, the command will:
 
 1. Extract metadata from job description (RECRUITER, DATE, TYPE, SALARY)
 2. Generate the optimized `.tex` file in `/jobapps/generated/` (working directory)
@@ -425,6 +426,8 @@ When `--format pdf` is specified, the command will:
 4. Copy the final PDF to `~/Documents/jobapps/output/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.pdf`
 5. Copy the final `.tex` file to `~/Documents/jobapps/generated/<RECRUITER>-<DATE>-<TYPE>-<SALARY>.tex`
 6. Optionally open the PDF if `--open` flag is provided
+
+Use `--format tex` to skip PDF compilation and generate only the LaTeX source file.
 
 The compilation script handles:
 
