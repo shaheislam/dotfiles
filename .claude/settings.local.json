@@ -144,7 +144,8 @@
       "Bash(command -v:*)",
       "Bash(bat:*)",
       "Bash(curl:*)",
-      "Read(/Users/shahe/Downloads/**)"
+      "Read(/Users/shahe/Downloads/**)",
+      "Read(/Users/shahe/.config/atuin/**)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

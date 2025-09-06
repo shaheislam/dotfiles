@@ -579,6 +579,10 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Have you added the atuin changes",
+          "pastedContents": {}
+        },
+        {
           "display": "Can you add the terminal notification and visual feedback please",
           "pastedContents": {}
         },
@@ -997,10 +1001,6 @@
         },
         {
           "display": "Have you updated all of my dotfiles to accomodate this change?",
-          "pastedContents": {}
-        },
-        {
-          "display": "❯ cursor .\n\\fish: Unknown command: cursor\n\n╭╴󰊠 dotfiles ✘!?  petlab-labs-eks \n╰─▶ \\2to3-3.12\ncursor command is not ",
           "pastedContents": {}
         }
       ],
