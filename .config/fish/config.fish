@@ -165,6 +165,11 @@ if status is-interactive
         thefuck --alias | source
     end
 
+    # Carapace completions initialization
+    if command -v carapace >/dev/null
+        carapace _carapace | source
+    end
+
     # Enhanced aliases combining both configs
     alias python=python3
     alias mkdir="mkdir -p"
@@ -445,7 +450,8 @@ if status is-interactive
     # Better File/System Tools
     alias du="dust"  # Better disk usage
     alias ncdu="ncdu --color dark"  # NCurses disk usage
-    alias sed="sd"  # Better sed replacement
+    # alias sed="sd"  # Disabled - breaks completion scripts that expect real sed
+    alias sedd="sd"  # Use 'sedd' for the sd tool instead
     alias cut="choose"  # Better cut/awk
     alias loc="tokei"  # Code statistics
     alias duf="duf"  # Better df

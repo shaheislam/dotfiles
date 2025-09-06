@@ -303,6 +303,15 @@ if command -v fish &> /dev/null; then
   done
 
   echo "Fisher and Fish plugins installation complete"
+  
+  # Initialize Carapace completions for Fish
+  if command -v carapace &> /dev/null; then
+    echo "Setting up Carapace completions for Fish..."
+    # The actual initialization happens in config.fish, just verify it works
+    fish -c "carapace _carapace" &>/dev/null && echo "Carapace completions ready for Fish" || echo "Warning: Carapace initialization may need manual setup"
+  else
+    echo "Note: Carapace not installed yet. Run 'brew install carapace' for enhanced completions"
+  fi
 else
   echo "Warning: Fish shell not found. Skipping Fisher plugin installation."
 fi

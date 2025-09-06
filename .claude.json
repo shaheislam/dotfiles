@@ -1,5 +1,5 @@
 {
-  "numStartups": 101,
+  "numStartups": 102,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
@@ -579,6 +579,26 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "╭╴󰊠 dotfiles !?  PROD@use1  petlab-labs-eks \n╰─▶ docker run --error: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n\n╭╴󰊠 dotfiles !?  PROD@use1  petlab-labs-eks \n╰─▶ docker run --\n\n\nSame issue",
+          "pastedContents": {}
+        },
+        {
+          "display": "I see this\n\n╰─▶ docker run --error: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n\n╭╴󰊠 dotfiles !?  PROD@use1  petlab-labs-eks \n╰─▶ docker run --\n",
+          "pastedContents": {}
+        },
+        {
+          "display": "Yes install Carapace",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can you not take these custom overrides into consideration?",
+          "pastedContents": {}
+        },
+        {
+          "display": "https://github.com/carapace-sh/carapace?tab=readme-ov-file Analyse my existing autocompletion with fish and tell me if carapace will help",
+          "pastedContents": {}
+        },
+        {
           "display": "/cv-generate ",
           "pastedContents": {}
         },
@@ -981,26 +1001,6 @@
         },
         {
           "display": "So tmux-sessionx uses tmuxinator?",
-          "pastedContents": {}
-        },
-        {
-          "display": "What does https://github.com/tmuxinator/tmuxinator do?",
-          "pastedContents": {}
-        },
-        {
-          "display": "How does sesh compare to https://github.com/omerxx/tmux-sessionx",
-          "pastedContents": {}
-        },
-        {
-          "display": "How does it differ to https://github.com/joshmedeski/sesh",
-          "pastedContents": {}
-        },
-        {
-          "display": "https://github.com/27medkamal/tmux-session-wizard Is this install? It doesn't seem to work",
-          "pastedContents": {}
-        },
-        {
-          "display": "The issue is\\\n\\\nVAULT_DIR=\"/Users/shahe/obsidian\"\nHOOK_DIR=\"$VAULT_DIR/.git/hooks\"\\\n\\\nIn the auto-commit.sh script for ~/obsidian",
           "pastedContents": {}
         }
       ],
@@ -2337,7 +2337,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1757006200268
+      "timestamp": 1757116875498
     }
   },
   "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",

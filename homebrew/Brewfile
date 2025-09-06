@@ -36,6 +36,7 @@ brew "tmux"
 brew "morantron/tmux-fingers/tmux-fingers"
 brew "thefuck"
 brew "atuin"
+brew "carapace"  # Multi-shell completion generator
 brew "lazygit"
 brew "lazydocker"
 brew "yazi"

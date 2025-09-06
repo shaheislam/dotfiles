@@ -8,5 +8,10 @@
     "session_id": "c2f7f381-84d5-467e-b0ad-425a3e716526",
     "blocked_command": "cd ~/dotfiles && npm install -g @musistudio/claude-code-router 2>&1",
     "suggested_command": "cd ~/dotfiles && bun install -g @musistudio/claude-code-router 2>&1"
+  },
+  {
+    "session_id": "91b68ff6-dd87-40d1-9fc6-cae95e622045",
+    "blocked_command": "fish -c \"complete -C 'npm run '\" | head -10",
+    "suggested_command": "fish -c \"complete -C 'bun run '\" | head -10"
   }
 ]

@@ -135,7 +135,9 @@
       "WebFetch(domain:confluence.atlassian.com)",
       "Read(/Users/shahe/work/devops-interview/**)",
       "Read(/Users/shahe/work/devops-interview/**)",
-      "Read(/Users/shahe/work/devops-interview/**)"
+      "Read(/Users/shahe/work/devops-interview/**)",
+      "Bash(brew info:*)",
+      "WebFetch(domain:carapace-sh.github.io)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
