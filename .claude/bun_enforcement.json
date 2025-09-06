@@ -38,5 +38,10 @@
     "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
     "blocked_command": "ls -la /opt/homebrew/lib/node_modules/@anthropic-ai/ 2>/dev/null || echo \"npm directory cleaned up\"",
     "suggested_command": "ls -la /opt/homebrew/lib/node_modules/@anthropic-ai/ 2>/dev/null || echo \"bun directory cleaned up\""
+  },
+  {
+    "session_id": "f26c74cd-3562-4452-8326-874cf7487023",
+    "blocked_command": "npx @modelcontextprotocol/server-sequential-thinking --version 2>&1 | head -5",
+    "suggested_command": "bunx @modelcontextprotocol/server-sequential-thinking --version 2>&1 | head -5"
   }
 ]

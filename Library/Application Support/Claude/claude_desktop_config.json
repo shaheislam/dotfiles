@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "browser-tools": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "@agentdeskai/browser-tools-mcp@1.1.0"
@@ -11,21 +11,21 @@
       }
     },
     "sequential-thinking": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
     "github": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-github"
       ]
     },
     "memory": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-memory"
@@ -48,14 +48,14 @@
       ]
     },
     "duckduckgo": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "duckduckgo-mcp-server"
       ]
     },
     "linear": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "linear-mcp-server"
@@ -65,7 +65,7 @@
       }
     },
     "exa": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "exa-mcp-server"
@@ -75,7 +75,7 @@
       }
     },
     "playwright": {
-      "command": "npx",
+      "command": "bunx",
       "args": [
         "-y",
         "@playwright/mcp@latest"
