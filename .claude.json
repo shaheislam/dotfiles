@@ -1,5 +1,5 @@
 {
-  "numStartups": 102,
+  "numStartups": 106,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
@@ -7,7 +7,7 @@
   "tipsHistory": {
     "ide-hotkey": 84,
     "new-user-warmup": 2,
-    "memory-command": 90,
+    "memory-command": 106,
     "theme-command": 93,
     "shift-enter": 93,
     "prompt-queue": 6,
@@ -22,8 +22,8 @@
     "continue": 96,
     "custom-commands": 93,
     "shift-tab": 97,
-    "custom-agents": 88,
-    "status-line": 80,
+    "custom-agents": 106,
+    "status-line": 106,
     "paste-images-mac": 94,
     "git-worktrees": 98,
     "image-paste": 100,
@@ -579,6 +579,34 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Its still entering Visual mode when I hit V in insert mode",
+          "pastedContents": {}
+        },
+        {
+          "display": "This is enterting the isual mode een when i am in insert mode please fix this",
+          "pastedContents": {}
+        },
+        {
+          "display": "Is there a simpler way in tmux I can enter copy mode, currently I have to use leader + [ and then when i yank it takes me to the bottom of the terminal again, i want to yank and stay where i am and be in copy mode by default is that possible?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can we implement approach 1 please",
+          "pastedContents": {}
+        },
+        {
+          "display": "Analyse my dotfiles and specificaly the Carapace autcomplete, is it possible to integrate fzf with carapace autocomplete?",
+          "pastedContents": {}
+        },
+        {
+          "display": "https://github.com/rs/curlie Can you install curlie to my dotfiles",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "╭╴󰊠 dotfiles !?  PROD@use1  petlab-labs-eks \n╰─▶ docker run --error: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\nerror: the following required arguments were not provided:\n  <REPLACE_WITH>\n\nUsage: sd <FIND> <REPLACE_WITH> [FILES]...\n\nFor more information, try '--help'.\n\n╭╴󰊠 dotfiles !?  PROD@use1  petlab-labs-eks \n╰─▶ docker run --\n\n\nSame issue",
           "pastedContents": {}
         },
@@ -974,34 +1002,6 @@
         {
           "display": "That works better! But now the sessions aren't showing only tmuxinator and zoxide ",
           "pastedContents": {}
-        },
-        {
-          "display": "When I hit the key the popup comes up but its blank, why is this... but when you test it directly it opens fine",
-          "pastedContents": {}
-        },
-        {
-          "display": "The original wizard works but the enhanced wizard and full manager do NOT",
-          "pastedContents": {}
-        },
-        {
-          "display": "Ctrl-Space + T doesn't work at all now neither does Ctrl-Space + S",
-          "pastedContents": {}
-        },
-        {
-          "display": "Is there any way to integrate tmuxinator templates into the session-wizard plugin?",
-          "pastedContents": {}
-        },
-        {
-          "display": "My sessionx plugin is very slow when I open it, why is this?",
-          "pastedContents": {}
-        },
-        {
-          "display": "Install tmuxinator and integreate it with sessionx",
-          "pastedContents": {}
-        },
-        {
-          "display": "So tmux-sessionx uses tmuxinator?",
-          "pastedContents": {}
         }
       ],
       "mcpContextUris": [],
@@ -1024,7 +1024,7 @@
       "hasClaudeMdExternalIncludesApproved": false,
       "hasClaudeMdExternalIncludesWarningShown": false,
       "hasCompletedProjectOnboarding": true,
-      "lastTotalWebSearchRequests": 0,
+      "lastTotalWebSearchRequests": 2,
       "hasTrustDialogHooksAccepted": true,
       "exampleFiles": [
         "app.py",
@@ -1033,7 +1033,18 @@
         "server.ts",
         "utils.js"
       ],
-      "exampleFilesGeneratedAt": 1756919840104
+      "exampleFilesGeneratedAt": 1756919840104,
+      "lastCost": 6.062046749999999,
+      "lastAPIDuration": 259863,
+      "lastToolDuration": 62831,
+      "lastDuration": 1603358,
+      "lastLinesAdded": 82,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 21377,
+      "lastTotalOutputTokens": 7315,
+      "lastTotalCacheCreationInputTokens": 141423,
+      "lastTotalCacheReadInputTokens": 1890789,
+      "lastSessionId": "9803df3f-23fb-4f42-aaf2-1ba85b3df312"
     },
     "/Users/shahe/work/devops-utils": {
       "allowedTools": [],
@@ -2136,6 +2147,52 @@
         "controllers/auth.py"
       ],
       "exampleFilesGeneratedAt": 1756943902705
+    },
+    "/Users/shahe/dotfiles-macos-defaults": {
+      "allowedTools": [],
+      "history": [
+        {
+          "display": "Check my MacOS defaults, ensure they are the same as on this laptop and then ensure that when I run the setup-script it gets applied to any device",
+          "pastedContents": {}
+        }
+      ],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": [
+        "app.py",
+        "server.py",
+        "models.py",
+        "views.py",
+        "utils.py"
+      ],
+      "exampleFilesGeneratedAt": 1757159206536,
+      "hasCompletedProjectOnboarding": true
+    },
+    "/Users/shahe/dotfiles-tmux-copy-simpification": {
+      "allowedTools": [],
+      "history": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "exampleFiles": [
+        "app.py",
+        "server.py",
+        "models.py",
+        "views.py",
+        "utils.py"
+      ],
+      "exampleFilesGeneratedAt": 1757159387057
     }
   },
   "shiftEnterKeyBindingInstalled": true,
@@ -2337,7 +2394,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1757116875498
+      "timestamp": 1757158936732
     }
   },
   "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",

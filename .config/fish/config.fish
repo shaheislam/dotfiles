@@ -1950,6 +1950,10 @@ if status is-interactive
         commandline -f repaint
     end
 
+    # Carapace FZF completion binding (Alt+Tab)
+    bind \e\t carapace_fzf_complete
+    bind -M insert \e\t carapace_fzf_complete
+
     # Custom Atuin keybindings for different filter modes
     # Up arrow - directory search (default behavior)
     bind \e\[A _atuin_search_directory
