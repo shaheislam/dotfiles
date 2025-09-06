@@ -1,58 +1,58 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# Minimal prompt inspired by omerxx style with Catppuccin Mocha colors
 format = """
-[╭╴](fg:arrow)\
-$os\
-[󰊠](fg:color_fg0)\
 $directory\
-[](fg:color_yellow bg:color_aqua)\
 $git_branch\
 $git_status\
-[](fg:color_aqua bg:color_blue)\
-$c\
-$rust\
+$character """
+
+right_format = """
 $golang\
-$nodejs\
-$php\
-$java\
-$kotlin\
-$haskell\
 $python\
-[](fg:color_blue bg:color_orange)\
-$docker_context\
-$conda\
+$rust\
+$nodejs\
 $aws\
-[](fg:color_orange bg:color_bg3)\
 $azure\
-[](fg:color_bg3 bg:color_purple)\
 $kubernetes\
-[](fg:color_purple bg:color_bg1)\
 $terraform\
-[](fg:color_bg1)\
-$cmd_duration
-[╰─](fg:arrow)$character\
+$cmd_duration\
 """
 
-palette = 'tokyo_night'
+command_timeout = 1000
+palette = 'catppuccin_mocha'
 
-[palettes.tokyo_night]
-color_fg0 = '#c0caf5'
-color_bg1 = '#1a1b26'
-color_bg3 = '#414868'
-color_blue = '#7aa2f7'
-color_aqua = '#2ac3de'
-color_green = '#9ece6a'
-color_orange = '#ff9e64'
-color_purple = '#bb9af7'
-color_red = '#f7768e'
-color_yellow = '#e0af68'
-arrow = '#bb9af7'
-color_white = '#ffffff'
-color_black = '#000000'
+[palettes.catppuccin_mocha]
+rosewater = "#f5e0dc"
+flamingo = "#f2cdcd"
+pink = "#f5c2e7"
+mauve = "#cba6f7"
+red = "#f38ba8"
+maroon = "#eba0ac"
+peach = "#fab387"
+yellow = "#f9e2af"
+green = "#a6e3a1"
+teal = "#94e2d5"
+sky = "#89dceb"
+sapphire = "#74c7ec"
+blue = "#89b4fa"
+lavender = "#b4befe"
+text = "#cdd6f4"
+subtext1 = "#bac2de"
+subtext0 = "#a6adc8"
+overlay2 = "#9399b2"
+overlay1 = "#7f849c"
+overlay0 = "#6c7086"
+surface2 = "#585b70"
+surface1 = "#45475a"
+surface0 = "#313244"
+base = "#1e1e2e"
+mantle = "#181825"
+crust = "#11111b"
 
 [os]
 disabled = true
-style = "bg:color_orange fg:color_fg0"
+style = "bg:peach fg:base"
 
 [os.symbols]
 Windows = "󰍲"
@@ -78,16 +78,17 @@ RedHatEnterprise = "󱄛"
 Pop = ""
 
 [username]
-show_always = true
-style_user = "bg:color_orange fg:color_black"
-style_root = "bg:color_orange fg:color_black"
-format = '[ $user ]($style)'
+show_always = false
+style_user = "fg:mauve"
+style_root = "fg:red bold"
+format = '[$user ]($style)'
 
 [directory]
-style = "fg:color_black bg:color_yellow"
-format = "[ $path ]($style)"
+style = "fg:lavender bold"
+format = "[$path]($style)"
 truncation_length = 3
-truncation_symbol = ""
+truncation_symbol = "…/"
+read_only = " 󰌾"
 
 [directory.substitutions]
 "Documents" = "󰈙 "
@@ -95,80 +96,84 @@ truncation_symbol = ""
 "Music" = "󰝚 "
 "Pictures" = " "
 "Developer" = "󰲋 "
+"~/dotfiles" = " "
+"~/work" = " "
+"~" = " "
 
 [git_branch]
-symbol = ""
-style = "bg:color_aqua"
+symbol = " "
+style = "fg:mauve"
 truncation_length = 25
 truncation_symbol = '…'
 ignore_branches = ['master', 'main']
-format = '[ $symbol$branch ]($style fg:color_black)'
+format = '[$symbol$branch]($style)'
 
 [git_status]
-style = "bg:color_aqua"
+style = "fg:yellow"
 ahead = '⇡${count}'
 diverged = '⇕⇡${ahead_count}⇣${behind_count}'
 behind = '⇣${count}'
-format = '[$all_status$ahead_behind ]($style fg:color_black)'
+format = '[$all_status$ahead_behind]($style) '
 
 [nodejs]
-symbol = ""
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+symbol = " "
+style = "fg:green"
+format = '[$symbol($version)]($style) '
 
 [c]
 symbol = " "
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+style = "fg:blue"
+format = '[$symbol($version)]($style) '
 
 [rust]
-symbol = ""
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+symbol = " "
+style = "fg:peach"
+format = '[$symbol($version)]($style) '
 
 [golang]
-symbol = ""
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+symbol = " "
+style = "fg:sky bold"
+format = '[$symbol($version)]($style) '
 
 [php]
-symbol = ""
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+symbol = " "
+style = "fg:mauve"
+format = '[$symbol($version)]($style) '
 
 [java]
-symbol = ""
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+symbol = " "
+style = "fg:red"
+format = '[$symbol($version)]($style) '
 
 [kotlin]
-symbol = ""
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+symbol = " "
+style = "fg:blue"
+format = '[$symbol($version)]($style) '
 
 [haskell]
-symbol = ""
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+symbol = " "
+style = "fg:mauve"
+format = '[$symbol($version)]($style) '
 
 [python]
 symbol = " "
-style = "bg:color_blue"
-format = '[[ $symbol( $version) ](fg:color_white bg:color_blue)]($style)'
+style = "fg:yellow"
+format = '[$symbol($version)]($style) '
 
 [docker_context]
-symbol = ""
-style = "bg:color_bg3"
-format = '[[ $symbol( $context) ](fg:color_white bg:color_bg3)]($style)'
+symbol = " "
+style = "fg:sapphire"
+format = '[$symbol$context]($style) '
+disabled = true
 
 [conda]
-style = "bg:color_bg3"
-format = '[[ $symbol( $environment) ](fg:color_white bg:color_bg3)]($style)'
+style = "fg:green"
+format = '[$symbol$environment]($style) '
 
 [aws]
-symbol = ""
-style = "bg:color_orange"
-format = '[[ $symbol$profile(@$region) ](fg:color_black bg:color_orange)]($style)'
+symbol = " "
+style = "fg:peach"
+format = '[$symbol$profile(@$region)]($style) '
 force_display = false
 
 [aws.region_aliases]
@@ -188,9 +193,9 @@ prod = "PROD"
 logging = "LOG"
 
 [azure]
-symbol = ""
-style = "bg:color_bg3"
-format = '[[ $symbol$subscription ](fg:color_white bg:color_bg3)]($style)'
+symbol = " "
+style = "fg:sapphire"
+format = '[$symbol$subscription]($style) '
 disabled = false
 
 [azure.subscription_aliases]
@@ -202,26 +207,26 @@ s189-teacher-services-cloud-test = "s189-test"
 s189-teacher-services-cloud-production = "s189-prod"
 
 [kubernetes]
-symbol = ""
-style = "bg:color_purple"
-format = '[[ $context(\($namespace\)) ](fg:color_white bg:color_purple)]($style)'
+symbol = "☸ "
+style = "fg:lavender"
+format = '[$symbol$context(\($namespace\))]($style) '
 disabled = false
 
 [terraform]
 symbol = "󱁢 "
-style = "bg:color_bg3"
-format = '[[ $symbol(tf:$version) ](fg:color_white bg:color_bg3)]($style)'
+style = "fg:mauve"
+format = '[$symbol($version)]($style) '
 disabled = false
 
 [time]
-disabled = false
+disabled = true
 time_format = "%R"
-style = "bg:color_bg1"
-format = '[[  $time ](fg:color_fg0 bg:color_bg1)]($style)'
+style = "fg:overlay1"
+format = '[$time]($style) '
 
 [cmd_duration]
-format = " [$duration]($style)"
-style = "fg:color_yellow"
+format = "[$duration]($style) "
+style = "fg:overlay1"
 min_time = 500
 
 [line_break]
@@ -229,9 +234,9 @@ disabled = false
 
 [character]
 disabled = false
-success_symbol = '[▶](bold fg:color_green)'
-error_symbol = '[▶](bold fg:color_red)'
-vimcmd_symbol = '[▶](bold fg:color_green)'
-vimcmd_replace_one_symbol = '[▶](bold fg:color_purple)'
-vimcmd_replace_symbol = '[▶](bold fg:color_purple)'
-vimcmd_visual_symbol = '[▶](bold fg:color_yellow)'
+success_symbol = '[➜](bold fg:green)'
+error_symbol = '[➜](bold fg:red)'
+vimcmd_symbol = '[N](bold fg:green) >>>'
+vimcmd_replace_one_symbol = '[R](bold fg:mauve)'
+vimcmd_replace_symbol = '[R](bold fg:mauve)'
+vimcmd_visual_symbol = '[V](bold fg:yellow)'

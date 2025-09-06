@@ -21,7 +21,7 @@
     "double-esc": 108,
     "continue": 108,
     "custom-commands": 108,
-    "shift-tab": 97,
+    "shift-tab": 108,
     "custom-agents": 106,
     "status-line": 106,
     "paste-images-mac": 108,
@@ -579,6 +579,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "https://github.com/omerxx/dotfiles I really like the startship prompt and aesthetics this repo uses, can you modify my starship so my metadata is as it it is but it uses the omerxx visual style?",
+          "pastedContents": {}
+        },
+        {
+          "display": "/clear ",
+          "pastedContents": {}
+        },
+        {
           "display": "Keep the tilde-based path as these dotfiles are used across different devices with varying $whoami values",
           "pastedContents": {}
         },
@@ -994,20 +1002,6 @@
         {
           "display": "Can you set it so that claude runs in any new window horiztonlly split pane?",
           "pastedContents": {}
-        },
-        {
-          "display": "Is it possible for tmuxinator automatically to run commands in a pane or window after running a new session?",
-          "pastedContents": {}
-        },
-        {
-          "display": "[Pasted text #1 +15 lines] Can you remove the obsidian plugin that is causing this to fail? I don't need it",
-          "pastedContents": {
-            "1": {
-              "id": 1,
-              "type": "text",
-              "content": "\nFailed to run `config` for obsidian.nvim\n\n...ocal/share/nvim/lazy/obsidian.nvim/lua/obsidian/path.lua:402: FileNotFoundError: ${HOME}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Engineering\n\n# stacktrace:\n  - /obsidian.nvim/lua/obsidian/path.lua:402 _in_ **resolve**\n  - /obsidian.nvim/lua/obsidian/workspace.lua:79 _in_ **new_from_spec**\n  - /obsidian.nvim/lua/obsidian/workspace.lua:169 _in_ **get_workspace_for_cwd**\n  - /obsidian.nvim/lua/obsidian/workspace.lua:206 _in_ **get_from_opts**\n  - /obsidian.nvim/lua/obsidian/client.lua:93 _in_ **new**\n  - /obsidian.nvim/lua/obsidian/init.lua:95 _in_ **setup**\n  - /opt/homebrew/Cellar/neovim/0.11.3/share/nvim/runtime/filetype.lua:36\n  - vim/shared.lua:0\n  - /opt/homebrew/Cellar/neovim/0.11.3/share/nvim/runtime/filetype.lua:35\n"
-            }
-          }
         }
       ],
       "mcpContextUris": [],
