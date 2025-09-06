@@ -87,6 +87,7 @@ brew "shfmt"
 brew "gh"
 brew "pipx"
 brew "gemini-cli"
+brew "mas"  # Mac App Store CLI
 
 # AI Tools
 # Claude Code Router - installed via npm globally in setup script
@@ -200,3 +201,6 @@ cask "altair-graphql-client"  # GraphQL IDE for testing and development
 cask "willow"  # Voice assistant application - https://willowvoice.com/
 cask "1password-cli"  # 1Password CLI for SSH agent integration
 brew "sketchybar"
+
+# Mac App Store Applications
+mas "Kinda Vim for Safari", id: 1609556629
