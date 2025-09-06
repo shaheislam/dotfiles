@@ -1,4 +1,5 @@
 -- ~/.config/wezterm/wezterm.lua
+-- Catppuccin Mocha theme with omerxx-inspired aesthetics
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
@@ -6,8 +7,8 @@ local config = wezterm.config_builder()
 config.font = wezterm.font('JetBrainsMono Nerd Font', { weight = 'Medium' })
 config.font_size = 14.0
 
--- Color scheme (Tokyo Night to match your other configs)
-config.color_scheme = 'Tokyo Night'
+-- Color scheme - Catppuccin Mocha for consistency
+config.color_scheme = 'Catppuccin Mocha'
 
 -- Window configuration
 config.window_decorations = "RESIZE"
@@ -42,8 +43,31 @@ config.term = "xterm-256color"
 config.enable_scroll_bar = false
 config.scrollback_lines = 10000
 
--- Key bindings
+-- Additional omerxx-inspired settings
+config.window_padding = {
+  left = 2,
+  right = 2,
+  top = 0,
+  bottom = 0,
+}
+
+-- Disable font size adjustment with mouse wheel
+config.adjust_window_size_when_changing_font_size = false
+
+-- Key bindings (enhanced with omerxx style)
 config.keys = {
+  -- Toggle fullscreen (omerxx style)
+  {
+    key = 'q',
+    mods = 'CTRL',
+    action = wezterm.action.ToggleFullScreen,
+  },
+  -- Clear scrollback
+  {
+    key = "'",
+    mods = 'CTRL',
+    action = wezterm.action.ClearScrollback 'ScrollbackAndViewport',
+  },
   -- Split panes
   {
     key = 'd',
@@ -78,8 +102,18 @@ config.keys = {
   },
 }
 
+-- Mouse bindings (omerxx style - Ctrl+Click to open links)
+config.mouse_bindings = {
+  {
+    event = { Up = { streak = 1, button = 'Left' } },
+    mods = 'CTRL',
+    action = wezterm.action.OpenLinkAtMouseCursor,
+  },
+}
+
 -- Performance
 config.enable_wayland = false
 config.front_end = "OpenGL"
+config.max_fps = 120
 
 return config
