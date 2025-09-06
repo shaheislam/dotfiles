@@ -152,7 +152,14 @@
       "Bash(PROFILE_DIR=\"/Users/shahe/Library/Application Support/Firefox/Profiles/9zacq58j.default-release\")",
       "Bash(sudo rm:*)",
       "Bash(claude migrate-installer:*)",
-      "Bash(claude --version)"
+      "Bash(claude --version)",
+      "Bash(uvx:*)",
+      "Bash(claude restart)",
+      "Bash(claude --debug)",
+      "WebFetch(domain:steampipe.io)",
+      "Bash(steampipe service status:*)",
+      "Bash(steampipe service start:*)",
+      "Bash(aws sso login:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

@@ -40,3 +40,4 @@
 # Environment files
 .envrc
 .env
+.claude.json

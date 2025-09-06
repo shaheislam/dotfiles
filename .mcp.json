@@ -51,6 +51,14 @@
       "args": [
         "@playwright/mcp@latest"
       ]
+    },
+    "steampipe": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@turbot/steampipe-mcp",
+        "postgresql://steampipe@localhost:9193/steampipe"
+      ]
     }
   }
 }

@@ -43,5 +43,15 @@
     "session_id": "f26c74cd-3562-4452-8326-874cf7487023",
     "blocked_command": "npx @modelcontextprotocol/server-sequential-thinking --version 2>&1 | head -5",
     "suggested_command": "bunx @modelcontextprotocol/server-sequential-thinking --version 2>&1 | head -5"
+  },
+  {
+    "session_id": "29d69be1-70aa-4f85-8bea-49dd78924867",
+    "blocked_command": "grep -n '\"command\": \"npx @openbnb' /Users/shahe/dotfiles/.claude.json",
+    "suggested_command": "grep -n '\"command\": \"bunx @openbnb' /Users/shahe/dotfiles/.claude.json"
+  },
+  {
+    "session_id": "29d69be1-70aa-4f85-8bea-49dd78924867",
+    "blocked_command": "sed -i '' 's/\"command\": \"npx @openbnb/\"command\": \"bunx @openbnb/g' /Users/shahe/dotfiles/.claude.json",
+    "suggested_command": "sed -i '' 's/\"command\": \"bunx @openbnb/\"command\": \"bunx @openbnb/g' /Users/shahe/dotfiles/.claude.json"
   }
 ]
