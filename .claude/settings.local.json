@@ -162,7 +162,10 @@
       "Bash(aws sso login:*)",
       "Bash(~/dotfiles/scripts/compile-cv.sh:*)",
       "Bash(/Users/shahe/dotfiles/scripts/cv-generate:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(./compile-cv.sh:*)",
+      "Bash(pdflatex:*)",
+      "Bash(/dev/null)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

@@ -596,7 +596,7 @@ class CVGenerator:
         filename = f"{metadata['recruiter']}-{metadata['date']}-{metadata['type']}-{metadata['salary']}"
         
         # Save working copy
-        working_path = self.jobapps_dir / "generated" / "cv.tex"
+        working_path = self.generated_dir / "cv.tex"
         with open(working_path, 'w') as f:
             f.write(content)
         

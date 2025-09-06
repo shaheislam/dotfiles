@@ -17,9 +17,9 @@ print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 print_info() { echo -e "${YELLOW}[INFO]${NC} $1"; }
 
 # Default paths
-JOBAPPS_DIR="$HOME/dotfiles/jobapps"
-TEMPLATES_DIR="$JOBAPPS_DIR/templates"
-GENERATED_DIR="$JOBAPPS_DIR/generated"
+JOBAPPS_DIR="$HOME/Documents/jobapps"
+TEMPLATES_DIR="$HOME/dotfiles/jobapps/templates"  # Keep templates in dotfiles
+GENERATED_DIR="$HOME/Documents/jobapps/generated"
 # Final output goes to Documents
 OUTPUT_DIR="$HOME/Documents/jobapps/output"
 ARCHIVE_DIR="$HOME/Documents/jobapps/archive"
