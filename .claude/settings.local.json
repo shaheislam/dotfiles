@@ -137,7 +137,9 @@
       "Read(/Users/shahe/work/devops-interview/**)",
       "Read(/Users/shahe/work/devops-interview/**)",
       "Bash(brew info:*)",
-      "WebFetch(domain:carapace-sh.github.io)"
+      "WebFetch(domain:carapace-sh.github.io)",
+      "Bash(nvim:*)",
+      "Bash(~/.tmux/plugins/tmux-cpu/scripts/cpu_percentage.sh:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

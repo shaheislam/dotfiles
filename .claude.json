@@ -1,5 +1,5 @@
 {
-  "numStartups": 106,
+  "numStartups": 108,
   "installMethod": "unknown",
   "autoUpdates": true,
   "preferredNotifChannel": "terminal_bell",
@@ -9,18 +9,18 @@
     "new-user-warmup": 2,
     "memory-command": 106,
     "theme-command": 93,
-    "shift-enter": 93,
+    "shift-enter": 107,
     "prompt-queue": 6,
     "enter-to-steer-in-relatime": 94,
     "todo-list": 94,
     "vscode-command-install": 9,
     "# for memory": 99,
     "install-github-app": 100,
-    "permissions": 94,
+    "permissions": 108,
     "drag-and-drop-images": 94,
     "double-esc": 96,
     "continue": 96,
-    "custom-commands": 93,
+    "custom-commands": 108,
     "shift-tab": 97,
     "custom-agents": 106,
     "status-line": 106,
@@ -29,7 +29,7 @@
     "image-paste": 100,
     "ide-upsell-external-terminal": 97
   },
-  "promptQueueUseCount": 33,
+  "promptQueueUseCount": 34,
   "cachedStatsigGates": {
     "tengu_disable_bypass_permissions_mode": false
   },
@@ -579,6 +579,28 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "It's fixed now I can see the values",
+          "pastedContents": {}
+        },
+        {
+          "display": "I am still seeing 00 00 after killing tmux and restarting it, I can see the battery now though I see 00 00 BATTERY TIME",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can you check why my Battery CPU RAM aren't showing in my tmux status base I only see 00 00 TIME",
+          "pastedContents": {}
+        },
+        {
+          "display": "[Pasted text #1 +17 lines] I get this error in neovim ",
+          "pastedContents": {
+            "1": {
+              "id": 1,
+              "type": "text",
+              "content": "Error executing vim.schedule lua callback: .../neovim/0.11.4/share/nvim/runtime/lua/vim/treesitter.lua:195: Index out of bounds\nstack traceback:\n    [C]: in function 'nvim_buf_get_text'\n    .../neovim/0.11.4/share/nvim/runtime/lua/vim/treesitter.lua:195: in function 'get_node_text'\n    ...zy/render-markdown.nvim/lua/render-markdown/lib/node.lua:32: in function 'new'\n    ...ender-markdown.nvim/lua/render-markdown/request/view.lua:74: in function 'callback'\n    ...ender-markdown.nvim/lua/render-markdown/request/view.lua:88: in function 'query'\n    ...ender-markdown.nvim/lua/render-markdown/request/view.lua:71: in function 'nodes'\n    ...r-markdown.nvim/lua/render-markdown/handler/markdown.lua:54: in function 'parse'\n    ...nder-markdown.nvim/lua/render-markdown/core/handlers.lua:90: in function 'tree'\n    ...nder-markdown.nvim/lua/render-markdown/core/handlers.lua:47: in function 'run'\n    ...azy/render-markdown.nvim/lua/render-markdown/core/ui.lua:170: in function 'callback'\n    ...ender-markdown.nvim/lua/render-markdown/request/view.lua:64: in function 'parse'\n    ...azy/render-markdown.nvim/lua/render-markdown/core/ui.lua:169: in function 'parse'\n    ...azy/render-markdown.nvim/lua/render-markdown/core/ui.lua:142: in function 'render'\n    ...azy/render-markdown.nvim/lua/render-markdown/core/ui.lua:125: in function 'run'\n    ...azy/render-markdown.nvim/lua/render-markdown/core/ui.lua:91: in function <...azy/render-markdown.nvim/lua/render-markdown/core/ui.lua:90>\n"
+            }
+          }
+        },
+        {
           "display": "Its still entering Visual mode when I hit V in insert mode",
           "pastedContents": {}
         },
@@ -986,22 +1008,6 @@
         {
           "display": "But it doesn't dynamically show me potential file path options as I type which I want",
           "pastedContents": {}
-        },
-        {
-          "display": "I want to be able to open ANY folder path as a new session simil`r to the tmux-session-wizard functionality, can you add that to my existing session manager script? ",
-          "pastedContents": {}
-        },
-        {
-          "display": "I don't need tmux-sessionx anymore I only need the functionality provided from Ctrl-Space + S can you remove whatever isn't required?",
-          "pastedContents": {}
-        },
-        {
-          "display": "That works now can you clean it up for me",
-          "pastedContents": {}
-        },
-        {
-          "display": "That works better! But now the sessions aren't showing only tmuxinator and zoxide ",
-          "pastedContents": {}
         }
       ],
       "mcpContextUris": [],
@@ -1024,7 +1030,7 @@
       "hasClaudeMdExternalIncludesApproved": false,
       "hasClaudeMdExternalIncludesWarningShown": false,
       "hasCompletedProjectOnboarding": true,
-      "lastTotalWebSearchRequests": 2,
+      "lastTotalWebSearchRequests": 0,
       "hasTrustDialogHooksAccepted": true,
       "exampleFiles": [
         "app.py",
@@ -1033,18 +1039,7 @@
         "server.ts",
         "utils.js"
       ],
-      "exampleFilesGeneratedAt": 1756919840104,
-      "lastCost": 6.062046749999999,
-      "lastAPIDuration": 259863,
-      "lastToolDuration": 62831,
-      "lastDuration": 1603358,
-      "lastLinesAdded": 82,
-      "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 21377,
-      "lastTotalOutputTokens": 7315,
-      "lastTotalCacheCreationInputTokens": 141423,
-      "lastTotalCacheReadInputTokens": 1890789,
-      "lastSessionId": "9803df3f-23fb-4f42-aaf2-1ba85b3df312"
+      "exampleFilesGeneratedAt": 1756919840104
     },
     "/Users/shahe/work/devops-utils": {
       "allowedTools": [],
@@ -2394,7 +2389,7 @@
   "s1mAccessCache": {
     "f94560b6-7ad4-4b3e-8c74-7db76dfc13d3": {
       "hasAccess": false,
-      "timestamp": 1757158936732
+      "timestamp": 1757163717337
     }
   },
   "claudeCodeFirstTokenDate": "2025-06-24T21:01:28.259262Z",
