@@ -17,19 +17,19 @@
     "# for memory": 99,
     "install-github-app": 100,
     "permissions": 108,
-    "drag-and-drop-images": 94,
+    "drag-and-drop-images": 108,
     "double-esc": 96,
     "continue": 96,
     "custom-commands": 108,
     "shift-tab": 97,
     "custom-agents": 106,
     "status-line": 106,
-    "paste-images-mac": 94,
+    "paste-images-mac": 108,
     "git-worktrees": 98,
     "image-paste": 100,
     "ide-upsell-external-terminal": 97
   },
-  "promptQueueUseCount": 34,
+  "promptQueueUseCount": 35,
   "cachedStatsigGates": {
     "tengu_disable_bypass_permissions_mode": false
   },
@@ -579,6 +579,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Scan my dotfiles repo and make sure there are no references to shahe or shaheislam or mohammedislam for directory expansion, they should be ~/ as we are symlinking using Stow",
+          "pastedContents": {}
+        },
+        {
+          "display": "/add-dir /Users/shahe/dotfiles/",
+          "pastedContents": {}
+        },
+        {
           "display": "It's fixed now I can see the values",
           "pastedContents": {}
         },
@@ -999,14 +1007,6 @@
         },
         {
           "display": "No autocompelte still isn't working, I see nothing. Can you look at the tmux session wizard plugin and integratae that functionality because autocompelte seems to work find there",
-          "pastedContents": {}
-        },
-        {
-          "display": "No it doesn't work",
-          "pastedContents": {}
-        },
-        {
-          "display": "But it doesn't dynamically show me potential file path options as I type which I want",
           "pastedContents": {}
         }
       ],

@@ -17,7 +17,7 @@ print_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 print_info() { echo -e "${YELLOW}[INFO]${NC} $1"; }
 
 # Default paths
-JOBAPPS_DIR="/Users/shahe/jobapps"
+JOBAPPS_DIR="$HOME/jobapps"
 TEMPLATES_DIR="$JOBAPPS_DIR/templates"
 GENERATED_DIR="$JOBAPPS_DIR/generated"
 OUTPUT_DIR="$JOBAPPS_DIR/output"
