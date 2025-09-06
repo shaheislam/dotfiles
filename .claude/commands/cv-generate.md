@@ -4,7 +4,8 @@ Generate an optimized CV in LaTeX format by analyzing job descriptions and match
 
 ## Command Structure
 ```bash
-/cv-generate [options]
+/cv-generate [recruiter] [date] [type] [salary] [options]
+/cv-generate --recruiter=<name> --date=<ddmmyy> --type=<perm|contract> --salary=<amount> [options]
 ```
 
 ## Description
@@ -64,11 +65,27 @@ Default location: `/jobapps/` directory (working files)
 
 ## Usage Examples
 
-### Basic Usage
+### Basic Usage (using parameters from job description file)
 ```bash
 /cv-generate
 ```
-Reads from default files in `/jobapps/` directory
+Uses existing metadata in jobdescription.md
+
+### Parameterized Usage (override metadata)
+```bash
+/cv-generate lorien 010425 perm 70k
+```
+Generate CV for Lorien recruiter, date 01/04/25, permanent role, 70k salary
+
+### Named Arguments
+```bash
+/cv-generate --recruiter=lorien --date=010425 --type=perm --salary=70k
+```
+
+### Mixed Arguments (positional + named)
+```bash
+/cv-generate lorien --type=contract --salary=65k
+```
 
 ### With Custom Paths
 ```bash
@@ -86,6 +103,16 @@ Reads from default files in `/jobapps/` directory
 ```
 
 ## Options
+
+### Metadata Arguments
+- `<recruiter>` - Recruiter name (positional arg 1)
+- `<date>` - Date in DDMMYY format (positional arg 2) 
+- `<type>` - Job type: perm|contract|permanent (positional arg 3)
+- `<salary>` - Salary info (positional arg 4)
+- `--recruiter=<name>` - Named argument for recruiter
+- `--date=<ddmmyy>` - Named argument for date
+- `--type=<perm|contract>` - Named argument for job type
+- `--salary=<amount>` - Named argument for salary
 
 ### Input Options
 - `--job <path>` - Path to job description (default: /jobapps/jobdescription.md)
@@ -133,16 +160,16 @@ Reads from default files in `/jobapps/` directory
 - Bonus skill 1
 
 <RECRUITER>
-    recruiter_name
+    ${RECRUITER:-default}
 </RECRUITER>
 <DATE>
-    DDMMYY
+    ${DATE:-010125}
 </DATE>
 <TYPE>
-    CONTRACT|PERMANENT
+    ${TYPE:-PERM}
 </TYPE>
 <SALARY>
-    salary_info
+    ${SALARY:-unknown}
 </SALARY>
 ```
 
@@ -217,23 +244,37 @@ Email: | Phone: | LinkedIn: | GitHub:
 
 ## Execution Flow
 
-1. **Read Input Files**
-   - Load job description, skills database, and CV template
+1. **Argument Processing**
+   - Parse command-line arguments (positional and named)
+   - Set environment variables: RECRUITER, DATE, TYPE, SALARY
+   - Apply defaults if arguments not provided
+   - Validate argument formats (date format, type values)
+
+2. **Template Variable Substitution**
+   - Replace ${RECRUITER:-default} with parsed RECRUITER value
+   - Replace ${DATE:-010125} with parsed DATE value  
+   - Replace ${TYPE:-PERM} with parsed TYPE value
+   - Replace ${SALARY:-unknown} with parsed SALARY value
+   - Create processed job description in memory
+
+3. **Read Input Files**
+   - Load processed job description with substituted variables
+   - Load skills database and CV template
    - Validate file formats and content
 
-2. **Analyze Job Requirements**
+4. **Analyze Job Requirements**
    - Extract technical requirements
    - Identify soft skill requirements
    - Parse experience level needed
    - Note industry-specific terms
 
-3. **Match and Score Skills**
+5. **Match and Score Skills**
    - Compare job requirements with skills database
    - Calculate relevance scores
    - Identify transferable skills
    - Flag missing but learnable skills
 
-4. **Generate Optimized CV**
+6. **Generate Optimized CV**
    - Create tailored professional summary (3-4 lines)
    - **IMPORTANT: Preserve employment chronology** - Keep all companies, positions, and dates unchanged
    - **PAGE LENGTH MANAGEMENT**:
@@ -250,13 +291,13 @@ Email: | Phone: | LinkedIn: | GitHub:
    - Format skills section strategically
    - Ensure ATS compatibility
 
-5. **Output LaTeX**
+7. **Output LaTeX**
    - Generate clean LaTeX code to `/jobapps/generated/cv.tex`
    - Include formatting for readability
    - Add comments for customization
    - Ensure `\documentclass{resume}` for custom class
 
-6. **PDF Compilation (if --format pdf)**
+8. **PDF Compilation (if --format pdf)**
    - Copy `resume.cls` to compilation directory
    - Run LaTeX compiler (pdflatex/xelatex/lualatex)
    - Execute two passes for proper references
@@ -298,21 +339,27 @@ Email: | Phone: | LinkedIn: | GitHub:
 ## Example Implementation
 
 ```bash
-# Basic CV generation (generates .tex file)
-/cv-generate
+# Basic CV generation with arguments (generates .tex file)
+/cv-generate lorien 010425 perm 70k
 
-# Generate and compile to PDF
+# Using named arguments
+/cv-generate --recruiter=lorien --type=contract --salary=65k
+
+# Generate and compile to PDF with arguments
+/cv-generate stottandmay 020425 contract 60k --format pdf
+
+# Mixed positional and named arguments
+/cv-generate lorien --type=perm --format pdf --open
+
+# Auto-generated filename from argument metadata
+/cv-generate lorien 010425 perm 70k --format pdf --open
+# Creates: lorien-010425-PERM-70k.pdf
+
+# Using defaults from jobdescription.md (legacy mode)
 /cv-generate --format pdf
 
-# Generate PDF and open it
-/cv-generate --format pdf --open
-
-# Auto-generated filename from metadata tags
-/cv-generate --format pdf --open
-# Creates: stottandmay-010425-CONTRACT-60OIR35.pdf
-
 # Custom PDF name override (optional)
-/cv-generate --format pdf --pdf-name "JohnDoe_SeniorDev_2024" --open
+/cv-generate lorien 010425 perm 70k --format pdf --pdf-name "JohnDoe_SeniorDev_2024" --open
 
 # Use XeLaTeX for better font support
 /cv-generate --format pdf --compiler xelatex

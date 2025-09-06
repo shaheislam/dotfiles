@@ -1,1 +1,0 @@
-jobapps/skills.md

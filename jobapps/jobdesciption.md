@@ -26,14 +26,14 @@ Preferred Skills
     Previous experience working with Kubernetes Ingress controllers
 
 <RECRUITER>
-    Lorien
+    ${RECRUITER:-Lorien}
 </RECRUITER>
 <DATE>
-    010425
+    ${DATE:-010425}
 </DATE>
 <TYPE>
-    PERM
+    ${TYPE:-PERM}
 </TYPE>
 <SALARY>
-    70O
+    ${SALARY:-70O}
 </SALARY>
