@@ -87,7 +87,7 @@ format = '[$user ]($style)'
 style = "fg:lavender bold"
 format = "[$path]($style)"
 truncation_length = 3
-truncation_symbol = "…/"
+truncation_symbol = ""
 read_only = " 󰌾"
 
 [directory.substitutions]
