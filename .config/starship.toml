@@ -91,14 +91,7 @@ truncation_symbol = "…/"
 read_only = " 󰌾"
 
 [directory.substitutions]
-"Documents" = "󰈙 "
-"Downloads" = " "
-"Music" = "󰝚 "
-"Pictures" = " "
-"Developer" = "󰲋 "
-"~/dotfiles" = " "
-"~/work" = " "
-"~" = " "
+"~" = "~"
 
 [git_branch]
 symbol = " "
@@ -207,13 +200,13 @@ s189-teacher-services-cloud-test = "s189-test"
 s189-teacher-services-cloud-production = "s189-prod"
 
 [kubernetes]
-symbol = "☸ "
+symbol = " "
 style = "fg:lavender"
 format = '[$symbol$context(\($namespace\))]($style) '
 disabled = false
 
 [terraform]
-symbol = "󱁢 "
+symbol = " "
 style = "fg:mauve"
 format = '[$symbol($version)]($style) '
 disabled = false
