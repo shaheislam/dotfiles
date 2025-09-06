@@ -180,6 +180,7 @@ brew "commitizen"
 # Development Tools
 brew "just"
 brew "task"
+brew "jj"  # Jujutsu version control system
 
 # Nerd Fonts
 cask "font-jetbrains-mono-nerd-font"
