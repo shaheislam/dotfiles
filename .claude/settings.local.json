@@ -140,7 +140,11 @@
       "WebFetch(domain:carapace-sh.github.io)",
       "Bash(nvim:*)",
       "Bash(~/.tmux/plugins/tmux-cpu/scripts/cpu_percentage.sh:*)",
-      "Read(/Users/shahe/.config/wezterm/**)"
+      "Read(/Users/shahe/.config/wezterm/**)",
+      "Bash(command -v:*)",
+      "Bash(bat:*)",
+      "Bash(curl:*)",
+      "Read(/Users/shahe/Downloads/**)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

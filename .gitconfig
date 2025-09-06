@@ -1,5 +1,6 @@
 [core]
 	excludesfile = ~/.gitignore_global
+	pager = delta
 [user]
 	email = shahedulislam94@gmail.com
 	name = Mohammed Islam
@@ -25,3 +26,18 @@
 	path = ~/dotfiles/.gitconfig-dfe
 [includeIf "gitdir:~/src/dfe/"]
 	path = ~/dotfiles/.gitconfig-dfe
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	theme = Catppuccin-mocha
+	line-numbers = true
+	side-by-side = true
+	navigate = true
+	light = false
+	syntax-theme = Catppuccin Mocha
+	file-style = bold yellow ul
+	file-decoration-style = none
+	hunk-header-decoration-style = cyan box
+	hunk-header-style = file line-number syntax
+	line-numbers-left-format = {nm:>4}┊
+	line-numbers-right-format = {np:>4}│

@@ -45,7 +45,7 @@ if status is-interactive
     set -g fish_escape_delay_ms 100
 
     # Environment Variables
-    set -x BAT_THEME tokyonight_night
+    set -x BAT_THEME "Catppuccin Mocha"
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
@@ -139,23 +139,55 @@ if status is-interactive
         set -gx FZF_DEFAULT_COMMAND "fd --hidden --strip-cwd-prefix --exclude .git"
     end
 
+    # Keep the same command but now with preview options from above
     set -gx FZF_CTRL_T_COMMAND "$FZF_DEFAULT_COMMAND"
+    # Keep the same command but now with preview options from above
     set -gx FZF_ALT_C_COMMAND "fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 
-    # FZF theme colors - Tokyo Night theme to match tmux and other tools
-    set -l fg "#c0caf5"          # Foreground
-    set -l bg "#1a1b26"          # Background
-    set -l bg_highlight "#283457" # Current Line/Selection
-    set -l purple "#9d7cd8"       # Purple
-    set -l blue "#7aa2f7"         # Blue
-    set -l cyan "#7dcfff"         # Cyan
-    set -l green "#9ece6a"        # Green
-    set -l orange "#ff9e64"       # Orange
-    set -l red "#f7768e"          # Red
-    set -l yellow "#e0af68"       # Yellow
-    set -l magenta "#bb9af7"      # Magenta
+    # FZF theme colors - Catppuccin Mocha theme to match other tools
+    set -l fg "#cdd6f4"          # Text
+    set -l bg "#1e1e2e"          # Base
+    set -l bg_highlight "#313244" # Surface0
+    set -l purple "#b4befe"       # Lavender
+    set -l blue "#89b4fa"         # Blue
+    set -l cyan "#89dceb"         # Sky
+    set -l green "#a6e3a1"        # Green
+    set -l orange "#fab387"       # Peach
+    set -l red "#f38ba8"          # Red
+    set -l yellow "#f9e2af"       # Yellow
+    set -l magenta "#cba6f7"      # Mauve
 
-    set -gx FZF_DEFAULT_OPTS "--color=fg:$fg,bg:$bg,hl:$blue,fg+:$fg,bg+:$bg_highlight,hl+:$magenta,info:$yellow,prompt:$cyan,pointer:$blue,marker:$green,spinner:$cyan,header:$purple"
+    # Enhanced FZF options matching WezTerm aesthetics (simulated transparency)
+    # Using -1 for bg creates transparent background effect
+    set -gx FZF_DEFAULT_OPTS "--color=fg:$fg,bg:-1,hl:$blue,fg+:$fg,bg+:$bg_highlight,hl+:$magenta,info:$yellow,prompt:$cyan,pointer:$blue,marker:$green,spinner:$cyan,header:$purple,border:$bg_highlight,preview-bg:-1,preview-fg:$fg \
+        --height 60% \
+        --layout=reverse \
+        --border=rounded \
+        --border-label=' 🔍 Search ' \
+        --border-label-pos=3 \
+        --preview-window=right:60%:wrap:rounded \
+        --padding=1 \
+        --margin=1 \
+        --prompt='▶ ' \
+        --pointer='→' \
+        --marker='✓' \
+        --bind='ctrl-/:toggle-preview' \
+        --bind='ctrl-u:preview-page-up' \
+        --bind='ctrl-d:preview-page-down' \
+        --bind='ctrl-y:preview-up' \
+        --bind='ctrl-e:preview-down'"
+    
+    # File preview with bat using Catppuccin theme and minimal style
+    set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {}' \
+        --border-label=' 📄 Files ' \
+        --preview-label=' Preview ' \
+        --preview-label-pos=3"
+    
+    # Directory preview with eza tree view and enhanced aesthetics
+    set -gx FZF_ALT_C_OPTS "--preview 'eza --tree --icons --level=2 --color=always {}' \
+        --border-label=' 📁 Directories ' \
+        --preview-label=' Tree View ' \
+        --preview-label-pos=3"
 
     # Disable fish greeting
     set -g fish_greeting ""
@@ -173,9 +205,15 @@ if status is-interactive
     # Enhanced aliases combining both configs
     alias python=python3
     alias mkdir="mkdir -p"
-    alias ls="eza"
-    alias la="eza -al"
-    alias l="eza -hal"
+    
+    # Enhanced eza aliases with better visual organization
+    alias ls="eza --icons --group-directories-first"
+    alias ll="eza -la --icons --group-directories-first --git"
+    alias la="eza -a --icons --group-directories-first"
+    alias l="eza -lah --icons --group-directories-first --git"
+    alias tree="eza --tree --icons --level=2"
+    alias lt="eza --tree --icons --level=3"
+    
     alias k=kubectl
     alias vi=nvim
     alias vim=nvim

@@ -579,6 +579,42 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Can you modify my fzf to have the same transparency and aesthetics as wezterm across my dotfiles?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Can you update the fzf preview configuration",
+          "pastedContents": {}
+        },
+        {
+          "display": "Screenshot 2025-09-06 at 15.02.28 Is this the change I'm supposed to be seeing?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Implement the git-delta changes now and explain how I can test it",
+          "pastedContents": {}
+        },
+        {
+          "display": "Update the bat theme to use catpuccin",
+          "pastedContents": {}
+        },
+        {
+          "display": "Implement the eza changes so i can test it",
+          "pastedContents": {}
+        },
+        {
+          "display": "I already have atuin, and the cli tools you've referenced?",
+          "pastedContents": {}
+        },
+        {
+          "display": "Are there any other visual tricks from omerxx I'm missing?",
+          "pastedContents": {}
+        },
+        {
+          "display": "What does the clear scroll back do?",
+          "pastedContents": {}
+        },
+        {
           "display": "I like the additional omerxx inspired settings but can you revert the font window and tab configuration changes",
           "pastedContents": {}
         },
@@ -965,42 +1001,6 @@
         },
         {
           "display": "No i want you to add these paths to my dotfiles configs and add cursor as an install to my setup script",
-          "pastedContents": {}
-        },
-        {
-          "display": "✨ Installation Complete!\n\n\nNext Steps\n\n1. Add ~/.local/bin to your PATH:\n   For bash:\n   echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.bashrc\n   source ~/.bashrc\n\n   For zsh:\n   echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.zshrc\n   source ~/.zshrc\n\n   For fish:\n   mkdir -p $HOME/.config/fish\n   echo 'fish_add_path $HOME/.local/bin' >> $HOME/.config/fish/config.fish\n   source $HOME/.config/fish/config.fish\n\n2. Start using Cursor Agent:\n   cursor-agent\n\n\nHappy coding! 🚀\n",
-          "pastedContents": {}
-        },
-        {
-          "display": "@scripts/clone-all-repos.sh Modify this file to add extra debugging as an optional flag if required",
-          "pastedContents": {}
-        },
-        {
-          "display": "That looks good but make the tone slightly more human like and casual. Don't try and be funny or witty.",
-          "pastedContents": {}
-        },
-        {
-          "display": "Make it less detailed just provide links to the gtihub with a brief overview of what it does",
-          "pastedContents": {}
-        },
-        {
-          "display": "Mention direnv, mise, zoxide, fzf, splash, bat, granted, tmux ",
-          "pastedContents": {}
-        },
-        {
-          "display": "First give me a list of tools you want to mention and I will refine it",
-          "pastedContents": {}
-        },
-        {
-          "display": "I have been asked by a developer on my team to write a guide on how i use different tools like direnv, stern etc for quality of life tooling, can you create a .md file in this repo that does this so I can add it to Confluence",
-          "pastedContents": {}
-        },
-        {
-          "display": "What kind of tmuxinator template would be good for an azure cli / K8s cluster workflow? ",
-          "pastedContents": {}
-        },
-        {
-          "display": "Does this hook apply to windows in new sessions too? ",
           "pastedContents": {}
         }
       ],
