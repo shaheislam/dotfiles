@@ -12,11 +12,45 @@ return {
       "rcarriga/nvim-dap-ui",
       "theHamsta/nvim-dap-virtual-text",
       "nvim-telescope/telescope-dap.nvim",
+      "jay-babu/mason-nvim-dap.nvim", -- Mason integration for DAP
     },
     config = function()
       require("dapui").setup()
       require("nvim-dap-virtual-text").setup()
+      require("mason-nvim-dap").setup({
+        ensure_installed = { "delve", "python", "node2", "chrome", "firefox" },
+        automatic_installation = true,
+      })
     end,
+  },
+
+  -- Go debugging support
+  {
+    "leoluz/nvim-dap-go",
+    dependencies = { "mfussenegger/nvim-dap" },
+    ft = "go",
+    config = function()
+      require("dap-go").setup({
+        -- Additional configurations for Go debugging
+        dap_configurations = {
+          {
+            type = "go",
+            name = "Attach remote",
+            mode = "remote",
+            request = "attach",
+          },
+        },
+        -- delve configurations
+        delve = {
+          initialize_timeout_sec = 20,
+          port = "${port}",
+        },
+      })
+    end,
+    keys = {
+      { "<leader>dgt", function() require("dap-go").debug_test() end, desc = "Debug Go Test" },
+      { "<leader>dgl", function() require("dap-go").debug_last_test() end, desc = "Debug Last Go Test" },
+    },
   },
 
   -- Test runner integration
@@ -32,6 +66,12 @@ return {
 
   -- ============== CLOUD PROVIDERS ==============
   
+  -- Helm support for Kubernetes
+  {
+    "towolf/vim-helm",
+    ft = { "helm", "yaml" },
+  },
+
   -- AWS CloudFormation support
   -- TEMPORARILY DISABLED: GitHub authentication issues
   -- {
