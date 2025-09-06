@@ -579,6 +579,14 @@
       "allowedTools": [],
       "history": [
         {
+          "display": "Update tmux only and lets try it",
+          "pastedContents": {}
+        },
+        {
+          "display": "That looks great, are there any other aesthetics omerxx is using that might be useful for me?",
+          "pastedContents": {}
+        },
+        {
           "display": "https://github.com/omerxx/dotfiles I really like the startship prompt and aesthetics this repo uses, can you modify my starship so my metadata is as it it is but it uses the omerxx visual style?",
           "pastedContents": {}
         },
@@ -993,14 +1001,6 @@
         },
         {
           "display": "1.",
-          "pastedContents": {}
-        },
-        {
-          "display": "You should be using tmuxinator for it, shouldn't you? Or is that not a good use case",
-          "pastedContents": {}
-        },
-        {
-          "display": "Can you set it so that claude runs in any new window horiztonlly split pane?",
           "pastedContents": {}
         }
       ],
