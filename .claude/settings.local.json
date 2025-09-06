@@ -165,7 +165,8 @@
       "Bash(python3:*)",
       "Bash(./compile-cv.sh:*)",
       "Bash(pdflatex:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(direnv allow:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

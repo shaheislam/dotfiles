@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Global environment variables loaded everywhere
+# This file lives in ~/dotfiles and can be symlinked to any project
+
+# Common API Keys from 1Password
+with_op op_load "Personal/Linear/api_key" "LINEAR_API_KEY"
+with_op op_load "Personal/GitHub/token" "GITHUB_TOKEN"
+with_op op_load "Personal/OpenAI/api_key" "OPENAI_API_KEY"
+with_op op_load "Personal/Anthropic/api_key" "ANTHROPIC_API_KEY"
+
+# MCP Server API Keys
+with_op op_load "Personal/OpenRouter/api_key" "OPENROUTER_API_KEY"
+with_op op_load "Personal/DeepSeek/api_key" "DEEPSEEK_API_KEY"
+with_op op_load "Personal/Gemini/api_key" "GEMINI_API_KEY"
+with_op op_load "Personal/Exa/api_key" "EXA_API_KEY"
+
+# AWS Credentials (if needed)
+# with_op op_load "Work/AWS/access_key" "AWS_ACCESS_KEY_ID"
+# with_op op_load "Work/AWS/secret_key" "AWS_SECRET_ACCESS_KEY"
+
+# Development defaults
+export EDITOR="nvim"
+export PAGER="less"
+
+# Load project-specific overrides if they exist
+[[ -f .envrc.local ]] && source .envrc.local

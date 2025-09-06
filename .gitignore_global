@@ -51,6 +51,8 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.1password
+.envrc
 
 # Ignore CLAUDE.md files in the work directory
 work/**/CLAUDE.md

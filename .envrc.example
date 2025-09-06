@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Example .envrc file for direnv + 1Password integration
+# Copy this to any project directory and customize as needed
+
+# Method 1: Direct loading with op_load function
+# op_load "vault/item/field" "ENV_VAR_NAME"
+# Examples:
+# op_load "Personal/Linear/api_key" "LINEAR_API_KEY"
+# op_load "Personal/GitHub/token" "GITHUB_TOKEN"
+# op_load "Work/AWS/access_key" "AWS_ACCESS_KEY_ID"
+# op_load "Work/AWS/secret_key" "AWS_SECRET_ACCESS_KEY"
+
+# Method 2: Using .env.1password file with op:// references
+# Create a .env.1password file with:
+# LINEAR_API_KEY="op://Personal/Linear/api_key"
+# GITHUB_TOKEN="op://Personal/GitHub/token"
+# Then load it:
+# source_env_1password
+
+# Method 3: Mixed approach - some from 1Password, some local
+# export NODE_ENV="development"
+# export PORT="3000"
+# op_load "Personal/Database/connection_string" "DATABASE_URL"
+
+# Method 4: Check authentication before loading
+# with_op op_load "Personal/OpenAI/api_key" "OPENAI_API_KEY"
+
+# Additional direnv features
+# layout node              # Automatically add node_modules/.bin to PATH
+# layout python            # Set up Python virtualenv
+# PATH_add bin            # Add local bin directory to PATH
+# source_env .env.local   # Load additional local env file
