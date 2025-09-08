@@ -627,7 +627,6 @@ if status is-interactive
     # AI Tools
     # Use 'ccr code' or just 'ccr' to start Claude Code Router
     alias claude-router="command ccr code"  # Alternative alias for Claude Code Router
-    alias claude="~/.claude/local/claude"  # Claude Code local installation
 
     # Utility aliases
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"

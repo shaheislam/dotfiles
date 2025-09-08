@@ -166,7 +166,9 @@
       "Bash(./compile-cv.sh:*)",
       "Bash(pdflatex:*)",
       "Bash(/dev/null)",
-      "Bash(direnv allow:*)"
+      "Bash(direnv allow:*)",
+      "Bash(~/.tmux/plugins/tmux-urlview/urlview.tmux:*)",
+      "Bash(/Users/shahe/dotfiles/scripts/urlview-firefox.sh:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
