@@ -2425,3 +2425,5 @@ if status is-interactive
     bind \cr atuin_fzf_search
     bind -M insert \cr atuin_fzf_search
 end
+
+

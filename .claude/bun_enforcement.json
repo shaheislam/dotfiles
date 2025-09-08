@@ -53,5 +53,10 @@
     "session_id": "29d69be1-70aa-4f85-8bea-49dd78924867",
     "blocked_command": "sed -i '' 's/\"command\": \"npx @openbnb/\"command\": \"bunx @openbnb/g' /Users/shahe/dotfiles/.claude.json",
     "suggested_command": "sed -i '' 's/\"command\": \"bunx @openbnb/\"command\": \"bunx @openbnb/g' /Users/shahe/dotfiles/.claude.json"
+  },
+  {
+    "session_id": "0d570f10-8da2-4be1-a6e0-5c65e1720922",
+    "blocked_command": "npm list -g @anthropic-ai/claude-code",
+    "suggested_command": "bun list -g @anthropic-ai/claude-code"
   }
 ]

@@ -592,22 +592,27 @@ else
   echo "Run: brew install pipx"
 fi
 
-# Install Claude Code CLI
-echo "=== Installing Claude Code CLI ==="
+# Claude Code CLI (now uses official installer)
+echo "=== Checking Claude Code CLI ==="
 if ! command -v claude &> /dev/null; then
-  echo "Installing Claude Code CLI via npm..."
-  bun install -g @anthropic-ai/claude-code || npm install -g @anthropic-ai/claude-code || echo "Warning: Failed to install Claude Code CLI"
-
-  # Install Claude Code Router for alternative AI providers
-  echo "Installing Claude Code Router..."
-  npm install -g @musistudio/claude-code-router || echo "Warning: Failed to install Claude Code Router"
+  echo "⚠️  Claude Code CLI not found."
+  echo "Please install Claude Code using the official installer:"
+  echo "  1. Download from: https://claude.ai/download"
+  echo "  2. Run: claude update"
+  echo "  3. Run: claude migrate-installer (if upgrading from npm/bun version)"
+  log_warning "Claude Code CLI needs manual installation"
 else
-  echo "Claude Code CLI already installed"
-  # Still install Claude Code Router if not present
-  if ! command -v ccr &> /dev/null; then
-    echo "Installing Claude Code Router..."
-    bun install -g @musistudio/claude-code-router || npm install -g @musistudio/claude-code-router || echo "Warning: Failed to install Claude Code Router"
-  fi
+  echo "Claude Code CLI already installed at: $(which claude)"
+  echo "To update, run: claude update"
+fi
+
+# Install Claude Code Router for alternative AI providers
+echo "=== Installing Claude Code Router ==="
+if ! command -v ccr &> /dev/null; then
+  echo "Installing Claude Code Router..."
+  bun install -g @musistudio/claude-code-router || npm install -g @musistudio/claude-code-router || echo "Warning: Failed to install Claude Code Router"
+else
+  echo "Claude Code Router already installed at: $(which ccr)"
 fi
 
 # Setup Claude Code Router configuration

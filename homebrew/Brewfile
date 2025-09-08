@@ -90,7 +90,8 @@ brew "gemini-cli"
 brew "mas"  # Mac App Store CLI
 
 # AI Tools
-# Claude Code Router - installed via npm globally in setup script
+# Claude Code - requires manual installation via official installer (https://claude.ai/download)
+# Claude Code Router - installed via npm globally in setup script for alternative AI providers
 
 # Security & DevSecOps Tools
 tap "vet-run/vet"
