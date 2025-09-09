@@ -376,13 +376,13 @@ else
   install_tmux_plugin "tmux-prefix-highlight" "https://github.com/tmux-plugins/tmux-prefix-highlight"
   install_tmux_plugin "tmux-which-key" "https://github.com/alexwforsythe/tmux-which-key"
   install_tmux_plugin "tmux-open" "https://github.com/tmux-plugins/tmux-open"
+  install_tmux_plugin "tmux-urlview" "https://github.com/tmux-plugins/tmux-urlview"
   install_tmux_plugin "tmux-copycat" "https://github.com/tmux-plugins/tmux-copycat"
   install_tmux_plugin "tmux-pain-control" "https://github.com/tmux-plugins/tmux-pain-control"
   install_tmux_plugin "tmux-sidebar" "https://github.com/tmux-plugins/tmux-sidebar"
   install_tmux_plugin "tmux-fingers" "https://github.com/Morantron/tmux-fingers"
-  install_tmux_plugin "tmux-session-wizard" "https://github.com/27medkamal/tmux-session-wizard"
   install_tmux_plugin "tmux-battery" "https://github.com/tmux-plugins/tmux-battery"
-  install_tmux_plugin "dracula" "https://github.com/dracula/tmux"
+  install_tmux_plugin "tmux-cpu" "https://github.com/tmux-plugins/tmux-cpu"
 fi
 
 # Apply Dracula theme customizations
@@ -404,7 +404,15 @@ else
   echo "Warning: .tmux.conf not found in current directory"
 fi
 
-echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (capital i) to install the plugins."
+echo "=== Running TPM plugin installation ==="
+# Auto-install/update plugins using TPM if tmux is installed
+if command -v tmux &> /dev/null && [ -f "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]; then
+  echo "Installing/updating tmux plugins via TPM..."
+  $HOME/.tmux/plugins/tpm/bin/install_plugins || echo "Note: TPM plugin installation may need to be run from within tmux"
+  echo "Tmux plugins installation attempted. If any failed, start tmux and press 'prefix' + 'I' (Ctrl-Space + I)"
+else
+  echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (Ctrl-Space + I) to install the plugins."
+fi
 
 # Apply tmux-continuum fix
 echo "=== Applying tmux-continuum fix ==="
@@ -414,7 +422,16 @@ else
   echo "Warning: fix_tmux_continuum.sh script not found"
 fi
 
-# tmux-fingers is now installed via Homebrew (see Brewfile)
+# Ensure tmux-fingers is properly linked (installed via Homebrew)
+if command -v tmux-fingers &> /dev/null; then
+  log_success "tmux-fingers installed via Homebrew"
+  # Create symlink in tmux plugins directory for consistency
+  if [ ! -L "$HOME/.tmux/plugins/tmux-fingers" ] && [ ! -d "$HOME/.tmux/plugins/tmux-fingers" ]; then
+    ln -s $(brew --prefix)/opt/tmux-fingers "$HOME/.tmux/plugins/tmux-fingers" 2>/dev/null || true
+  fi
+else
+  log_warning "tmux-fingers not found. Install with: brew install morantron/tmux-fingers/tmux-fingers"
+fi
 
 # Configure tmux-session-wizard plugin
 echo "=== Configuring tmux-session-wizard plugin ==="
