@@ -1,0 +1,6 @@
+# urlview configuration
+# Use Firefox as the default browser - wrapper script handles protocol
+COMMAND /Users/shahe/dotfiles/scripts/urlview-firefox.sh %s
+
+# Regular expressions to match URLs
+REGEXP (((http|https|ftp|gopher)|mailto)[.:][^ >"\t]*|www\.[-a-z0-9.]+)[^ .,;\t>">\):]

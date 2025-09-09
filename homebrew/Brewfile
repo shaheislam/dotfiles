@@ -82,6 +82,7 @@ brew "jq"
 brew "yq"
 brew "w3m"       # For tmpmail HTML email rendering
 brew "curl"      # For tmpmail API calls
+brew "urlview"   # For tmux-urlview plugin to extract and open URLs
 brew "shellcheck"
 brew "shfmt"
 brew "gh"

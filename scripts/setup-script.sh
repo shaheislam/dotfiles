@@ -98,6 +98,7 @@ BREW_PACKAGES=(
   "glow"
   "jq"
   "yq"
+  "urlview"
   "shellcheck"
   "shfmt"
   "gh"
