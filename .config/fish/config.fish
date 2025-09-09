@@ -2433,4 +2433,3 @@ end
 
 
 
-alias claude="/Users/shaheislam/.claude/local/claude"
