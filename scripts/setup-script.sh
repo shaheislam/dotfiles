@@ -98,8 +98,6 @@ BREW_PACKAGES=(
   "glow"
   "jq"
   "yq"
-  "urlview"
-  "extract_url"
   "shellcheck"
   "shfmt"
   "gh"
@@ -378,7 +376,6 @@ else
   install_tmux_plugin "tmux-prefix-highlight" "https://github.com/tmux-plugins/tmux-prefix-highlight"
   install_tmux_plugin "tmux-which-key" "https://github.com/alexwforsythe/tmux-which-key"
   install_tmux_plugin "tmux-open" "https://github.com/tmux-plugins/tmux-open"
-  install_tmux_plugin "tmux-urlview" "https://github.com/tmux-plugins/tmux-urlview"
   install_tmux_plugin "tmux-copycat" "https://github.com/tmux-plugins/tmux-copycat"
   install_tmux_plugin "tmux-pain-control" "https://github.com/tmux-plugins/tmux-pain-control"
   install_tmux_plugin "tmux-sidebar" "https://github.com/tmux-plugins/tmux-sidebar"
@@ -1150,24 +1147,6 @@ else
   log_info "LaunchTemplates directory not found in dotfiles"
 fi
 
-# Setup URL view script for tmux
-echo "=== Setting up URL view script ==="
-if [ -f "$HOME/dotfiles/scripts/urlview-firefox.sh" ]; then
-  chmod +x "$HOME/dotfiles/scripts/urlview-firefox.sh"
-  log_success "URL view script configured and made executable"
-else
-  log_warning "urlview-firefox.sh not found in scripts directory"
-fi
-
-# Fix tmux-urlview plugin to use dynamic temp paths
-echo "=== Fixing tmux-urlview plugin ==="
-if [ -f "$HOME/dotfiles/scripts/fix-tmux-urlview.sh" ]; then
-  chmod +x "$HOME/dotfiles/scripts/fix-tmux-urlview.sh"
-  "$HOME/dotfiles/scripts/fix-tmux-urlview.sh"
-  log_success "tmux-urlview plugin fixed to use dynamic temp paths"
-else
-  log_info "fix-tmux-urlview.sh not found - will use default plugin behavior"
-fi
 
 # Run stow to create all symlinks
 echo "=== Running stow to create symlinks ==="
