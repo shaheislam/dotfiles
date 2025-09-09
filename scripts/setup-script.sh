@@ -99,6 +99,7 @@ BREW_PACKAGES=(
   "jq"
   "yq"
   "urlview"
+  "extract_url"
   "shellcheck"
   "shfmt"
   "gh"

@@ -1,0 +1,17 @@
+# extract_url configuration for use with tmux-urlview
+# Open URLs in Firefox
+
+COMMAND /Users/shahe/dotfiles/scripts/urlview-firefox.sh
+
+# Alternative if you want to use the default browser:
+# COMMAND open
+
+# HTML parsers to use (in order of preference)
+HTML_PARSER html_links_only
+
+# Regular expression for matching URLs
+# This is more comprehensive than urlview's default
+DEFAULT_VIEW context
+
+# Show context around URLs
+SHOW_CONTEXT

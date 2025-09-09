@@ -169,7 +169,8 @@
       "Bash(direnv allow:*)",
       "Bash(~/.tmux/plugins/tmux-urlview/urlview.tmux:*)",
       "Bash(/Users/shahe/dotfiles/scripts/urlview-firefox.sh:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(~/dotfiles/scripts/test-urlview.sh:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
