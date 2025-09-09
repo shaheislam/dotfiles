@@ -187,7 +187,8 @@
       "Bash(tmux capture-pane:*)",
       "Bash(git restore:*)",
       "mcp__fetch__fetch",
-      "Bash(./scripts/tmux-url-handler.sh:*)"
+      "Bash(./scripts/tmux-url-handler.sh:*)",
+      "Bash(readlink:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
@@ -204,6 +205,7 @@
     "git",
     "fetch",
     "duckduckgo",
-    "playwright"
+    "playwright",
+    "steampipe"
   ]
 }
