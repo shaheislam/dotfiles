@@ -990,6 +990,21 @@ echo "=== Configuring global gitignore ==="
 git config --global core.excludesfile ~/.gitignore_global
 echo "Global gitignore configured to use ~/.gitignore_global"
 
+# Configure Jujutsu (jj) version control
+echo "=== Configuring Jujutsu (jj) version control ==="
+if command -v jj &> /dev/null; then
+  # Initialize jj configuration
+  if [ -f "$HOME/dotfiles/.config/jj/config.toml" ]; then
+    mkdir -p "$HOME/.config/jj"
+    ln -sf "$HOME/dotfiles/.config/jj/config.toml" "$HOME/.config/jj/config.toml" 2>/dev/null || true
+    log_success "Jujutsu (jj) configuration linked"
+  else
+    log_info "Jujutsu config will be created by stow"
+  fi
+else
+  log_warning "Jujutsu (jj) not installed. Install with: brew install jj"
+fi
+
 # Pre-commit hooks removed from dotfiles setup
 # Users can manually install pre-commit if needed for specific projects
 
@@ -1000,6 +1015,63 @@ if command -v claude &> /dev/null; then
     echo "Claude Code notification channel set to terminal_bell"
 else
     echo "Claude Code not found, skipping configuration"
+fi
+
+# Configure direnv with 1Password integration
+echo "=== Configuring direnv with 1Password integration ==="
+if command -v direnv &> /dev/null; then
+  # Run direnv setup script if it exists
+  if [ -f "$HOME/dotfiles/scripts/setup-direnv-1password.sh" ]; then
+    log_info "Setting up direnv with 1Password integration..."
+    bash "$HOME/dotfiles/scripts/setup-direnv-1password.sh" || log_warning "direnv 1Password setup had issues - check manually"
+  fi
+  # Create direnv config directory
+  mkdir -p "$HOME/.config/direnv"
+  # Link direnv config if it exists in dotfiles
+  if [ -f "$HOME/dotfiles/.config/direnv/direnv.toml" ]; then
+    ln -sf "$HOME/dotfiles/.config/direnv/direnv.toml" "$HOME/.config/direnv/direnv.toml" 2>/dev/null || true
+  fi
+  log_success "direnv configured"
+else
+  log_warning "direnv not installed. Install with: brew install direnv"
+fi
+
+# Apply macOS system defaults for developers
+echo "=== Applying macOS developer defaults ==="
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  if [ -f "$HOME/dotfiles/scripts/macos-defaults.sh" ]; then
+    log_info "Configuring macOS developer settings..."
+    bash "$HOME/dotfiles/scripts/macos-defaults.sh" || log_warning "Some macOS defaults may have failed - check manually"
+    log_success "macOS developer defaults applied"
+  else
+    log_warning "macos-defaults.sh not found in scripts directory"
+  fi
+else
+  log_info "Not running on macOS, skipping macOS defaults"
+fi
+
+# Set Fish as default shell
+echo "=== Setting Fish as default shell ==="
+if command -v fish &> /dev/null; then
+  FISH_PATH=$(which fish)
+  # Check if fish is in /etc/shells
+  if ! grep -q "$FISH_PATH" /etc/shells; then
+    log_info "Adding Fish to /etc/shells..."
+    echo "$FISH_PATH" | sudo tee -a /etc/shells
+  fi
+  # Check if Fish is already the default shell
+  if [[ "$SHELL" != "$FISH_PATH" ]]; then
+    log_info "Setting Fish as default shell..."
+    if chsh -s "$FISH_PATH"; then
+      log_success "Fish set as default shell. Please restart your terminal."
+    else
+      log_warning "Failed to set Fish as default shell. You can manually run: chsh -s $FISH_PATH"
+    fi
+  else
+    log_success "Fish is already your default shell"
+  fi
+else
+  log_warning "Fish not installed. Install with: brew install fish"
 fi
 
 # Clone personal repositories
@@ -1051,6 +1123,66 @@ else
 fi
 
 echo ""
+# Configure Starship prompt
+echo "=== Configuring Starship prompt ==="
+if command -v starship &> /dev/null; then
+  # Link Starship config if it exists in dotfiles
+  if [ -f "$HOME/dotfiles/.config/starship.toml" ]; then
+    mkdir -p "$HOME/.config"
+    ln -sf "$HOME/dotfiles/.config/starship.toml" "$HOME/.config/starship.toml" 2>/dev/null || true
+    log_success "Starship configuration linked"
+  else
+    log_info "Starship config will be created by stow"
+  fi
+else
+  log_warning "Starship not installed. Install with: brew install starship"
+fi
+
+# Configure LaunchTemplates
+echo "=== Configuring LaunchTemplates ==="
+if [ -d "$HOME/dotfiles/.config/launch-templates" ]; then
+  mkdir -p "$HOME/.config"
+  ln -sf "$HOME/dotfiles/.config/launch-templates" "$HOME/.config/launch-templates" 2>/dev/null || true
+  log_success "LaunchTemplates configured"
+else
+  log_info "LaunchTemplates directory not found in dotfiles"
+fi
+
+# Setup URL view script for tmux
+echo "=== Setting up URL view script ==="
+if [ -f "$HOME/dotfiles/scripts/urlview-firefox.sh" ]; then
+  chmod +x "$HOME/dotfiles/scripts/urlview-firefox.sh"
+  log_success "URL view script configured and made executable"
+else
+  log_warning "urlview-firefox.sh not found in scripts directory"
+fi
+
+# Run stow to create all symlinks
+echo "=== Running stow to create symlinks ==="
+if command -v stow &> /dev/null; then
+  cd "$HOME/dotfiles" || exit
+  log_info "Creating symlinks with stow..."
+  
+  # Run stow with adopt flag to handle existing files
+  if stow . --adopt --verbose 2>&1 | tee /tmp/stow-output.log; then
+    log_success "Dotfiles symlinked successfully"
+    
+    # Check if any files were adopted
+    if grep -q "LINK:" /tmp/stow-output.log; then
+      log_info "Some existing files were adopted into dotfiles - review git status"
+    fi
+  else
+    log_error "Stow encountered errors - check /tmp/stow-output.log"
+    log_info "You can manually run: cd ~/dotfiles && stow . --adopt"
+  fi
+  
+  # Clean up log file
+  rm -f /tmp/stow-output.log
+else
+  log_error "stow not installed. Install with: brew install stow"
+  log_info "After installing stow, run: cd ~/dotfiles && stow . --adopt"
+fi
+
 # Setup completion summary
 echo ""
 echo "=== Setup Complete! ==="
@@ -1101,17 +1233,16 @@ if ! command -v claude &> /dev/null; then
     echo ""
 fi
 
-echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"
+echo "1. Close and reopen your terminal to use Fish shell (or run 'exec fish')"
 echo "2. Configure iTerm2 to use 'JetBrainsMono Nerd Font' in Preferences → Profiles → Text"
-echo "3. Set up your dotfiles with 'stow . --adopt' (includes SuperClaude configuration and git hooks)"
-echo "4. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
-echo "5. Start sketchybar: 'brew services start sketchybar'"
-echo "6. Restart Claude Desktop to load MCP servers"
-echo "7. Verify Claude Code MCP servers with 'claude mcp list' (after installing Claude Code if needed)"
-echo "8. SuperClaude framework is ready via stow symlinks at ~/.claude/"
-echo "9. Fish shell is your default shell with great aliases and functions"
+echo "3. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
+echo "4. Start sketchybar: 'brew services start sketchybar'"
+echo "5. Restart Claude Desktop to load MCP servers"
+echo "6. Verify Claude Code MCP servers with 'claude mcp list' (after installing Claude Code if needed)"
+echo "7. SuperClaude framework is ready via stow symlinks at ~/.claude/"
+echo "8. Fish shell is now your default shell with great aliases and functions"
+echo "9. Your Starship prompt should display beautiful icons!"
 echo "10. Start coding!"
-echo "11. Your Starship prompt should display beautiful icons!"
 echo ""
 
 # Exit with appropriate code
