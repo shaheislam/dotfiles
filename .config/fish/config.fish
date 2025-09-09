@@ -76,6 +76,7 @@ if status is-interactive
     fish_add_path $HOME/.cargo/bin
     fish_add_path $HOME/.rd/bin
     fish_add_path $HOME/.bun/bin
+    fish_add_path $HOME/.claude/local/bin
     fish_add_path $HOME/dotfiles/scripts/bin
 
     # Add VSCode bin to PATH if it exists
@@ -2427,3 +2428,5 @@ if status is-interactive
 end
 
 
+
+alias claude="/Users/shaheislam/.claude/local/claude"
