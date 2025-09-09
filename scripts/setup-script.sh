@@ -1159,6 +1159,16 @@ else
   log_warning "urlview-firefox.sh not found in scripts directory"
 fi
 
+# Fix tmux-urlview plugin to use dynamic temp paths
+echo "=== Fixing tmux-urlview plugin ==="
+if [ -f "$HOME/dotfiles/scripts/fix-tmux-urlview.sh" ]; then
+  chmod +x "$HOME/dotfiles/scripts/fix-tmux-urlview.sh"
+  "$HOME/dotfiles/scripts/fix-tmux-urlview.sh"
+  log_success "tmux-urlview plugin fixed to use dynamic temp paths"
+else
+  log_info "fix-tmux-urlview.sh not found - will use default plugin behavior"
+fi
+
 # Run stow to create all symlinks
 echo "=== Running stow to create symlinks ==="
 if command -v stow &> /dev/null; then
