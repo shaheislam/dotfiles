@@ -180,7 +180,14 @@
       "Bash(~/.claude/local/claude config set --global installation_method local)",
       "Bash(~/.claude/local/claude config set --global installMethod local)",
       "Bash($HOME/.claude/local/claude:*)",
-      "Bash(claude update)"
+      "Bash(claude update)",
+      "Bash(./scripts/diagnose-tmux-urlview.sh:*)",
+      "Bash(LINES=24 COLUMNS=80 extract_url /tmp/test-urls.txt)",
+      "Bash(LINES=24 COLUMNS=80 extract_url /tmp/test-content.txt)",
+      "Bash(tmux capture-pane:*)",
+      "Bash(git restore:*)",
+      "mcp__fetch__fetch",
+      "Bash(./scripts/tmux-url-handler.sh:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

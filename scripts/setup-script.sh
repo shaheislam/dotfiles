@@ -726,10 +726,18 @@ else
   echo "footyres already installed"
 fi
 
-# Ensure footyres script is executable
+# Make scripts executable
 if [ -f "$HOME/dotfiles/scripts/bin/footyres" ]; then
   chmod +x "$HOME/dotfiles/scripts/bin/footyres"
   echo "footyres wrapper script is ready"
+fi
+
+# Make tmux URL handler executable
+if [ -f "$HOME/dotfiles/scripts/tmux-url-handler.sh" ]; then
+  chmod +x "$HOME/dotfiles/scripts/tmux-url-handler.sh"
+  log_success "tmux-url-handler.sh is now executable"
+else
+  log_warning "tmux-url-handler.sh not found"
 fi
 
 # Install Mac App Store applications using mas
