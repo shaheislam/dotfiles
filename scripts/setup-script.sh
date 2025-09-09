@@ -1071,13 +1071,26 @@ echo "- Personal repositories: Obsidian vault at ~/obsidian"
 echo "- Sports tools: footyres (football results CLI)"
 echo ""
 echo "Next steps:"
+
+# Check if Claude Code is installed and provide instructions if not
+if ! command -v claude &> /dev/null; then
+    echo ""
+    echo "⚠️  IMPORTANT: Claude Code CLI is not installed!"
+    echo "   Install Claude Code using the official installer:"
+    echo "   a) Download from: https://claude.ai/download"
+    echo "   b) After installation, run: claude update"
+    echo "   c) If upgrading from npm/bun version, run: claude migrate-installer"
+    echo "   d) Then verify MCP servers with: claude mcp list"
+    echo ""
+fi
+
 echo "1. Close and reopen your terminal or run 'source ~/.zshrc'"
 echo "2. Configure iTerm2 to use 'JetBrainsMono Nerd Font' in Preferences → Profiles → Text"
 echo "3. Set up your dotfiles with 'stow . --adopt' (includes SuperClaude configuration and git hooks)"
 echo "4. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
 echo "5. Start sketchybar: 'brew services start sketchybar'"
 echo "6. Restart Claude Desktop to load MCP servers"
-echo "7. Verify Claude Code MCP servers with 'claude mcp list'"
+echo "7. Verify Claude Code MCP servers with 'claude mcp list' (after installing Claude Code if needed)"
 echo "8. SuperClaude framework is ready via stow symlinks at ~/.claude/"
 echo "9. Fish shell is your default shell with great aliases and functions"
 echo "10. Start coding!"
