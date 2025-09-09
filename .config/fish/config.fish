@@ -48,6 +48,9 @@ if status is-interactive
     set -x BAT_THEME "Catppuccin Mocha"
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
+    
+    # Add Claude local installation to PATH
+    fish_add_path -p $HOME/.claude/local
 
     # 1Password SSH Agent Socket
     # This enables using SSH keys stored in 1Password
@@ -2429,3 +2432,5 @@ end
 
 
 
+
+alias claude="/Users/shaheislam/.claude/local/claude"

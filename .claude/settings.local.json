@@ -172,7 +172,15 @@
       "Bash(git add:*)",
       "Bash(~/dotfiles/scripts/test-urlview.sh:*)",
       "Bash(~/dotfiles/scripts/fix-1password-tmux.sh:*)",
-      "Bash(urlview:*)"
+      "Bash(urlview:*)",
+      "Bash(bun list:*)",
+      "Bash(bunx:*)",
+      "Bash(~/.claude/local/bin/claude config set installation_method local)",
+      "Bash(~/.claude/local/claude config set installation_method local)",
+      "Bash(~/.claude/local/claude config set --global installation_method local)",
+      "Bash(~/.claude/local/claude config set --global installMethod local)",
+      "Bash($HOME/.claude/local/claude:*)",
+      "Bash(claude update)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

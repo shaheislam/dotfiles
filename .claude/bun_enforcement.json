@@ -63,5 +63,10 @@
     "session_id": "f88bf117-6fca-4128-8499-3e8e9ee5b1c4",
     "blocked_command": "npm list -g @anthropic-ai/claude-code 2>/dev/null",
     "suggested_command": "bun list -g @anthropic-ai/claude-code 2>/dev/null"
+  },
+  {
+    "session_id": "f09278ce-079f-48df-8afc-de7dbe3e94e8",
+    "blocked_command": "npm list -g @claude-ai/cli 2>/dev/null | head -2",
+    "suggested_command": "bun list -g @claude-ai/cli 2>/dev/null | head -2"
   }
 ]
