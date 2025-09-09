@@ -171,7 +171,8 @@
       "Bash(/Users/shahe/dotfiles/scripts/urlview-firefox.sh:*)",
       "Bash(git add:*)",
       "Bash(~/dotfiles/scripts/test-urlview.sh:*)",
-      "Bash(~/dotfiles/scripts/fix-1password-tmux.sh:*)"
+      "Bash(~/dotfiles/scripts/fix-1password-tmux.sh:*)",
+      "Bash(urlview:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
