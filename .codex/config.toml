@@ -14,3 +14,48 @@ args = ["-y", "@playwright/mcp@latest"]
 # [mcp_servers.supabase.env]
 # SUPABASE_ACCESS_TOKEN = "${SUPABASE_ACCESS_TOKEN}"
 #
+
+[mcp_servers.browser-tools]
+command = "bunx"
+args = ["-y", "@agentdeskai/browser-tools-mcp@1.1.0"]
+
+[mcp_servers.browser-tools.env]
+NODE_OPTIONS = "--no-warnings"
+
+[mcp_servers.sequential-thinking]
+command = "bunx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+[mcp_servers.github]
+command = "bunx"
+args = ["-y", "@modelcontextprotocol/server-github"]
+
+[mcp_servers.memory]
+command = "bunx"
+args = ["-y", "@modelcontextprotocol/server-memory"]
+
+[mcp_servers.git]
+command = "pipx"
+args = ["run", "mcp-server-git", "--repository", "${HOME}/dotfiles"]
+
+[mcp_servers.fetch]
+command = "pipx"
+args = ["run", "mcp-server-fetch"]
+
+[mcp_servers.duckduckgo]
+command = "bunx"
+args = ["-y", "duckduckgo-mcp-server"]
+
+[mcp_servers.linear]
+command = "bunx"
+args = ["-y", "linear-mcp-server"]
+
+[mcp_servers.linear.env]
+LINEAR_API_KEY = "${LINEAR_API_KEY}"
+
+[mcp_servers.exa]
+command = "bunx"
+args = ["-y", "exa-mcp-server"]
+
+[mcp_servers.exa.env]
+EXA_API_KEY = "${EXA_API_KEY}"
