@@ -408,6 +408,17 @@ echo "=== Running TPM plugin installation ==="
 if command -v tmux &> /dev/null && [ -f "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]; then
   echo "Installing/updating tmux plugins via TPM..."
   $HOME/.tmux/plugins/tpm/bin/install_plugins || echo "Note: TPM plugin installation may need to be run from within tmux"
+  
+  # Force install critical plugins if they're missing
+  if [ ! -d "$HOME/.tmux/plugins/tmux-cpu" ]; then
+    echo "Force installing tmux-cpu plugin..."
+    git clone https://github.com/tmux-plugins/tmux-cpu "$HOME/.tmux/plugins/tmux-cpu" || log_warning "Failed to clone tmux-cpu"
+  fi
+  if [ ! -d "$HOME/.tmux/plugins/tmux-battery" ]; then
+    echo "Force installing tmux-battery plugin..."
+    git clone https://github.com/tmux-plugins/tmux-battery "$HOME/.tmux/plugins/tmux-battery" || log_warning "Failed to clone tmux-battery"
+  fi
+  
   echo "Tmux plugins installation attempted. If any failed, start tmux and press 'prefix' + 'I' (Ctrl-Space + I)"
 else
   echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (Ctrl-Space + I) to install the plugins."
@@ -732,13 +743,23 @@ if [ -f "$HOME/dotfiles/scripts/bin/footyres" ]; then
   echo "footyres wrapper script is ready"
 fi
 
-# Make tmux URL handler executable
+# Make tmux scripts executable
 if [ -f "$HOME/dotfiles/scripts/tmux-url-handler.sh" ]; then
   chmod +x "$HOME/dotfiles/scripts/tmux-url-handler.sh"
   log_success "tmux-url-handler.sh is now executable"
 else
   log_warning "tmux-url-handler.sh not found"
 fi
+
+# Make tmux formatting scripts executable
+for script in tmux-cpu-formatted.sh tmux-ram-formatted.sh tmux-battery-formatted.sh; do
+  if [ -f "$HOME/dotfiles/scripts/$script" ]; then
+    chmod +x "$HOME/dotfiles/scripts/$script"
+    log_success "$script is now executable"
+  else
+    log_warning "$script not found"
+  fi
+done
 
 # Install Mac App Store applications using mas
 echo "=== Installing Mac App Store Applications ==="
