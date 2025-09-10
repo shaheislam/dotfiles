@@ -26,9 +26,9 @@ function git-check-identity --description "Check Git user configuration for curr
     echo "  User: $git_user"
     echo "  Email: $git_email"
     
-    # Check current GitHub identity via 1Password SSH
+    # Check current GitHub identity
     echo ""
-    echo "GitHub authentication (via 1Password SSH):"
+    echo "GitHub authentication:"
     ssh -T git@github.com 2>&1 | grep "Hi" || echo "  Not authenticated"
 
     # Determine recommended configuration based on repository
@@ -49,7 +49,6 @@ function git-check-identity --description "Check Git user configuration for curr
     else if string match -q "*bitbucket.org*" $remote_url
         echo ""
         echo "✓ This is a Bitbucket repository"
-        echo "  Using 1Password SSH for authentication"
 
     else
         echo ""
@@ -57,14 +56,14 @@ function git-check-identity --description "Check Git user configuration for curr
         echo "  Remote: $remote_url"
     end
 
-    # Show 1Password SSH agent status
+    # Show SSH agent status
     echo ""
-    echo "1Password SSH Agent:"
-    if test -S "$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
-        echo "  ✓ Socket is available"
-        SSH_AUTH_SOCK="$HOME/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock" ssh-add -l 2>/dev/null | head -1 | sed 's/^/  /' || echo "  No identities available"
+    echo "SSH Agent:"
+    if set -q SSH_AUTH_SOCK
+        echo "  ✓ Agent is running"
+        ssh-add -l 2>/dev/null | head -1 | sed 's/^/  /' || echo "  No identities loaded"
     else
-        echo "  ⚠ Socket not found - check 1Password SSH agent settings"
+        echo "  ⚠ Agent not running"
     end
 end
 

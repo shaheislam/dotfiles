@@ -18,8 +18,8 @@ case "$1" in
     *)
         echo "Usage: $0 {disable|enable|status}"
         echo ""
-        echo "Disable automatic restore to prevent 1Password prompts on tmux start"
-        echo "Then manually restore when ready to approve all connections at once"
+        echo "Disable automatic restore to prevent prompts on tmux start"
+        echo "Then manually restore when ready"
         exit 1
         ;;
 esac

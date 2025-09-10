@@ -19,7 +19,6 @@ function git-auto-remote --description "Automatically set git remote URL based o
         set -l repo_path (echo $remote_url | sed -E 's/.*[:\/]([^\/]+\/[^\/]+)(\.git)?$/\1/')
         
         # Set to use github.com (standard) for DFE repos
-        # DFE key should be second in 1Password config
         git remote set-url origin git@github.com:$repo_path.git
         echo "✓ Set remote to standard GitHub for DFE repo: $repo_path"
         
@@ -28,7 +27,6 @@ function git-auto-remote --description "Automatically set git remote URL based o
         set -l repo_path (echo $remote_url | sed -E 's/.*[:\/]([^\/]+\/[^\/]+)(\.git)?$/\1/')
         
         # Set to use github.com (standard) for personal repos
-        # Personal key should be first in 1Password config
         git remote set-url origin git@github.com:$repo_path.git
         echo "✓ Set remote to standard GitHub for personal repo: $repo_path"
     end
