@@ -59,6 +59,12 @@
         "@turbot/steampipe-mcp",
         "postgresql://steampipe@localhost:9193/steampipe"
       ]
+    },
+    "context7": {
+      "command": "bunx",
+      "args": [
+        "@upstash/context7-mcp"
+      ]
     }
   }
 }

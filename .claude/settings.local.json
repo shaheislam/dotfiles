@@ -198,7 +198,9 @@
       "Bash(~/.tmux/plugins/tmux-floax/scripts/floax.sh:*)",
       "Bash(~/dotfiles/scripts/fix-floax-plugin.sh:*)",
       "WebFetch(domain:www.npmjs.com)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "WebFetch(domain:registry.terraform.io)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
