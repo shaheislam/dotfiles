@@ -1,0 +1,16 @@
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+
+# [mcp_servers.supabase]
+# command = "npx"
+# args = [
+#   "-y",
+#   "@supabase/mcp-server-supabase@latest",
+#   "--read-only",
+#   "--project-ref=xzyordxXXXXXfofmoafh"
+# ]
+#
+# [mcp_servers.supabase.env]
+# SUPABASE_ACCESS_TOKEN = "${SUPABASE_ACCESS_TOKEN}"
+#
