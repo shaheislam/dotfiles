@@ -1,72 +1,12 @@
 [
   {
-    "session_id": "a209c61e-4737-45a9-9672-391f2ced9988",
-    "blocked_command": "claude mcp add linear npx linear-mcp-server --env LINEAR_API_KEY",
-    "suggested_command": "claude mcp add linear bunx linear-mcp-server --env LINEAR_API_KEY"
+    "session_id": "c926ec1a-25e6-411b-832a-0ebb5c5ef9f9",
+    "blocked_command": "npm install -g @openai/codex",
+    "suggested_command": "bun install -g @openai/codex"
   },
   {
-    "session_id": "c2f7f381-84d5-467e-b0ad-425a3e716526",
-    "blocked_command": "cd ~/dotfiles && npm install -g @musistudio/claude-code-router 2>&1",
-    "suggested_command": "cd ~/dotfiles && bun install -g @musistudio/claude-code-router 2>&1"
-  },
-  {
-    "session_id": "91b68ff6-dd87-40d1-9fc6-cae95e622045",
-    "blocked_command": "fish -c \"complete -C 'npm run '\" | head -10",
-    "suggested_command": "fish -c \"complete -C 'bun run '\" | head -10"
-  },
-  {
-    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
-    "blocked_command": "npm i -g @anthropic-ai/claude-code",
-    "suggested_command": "bun i -g @anthropic-ai/claude-code"
-  },
-  {
-    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
-    "blocked_command": "bunx npm view @anthropic-ai/claude-code version",
-    "suggested_command": "bunx bun view @anthropic-ai/claude-code version"
-  },
-  {
-    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
-    "blocked_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo npm uninstall -g @anthropic-ai/claude-code",
-    "suggested_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo bun uninstall -g @anthropic-ai/claude-code"
-  },
-  {
-    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
-    "blocked_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code\necho \"Cleaned up npm installation\"",
-    "suggested_command": "sudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/.claude-code-2DTsDk1V\nsudo rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code\necho \"Cleaned up bun installation\""
-  },
-  {
-    "session_id": "e344ff1d-8857-4da2-86b0-b283b7ed4eb7",
-    "blocked_command": "ls -la /opt/homebrew/lib/node_modules/@anthropic-ai/ 2>/dev/null || echo \"npm directory cleaned up\"",
-    "suggested_command": "ls -la /opt/homebrew/lib/node_modules/@anthropic-ai/ 2>/dev/null || echo \"bun directory cleaned up\""
-  },
-  {
-    "session_id": "f26c74cd-3562-4452-8326-874cf7487023",
-    "blocked_command": "npx @modelcontextprotocol/server-sequential-thinking --version 2>&1 | head -5",
-    "suggested_command": "bunx @modelcontextprotocol/server-sequential-thinking --version 2>&1 | head -5"
-  },
-  {
-    "session_id": "29d69be1-70aa-4f85-8bea-49dd78924867",
-    "blocked_command": "grep -n '\"command\": \"npx @openbnb' /Users/shahe/dotfiles/.claude.json",
-    "suggested_command": "grep -n '\"command\": \"bunx @openbnb' /Users/shahe/dotfiles/.claude.json"
-  },
-  {
-    "session_id": "29d69be1-70aa-4f85-8bea-49dd78924867",
-    "blocked_command": "sed -i '' 's/\"command\": \"npx @openbnb/\"command\": \"bunx @openbnb/g' /Users/shahe/dotfiles/.claude.json",
-    "suggested_command": "sed -i '' 's/\"command\": \"bunx @openbnb/\"command\": \"bunx @openbnb/g' /Users/shahe/dotfiles/.claude.json"
-  },
-  {
-    "session_id": "0d570f10-8da2-4be1-a6e0-5c65e1720922",
-    "blocked_command": "npm list -g @anthropic-ai/claude-code",
-    "suggested_command": "bun list -g @anthropic-ai/claude-code"
-  },
-  {
-    "session_id": "f88bf117-6fca-4128-8499-3e8e9ee5b1c4",
-    "blocked_command": "npm list -g @anthropic-ai/claude-code 2>/dev/null",
-    "suggested_command": "bun list -g @anthropic-ai/claude-code 2>/dev/null"
-  },
-  {
-    "session_id": "f09278ce-079f-48df-8afc-de7dbe3e94e8",
-    "blocked_command": "npm list -g @claude-ai/cli 2>/dev/null | head -2",
-    "suggested_command": "bun list -g @claude-ai/cli 2>/dev/null | head -2"
+    "session_id": "a22d5b17-0761-4d91-a026-aed123b2d7fd",
+    "blocked_command": "npm install -g @upstash/context7",
+    "suggested_command": "bun install -g @upstash/context7"
   }
 ]
