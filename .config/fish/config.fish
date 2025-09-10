@@ -270,37 +270,6 @@ if status is-interactive
         end
     end
     
-    # Directory change notification with visual feedback
-    function __fish_directory_change_notify --on-variable PWD
-        # Show directory info when changing directories
-        set -l dir_name (basename $PWD)
-        set -l file_count (count (ls -A 2>/dev/null))
-        
-        # Only show for non-home directories
-        if test "$PWD" != "$HOME"
-            set_color blue
-            echo "📁 → $dir_name ($file_count items)"
-            set_color normal
-        end
-    end
-    
-    # Git status notification on directory change
-    function __fish_git_status_notify --on-variable PWD
-        if git rev-parse --git-dir >/dev/null 2>&1
-            set -l branch (git branch --show-current 2>/dev/null)
-            set -l status_count (git status --porcelain 2>/dev/null | wc -l | string trim)
-            
-            if test $status_count -gt 0
-                set_color yellow
-                echo "🔀 Git: $branch ($status_count uncommitted changes)"
-                set_color normal
-            else
-                set_color green
-                echo "🔀 Git: $branch (clean)"
-                set_color normal
-            end
-        end
-    end
     
     # Loading indicator for slow commands
     function __fish_show_loading --description "Show loading animation"
