@@ -432,6 +432,14 @@ else
   echo "Warning: fix_tmux_continuum.sh script not found"
 fi
 
+# Apply Floax plugin fix
+echo "=== Applying Floax plugin fix ==="
+if [ -f "$(pwd)/scripts/fix-floax-plugin.sh" ]; then
+  bash "$(pwd)/scripts/fix-floax-plugin.sh"
+else
+  echo "Warning: fix-floax-plugin.sh script not found"
+fi
+
 # Ensure tmux-fingers is properly linked (installed via Homebrew)
 if command -v tmux-fingers &> /dev/null; then
   log_success "tmux-fingers installed via Homebrew"
