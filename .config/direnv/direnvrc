@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # direnv + 1Password integration
 
+# Logging functions
+log_status() {
+    echo "$1" >&2
+}
+
+log_error() {
+    echo "$1" >&2
+}
+
 # Function to load secrets from 1Password
 # Usage: op_load "vault/item/field" "ENV_VAR_NAME"
 op_load() {
