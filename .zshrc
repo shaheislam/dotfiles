@@ -86,6 +86,7 @@ alias ls="eza"
 alias la="eza -al"
 alias cat="bat"
 alias k="kubectl"
+alias claude="${HOME}/.claude/local/claude"
 
 # bat theme
 export BAT_THEME=tokyonight_night

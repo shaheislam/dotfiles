@@ -200,7 +200,8 @@
       "WebFetch(domain:www.npmjs.com)",
       "Bash(bun install:*)",
       "mcp__sequential-thinking__sequentialthinking",
-      "WebFetch(domain:registry.terraform.io)"
+      "WebFetch(domain:registry.terraform.io)",
+      "Bash(zsh:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",

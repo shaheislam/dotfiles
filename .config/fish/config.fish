@@ -610,6 +610,7 @@ if status is-interactive
     alias act="act --container-architecture linux/amd64"  # GitHub Actions locally with ARM64 compatibility
 
     # AI Tools
+    alias claude="$HOME/.claude/local/claude"  # Claude CLI tool
     # Use 'ccr code' or just 'ccr' to start Claude Code Router
     alias claude-router="command ccr code"  # Alternative alias for Claude Code Router
 
