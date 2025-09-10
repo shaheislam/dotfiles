@@ -194,7 +194,9 @@
       "Bash(~/.tmux/plugins/tmux-battery/scripts/battery_percentage.sh:*)",
       "mcp__filesystem__read_text_file",
       "mcp__filesystem__edit_file",
-      "Bash(direnv reload:*)"
+      "Bash(direnv reload:*)",
+      "Bash(~/.tmux/plugins/tmux-floax/scripts/floax.sh:*)",
+      "Bash(~/dotfiles/scripts/fix-floax-plugin.sh:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
