@@ -39,7 +39,7 @@ function fish-help --description "Show custom Fish commands and features"
 
     echo "💡 Tips:"
     echo "  - In WezTerm, arrow keys work in Ctrl+R history search"
-    echo "  - SSH keys are managed via 1Password SSH agent with host aliases"
+    echo "  - SSH keys are managed via SSH agent with host aliases"
     echo "  - Use git@github.com-personal for personal repos, git@github.com-dfe for work repos"
     echo "  - Git abbreviations: g, ga, gaa, gc, gco, gd, gp, gst, etc."
     echo "  - Kubectl shortcuts: k, kgp, kgs, kgd, kaf, klog, kexec"

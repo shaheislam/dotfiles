@@ -203,7 +203,6 @@ cask "session-manager-plugin"
 cask "raycast"
 cask "altair-graphql-client"  # GraphQL IDE for testing and development
 cask "willow"  # Voice assistant application - https://willowvoice.com/
-cask "1password-cli"  # 1Password CLI for SSH agent integration
 brew "sketchybar"
 
 # Mac App Store Applications

@@ -212,13 +212,6 @@ else
   echo "Granted already installed"
 fi
 
-# Install 1Password CLI for SSH agent integration
-if ! command -v op &> /dev/null; then
-  echo "Installing 1Password CLI for SSH agent integration..."
-  brew install --cask 1password-cli
-else
-  echo "1Password CLI already installed"
-fi
 
 # Install SketchyBar (status bar) - needs special handling
 if ! command -v sketchybar &> /dev/null; then
@@ -1074,14 +1067,9 @@ else
     echo "Claude Code not found, skipping configuration"
 fi
 
-# Configure direnv with 1Password integration
-echo "=== Configuring direnv with 1Password integration ==="
+# Configure direnv
+echo "=== Configuring direnv ==="
 if command -v direnv &> /dev/null; then
-  # Run direnv setup script if it exists
-  if [ -f "$HOME/dotfiles/scripts/setup-direnv-1password.sh" ]; then
-    log_info "Setting up direnv with 1Password integration..."
-    bash "$HOME/dotfiles/scripts/setup-direnv-1password.sh" || log_warning "direnv 1Password setup had issues - check manually"
-  fi
   # Create direnv config directory
   mkdir -p "$HOME/.config/direnv"
   # Link direnv config if it exists in dotfiles

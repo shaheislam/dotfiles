@@ -7,13 +7,6 @@
 	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINul6AslUSv8Wda9xggr4Dt2X77BD4lbDn2TgMww0lfi
 [init]
 	templateDir = ~/.config/git
-[gpg]
-	format = ssh
-[gpg "ssh"]
-	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
-	allowedsignersfile = ~/.ssh/allowed_signers
-[commit]
-	gpgsign = true
 
 # Include personal config for personal projects
 [includeIf "gitdir:~/dotfiles/"]
