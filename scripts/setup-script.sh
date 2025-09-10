@@ -658,6 +658,27 @@ if [ -f "$HOME/dotfiles/.config/claude-code-router/config.json" ] && [ ! -f "$HO
   echo "Claude Code Router configuration linked from dotfiles"
 fi
 
+# Install OpenAI Codex CLI
+echo "=== Installing OpenAI Codex CLI ==="
+if command -v npm &> /dev/null; then
+  if ! command -v codex &> /dev/null; then
+    echo "Installing OpenAI Codex CLI..."
+    if bun install -g @openai/codex || npm install -g @openai/codex; then
+      log_success "OpenAI Codex CLI installed"
+      echo "ℹ️  OpenAI Codex CLI is ready!"
+      echo "   - Run 'codex' to start the AI coding assistant"
+      echo "   - Sign in with your ChatGPT account when prompted"
+      echo "   - Get AI-powered coding assistance locally"
+    else
+      log_error "Failed to install OpenAI Codex CLI"
+    fi
+  else
+    log_success "OpenAI Codex CLI already installed"
+  fi
+else
+  log_warning "npm not found. Install Node.js first to use OpenAI Codex CLI"
+fi
+
 # Configure Claude Code MCP servers (user scope)
 echo "=== Configuring Claude Code MCP servers ==="
 if command -v claude &> /dev/null; then
@@ -1240,6 +1261,7 @@ echo "- Security tools: vet (safe remote script execution), gitleaks (secret det
 echo "- AWS log tools: aws-log-viewer (interactive s3grep TUI)"
 echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Claude Code: CLI tool with SuperClaude framework"
+echo "- AI Tools: OpenAI Codex CLI, Claude Code Router"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"

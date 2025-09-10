@@ -196,7 +196,9 @@
       "mcp__filesystem__edit_file",
       "Bash(direnv reload:*)",
       "Bash(~/.tmux/plugins/tmux-floax/scripts/floax.sh:*)",
-      "Bash(~/dotfiles/scripts/fix-floax-plugin.sh:*)"
+      "Bash(~/dotfiles/scripts/fix-floax-plugin.sh:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(bun install:*)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
