@@ -52,9 +52,21 @@ if status is-interactive
     # Add Claude local installation to PATH
     fish_add_path -p $HOME/.claude/local
 
-    # 1Password SSH Agent Socket
-    # This enables using SSH keys stored in 1Password
-    set -x SSH_AUTH_SOCK ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
+    # 1Password SSH Agent Socket - DISABLED globally to prevent auth prompts
+    # Use git-with-1p, gp, gpl, gf commands when you need SSH for git
+    # set -x SSH_AUTH_SOCK ~/Library/Group\ Containers/2BUA8C4S2C.com.1password/t/agent.sock
+    
+    # 1Password CLI configuration to reduce authentication prompts
+    # Keep session alive for 30 minutes of inactivity
+    set -x OP_SESSION_TIMEOUT 1800
+    # Use biometric authentication when available
+    set -x OP_BIOMETRIC_UNLOCK_ENABLED true
+    
+    # DISABLED: This was causing 1Password prompts on every new window
+    # Only activate SSH agent when actually needed for git operations
+    # if test -S "$SSH_AUTH_SOCK"
+    #     ssh-add -l &>/dev/null
+    # end
 
     # Additional environment variables from extended config
     set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages

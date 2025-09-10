@@ -188,7 +188,9 @@
       "Bash(git restore:*)",
       "mcp__fetch__fetch",
       "Bash(./scripts/tmux-url-handler.sh:*)",
-      "Bash(readlink:*)"
+      "Bash(readlink:*)",
+      "Bash(tmux:*)",
+      "Bash(~/.tmux/plugins/tmux-floax/floax.tmux)"
     ],
     "additionalDirectories": [
       "/Users/shahe/obsidian/",
