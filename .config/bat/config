@@ -1,1 +1,16 @@
---theme="tokyonight_night"
+# Bat configuration file
+
+# Set the theme to Catppuccin Mocha
+--theme="Catppuccin Mocha"
+
+# Show line numbers and other decorations
+--style=numbers,changes,header
+
+# Use italic text on the terminal (not supported on all terminals)
+--italic-text=always
+
+# Add mouse support
+--paging=auto
+
+# Wrap text
+--wrap=auto

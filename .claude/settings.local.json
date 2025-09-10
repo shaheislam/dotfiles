@@ -11,7 +11,8 @@
       "Bash(cp:*)",
       "Bash(fish:*)",
       "Bash(ssh:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(bat:*)"
     ],
     "deny": [],
     "ask": []
