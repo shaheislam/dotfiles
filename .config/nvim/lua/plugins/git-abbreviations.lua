@@ -18,7 +18,7 @@ return {
       vim.cmd("cnoreabbrev gau Git add --update")
       
       -- Commit commands
-      vim.cmd("cnoreabbrev gc Git commit -v")
+      vim.cmd("cnoreabbrev gc Git commit -m")
       vim.cmd("cnoreabbrev gca Git commit -v -a")
       vim.cmd("cnoreabbrev gcm Git commit -m")
       vim.cmd("cnoreabbrev gcam Git commit -a -m")
@@ -62,7 +62,7 @@ return {
       
       -- Log commands
       vim.cmd("cnoreabbrev gl Git log")
-      vim.cmd("cnoreabbrev gll Git log --graph --pretty='%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset'")
+      vim.cmd("cnoreabbrev gll Git pull")
       vim.cmd("cnoreabbrev glol Git log --graph --pretty='%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset' --abbrev-commit")
       vim.cmd("cnoreabbrev glola Git log --graph --pretty='%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%ar) %C(bold blue)<%an>%Creset' --abbrev-commit --all")
       vim.cmd("cnoreabbrev glog Git log --oneline --decorate --graph")
@@ -82,7 +82,7 @@ return {
       vim.cmd("cnoreabbrev gmum Git merge upstream/master")
       
       -- Pull commands
-      vim.cmd("cnoreabbrev gp Git pull")
+      vim.cmd("cnoreabbrev gp Git push")
       vim.cmd("cnoreabbrev gpr Git pull --rebase")
       vim.cmd("cnoreabbrev gpu Git pull upstream")
       vim.cmd("cnoreabbrev gpv Git pull -v")
