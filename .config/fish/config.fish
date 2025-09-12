@@ -2400,4 +2400,3 @@ end
 
 
 
-alias claude="/Users/shahe/.claude/local/claude"
