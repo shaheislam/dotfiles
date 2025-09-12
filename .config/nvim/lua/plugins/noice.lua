@@ -31,7 +31,7 @@ return {
         },
       },
       messages = {
-        view = "mini",
+        view = "notify",  -- Use notify view for better message stacking
       },
       mini = {
         win_options = {
@@ -46,7 +46,7 @@ return {
           max_height = 10, -- Limit height to prevent taking too much space
         },
         position = {
-          row = 1, -- Position at top of screen
+          row = -2, -- Position at bottom of screen (negative = from bottom)
           col = "50%", -- Centered horizontally
         },
         align = "center", -- Center align the text within the window
@@ -116,6 +116,15 @@ return {
       enabled = true,
       view = "notify", -- Use notify view for better popup notifications
     },
+    -- Message configuration
+    messages = {
+      enabled = true,
+      view = "notify",  -- Use notify for messages
+      view_error = "notify",
+      view_warn = "notify",
+      view_history = "messages",
+      view_search = "virtualtext",
+    },
     -- Presets
     presets = {
       bottom_search = false, -- Use default search position
@@ -156,7 +165,7 @@ return {
             wrap = true,
             linebreak = true,
           },
-          timeout = 3000, -- Auto-dismiss after 3 seconds (3000ms)
+          -- timeout removed - messages stay until dismissed with Esc
         },
       },
       -- Route long messages to split view

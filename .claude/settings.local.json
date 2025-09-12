@@ -17,7 +17,8 @@
       "Bash(~/.tmux/plugins/tpm/scripts/install_plugins.sh)",
       "Bash(nvim:*)",
       "Read(//Users/shahe/.local/share/nvim/mason/packages/**)",
-      "mcp__sequential-thinking__sequentialthinking"
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
