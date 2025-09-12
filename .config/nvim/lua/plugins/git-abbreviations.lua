@@ -8,6 +8,9 @@ return {
       -- Define command abbreviations for Git commands
       -- These will auto-expand when typed in command mode
       
+      -- Abbreviation for git -> Git (will work when you type :git<space>)
+      vim.cmd("cnoreabbrev <expr> git (getcmdtype() == ':' && getcmdline() =~ '^git$') ? 'Git' : 'git'")
+      
       -- Basic Git commands
       vim.cmd("cnoreabbrev ga Git add")
       vim.cmd("cnoreabbrev gaa Git add --all")
@@ -169,9 +172,6 @@ return {
       -- Work in progress commit (simplified to avoid shell command issues)
       -- vim.cmd("cnoreabbrev gwip Git add -A; git rm $(git ls-files --deleted) 2> /dev/null; git commit --no-verify --no-gpg-sign -m '--wip-- [skip ci]'")
       -- vim.cmd("cnoreabbrev gunwip Git log -n 1 | grep -q -c '--wip--' && git reset HEAD~1")
-      
-      -- Alias for git itself (for quick access)
-      vim.cmd("cnoreabbrev g Git")
     end,
   },
 }
