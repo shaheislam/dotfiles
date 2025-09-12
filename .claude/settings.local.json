@@ -14,7 +14,8 @@
       "Bash(git pull:*)",
       "Bash(bat:*)",
       "Bash(tmux list-keys:*)",
-      "Bash(~/.tmux/plugins/tpm/scripts/install_plugins.sh)"
+      "Bash(~/.tmux/plugins/tpm/scripts/install_plugins.sh)",
+      "Bash(nvim:*)"
     ],
     "deny": [],
     "ask": []

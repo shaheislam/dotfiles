@@ -95,8 +95,17 @@ return {
     },
   },
 
-  -- Disable fugitive since we're using Neogit
-  { "tpope/vim-fugitive", enabled = false },
+  -- Enable fugitive for :Git commands (works alongside Neogit)
+  {
+    "tpope/vim-fugitive",
+    config = function()
+      -- Create command abbreviation so :git expands to :Git
+      vim.cmd([[
+        " Command-line abbreviation for git -> Git
+        cnoreabbrev <expr> git (getcmdtype() == ':' && getcmdline() =~ '^git$') ? 'Git' : 'git'
+      ]])
+    end,
+  },
   
   -- Keep rhubarb for GitHub integration
   "tpope/vim-rhubarb",
