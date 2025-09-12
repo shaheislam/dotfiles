@@ -77,17 +77,27 @@ return {
     },
   },
 
-  -- Git fugitive (LazyVim includes this but we'll ensure our keymaps)
+  -- Neogit - Magit-inspired Git interface
   {
-    "tpope/vim-fugitive",
+    "NeogitOrg/neogit",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "sindrets/diffview.nvim",
+      "nvim-telescope/telescope.nvim",
+    },
+    config = true,
+    cmd = { "Neogit" }, -- This ensures the command is available
     keys = {
-      { "<leader>gs", "<cmd>Git<cr>", desc = "Git Status" },
-      { "<leader>gp", "<cmd>Git push<cr>", desc = "Git Push" },
-      { "<leader>gl", "<cmd>Git pull<cr>", desc = "Git Pull" },
-      { "<leader>gb", "<cmd>Git blame<cr>", desc = "Git Blame" },
+      { "<leader>gs", "<cmd>Neogit<cr>", desc = "Git Status (Neogit)" },
+      { "<leader>gc", "<cmd>Neogit commit<cr>", desc = "Git Commit" },
+      { "<leader>gp", "<cmd>Neogit push<cr>", desc = "Git Push" },
+      { "<leader>gl", "<cmd>Neogit pull<cr>", desc = "Git Pull" },
     },
   },
 
-  -- Ensure rhubarb for GitHub integration
+  -- Disable fugitive since we're using Neogit
+  { "tpope/vim-fugitive", enabled = false },
+  
+  -- Keep rhubarb for GitHub integration
   "tpope/vim-rhubarb",
 }
