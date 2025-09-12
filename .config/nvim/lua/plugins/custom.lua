@@ -8,6 +8,7 @@ return {
     "stevearc/oil.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     lazy = false, -- Load immediately to override neo-tree
+    cmd = { "Oil" }, -- Ensure Oil command is available from cmdline
     opts = {
       default_file_explorer = true,
       delete_to_trash = true,

@@ -1,6 +1,7 @@
 return {
   {
     "f-person/git-blame.nvim",
+    cmd = { "GitBlameToggle", "GitBlameCopySHA", "GitBlameOpenCommitURL", "GitBlameEnable", "GitBlameDisable" },
     opts = {
       -- Show blame info in virtual text
       enabled = true,
