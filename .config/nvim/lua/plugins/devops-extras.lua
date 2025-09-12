@@ -12,15 +12,16 @@ return {
       "rcarriga/nvim-dap-ui",
       "theHamsta/nvim-dap-virtual-text",
       "nvim-telescope/telescope-dap.nvim",
-      "jay-babu/mason-nvim-dap.nvim", -- Mason integration for DAP
+      -- "jay-babu/mason-nvim-dap.nvim", -- Mason integration for DAP (disabled due to issues)
     },
     config = function()
       require("dapui").setup()
       require("nvim-dap-virtual-text").setup()
-      require("mason-nvim-dap").setup({
-        ensure_installed = { "delve", "python", "node2", "chrome", "firefox" },
-        automatic_installation = true,
-      })
+      -- Commenting out mason-nvim-dap setup to fix startup issues
+      -- require("mason-nvim-dap").setup({
+      --   ensure_installed = { "delve", "python", "node2", "chrome", "firefox" },
+      --   automatic_installation = true,
+      -- })
     end,
   },
 
