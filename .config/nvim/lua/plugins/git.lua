@@ -1,7 +1,90 @@
 -- ~/.config/nvim/lua/plugins/git.lua
 return {
-  -- Disable LazyVim's default gitsigns since you don't want it
-  { "lewis6991/gitsigns.nvim", enabled = false },
+  -- Gitsigns for visual git indicators and inline operations
+  {
+    "lewis6991/gitsigns.nvim",
+    event = { "BufReadPre", "BufNewFile" },
+    opts = {
+      signs = {
+        add          = { text = '│' },
+        change       = { text = '│' },
+        delete       = { text = '_' },
+        topdelete    = { text = '‾' },
+        changedelete = { text = '~' },
+        untracked    = { text = '┆' },
+      },
+      signcolumn = true,  -- Toggle with `:Gitsigns toggle_signs`
+      numhl      = false, -- Toggle with `:Gitsigns toggle_numhl`
+      linehl     = false, -- Toggle with `:Gitsigns toggle_linehl`
+      word_diff  = false, -- Toggle with `:Gitsigns toggle_word_diff`
+      watch_gitdir = {
+        interval = 1000,
+        follow_files = true
+      },
+      attach_to_untracked = true,
+      current_line_blame = false, -- Toggle with `:Gitsigns toggle_current_line_blame`
+      current_line_blame_opts = {
+        virt_text = true,
+        virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
+        delay = 1000,
+        ignore_whitespace = false,
+      },
+      current_line_blame_formatter = '<author>, <author_time:%Y-%m-%d> - <summary>',
+      sign_priority = 6,
+      update_debounce = 100,
+      status_formatter = nil, -- Use default
+      max_file_length = 40000, -- Disable if file is longer than this (in lines)
+      preview_config = {
+        -- Options passed to nvim_open_win
+        border = 'single',
+        style = 'minimal',
+        relative = 'cursor',
+        row = 0,
+        col = 1
+      },
+      on_attach = function(bufnr)
+        local gs = package.loaded.gitsigns
+
+        local function map(mode, l, r, opts)
+          opts = opts or {}
+          opts.buffer = bufnr
+          vim.keymap.set(mode, l, r, opts)
+        end
+
+        -- Navigation between hunks (]c and [c for next/previous change)
+        map('n', ']c', function()
+          if vim.wo.diff then return ']c' end
+          vim.schedule(function() gs.next_hunk() end)
+          return '<Ignore>'
+        end, {expr=true, desc = "Next Git hunk"})
+
+        map('n', '[c', function()
+          if vim.wo.diff then return '[c' end
+          vim.schedule(function() gs.prev_hunk() end)
+          return '<Ignore>'
+        end, {expr=true, desc = "Previous Git hunk"})
+
+        -- Hunk actions (using <leader>h prefix to avoid conflicts with Neogit)
+        map('n', '<leader>hs', gs.stage_hunk, { desc = "Stage hunk" })
+        map('n', '<leader>hr', gs.reset_hunk, { desc = "Reset hunk" })
+        map('v', '<leader>hs', function() gs.stage_hunk {vim.fn.line('.'), vim.fn.line('v')} end, { desc = "Stage selected hunk" })
+        map('v', '<leader>hr', function() gs.reset_hunk {vim.fn.line('.'), vim.fn.line('v')} end, { desc = "Reset selected hunk" })
+        map('n', '<leader>hS', gs.stage_buffer, { desc = "Stage buffer" })
+        map('n', '<leader>hu', gs.undo_stage_hunk, { desc = "Undo stage hunk" })
+        map('n', '<leader>hR', gs.reset_buffer, { desc = "Reset buffer" })
+        map('n', '<leader>hp', gs.preview_hunk, { desc = "Preview hunk" })
+        map('n', '<leader>hb', function() gs.blame_line{full=true} end, { desc = "Blame line (full)" })
+        map('n', '<leader>hB', gs.toggle_current_line_blame, { desc = "Toggle blame line" })
+        map('n', '<leader>hd', gs.diffthis, { desc = "Diff this" })
+        map('n', '<leader>hD', function() gs.diffthis('~') end, { desc = "Diff this ~" })
+        map('n', '<leader>ht', gs.toggle_deleted, { desc = "Toggle deleted" })
+
+        -- Text object for hunks (ih = inner hunk, ah = around hunk)
+        map({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select inner hunk" })
+        map({'o', 'x'}, 'ah', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select around hunk" })
+      end
+    },
+  },
 
   -- Enhanced toggleterm with lazygit integration
   {
@@ -77,22 +160,10 @@ return {
     },
   },
 
-  -- Neogit - Magit-inspired Git interface
+  -- Neogit - Disabled
   {
     "NeogitOrg/neogit",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "sindrets/diffview.nvim",
-      "nvim-telescope/telescope.nvim",
-    },
-    config = true,
-    cmd = { "Neogit" }, -- This ensures the command is available
-    keys = {
-      { "<leader>gs", "<cmd>Neogit<cr>", desc = "Git Status (Neogit)" },
-      { "<leader>gc", "<cmd>Neogit commit<cr>", desc = "Git Commit" },
-      { "<leader>gp", "<cmd>Neogit push<cr>", desc = "Git Push" },
-      { "<leader>gl", "<cmd>Neogit pull<cr>", desc = "Git Pull" },
-    },
+    enabled = false,
   },
 
   -- Enable fugitive for :Git commands (works alongside Neogit)
