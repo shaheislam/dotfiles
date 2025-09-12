@@ -10,13 +10,13 @@ return {
     -- Cmdline configuration
     cmdline = {
       enabled = true,
-      view = "cmdline_popup", -- Use popup for cmdline
+      view = "cmdline", -- Use traditional bottom cmdline (like /)
     },
     -- Views configuration - focus on proper text display
     views = {
       cmdline_popup = {
         position = {
-          row = "50%", -- Center vertically
+          row = "90%", -- Position near bottom of screen
           col = "50%", -- Center horizontally
         },
         size = {
@@ -46,7 +46,7 @@ return {
           max_height = 10, -- Limit height to prevent taking too much space
         },
         position = {
-          row = -2, -- Position at bottom of screen (negative = from bottom)
+          row = -1, -- Position at very bottom of screen
           col = "50%", -- Centered horizontally
         },
         align = "center", -- Center align the text within the window
@@ -127,7 +127,7 @@ return {
     },
     -- Presets
     presets = {
-      bottom_search = false, -- Use default search position
+      bottom_search = true, -- Use bottom search position
       command_palette = true, -- Position cmdline and popupmenu together
       long_message_to_split = true, -- Long messages will be sent to a split
       inc_rename = false, -- Disable inc-rename preset
