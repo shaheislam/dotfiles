@@ -111,32 +111,6 @@ return {
     },
     keys = {
       { "<leader>t", "<cmd>ToggleTerm<cr>", desc = "Toggle Terminal" },
-      -- Lazygit integration
-      { "<leader>gg", function()
-        local Terminal = require('toggleterm.terminal').Terminal
-        local git_root = vim.fn.fnamemodify(vim.fn.finddir('.git', '.;'), ':h')
-        if git_root == "" then
-          vim.notify("Not in a git repository", vim.log.levels.ERROR)
-          return
-        end
-        local lazygit = Terminal:new({
-          cmd = "lazygit",
-          dir = git_root,
-          direction = "float",
-          float_opts = {
-            border = "curved",
-          },
-          on_open = function(term)
-            vim.cmd("startinsert!")
-            vim.api.nvim_buf_set_keymap(term.bufnr, "n", "q", "<cmd>close<CR>", {noremap = true, silent = true})
-          end,
-          on_close = function(term)
-            vim.cmd("startinsert!")
-          end,
-        })
-        lazygit:toggle()
-      end, desc = "Lazygit" },
-
       -- LazyDocker integration
       { "<leader>gd", function()
         local Terminal = require('toggleterm.terminal').Terminal
