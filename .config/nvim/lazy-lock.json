@@ -70,7 +70,7 @@
   "rainbow_csv": { "branch": "master", "commit": "3dbbfd7d17536aebfb80f571255548495574c32b" },
   "rainbow_parentheses.vim": { "branch": "master", "commit": "27e7cd73fec9d1162169180399ff8ea9fa28b003" },
   "refactoring.nvim": { "branch": "master", "commit": "74b608dfee827c2372250519d433cc21cb083407" },
-  "render-markdown.nvim": { "branch": "main", "commit": "44cbac697e50ae32e4644652da08cf692b9a5a57" },
+  "render-markdown.nvim": { "branch": "main", "commit": "b4885a95e5082a6ed164830c581aac257a74f355" },
   "rest.nvim": { "branch": "main", "commit": "de9726ab956e30202aafbcdea83c1d6bffe54227" },
   "schemastore.nvim": { "branch": "main", "commit": "d522e3ed6ed2c7bed7ebe1e42615e79b3aabfe65" },
   "sixelview.nvim": { "branch": "master", "commit": "ebfdcb42adbe69ae08dde4d25b56651103e065ab" },

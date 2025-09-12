@@ -12,9 +12,24 @@
       "Bash(fish:*)",
       "Bash(ssh:*)",
       "Bash(git pull:*)",
-      "Bash(bat:*)"
+      "Bash(bat:*)",
+      "Bash(tmux list-keys:*)",
+      "Bash(~/.tmux/plugins/tpm/scripts/install_plugins.sh)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "browser-tools",
+    "sequential-thinking",
+    "github",
+    "memory",
+    "git",
+    "fetch",
+    "duckduckgo",
+    "playwright",
+    "steampipe",
+    "context7"
+  ]
 }
