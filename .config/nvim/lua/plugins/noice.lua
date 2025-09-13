@@ -1,17 +1,85 @@
 -- Noice.nvim configuration to ensure text fits in message window
 return {
   "folke/noice.nvim",
+  event = "VeryLazy",
+  dependencies = {
+    "MunifTanjim/nui.nvim",
+    "rcarriga/nvim-notify",
+  },
+  cmd = { "Noice" },
+  -- LazyVim already defines keys under <leader>sn prefix
+  -- We'll add our custom shortcuts that don't conflict
   keys = {
-    -- Add keymaps to dismiss messages
-    { "<Esc>", "<cmd>Noice dismiss<cr>", desc = "Dismiss all messages" },
-    { "<leader>nd", "<cmd>Noice dismiss<cr>", desc = "Dismiss Noice messages" },
-    -- Toggle message history buffer
-    { "<leader>nh", "<cmd>Noice history<cr>", desc = "Show Noice history" },
-    { "<leader>nl", "<cmd>Noice last<cr>", desc = "Show last message" },
-    { "<leader>ne", "<cmd>Noice errors<cr>", desc = "Show error messages" },
-    { "<leader>nt", "<cmd>Noice telescope<cr>", desc = "Show messages in Telescope" },
+    -- Quick access to history (in addition to LazyVim's <leader>snh)
+    { "<leader>mh", function() require("noice").cmd("history") end, desc = "Message History" },
+    { "<leader>ml", function() require("noice").cmd("last") end, desc = "Last Message" },
+    { "<leader>md", function() require("noice").cmd("dismiss") end, desc = "Dismiss Messages" },
+    -- Toggle persistent messages
+    { "<leader>mp", function()
+      vim.g.noice_persistent_messages = not vim.g.noice_persistent_messages
+
+      -- Update Noice configuration directly
+      local config = require("noice.config")
+
+      -- Calculate new timeout
+      local new_timeout = vim.g.noice_persistent_messages and 30000 or 3000
+
+      -- Update the views config
+      if config.options.views.mini then
+        config.options.views.mini.timeout = new_timeout
+      end
+
+      -- Update smart_move
+      config.options.smart_move.enabled = not vim.g.noice_persistent_messages
+
+      -- Update all routes that use mini view to have the new timeout
+      for _, route in ipairs(config.options.routes) do
+        if route.view == "mini" then
+          route.opts = route.opts or {}
+          route.opts.timeout = new_timeout
+        end
+      end
+
+      -- Force update of any existing mini views
+      for _, view in pairs(require("noice.view")._views or {}) do
+        if view._opts and view._opts.timeout then
+          view._opts.timeout = new_timeout
+        end
+        if view.opts and view.opts.timeout then
+          view.opts.timeout = new_timeout
+        end
+      end
+
+      -- Show status
+      local status = vim.g.noice_persistent_messages and "ON (30s)" or "OFF (3s)"
+      vim.notify("Persistent messages: " .. status, vim.log.levels.INFO)
+    end, desc = "Toggle Persistent Messages" },
   },
   config = function(_, opts)
+    -- Initialize persistent messages as disabled by default
+    vim.g.noice_persistent_messages = false
+
+    -- Override the mini view to respect our timeout
+    opts.views = opts.views or {}
+    opts.views.mini = vim.tbl_deep_extend("force", opts.views.mini or {}, {
+      backend = "mini",
+      relative = "editor",
+      align = "message-right",
+      timeout = 3000,
+      position = {
+        row = -1,
+        col = "100%",
+      },
+      size = "auto",
+      border = {
+        style = "none",
+      },
+      win_options = {
+        winblend = 0,
+        winhighlight = "Normal:Normal",
+      },
+    })
+
     -- Add a hook to the split view to scroll to bottom on open
     local original_split = opts.views.split or {}
     opts.views.split = vim.tbl_deep_extend("force", original_split, {
@@ -33,8 +101,43 @@ return {
         end,
       },
     })
-    
+
     require("noice").setup(opts)
+
+    -- Monkey-patch the mini backend to use dynamic timeouts
+    vim.defer_fn(function()
+      local ok, Mini = pcall(require, "noice.view.backend.mini")
+      if ok and Mini then
+        local original_show = Mini.show
+
+        Mini.show = function(self)
+          -- Override timeout before showing
+          if self._opts then
+            self._opts.timeout = vim.g.noice_persistent_messages and 30000 or 3000
+          end
+          return original_show(self)
+        end
+      end
+    end, 100)
+
+    -- Store the original notify function
+    local notify = require("notify")
+
+    -- Override vim.notify to use dynamic timeout
+    local original_notify = vim.notify
+    vim.notify = function(msg, level, opts)
+      opts = opts or {}
+      -- Set timeout based on persistent mode
+      if vim.g.noice_persistent_messages then
+        opts.timeout = 30000  -- 30 seconds in persistent mode
+        opts.animate = false  -- No animation in persistent mode
+      else
+        opts.timeout = opts.timeout or 3000  -- 3 seconds by default
+        opts.animate = true
+      end
+      return notify(msg, level, opts)
+    end
+
     
     -- Track manual scrolling to avoid interfering
     local noice_manually_scrolled = {}
@@ -167,24 +270,6 @@ return {
         -- Force scroll to bottom on open
         focus = true,
       },
-      mini = {
-        win_options = {
-          wrap = true, -- Enable text wrapping
-          linebreak = true, -- Break at word boundaries
-          winblend = 0, -- No transparency
-        },
-        size = {
-          width = "auto", -- Automatic width based on content
-          height = "auto", -- Automatic height based on content
-          max_width = math.floor(vim.o.columns * 0.9), -- Use 90% of screen width max
-          max_height = 10, -- Limit height to prevent taking too much space
-        },
-        position = {
-          row = -1, -- Position at very bottom of screen
-          col = "50%", -- Centered horizontally
-        },
-        align = "center", -- Center align the text within the window
-      },
       notify = {
         win_options = {
           wrap = true,
@@ -250,13 +335,18 @@ return {
       enabled = true,
       view = "notify", -- Use notify view for better popup notifications
     },
+    -- Smart move - messages disappear on cursor move when not in persistent mode
+    smart_move = {
+      enabled = true, -- Enable auto-hiding on cursor move
+      excluded_filetypes = { "cmp_menu", "cmp_docs", "notify" },
+    },
     -- Message configuration
     messages = {
       enabled = true,
-      view = "split",  -- Use split buffer for regular messages
-      view_error = "split",  -- Use split buffer for errors
-      view_warn = "split",  -- Use split buffer for warnings
-      view_history = "split",  -- Use split buffer for history
+      view = "mini",  -- Use mini view for regular messages (less intrusive)
+      view_error = "notify",  -- Use notify for errors (more visible but not a split)
+      view_warn = "notify",  -- Use notify for warnings
+      view_history = "split",  -- Keep split buffer for history when explicitly requested
       view_search = "virtualtext",
     },
     -- Presets
@@ -269,14 +359,22 @@ return {
     },
     -- Routes to handle specific message types
     routes = {
-      -- Route all messages to split buffer by default
+      -- Don't auto-show messages in split buffer, use mini view instead
       {
         filter = {
           event = "msg_show",
         },
-        view = "split",
+        view = "mini",  -- Changed from "split" to "mini" for less intrusive display
       },
-      -- Route git messages to split buffer
+      -- Route important error messages to notify
+      {
+        filter = {
+          event = "msg_show",
+          kind = { "error", "Error" },
+        },
+        view = "notify",
+      },
+      -- Route git messages to mini view (changed from split)
       {
         filter = {
           event = "msg_show",
@@ -292,7 +390,7 @@ return {
             { find = "git add" },
           },
         },
-        view = "split",
+        view = "mini",  -- Changed from "split" to "mini"
       },
       -- Route LSP progress to mini (less intrusive)
       {
@@ -302,7 +400,7 @@ return {
         },
         view = "mini",
       },
-      -- Hide some common messages you might not need
+      -- Hide common messages that aren't important
       {
         filter = {
           event = "msg_show",
@@ -310,7 +408,20 @@ return {
             { find = "^%d+L, %d+B" },  -- File write messages
             { find = "; after #%d+" },  -- Undo messages
             { find = "; before #%d+" }, -- Redo messages
+            { find = "^%d+ changes?;" }, -- More undo/redo messages
+            { find = "^%d+ fewer lines" }, -- Line deletion messages
+            { find = "^%d+ more lines" }, -- Line addition messages
+            { find = "Already at oldest change" }, -- Undo limit reached
+            { find = "Already at newest change" }, -- Redo limit reached
           },
+        },
+        opts = { skip = true },
+      },
+      -- Hide search count messages
+      {
+        filter = {
+          event = "msg_show",
+          kind = "search_count",
         },
         opts = { skip = true },
       },
