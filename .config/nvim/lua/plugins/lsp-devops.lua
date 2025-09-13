@@ -59,7 +59,6 @@ return {
         "gopls",                   -- Go
         "rust-analyzer",           -- Rust
         "lua-language-server",     -- Lua
-        "sqls",                    -- SQL Language Server
         "marksman",                -- Markdown
         
         -- Formatters
@@ -70,7 +69,6 @@ return {
         "isort",                   -- Python imports
         "gofumpt",                 -- Go
         "rustfmt",                 -- Rust
-        "sql-formatter",           -- SQL
         
         -- Linters
         "shellcheck",              -- Shell scripts
@@ -80,7 +78,6 @@ return {
         "markdownlint",            -- Markdown
         "golangci-lint",           -- Go
         "ruff",                    -- Python
-        "sqlfluff",                -- SQL
       },
     },
   },
@@ -148,26 +145,6 @@ return {
           end,
         },
         
-        -- SQL Language Server
-        sqls = {
-          cmd = { "sqls" },
-          filetypes = { "sql", "mysql", "postgres" },
-          root_dir = function(fname)
-            return require("lspconfig.util").root_pattern(".git")(fname)
-          end,
-          settings = {
-            sqls = {
-              connections = {
-                -- Add your database connections here if needed
-                -- Example:
-                -- {
-                --   driver = "mysql",
-                --   dataSourceName = "user:pass@tcp(127.0.0.1:3306)/dbname",
-                -- },
-              },
-            },
-          },
-        },
       },
     },
   },
