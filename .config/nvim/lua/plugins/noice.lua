@@ -5,6 +5,11 @@ return {
     -- Add keymaps to dismiss messages
     { "<Esc>", "<cmd>Noice dismiss<cr>", desc = "Dismiss all messages" },
     { "<leader>nd", "<cmd>Noice dismiss<cr>", desc = "Dismiss Noice messages" },
+    -- Toggle message history buffer
+    { "<leader>nh", "<cmd>Noice history<cr>", desc = "Show Noice history" },
+    { "<leader>nl", "<cmd>Noice last<cr>", desc = "Show last message" },
+    { "<leader>ne", "<cmd>Noice errors<cr>", desc = "Show error messages" },
+    { "<leader>nt", "<cmd>Noice telescope<cr>", desc = "Show messages in Telescope" },
   },
   opts = {
     -- Cmdline configuration
@@ -12,7 +17,7 @@ return {
       enabled = true,
       view = "cmdline", -- Use traditional bottom cmdline (like /)
     },
-    -- Views configuration - focus on proper text display
+    -- Views configuration - use split buffer for messages
     views = {
       cmdline_popup = {
         position = {
@@ -31,7 +36,21 @@ return {
         },
       },
       messages = {
-        view = "notify",  -- Use notify view for better message stacking
+        view = "split",  -- Use split buffer instead of floating window
+      },
+      split = {
+        backend = "split",
+        relative = "editor",
+        position = "bottom",
+        size = "20%",
+        close = {
+          keys = { "q", "<Esc>" },
+        },
+        win_options = {
+          wrap = true,
+          linebreak = true,
+          winhighlight = "Normal:Normal,FloatBorder:Normal",
+        },
       },
       mini = {
         win_options = {
@@ -119,10 +138,10 @@ return {
     -- Message configuration
     messages = {
       enabled = true,
-      view = "notify",  -- Use notify for messages
-      view_error = "notify",
-      view_warn = "notify",
-      view_history = "messages",
+      view = "split",  -- Use split buffer for regular messages
+      view_error = "split",  -- Use split buffer for errors
+      view_warn = "split",  -- Use split buffer for warnings
+      view_history = "split",  -- Use split buffer for history
       view_search = "virtualtext",
     },
     -- Presets
@@ -135,7 +154,14 @@ return {
     },
     -- Routes to handle specific message types
     routes = {
-      -- Route git/fugitive messages to popup for better visibility
+      -- Route all messages to split buffer by default
+      {
+        filter = {
+          event = "msg_show",
+        },
+        view = "split",
+      },
+      -- Route git messages to split buffer
       {
         filter = {
           event = "msg_show",
@@ -151,38 +177,27 @@ return {
             { find = "git add" },
           },
         },
-        view = "popup",
-        opts = {
-          position = {
-            row = "30%",
-            col = "50%",
-          },
-          size = {
-            width = "80%",
-            height = "auto",
-          },
-          win_options = {
-            wrap = true,
-            linebreak = true,
-          },
-          -- timeout removed - messages stay until dismissed with Esc
-        },
-      },
-      -- Route long messages to split view
-      {
-        filter = {
-          event = "msg_show",
-          min_height = 10, -- Messages with 10+ lines
-        },
         view = "split",
       },
-      -- Keep short messages in mini view
+      -- Route LSP progress to mini (less intrusive)
+      {
+        filter = {
+          event = "lsp",
+          kind = "progress",
+        },
+        view = "mini",
+      },
+      -- Hide some common messages you might not need
       {
         filter = {
           event = "msg_show",
-          max_height = 5, -- Messages with 5 or fewer lines
+          any = {
+            { find = "^%d+L, %d+B" },  -- File write messages
+            { find = "; after #%d+" },  -- Undo messages
+            { find = "; before #%d+" }, -- Redo messages
+          },
         },
-        view = "mini",
+        opts = { skip = true },
       },
     },
   },
