@@ -142,7 +142,7 @@ return {
       
       -- Tag commands
       vim.cmd("cnoreabbrev gts Git tag -s")
-      vim.cmd("cnoreabbrev gtv Git tag | sort -V")
+      vim.cmd("cnoreabbrev gtv Git tag")  -- Removed sort -V as it causes issues in non-modifiable buffer
       vim.cmd("cnoreabbrev gtl Git tag -l")
       
       -- What changed commands

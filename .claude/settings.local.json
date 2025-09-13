@@ -25,7 +25,9 @@
       "Read(//Users/shahe/.local/share/nvim/mason/bin/**)",
       "Bash(go install:*)",
       "Bash(sqls:*)",
-      "Read(//Users/shahe/go/bin/**)"
+      "Read(//Users/shahe/go/bin/**)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []
