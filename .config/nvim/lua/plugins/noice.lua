@@ -61,7 +61,7 @@ return {
     -- Initialize persistent messages as disabled by default
     vim.g.noice_persistent_messages = false
 
-    -- Override the mini view to respect our timeout
+    -- Override the mini view to respect our timeout and add a border
     opts.views = opts.views or {}
     opts.views.mini = vim.tbl_deep_extend("force", opts.views.mini or {}, {
       backend = "mini",
@@ -69,16 +69,17 @@ return {
       align = "message-right",
       timeout = 3000,
       position = {
-        row = -1,
+        row = -2,  -- Move up slightly to account for border
         col = "100%",
       },
       size = "auto",
       border = {
-        style = "none",
+        style = "double",  -- Use double-line border for better visibility
+        padding = { 0, 1 },  -- Add horizontal padding for readability
       },
       win_options = {
         winblend = 0,
-        winhighlight = "Normal:Normal",
+        winhighlight = "Normal:Normal,FloatBorder:DiagnosticInfo",  -- Add border highlighting
       },
     })
 
@@ -273,6 +274,8 @@ return {
         focus = true,
       },
       notify = {
+        replace = true,
+        merge = true,
         win_options = {
           wrap = true,
           linebreak = true,
