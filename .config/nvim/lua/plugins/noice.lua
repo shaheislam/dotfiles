@@ -66,16 +66,16 @@ return {
     opts.views.mini = vim.tbl_deep_extend("force", opts.views.mini or {}, {
       backend = "mini",
       relative = "editor",
-      align = "message-right",
+      align = "center",  -- Center the message text
       timeout = 3000,
       position = {
-        row = -2,  -- Move up slightly to account for border
-        col = "100%",
+        row = "50%",  -- Center vertically in the window
+        col = "50%",  -- Center horizontally in the window
       },
       size = "auto",
       border = {
         style = "double",  -- Use double-line border for better visibility
-        padding = { 0, 1 },  -- Add horizontal padding for readability
+        padding = { 0, 2 },  -- Add more horizontal padding for readability
       },
       win_options = {
         winblend = 0,
