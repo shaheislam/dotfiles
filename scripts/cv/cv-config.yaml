@@ -8,7 +8,7 @@ paths:
   generated_dir: "~/dotfiles/jobapps/generated"
   output_dir: "~/Documents/jobapps/output"
   archive_dir: "~/Documents/jobapps/archive"
-  skills_db: "~/dotfiles/scripts/skill-mapping.json"
+  skills_db: "~/dotfiles/scripts/cv/skill-mapping.json"
   resume_cls: "~/dotfiles/jobapps/resume.cls"
 
 # LaTeX compilation settings

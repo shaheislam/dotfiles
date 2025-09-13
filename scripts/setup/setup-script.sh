@@ -766,8 +766,8 @@ if [ -f "$HOME/dotfiles/scripts/bin/footyres" ]; then
 fi
 
 # Make tmux scripts executable
-if [ -f "$HOME/dotfiles/scripts/tmux-url-handler.sh" ]; then
-  chmod +x "$HOME/dotfiles/scripts/tmux-url-handler.sh"
+if [ -f "$HOME/dotfiles/scripts/tmux/tmux-url-handler.sh" ]; then
+  chmod +x "$HOME/dotfiles/scripts/tmux/tmux-url-handler.sh"
   log_success "tmux-url-handler.sh is now executable"
 else
   log_warning "tmux-url-handler.sh not found"
@@ -775,8 +775,8 @@ fi
 
 # Make tmux formatting scripts executable
 for script in tmux-cpu-formatted.sh tmux-ram-formatted.sh tmux-battery-formatted.sh; do
-  if [ -f "$HOME/dotfiles/scripts/$script" ]; then
-    chmod +x "$HOME/dotfiles/scripts/$script"
+  if [ -f "$HOME/dotfiles/scripts/tmux/$script" ]; then
+    chmod +x "$HOME/dotfiles/scripts/tmux/$script"
     log_success "$script is now executable"
   else
     log_warning "$script not found"
@@ -1084,9 +1084,9 @@ fi
 # Apply macOS system defaults for developers
 echo "=== Applying macOS developer defaults ==="
 if [[ "$OSTYPE" == "darwin"* ]]; then
-  if [ -f "$HOME/dotfiles/scripts/macos-defaults.sh" ]; then
+  if [ -f "$HOME/dotfiles/scripts/setup/macos-defaults.sh" ]; then
     log_info "Configuring macOS developer settings..."
-    bash "$HOME/dotfiles/scripts/macos-defaults.sh" || log_warning "Some macOS defaults may have failed - check manually"
+    bash "$HOME/dotfiles/scripts/setup/macos-defaults.sh" || log_warning "Some macOS defaults may have failed - check manually"
     log_success "macOS developer defaults applied"
   else
     log_warning "macos-defaults.sh not found in scripts directory"

@@ -14,14 +14,14 @@ This setup allows you to use distant.nvim to edit files on EC2 instances through
 ### 1. SSH Key Distribution
 - Generated SSH key pair: `~/.ssh/shahe-distant-nvim`
 - Distributed public key to all EC2 instances via SSM
-- Script: `~/dotfiles/scripts/setup-ec2-ssh-keys.sh`
+- Script: `~/dotfiles/scripts/setup/setup-ec2-ssh-keys.sh`
 
 ### 2. distant.nvim Configuration
 - Plugin configured in: `~/.config/nvim/lua/plugins/distant.lua`
 - distant binary installed: `~/.local/share/nvim/distant/distant.bin`
 
 ### 3. SSM Tunnel Script
-- Created helper script: `~/dotfiles/scripts/distant-ssm-tunnel.sh`
+- Created helper script: `~/dotfiles/scripts/aws/distant-ssm-tunnel.sh`
 - Creates port forwarding through SSM (port 2222 by default)
 
 ## Usage
@@ -29,10 +29,10 @@ This setup allows you to use distant.nvim to edit files on EC2 instances through
 ### Step 1: Start the SSM Tunnel
 ```bash
 # Interactive instance selection
-~/dotfiles/scripts/distant-ssm-tunnel.sh
+~/dotfiles/scripts/aws/distant-ssm-tunnel.sh
 
 # Or specify instance and profile
-~/dotfiles/scripts/distant-ssm-tunnel.sh i-xxxxx labs
+~/dotfiles/scripts/aws/distant-ssm-tunnel.sh i-xxxxx labs
 ```
 
 Keep this terminal open or run in tmux/screen.
@@ -55,8 +55,8 @@ Keep this terminal open or run in tmux/screen.
 - `<leader>di` - Show session info
 
 ## Files Created
-- `~/dotfiles/scripts/setup-ec2-ssh-keys.sh` - SSH key distribution script
-- `~/dotfiles/scripts/distant-ssm-tunnel.sh` - SSM tunnel helper
+- `~/dotfiles/scripts/setup/setup-ec2-ssh-keys.sh` - SSH key distribution script
+- `~/dotfiles/scripts/aws/distant-ssm-tunnel.sh` - SSM tunnel helper
 - `~/.ssh/shahe-distant-nvim` - SSH key pair for distant.nvim
 - `~/.ssh/config.d/ec2-instances.conf` - SSH config for EC2 instances
 

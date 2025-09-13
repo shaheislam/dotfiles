@@ -183,9 +183,9 @@ alias claude-router = command ccr code
 alias wea = curl --silent wttr.in/Didsbury_uk | grep -v Follow
 alias save = ~/sesh.sh save
 alias rest = ~/sesh.sh restore
-alias tr = sh -c "clear; ~/dotfiles/scripts/tmux-smart-restore.sh"
+alias tr = sh -c "clear; ~/dotfiles/scripts/tmux/tmux-smart-restore.sh"
 alias ts = tmux run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'
-alias tk = ~/dotfiles/scripts/tmux-safe-kill-server.sh
+alias tk = ~/dotfiles/scripts/tmux/tmux-safe-kill-server.sh
 alias tkf = tmux kill-server
 
 # Security aliases

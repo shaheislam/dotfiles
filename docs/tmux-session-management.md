@@ -11,7 +11,7 @@ Your tmux setup uses a single, unified session manager that integrates tmux sess
 
 ## Session Manager
 
-**Location**: `~/dotfiles/scripts/tmux-session-manager.sh`
+**Location**: `~/dotfiles/scripts/tmux/tmux-session-manager.sh`
 
 The session manager provides a unified interface with three types of entries:
 - **[S]** - Existing tmux sessions with window count
@@ -132,7 +132,7 @@ windows:
 ## Configuration Files
 
 - **Tmux config**: `~/.tmux.conf`
-- **Session manager script**: `~/dotfiles/scripts/tmux-session-manager.sh`
+- **Session manager script**: `~/dotfiles/scripts/tmux/tmux-session-manager.sh`
 - **Tmuxinator configs**: `~/.config/tmuxinator/*.yml`
 
 ## Tips

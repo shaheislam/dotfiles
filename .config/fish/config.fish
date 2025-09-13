@@ -567,9 +567,9 @@ if status is-interactive
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
     alias save="~/sesh.sh save"
     alias rest="~/sesh.sh restore"
-    alias tr="clear; ~/dotfiles/scripts/tmux-smart-restore.sh"
+    alias tr="clear; ~/dotfiles/scripts/tmux/tmux-smart-restore.sh"
     alias ts="tmux run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'"
-    alias tk="~/dotfiles/scripts/tmux-safe-kill-server.sh"  # Safe kill with auto-save
+    alias tk="~/dotfiles/scripts/tmux/tmux-safe-kill-server.sh"  # Safe kill with auto-save
     alias tkf="tmux kill-server"  # Force kill without save (use with caution)
 
     # Security aliases

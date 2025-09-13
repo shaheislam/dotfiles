@@ -44,7 +44,10 @@
       "WebFetch(domain:distant.dev)",
       "Bash(~/.local/share/nvim/distant/distant.bin connect:*)",
       "Bash(grep:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(tmux:*)",
+      "Bash(echo $TMUX)",
+      "Read(//Users/shahe/.tmux/plugins/**)"
     ],
     "deny": [],
     "ask": []

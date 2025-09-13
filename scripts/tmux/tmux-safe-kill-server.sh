@@ -20,7 +20,7 @@ fi
 
 # Save each session to trash
 for session in $(tmux list-sessions -F '#{session_name}' 2>/dev/null); do
-    "$HOME/dotfiles/scripts/tmux-session-trash.sh" save "$session"
+    "$HOME/dotfiles/scripts/tmux/tmux-session-trash.sh" save "$session"
 done
 
 echo "All sessions saved. Killing tmux server..."
