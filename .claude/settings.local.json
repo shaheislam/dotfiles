@@ -19,7 +19,13 @@
       "Read(//Users/shahe/.local/share/nvim/mason/packages/**)",
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(find:*)",
-      "Bash(cut:*)"
+      "Bash(cut:*)",
+      "Bash(code:*)",
+      "Read(//Users/shahe/.local/share/nvim/lazy/markdown-preview.nvim/**)",
+      "Read(//Users/shahe/.local/share/nvim/mason/bin/**)",
+      "Bash(go install:*)",
+      "Bash(sqls:*)",
+      "Read(//Users/shahe/go/bin/**)"
     ],
     "deny": [],
     "ask": []

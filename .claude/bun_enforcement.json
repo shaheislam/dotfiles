@@ -8,5 +8,10 @@
     "session_id": "a22d5b17-0761-4d91-a026-aed123b2d7fd",
     "blocked_command": "npm install -g @upstash/context7",
     "suggested_command": "bun install -g @upstash/context7"
+  },
+  {
+    "session_id": "780fb1d3-c53b-4063-af7e-c2ecebe9b8e2",
+    "blocked_command": "cd ~/.local/share/nvim/lazy/markdown-preview.nvim && npm install 2>&1 || echo \"npm install attempt completed\"",
+    "suggested_command": "cd ~/.local/share/nvim/lazy/markdown-preview.nvim && bun install 2>&1 || echo \"bun install attempt completed\""
   }
 ]

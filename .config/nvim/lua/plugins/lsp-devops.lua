@@ -59,7 +59,7 @@ return {
         "gopls",                   -- Go
         "rust-analyzer",           -- Rust
         "lua-language-server",     -- Lua
-        "sqlls",                   -- SQL
+        "sqls",                    -- SQL Language Server
         "marksman",                -- Markdown
         
         -- Formatters
@@ -146,6 +146,27 @@ return {
           root_dir = function(fname)
             return require("lspconfig.util").root_pattern("Chart.yaml")(fname)
           end,
+        },
+        
+        -- SQL Language Server
+        sqls = {
+          cmd = { "sqls" },
+          filetypes = { "sql", "mysql", "postgres" },
+          root_dir = function(fname)
+            return require("lspconfig.util").root_pattern(".git")(fname)
+          end,
+          settings = {
+            sqls = {
+              connections = {
+                -- Add your database connections here if needed
+                -- Example:
+                -- {
+                --   driver = "mysql",
+                --   dataSourceName = "user:pass@tcp(127.0.0.1:3306)/dbname",
+                -- },
+              },
+            },
+          },
         },
       },
     },
