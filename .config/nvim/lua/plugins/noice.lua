@@ -10,6 +10,8 @@ return {
   -- LazyVim already defines keys under <leader>sn prefix
   -- We'll add our custom shortcuts that don't conflict
   keys = {
+    -- Escape key to dismiss all messages (only in normal mode)
+    { "<Esc>", function() require("noice").cmd("dismiss") end, desc = "Dismiss All Messages", mode = "n" },
     -- Quick access to history (in addition to LazyVim's <leader>snh)
     { "<leader>mh", function() require("noice").cmd("history") end, desc = "Message History" },
     { "<leader>ml", function() require("noice").cmd("last") end, desc = "Last Message" },
