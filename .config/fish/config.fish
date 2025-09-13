@@ -1,16 +1,7 @@
 # Fish Shell Configuration
 # Integrated configuration combining dotfiles setup with extended functionality
 
-# Helper functions for completions (available in all sessions)
-function __fish_complete_aws_s3_buckets
-    if test -n "$AWS_PROFILE"
-        aws s3 ls 2>/dev/null | awk '{print $3}' | head -20
-    end
-end
-
-function __fish_complete_aws_profiles
-    aws configure list-profiles 2>/dev/null
-end
+# Helper functions for completions moved to functions directory
 
 # Completions for AWS functions with descriptions
 complete -c ct-view -e
@@ -48,13 +39,9 @@ if status is-interactive
     set -x BAT_THEME "Catppuccin Mocha"
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
-    
-    # Add Claude local installation to PATH
-    fish_add_path -p $HOME/.claude/local
 
-
-    # Additional environment variables from extended config
-    set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
+    # Load centralized PATH configuration
+    source $HOME/.config/fish/paths.fish
 
     # API Keys for Claude Code Router
     # Load from ~/dotfiles/.env if it exists (after stow symlink)
@@ -65,28 +52,6 @@ if status is-interactive
             set value (string trim -c '"' $pair[2])
             set -gx $key $value
         end
-    end
-
-    # Path configuration - combining both configs
-    fish_add_path /opt/homebrew/bin
-    fish_add_path $HOME/bin
-    fish_add_path $HOME/.local/bin
-    fish_add_path /usr/local/bin
-    fish_add_path $HOME/Library/Python/3.9/bin
-    fish_add_path $HOME/.cargo/bin
-    fish_add_path $HOME/.rd/bin
-    fish_add_path $HOME/.bun/bin
-    fish_add_path $HOME/.claude/local/bin
-    fish_add_path $HOME/dotfiles/scripts/bin
-
-    # Add VSCode bin to PATH if it exists
-    if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-        fish_add_path "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-    end
-
-    # Add Cursor bin to PATH if it exists
-    if test -d "/Applications/Cursor.app/Contents/Resources/app/bin"
-        fish_add_path "/Applications/Cursor.app/Contents/Resources/app/bin"
     end
 
     # Initialize tools

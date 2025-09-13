@@ -2,6 +2,18 @@
 
 This directory contains custom scripts and utilities for the dotfiles setup.
 
+## Organization
+
+Scripts are organized into the following categories:
+
+- **setup/** - Installation, setup, and configuration scripts
+- **aws/** - AWS-related utilities and log viewers
+- **tmux/** - tmux session management and utilities
+- **tools/** - Miscellaneous development tools
+- **cv/** - CV generation and compilation tools
+- **bin/** - Binary executables in PATH
+- **footyres/** - Football results fetcher
+
 ## bin/
 
 ### tmpmail

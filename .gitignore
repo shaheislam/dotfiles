@@ -37,6 +37,15 @@
 # macOS
 .DS_Store
 
+# Backup files
+*.backup
+*.bak
+*.archive
+*.orig
+*~
+.backup/
+.bak/
+
 # Environment files
 .envrc
 .env
