@@ -29,7 +29,20 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(aws ssm describe-instance-information:*)",
+      "Bash(bash:*)",
+      "Bash(aws:*)",
+      "Bash(chmod:*)",
+      "Bash(awk:*)",
+      "Bash(/tmp/distant:*)",
+      "Bash(curl:*)",
+      "Bash(~/.local/share/nvim/distant/distant.bin --version)",
+      "Bash(~/.local/share/nvim/distant/distant.bin client connect ssh://ec2-i-059fbc6cbc4bb45df)",
+      "Bash(~/.local/share/nvim/distant/distant.bin connect ssh://ec2-i-059fbc6cbc4bb45df)",
+      "Bash(~/.local/share/nvim/distant/distant.bin connect --help)",
+      "WebFetch(domain:distant.dev)",
+      "Bash(~/.local/share/nvim/distant/distant.bin connect:*)"
     ],
     "deny": [],
     "ask": []
