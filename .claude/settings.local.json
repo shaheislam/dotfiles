@@ -42,7 +42,8 @@
       "Bash(~/.local/share/nvim/distant/distant.bin connect ssh://ec2-i-059fbc6cbc4bb45df)",
       "Bash(~/.local/share/nvim/distant/distant.bin connect --help)",
       "WebFetch(domain:distant.dev)",
-      "Bash(~/.local/share/nvim/distant/distant.bin connect:*)"
+      "Bash(~/.local/share/nvim/distant/distant.bin connect:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
