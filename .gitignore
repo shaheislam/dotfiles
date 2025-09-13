@@ -46,6 +46,35 @@
 .backup/
 .bak/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+*.error.log
+
+# Lock files
+*.lock
+package-lock.json
+
+# Test files
+testfolder/
+test/
+
+# Version control
+.jj/
+
 # Environment files
 .envrc
 .env
