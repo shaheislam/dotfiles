@@ -14,15 +14,15 @@ AWS_PROFILE=labs aws ec2 create-vpc-endpoint \
   --vpc-id vpc-00eba88dae2a58603 \
   --vpc-endpoint-type Interface \
   --service-name com.amazonaws.us-east-1.execute-api \
-  --test-ids \
-  test-08d8ea785c76c4b3e \
-  test-00f8b696e968ae521 \
-  test-0166d0e54132656c8 \
+  --subnet-ids \
+  subnet-08d8ea785c76c4b3e \
+  subnet-00f8b696e968ae521 \
+  subnet-0166d0e54132656c8 \
   --security-group-ids sg-0569dcb7ee8c13701 \
   --private-dns-enabled \
   --tag-specifications 'ResourceType=vpc-endpoint,Tags=[{Key=Name,Value=jenkins-api-gateway-endpoint}]'
 
-echo ""
+g
 echo "VPC Endpoint creation initiated!"
 echo ""
 echo "Next steps:"

@@ -58,8 +58,14 @@ return {
       require("harpoon"):setup()
     end,
     keys = {
-      { "<leader>a", function() require("harpoon"):list():add() end, desc = "Harpoon add file" },
+      { "<leader>ja", function() require("harpoon"):list():add() end, desc = "Jump add (Harpoon)" },
+      { "<leader>jj", function() require("harpoon").ui:toggle_quick_menu(require("harpoon"):list()) end, desc = "Jump menu (Harpoon)" },
       { "<C-e>", function() require("harpoon").ui:toggle_quick_menu(require("harpoon"):list()) end, desc = "Harpoon toggle menu" },
+      { "<leader>j1", function() require("harpoon"):list():select(1) end, desc = "Jump to file 1" },
+      { "<leader>j2", function() require("harpoon"):list():select(2) end, desc = "Jump to file 2" },
+      { "<leader>j3", function() require("harpoon"):list():select(3) end, desc = "Jump to file 3" },
+      { "<leader>j4", function() require("harpoon"):list():select(4) end, desc = "Jump to file 4" },
+      -- Alternative: Try these if your terminal supports them
       { "<C-1>", function() require("harpoon"):list():select(1) end, desc = "Harpoon file 1" },
       { "<C-2>", function() require("harpoon"):list():select(2) end, desc = "Harpoon file 2" },
       { "<C-3>", function() require("harpoon"):list():select(3) end, desc = "Harpoon file 3" },

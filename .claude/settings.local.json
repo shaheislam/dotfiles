@@ -18,7 +18,8 @@
       "Bash(nvim:*)",
       "Read(//Users/shahe/.local/share/nvim/mason/packages/**)",
       "mcp__sequential-thinking__sequentialthinking",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cut:*)"
     ],
     "deny": [],
     "ask": []
