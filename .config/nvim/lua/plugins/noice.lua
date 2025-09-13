@@ -11,6 +11,39 @@ return {
     { "<leader>ne", "<cmd>Noice errors<cr>", desc = "Show error messages" },
     { "<leader>nt", "<cmd>Noice telescope<cr>", desc = "Show messages in Telescope" },
   },
+  config = function(_, opts)
+    require("noice").setup(opts)
+    
+    -- Autocmd to keep cursor at the last line in Noice messages buffer
+    vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter", "WinEnter" }, {
+      pattern = { "noice", "NoiceHistory", "NoiceSplit" },
+      callback = function()
+        -- Move cursor to the last line
+        vim.defer_fn(function()
+          local win = vim.api.nvim_get_current_win()
+          local buf = vim.api.nvim_win_get_buf(win)
+          local line_count = vim.api.nvim_buf_line_count(buf)
+          vim.api.nvim_win_set_cursor(win, { line_count, 0 })
+        end, 10)
+      end,
+    })
+    
+    -- Also trigger when messages are added
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "NoiceMessageAdded",
+      callback = function()
+        -- Find Noice windows and move cursor to bottom
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+          local buf = vim.api.nvim_win_get_buf(win)
+          local ft = vim.api.nvim_buf_get_option(buf, "filetype")
+          if ft == "noice" or ft == "NoiceHistory" or ft == "NoiceSplit" then
+            local line_count = vim.api.nvim_buf_line_count(buf)
+            vim.api.nvim_win_set_cursor(win, { line_count, 0 })
+          end
+        end
+      end,
+    })
+  end,
   opts = {
     -- Cmdline configuration
     cmdline = {
@@ -51,6 +84,8 @@ return {
           linebreak = true,
           winhighlight = "Normal:Normal,FloatBorder:Normal",
         },
+        -- Keep cursor at the last line
+        enter = true,
       },
       mini = {
         win_options = {
