@@ -47,7 +47,9 @@
       "Bash(tree:*)",
       "Bash(tmux:*)",
       "Bash(echo $TMUX)",
-      "Read(//Users/shahe/.tmux/plugins/**)"
+      "Read(//Users/shahe/.tmux/plugins/**)",
+      "Bash(python:*)",
+      "Bash(open ~/Documents/jobapps/output/Test-140125-perm-85K.pdf)"
     ],
     "deny": [],
     "ask": []

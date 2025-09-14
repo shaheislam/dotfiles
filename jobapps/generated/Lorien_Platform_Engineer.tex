@@ -23,7 +23,6 @@
 \documentclass{resume} % Use the custom resume.cls style
 
 \usepackage[left=0.75in,top=0.6in,right=0.75in,bottom=0.6in]{geometry} % Document margins
-\usepackage{enumitem} % For custom list formatting
 \newcommand{\tab}[1]{\hspace{.2667\textwidth}\rlap{#1}}
 \newcommand{\itab}[1]{\hspace{0em}\rlap{#1}}
 \name{Mohammed Islam - SC Cleared} % Your name
@@ -52,10 +51,8 @@
 %----------------------------------------------------------------------------------------
 
 \begin{rSection}{Certifications}
-\begin{itemize}[leftmargin=1em, nosep]
-\item \textbf{AWS x10} - \normalfont All AWS Certs at Speciality \& Professional level
-\item \textbf{HashiCorp Certified} - \normalfont Terraform Associate
-\end{itemize}
+
+% \\ \itab{Process Control (ongoing)} \tab{} \tab{Electrodynamics}
 \end{rSection}
 
 \begin{rSection}{Skills}
@@ -93,13 +90,10 @@ Confluence, Service Now, JIRA, Trello, Jenkins, Gitlab, Git, Twistlock, Vault, N
 \normalfont
 \item Delivering EKS as a Platform with integrated day-2 tooling to customers to achieve a unified, pen-tested secure cloud platform across the organisation % (EKS, AWS, Kubernetes, Platform Engineering, Security, PenTesting, Cloud Platform)
 \item Implemented standardised compliance testing through Open Policy Agent \& Conftest. Moving from multiple runners to a single multi-tenant deployment runner agent against AWS infrastructure, defining permissions based on standardised YAML per team and enforcing against Terraform JSON This saved runner costs by 70\% and reduced engineering hours spent % (OPA, Conftest, Compliance, Policy as Code, Cost Optimization, CI/CD, Terraform, YAML, Multi-tenant)
-\item Built an Ansible playbook for PCI compliant security hardening on Amazons CIS Benchmark AMI % (Ansible, PCI Compliance, Security, CIS Benchmark, AMI, AWS, Configuration Management)
 \item Architected a series of Lambdas to populate and distribute SSH keys with automated rotation within a 60 day period % (Lambda, AWS, SSH, Security, Key Management, Automation, Python)
 \item Created DynamoDB tables to dynamically store AMI status for different accounts % (DynamoDB, AWS, Database, NoSQL, AMI, Multi-account, Architecture)
-\item Creating and extending Dockerfiles to perform wrapper execution to prevent developer team intervention and increase guardrails for pipelines, reducing CVEs by 30\% % (Docker, Dockerfile, Security, CVE, Container Security, CI/CD, DevSecOps)
 \item Designed automation to evacuate EKS nodes from selected AZs, increasing organisation DR capabilities % (EKS, AWS, Kubernetes, Disaster Recovery, Automation, Availability Zones, Node Management)
 \item Designed Python program leveraging Github API and Jinja2 templating to automate release note generation across different internal EKS releases, bringing down release note generation time from 4-6 hours manually, to 15 seconds % (Python, GitHub API, Jinja2, Automation, Release Management, EKS, Documentation)
-\item Ran AWS Glue to take Kubernetes cluster NFR load testing such as CoreDNS, storing results in a central object storage such as S3 for long term performance tracking and visualisation via AWS Athena and Managed Grafana, providing long term visibility to product ownership of performance over release iterations % (AWS Glue, S3, Athena, Grafana, Performance Testing, CoreDNS, Kubernetes, ETL, Data Analytics, Monitoring)
 \end{rSubsection}
 
 \begin{rSubsection}{William Hill}{June 2022 - January 2023}
@@ -110,7 +104,6 @@ Confluence, Service Now, JIRA, Trello, Jenkins, Gitlab, Git, Twistlock, Vault, N
 \item Leveraging of Prometheus kube state metrics metadata to alert based on team labelling allowing custom receivers to fire. % (Prometheus, Kube-state-metrics, Alerting, Kubernetes, Monitoring, Alertmanager)
 \item Improved Opensearch performance capabilities by performance testing and optimising JVM heap size to increase garbage collection efficiency. % (OpenSearch, Performance Tuning, JVM, Java, Elasticsearch, Performance Testing, Optimization)
 \item Implemented custom Prometheus exporters to generate metrics for AWS services into a single monitoring system, allowing Product Owners to streamline platform service offerings. % (Prometheus, Golang, AWS, Monitoring, Metrics, Custom Exporters, Cloud Monitoring)
-\item Ran performance testing for e2e logging solution of Fluentbit, Fluentd and Opensearch to understand performance limitations and configuration settings required to prevent service disruption and cost optimise scaling. % (Fluentbit, Fluentd, OpenSearch, Performance Testing, Logging, Log Aggregation, Cost Optimization)
 \item Monitored and maintained AWS services, including EC2 instances, S3 buckets, and RDS databases, ensuring high availability through Cloudwatch pushing metrics to Prometheus Pushgateway. % (AWS, CloudWatch, EC2, S3, RDS, Prometheus, Pushgateway, Monitoring, High Availability)
 \normalfont
 
@@ -120,37 +113,25 @@ Confluence, Service Now, JIRA, Trello, Jenkins, Gitlab, Git, Twistlock, Vault, N
 \normalfont
 {Site Reliability Engineer - Enterprise Kubernetes Team}{2020 - June 2022}
 \normalfont
-\item Created Gatekeeper policy constraints and tested using Python Behave to achieve pen-test requirements and limit root access for customers % (Gatekeeper, OPA, Python, Behave, Kubernetes, Security, Policy as Code, Testing, Compliance)
-\item Introduced Karpenter in combination with spot instances as an enhancement to cluster-autoscaler for node cost optimisation within non-production environments % (Karpenter, AWS, Spot Instances, Kubernetes, Cost Optimization, Autoscaling, Cluster Management)
-\item Developed AWS Glue jobs to take Kubernetes cluster non-functional requirement testing and store them in a central database, allowing time series trends to measure component upgrade influence against performance over time % (AWS Glue, ETL, Kubernetes, Performance Testing, Data Analytics, Time Series, Database, NFR)
 \item Automated infrastructure management and deployment using Terraform and Terragrunt for AWS Cloudwatch \& RDS modules for onprem developers via Python Jinja2 wrappers, easing deployment use for customers and elminating team support tickets by 50\% thanks to new developer self serve capabilities % (Terraform, Terragrunt, AWS, CloudWatch, RDS, Python, Jinja2, IaC, Automation, Self-service)
 \item Supporting developer teams with microservice Github Actions to deploy to multiple platforms and enforce pull request policies such as tagging and linting % (GitHub Actions, CI/CD, Microservices, DevOps, Automation, Git, Policy Enforcement)
 \item Adjustment of pipelines to automatically shut down lab clusters over evenings and auto destroy after a 2 weeks, saving costs by 85\% % (Cost Optimization, Kubernetes, Automation, CI/CD, Cluster Management, Scheduling)
 \item Designed multi-stage Buildkite pipeline, for cluster build \& test stages using Make targets \& 3-musketeers pattern % (Buildkite, CI/CD, Make, Docker, 3-Musketeers, Pipeline, Testing, Kubernetes)
-\item Built out automation of CoreDNS performance testing with the cluster post-creation to achieve an additional layer of performance validation for customers post-micro-service deployment % (CoreDNS, Kubernetes, Performance Testing, Automation, DNS, Validation, Microservices)
 \end{rSubsection}
 
 \begin{rSubsection}{}{}{Platform Engineer - Observability \& Monitoring Team}{2018 - 2020}
 \normalfont
 \item Development of monitoring platform, deploying Logstash architecture alongside Beats family to enable centralized application logging within Elasticsearch and visualisation within Kibana to achieve a unified monitoring platform spanned 40+ teams % (Logstash, Elasticsearch, Kibana, ELK Stack, Beats, Monitoring, Log Aggregation, Observability)
-\item Implemented the Grafana Labs stack of Loki, Mimir \& Tempo, performing load testing across the components to size resources appropriately leveraging k6s % (Grafana, Loki, Mimir, Tempo, k6, Load Testing, Observability, Performance Testing, Monitoring)
-\item Implemented KEDA to optimise sizing of K8s components, specifically relating to Loki queries, saving costs % (KEDA, Kubernetes, Autoscaling, Cost Optimization, Loki, Performance, Resource Management)
 \item Created Grafana dashboard pipeline allowing consumers to self serve dashboards to team specific custom folders via Helm templating and automatically promote to production via pipeline scripting, reducing dashboard support tickets by 90\% % (Grafana, Helm, CI/CD, Self-service, Automation, Dashboard, Pipeline, GitOps)
-\item Successful integration of Prometheus \& Alertmanager with Pagerduty to improve oncall engineering working methods % (Prometheus, Alertmanager, PagerDuty, Monitoring, Alerting, On-call, Integration, SRE)
-\item Built a Python script utilising Pyexcel and Pandas to automate the sizing of Elasticsearch clusters, resulting in significant cost savings through automation and reduction of human input in the magnitude of hundreds of hours % (Python, Pyexcel, Pandas, Elasticsearch, Automation, Cost Optimization, Capacity Planning, Data Analysis)
-\item Designed and implemented a more flexible Logstash pipeline which allowed customers to implement their sharding with no dependencies on the monitoring team, improving organisational velocity % (Logstash, Elasticsearch, Pipeline, Architecture, Self-service, Data Processing, Sharding)
 \end{rSubsection}
 
 \begin{rSubsection}{}{}{Platform Engineer - Digital Transformation}{September 2017 - 2018}
 \normalfont
-\item Alerting system to ETL MongoDB logs via the ELK stack using Python, firing alerts to hubs if there were access attempts. Ran integration testing \& a Jenkins pipeline deploying a custom Dockerfile to a multi-tenant K8s cluster. % (MongoDB, ELK Stack, Python, ETL, Jenkins, Docker, Kubernetes, CI/CD, Alerting, Security)
-\item Led a 12-person strong team of engineers to develop a prototype application for Nationwide. % (Leadership, Team Management, Project Management, Agile, Development, Prototyping)
 \end{rSubsection}
 
 \begin{rSubsection}{OVO Energy \& Warwick Manufacturing Group}{July 2016 – June 2017}{Research Analyst}{}
 \normalfont
 \item Modelled the degradation of Nissan Leaf batteries through lab testing \& MATLAB % (MATLAB, Data Analysis, Research, Battery Technology, Testing, Modeling, Electric Vehicles)
-\item Presented findings for EV battery at Munich conference to over one hundred academics % (Presentation, Communication, Research, Academic, Conference, Public Speaking)
 \end{rSubsection}
 
 \end{rSection}

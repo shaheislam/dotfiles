@@ -154,18 +154,18 @@
 ### Platform Engineering & Architecture
 
 - Architected enterprise-scale Kubernetes platform using Cluster API with integrated day-2 operations tooling, providing 50+ development teams with standardized, secure cloud infrastructure
-- Architected and delivered platform using Cluster API with integrated day-2 operations tooling on Linux infrastructure, providing 50+ development teams with standardized, pen-tested secure cloud infrastructure
+- Delivering EKS as a Platform with integrated day-2 tooling to customers to achieve a unified, pen-tested secure cloud platform across the organisation
 - Designed declarative infrastructure provisioning platform using Terraform modules and custom Golang tooling, enabling complete cloud environment deployment through single YAML configurations
-- Architected self-service Prometheus deployment framework with Thanos sidecar integration, enabling 30+ development teams to implement standardized monitoring within Cluster API managed clusters
+- Worked on deploying Prometheus as a vended repository for consumers to utilise a satellite Prometheus with a Thanos sidecar within their EKS cluster to unify platform observability
 
 ### Cost Optimization
 
 - Led end-to-end PagerDuty to OpsGenie migration in 6 months, ensuring 100% feature parity while coordinating 20+ stakeholder teams and delivering $150K in annual cost savings
-- Implemented standardized compliance testing through Open Policy Agent and Conftest with Bash automation scripts, consolidating CI/CD runners achieving 70% cost reduction
+- Implemented standardised compliance testing through Open Policy Agent & Conftest. Moving from multiple runners to a single multi-tenant deployment runner agent against AWS infrastructure, defining permissions based on standardised YAML per team and enforcing against Terraform JSON This saved runner costs by 70% and reduced engineering hours spent
 - Deployed Karpenter with AWS Spot Instances to replace cluster-autoscaler in Cluster API managed environments, reducing compute costs by 60%
 - Automated lab cluster lifecycle management using Cluster API with evening shutdowns, reducing non-production infrastructure costs by 85%
-- Implemented KEDA autoscaling for Kubernetes components with optimized Loki query processing using Golang microservices, reducing monitoring infrastructure costs by 40%
-- Built self-service Grafana dashboard provisioning pipeline using Helm templating and automated CI/CD promotion, reducing support requests by 90%
+- Implemented KEDA to optimise sizing of K8s components, specifically relating to Loki queries, saving costs
+- Created Grafana dashboard pipeline allowing consumers to self serve dashboards to team specific custom folders via Helm templating and automatically promote to production via pipeline scripting, reducing dashboard support tickets by 90%
 
 ### Migration & Modernization
 
@@ -174,27 +174,43 @@
 
 ### Security & Compliance
 
-- Built PCI-compliant Ansible playbook for automated security hardening of Amazon CIS Benchmark AMIs on RHEL systems, ensuring consistent security posture across all EC2 instances
-- Architected automated SSH key management system using AWS Lambda with 60-day rotation cycles, improving security compliance across 200+ EC2 instances
+- Implemented Twingate across AWS & GCP estate to achieve Zero-Trust-Network-Access across hybrid cloud architecture.
+- Built an Ansible playbook for PCI compliant security hardening on Amazons CIS Benchmark AMI
+- Architected a series of Lambdas to populate and distribute SSH keys with automated rotation within a 60 day period
 - Implemented OIDC federated authentication for service repositories with External Secrets Operator integration, eliminating manual secret management across 50+ microservices
 - Implemented Gatekeeper policy enforcement with Python Behave testing framework, preventing unauthorized root access and achieving 100% penetration test compliance
 
 ### Monitoring & Observability
 
+- Development of monitoring platform, deploying Logstash architecture alongside Beats family to enable centralized application logging within Elasticsearch and visualisation within Kibana to achieve a unified monitoring platform spanned 40+ teams
 - Developed Node.js middleware application integrating ServiceNow incident data with real-time market-location-based status updates, enabling executive leadership monitoring across global operations
-- Built custom alerting framework using Prometheus kube-state-metrics and team-based labeling with Bash scripting, enabling automated incident routing and reducing alert response time by 60%
-- Optimized OpenSearch cluster performance through JVM heap tuning and garbage collection optimization on RHEL systems, improving query response times by 35%
-- Developed custom Prometheus exporters for AWS services integration using Golang, consolidating monitoring data into unified dashboards for improved service visibility
-- Deployed Grafana Labs observability stack (Loki, Mimir, Tempo) with comprehensive k6 load testing, ensuring 99.9% availability while reducing infrastructure costs by 30%
-- Built AWS Glue ETL pipeline to centralize Kubernetes cluster performance metrics, reducing performance regression incidents by 40%
+- Deployed Thanos chart, alongside additional components such as ruler & compactor with associated bucket, access points and role infra to enable for long term object storage of Prometheus metrics
+- Leveraging of Prometheus kube state metrics metadata to alert based on team labelling allowing custom receivers to fire
+- Improved Opensearch performance capabilities by performance testing and optimising JVM heap size to increase garbage collection efficiency
+- Implemented custom Prometheus exporters to generate metrics for AWS services into a single monitoring system, allowing Product Owners to streamline platform service offerings
+- Ran performance testing for e2e logging solution of Fluentbit, Fluentd and Opensearch to understand performance limitations and configuration settings required to prevent service disruption and cost optimise scaling
+- Monitored and maintained AWS services, including EC2 instances, S3 buckets, and RDS databases, ensuring high availability through Cloudwatch pushing metrics to Prometheus Pushgateway
+- Implemented the Grafana Labs stack of Loki, Mimir & Tempo, performing load testing across the components to size resources appropriately leveraging k6s
+- Successful integration of Prometheus & Alertmanager with Pagerduty to improve oncall engineering working methods
+- Built a Python script utilising Pyexcel and Pandas to automate the sizing of Elasticsearch clusters, resulting in significant cost savings through automation and reduction of human input in the magnitude of hundreds of hours
+- Designed and implemented a more flexible Logstash pipeline which allowed customers to implement their sharding with no dependencies on the monitoring team, improving organisational velocity
+- Ran AWS Glue to take Kubernetes cluster NFR load testing such as CoreDNS, storing results in a central object storage such as S3 for long term performance tracking and visualisation via AWS Athena and Managed Grafana, providing long term visibility to product ownership of performance over release iterations
 
 ### Automation & DevOps
 
-- Designed DynamoDB-based AMI status tracking system for multi-account environments, providing real-time visibility and reducing troubleshooting time by 50%
-- Implemented automated Cluster API node evacuation system for availability zone maintenance, enabling zero-downtime disaster recovery testing
+- Created DynamoDB tables to dynamically store AMI status for different accounts
+- Creating and extending Dockerfiles to perform wrapper execution to prevent developer team intervention and increase guardrails for pipelines, reducing CVEs by 30%
+- Designed automation to evacuate EKS nodes from selected AZs, increasing organisation DR capabilities
 - Engineered automated disaster recovery testing framework using Point-in-Time Recovery (PITR), reducing manual testing effort by 80% and ensuring 4-hour recovery objectives
 - Automated CoreDNS performance validation post-cluster deployment, ensuring 99.9% DNS resolution SLA compliance across customer microservice deployments
 - Designed Python program leveraging Github API and Jinja2 templating to automate release note generation across different internal EKS releases, bringing down release note generation time from 4-6 hours manually, to 15 seconds
+- Architected declarative infrastructure provisioning system using custom tooling and Terraform modules, enabling teams to define complete cloud environments in a single YAML configuration file
+- Implemented GitOps-based deployment pipeline with automated validation, rendering, and provisioning of infrastructure components including Kubernetes clusters, databases, storage accounts, and identity management
+- Leveraged deployment patterns using a combination of Make targets and chained Github Actions workflows, passing data through artifact uploads
+- Created restore container workflows for postgresql and file storage in backup subscriptions to main subscription, using service principals with strict RBAC in place via PIM
+- Built enterprise backup solution for Azure storage accounts, PostgreSQL databases, and key vaults with automated scheduling and monitoring, achieving 99.99% backup success rate
+- Created DR Testing workflows to use PITR recovery to restore corrupted Databases from Azure Storage Accounts
+- Created OIDC Federated Credentials workflow for service repositories to integrate deployments with External Secrets Operator reducing overhead of secrets management
 
 ### Research & Innovation
 
