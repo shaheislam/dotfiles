@@ -1,0 +1,88 @@
+# Skill Taxonomy - Hierarchical skill relationships for intelligent matching
+# This enables better synonym matching and skill inference
+
+kubernetes:
+  aliases: [k8s, container orchestration, container management]
+  related: [docker, containers, helm, kustomize]
+  implies: [linux, networking, yaml]
+  vendors:
+    - eks: [aws, amazon]
+    - gke: [gcp, google cloud]
+    - aks: [azure, microsoft]
+  certifications:
+    - CKA
+    - CKAD
+    - CKS
+
+aws:
+  aliases: [amazon web services, aws cloud]
+  services:
+    compute: [ec2, lambda, ecs, fargate, batch]
+    storage: [s3, ebs, efs, glacier]
+    database: [rds, dynamodb, aurora, elasticache]
+    networking: [vpc, route53, cloudfront, elb]
+    security: [iam, kms, secrets manager, waf]
+  certifications:
+    - Solutions Architect
+    - DevOps Engineer
+    - Security Specialty
+
+terraform:
+  aliases: [iac, infrastructure as code, tf]
+  related: [terragrunt, terraform cloud, hcl]
+  competitors: [cloudformation, pulumi, cdk, ansible]
+  patterns: [modules, workspaces, state management]
+
+monitoring:
+  tools:
+    metrics: [prometheus, grafana, datadog, cloudwatch]
+    logging: [elk, loki, fluentd, splunk]
+    tracing: [jaeger, zipkin, tempo, xray]
+    apm: [newrelic, appdynamics, dynatrace]
+  concepts: [observability, sre, golden signals, sli/slo]
+
+ci-cd:
+  aliases: [cicd, continuous integration, continuous delivery]
+  tools:
+    - jenkins: [groovy, pipeline, jenkinsfile]
+    - github-actions: [workflows, yaml, actions]
+    - gitlab: [gitlab-ci, runners]
+    - buildkite: [agents, pipelines]
+  concepts: [gitops, progressive delivery, blue-green, canary]
+
+security:
+  domains:
+    - compliance: [pci, cis, hipaa, gdpr, sox]
+    - authentication: [oidc, saml, oauth, sso, mfa]
+    - secrets: [vault, sealed-secrets, external-secrets]
+    - scanning: [trivy, twistlock, sonarqube, snyk]
+    - policies: [opa, gatekeeper, polaris, falco]
+
+# Skill level indicators for scoring
+skill_levels:
+  expert: [architected, designed, led, built, implemented]
+  advanced: [developed, created, managed, optimized, configured]
+  intermediate: [worked with, used, maintained, supported]
+  beginner: [familiar with, exposed to, learning]
+
+# Impact indicators for priority scoring
+impact_keywords:
+  high_value:
+    - cost savings
+    - reduced by X%
+    - improved by X%
+    - $X saved
+    - X% faster
+    - eliminated
+    - automated
+  team_scale:
+    - 50+ teams
+    - enterprise-scale
+    - organization-wide
+    - company-wide
+    - global
+  technical_depth:
+    - from scratch
+    - custom solution
+    - novel approach
+    - first to implement
