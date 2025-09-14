@@ -81,65 +81,37 @@ Confluence, Service Now, JIRA, Trello, Jenkins, Gitlab, Git, Twistlock, Vault, N
 \smallbreak
 
 \begin{rSubsection}{Phillip Morris International}{June 2024 - Present}
-{Senior Platform Engineer}{}
+{%%PMI_JOB_TITLE%%}{}
 \normalfont
-\item Architected declarative infrastructure provisioning system using custom tooling and Terraform modules, enabling teams to define complete cloud environments in a single YAML configuration file
-\item Implemented GitOps-based deployment pipeline with automated validation, rendering, and provisioning of infrastructure components including Kubernetes clusters, databases, storage accounts, and identity management
-\item Leveraged deployment patterns using a combination of Make targets and chained Github Actions workflows, passing data through artifact uploads
-\item Created restore container workflows for postgresql and file storage in backup subscriptions to main subscription, using service principals with strict RBAC in place via PIM
-\item Built enterprise backup solution for Azure storage accounts, PostgreSQL databases, and key vaults with automated scheduling and monitoring, achieving 99.99\% backup success rate
-\item Created DR Testing workflows to use PITR recovery to restore corrupted Databases from Azure Storage Accounts
-\item Created OIDC Federated Credentials workflow for service repositories to integrate deployments with External Secrets Operator reducing overhead of secrets management
+% PMI_BULLETS_START
+% PMI_BULLETS_END
 \end{rSubsection}
 
 \begin{rSubsection}{HMRC}{January 2023 - March 2024}
-{Site Reliability Engineer - Platform Squad}{}
+{%%HMRC_JOB_TITLE%%}{}
 \normalfont
-\item Delivering EKS as a Platform with integrated day-2 tooling to customers to achieve a unified, pen-tested secure cloud platform across the organisation
-\item Implemented standardised compliance testing through Open Policy Agent \& Conftest. Moving from multiple runners to a single multi-tenant deployment runner agent against AWS infrastructure, defining permissions based on standardised YAML per team and enforcing against Terraform JSON This saved runner costs by 70\% and reduced engineering hours spent
-\item Built an Ansible playbook for PCI compliant security hardening on Amazons CIS Benchmark AMI
-\item Architected a series of Lambdas to populate and distribute SSH keys with automated rotation within a 60 day period
-\item Created DynamoDB tables to dynamically store AMI status for different accounts
-\item Creating and extending Dockerfiles to perform wrapper execution to prevent developer team intervention and increase guardrails for pipelines, reducing CVEs by 30\%
-\item Designed automation to evacuate EKS nodes from selected AZs, increasing organisation DR capabilities
-\item Designed Python program leveraging Github API and Jinja2 templating to automate release note generation across different internal EKS releases, bringing down release note generation time from 4-6 hours manually, to 15 seconds
-\item Ran AWS Glue to take Kubernetes cluster NFR load testing such as CoreDNS, storing results in a central object storage such as S3 for long term performance tracking and visualisation via AWS Athena and Managed Grafana, providing long term visibility to product ownership of performance over release iterations
+% HMRC_BULLETS_START
+% HMRC_BULLETS_END
 \end{rSubsection}
 
 \begin{rSubsection}{ITV}{June 2022 - Jan 2023}
-{Site Reliability Engineer - ITVx}{}
+{%%ITV_JOB_TITLE%%}{}
 \normalfont
-\item Worked on deploying Prometheus as a vended repository for consumers to utilise a satellite Prometheus with a Thanos sidecar within their EKS cluster to unify platform observability
-\item Deployed Thanos chart, alongside additional components such as ruler \& compactor with associated bucket, access points and role infra to enable for long term object storage of Prometheus metrics
-\item Leveraging of Prometheus kube state metrics metadata to alert based on team labelling allowing custom receivers to fire
-\item Improved Opensearch performance capabilities by performance testing and optimising JVM heap size to increase garbage collection efficiency
-\item Implemented custom Prometheus exporters to generate metrics for AWS services into a single monitoring system, allowing Product Owners to streamline platform service offerings
-\item Ran performance testing for e2e logging solution of Fluentbit, Fluentd and Opensearch to understand performance limitations and configuration settings required to prevent service disruption and cost optimise scaling
-\item Monitored and maintained AWS services, including EC2 instances, S3 buckets, and RDS databases, ensuring high availability through Cloudwatch pushing metrics to Prometheus Pushgateway
+% ITV_BULLETS_START
+% ITV_BULLETS_END
 \end{rSubsection}
 
 \begin{rSubsection}{Nationwide Building Society}{September 2017 - July 2022}
-{Site Reliability Engineer - Enterprise Kubernetes Team}{2020 - July 2022}
+{%%NATIONWIDE_EKS_JOB_TITLE%%}{2020 - July 2022}
 \normalfont
-\item Created Gatekeeper policy constraints and tested using Python Behave to achieve pen-test requirements and limit root access for customers
-\item Introduced Karpenter in combination with spot instances as an enhancement to cluster-autoscaler for node cost optimisation within non-production environments
-\item Developed AWS Glue jobs to take Kubernetes cluster non-functional requirement testing and store them in a central database, allowing time series trends to measure component upgrade influence against performance over time
-\item Automated infrastructure management and deployment using Terraform and Terragrunt for AWS Cloudwatch \& RDS modules for onprem developers via Python Jinja2 wrappers, easing deployment use for customers and eliminating team support tickets by 50\% thanks to new developer self serve capabilities
-\item Supporting developer teams with microservice Github Actions to deploy to multiple platforms and enforce pull request policies such as tagging and linting
-\item Adjustment of pipelines to automatically shut down lab clusters over evenings and auto destroy after a 2 weeks, saving costs by 85\%
-\item Designed multi-stage Buildkite pipeline, for cluster build \& test stages using Make targets \& 3-musketeers pattern
-\item Built out automation of CoreDNS performance testing with the cluster post-creation to achieve an additional layer of performance validation for customers post-micro-service deployment
+% NATIONWIDE_EKS_BULLETS_START
+% NATIONWIDE_EKS_BULLETS_END
 \end{rSubsection}
 
-\begin{rSubsection}{}{}{Platform Engineer - Observability \& Monitoring Team}{2018 - 2020}
+\begin{rSubsection}{}{}{%%NATIONWIDE_OBS_JOB_TITLE%%}{2018 - 2020}
 \normalfont
-\item Development of monitoring platform, deploying Logstash architecture alongside Beats family to enable centralized application logging within Elasticsearch and visualisation within Kibana to achieve a unified monitoring platform spanned 40+ teams
-\item Implemented the Grafana Labs stack of Loki, Mimir \& Tempo, performing load testing across the components to size resources appropriately leveraging k6s
-\item Implemented KEDA to optimise sizing of K8s components, specifically relating to Loki queries, saving costs
-\item Created Grafana dashboard pipeline allowing consumers to self serve dashboards to team specific custom folders via Helm templating and automatically promote to production via pipeline scripting, reducing dashboard support tickets by 90\%
-\item Successful integration of Prometheus \& Alertmanager with Pagerduty to improve oncall engineering working methods
-\item Built a Python script utilising Pyexcel and Pandas to automate the sizing of Elasticsearch clusters, resulting in significant cost savings through automation and reduction of human input in the magnitude of hundreds of hours
-\item Designed and implemented a more flexible Logstash pipeline which allowed customers to implement their sharding with no dependencies on the monitoring team, improving organisational velocity
+% NATIONWIDE_OBS_BULLETS_START
+% NATIONWIDE_OBS_BULLETS_END
 \end{rSubsection}
 
 \begin{rSubsection}{}{}{Platform Engineer - Nationwide Digital Hub}{September 2017 - 2018}

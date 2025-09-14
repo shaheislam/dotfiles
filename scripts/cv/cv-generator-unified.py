@@ -66,12 +66,13 @@ class UnifiedCVGenerator:
         }
 
     def parse_job_description(self, job_path: str) -> Dict:
-        """Parse job description to extract requirements"""
+        """Parse job description to dynamically extract ALL requirements"""
         requirements = {
             'technologies': [],
             'keywords': [],
             'must_have': [],
             'nice_to_have': [],
+            'all_terms': [],  # New: capture all significant terms
         }
 
         if not Path(job_path).exists():
@@ -81,34 +82,97 @@ class UnifiedCVGenerator:
         with open(job_path, 'r') as f:
             content = f.read()
 
-        # Extract technologies (common patterns)
-        tech_patterns = [
-            r'\b(kubernetes|k8s|eks|gke|aks)\b',
-            r'\b(aws|azure|gcp|cloud)\b',
-            r'\b(terraform|ansible|cloudformation)\b',
-            r'\b(docker|container|helm)\b',
-            r'\b(python|golang|go|java|javascript)\b',
-            r'\b(prometheus|grafana|datadog|monitoring)\b',
-            r'\b(jenkins|gitlab|github\s+actions|ci\/cd)\b',
-        ]
-
         content_lower = content.lower()
-        for pattern in tech_patterns:
-            matches = re.findall(pattern, content_lower)
-            requirements['technologies'].extend(matches)
 
-        # Extract keywords
-        keywords = ['platform', 'infrastructure', 'automation', 'security',
-                   'monitoring', 'observability', 'migration', 'optimization',
-                   'compliance', 'leadership', 'agile', 'devops', 'sre']
+        # Dynamic technology extraction - find all technical terms
+        # Pattern 1: Capitalized words and acronyms (likely to be tools/technologies)
+        tech_terms = re.findall(r'\b[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*\b', content)
+        tech_acronyms = re.findall(r'\b[A-Z]{2,}[0-9]*\b', content)
 
-        for keyword in keywords:
-            if keyword in content_lower:
-                requirements['keywords'].append(keyword)
+        # Pattern 2: Terms with special chars (e.g., M365, K8s)
+        special_terms = re.findall(r'\b[A-Za-z]+[0-9]+[A-Za-z]*\b|\b[A-Za-z]*[0-9]+[A-Za-z]+\b', content)
 
-        # Deduplicate
-        requirements['technologies'] = list(set(requirements['technologies']))
-        requirements['keywords'] = list(set(requirements['keywords']))
+        # Pattern 3: Common tech patterns (word-word, word/word)
+        compound_terms = re.findall(r'\b\w+[-/]\w+\b', content_lower)
+
+        # Pattern 4: Extract from sections like "Essential Technical Skills"
+        # Look for bullet points and technical sections
+        tech_section_match = re.search(r'(technical|skills|requirements|experience).*?(?=\n\n|\Z)',
+                                       content_lower, re.DOTALL | re.IGNORECASE)
+        if tech_section_match:
+            section_text = tech_section_match.group()
+            # Extract all nouns and technical terms from this section
+            section_terms = re.findall(r'\b[a-zA-Z][\w\-\./]+\b', section_text)
+            requirements['technologies'].extend(section_terms)
+
+        # Combine all technical terms
+        all_tech = tech_terms + tech_acronyms + special_terms + compound_terms
+
+        # Clean and filter technical terms
+        for term in all_tech:
+            clean_term = term.strip().lower()
+            # Filter out common words and keep technical terms
+            if (len(clean_term) > 2 and
+                clean_term not in ['the', 'and', 'for', 'with', 'from', 'this', 'that', 'will', 'can', 'has', 'have', 'are', 'was', 'were', 'been']):
+                requirements['technologies'].append(clean_term)
+
+        # Extract domain-specific keywords based on job content
+        # Dynamically identify important words based on frequency and context
+        words = re.findall(r'\b[a-z]+\b', content_lower)
+        word_freq = {}
+        for word in words:
+            if len(word) > 4:  # Focus on meaningful words
+                word_freq[word] = word_freq.get(word, 0) + 1
+
+        # Keywords are frequently mentioned important terms
+        sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+        requirements['keywords'] = [word for word, freq in sorted_words[:20] if freq > 1]
+
+        # Extract specific requirements from "Essential" or "Required" sections
+        essential_match = re.search(r'(essential|required|must.have).*?(?=(desirable|nice.to.have|\n\n|\Z))',
+                                   content_lower, re.DOTALL | re.IGNORECASE)
+        if essential_match:
+            essential_text = essential_match.group()
+            # Extract all technical terms from essential section
+            essential_terms = re.findall(r'\b[a-zA-Z][\w\-\./]+\b', essential_text)
+            requirements['must_have'] = [t.lower() for t in essential_terms if len(t) > 2]
+
+        # Extract nice-to-have from "Desirable" sections
+        desirable_match = re.search(r'(desirable|nice.to.have|preferred).*?(?=\n\n|\Z)',
+                                   content_lower, re.DOTALL | re.IGNORECASE)
+        if desirable_match:
+            desirable_text = desirable_match.group()
+            desirable_terms = re.findall(r'\b[a-zA-Z][\w\-\./]+\b', desirable_text)
+            requirements['nice_to_have'] = [t.lower() for t in desirable_terms if len(t) > 2]
+
+        # Store all unique terms for comprehensive matching
+        requirements['all_terms'] = list(set(
+            requirements['technologies'] +
+            requirements['keywords'] +
+            requirements['must_have'] +
+            requirements['nice_to_have']
+        ))
+
+        # Deduplicate while preserving order of importance
+        requirements['technologies'] = list(dict.fromkeys(requirements['technologies']))[:50]
+        requirements['keywords'] = list(dict.fromkeys(requirements['keywords']))[:30]
+        requirements['must_have'] = list(dict.fromkeys(requirements['must_have']))[:30]
+        requirements['nice_to_have'] = list(dict.fromkeys(requirements['nice_to_have']))[:20]
+
+        print(f"\nDynamically extracted from job description:")
+        print(f"  - {len(requirements['technologies'])} technologies/tools")
+        print(f"  - {len(requirements['keywords'])} keywords")
+        print(f"  - {len(requirements['must_have'])} must-have skills")
+        print(f"  - {len(requirements['nice_to_have'])} nice-to-have skills")
+
+        # Show top extracted terms for debugging
+        if requirements['technologies']:
+            print(f"\n  Top technologies detected: {', '.join(requirements['technologies'][:10])}")
+
+        # Debug: Show what we're actually looking for
+        print(f"\nDebug - Key terms we're matching against:")
+        print(f"  Must-have: {', '.join(requirements['must_have'][:10]) if requirements['must_have'] else 'None'}")
+        print(f"  Technologies: {', '.join([t for t in requirements['technologies'] if any(x in t for x in ['security', 'identity', 'entra', 'purview', 'cyber'])][:10])}")
 
         return requirements
 
@@ -177,7 +241,7 @@ class UnifiedCVGenerator:
         return achievement, []
 
     def score_achievements(self, skills: Dict, requirements: Dict) -> Dict:
-        """Score achievements based on metadata tags and text matching"""
+        """Score achievements based on dynamic job requirements"""
         scored_achievements = {}
 
         for achievement in skills['all_achievements']:
@@ -185,27 +249,41 @@ class UnifiedCVGenerator:
             clean_text, tags = self.parse_metadata_tags(achievement)
             achievement_lower = clean_text.lower()
 
-            # Score based on metadata tags (highest priority)
-            if tags:
-                for tag in tags:
-                    # Technology match in tags
-                    for tech in requirements['technologies']:
-                        if tech in tag or tag in tech:
-                            score += self.scoring_weights['metadata_tech_match']
+            # Priority 1: Must-have requirements (highest weight)
+            for must_have in requirements.get('must_have', []):
+                if must_have in achievement_lower:
+                    score += 30  # Highest priority for must-have matches
+                # Check in tags too
+                if tags and any(must_have in tag.lower() for tag in tags):
+                    score += 35
 
-                    # Keyword match in tags
-                    for keyword in requirements['keywords']:
-                        if keyword in tag or tag in keyword:
-                            score += self.scoring_weights['metadata_keyword_match']
-
-            # Text-based scoring
+            # Priority 2: Technology matches
             for tech in requirements['technologies']:
+                # Check in achievement text
                 if tech in achievement_lower:
                     score += self.scoring_weights['text_tech_match']
+                # Check in metadata tags
+                if tags and any(tech in tag.lower() for tag in tags):
+                    score += self.scoring_weights['metadata_tech_match']
 
+            # Priority 3: Keywords (domain-specific terms)
             for keyword in requirements['keywords']:
                 if keyword in achievement_lower:
                     score += self.scoring_weights['text_keyword_match']
+                if tags and any(keyword in tag.lower() for tag in tags):
+                    score += self.scoring_weights['metadata_keyword_match']
+
+            # Priority 4: Nice-to-have skills
+            for nice in requirements.get('nice_to_have', []):
+                if nice in achievement_lower:
+                    score += 5
+                if tags and any(nice in tag.lower() for tag in tags):
+                    score += 8
+
+            # Bonus: Check against all extracted terms for comprehensive matching
+            if 'all_terms' in requirements:
+                term_matches = sum(1 for term in requirements['all_terms'] if term in achievement_lower)
+                score += term_matches * 2  # Small bonus for each term match
 
             # Bonus for quantifiable achievements
             if any(char.isdigit() for char in clean_text):
@@ -235,38 +313,95 @@ class UnifiedCVGenerator:
         """
         # Enforce page limits - default to 10 bullets for 2-page CV
         # Can be increased via command line if needed for specific roles
-        max_bullets = min(max_bullets, 10)
+        max_bullets = min(max_bullets, 15)  # Allow up to 15 for 3-page CV when specified
+
+        # Debug: Show top scoring achievements
+        sorted_achievements = sorted(
+            scored_achievements.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+        print("\nTop 15 scoring achievements:")
+        for i, (achievement, score) in enumerate(sorted_achievements[:15], 1):
+            preview = achievement[:60] + "..." if len(achievement) > 60 else achievement
+            print(f"  {i}. Score {score}: {preview}")
 
         selected = []
-        category_counts = {}
 
-        # Priority categories
-        priority_order = [
-            'Platform Engineering & Architecture',
-            'Cost Optimization',
-            'Security & Compliance',
-            'Monitoring & Observability',
-            'Migration & Modernization',
-            'Automation & DevOps'
-        ]
+        # Simply take the top scoring achievements without category limits
+        # This ensures the CV reflects what's most relevant to the job
+        for achievement, score in sorted_achievements[:max_bullets]:
+            # Clean the bullet (remove metadata tags)
+            clean_bullet, _ = self.parse_metadata_tags(achievement)
+            selected.append(clean_bullet)
 
-        # First pass: get top bullets from priority categories
-        for achievement, score in scored_achievements.items():
-            if len(selected) >= max_bullets:
-                break
+        return selected
 
-            # Find which category this achievement belongs to
-            for category, bullets in skills['achievements'].items():
-                if achievement in bullets:
-                    # Limit bullets per category for diversity
-                    if category_counts.get(category, 0) < 3:
-                        # Clean the bullet (remove metadata tags)
-                        clean_bullet, _ = self.parse_metadata_tags(achievement)
-                        selected.append(clean_bullet)
-                        category_counts[category] = category_counts.get(category, 0) + 1
-                    break
+    def determine_job_title(self, bullets: List[str]) -> str:
+        """Determine the best job title based on bullet content"""
+        bullet_text = ' '.join(bullets).lower()
 
-        return selected[:max_bullets]
+        # Count keywords to determine focus area
+        scores = {
+            'Security Platform Engineer': 0,
+            'DevOps Platform Engineer': 0,
+            'Cloud Platform Engineer': 0,
+            'Site Reliability Engineer': 0,
+            'Platform Engineer': 0,  # Default
+            'Infrastructure Engineer': 0,
+            'Observability Engineer': 0,
+        }
+
+        # Security keywords
+        security_keywords = ['security', 'compliance', 'pci', 'cis', 'vulnerability',
+                            'penetration', 'twingate', 'zero trust', 'oidc', 'identity',
+                            'gatekeeper', 'policy', 'ssh', 'encryption', 'audit', 'soc',
+                            'rbac', 'iam', 'secrets', 'purview', 'entra']
+
+        # DevOps keywords
+        devops_keywords = ['ci/cd', 'pipeline', 'jenkins', 'gitlab', 'github actions',
+                          'deployment', 'automation', 'docker', 'container', 'build']
+
+        # Cloud keywords
+        cloud_keywords = ['aws', 'azure', 'gcp', 'cloud', 'eks', 'aks', 'gke',
+                         's3', 'ec2', 'lambda', 'dynamodb', 'rds']
+
+        # SRE keywords
+        sre_keywords = ['monitoring', 'observability', 'prometheus', 'grafana',
+                       'alerting', 'incident', 'reliability', 'sla', 'slo', 'performance']
+
+        # Infrastructure keywords
+        infra_keywords = ['terraform', 'ansible', 'infrastructure', 'provisioning',
+                         'configuration', 'networking', 'load balancer', 'cdn']
+
+        # Count matches
+        for keyword in security_keywords:
+            if keyword in bullet_text:
+                scores['Security Platform Engineer'] += 2
+
+        for keyword in devops_keywords:
+            if keyword in bullet_text:
+                scores['DevOps Platform Engineer'] += 1.5
+
+        for keyword in cloud_keywords:
+            if keyword in bullet_text:
+                scores['Cloud Platform Engineer'] += 1.5
+
+        for keyword in sre_keywords:
+            if keyword in bullet_text:
+                scores['Site Reliability Engineer'] += 1.5
+                scores['Observability Engineer'] += 1
+
+        for keyword in infra_keywords:
+            if keyword in bullet_text:
+                scores['Infrastructure Engineer'] += 1
+
+        # Default score for Platform Engineer
+        scores['Platform Engineer'] = 5  # Base score
+
+        # Return the title with highest score
+        best_title = max(scores.items(), key=lambda x: x[1])[0]
+        return best_title
 
     def generate_cv_latex(self, template_path: str, bullets: List[str],
                          skills: Dict, metadata: Dict) -> str:
@@ -283,17 +418,83 @@ class UnifiedCVGenerator:
 
 """
 
-        # Create experience section with selected bullets
-        experience_section = ""
-        for bullet in bullets:
-            experience_section += f"\\item {bullet}\n"
+        # Distribute bullets across positions
+        # Define distribution based on total bullets
+        # Note: NATIONWIDE_HUB and OVO have hardcoded bullets in CV.tex
+        if len(bullets) <= 10:
+            # For 2-page CV: focus on recent roles
+            distribution = {
+                'PMI': min(3, len(bullets)),
+                'HMRC': min(3, max(0, len(bullets) - 3)),
+                'ITV': min(2, max(0, len(bullets) - 6)),
+                'NATIONWIDE_EKS': min(2, max(0, len(bullets) - 8)),
+                'NATIONWIDE_OBS': 0,
+                # Skip these - they have hardcoded bullets
+                # 'NATIONWIDE_HUB': 0,
+                # 'OVO': 0
+            }
+        else:
+            # For 3-page CV: spread across more roles
+            distribution = {
+                'PMI': min(3, len(bullets)),
+                'HMRC': min(3, max(0, len(bullets) - 3)),
+                'ITV': min(3, max(0, len(bullets) - 6)),
+                'NATIONWIDE_EKS': min(3, max(0, len(bullets) - 9)),
+                'NATIONWIDE_OBS': min(3, max(0, len(bullets) - 12)),
+                # Skip these - they have hardcoded bullets
+                # 'NATIONWIDE_HUB': 0,
+                # 'OVO': 0
+            }
 
-        # Replace the placeholder with actual bullets
-        if "% EXPERIENCE BULLETS WILL BE INSERTED HERE BY THE GENERATOR" in template:
-            template = template.replace(
-                "% EXPERIENCE BULLETS WILL BE INSERTED HERE BY THE GENERATOR",
-                experience_section.strip()
-            )
+        # Assign bullets to positions and determine job titles
+        bullet_index = 0
+        job_titles = {}  # Store job titles for each position
+
+        for position, count in distribution.items():
+            if count > 0 and bullet_index < len(bullets):
+                position_bullets = bullets[bullet_index:bullet_index + count]
+
+                # Determine the best job title for this position based on its bullets
+                job_title = self.determine_job_title(position_bullets)
+
+                # Add seniority prefix based on position
+                if position == 'PMI':
+                    job_title = 'Senior ' + job_title
+                elif position in ['HMRC', 'ITV']:
+                    job_title = job_title  # Keep as is
+                else:
+                    # For older positions, keep the default or adjust
+                    job_title = job_title
+
+                job_titles[position] = job_title
+                print(f"  {position}: {job_title} (based on {count} bullets)")
+
+                # Escape LaTeX special characters in bullets
+                escaped_bullets = []
+                for bullet in position_bullets:
+                    # Escape % symbols and other LaTeX special chars
+                    escaped = bullet.replace('%', '\\%').replace('$', '\\$').replace('&', '\\&')
+                    escaped_bullets.append(escaped)
+                bullet_text = '\n'.join(f'\\item {b}' for b in escaped_bullets)
+
+                # Replace the position placeholders
+                template = template.replace(
+                    f'% {position}_BULLETS_START\n% {position}_BULLETS_END',
+                    f'% {position}_BULLETS_START\n{bullet_text}\n% {position}_BULLETS_END'
+                )
+                bullet_index += count
+
+        # Replace job title placeholders
+        template = template.replace('%%PMI_JOB_TITLE%%',
+                                  job_titles.get('PMI', 'Senior Platform Engineer'))
+        template = template.replace('%%HMRC_JOB_TITLE%%',
+                                  job_titles.get('HMRC', 'Site Reliability Engineer'))
+        template = template.replace('%%ITV_JOB_TITLE%%',
+                                  job_titles.get('ITV', 'Site Reliability Engineer'))
+        template = template.replace('%%NATIONWIDE_EKS_JOB_TITLE%%',
+                                  job_titles.get('NATIONWIDE_EKS', 'Platform Engineer'))
+        template = template.replace('%%NATIONWIDE_OBS_JOB_TITLE%%',
+                                  job_titles.get('NATIONWIDE_OBS', 'Platform Engineer - Observability'))
 
         cv_content = header + template
 
@@ -303,6 +504,13 @@ class UnifiedCVGenerator:
             for i, bullet in enumerate(bullets[:3], 1):
                 preview = bullet[:80] + "..." if len(bullet) > 80 else bullet
                 print(f"  {i}. {preview}")
+
+        # Debug: Show if security-related bullets are in the selection
+        security_bullets = [b for b in bullets if any(term in b.lower() for term in ['security', 'twingate', 'zero trust', 'identity', 'oidc', 'compliance', 'soc'])]
+        if security_bullets:
+            print(f"\nSecurity-focused bullets included: {len(security_bullets)}")
+        else:
+            print("\nWARNING: No security-focused bullets in selection!")
 
         return cv_content
 

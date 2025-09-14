@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/shahe/dotfiles/scripts/cv/**)",
+      "Bash(make:*)",
+      "Bash(open /Users/shahe/dotfiles/jobapps/output/experis-140925-contract-500.pdf)",
+      "Bash(pdftotext:*)",
+      "Bash(grep:*)",
+      "Read(//Users/shahe/dotfiles/**)",
+      "Bash(git rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

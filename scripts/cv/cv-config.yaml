@@ -189,7 +189,7 @@ validation:
     salary: "^\\d{2,4}[kK]?$"
   
   file_checks:
-    - "jobdesciption.md exists"
+    - "jobdescription.md exists"
     - "CV.tex template exists"
     - "resume.cls available"
 

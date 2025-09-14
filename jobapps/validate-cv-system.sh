@@ -58,7 +58,7 @@ echo "1. FILE STRUCTURE VALIDATION"
 echo "----------------------------"
 
 test_condition "skills.md exists" "[ -f skills.md ]"
-test_condition "jobdesciption.md exists" "[ -f jobdesciption.md ]"
+test_condition "jobdescription.md exists" "[ -f jobdescription.md ]"
 test_condition "CV.tex exists" "[ -f CV.tex ]"
 test_condition "Makefile exists" "[ -f Makefile ]"
 test_condition "Unified script exists" "[ -f ../scripts/cv/cv-generator-unified.py ]"

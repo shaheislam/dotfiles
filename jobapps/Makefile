@@ -6,7 +6,7 @@
 # Variables
 SCRIPTS_DIR = ../scripts/cv
 OUTPUT_DIR = generated
-JOB_FILE ?= jobdesciption.md
+JOB_FILE ?= jobdescription.md
 CV_FILE ?= CV.tex
 
 # Color output
@@ -33,6 +33,7 @@ unified: ## Generate both standard and ATS-optimized CVs with metadata matching
 		--recruiter "$(RECRUITER)" \
 		--type "$(TYPE)" \
 		--salary "$(SALARY)" \
+		$(if $(MAX_BULLETS),--max-bullets $(MAX_BULLETS),) \
 		--open
 	@echo "$(GREEN)✅ Complete: Standard + ATS versions generated$(NC)"
 
