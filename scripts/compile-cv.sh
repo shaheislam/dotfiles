@@ -19,7 +19,7 @@ fi
 # Get directories
 TEX_DIR=$(dirname "$TEX_PATH")
 TEX_FILE=$(basename "$TEX_PATH")
-OUTPUT_DIR="$HOME/Documents/jobapps/output"
+OUTPUT_DIR="$HOME/dotfiles/jobapps/output"
 
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"

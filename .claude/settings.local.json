@@ -49,7 +49,13 @@
       "Bash(echo $TMUX)",
       "Read(//Users/shahe/.tmux/plugins/**)",
       "Bash(python:*)",
-      "Bash(open ~/Documents/jobapps/output/Test-140125-perm-85K.pdf)"
+      "Bash(open ~/Documents/jobapps/output/Test-140125-perm-85K.pdf)",
+      "Bash(make:*)",
+      "Bash(/Users/shahe/dotfiles/scripts/compile-cv.sh:*)",
+      "Bash(open /Users/shahe/dotfiles/jobapps/generated/comparison_Google_140925.html)",
+      "Bash(pdflatex:*)",
+      "Bash(open:*)",
+      "Bash(./validate-cv-system.sh:*)"
     ],
     "deny": [],
     "ask": []
