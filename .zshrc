@@ -43,6 +43,9 @@ if [ -d "/Applications/Cursor.app/Contents/Resources/app/bin" ]; then
   export PATH="$PATH:/Applications/Cursor.app/Contents/Resources/app/bin"
 fi
 
+# Podman/Docker configuration for k3d
+export DOCKER_HOST="unix:///var/folders/5p/gmrrr9ws5g98h04tn8scp6s40000gn/T/podman/podman-machine-default-api.sock"
+
 # Initialize tools
 eval "$(zoxide init zsh)"
 eval "$(direnv hook zsh)"
@@ -86,6 +89,8 @@ alias ls="eza"
 alias la="eza -al"
 alias cat="bat"
 alias k="kubectl"
+alias kc="kubectx"
+alias kn="kubens"
 
 # bat theme
 export BAT_THEME=tokyonight_night

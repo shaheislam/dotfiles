@@ -83,3 +83,48 @@ test/
 .envrc
 .env
 .claude.json
+
+# Kubernetes Configuration Files
+# Kubeconfig files contain sensitive cluster credentials
+.kube/config
+.kube/config.*
+.kube/cache/
+.kube/http-cache/
+*kubeconfig*
+!.kube/config.template
+!.kube/README.md
+
+# k3d/k3s Specific
+# k3d runtime files
+.k3d/
+k3d-*.yaml.tmp
+# k3s data directories (if running k3s directly)
+/var/lib/rancher/k3s/
+.k3s-data/
+
+# Minikube Specific
+.minikube/
+.minikube-cache/
+minikube.log
+
+# Kind (Kubernetes in Docker) Specific
+.kind/
+kind-logs-*/
+
+# Helm Charts
+# Helm package files that might contain secrets
+**/charts/*.tgz
+**/charts/*.tar.gz
+**/requirements.lock
+
+# Container Runtime Logs
+podman-machine.log
+docker-machine.log
+containerd.log
+
+# Kubernetes Tools Configuration
+# k9s configuration with cluster credentials
+.k9s/
+.k9s_config.yml
+# kubectl plugins cache
+.kubectl-plugins/

@@ -1,0 +1,38 @@
+# k3d cluster configuration
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: local-cluster
+servers: 1
+agents: 2
+image: rancher/k3s:v1.30.0-k3s1
+ports:
+  - port: 8080:80
+    nodeFilters:
+      - loadbalancer
+  - port: 8443:443
+    nodeFilters:
+      - loadbalancer
+  - port: 6443:6443
+    nodeFilters:
+      - server:0
+options:
+  k3d:
+    wait: true
+    timeout: "60s"
+    disableLoadbalancer: false
+    disableImageVolume: false
+  k3s:
+    extraArgs:
+      - arg: --tls-san=127.0.0.1
+        nodeFilters:
+          - server:*
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: true
+# Registry disabled for Podman compatibility
+# registries:
+#   create:
+#     name: k3d-local-registry
+#     host: "0.0.0.0"
+#     hostPort: "5000"

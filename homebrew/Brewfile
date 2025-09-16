@@ -163,6 +163,13 @@ brew "pulumi"
 # brew "consul" # License changed to BUSL - install manually if needed
 # brew "nomad" # License changed to BUSL - install manually if needed
 
+# Kubernetes Local Development Tools
+brew "minikube"  # Full Kubernetes in VM/Docker
+brew "k3d"       # k3s in Docker (lightweight)
+brew "kind"      # Kubernetes in Docker
+brew "kubectx"   # Quick context switching
+brew "kubens"    # Quick namespace switching
+
 # Container Tools
 brew "podman"
 # brew "buildah" # Not available on macOS

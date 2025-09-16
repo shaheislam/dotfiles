@@ -915,6 +915,8 @@ alias ls="eza"
 alias la="eza -al"
 alias cat="bat"
 alias k="kubectl"
+alias kc="kubectx"
+alias kn="kubens"
 
 # bat theme
 export BAT_THEME=tokyonight_night
@@ -1150,12 +1152,52 @@ else
   echo "SSH config already linked"
 fi
 
+# Configure Kubernetes Local Development Tools
+echo "=== Configuring Kubernetes Local Development Tools ==="
+
+# Create .kube directory if it doesn't exist
+mkdir -p $HOME/.kube
+
+# Initialize kubectl config if it doesn't exist
+if [ ! -f "$HOME/.kube/config" ]; then
+  echo "Creating initial kubectl config..."
+  cat > "$HOME/.kube/config" << 'EOF'
+apiVersion: v1
+kind: Config
+clusters: []
+contexts: []
+current-context: ""
+preferences: {}
+users: []
+EOF
+  chmod 600 $HOME/.kube/config
+  log_success "kubectl config initialized"
+else
+  log_info "kubectl config already exists"
+fi
+
+# Initialize minikube if installed
+if command -v minikube &> /dev/null; then
+  log_info "Minikube installed. Initialize with: minikube start"
+  log_info "Use 'minikube config set driver docker' to use Docker driver"
+fi
+
+# Initialize k3d if installed
+if command -v k3d &> /dev/null; then
+  log_info "k3d installed. Create cluster with: k3d cluster create mycluster"
+  log_info "List clusters with: k3d cluster list"
+fi
+
+# Initialize kind if installed
+if command -v kind &> /dev/null; then
+  log_info "kind installed. Create cluster with: kind create cluster"
+  log_info "List clusters with: kind get clusters"
+fi
+
 # Configure Azure Kubernetes tools
 echo "=== Configuring Azure Kubernetes tools ==="
 if command -v kubelogin &> /dev/null; then
   echo "Configuring kubelogin..."
-  # Create .kube directory if it doesn't exist
-  mkdir -p $HOME/.kube
   # Set proper permissions for kubeconfig
   if [ -f "$HOME/.kube/config" ]; then
     chmod 600 $HOME/.kube/config

@@ -40,6 +40,9 @@ if status is-interactive
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
+    # Podman/Docker configuration for k3d
+    set -x DOCKER_HOST "unix:///var/folders/5p/gmrrr9ws5g98h04tn8scp6s40000gn/T/podman/podman-machine-default-api.sock"
+
     # Load centralized PATH configuration
     source $HOME/.config/fish/paths.fish
 
@@ -520,10 +523,46 @@ if status is-interactive
 
     # Kubernetes & Container Tools
     alias k="kubectl"  # Kubernetes CLI shorthand
-    alias kx="kubie ctx"  # Switch kubernetes context
-    alias kns="kubie ns"  # Switch namespace
+    alias kc="kubectx"  # Quick context switching
+    alias kn="kubens"  # Quick namespace switching
+    alias kx="kubie ctx"  # Switch kubernetes context with kubie (alternative)
+    alias kns="kubie ns"  # Switch namespace with kubie (alternative)
     alias kdive="dive"  # Docker image explorer
     alias kctop="ctop"  # Container metrics
+
+    # Kubernetes shortcuts
+    alias kgp="kubectl get pods"
+    alias kgs="kubectl get svc"
+    alias kgd="kubectl get deployment"
+    alias kgn="kubectl get nodes"
+    alias kdp="kubectl describe pod"
+    alias kds="kubectl describe svc"
+    alias kdd="kubectl describe deployment"
+    alias kdn="kubectl describe node"
+    alias kaf="kubectl apply -f"
+    alias kdf="kubectl delete -f"
+    alias kl="kubectl logs"
+    alias klf="kubectl logs -f"
+    alias ke="kubectl exec -it"
+
+    # Local Kubernetes clusters
+    alias mk="minikube"
+    alias mkstart="minikube start --driver=docker"
+    alias mkstop="minikube stop"
+    alias mkdel="minikube delete"
+    alias mkdash="minikube dashboard"
+
+    # k3d shortcuts
+    alias k3dc="k3d cluster"
+    alias k3dcreate="k3d cluster create"
+    alias k3dlist="k3d cluster list"
+    alias k3ddel="k3d cluster delete"
+    alias k3s="~/dotfiles/scripts/k3s-setup.sh"
+
+    # kind shortcuts
+    alias kindc="kind create cluster"
+    alias kindl="kind get clusters"
+    alias kindd="kind delete cluster"
 
     # Better File/System Tools
     alias du="dust"  # Better disk usage
@@ -2115,6 +2154,137 @@ if status is-interactive
             set -l pod_name (echo $selected | awk '{print $1}')
             kubectl describe pod $pod_name
         end
+    end
+
+    # Quick cluster management functions
+    function kcluster --description "Manage local Kubernetes clusters"
+        if test (count $argv) -eq 0
+            echo "Usage: kcluster <type> <action> [name]"
+            echo "Types: minikube, k3d, kind"
+            echo "Actions: start, stop, delete, list"
+            return 1
+        end
+
+        set -l cluster_type $argv[1]
+        set -l action $argv[2]
+        set -l name $argv[3]
+
+        switch $cluster_type
+            case minikube mk
+                switch $action
+                    case start
+                        minikube start --driver=docker
+                    case stop
+                        minikube stop
+                    case delete del
+                        minikube delete
+                    case list ls
+                        minikube profile list
+                    case dashboard dash
+                        minikube dashboard
+                    case '*'
+                        echo "Unknown action: $action"
+                end
+
+            case k3d
+                switch $action
+                    case start create
+                        if test -n "$name"
+                            k3d cluster create $name
+                        else
+                            k3d cluster create mycluster
+                        end
+                    case stop
+                        if test -n "$name"
+                            k3d cluster stop $name
+                        else
+                            echo "Name required for k3d stop"
+                        end
+                    case delete del
+                        if test -n "$name"
+                            k3d cluster delete $name
+                        else
+                            echo "Name required for k3d delete"
+                        end
+                    case list ls
+                        k3d cluster list
+                    case '*'
+                        echo "Unknown action: $action"
+                end
+
+            case kind
+                switch $action
+                    case start create
+                        if test -n "$name"
+                            kind create cluster --name $name
+                        else
+                            kind create cluster
+                        end
+                    case delete del
+                        if test -n "$name"
+                            kind delete cluster --name $name
+                        else
+                            kind delete cluster
+                        end
+                    case list ls
+                        kind get clusters
+                    case '*'
+                        echo "Unknown action: $action"
+                end
+
+            case '*'
+                echo "Unknown cluster type: $cluster_type"
+                echo "Supported: minikube, k3d, kind"
+        end
+    end
+
+    # Helper function to get all pods across all namespaces
+    function kpods-all --description "Get pods from all namespaces"
+        kubectl get pods --all-namespaces
+    end
+
+    # Quick port forward function
+    function kpf --description "Port forward to a pod"
+        if test (count $argv) -lt 2
+            echo "Usage: kpf <pod-name> <local-port>:<pod-port>"
+            return 1
+        end
+        kubectl port-forward $argv[1] $argv[2]
+    end
+
+    # Quick exec into pod
+    function kexec --description "Exec into a pod with shell detection"
+        if test (count $argv) -eq 0
+            echo "Usage: kexec <pod-name> [command]"
+            return 1
+        end
+
+        set -l pod $argv[1]
+        set -l cmd $argv[2..-1]
+
+        if test -z "$cmd"
+            # Try common shells in order
+            for shell in bash sh ash
+                if kubectl exec $pod -- which $shell >/dev/null 2>&1
+                    echo "Using shell: $shell"
+                    kubectl exec -it $pod -- $shell
+                    return 0
+                end
+            end
+            echo "No suitable shell found"
+            return 1
+        else
+            kubectl exec -it $pod -- $cmd
+        end
+    end
+
+    # Get resource usage
+    function ktop --description "Show resource usage for nodes and pods"
+        echo "=== Node Resources ==="
+        kubectl top nodes 2>/dev/null || echo "Metrics server not installed"
+        echo ""
+        echo "=== Pod Resources ==="
+        kubectl top pods 2>/dev/null || echo "Metrics server not installed"
     end
 
     # Docker container selector with fzf
