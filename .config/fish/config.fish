@@ -28,6 +28,9 @@ complete -c ssmc -f -a "(__fish_complete_aws_profiles)" -d "Connect to EC2 insta
 complete -c aws-sso -e
 complete -c aws-sso -f -a "(__fish_complete_aws_profiles)" -d "Authenticate with AWS SSO and export credentials to environment"
 
+complete -c dssmc -e
+complete -c dssmc -f -a "(__fish_complete_aws_profiles)" -d "Connect to EC2 via SSM tunnel for distant.nvim"
+
 
 # Only run in interactive sessions
 if status is-interactive
