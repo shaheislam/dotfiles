@@ -1,11 +1,18 @@
 return {
   {
     "chipsenkbeil/distant.nvim",
-    branch = "v0.3",
-    lazy = false,  -- Load immediately
-    priority = 1000,  -- Load early
+    branch = "main",  -- Use main branch for latest compatibility
+    lazy = true,     -- Load on demand to avoid early loading issues
     config = function()
-      require("distant"):setup()
+      -- Simple setup with minimal configuration
+      local ok, distant = pcall(require, "distant")
+      if not ok then
+        vim.notify("Failed to load distant.nvim", vim.log.levels.ERROR)
+        return
+      end
+
+      -- Use simple default setup without non-existent settings module
+      distant:setup()
     end,
     cmd = {
       "DistantInstall",

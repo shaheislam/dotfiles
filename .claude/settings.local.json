@@ -76,7 +76,8 @@
       "Bash(kubectl:*)",
       "Bash(source:*)",
       "Bash(echo:*)",
-      "Read(//Users/shahe/.kube/**)"
+      "Read(//Users/shahe/.kube/**)",
+      "Read(//Users/shahe/.local/share/nvim/distant/**)"
     ],
     "deny": [],
     "ask": []

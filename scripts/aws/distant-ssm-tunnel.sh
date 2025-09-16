@@ -116,6 +116,12 @@ main() {
         exit 1
     fi
 
+    # Update SSH known_hosts to prevent host key mismatch issues
+    print_info "Updating SSH known_hosts for localhost:$LOCAL_PORT..."
+    ssh-keygen -R "[localhost]:$LOCAL_PORT" 2>/dev/null || true
+    ssh-keyscan -p $LOCAL_PORT localhost >> ~/.ssh/known_hosts 2>/dev/null
+    print_success "SSH known_hosts updated"
+
     # Determine the user (try common ones)
     local SSH_USER=""
     for user in ubuntu ec2-user admin centos; do
