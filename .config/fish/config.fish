@@ -248,6 +248,17 @@ if status is-interactive
         carapace _carapace | source
     end
 
+    # Auto-attach to tmux session 'main' or create it if it doesn't exist
+    # Only do this in WezTerm or when not already in tmux
+    if test -z "$TMUX" -a "$TERM_PROGRAM" = "WezTerm"
+        # Check if 'main' session exists
+        if tmux has-session -t main 2>/dev/null
+            exec tmux attach-session -t main
+        else
+            exec tmux new-session -s main
+        end
+    end
+
     # Enhanced aliases combining both configs
     alias python=python3
     alias mkdir="mkdir -p"

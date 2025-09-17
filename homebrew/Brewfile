@@ -96,6 +96,12 @@ brew "mas"  # Mac App Store CLI
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
 
+# File System Tools
+# FUSE-T - kext-less FUSE implementation for macOS (replacement for macFUSE)
+tap "macos-fuse-t/homebrew-cask"
+cask "fuse-t"
+cask "fuse-t-sshfs"
+
 # Security & DevSecOps Tools
 tap "vet-run/vet"
 tap "aquasecurity/trivy"

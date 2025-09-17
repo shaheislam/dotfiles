@@ -77,7 +77,9 @@
       "Bash(source:*)",
       "Bash(echo:*)",
       "Read(//Users/shahe/.kube/**)",
-      "Read(//Users/shahe/.local/share/nvim/distant/**)"
+      "Read(//Users/shahe/.local/share/nvim/distant/**)",
+      "Bash(git config:*)",
+      "Read(//Users/shahe/.tmux/**)"
     ],
     "deny": [],
     "ask": []
