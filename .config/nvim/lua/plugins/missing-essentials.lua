@@ -3,22 +3,8 @@
 
 return {
   -- ============== CORE PRODUCTIVITY ==============
-  
-  -- 1. MISSING: Code comments plugin
-  {
-    "numToStr/Comment.nvim",
-    event = { "BufReadPre", "BufNewFile" },
-    dependencies = {
-      "JoosepAlviste/nvim-ts-context-commentstring",
-    },
-    config = function()
-      require("Comment").setup({
-        pre_hook = require("ts_context_commentstring.integrations.comment_nvim").create_pre_hook(),
-      })
-    end,
-  },
 
-  -- 2. MISSING: Better quickfix/location list
+  -- 1. MISSING: Better quickfix/location list
   {
     "kevinhwang91/nvim-bqf",
     ft = "qf",
@@ -31,34 +17,7 @@ return {
     },
   },
 
-  -- 3. MISSING: Indent visualization (you had vim-indent-guides but not configured)
-  {
-    "lukas-reineke/indent-blankline.nvim",
-    main = "ibl",
-    opts = {
-      indent = {
-        char = "│",
-        tab_char = "│",
-      },
-      scope = { enabled = false },
-      exclude = {
-        filetypes = {
-          "help",
-          "dashboard",
-          "neo-tree",
-          "Trouble",
-          "trouble",
-          "lazy",
-          "mason",
-          "notify",
-          "toggleterm",
-          "lazyterm",
-        },
-      },
-    },
-  },
-
-  -- 4. MISSING: Smart splits and window management
+  -- 2. MISSING: Smart splits and window management
   {
     "mrjones2014/smart-splits.nvim",
     lazy = false,
@@ -82,55 +41,53 @@ return {
     end,
   },
 
-  -- 5. MISSING: Treesitter textobjects for better code navigation
+  -- 3. Treesitter configuration (textobjects is included in LazyVim by default)
   {
-    "nvim-treesitter/nvim-treesitter-textobjects",
-    event = { "BufReadPost", "BufNewFile" },
-    dependencies = "nvim-treesitter/nvim-treesitter",
-    config = function()
-      require("nvim-treesitter.configs").setup({
-        textobjects = {
-          select = {
-            enable = true,
-            lookahead = true,
-            keymaps = {
-              ["af"] = "@function.outer",
-              ["if"] = "@function.inner",
-              ["ac"] = "@class.outer",
-              ["ic"] = "@class.inner",
-              ["aa"] = "@parameter.outer",
-              ["ia"] = "@parameter.inner",
-            },
-          },
-          move = {
-            enable = true,
-            set_jumps = true,
-            goto_next_start = {
-              ["]f"] = "@function.outer",
-              ["]c"] = "@class.outer",
-              ["]a"] = "@parameter.outer",
-            },
-            goto_previous_start = {
-              ["[f"] = "@function.outer",
-              ["[c"] = "@class.outer",
-              ["[a"] = "@parameter.outer",
-            },
-          },
-          swap = {
-            enable = true,
-            swap_next = {
-              ["<leader>a"] = "@parameter.inner",
-            },
-            swap_previous = {
-              ["<leader>A"] = "@parameter.inner",
-            },
+    "nvim-treesitter/nvim-treesitter",
+    opts = function(_, opts)
+      -- Extend the existing treesitter configuration
+      opts.textobjects = {
+        select = {
+          enable = true,
+          lookahead = true,
+          keymaps = {
+            ["af"] = "@function.outer",
+            ["if"] = "@function.inner",
+            ["ac"] = "@class.outer",
+            ["ic"] = "@class.inner",
+            ["aa"] = "@parameter.outer",
+            ["ia"] = "@parameter.inner",
           },
         },
-      })
+        move = {
+          enable = true,
+          set_jumps = true,
+          goto_next_start = {
+            ["]f"] = "@function.outer",
+            ["]c"] = "@class.outer",
+            ["]a"] = "@parameter.outer",
+          },
+          goto_previous_start = {
+            ["[f"] = "@function.outer",
+            ["[c"] = "@class.outer",
+            ["[a"] = "@parameter.outer",
+          },
+        },
+        swap = {
+          enable = true,
+          swap_next = {
+            ["<leader>a"] = "@parameter.inner",
+          },
+          swap_previous = {
+            ["<leader>A"] = "@parameter.inner",
+          },
+        },
+      }
+      return opts
     end,
   },
 
-  -- 6. MISSING: TODO comments highlighting
+  -- 4. MISSING: TODO comments highlighting
   {
     "folke/todo-comments.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
@@ -146,7 +103,7 @@ return {
     },
   },
 
-  -- 7. MISSING: Better code folding
+  -- 5. MISSING: Better code folding
   {
     "kevinhwang91/nvim-ufo",
     dependencies = "kevinhwang91/promise-async",
@@ -170,7 +127,7 @@ return {
     },
   },
 
-  -- 8. MISSING: Trouble.nvim for better diagnostics
+  -- 6. MISSING: Trouble.nvim for better diagnostics
   {
     "folke/trouble.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
@@ -185,7 +142,7 @@ return {
     },
   },
 
-  -- 9. MISSING: Notification system
+  -- 7. MISSING: Notification system
   {
     "rcarriga/nvim-notify",
     opts = {
@@ -205,7 +162,7 @@ return {
     end,
   },
 
-  -- 10. MISSING: Better buffer management
+  -- 8. MISSING: Better buffer management
   {
     "akinsho/bufferline.nvim",
     event = "VeryLazy",
@@ -237,7 +194,7 @@ return {
     },
   },
 
-  -- 11. MISSING: Leap.nvim for faster navigation
+  -- 9. MISSING: Leap.nvim for faster navigation
   {
     "ggandor/leap.nvim",
     enabled = true,
@@ -257,9 +214,9 @@ return {
     end,
   },
 
-  -- 12. MISSING: Mini.nvim suite for small utilities
+  -- 10. MISSING: Mini.nvim suite for small utilities
   {
-    "echasnovski/mini.nvim",
+    "nvim-mini/mini.nvim",
     version = false,
     config = function()
       -- Better Around/Inside textobjects
@@ -287,7 +244,7 @@ return {
     end,
   },
 
-  -- 13. MISSING: Zen mode for focused writing
+  -- 11. MISSING: Zen mode for focused writing
   {
     "folke/zen-mode.nvim",
     cmd = "ZenMode",
@@ -303,7 +260,7 @@ return {
     keys = { { "<leader>z", "<cmd>ZenMode<cr>", desc = "Zen Mode" } },
   },
 
-  -- 14. MISSING: Code actions preview
+  -- 12. MISSING: Code actions preview
   {
     "aznhe21/actions-preview.nvim",
     event = "LspAttach",
@@ -312,7 +269,7 @@ return {
     end,
   },
 
-  -- 15. MISSING: Refactoring tools
+  -- 13. MISSING: Refactoring tools
   {
     "ThePrimeagen/refactoring.nvim",
     dependencies = {

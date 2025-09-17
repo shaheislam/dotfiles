@@ -59,6 +59,4 @@ vim.api.nvim_create_autocmd("VimEnter", {
 vim.opt.clipboard = "unnamed" -- Your preference
 vim.opt.relativenumber = true -- LazyVim has this but ensuring it's set
 
--- Plugin configuration variables for your custom plugins
-vim.g.yoinkIncludeDeleteOperations = 1
-vim.g.indent_guides_enable_on_vim_startup = 0
+-- Custom plugin configuration variables

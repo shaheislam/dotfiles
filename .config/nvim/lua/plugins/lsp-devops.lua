@@ -38,49 +38,8 @@ return {
     },
   },
 
-  -- Ensure Mason installs all necessary LSPs, formatters, and linters
-  {
-    "williamboman/mason.nvim",
-    opts = {
-      ensure_installed = {
-        -- LSP Servers
-        "terraform-ls",           -- Terraform
-        "tflint",                  -- Terraform linter
-        "ansible-language-server", -- Ansible
-        "helm-ls",                 -- Helm charts
-        "docker-compose-language-service", -- Docker Compose
-        "dockerfile-language-server", -- Dockerfile
-        "yaml-language-server",    -- YAML
-        "json-lsp",                -- JSON
-        "taplo",                   -- TOML
-        "bash-language-server",    -- Bash/Shell
-        "powershell-editor-services", -- PowerShell
-        "pyright",                 -- Python
-        "gopls",                   -- Go
-        "rust-analyzer",           -- Rust
-        "lua-language-server",     -- Lua
-        "marksman",                -- Markdown
-        
-        -- Formatters
-        "prettier",                -- YAML, JSON, Markdown
-        "stylua",                  -- Lua
-        "shfmt",                   -- Shell scripts
-        "black",                   -- Python
-        "isort",                   -- Python imports
-        "gofumpt",                 -- Go
-        "rustfmt",                 -- Rust
-        
-        -- Linters
-        "shellcheck",              -- Shell scripts
-        "hadolint",                -- Dockerfile
-        "yamllint",                -- YAML
-        "jsonlint",                -- JSON
-        "markdownlint",            -- Markdown
-        "golangci-lint",           -- Go
-        "ruff",                    -- Python
-      },
-    },
-  },
+  -- Mason configuration is now in mason-fix.lua to avoid conflicts
+  -- The ensure_installed list has been moved to mason-lspconfig
 
   -- Additional LSP configurations
   {

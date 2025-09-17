@@ -32,6 +32,7 @@ brew "starship"
 brew "fzf"
 brew "ripgrep"
 brew "neovim"
+brew "tree-sitter-cli"  # Required for nvim-treesitter
 brew "tmux"
 brew "morantron/tmux-fingers/tmux-fingers"
 brew "thefuck"

@@ -95,7 +95,12 @@
       "Bash(/Users/shahe/dotfiles/scripts/test-kubectl-nvim.sh:*)",
       "Read(//Users/shahe/.config/**)",
       "Bash(~/dotfiles/scripts/setup-k9s.sh)",
-      "Read(//Users/shahe/Library/**)"
+      "Read(//Users/shahe/Library/**)",
+      "Bash(for file in /Users/shahe/dotfiles/.config/nvim/lua/plugins/*.lua)",
+      "Bash(head:*)",
+      "Bash(done)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

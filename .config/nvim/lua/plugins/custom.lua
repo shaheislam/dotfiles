@@ -74,18 +74,8 @@ return {
     end,
   },
 
-  {
-    "svermeulen/vim-subversive",
-    config = function()
-      -- vim-subversive mappings
-      vim.keymap.set('n', 's', '<plug>(SubversiveSubstitute)')
-      vim.keymap.set('n', 'ss', '<plug>(SubversiveSubstituteLine)')
-      vim.keymap.set('n', 'S', '<plug>(SubversiveSubstituteToEndOfLine)')
-      vim.keymap.set('n', '<leader>s', '<plug>(SubversiveSubstituteRange)')
-      vim.keymap.set('x', '<leader>s', '<plug>(SubversiveSubstituteRange)')
-      vim.keymap.set('n', '<leader>ss', '<plug>(SubversiveSubstituteWordRange)')
-    end,
-  },
+  -- vim-subversive removed - was causing treesitter query errors
+  -- Use LazyVim's built-in substitute features instead
 
   -- Additional plugins you had that aren't in LazyVim
   "inkarkat/vim-ingo-library",
@@ -94,7 +84,6 @@ return {
   "inkarkat/vim-visualrepeat",
   "christoomey/vim-sort-motion",
   "junegunn/vim-peekaboo",
-  "easymotion/vim-easymotion",
   "tpope/vim-rsi",
   "simnalamburt/vim-mundo",
 
@@ -221,16 +210,16 @@ return {
     },
   },
 
-  -- Kai-Neovim Claude AI Integration
-  {
-    dir = vim.fn.stdpath("config") .. "/lua/config",
-    name = "kai-neovim",
-    lazy = false,
-    config = function()
-      require("config.kai-neovim").setup()
-    end,
-    keys = {
-      { "<leader>ai", mode = { "n", "v" }, desc = "Kai AI Assistant (Claude)" }
-    },
-  },
+  -- Kai-Neovim Claude AI Integration (disabled - missing config)
+  -- {
+  --   dir = vim.fn.stdpath("config") .. "/lua/config",
+  --   name = "kai-neovim",
+  --   lazy = false,
+  --   config = function()
+  --     require("config.kai-neovim").setup()
+  --   end,
+  --   keys = {
+  --     { "<leader>ai", mode = { "n", "v" }, desc = "Kai AI Assistant (Claude)" }
+  --   },
+  -- },
 }
