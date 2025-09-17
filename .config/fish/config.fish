@@ -38,6 +38,22 @@ if status is-interactive
     set -g fish_key_bindings fish_vi_key_bindings
     set -g fish_escape_delay_ms 100
 
+    # Fix arrow key bindings for vi mode
+    # Clear any corrupted bindings first
+    bind -M insert -e \e\[B 2>/dev/null
+    bind -M default -e \e\[B 2>/dev/null
+
+    # Set correct bindings
+    bind -M insert \e\[A up-or-search
+    bind -M insert \e\[B down-or-search
+    bind -M insert \e\[C forward-char
+    bind -M insert \e\[D backward-char
+
+    bind -M default \e\[A up-line
+    bind -M default \e\[B down-line
+    bind -M default \e\[C forward-char
+    bind -M default \e\[D backward-char
+
     # Environment Variables
     set -x BAT_THEME "Catppuccin Mocha"
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
