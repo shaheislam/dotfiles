@@ -60,3 +60,7 @@ vim.opt.clipboard = "unnamed" -- Your preference
 vim.opt.relativenumber = true -- LazyVim has this but ensuring it's set
 
 -- Custom plugin configuration variables
+vim.g.cutlass_exclude = { "ns", "nS" }
+
+-- Auto-install treesitter parsers
+require("config.treesitter-install")
