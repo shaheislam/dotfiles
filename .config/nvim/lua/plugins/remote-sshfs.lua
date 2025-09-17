@@ -12,6 +12,8 @@ return {
           "-o", "ConnectTimeout=5",
           "-o", "ServerAliveInterval=15",
           "-o", "ServerAliveCountMax=3",
+          "-o", "StrictHostKeyChecking=no",
+          "-o", "UserKnownHostsFile=/dev/null",
         },
       },
       mounts = {

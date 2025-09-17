@@ -79,7 +79,17 @@
       "Read(//Users/shahe/.kube/**)",
       "Read(//Users/shahe/.local/share/nvim/distant/**)",
       "Bash(git config:*)",
-      "Read(//Users/shahe/.tmux/**)"
+      "Read(//Users/shahe/.tmux/**)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Library/Filesystems/macfuse.fs/**)",
+      "Bash(AWS_PROFILE=labs AWS_REGION=us-east-1 ~/dotfiles/scripts/ssm-ssh-proxy.sh:*)",
+      "Bash(AWS_PROFILE=labs ssh:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:cadu.dev)",
+      "Bash(~/.local/share/nvim/distant/distant.bin manager list)",
+      "Bash(~/.local/share/nvim/distant/distant.bin manager info)",
+      "Read(//Users/shahe/.local/share/nvim/lazy/distant.nvim/**)",
+      "Bash(/Users/shahe/dotfiles/scripts/test-distant.sh:*)"
     ],
     "deny": [],
     "ask": []

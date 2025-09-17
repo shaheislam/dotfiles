@@ -5,9 +5,14 @@ function remote-nvim --description "Remote Neovim SSHFS workflow helper"
     ~/dotfiles/scripts/remote-nvim.sh $argv
 end
 
-# Convenience aliases
-alias rnvim='remote-nvim'
-alias rn='remote-nvim'
+# Short aliases for remote-nvim
+function rnvim --description "Alias for remote-nvim"
+    remote-nvim $argv
+end
+
+function rn --description "Short alias for remote-nvim"
+    remote-nvim $argv
+end
 
 # Start Neovim server
 function rnvim-start --description "Start Neovim server with socket"

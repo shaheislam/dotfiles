@@ -5,22 +5,23 @@ function dssmc --description "Connect to EC2 instance via SSM tunnel for distant
     set -l port ""
     set -l skip_next false
 
-    # Parse named arguments
-    for i in (seq 1 (count $argv))
-        # Skip if this was a value for a previous flag
-        if test "$skip_next" = true
-            set skip_next false
-            continue
-        end
+    # Parse named arguments only if there are arguments
+    if test (count $argv) -gt 0
+        for i in (seq 1 (count $argv))
+            # Skip if this was a value for a previous flag
+            if test "$skip_next" = true
+                set skip_next false
+                continue
+            end
 
-        switch $argv[$i]
+            switch $argv[$i]
             case --profile -p
-                if test $i -lt (count $argv)
+                if test (math "$i + 1") -le (count $argv)
                     set profile $argv[(math "$i + 1")]
                     set skip_next true
                 end
             case --port
-                if test $i -lt (count $argv)
+                if test (math "$i + 1") -le (count $argv)
                     set port $argv[(math "$i + 1")]
                     set skip_next true
                 end
@@ -48,6 +49,7 @@ function dssmc --description "Connect to EC2 instance via SSM tunnel for distant
                     end
                 end
         end
+    end
     end
 
     # Set port environment variable if provided

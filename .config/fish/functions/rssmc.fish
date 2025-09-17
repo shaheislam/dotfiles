@@ -1,20 +1,30 @@
-function rssmc --description "Connect to EC2 instance via SSM + SSHFS mount for local Neovim editing"
+function rssmc --description "Connect to EC2 instance via SSM with convenient workflow"
     set -l profile $argv[1]
 
-    # Ensure Neovim server is running
-    if not pgrep -f "nvim.*--listen.*/tmp/nvim.socket" > /dev/null 2>&1
-        echo "📝 Starting Neovim server..."
-        nvim --listen /tmp/nvim.socket &
-        sleep 1
-    else
-        echo "✅ Neovim server already running"
+    # Check for required tools
+    if not command -v session-manager-plugin > /dev/null 2>&1
+        echo "❌ AWS Session Manager Plugin is not installed"
+        echo "Install it with: brew install --cask session-manager-plugin"
+        return 1
+    end
+
+    # Set environment variables
+    if test -n "$profile"
+        set -x AWS_PROFILE $profile
     end
 
     # Try to get instances with current credentials first
     echo "Fetching EC2 instances..."
 
+    # Get region early for consistency
+    set -l region (aws configure get region 2>/dev/null)
+    if test -z "$region"
+        set region "us-east-1"
+    end
+
     # Get all running instances with their SSM status
     set -l instances (aws ec2 describe-instances \
+        --region $region \
         --filters "Name=instance-state-name,Values=running" \
         --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,PrivateIpAddress]' \
         --output text 2>/dev/null)
@@ -22,8 +32,13 @@ function rssmc --description "Connect to EC2 instance via SSM + SSHFS mount for 
     # If no instances found and we have a profile, try with profile
     if test -z "$instances" -a -n "$profile"
         echo "Retrying with profile: $profile"
+        set -l profile_region (aws configure get region --profile $profile 2>/dev/null)
+        if test -n "$profile_region"
+            set region $profile_region
+        end
         set instances (aws ec2 describe-instances \
             --profile $profile \
+            --region $region \
             --filters "Name=instance-state-name,Values=running" \
             --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,PrivateIpAddress]' \
             --output text 2>/dev/null)
@@ -33,8 +48,13 @@ function rssmc --description "Connect to EC2 instance via SSM + SSHFS mount for 
     if test -z "$instances" -a -z "$profile"
         set profile "labs"
         echo "Trying default profile: $profile"
+        set -l profile_region (aws configure get region --profile $profile 2>/dev/null)
+        if test -n "$profile_region"
+            set region $profile_region
+        end
         set instances (aws ec2 describe-instances \
             --profile $profile \
+            --region $region \
             --filters "Name=instance-state-name,Values=running" \
             --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,PrivateIpAddress]' \
             --output text 2>/dev/null)
@@ -48,9 +68,20 @@ function rssmc --description "Connect to EC2 instance via SSM + SSHFS mount for 
 
     # Get SSM connection status for all instances
     echo "Checking SSM connectivity..."
-    set -l ssm_instances (aws ssm describe-instance-information \
-        --query 'InstanceInformationList[*].InstanceId' \
-        --output text 2>/dev/null)
+
+    set -l ssm_instances
+    if test -n "$profile"
+        set ssm_instances (aws ssm describe-instance-information \
+            --profile $profile \
+            --region $region \
+            --query 'InstanceInformationList[*].InstanceId' \
+            --output text 2>/dev/null)
+    else
+        set ssm_instances (aws ssm describe-instance-information \
+            --region $region \
+            --query 'InstanceInformationList[*].InstanceId' \
+            --output text 2>/dev/null)
+    end
 
     # Format for fzf: "Name (InstanceType) - InstanceId [SSM Status]"
     set -l formatted_instances
@@ -74,7 +105,7 @@ function rssmc --description "Connect to EC2 instance via SSM + SSHFS mount for 
 
     # Use fzf for selection
     set -l selected (printf "%s\n" $formatted_instances | fzf \
-        --prompt="Select EC2 instance to mount via SSHFS > " \
+        --prompt="Select EC2 instance to connect > " \
         --height=40% \
         --layout=reverse \
         --border \
@@ -95,73 +126,23 @@ function rssmc --description "Connect to EC2 instance via SSM + SSHFS mount for 
 
     echo "🚀 Connecting to $instance_id via SSM..."
 
-    # Create mount directory
-    set -l mount_dir "$HOME/.sshfs/ec2-$instance_id"
-    mkdir -p "$mount_dir"
-
-    # Find an available port
-    set -l port 2224
-    while lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1
-        set port (math $port + 1)
+    # Build SSM command
+    set -l ssm_cmd "aws ssm start-session"
+    if test -n "$profile"
+        set ssm_cmd "$ssm_cmd --profile $profile"
     end
+    set ssm_cmd "$ssm_cmd --region $region"
+    set ssm_cmd "$ssm_cmd --target $instance_id"
 
-    # Start SSM session with port forwarding in background
-    echo "🔧 Setting up SSM port forward on localhost:$port..."
-    aws ssm start-session \
-        --target $instance_id \
-        --document-name AWS-StartPortForwardingSession \
-        --parameters "portNumber=22,localPortNumber=$port" &
+    echo ""
+    echo "📡 Starting SSM session..."
+    echo ""
+    echo "💡 Tips for remote editing:"
+    echo "  • For Neovim: Use distant.nvim (already configured)"
+    echo "  • For quick edits: nano, vim, or vi"
+    echo "  • To copy files: Use 'aws s3 cp' to transfer via S3"
+    echo ""
 
-    set -l ssm_pid $last_pid
-
-    # Wait for port to be ready
-    echo "⏳ Waiting for tunnel..."
-    for i in (seq 1 30)
-        if nc -z localhost $port 2>/dev/null
-            echo "✅ Tunnel established!"
-            break
-        end
-        sleep 1
-    end
-
-    # Mount via SSHFS
-    echo "📂 Mounting filesystem via SSHFS..."
-    /usr/local/bin/sshfs -p $port \
-        -o StrictHostKeyChecking=no \
-        -o UserKnownHostsFile=/dev/null \
-        -o reconnect \
-        -o ServerAliveInterval=15 \
-        -o ServerAliveCountMax=3 \
-        ec2-user@localhost:/ "$mount_dir" 2>/dev/null
-
-    set -l mount_status $status
-
-    if test $mount_status -eq 0
-        echo "✅ Mounted at: $mount_dir"
-
-        # Change Neovim working directory to mount point
-        nvim --server /tmp/nvim.socket --remote-send ":cd $mount_dir<CR>" 2>/dev/null
-
-        echo ""
-        echo "🎉 Ready to edit! Use these commands:"
-        echo "  rnvim <file>  or  rn <file>         # Open file in Neovim"
-        echo "  cd $mount_dir                        # Browse files locally"
-        echo ""
-        echo "To disconnect: Ctrl+C here or unmount with:"
-        echo "  umount $mount_dir"
-        echo ""
-        echo "📡 Session active. Press Ctrl+C to disconnect..."
-
-        # Keep the session alive
-        wait $ssm_pid
-    else
-        echo "❌ Failed to mount filesystem"
-        kill $ssm_pid 2>/dev/null
-        return 1
-    end
-
-    # Cleanup on exit
-    echo "🧹 Cleaning up..."
-    umount "$mount_dir" 2>/dev/null || fusermount -u "$mount_dir" 2>/dev/null
-    rmdir "$mount_dir" 2>/dev/null
+    # Start interactive SSM session
+    eval $ssm_cmd
 end
