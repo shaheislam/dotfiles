@@ -11,29 +11,6 @@ k9s:
   # Disable cluster info section
   noExitOnCtrlC: false
 
-  # UI settings
-  ui:
-    # Enable mouse support
-    enableMouse: false
-
-    # Disable the k9s logo
-    logoless: false
-
-    # Disable breadcrumbs
-    crumbsless: false
-
-    # Reactive UI updates
-    reactive: true
-
-    # Show icons
-    noIcons: false
-
-    # Skin (theme) - will use tokyo-night
-    skin: tokyo-night
-
-    # Default namespace to use
-    defaultNamespace: default
-
   # Skip latest version check
   skipLatestRevCheck: false
 
@@ -98,7 +75,25 @@ k9s:
   # Screen dump directory
   screenDumpDir: /tmp/k9s-screens
 
-  # Disable features
-  disableFeatures:
-    # Disable node shell feature if not needed
-    nodeShell: false
+  # UI settings
+  ui:
+    # Enable mouse support
+    enableMouse: false
+
+    # Disable the k9s logo
+    logoless: false
+
+    # Disable breadcrumbs
+    crumbsless: false
+
+    # Reactive UI updates
+    reactive: true
+
+    # Show icons
+    noIcons: false
+
+    # Default namespace to use
+    defaultNamespace: default
+
+    # Skin (theme) - Catppuccin Mocha to match terminal
+    skin: catppuccin-mocha

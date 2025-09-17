@@ -94,7 +94,8 @@
       "Read(//Users/shahe/.local/share/nvim/lazy/**)",
       "Bash(/Users/shahe/dotfiles/scripts/test-kubectl-nvim.sh:*)",
       "Read(//Users/shahe/.config/**)",
-      "Bash(~/dotfiles/scripts/setup-k9s.sh)"
+      "Bash(~/dotfiles/scripts/setup-k9s.sh)",
+      "Read(//Users/shahe/Library/**)"
     ],
     "deny": [],
     "ask": []

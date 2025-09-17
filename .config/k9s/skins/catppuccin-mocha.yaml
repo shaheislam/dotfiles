@@ -1,0 +1,138 @@
+# Catppuccin Mocha Theme for K9s
+# Modified to support terminal transparency
+
+k9s:
+  # Body styles
+  body:
+    fgColor: "#cdd6f4"      # Text
+    bgColor: "default"      # Use terminal's transparent background
+    logoColor: "#89b4fa"    # Blue
+
+  # Prompt styles
+  prompt:
+    fgColor: "#cdd6f4"      # Text
+    bgColor: "default"      # Use terminal's transparent background
+    suggestColor: "#89b4fa" # Blue
+
+  # Info styles
+  info:
+    fgColor: "#89b4fa"      # Blue
+    sectionColor: "#cdd6f4" # Text
+
+  # Help styles
+  help:
+    fgColor: "#cdd6f4"      # Text
+    bgColor: "default"      # Use terminal's transparent background
+    keyColor: "#89b4fa"     # Blue
+    numKeyColor: "#cba6f7"  # Mauve
+    sectionColor: "#a6e3a1" # Green
+
+  # Frame styles
+  frame:
+    # Border styles
+    border:
+      fgColor: "#6c7086"    # Overlay0
+      focusColor: "#89b4fa" # Blue
+
+    # Menu styles
+    menu:
+      fgColor: "#cdd6f4"    # Text
+      keyColor: "#89b4fa"   # Blue
+      numKeyColor: "#cba6f7" # Mauve
+
+    # Crumbs styles
+    crumbs:
+      fgColor: "#cdd6f4"    # Text
+      bgColor: "default"    # Use terminal's transparent background
+      activeColor: "#94e2d5" # Teal
+
+    # Status styles
+    status:
+      newColor: "#a6e3a1"     # Green
+      modifyColor: "#f9e2af"  # Yellow
+      addColor: "#89b4fa"     # Blue
+      pendingColor: "#cba6f7" # Mauve
+      errorColor: "#f38ba8"   # Red
+      highlightColor: "#94e2d5" # Teal
+      killColor: "#f38ba8"    # Red
+      completedColor: "#a6e3a1" # Green
+
+    # Title styles
+    title:
+      fgColor: "#cdd6f4"      # Text
+      bgColor: "default"      # Use terminal's transparent background
+      highlightColor: "#94e2d5" # Teal
+      counterColor: "#89b4fa" # Blue
+      filterColor: "#cba6f7"  # Mauve
+
+  # Views styles
+  views:
+    # Charts styles
+    charts:
+      bgColor: "default"     # Use terminal's transparent background
+      chartBgColor: "default" # Use terminal's transparent background
+      dialBgColor: "default"  # Use terminal's transparent background
+      defaultDialColors:
+        - "#89b4fa"          # Blue
+        - "#cba6f7"          # Mauve
+      defaultChartColors:
+        - "#89b4fa"          # Blue
+        - "#cba6f7"          # Mauve
+      resourceColors:
+        cpu:
+          - "#a6e3a1"        # Green
+          - "#f9e2af"        # Yellow
+          - "#f38ba8"        # Red
+        mem:
+          - "#94e2d5"        # Teal
+          - "#cba6f7"        # Mauve
+          - "#f38ba8"        # Red
+
+    # Table styles
+    table:
+      fgColor: "#cdd6f4"     # Text
+      bgColor: "default"     # Use terminal's transparent background
+      cursorFgColor: "#1e1e2e" # Base (keep opaque for cursor)
+      cursorBgColor: "#89b4fa"  # Blue
+      markColor: "#f9e2af"   # Yellow
+
+      # Header styles
+      header:
+        fgColor: "#94e2d5"   # Teal
+        bgColor: "default"   # Use terminal's transparent background
+        sorterColor: "#a6e3a1" # Green
+
+    # Xray styles
+    xray:
+      fgColor: "#cdd6f4"     # Text
+      bgColor: "default"     # Use terminal's transparent background
+      cursorColor: "#89b4fa" # Blue
+      cursorTextColor: "#1e1e2e" # Base
+      graphicColor: "#a6e3a1" # Green
+
+    # YAML styles
+    yaml:
+      keyColor: "#89b4fa"    # Blue
+      colonColor: "#6c7086"  # Overlay0
+      valueColor: "#cdd6f4"  # Text
+
+    # Logs styles
+    logs:
+      fgColor: "#cdd6f4"     # Text
+      bgColor: "default"     # Use terminal's transparent background
+      indicator:
+        fgColor: "#89b4fa"   # Blue
+        bgColor: "default"   # Use terminal's transparent background
+        toggleOnColor: "#a6e3a1" # Green
+        toggleOffColor: "#6c7086" # Overlay0
+
+  # Dialog styles
+  dialog:
+    fgColor: "#cdd6f4"       # Text
+    bgColor: "#313244"       # Surface0 (keep for dialog visibility)
+    buttonFgColor: "#cdd6f4" # Text
+    buttonBgColor: "#313244" # Surface0
+    buttonFocusFgColor: "#1e1e2e" # Base
+    buttonFocusBgColor: "#89b4fa" # Blue
+    labelFgColor: "#f9e2af"  # Yellow
+    fieldFgColor: "#cdd6f4"  # Text
