@@ -1,31 +1,77 @@
 -- ~/.config/nvim/lua/plugins/misc.lua
 return {
-  -- Override LazyVim's default colorscheme to your preference
+  -- Override LazyVim's default colorscheme to Catppuccin Mocha
   {
-    "folke/tokyonight.nvim",
+    "catppuccin/nvim",
+    name = "catppuccin",
     lazy = false,
     priority = 1000,
     opts = {
-      transparent = true,
+      flavour = "mocha",
+      transparent_background = true,
+      show_end_of_buffer = false,
+      term_colors = true,
+      dim_inactive = {
+        enabled = false,
+        shade = "dark",
+        percentage = 0.15,
+      },
+      no_italic = false,
+      no_bold = false,
+      no_underline = false,
       styles = {
-        sidebars = "transparent",
-        floats = "transparent",
+        comments = { "italic" },
+        conditionals = { "italic" },
+        loops = {},
+        functions = {},
+        keywords = {},
+        strings = {},
+        variables = {},
+        numbers = {},
+        booleans = {},
+        properties = {},
+        types = {},
+        operators = {},
+      },
+      integrations = {
+        cmp = true,
+        gitsigns = true,
+        nvimtree = false,
+        treesitter = true,
+        notify = true,
+        mini = {
+          enabled = true,
+          indentscope_color = "",
+        },
+        telescope = {
+          enabled = true,
+        },
+        which_key = true,
+        indent_blankline = {
+          enabled = true,
+          scope_color = "",
+          colored_indent_levels = false,
+        },
+        dashboard = true,
+        neotree = true,
+        noice = true,
+        hop = false,
+        markdown = true,
+        mason = true,
+        native_lsp = {
+          enabled = true,
+          underlines = {
+            errors = { "underline" },
+            hints = { "underline" },
+            warnings = { "underline" },
+            information = { "underline" },
+          },
+        },
       },
     },
     config = function(_, opts)
-      require("tokyonight").setup(opts)
-      vim.cmd([[colorscheme tokyonight-night]])
-
-      -- Force background transparency
-      vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-      vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
-      vim.api.nvim_set_hl(0, "NormalNC", { bg = "none" })
-      vim.api.nvim_set_hl(0, "Terminal", { bg = "none" })
-      vim.api.nvim_set_hl(0, "EndOfBuffer", { bg = "none" })
-      vim.api.nvim_set_hl(0, "SignColumn", { bg = "none" })
-      vim.api.nvim_set_hl(0, "VertSplit", { bg = "none" })
-      vim.api.nvim_set_hl(0, "StatusLine", { bg = "none" })
-      vim.api.nvim_set_hl(0, "StatusLineNC", { bg = "none" })
+      require("catppuccin").setup(opts)
+      vim.cmd([[colorscheme catppuccin-mocha]])
     end,
   },
 

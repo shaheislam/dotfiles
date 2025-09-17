@@ -151,6 +151,46 @@ if ! command -v git >/dev/null 2>&1; then
     fi
 fi
 
+# Install ripgrep and fd for Telescope functionality
+echo "🔍 Installing search tools for Telescope..."
+
+# Install ripgrep (for live_grep)
+if ! command -v rg >/dev/null 2>&1; then
+    echo "   Installing ripgrep..."
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get install -y ripgrep 2>/dev/null || true
+    elif command -v apk >/dev/null 2>&1; then
+        apk add --no-cache ripgrep 2>/dev/null || true
+    elif command -v yum >/dev/null 2>&1; then
+        yum install -y ripgrep 2>/dev/null || true
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y ripgrep 2>/dev/null || true
+    elif command -v pacman >/dev/null 2>&1; then
+        pacman -Sy --noconfirm ripgrep 2>/dev/null || true
+    fi
+fi
+
+# Install fd (for find_files)
+if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
+    echo "   Installing fd..."
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get install -y fd-find 2>/dev/null || true
+        # Create fd symlink on Debian/Ubuntu
+        if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
+            ln -sf $(which fdfind) /usr/local/bin/fd 2>/dev/null || \
+            ln -sf $(which fdfind) ~/.local/bin/fd 2>/dev/null || true
+        fi
+    elif command -v apk >/dev/null 2>&1; then
+        apk add --no-cache fd 2>/dev/null || true
+    elif command -v yum >/dev/null 2>&1; then
+        yum install -y fd-find 2>/dev/null || true
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y fd-find 2>/dev/null || true
+    elif command -v pacman >/dev/null 2>&1; then
+        pacman -Sy --noconfirm fd 2>/dev/null || true
+    fi
+fi
+
 # Make sure PATH includes local bin if we installed there
 export PATH="$HOME/.local/bin:$PATH"
 
@@ -288,17 +328,206 @@ if can_use_plugins then
   end
   vim.opt.rtp:prepend(lazypath)
 
-  -- Minimal plugin setup for containers
+  -- Enhanced plugin setup for containers (closer to LazyVim experience)
   local ok, lazy = pcall(require, "lazy")
   if ok then
     lazy.setup({
-      -- Essential plugins only
+      -- Essential plugins with LazyVim-like visuals
       {
         "folke/tokyonight.nvim",
         lazy = false,
         priority = 1000,
         config = function()
+          require("tokyonight").setup({
+            style = "night",
+            transparent = false,
+            terminal_colors = true,
+            styles = {
+              comments = { italic = true },
+              keywords = { italic = true },
+              sidebars = "dark",
+              floats = "dark",
+            },
+            sidebars = { "qf", "help", "terminal", "packer" },
+            day_brightness = 0.3,
+            hide_inactive_statusline = false,
+            dim_inactive = false,
+            lualine_bold = false,
+          })
           vim.cmd.colorscheme("tokyonight-night")
+        end,
+      },
+      -- Statusline for better visual feedback
+      {
+        "nvim-lualine/lualine.nvim",
+        event = "VeryLazy",
+        opts = {
+          options = {
+            theme = "tokyonight",
+            icons_enabled = true,
+            component_separators = "|",
+            section_separators = "",
+            globalstatus = true,
+          },
+          sections = {
+            lualine_a = { "mode" },
+            lualine_b = { "branch", "diff", "diagnostics" },
+            lualine_c = { { "filename", path = 1 } },
+            lualine_x = { "encoding", "fileformat", "filetype" },
+            lualine_y = { "progress" },
+            lualine_z = { "location" }
+          },
+        },
+      },
+      -- Buffer line for tab-like experience
+      {
+        "akinsho/bufferline.nvim",
+        event = "VeryLazy",
+        opts = {
+          options = {
+            mode = "buffers",
+            themable = true,
+            numbers = "none",
+            close_command = "bdelete! %d",
+            right_mouse_command = "bdelete! %d",
+            indicator = {
+              icon = "▎",
+              style = "icon",
+            },
+            buffer_close_icon = "✗",
+            modified_icon = "●",
+            close_icon = "✗",
+            left_trunc_marker = "",
+            right_trunc_marker = "",
+            diagnostics = "nvim_lsp",
+            diagnostics_indicator = function(count, level)
+              local icon = level:match("error") and " " or " "
+              return " " .. icon .. count
+            end,
+            offsets = {
+              {
+                filetype = "oil",
+                text = "File Explorer",
+                text_align = "left",
+                separator = true,
+              }
+            },
+            color_icons = true,
+            show_buffer_icons = true,
+            show_buffer_close_icons = true,
+            show_close_icon = true,
+            show_tab_indicators = true,
+            separator_style = "thin",
+            always_show_bufferline = true,
+          },
+        },
+      },
+      -- Better UI elements
+      {
+        "stevearc/dressing.nvim",
+        event = "VeryLazy",
+        opts = {
+          input = {
+            enabled = true,
+            default_prompt = "Input:",
+            prompt_align = "left",
+            insert_only = true,
+            border = "rounded",
+            relative = "cursor",
+            prefer_width = 40,
+            width = nil,
+            max_width = { 140, 0.9 },
+            min_width = { 20, 0.2 },
+            win_options = {
+              winblend = 0,
+            },
+          },
+          select = {
+            enabled = true,
+            backend = { "telescope", "builtin" },
+            builtin = {
+              border = "rounded",
+              relative = "editor",
+              win_options = {
+                winblend = 10,
+              },
+            },
+          },
+        },
+      },
+      -- Indent guides for better code visibility
+      {
+        "lukas-reineke/indent-blankline.nvim",
+        main = "ibl",
+        event = "VeryLazy",
+        opts = {
+          indent = {
+            char = "│",
+            tab_char = "│",
+          },
+          scope = { enabled = false },
+          exclude = {
+            filetypes = {
+              "help",
+              "alpha",
+              "dashboard",
+              "lazy",
+              "mason",
+              "notify",
+              "toggleterm",
+            },
+          },
+        },
+      },
+      -- Which-key for discovering keybindings
+      {
+        "folke/which-key.nvim",
+        event = "VeryLazy",
+        config = function()
+          local wk = require("which-key")
+          wk.setup({
+            plugins = {
+              marks = false,
+              registers = false,
+              spelling = { enabled = false },
+              presets = {
+                operators = false,
+                motions = false,
+                text_objects = false,
+                windows = false,
+                nav = false,
+                z = false,
+                g = false,
+              },
+            },
+            key_labels = {
+              ["<space>"] = "SPC",
+              ["<cr>"] = "RET",
+              ["<tab>"] = "TAB",
+            },
+            window = {
+              border = "rounded",
+              position = "bottom",
+              margin = { 1, 0, 1, 0 },
+              padding = { 2, 2, 2, 2 },
+              winblend = 0,
+            },
+            layout = {
+              height = { min = 4, max = 25 },
+              width = { min = 20, max = 50 },
+              spacing = 3,
+              align = "left",
+            },
+          })
+          -- Register key groups
+          wk.register({
+            ["<leader>"] = {
+              f = { name = "+find" },
+              g = { name = "+git" },
+              b = { name = "+buffer" },
+              c = { name = "+code" },
+            }
+          })
         end,
       },
       {
@@ -306,11 +535,32 @@ if can_use_plugins then
         cmd = "Telescope",
         dependencies = { "nvim-lua/plenary.nvim" },
         keys = {
-          { "<leader><space>", "<cmd>Telescope find_files<cr>", desc = "Find Files" },
-          { "<leader>/", "<cmd>Telescope live_grep<cr>", desc = "Grep" },
+          { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find Files" },
+          { "<leader>fg", "<cmd>Telescope live_grep<cr>", desc = "Live Grep" },
           { "<leader>fb", "<cmd>Telescope buffers<cr>", desc = "Buffers" },
+          { "<leader>fh", "<cmd>Telescope help_tags<cr>", desc = "Help" },
+          { "<leader>fr", "<cmd>Telescope oldfiles<cr>", desc = "Recent Files" },
+          { "<leader><space>", "<cmd>Telescope find_files<cr>", desc = "Find Files (quick)" },
+          { "<leader>/", "<cmd>Telescope live_grep<cr>", desc = "Grep (quick)" },
+        },
+        opts = {
+          defaults = {
+            prompt_prefix = " ",
+            selection_caret = " ",
+            layout_config = {
+              horizontal = {
+                prompt_position = "top",
+                preview_width = 0.55,
+              },
+              width = 0.87,
+              height = 0.80,
+            },
+            sorting_strategy = "ascending",
+            file_ignore_patterns = { "node_modules", ".git/" },
+          },
         },
       },
+      -- Oil.nvim file explorer (fast and simple)
       {
         "stevearc/oil.nvim",
         keys = {
@@ -319,12 +569,115 @@ if can_use_plugins then
         },
         opts = {
           default_file_explorer = true,
+          columns = {
+            "icon",
+            "permissions",
+            "size",
+            "mtime",
+          },
+          buf_options = {
+            buflisted = false,
+            bufhidden = "hide",
+          },
+          win_options = {
+            wrap = false,
+            signcolumn = "no",
+            cursorcolumn = false,
+            foldcolumn = "0",
+            spell = false,
+            list = false,
+            conceallevel = 3,
+            concealcursor = "nvic",
+          },
+          delete_to_trash = false,
+          skip_confirm_for_simple_edits = false,
+          prompt_save_on_select_new_entry = true,
+          cleanup_delay_ms = 2000,
+          keymaps = {
+            ["g?"] = "actions.show_help",
+            ["<CR>"] = "actions.select",
+            ["<C-s>"] = "actions.select_vsplit",
+            ["<C-h>"] = "actions.select_split",
+            ["<C-t>"] = "actions.select_tab",
+            ["<C-p>"] = "actions.preview",
+            ["<C-c>"] = "actions.close",
+            ["<C-l>"] = "actions.refresh",
+            ["-"] = "actions.parent",
+            ["_"] = "actions.open_cwd",
+            ["`"] = "actions.cd",
+            ["~"] = "actions.tcd",
+            ["gs"] = "actions.change_sort",
+            ["gx"] = "actions.open_external",
+            ["g."] = "actions.toggle_hidden",
+            ["g\\"] = "actions.toggle_trash",
+          },
+          use_default_keymaps = true,
+          view_options = {
+            show_hidden = false,
+            is_hidden_file = function(name, bufnr)
+              return vim.startswith(name, ".")
+            end,
+            is_always_hidden = function(name, bufnr)
+              return false
+            end,
+            sort = {
+              { "type", "asc" },
+              { "name", "asc" },
+            },
+          },
+          float = {
+            padding = 2,
+            max_width = 0,
+            max_height = 0,
+            border = "rounded",
+            win_options = {
+              winblend = 0,
+            },
+            override = function(conf)
+              return conf
+            end,
+          },
         },
       },
       {
         "lewis6991/gitsigns.nvim",
         event = "VeryLazy",
-        opts = {},
+        opts = {
+          signs = {
+            add = { text = "▎" },
+            change = { text = "▎" },
+            delete = { text = "" },
+            topdelete = { text = "" },
+            changedelete = { text = "▎" },
+            untracked = { text = "▎" },
+          },
+          signcolumn = true,
+          numhl = false,
+          linehl = false,
+          word_diff = false,
+          watch_gitdir = {
+            interval = 1000,
+            follow_files = true,
+          },
+          attach_to_untracked = true,
+          current_line_blame = false,
+          current_line_blame_opts = {
+            virt_text = true,
+            virt_text_pos = "eol",
+            delay = 1000,
+          },
+          sign_priority = 6,
+          update_debounce = 100,
+          status_formatter = nil,
+          max_file_length = 40000,
+          preview_config = {
+            border = "single",
+            style = "minimal",
+            relative = "cursor",
+            row = 0,
+            col = 1,
+          },
+        },
       },
       {
         "numToStr/Comment.nvim",
@@ -345,7 +698,7 @@ if can_use_plugins then
         end,
       },
     })
-    print("LazyVim configuration loaded with plugins!")
+    print("Enhanced LazyVim-like configuration loaded!")
   else
     print("Failed to load lazy.nvim")
   end
@@ -466,8 +819,10 @@ echo "   <Space>w      - Save file"
 echo "   <Space>q      - Quit"
 
 if [ "$MAJOR" -gt 0 ] || [ "$MINOR" -ge 8 ]; then
-    echo "   <Space><Space> - Find files (Telescope)"
-    echo "   <Space>/      - Live grep (Telescope)"
+    echo "   <Space>ff     - Find files (Telescope)"
+    echo "   <Space>fg     - Live grep (Telescope)"
+    echo "   <Space>fb     - Buffers (Telescope)"
+    echo "   <Space>fr     - Recent files (Telescope)"
     echo "   gcc           - Comment line"
 fi
 '
