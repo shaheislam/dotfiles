@@ -154,6 +154,20 @@ fi
 # Install ripgrep and fd for Telescope functionality
 echo "🔍 Installing search tools for Telescope..."
 
+# Install build tools for telescope-fzf-native
+echo "   Installing build tools for fzf extension..."
+if command -v apt-get >/dev/null 2>&1; then
+    apt-get install -y make gcc g++ 2>/dev/null || apt-get install -y make gcc 2>/dev/null || true
+elif command -v apk >/dev/null 2>&1; then
+    apk add --no-cache make gcc g++ musl-dev 2>/dev/null || apk add --no-cache make gcc 2>/dev/null || true
+elif command -v yum >/dev/null 2>&1; then
+    yum install -y make gcc gcc-c++ 2>/dev/null || yum install -y make gcc 2>/dev/null || true
+elif command -v dnf >/dev/null 2>&1; then
+    dnf install -y make gcc gcc-c++ 2>/dev/null || dnf install -y make gcc 2>/dev/null || true
+elif command -v pacman >/dev/null 2>&1; then
+    pacman -Sy --noconfirm base-devel 2>/dev/null || pacman -Sy --noconfirm make gcc 2>/dev/null || true
+fi
+
 # Install ripgrep (for live_grep)
 if ! command -v rg >/dev/null 2>&1; then
     echo "   Installing ripgrep..."
@@ -533,7 +547,13 @@ if can_use_plugins then
       {
         "nvim-telescope/telescope.nvim",
         cmd = "Telescope",
-        dependencies = { "nvim-lua/plenary.nvim" },
+        dependencies = {
+          "nvim-lua/plenary.nvim",
+          {
+            "nvim-telescope/telescope-fzf-native.nvim",
+            build = "make || cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release",
+          },
+        },
         keys = {
           { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find Files" },
           { "<leader>fg", "<cmd>Telescope live_grep<cr>", desc = "Live Grep" },
@@ -543,22 +563,35 @@ if can_use_plugins then
           { "<leader><space>", "<cmd>Telescope find_files<cr>", desc = "Find Files (quick)" },
           { "<leader>/", "<cmd>Telescope live_grep<cr>", desc = "Grep (quick)" },
         },
-        opts = {
-          defaults = {
-            prompt_prefix = " ",
-            selection_caret = " ",
-            layout_config = {
-              horizontal = {
-                prompt_position = "top",
-                preview_width = 0.55,
+        config = function()
+          local telescope = require("telescope")
+          telescope.setup({
+            defaults = {
+              prompt_prefix = " ",
+              selection_caret = " ",
+              layout_config = {
+                horizontal = {
+                  prompt_position = "top",
+                  preview_width = 0.55,
+                },
+                width = 0.87,
+                height = 0.80,
               },
-              width = 0.87,
-              height = 0.80,
+              sorting_strategy = "ascending",
+              file_ignore_patterns = { "node_modules", ".git/" },
             },
-            sorting_strategy = "ascending",
-            file_ignore_patterns = { "node_modules", ".git/" },
-          },
-        },
+            extensions = {
+              fzf = {
+                fuzzy = true,
+                override_generic_sorter = true,
+                override_file_sorter = true,
+                case_mode = "smart_case",
+              },
+            },
+          })
+          -- Load fzf extension for better fuzzy finding
+          telescope.load_extension("fzf")
+        end,
       },
       -- Oil.nvim file explorer (fast and simple)
       {
