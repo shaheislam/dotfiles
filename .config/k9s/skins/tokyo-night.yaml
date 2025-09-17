@@ -1,0 +1,138 @@
+# Tokyo Night Theme for K9s
+# Matches the Tokyo Night theme used in Neovim
+
+k9s:
+  # Body styles
+  body:
+    fgColor: "#a9b1d6"
+    bgColor: "#1a1b26"
+    logoColor: "#7aa2f7"
+
+  # Prompt styles
+  prompt:
+    fgColor: "#a9b1d6"
+    bgColor: "#1a1b26"
+    suggestColor: "#7aa2f7"
+
+  # Info styles
+  info:
+    fgColor: "#7aa2f7"
+    sectionColor: "#a9b1d6"
+
+  # Help styles
+  help:
+    fgColor: "#a9b1d6"
+    bgColor: "#1a1b26"
+    keyColor: "#7aa2f7"
+    numKeyColor: "#bb9af7"
+    sectionColor: "#9ece6a"
+
+  # Frame styles
+  frame:
+    # Border styles
+    border:
+      fgColor: "#565f89"
+      focusColor: "#7aa2f7"
+
+    # Menu styles
+    menu:
+      fgColor: "#a9b1d6"
+      keyColor: "#7aa2f7"
+      numKeyColor: "#bb9af7"
+
+    # Crumbs styles
+    crumbs:
+      fgColor: "#a9b1d6"
+      bgColor: "#1a1b26"
+      activeColor: "#7dcfff"
+
+    # Status styles
+    status:
+      newColor: "#9ece6a"
+      modifyColor: "#e0af68"
+      addColor: "#7aa2f7"
+      pendingColor: "#bb9af7"
+      errorColor: "#f7768e"
+      highlightColor: "#7dcfff"
+      killColor: "#f7768e"
+      completedColor: "#73daca"
+
+    # Title styles
+    title:
+      fgColor: "#a9b1d6"
+      bgColor: "#1a1b26"
+      highlightColor: "#7dcfff"
+      counterColor: "#7aa2f7"
+      filterColor: "#bb9af7"
+
+  # Views styles
+  views:
+    # Charts styles
+    charts:
+      bgColor: "#1a1b26"
+      chartBgColor: "#1a1b26"
+      dialBgColor: "#1a1b26"
+      defaultDialColors:
+        - "#7aa2f7"
+        - "#bb9af7"
+      defaultChartColors:
+        - "#7aa2f7"
+        - "#bb9af7"
+      resourceColors:
+        cpu:
+          - "#73daca"
+          - "#e0af68"
+          - "#f7768e"
+        mem:
+          - "#7dcfff"
+          - "#bb9af7"
+          - "#f7768e"
+
+    # Table styles
+    table:
+      fgColor: "#a9b1d6"
+      bgColor: "#1a1b26"
+      cursorFgColor: "#1a1b26"
+      cursorBgColor: "#7aa2f7"
+      markColor: "#e0af68"
+
+      # Header styles
+      header:
+        fgColor: "#7dcfff"
+        bgColor: "#1a1b26"
+        sorterColor: "#73daca"
+
+    # Xray styles
+    xray:
+      fgColor: "#a9b1d6"
+      bgColor: "#1a1b26"
+      cursorColor: "#7aa2f7"
+      cursorTextColor: "#1a1b26"
+      graphicColor: "#73daca"
+
+    # YAML styles
+    yaml:
+      keyColor: "#7aa2f7"
+      colonColor: "#565f89"
+      valueColor: "#a9b1d6"
+
+    # Logs styles
+    logs:
+      fgColor: "#a9b1d6"
+      bgColor: "#1a1b26"
+      indicator:
+        fgColor: "#7aa2f7"
+        bgColor: "#1a1b26"
+        toggleOnColor: "#73daca"
+        toggleOffColor: "#565f89"
+
+  # Dialog styles
+  dialog:
+    fgColor: "#a9b1d6"
+    bgColor: "#24283b"
+    buttonFgColor: "#a9b1d6"
+    buttonBgColor: "#1a1b26"
+    buttonFocusFgColor: "#1a1b26"
+    buttonFocusBgColor: "#7aa2f7"
+    labelFgColor: "#e0af68"
+    fieldFgColor: "#a9b1d6"

@@ -1,0 +1,98 @@
+# K9s Hotkeys
+# Custom keyboard shortcuts for quick navigation
+
+hotkeys:
+  # Quick namespace switching
+  shift-0:
+    shortCut: Shift-0
+    description: All namespaces
+    command: ":xray namespaces"
+
+  # Quick resource views
+  shift-1:
+    shortCut: Shift-1
+    description: Pods
+    command: ":pods"
+
+  shift-2:
+    shortCut: Shift-2
+    description: Deployments
+    command: ":deployments"
+
+  shift-3:
+    shortCut: Shift-3
+    description: Services
+    command: ":services"
+
+  shift-4:
+    shortCut: Shift-4
+    description: ConfigMaps
+    command: ":configmaps"
+
+  shift-5:
+    shortCut: Shift-5
+    description: Secrets
+    command: ":secrets"
+
+  shift-6:
+    shortCut: Shift-6
+    description: Ingresses
+    command: ":ingresses"
+
+  shift-7:
+    shortCut: Shift-7
+    description: PVCs
+    command: ":persistentvolumeclaims"
+
+  shift-8:
+    shortCut: Shift-8
+    description: HPA
+    command: ":horizontalpodautoscalers"
+
+  shift-9:
+    shortCut: Shift-9
+    description: Nodes
+    command: ":nodes"
+
+  # Quick actions
+  alt-l:
+    shortCut: Alt-L
+    description: Show logs
+    command: ":logs"
+
+  alt-x:
+    shortCut: Alt-X
+    description: Context menu
+    command: ":xray contexts"
+
+  alt-p:
+    shortCut: Alt-P
+    description: Pulses view
+    command: ":pulses"
+
+  alt-h:
+    shortCut: Alt-H
+    description: Helm releases
+    command: ":helm"
+
+  # Quick filters
+  alt-a:
+    shortCut: Alt-A
+    description: Show all resources
+    command: ":xray all"
+
+  alt-e:
+    shortCut: Alt-E
+    description: Show events
+    command: ":events"
+
+  # Navigation
+  alt-n:
+    shortCut: Alt-N
+    description: Namespaces
+    command: ":namespaces"
+
+  alt-d:
+    shortCut: Alt-D
+    description: Describe
+    command: ":describe"

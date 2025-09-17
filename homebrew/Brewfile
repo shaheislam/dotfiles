@@ -62,7 +62,6 @@ brew "crystal"
 brew "awscli"
 brew "granted"
 brew "kubectl"
-brew "kubediff"  # Diff tool for kubectl.nvim plugin
 brew "azure-cli"
 brew "imagemagick"
 brew "Azure/kubelogin/kubelogin"

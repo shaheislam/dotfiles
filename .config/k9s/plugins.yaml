@@ -1,0 +1,342 @@
+# K9s Plugins Configuration
+# Official plugins from https://github.com/derailed/k9s/tree/master/plugins
+# Plus custom plugins for enhanced workflow
+
+plugins:
+  # ============== DEBUGGING & TROUBLESHOOTING ==============
+
+  # Add debug container to pods
+  debug:
+    shortCut: Shift-D
+    description: Add debug container
+    dangerous: true
+    scopes:
+      - containers
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - "kubectl debug -it -n=$NAMESPACE $POD --target=$NAME --image=nicolaka/netshoot:v0.13 --share-processes -- bash"
+
+  # ============== LOGS & MONITORING ==============
+
+  # Stern - Multi-pod log tailing
+  stern:
+    shortCut: Ctrl-L
+    description: Logs via Stern
+    scopes:
+      - pods
+      - deployments
+    command: stern
+    background: false
+    args:
+      - --tail=100
+      - --timestamps
+      - --context
+      - $CONTEXT
+      - -n
+      - $NAMESPACE
+      - $NAME
+
+  # Show pod metrics
+  top-pod:
+    shortCut: t
+    description: Show metrics
+    scopes:
+      - pods
+    command: kubectl
+    background: false
+    args:
+      - top
+      - pod
+      - -n
+      - $NAMESPACE
+      - $NAME
+      - --containers
+
+  # Watch events for resource
+  show-events:
+    shortCut: Shift-E
+    description: Show events
+    scopes:
+      - all
+    command: kubectl
+    background: false
+    args:
+      - get
+      - events
+      - -n
+      - $NAMESPACE
+      - --field-selector
+      - involvedObject.name=$NAME
+      - --sort-by='.lastTimestamp'
+
+  # ============== EDITING & CONFIGURATION ==============
+
+  # Edit resource in Neovim
+  edit-nvim:
+    shortCut: e
+    description: Edit in Neovim
+    scopes:
+      - all
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl get $RESOURCE_NAME -n $NAMESPACE -o yaml | nvim -c 'set ft=yaml' -"
+
+  # Copy resource YAML to clipboard
+  copy-yaml:
+    shortCut: y
+    description: Copy YAML
+    scopes:
+      - all
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl get $RESOURCE_NAME -n $NAMESPACE -o yaml | pbcopy && echo '✅ Copied to clipboard!'"
+
+  # ============== CONTAINER OPERATIONS ==============
+
+  # Exec with bash
+  exec-bash:
+    shortCut: b
+    description: Bash shell
+    scopes:
+      - pods
+      - containers
+    command: kubectl
+    background: false
+    args:
+      - exec
+      - -it
+      - -n
+      - $NAMESPACE
+      - $POD
+      - -c
+      - $CONTAINER
+      - --
+      - bash
+
+  # Exec with sh (for alpine/minimal containers)
+  exec-sh:
+    shortCut: s
+    description: sh shell
+    scopes:
+      - pods
+      - containers
+    command: kubectl
+    background: false
+    args:
+      - exec
+      - -it
+      - -n
+      - $NAMESPACE
+      - $POD
+      - -c
+      - $CONTAINER
+      - --
+      - sh
+
+  # Dive - Analyze container image layers
+  dive:
+    shortCut: d
+    description: Dive image
+    scopes:
+      - containers
+    command: dive
+    background: false
+    args:
+      - $COL-IMAGE
+
+  # Security scan with trivy
+  trivy-scan:
+    shortCut: Shift-T
+    description: Security scan
+    scopes:
+      - containers
+    command: trivy
+    background: false
+    args:
+      - image
+      - --severity
+      - HIGH,CRITICAL
+      - $COL-IMAGE
+
+  # ============== DEPLOYMENT OPERATIONS ==============
+
+  # Restart deployment/statefulset/daemonset
+  restart:
+    shortCut: Shift-R
+    description: Restart
+    scopes:
+      - deployments
+      - statefulsets
+      - daemonsets
+    command: kubectl
+    background: false
+    confirm: true
+    args:
+      - rollout
+      - restart
+      - $RESOURCE_NAME
+      - -n
+      - $NAMESPACE
+
+  # Scale deployment
+  scale:
+    shortCut: Shift-S
+    description: Scale
+    scopes:
+      - deployments
+      - statefulsets
+    command: bash
+    background: false
+    args:
+      - -c
+      - "echo 'Enter replica count:' && read replicas && kubectl scale $RESOURCE_NAME -n $NAMESPACE --replicas=$replicas"
+
+  # ============== NETWORKING ==============
+
+  # Interactive port-forward
+  port-forward-custom:
+    shortCut: Shift-F
+    description: Port-forward
+    scopes:
+      - pods
+      - services
+    command: bash
+    background: true
+    args:
+      - -c
+      - "echo 'Enter local:remote ports (e.g., 8080:80):' && read ports && kubectl port-forward -n $NAMESPACE $RESOURCE_NAME $ports"
+
+  # ============== FLUX GITOPS ==============
+
+  # Toggle Flux suspend/resume for HelmRelease
+  flux-toggle-helm:
+    shortCut: Shift-G
+    confirm: true
+    scopes:
+      - helmreleases
+    description: Toggle suspend/resume
+    command: bash
+    background: false
+    args:
+      - -c
+      - >-
+        suspended=$(kubectl get helmreleases -n $NAMESPACE $NAME -o=jsonpath='{.spec.suspend}');
+        verb=$([ "$suspended" = "true" ] && echo "resume" || echo "suspend");
+        flux $verb helmrelease -n $NAMESPACE $NAME
+
+  # Reconcile Flux resources
+  flux-reconcile:
+    shortCut: Shift-X
+    confirm: false
+    description: Flux reconcile
+    scopes:
+      - gitrepositories
+      - helmreleases
+      - kustomizations
+    command: bash
+    background: false
+    args:
+      - -c
+      - "flux reconcile source git -n $NAMESPACE $NAME"
+
+  # ============== OBSERVABILITY ==============
+
+  # Watch resource changes
+  watch-resource:
+    shortCut: w
+    description: Watch
+    scopes:
+      - all
+    command: watch
+    background: false
+    args:
+      - -n
+      - "2"
+      - kubectl
+      - get
+      - $RESOURCE_NAME
+      - -n
+      - $NAMESPACE
+      - -o
+      - wide
+
+  # Get all resources in namespace
+  get-all:
+    shortCut: Shift-A
+    description: Get all resources
+    scopes:
+      - namespaces
+    command: kubectl
+    background: false
+    args:
+      - get
+      - all
+      - -n
+      - $NAME
+      - -o
+      - wide
+
+  # ============== NODE OPERATIONS ==============
+
+  # Shell into node
+  node-shell:
+    shortCut: Shift-N
+    description: Node shell
+    scopes:
+      - nodes
+    command: kubectl
+    background: false
+    confirm: true
+    dangerous: true
+    args:
+      - node-shell
+      - $NAME
+
+  # Drain node
+  drain-node:
+    shortCut: Shift-D
+    description: Drain node
+    scopes:
+      - nodes
+    command: kubectl
+    background: false
+    confirm: true
+    dangerous: true
+    args:
+      - drain
+      - $NAME
+      - --ignore-daemonsets
+      - --delete-emptydir-data
+
+  # ============== HELM OPERATIONS ==============
+
+  # Show Helm values
+  helm-values:
+    shortCut: v
+    description: Helm values
+    scopes:
+      - helmreleases
+    command: bash
+    background: false
+    args:
+      - -c
+      - "helm get values -n $NAMESPACE $NAME | nvim -c 'set ft=yaml' -"
+
+  # Helm diff
+  helm-diff:
+    shortCut: Shift-H
+    description: Helm diff
+    scopes:
+      - helmreleases
+    command: bash
+    background: false
+    args:
+      - -c
+      - "helm diff upgrade -n $NAMESPACE $NAME --reuse-values | less"

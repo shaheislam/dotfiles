@@ -92,7 +92,9 @@
       "Bash(/Users/shahe/dotfiles/scripts/test-distant.sh:*)",
       "Bash(~/dotfiles/scripts/k3d-netman-setup.sh test)",
       "Read(//Users/shahe/.local/share/nvim/lazy/**)",
-      "Bash(/Users/shahe/dotfiles/scripts/test-kubectl-nvim.sh:*)"
+      "Bash(/Users/shahe/dotfiles/scripts/test-kubectl-nvim.sh:*)",
+      "Read(//Users/shahe/.config/**)",
+      "Bash(~/dotfiles/scripts/setup-k9s.sh)"
     ],
     "deny": [],
     "ask": []

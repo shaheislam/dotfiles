@@ -1,0 +1,104 @@
+# K9s Configuration
+# Main configuration file for k9s
+
+k9s:
+  # Refresh rate in seconds
+  refreshRate: 2
+
+  # Max number of retries for failed connections
+  maxConnRetry: 5
+
+  # Disable cluster info section
+  noExitOnCtrlC: false
+
+  # UI settings
+  ui:
+    # Enable mouse support
+    enableMouse: false
+
+    # Disable the k9s logo
+    logoless: false
+
+    # Disable breadcrumbs
+    crumbsless: false
+
+    # Reactive UI updates
+    reactive: true
+
+    # Show icons
+    noIcons: false
+
+    # Skin (theme) - will use tokyo-night
+    skin: tokyo-night
+
+    # Default namespace to use
+    defaultNamespace: default
+
+  # Skip latest version check
+  skipLatestRevCheck: false
+
+  # Disable pod counting in headers
+  disablePodCounting: false
+
+  # Shell pod configuration for debugging
+  shellPod:
+    # Image to use for shell pods
+    image: busybox:1.35.0
+
+    # Namespace to create shell pods in
+    namespace: default
+
+    # Resource limits
+    limits:
+      cpu: 100m
+      memory: 100Mi
+
+  # Image scanning settings
+  imageScans:
+    # Enable image scanning
+    enable: true
+
+    # Exclusions
+    exclusions:
+      # Namespaces to exclude from scanning
+      namespaces: []
+
+      # Labels to exclude
+      labels: {}
+
+  # Logger settings
+  logger:
+    # Number of lines to tail
+    tail: 200
+
+    # Buffer size
+    buffer: 5000
+
+    # Since seconds (-1 for all)
+    sinceSeconds: 300
+
+    # Text wrap
+    textWrap: false
+
+    # Show timestamps
+    showTime: true
+
+  # Resource thresholds for coloring
+  thresholds:
+    # CPU thresholds (percentage)
+    cpu:
+      critical: 90
+      warn: 70
+
+    # Memory thresholds (percentage)
+    memory:
+      critical: 90
+      warn: 70
+
+  # Screen dump directory
+  screenDumpDir: /tmp/k9s-screens
+
+  # Disable features
+  disableFeatures:
+    # Disable node shell feature if not needed
+    nodeShell: false
