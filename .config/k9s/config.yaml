@@ -19,16 +19,16 @@ k9s:
 
   # Shell pod configuration for debugging
   shellPod:
-    # Image to use for shell pods
-    image: busybox:1.35.0
+    # Image to use for shell pods - using alpine with more tools
+    image: alpine:latest
 
     # Namespace to create shell pods in
     namespace: default
 
     # Resource limits
     limits:
-      cpu: 100m
-      memory: 100Mi
+      cpu: 200m
+      memory: 256Mi
 
   # Image scanning settings
   imageScans:
