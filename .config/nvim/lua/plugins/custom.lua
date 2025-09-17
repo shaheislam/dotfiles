@@ -119,7 +119,7 @@ return {
         defaults = {
           file_ignore_patterns = {
             "node_modules",
-            ".git",
+            "^.git/",  -- Only ignore .git directory itself, not .github or .gitignore
             "dist",
             "build",
             "%.lock",
