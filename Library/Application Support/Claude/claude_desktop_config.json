@@ -54,26 +54,6 @@
         "duckduckgo-mcp-server"
       ]
     },
-    "linear": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "linear-mcp-server"
-      ],
-      "env": {
-        "LINEAR_API_KEY": "${LINEAR_API_KEY}"
-      }
-    },
-    "exa": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "exa-mcp-server"
-      ],
-      "env": {
-        "EXA_API_KEY": "your-exa-api-key-here"
-      }
-    },
     "playwright": {
       "command": "bunx",
       "args": [
