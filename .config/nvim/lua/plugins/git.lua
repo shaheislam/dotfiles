@@ -236,18 +236,35 @@ return {
 			{
 				"<leader>gs",
 				function()
-					require("telescope.builtin").git_status({
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.5,
+					require("snacks.picker").git_status({
+						win = {
+							input = {
+								keys = {
+									["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+									["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
+								},
 							},
-							width = 0.9,
-							height = 0.9,
 						},
 					})
 				end,
-				desc = "Git status",
+				desc = "Git status (Snacks)",
+			},
+
+			{
+				"<leader>gD",
+				function()
+					require("snacks.picker").git_diff({
+						win = {
+							input = {
+								keys = {
+									["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+									["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
+								},
+							},
+						},
+					})
+				end,
+				desc = "Git diff (Snacks)",
 			},
 
 			{
