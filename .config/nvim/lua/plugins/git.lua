@@ -14,6 +14,15 @@ return {
           changedelete = { text = '~' },
           untracked    = { text = '┆' },
         },
+        -- Staged signs configuration (shows different signs for staged changes)
+        signs_staged = {
+          add          = { text = '▎' },  -- Left thick bar for staged adds
+          change       = { text = '▎' },  -- Left thick bar for staged changes
+          delete       = { text = '▸' },  -- Triangle for staged deletions
+          topdelete    = { text = '▾' },  -- Down triangle for staged top deletions
+          changedelete = { text = '▊' },  -- Block for staged change+delete
+        },
+        signs_staged_enable = true,  -- Enable staged signs display
         numhl      = true,  -- Line number highlighting
         linehl     = false,  -- No line background highlighting
         word_diff  = true,  -- Word-level diff
@@ -75,6 +84,16 @@ return {
       vim.api.nvim_set_hl(0, 'GitSignsDeleteInline', { fg = '#f7768e', bg = '#2d202a' })
       vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a' })
 
+      -- Set staged signs highlights - brighter and more distinct colors
+      vim.api.nvim_set_hl(0, 'GitSignsStagedAdd', { fg = '#00ff00', bold = true })           -- Bright green for staged adds
+      vim.api.nvim_set_hl(0, 'GitSignsStagedChange', { fg = '#ffd700', bold = true })        -- Gold for staged changes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedDelete', { fg = '#ff69b4', bold = true })        -- Hot pink for staged deletes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedTopdelete', { fg = '#ff69b4', bold = true })     -- Hot pink for staged topdeletes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedChangedelete', { fg = '#ff8c00', bold = true })  -- Dark orange for staged changedeletes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedAddNr', { fg = '#00ff00', bold = true })         -- Bright green for line numbers
+      vim.api.nvim_set_hl(0, 'GitSignsStagedChangeNr', { fg = '#ffd700', bold = true })      -- Gold for line numbers
+      vim.api.nvim_set_hl(0, 'GitSignsStagedDeleteNr', { fg = '#ff69b4', bold = true })      -- Hot pink for line numbers
+
       -- Also set in ColorScheme autocmd for persistence
       vim.api.nvim_create_autocmd("ColorScheme", {
         pattern = "*",
@@ -85,6 +104,16 @@ return {
           vim.api.nvim_set_hl(0, 'GitSignsAddLnInline', { fg = '#9ece6a', bg = '#1f2231' })
           vim.api.nvim_set_hl(0, 'GitSignsDeleteInline', { fg = '#f7768e', bg = '#2d202a' })
           vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a' })
+
+          -- Staged signs highlights
+          vim.api.nvim_set_hl(0, 'GitSignsStagedAdd', { fg = '#00ff00', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedChange', { fg = '#ffd700', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedDelete', { fg = '#ff69b4', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedTopdelete', { fg = '#ff69b4', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedChangedelete', { fg = '#ff8c00', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedAddNr', { fg = '#00ff00', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedChangeNr', { fg = '#ffd700', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedDeleteNr', { fg = '#ff69b4', bold = true })
         end
       })
     end,
