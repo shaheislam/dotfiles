@@ -4,52 +4,29 @@ return {
   {
     "lewis6991/gitsigns.nvim",
     event = { "BufReadPre", "BufNewFile" },
-    opts = {
-      signs = {
-        add          = { text = '│' },
-        change       = { text = '│' },
-        delete       = { text = '_' },
-        topdelete    = { text = '‾' },
-        changedelete = { text = '~' },
-        untracked    = { text = '┆' },
-      },
-      signcolumn = true,  -- Toggle with `:Gitsigns toggle_signs`
-      numhl      = false, -- Toggle with `:Gitsigns toggle_numhl`
-      linehl     = false, -- Toggle with `:Gitsigns toggle_linehl`
-      word_diff  = false, -- Toggle with `:Gitsigns toggle_word_diff`
-      watch_gitdir = {
-        interval = 1000,
-        follow_files = true
-      },
-      attach_to_untracked = true,
-      current_line_blame = false, -- Toggle with `:Gitsigns toggle_current_line_blame`
-      current_line_blame_opts = {
-        virt_text = true,
-        virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
-        delay = 1000,
-        ignore_whitespace = false,
-      },
-      current_line_blame_formatter = '<author>, <author_time:%Y-%m-%d> - <summary>',
-      sign_priority = 6,
-      update_debounce = 100,
-      status_formatter = nil, -- Use default
-      max_file_length = 40000, -- Disable if file is longer than this (in lines)
-      preview_config = {
-        -- Options passed to nvim_open_win
-        border = 'single',
-        style = 'minimal',
-        relative = 'cursor',
-        row = 0,
-        col = 1
-      },
-      on_attach = function(bufnr)
-        local gs = package.loaded.gitsigns
+    config = function()
+      require('gitsigns').setup({
+        signs = {
+          add          = { text = '│' },
+          change       = { text = '│' },
+          delete       = { text = '_' },
+          topdelete    = { text = '‾' },
+          changedelete = { text = '~' },
+          untracked    = { text = '┆' },
+        },
+        signcolumn = true,
+        numhl      = true,
+        linehl     = true,
+        word_diff  = true,
 
-        local function map(mode, l, r, opts)
-          opts = opts or {}
-          opts.buffer = bufnr
-          vim.keymap.set(mode, l, r, opts)
-        end
+        on_attach = function(bufnr)
+          local gs = package.loaded.gitsigns
+
+          local function map(mode, l, r, opts)
+            opts = opts or {}
+            opts.buffer = bufnr
+            vim.keymap.set(mode, l, r, opts)
+          end
 
         -- Navigation between hunks (]c and [c for next/previous change)
         map('n', ']c', function()
@@ -79,11 +56,48 @@ return {
         map('n', '<leader>hD', function() gs.diffthis('~') end, { desc = "Diff this ~" })
         map('n', '<leader>ht', gs.toggle_deleted, { desc = "Toggle deleted" })
 
-        -- Text object for hunks (ih = inner hunk, ah = around hunk)
-        map({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select inner hunk" })
-        map({'o', 'x'}, 'ah', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select around hunk" })
-      end
-    },
+        -- Toggle highlighting features
+        map('n', '<leader>hn', gs.toggle_numhl, { desc = "Toggle line number highlighting" })
+        map('n', '<leader>hl', gs.toggle_linehl, { desc = "Toggle line highlighting" })
+        map('n', '<leader>hw', gs.toggle_word_diff, { desc = "Toggle word diff" })
+        map('n', '<leader>hg', gs.toggle_signs, { desc = "Toggle git signs" })
+
+          -- Text object for hunks (ih = inner hunk, ah = around hunk)
+          map({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select inner hunk" })
+          map({'o', 'x'}, 'ah', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select around hunk" })
+        end
+      })
+
+      -- Set word diff highlights AFTER gitsigns setup
+      -- Use defer_fn to ensure these are set after everything loads
+      vim.defer_fn(function()
+        -- Force yellow text for changed words - try all possible highlight groups
+        vim.api.nvim_set_hl(0, 'GitSignsChangeInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
+        vim.api.nvim_set_hl(0, 'GitSignsChangeLnInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
+        vim.api.nvim_set_hl(0, 'GitSignsChangeVirtLn', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
+        vim.api.nvim_set_hl(0, 'GitSignsChangeNr', { fg = '#e0af68' })
+        vim.api.nvim_set_hl(0, 'GitSignsChangeLn', { bg = '#3a3a2a' })
+
+        -- Green for additions
+        vim.api.nvim_set_hl(0, 'GitSignsAddInline', { fg = '#9ece6a', bg = '#1f2231', bold = true, nocombine = true })
+        vim.api.nvim_set_hl(0, 'GitSignsAddLnInline', { fg = '#9ece6a', bg = '#1f2231', bold = true, nocombine = true })
+
+        -- Red for deletions
+        vim.api.nvim_set_hl(0, 'GitSignsDeleteInline', { fg = '#f7768e', bg = '#2d202a', bold = true, nocombine = true })
+        vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a', bold = true, nocombine = true })
+      end, 100)
+
+      -- Also set in ColorScheme autocmd for persistence
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        pattern = "*",
+        callback = function()
+          vim.defer_fn(function()
+            vim.api.nvim_set_hl(0, 'GitSignsChangeInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
+            vim.api.nvim_set_hl(0, 'GitSignsChangeLnInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
+          end, 100)
+        end
+      })
+    end,
   },
 
   -- Enhanced toggleterm with lazygit integration

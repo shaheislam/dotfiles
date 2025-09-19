@@ -8,7 +8,10 @@ kubectl delete pod dev-pod-ssh dev-pod-alpine dev-pod-python dev-pod-secure --ig
 # Delete the ConfigMap
 kubectl delete configmap ssh-public-key --ignore-not-found=true
 
+ejjfjejej
+
 # Kill any port-forward processes
 pkill -f "kubectl port-forward dev-pod"
 
-echo "✅ Cleanup complete!"
+echo "✅ Cleanu fhfhfhfh jrjrhrhrk complete!"
+
