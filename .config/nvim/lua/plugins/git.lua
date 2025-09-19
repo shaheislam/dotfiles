@@ -11,29 +11,9 @@ return {
       -- Telescope git integration keybindings with enhanced configuration
       { "<leader>gf", "<cmd>Telescope git_files<cr>", desc = "Git files" },
 
-      { "<leader>gc", function()
-        local previewers = require("telescope.previewers")
-        require("telescope.builtin").git_commits({
-          previewer = previewers.git_commit_diff_as_was.new{},
-          layout_config = {
-            horizontal = {
-              preview_width = 0.6,
-            },
-          },
-        })
-      end, desc = "Git commits" },
+      { "<leader>gc", "<cmd>Telescope git_commits<cr>", desc = "Git commits" },
 
-      { "<leader>gC", function()
-        local previewers = require("telescope.previewers")
-        require("telescope.builtin").git_bcommits({
-          previewer = previewers.git_commit_diff_as_was.new{},
-          layout_config = {
-            horizontal = {
-              preview_width = 0.6,
-            },
-          },
-        })
-      end, desc = "Git buffer commits" },
+      { "<leader>gC", "<cmd>Telescope git_bcommits<cr>", desc = "Git buffer commits" },
 
       { "<leader>gb", function()
         local actions = require("telescope.actions")
@@ -161,21 +141,7 @@ return {
         })
       end, desc = "Git branches (with remote)" },
 
-      { "<leader>gl", function()
-        local previewers = require("telescope.previewers")
-        require("telescope.builtin").git_commits({
-          previewer = previewers.git_commit_diff_as_was.new{},
-          layout_config = {
-            horizontal = {
-              preview_width = 0.6,
-            },
-          },
-          git_command = {
-            "git", "log", "--pretty=format:%h %s (%cr) <%an>",
-            "--abbrev-commit", "--all"
-          }
-        })
-      end, desc = "Git log (all branches)" },
+      { "<leader>gl", "<cmd>Telescope git_commits<cr>", desc = "Git log" },
 
       { "<leader>gs", "<cmd>Telescope git_status<cr>", desc = "Git status" },
       { "<leader>gS", "<cmd>Telescope git_stash<cr>", desc = "Git stash" },
