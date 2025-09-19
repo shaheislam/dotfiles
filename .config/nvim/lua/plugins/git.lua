@@ -4,6 +4,176 @@ return {
   {
     "lewis6991/gitsigns.nvim",
     event = { "BufReadPre", "BufNewFile" },
+    dependencies = {
+      "nvim-telescope/telescope.nvim",
+    },
+    keys = {
+      -- Telescope git integration keybindings with enhanced configuration
+      { "<leader>gf", "<cmd>Telescope git_files<cr>", desc = "Git files" },
+
+      { "<leader>gc", function()
+        require("telescope.builtin").git_commits({
+          previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+          },
+        })
+      end, desc = "Git commits" },
+
+      { "<leader>gC", function()
+        require("telescope.builtin").git_bcommits({
+          previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+          },
+        })
+      end, desc = "Git buffer commits" },
+
+      { "<leader>gb", function()
+        local actions = require("telescope.actions")
+        require("telescope.builtin").git_branches({
+          attach_mappings = function(_, map)
+            -- Custom branch switching with stash handling
+            local switch_branch = function(prompt_bufnr)
+              local selection = require("telescope.actions.state").get_selected_entry()
+              if selection == nil then
+                return
+              end
+
+              actions.close(prompt_bufnr)
+              local branch = selection.value
+
+              -- Check for uncommitted changes
+              local has_changes = vim.fn.system("git status --porcelain"):match("%S")
+
+              if has_changes then
+                local choice = vim.fn.confirm(
+                  "You have uncommitted changes. What would you like to do?",
+                  "&Stash and switch\n&Cancel",
+                  1
+                )
+
+                if choice == 1 then
+                  -- Stash changes with a descriptive message
+                  local stash_msg = string.format("WIP on %s before switching to %s",
+                    vim.fn.system("git branch --show-current"):gsub("\n", ""),
+                    branch)
+                  vim.fn.system(string.format("git stash push -m '%s'", stash_msg))
+                  vim.notify("Changes stashed: " .. stash_msg, vim.log.levels.INFO)
+
+                  -- Now switch branch
+                  local result = vim.fn.system(string.format("git checkout %s", branch))
+                  if vim.v.shell_error == 0 then
+                    vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
+                  else
+                    vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
+                  end
+                end
+              else
+                -- No changes, switch directly
+                local result = vim.fn.system(string.format("git checkout %s", branch))
+                if vim.v.shell_error == 0 then
+                  vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
+                else
+                  vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
+                end
+              end
+            end
+
+            map("i", "<cr>", switch_branch)
+            map("n", "<cr>", switch_branch)
+            return true
+          end,
+        })
+      end, desc = "Git branches (smart checkout)" },
+
+      { "<leader>gs", function()
+        require("telescope.builtin").git_status({
+          previewer = require("telescope.previewers").git_file_diff.new({}),
+        })
+      end, desc = "Git status" },
+
+      { "<leader>gS", "<cmd>Telescope git_stash<cr>", desc = "Git stash" },
+
+      -- Additional git shortcuts
+      { "<leader>gB", function()
+        local actions = require("telescope.actions")
+        require("telescope.builtin").git_branches({
+          show_remote_tracking_branches = true,
+          attach_mappings = function(_, map)
+            -- Use the same smart branch switcher for remote branches
+            local switch_branch = function(prompt_bufnr)
+              local selection = require("telescope.actions.state").get_selected_entry()
+              if selection == nil then
+                return
+              end
+
+              actions.close(prompt_bufnr)
+              local branch = selection.value
+
+              -- Check for uncommitted changes
+              local has_changes = vim.fn.system("git status --porcelain"):match("%S")
+
+              if has_changes then
+                local choice = vim.fn.confirm(
+                  "You have uncommitted changes. What would you like to do?",
+                  "&Stash and switch\n&Cancel",
+                  1
+                )
+
+                if choice == 1 then
+                  -- Stash changes with a descriptive message
+                  local stash_msg = string.format("WIP on %s before switching to %s",
+                    vim.fn.system("git branch --show-current"):gsub("\n", ""),
+                    branch)
+                  vim.fn.system(string.format("git stash push -m '%s'", stash_msg))
+                  vim.notify("Changes stashed: " .. stash_msg, vim.log.levels.INFO)
+
+                  -- Now switch branch
+                  local result = vim.fn.system(string.format("git checkout %s", branch))
+                  if vim.v.shell_error == 0 then
+                    vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
+                  else
+                    vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
+                  end
+                end
+              else
+                -- No changes, switch directly
+                local result = vim.fn.system(string.format("git checkout %s", branch))
+                if vim.v.shell_error == 0 then
+                  vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
+                else
+                  vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
+                end
+              end
+            end
+
+            map("i", "<cr>", switch_branch)
+            map("n", "<cr>", switch_branch)
+            return true
+          end,
+        })
+      end, desc = "Git branches (with remote)" },
+
+      { "<leader>gl", function()
+        require("telescope.builtin").git_commits({
+          previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+          },
+          git_command = {
+            "git", "log", "--pretty=format:%h %s (%cr) <%an>",
+            "--abbrev-commit", "--all"
+          }
+        })
+      end, desc = "Git log (all branches)" },
+    },
     config = function()
       require('gitsigns').setup({
         signs = {
@@ -27,6 +197,17 @@ return {
         linehl     = false,  -- No line background highlighting
         word_diff  = true,  -- Word-level diff
         max_file_length = 40000,  -- Support word diff on larger files
+
+        -- Current line blame in virtual text
+        current_line_blame = true,
+        current_line_blame_opts = {
+          virt_text = true,
+          virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
+          delay = 1000,
+          ignore_whitespace = false,
+          virt_text_priority = 100,
+        },
+        current_line_blame_formatter = '<author>, <author_time:%Y-%m-%d> - <summary>',
 
         on_attach = function(bufnr)
           local gs = package.loaded.gitsigns
@@ -70,6 +251,14 @@ return {
         map('n', '<leader>hl', gs.toggle_linehl, { desc = "Toggle line highlighting" })
         map('n', '<leader>hw', gs.toggle_word_diff, { desc = "Toggle word diff" })
         map('n', '<leader>hg', gs.toggle_signs, { desc = "Toggle git signs" })
+
+        -- Quickfix/Location list integration
+        map('n', '<leader>hq', function() gs.setqflist() end, { desc = "Send all hunks to quickfix" })
+        map('n', '<leader>hQ', function() gs.setqflist('all') end, { desc = "Send hunks from all buffers to quickfix" })
+        map('n', '<leader>hL', function() gs.setloclist() end, { desc = "Send hunks to location list" })
+
+        -- Git actions picker
+        map('n', '<leader>ha', gs.actions, { desc = "Git actions" })
 
           -- Text object for hunks
           map({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select hunk" })

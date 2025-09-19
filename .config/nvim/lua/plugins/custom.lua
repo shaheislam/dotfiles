@@ -174,6 +174,35 @@ return {
             -- Add these options for better search
             find_command = nil, -- Use default telescope finder
           },
+          -- Enhanced git pickers configuration
+          git_commits = {
+            previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+            layout_config = {
+              horizontal = {
+                preview_width = 0.6,
+              },
+            },
+          },
+          git_bcommits = {
+            previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+            layout_config = {
+              horizontal = {
+                preview_width = 0.6,
+              },
+            },
+          },
+          git_branches = {
+            previewer = require("telescope.previewers").git_branch_log.new({}),
+            -- Don't use dropdown theme with custom layout_config
+          },
+          git_status = {
+            previewer = require("telescope.previewers").git_file_diff.new({}),
+            layout_config = {
+              horizontal = {
+                preview_width = 0.6,
+              },
+            },
+          },
         },
       })
 
