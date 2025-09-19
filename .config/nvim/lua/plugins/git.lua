@@ -12,8 +12,9 @@ return {
       { "<leader>gf", "<cmd>Telescope git_files<cr>", desc = "Git files" },
 
       { "<leader>gc", function()
+        local previewers = require("telescope.previewers")
         require("telescope.builtin").git_commits({
-          previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+          previewer = previewers.git_commit_diff_as_was.new{},
           layout_config = {
             horizontal = {
               preview_width = 0.6,
@@ -23,8 +24,9 @@ return {
       end, desc = "Git commits" },
 
       { "<leader>gC", function()
+        local previewers = require("telescope.previewers")
         require("telescope.builtin").git_bcommits({
-          previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+          previewer = previewers.git_commit_diff_as_was.new{},
           layout_config = {
             horizontal = {
               preview_width = 0.6,
@@ -160,8 +162,9 @@ return {
       end, desc = "Git branches (with remote)" },
 
       { "<leader>gl", function()
+        local previewers = require("telescope.previewers")
         require("telescope.builtin").git_commits({
-          previewer = require("telescope.previewers").git_commit_diff_as_was.new({}),
+          previewer = previewers.git_commit_diff_as_was.new{},
           layout_config = {
             horizontal = {
               preview_width = 0.6,
@@ -173,6 +176,9 @@ return {
           }
         })
       end, desc = "Git log (all branches)" },
+
+      { "<leader>gs", "<cmd>Telescope git_status<cr>", desc = "Git status" },
+      { "<leader>gS", "<cmd>Telescope git_stash<cr>", desc = "Git stash" },
     },
     config = function()
       require('gitsigns').setup({
@@ -257,8 +263,8 @@ return {
         map('n', '<leader>hQ', function() gs.setqflist('all') end, { desc = "Send hunks from all buffers to quickfix" })
         map('n', '<leader>hL', function() gs.setloclist() end, { desc = "Send hunks to location list" })
 
-        -- Git actions picker
-        map('n', '<leader>ha', gs.actions, { desc = "Git actions" })
+        -- Note: gitsigns doesn't have a general actions picker
+        -- All actions are available through individual keybindings above
 
           -- Text object for hunks
           map({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select hunk" })
