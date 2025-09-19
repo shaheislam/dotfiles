@@ -34,10 +34,10 @@ function __git.init
   __git.create_abbr gbsg       git bisect good
   __git.create_abbr gbsr       git bisect reset
   __git.create_abbr gbss       git bisect start
-  __git.create_abbr gc         git commit -v
+  __git.create_abbr gc         'git commit -m ""'
   __git.create_abbr gc!        git commit -v --amend
   __git.create_abbr gcn!       git commit -v --no-edit --amend
-  __git.create_abbr gca        git commit -v -a
+  __git.create_abbr gca        git commit --amend
   __git.create_abbr gca!       git commit -v -a --amend
   __git.create_abbr gcan!      git commit -v -a --no-edit --amend
   __git.create_abbr gcv        git commit -v --no-verify

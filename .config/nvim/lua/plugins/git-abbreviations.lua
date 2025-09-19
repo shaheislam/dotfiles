@@ -18,8 +18,8 @@ return {
       vim.cmd("cnoreabbrev gau Git add --update")
       
       -- Commit commands
-      vim.cmd("cnoreabbrev gc Git commit -m")
-      vim.cmd("cnoreabbrev gca Git commit -v -a")
+      vim.cmd('cnoreabbrev gc Git commit -m ""')
+      vim.cmd("cnoreabbrev gca Git commit --amend")
       vim.cmd("cnoreabbrev gcm Git commit -m")
       vim.cmd("cnoreabbrev gcam Git commit -a -m")
       vim.cmd("cnoreabbrev gcs Git commit -S")
