@@ -366,6 +366,7 @@ return {
 						gs.blame_line({ full = true })
 					end, { desc = "Blame line (full)" })
 					map("n", "<leader>hB", gs.toggle_current_line_blame, { desc = "Toggle blame line" })
+					map("n", "<leader>hv", gs.blame, { desc = "Blame buffer (full)" })
 					map("n", "<leader>hd", gs.diffthis, { desc = "Diff this" })
 					map("n", "<leader>hD", function()
 						gs.diffthis("~")
