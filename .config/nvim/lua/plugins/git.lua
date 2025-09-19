@@ -14,10 +14,10 @@ return {
           changedelete = { text = '~' },
           untracked    = { text = '┆' },
         },
-        signcolumn = true,
-        numhl      = true,
-        linehl     = true,
-        word_diff  = true,
+        numhl      = true,  -- Line number highlighting
+        linehl     = false,  -- No line background highlighting
+        word_diff  = true,  -- Word-level diff
+        max_file_length = 40000,  -- Support word diff on larger files
 
         on_attach = function(bufnr)
           local gs = package.loaded.gitsigns
@@ -62,39 +62,29 @@ return {
         map('n', '<leader>hw', gs.toggle_word_diff, { desc = "Toggle word diff" })
         map('n', '<leader>hg', gs.toggle_signs, { desc = "Toggle git signs" })
 
-          -- Text object for hunks (ih = inner hunk, ah = around hunk)
-          map({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select inner hunk" })
-          map({'o', 'x'}, 'ah', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select around hunk" })
+          -- Text object for hunks
+          map({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>', { desc = "Select hunk" })
         end
       })
 
-      -- Set word diff highlights AFTER gitsigns setup
-      -- Use defer_fn to ensure these are set after everything loads
-      vim.defer_fn(function()
-        -- Force yellow text for changed words - try all possible highlight groups
-        vim.api.nvim_set_hl(0, 'GitSignsChangeInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
-        vim.api.nvim_set_hl(0, 'GitSignsChangeLnInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
-        vim.api.nvim_set_hl(0, 'GitSignsChangeVirtLn', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
-        vim.api.nvim_set_hl(0, 'GitSignsChangeNr', { fg = '#e0af68' })
-        vim.api.nvim_set_hl(0, 'GitSignsChangeLn', { bg = '#3a3a2a' })
-
-        -- Green for additions
-        vim.api.nvim_set_hl(0, 'GitSignsAddInline', { fg = '#9ece6a', bg = '#1f2231', bold = true, nocombine = true })
-        vim.api.nvim_set_hl(0, 'GitSignsAddLnInline', { fg = '#9ece6a', bg = '#1f2231', bold = true, nocombine = true })
-
-        -- Red for deletions
-        vim.api.nvim_set_hl(0, 'GitSignsDeleteInline', { fg = '#f7768e', bg = '#2d202a', bold = true, nocombine = true })
-        vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a', bold = true, nocombine = true })
-      end, 100)
+      -- Set word diff highlights
+      vim.api.nvim_set_hl(0, 'GitSignsChangeInline', { fg = '#ffdb69', bg = '#3a3a2a' })
+      vim.api.nvim_set_hl(0, 'GitSignsChangeLnInline', { fg = '#ffdb69', bg = '#3a3a2a' })
+      vim.api.nvim_set_hl(0, 'GitSignsAddInline', { fg = '#9ece6a', bg = '#1f2231' })
+      vim.api.nvim_set_hl(0, 'GitSignsAddLnInline', { fg = '#9ece6a', bg = '#1f2231' })
+      vim.api.nvim_set_hl(0, 'GitSignsDeleteInline', { fg = '#f7768e', bg = '#2d202a' })
+      vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a' })
 
       -- Also set in ColorScheme autocmd for persistence
       vim.api.nvim_create_autocmd("ColorScheme", {
         pattern = "*",
         callback = function()
-          vim.defer_fn(function()
-            vim.api.nvim_set_hl(0, 'GitSignsChangeInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
-            vim.api.nvim_set_hl(0, 'GitSignsChangeLnInline', { fg = '#ffdb69', bg = '#3a3a2a', bold = true, nocombine = true })
-          end, 100)
+          vim.api.nvim_set_hl(0, 'GitSignsChangeInline', { fg = '#ffdb69', bg = '#3a3a2a' })
+          vim.api.nvim_set_hl(0, 'GitSignsChangeLnInline', { fg = '#ffdb69', bg = '#3a3a2a' })
+          vim.api.nvim_set_hl(0, 'GitSignsAddInline', { fg = '#9ece6a', bg = '#1f2231' })
+          vim.api.nvim_set_hl(0, 'GitSignsAddLnInline', { fg = '#9ece6a', bg = '#1f2231' })
+          vim.api.nvim_set_hl(0, 'GitSignsDeleteInline', { fg = '#f7768e', bg = '#2d202a' })
+          vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a' })
         end
       })
     end,
