@@ -166,6 +166,24 @@ return {
             "--hidden",
             "--glob=!.git/*",
           },
+          -- Layout configuration
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+              preview_cutoff = 120,
+            },
+            vertical = {
+              preview_height = 0.5,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+          -- Ensure syntax highlighting in previews
+          preview = {
+            treesitter = true,
+            syntax = true,
+          },
         },
         pickers = {
           find_files = {
@@ -174,8 +192,33 @@ return {
             -- Add these options for better search
             find_command = nil, -- Use default telescope finder
           },
-          -- Git pickers will use default Telescope configuration
-          -- Custom previewers are configured in git.lua
+          -- Git picker specific configurations
+          git_commits = {
+            layout_config = {
+              preview_width = 0.7,
+            },
+          },
+          git_bcommits = {
+            layout_config = {
+              preview_width = 0.7,
+            },
+          },
+          git_branches = {
+            layout_config = {
+              preview_width = 0.6,
+            },
+            show_remote_tracking_branches = false,
+          },
+          git_status = {
+            layout_config = {
+              preview_width = 0.6,
+            },
+          },
+          git_stash = {
+            layout_config = {
+              preview_width = 0.7,
+            },
+          },
         },
       })
 

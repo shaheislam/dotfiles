@@ -9,15 +9,66 @@ return {
     },
     keys = {
       -- Telescope git integration keybindings with enhanced configuration
-      { "<leader>gf", "<cmd>Telescope git_files<cr>", desc = "Git files" },
+      { "<leader>gf", function()
+        require("telescope.builtin").git_files({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+        })
+      end, desc = "Git files" },
 
-      { "<leader>gc", "<cmd>Telescope git_commits<cr>", desc = "Git commits" },
+      { "<leader>gc", function()
+        require("telescope.builtin").git_commits({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+          mappings = {
+            i = {
+              ["<C-o>"] = function(prompt_bufnr)
+                local selection = require("telescope.actions.state").get_selected_entry()
+                if selection then
+                  vim.cmd("DiffviewOpen " .. selection.value .. "^!")
+                end
+              end,
+            },
+          },
+        })
+      end, desc = "Git commits" },
 
-      { "<leader>gC", "<cmd>Telescope git_bcommits<cr>", desc = "Git buffer commits" },
+      { "<leader>gC", function()
+        require("telescope.builtin").git_bcommits({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+        })
+      end, desc = "Git buffer commits" },
 
       { "<leader>gb", function()
         local actions = require("telescope.actions")
         require("telescope.builtin").git_branches({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.5,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
           attach_mappings = function(_, map)
             -- Custom branch switching with stash handling
             local switch_branch = function(prompt_bufnr)
@@ -73,19 +124,20 @@ return {
         })
       end, desc = "Git branches (smart checkout)" },
 
-      { "<leader>gs", function()
-        require("telescope.builtin").git_status({
-          previewer = require("telescope.previewers").git_file_diff.new({}),
-        })
-      end, desc = "Git status" },
-
-      { "<leader>gS", "<cmd>Telescope git_stash<cr>", desc = "Git stash" },
 
       -- Additional git shortcuts
       { "<leader>gB", function()
         local actions = require("telescope.actions")
         require("telescope.builtin").git_branches({
           show_remote_tracking_branches = true,
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.5,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
           attach_mappings = function(_, map)
             -- Use the same smart branch switcher for remote branches
             local switch_branch = function(prompt_bufnr)
@@ -141,10 +193,58 @@ return {
         })
       end, desc = "Git branches (with remote)" },
 
-      { "<leader>gl", "<cmd>Telescope git_commits<cr>", desc = "Git log" },
+      { "<leader>gl", function()
+        require("telescope.builtin").git_commits({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+          git_command = { "git", "log", "--oneline", "--decorate", "--color" },
+        })
+      end, desc = "Git log" },
 
-      { "<leader>gs", "<cmd>Telescope git_status<cr>", desc = "Git status" },
-      { "<leader>gS", "<cmd>Telescope git_stash<cr>", desc = "Git stash" },
+      { "<leader>gL", function()
+        require("telescope.builtin").git_commits({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+        })
+      end, desc = "Git log (Telescope)" },
+
+      { "<leader>gs", function()
+        require("telescope.builtin").git_status({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.5,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+        })
+      end, desc = "Git status" },
+
+      { "<leader>gS", function()
+        require("telescope.builtin").git_stash({
+          layout_strategy = "horizontal",
+          layout_config = {
+            horizontal = {
+              preview_width = 0.6,
+            },
+            width = 0.9,
+            height = 0.9,
+          },
+        })
+      end, desc = "Git stash" },
     },
     config = function()
       require('gitsigns').setup({
