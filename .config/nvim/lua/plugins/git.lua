@@ -219,18 +219,18 @@ return {
 			{
 				"<leader>gl",
 				function()
-					require("telescope.builtin").git_commits({
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.6,
+					require("snacks.picker").git_log({
+						win = {
+							input = {
+								keys = {
+									["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
+									["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
+								},
 							},
-							width = 0.9,
-							height = 0.9,
 						},
 					})
 				end,
-				desc = "Git log (Telescope)",
+				desc = "Git log (Snacks)",
 			},
 
 			{
