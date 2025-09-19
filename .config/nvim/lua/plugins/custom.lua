@@ -88,7 +88,31 @@ return {
   "simnalamburt/vim-mundo",
 
   -- Missing plugins from your original config
-  "ap/vim-css-color",
+  -- "ap/vim-css-color", -- Disabled: causing E121 errors with undefined b:css_color_pat
+
+  -- Modern CSS color highlighter replacement
+  {
+    "NvChad/nvim-colorizer.lua",
+    event = { "BufReadPost", "BufNewFile" },
+    opts = {
+      filetypes = { "*" },
+      user_default_options = {
+        RGB = true,
+        RRGGBB = true,
+        names = true,
+        RRGGBBAA = true,
+        AARRGGBB = true,
+        rgb_fn = true,
+        hsl_fn = true,
+        css = true,
+        css_fn = true,
+        mode = "background",
+        tailwind = true,
+        virtualtext = "■",
+      },
+    },
+  },
+
   "junegunn/rainbow_parentheses.vim",
   "michaeljsmith/vim-indent-object",
   "nathanaelkane/vim-indent-guides",
