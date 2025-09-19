@@ -10,11 +10,11 @@ kubectl delete configmap ssh-public-key --ignore-not-found=true
 # Kill any port-forward processes
 pkill -f "kubectl port-forward dev-pod"
 
-echo "✅ Cleanu fhfhfhfh jrjrhrhrk complete!"
-
 fjfjfjjffjjf
 
 fkfjfjfjf
 
 fjlfjjfjf
 testing based on what i can see for staging
+
+test

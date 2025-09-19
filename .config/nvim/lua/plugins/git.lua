@@ -84,15 +84,15 @@ return {
       vim.api.nvim_set_hl(0, 'GitSignsDeleteInline', { fg = '#f7768e', bg = '#2d202a' })
       vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a' })
 
-      -- Set staged signs highlights - brighter and more distinct colors
-      vim.api.nvim_set_hl(0, 'GitSignsStagedAdd', { fg = '#00ff00', bold = true })           -- Bright green for staged adds
-      vim.api.nvim_set_hl(0, 'GitSignsStagedChange', { fg = '#ffd700', bold = true })        -- Gold for staged changes
-      vim.api.nvim_set_hl(0, 'GitSignsStagedDelete', { fg = '#ff69b4', bold = true })        -- Hot pink for staged deletes
-      vim.api.nvim_set_hl(0, 'GitSignsStagedTopdelete', { fg = '#ff69b4', bold = true })     -- Hot pink for staged topdeletes
-      vim.api.nvim_set_hl(0, 'GitSignsStagedChangedelete', { fg = '#ff8c00', bold = true })  -- Dark orange for staged changedeletes
-      vim.api.nvim_set_hl(0, 'GitSignsStagedAddNr', { fg = '#00ff00', bold = true })         -- Bright green for line numbers
-      vim.api.nvim_set_hl(0, 'GitSignsStagedChangeNr', { fg = '#ffd700', bold = true })      -- Gold for line numbers
-      vim.api.nvim_set_hl(0, 'GitSignsStagedDeleteNr', { fg = '#ff69b4', bold = true })      -- Hot pink for line numbers
+      -- Set staged signs highlights - muted but distinct colors
+      vim.api.nvim_set_hl(0, 'GitSignsStagedAdd', { fg = '#73c991', bold = true })           -- Soft mint green for staged adds
+      vim.api.nvim_set_hl(0, 'GitSignsStagedChange', { fg = '#e0af68', bold = true })        -- Soft amber for staged changes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedDelete', { fg = '#bb7a8c', bold = true })        -- Dusty rose for staged deletes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedTopdelete', { fg = '#bb7a8c', bold = true })     -- Dusty rose for staged topdeletes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedChangedelete', { fg = '#c8917a', bold = true })  -- Soft terracotta for staged changedeletes
+      vim.api.nvim_set_hl(0, 'GitSignsStagedAddNr', { fg = '#73c991', bold = true })         -- Soft mint green for line numbers
+      vim.api.nvim_set_hl(0, 'GitSignsStagedChangeNr', { fg = '#e0af68', bold = true })      -- Soft amber for line numbers
+      vim.api.nvim_set_hl(0, 'GitSignsStagedDeleteNr', { fg = '#bb7a8c', bold = true })      -- Dusty rose for line numbers
 
       -- Also set in ColorScheme autocmd for persistence
       vim.api.nvim_create_autocmd("ColorScheme", {
@@ -106,14 +106,14 @@ return {
           vim.api.nvim_set_hl(0, 'GitSignsDeleteLnInline', { fg = '#f7768e', bg = '#2d202a' })
 
           -- Staged signs highlights
-          vim.api.nvim_set_hl(0, 'GitSignsStagedAdd', { fg = '#00ff00', bold = true })
-          vim.api.nvim_set_hl(0, 'GitSignsStagedChange', { fg = '#ffd700', bold = true })
-          vim.api.nvim_set_hl(0, 'GitSignsStagedDelete', { fg = '#ff69b4', bold = true })
-          vim.api.nvim_set_hl(0, 'GitSignsStagedTopdelete', { fg = '#ff69b4', bold = true })
-          vim.api.nvim_set_hl(0, 'GitSignsStagedChangedelete', { fg = '#ff8c00', bold = true })
-          vim.api.nvim_set_hl(0, 'GitSignsStagedAddNr', { fg = '#00ff00', bold = true })
-          vim.api.nvim_set_hl(0, 'GitSignsStagedChangeNr', { fg = '#ffd700', bold = true })
-          vim.api.nvim_set_hl(0, 'GitSignsStagedDeleteNr', { fg = '#ff69b4', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedAdd', { fg = '#73c991', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedChange', { fg = '#e0af68', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedDelete', { fg = '#bb7a8c', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedTopdelete', { fg = '#bb7a8c', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedChangedelete', { fg = '#c8917a', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedAddNr', { fg = '#73c991', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedChangeNr', { fg = '#e0af68', bold = true })
+          vim.api.nvim_set_hl(0, 'GitSignsStagedDeleteNr', { fg = '#bb7a8c', bold = true })
         end
       })
     end,
