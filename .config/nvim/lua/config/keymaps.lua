@@ -10,3 +10,6 @@ vim.keymap.set("n", "-", "<cmd>Oil<cr>", { desc = "Open parent directory", silen
 -- Additional custom keymaps
 vim.keymap.set("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all", silent = true })
 vim.keymap.set("n", "<leader>ww", "<cmd>w<cr>", { desc = "Save file", silent = true })
+
+-- Disable LazyVim's default <leader>gL keybinding
+vim.keymap.del("n", "<leader>gL")
