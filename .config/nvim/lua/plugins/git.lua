@@ -328,13 +328,14 @@ return {
 						vim.keymap.set(mode, l, r, opts)
 					end
 
-					-- Navigation between hunks (]c and [c for next/previous change)
+					-- Navigation between hunks using new nav_hunk API
+					-- Basic navigation (]c and [c for next/previous change)
 					map("n", "]c", function()
 						if vim.wo.diff then
 							return "]c"
 						end
 						vim.schedule(function()
-							gs.next_hunk()
+							gs.nav_hunk("next", { wrap = true })
 						end)
 						return "<Ignore>"
 					end, { expr = true, desc = "Next Git hunk" })
@@ -344,10 +345,56 @@ return {
 							return "[c"
 						end
 						vim.schedule(function()
-							gs.prev_hunk()
+							gs.nav_hunk("prev", { wrap = true })
 						end)
 						return "<Ignore>"
 					end, { expr = true, desc = "Previous Git hunk" })
+
+					-- Advanced navigation commands
+					-- Navigate to first/last hunk
+					map("n", "[C", function()
+						gs.nav_hunk("first")
+					end, { desc = "First Git hunk" })
+
+					map("n", "]C", function()
+						gs.nav_hunk("last")
+					end, { desc = "Last Git hunk" })
+
+					-- Navigate with auto-preview
+					map("n", "]p", function()
+						gs.nav_hunk("next", { preview = true })
+					end, { desc = "Next hunk with preview" })
+
+					map("n", "[p", function()
+						gs.nav_hunk("prev", { preview = true })
+					end, { desc = "Previous hunk with preview" })
+
+					-- Navigate only between non-contiguous hunks (skip adjacent changes)
+					map("n", "]g", function()
+						gs.nav_hunk("next", { greedy = false })
+					end, { desc = "Next non-contiguous hunk" })
+
+					map("n", "[g", function()
+						gs.nav_hunk("prev", { greedy = false })
+					end, { desc = "Previous non-contiguous hunk" })
+
+					-- Navigate between staged hunks only
+					map("n", "]s", function()
+						gs.nav_hunk("next", { target = "staged" })
+					end, { desc = "Next staged hunk" })
+
+					map("n", "[s", function()
+						gs.nav_hunk("prev", { target = "staged" })
+					end, { desc = "Previous staged hunk" })
+
+					-- Navigate between unstaged hunks only
+					map("n", "]u", function()
+						gs.nav_hunk("next", { target = "unstaged" })
+					end, { desc = "Next unstaged hunk" })
+
+					map("n", "[u", function()
+						gs.nav_hunk("prev", { target = "unstaged" })
+					end, { desc = "Previous unstaged hunk" })
 
 					-- Hunk actions (using <leader>h prefix to avoid conflicts with Neogit)
 					map("n", "<leader>hs", gs.stage_hunk, { desc = "Stage hunk" })
