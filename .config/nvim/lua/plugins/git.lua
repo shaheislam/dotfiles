@@ -394,8 +394,30 @@ return {
 					-- Note: gitsigns doesn't have a general actions picker
 					-- All actions are available through individual keybindings above
 
-					-- Text object for hunks
+					-- Text object for hunks (with greedy selection by default)
 					map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", { desc = "Select hunk" })
+
+					-- Additional visual mode hunk selection commands
+					map("n", "<leader>hx", function()
+						gs.select_hunk({ greedy = true })
+					end, { desc = "Select all contiguous hunks" })
+
+					map("n", "<leader>hX", function()
+						gs.select_hunk({ greedy = false })
+					end, { desc = "Select only current hunk" })
+
+					-- Visual mode: operate on selected hunks
+					map("x", "<leader>hs", function()
+						local start_line = vim.fn.line("'<")
+						local end_line = vim.fn.line("'>")
+						gs.stage_hunk({ start_line, end_line })
+					end, { desc = "Stage selected lines" })
+
+					map("x", "<leader>hr", function()
+						local start_line = vim.fn.line("'<")
+						local end_line = vim.fn.line("'>")
+						gs.reset_hunk({ start_line, end_line })
+					end, { desc = "Reset selected lines" })
 				end,
 			})
 
