@@ -104,7 +104,8 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "Read(//Users/shaheislam/.config/tmux/**)",
-      "Read(//Users/shaheislam/.codex/**)"
+      "Read(//Users/shaheislam/.codex/**)",
+      "Read(//Users/shaheislam/.local/share/nvim/lazy/**)"
     ],
     "deny": [],
     "ask": []

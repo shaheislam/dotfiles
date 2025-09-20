@@ -38,7 +38,7 @@ brew "morantron/tmux-fingers/tmux-fingers"
 brew "thefuck"
 brew "atuin"
 brew "carapace"  # Multi-shell completion generator
-brew "lazygit"
+# brew "lazygit"  # Removed - not using LazyGit
 brew "lazydocker"
 brew "yazi"
 brew "ffmpegthumbnailer"  # For video thumbnails in yazi
