@@ -279,6 +279,58 @@ return {
     },
   },
 
+  -- Telescope-zoxide integration with oil.nvim
+  {
+    "jvgrootveld/telescope-zoxide",
+    dependencies = {
+      "nvim-telescope/telescope.nvim",
+      "stevearc/oil.nvim",
+    },
+    config = function()
+      require("telescope").load_extension("zoxide")
+    end,
+    keys = {
+      -- Zoxide jump that changes pwd AND opens oil.nvim
+      { "<leader>cd", function()
+        require("telescope").extensions.zoxide.list({
+          attach_mappings = function(_, map)
+            local actions = require("telescope.actions")
+            local action_state = require("telescope.actions.state")
+
+            -- Override enter to change directory AND open oil
+            map("i", "<CR>", function(prompt_bufnr)
+              local selection = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
+              if selection and selection.path then
+                -- Change working directory first
+                vim.cmd("cd " .. vim.fn.fnameescape(selection.path))
+                -- Then open oil in that directory
+                require("oil").open(selection.path)
+              end
+            end)
+
+            -- Also map for normal mode
+            map("n", "<CR>", function(prompt_bufnr)
+              local selection = action_state.get_selected_entry()
+              actions.close(prompt_bufnr)
+              if selection and selection.path then
+                -- Change working directory first
+                vim.cmd("cd " .. vim.fn.fnameescape(selection.path))
+                -- Then open oil in that directory
+                require("oil").open(selection.path)
+              end
+            end)
+
+            return true
+          end,
+        })
+      end, desc = "Zoxide jump to Oil" },
+
+      -- Alternative: Zoxide with default behavior (changes cwd)
+      { "<leader>cD", "<cmd>Telescope zoxide list<cr>", desc = "Zoxide jump (default)" },
+    },
+  },
+
   -- Kai-Neovim Claude AI Integration (disabled - missing config)
   -- {
   --   dir = vim.fn.stdpath("config") .. "/lua/config",
