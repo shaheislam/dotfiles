@@ -95,7 +95,7 @@ return {
 								local branch = selection.value
 
 								-- Check for uncommitted changes
-								local has_changes = vim.fn.system("git status --porcelain"):match("%S")
+								local has_changes = vim.fn.system("bash -c 'git status --porcelain'"):match("%S")
 
 								if has_changes then
 									local choice = vim.fn.confirm(
@@ -108,14 +108,14 @@ return {
 										-- Stash changes with a descriptive message
 										local stash_msg = string.format(
 											"WIP on %s before switching to %s",
-											vim.fn.system("git branch --show-current"):gsub("\n", ""),
+											vim.fn.system("bash -c 'git branch --show-current'"):gsub("\n", ""),
 											branch
 										)
-										vim.fn.system(string.format("git stash push -m '%s'", stash_msg))
+										vim.fn.system(string.format("bash -c \"git stash push -m '%s'\"", stash_msg))
 										vim.notify("Changes stashed: " .. stash_msg, vim.log.levels.INFO)
 
 										-- Now switch branch
-										local result = vim.fn.system(string.format("git checkout %s", branch))
+										local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
 										if vim.v.shell_error == 0 then
 											vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
 										else
@@ -124,7 +124,7 @@ return {
 									end
 								else
 									-- No changes, switch directly
-									local result = vim.fn.system(string.format("git checkout %s", branch))
+									local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
 									if vim.v.shell_error == 0 then
 										vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
 									else
@@ -169,7 +169,7 @@ return {
 								local branch = selection.value
 
 								-- Check for uncommitted changes
-								local has_changes = vim.fn.system("git status --porcelain"):match("%S")
+								local has_changes = vim.fn.system("bash -c 'git status --porcelain'"):match("%S")
 
 								if has_changes then
 									local choice = vim.fn.confirm(
@@ -182,14 +182,14 @@ return {
 										-- Stash changes with a descriptive message
 										local stash_msg = string.format(
 											"WIP on %s before switching to %s",
-											vim.fn.system("git branch --show-current"):gsub("\n", ""),
+											vim.fn.system("bash -c 'git branch --show-current'"):gsub("\n", ""),
 											branch
 										)
-										vim.fn.system(string.format("git stash push -m '%s'", stash_msg))
+										vim.fn.system(string.format("bash -c \"git stash push -m '%s'\"", stash_msg))
 										vim.notify("Changes stashed: " .. stash_msg, vim.log.levels.INFO)
 
 										-- Now switch branch
-										local result = vim.fn.system(string.format("git checkout %s", branch))
+										local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
 										if vim.v.shell_error == 0 then
 											vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
 										else
@@ -198,7 +198,7 @@ return {
 									end
 								else
 									-- No changes, switch directly
-									local result = vim.fn.system(string.format("git checkout %s", branch))
+									local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
 									if vim.v.shell_error == 0 then
 										vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
 									else
