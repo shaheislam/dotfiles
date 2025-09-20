@@ -331,6 +331,51 @@ return {
     },
   },
 
+  -- Telescope undo tree - visual undo history browser
+  {
+    "debugloop/telescope-undo.nvim",
+    dependencies = {
+      "nvim-telescope/telescope.nvim",
+    },
+    config = function()
+      require("telescope").load_extension("undo")
+      -- Configure undo settings
+      require("telescope").setup({
+        extensions = {
+          undo = {
+            -- Use delta for better diff visualization
+            use_delta = true,
+            -- Use custom command for delta if installed
+            diff_context_lines = 3,
+            -- Entry format
+            entry_format = "state #$ID, $STAT, $TIME",
+            -- Time format
+            time_format = "%Y-%m-%d %H:%M:%S",
+            -- Save state on Neovim exit
+            saved_only = false,
+            -- Mappings inside the undo picker
+            mappings = {
+              i = {
+                ["<C-y>"] = require("telescope-undo.actions").yank_additions,
+                ["<C-r>"] = require("telescope-undo.actions").restore,
+              },
+              n = {
+                ["y"] = require("telescope-undo.actions").yank_additions,
+                ["Y"] = require("telescope-undo.actions").yank_deletions,
+                ["<CR>"] = require("telescope-undo.actions").restore,
+              },
+            },
+          },
+        },
+      })
+    end,
+    keys = {
+      { "<leader>fu", "<cmd>Telescope undo<cr>", desc = "Undo tree" },
+      -- Override vim-mundo binding if it exists
+      { "<leader>u", "<cmd>Telescope undo<cr>", desc = "Visual undo tree" },
+    },
+  },
+
   -- Kai-Neovim Claude AI Integration (disabled - missing config)
   -- {
   --   dir = vim.fn.stdpath("config") .. "/lua/config",
