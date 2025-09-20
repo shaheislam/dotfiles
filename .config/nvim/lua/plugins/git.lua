@@ -219,16 +219,7 @@ return {
 			{
 				"<leader>gl",
 				function()
-					require("snacks.picker").git_log({
-						win = {
-							input = {
-								keys = {
-									["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
-									["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
-								},
-							},
-						},
-					})
+					require("snacks.picker").git_log()
 				end,
 				desc = "Git log (Snacks)",
 			},
@@ -236,16 +227,7 @@ return {
 			{
 				"<leader>gs",
 				function()
-					require("snacks.picker").git_status({
-						win = {
-							input = {
-								keys = {
-									["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
-									["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
-								},
-							},
-						},
-					})
+					require("snacks.picker").git_status()
 				end,
 				desc = "Git status (Snacks)",
 			},
@@ -253,16 +235,7 @@ return {
 			{
 				"<leader>gD",
 				function()
-					require("snacks.picker").git_diff({
-						win = {
-							input = {
-								keys = {
-									["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } },
-									["<C-u>"] = { "preview_scroll_up", mode = { "i", "n" } },
-								},
-							},
-						},
-					})
+					require("snacks.picker").git_diff()
 				end,
 				desc = "Git diff (Snacks)",
 			},
