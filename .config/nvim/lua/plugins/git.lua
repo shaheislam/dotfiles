@@ -8,49 +8,13 @@ return {
 			"nvim-telescope/telescope.nvim",
 		},
 		keys = {
-			-- Telescope git integration keybindings with enhanced configuration
+			-- Snacks git files picker
 			{
 				"<leader>gf",
 				function()
-					require("telescope.builtin").git_files({
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.6,
-							},
-							width = 0.9,
-							height = 0.9,
-						},
-					})
+					require("snacks.picker").git_files()
 				end,
-				desc = "Git files",
-			},
-
-			{
-				"<leader>gc",
-				function()
-					require("telescope.builtin").git_commits({
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.6,
-							},
-							width = 0.9,
-							height = 0.9,
-						},
-						mappings = {
-							i = {
-								["<C-o>"] = function(prompt_bufnr)
-									local selection = require("telescope.actions.state").get_selected_entry()
-									if selection then
-										vim.cmd("DiffviewOpen " .. selection.value .. "^!")
-									end
-								end,
-							},
-						},
-					})
-				end,
-				desc = "Git commits",
+				desc = "Git files (Snacks)",
 			},
 
 			{

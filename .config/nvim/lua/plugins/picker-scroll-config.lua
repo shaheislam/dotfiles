@@ -81,7 +81,7 @@ return {
 
   -- Optional: Add mini.animate for even smoother scrolling animations
   {
-    "echasnovski/mini.animate",
+    "nvim-mini/mini.animate",
     event = "VeryLazy",
     opts = function()
       local animate = require("mini.animate")
