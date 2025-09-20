@@ -11,5 +11,8 @@ vim.keymap.set("n", "-", "<cmd>Oil<cr>", { desc = "Open parent directory", silen
 vim.keymap.set("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all", silent = true })
 vim.keymap.set("n", "<leader>ww", "<cmd>w<cr>", { desc = "Save file", silent = true })
 
--- Disable LazyVim's default <leader>gL keybinding
-vim.keymap.del("n", "<leader>gL")
+-- Disable LazyVim's LazyGit keybindings
+pcall(vim.keymap.del, "n", "<leader>gg")
+pcall(vim.keymap.del, "n", "<leader>gG")
+pcall(vim.keymap.del, "n", "<leader>gL")
+pcall(vim.keymap.del, "n", "<leader>gB")

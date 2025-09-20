@@ -12,6 +12,10 @@ return {
     keys = {
       { "<leader>gg", false },
       { "<leader>gG", false },
+      { "<leader>gf", false }, -- Disable default git files if Snacks sets it
+      { "<leader>gF", false }, -- Disable any other git file variants
+      { "<leader>gL", false },
+      { "<leader>gB", false },
     },
   },
 }
