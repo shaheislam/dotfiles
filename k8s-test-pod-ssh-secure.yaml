@@ -10,7 +10,6 @@ data:
     # Or use the existing distant-nvim key:
     ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPGNmf8gr2qj2MeAwAaOIkpIHCqmybZQKSP6FojHpcau distant-nvim@MacBookPro
 ---
-rjkefrkjetjegjkgjkgjkegkj
 apiVersion: v1
 kind: Pod
 metadata:
@@ -21,7 +20,6 @@ metadata:
     environment: development
     security: ssh-keys
 spec:
-  jdgjfkgjfjkgfkjgkjg
   containers:
     - name: dev-container
       image: ubuntu:22.04

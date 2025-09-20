@@ -428,11 +428,53 @@ return {
 					end, { desc = "Blame line (full)" })
 					map("n", "<leader>hB", gs.toggle_current_line_blame, { desc = "Toggle blame line" })
 					map("n", "<leader>hv", gs.blame, { desc = "Blame buffer (full)" })
+					-- Advanced diff features
 					map("n", "<leader>hd", gs.diffthis, { desc = "Diff this" })
 					map("n", "<leader>hD", function()
 						gs.diffthis("~")
 					end, { desc = "Diff this ~" })
+
+					-- Diff against specific revision
+					map("n", "<leader>hc", function()
+						vim.ui.input({ prompt = "Diff against revision: " }, function(revision)
+							if revision then
+								gs.diffthis(revision)
+							end
+						end)
+					end, { desc = "Diff against custom revision" })
+
+					-- Show deleted lines as virtual text
 					map("n", "<leader>ht", gs.toggle_deleted, { desc = "Toggle deleted" })
+
+					-- Change and reset diff base
+					map("n", "<leader>hC", function()
+						vim.ui.input({ prompt = "Change diff base to: " }, function(base)
+							if base then
+								gs.change_base(base, true)
+								vim.notify("Diff base changed to: " .. base, vim.log.levels.INFO)
+							end
+						end)
+					end, { desc = "Change diff base" })
+
+					map("n", "<leader>hE", function()
+						gs.change_base(nil, true)
+						vim.notify("Diff base reset to index", vim.log.levels.INFO)
+					end, { desc = "Reset diff base to index" })
+
+					-- Reset buffer to index or base
+					map("n", "<leader>hF", function()
+						vim.ui.select({ "Index", "HEAD", "HEAD~1" }, {
+							prompt = "Reset buffer to:",
+						}, function(choice)
+							if choice == "Index" then
+								gs.reset_buffer_index()
+							else
+								-- Reset to specific revision
+								vim.cmd("Gitsigns reset_buffer " .. choice)
+							end
+							vim.notify("Buffer reset to " .. choice, vim.log.levels.INFO)
+						end)
+					end, { desc = "Reset buffer to revision" })
 
 					-- Toggle highlighting features
 					map("n", "<leader>hn", gs.toggle_numhl, { desc = "Toggle line number highlighting" })
