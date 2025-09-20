@@ -21,43 +21,43 @@ metadata:
     security: ssh-keys
 spec:
   containers:
-  - name: dev-container
-    image: ubuntu:22.04
-    command: ["/bin/bash"]
-    args:
-    - -c
-    - |
-      apt-get update && apt-get install -y openssh-server vim curl wget git nodejs npm python3 python3-pip
-      mkdir -p /var/run/sshd /root/.ssh
-      cp /tmp/ssh-keys/authorized_keys /root/.ssh/
-      chmod 700 /root/.ssh
-      chmod 600 /root/.ssh/authorized_keys
-      sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
-      sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-      sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-      ssh-keygen -A
-      echo "SSH server starting with key-only authentication..."
-      /usr/sbin/sshd -D
-    ports:
-    - containerPort: 22
-      name: ssh
-    resources:
-      requests:
-        memory: "512Mi"
-        cpu: "500m"
-      limits:
-        memory: "1Gi"
-        cpu: "1000m"
-    volumeMounts:
-    - name: ssh-keys
-      mountPath: /tmp/ssh-keys
-      readOnly: true
-    - name: workspace
-      mountPath: /workspace
+    - name: dev-container
+      image: ubuntu:22.04
+      command: ["/bin/bash"]
+      args:
+        - -c
+        - |
+          apt-get update && apt-get install -y openssh-server vim curl wget git nodejs npm python3 python3-pip
+          mkdir -p /var/run/sshd /root/.ssh
+          cp /tmp/ssh-keys/authorized_keys /root/.ssh/
+          chmod 700 /root/.ssh
+          chmod 600 /root/.ssh/authorized_keys
+          sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+          sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+          sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+          ssh-keygen -A
+          echo "SSH server starting with key-only authentication..."
+          /usr/sbin/sshd -D
+      ports:
+        - containerPort: 22
+          name: ssh
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "500m"
+        limits:
+          memory: "1Gi"
+          cpu: "1000m"
+      volumeMounts:
+        - name: ssh-keys
+          mountPath: /tmp/ssh-keys
+          readOnly: true
+        - name: workspace
+          mountPath: /workspace
   volumes:
-  - name: ssh-keys
-    configMap:
-      name: ssh-public-key
-      defaultMode: 0644
-  - name: workspace
-    emptyDir: {}
+    - name: ssh-keys
+      configMap:
+        name: ssh-public-key
+        defaultMode: 0644
+    - name: workspace
+      emptyDir: {}
