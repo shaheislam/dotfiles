@@ -407,6 +407,19 @@ return {
 					end, { desc = "Reset selected hunk" })
 					map("n", "<leader>hS", gs.stage_buffer, { desc = "Stage buffer" })
 					map("n", "<leader>hu", gs.undo_stage_hunk, { desc = "Undo stage hunk" })
+
+					-- Stage hunk with preview confirmation
+					map("n", "<leader>hP", function()
+						gs.preview_hunk()
+						vim.ui.select({ "Stage", "Cancel" }, {
+							prompt = "Stage this hunk?",
+						}, function(choice)
+							if choice == "Stage" then
+								gs.stage_hunk()
+								vim.notify("Hunk staged", vim.log.levels.INFO)
+							end
+						end)
+					end, { desc = "Preview and stage hunk" })
 					map("n", "<leader>hR", gs.reset_buffer, { desc = "Reset buffer" })
 					map("n", "<leader>hp", gs.preview_hunk, { desc = "Preview hunk" })
 					map("n", "<leader>hi", gs.preview_hunk_inline, { desc = "Preview hunk inline" })
