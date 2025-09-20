@@ -42,7 +42,8 @@ return {
           "taplo",              -- TOML
           "bashls",             -- Bash
           "powershell_es",      -- PowerShell
-          "pyright",            -- Python
+          "basedpyright",       -- Python (enhanced pyright fork)
+          "ruff",               -- Python linter/formatter
           "gopls",              -- Go
           "rust_analyzer",      -- Rust
           "lua_ls",             -- Lua

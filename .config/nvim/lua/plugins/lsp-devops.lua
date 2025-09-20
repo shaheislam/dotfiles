@@ -22,7 +22,7 @@ return {
         "lazyvim.plugins.extras.lang.toml",
         
         -- Scripting Languages
-        "lazyvim.plugins.extras.lang.python",
+        -- "lazyvim.plugins.extras.lang.python", -- Disabled - using basedpyright instead
         "lazyvim.plugins.extras.lang.go",
         "lazyvim.plugins.extras.lang.rust",
         

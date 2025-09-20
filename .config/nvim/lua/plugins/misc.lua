@@ -96,7 +96,7 @@ return {
       return vim.tbl_deep_extend("force", opts, {
         formatters_by_ft = {
           lua = { 'stylua' },
-          python = { 'isort', 'black' },
+          python = { 'ruff_organize_imports', 'ruff_format' }, -- Use ruff for both import sorting and formatting
           javascript = { 'prettierd', 'prettier', stop_after_first = true },
           typescript = { 'prettierd', 'prettier', stop_after_first = true },
           json = { 'prettierd', 'prettier', stop_after_first = true },

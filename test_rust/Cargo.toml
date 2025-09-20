@@ -1,0 +1,23 @@
+[package]
+name = "test_rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Test crates.nvim - hover over version numbers to see available updates
+serde = "1.0.130"  # Try hovering here to see latest version
+serde_json = "1.0.70"
+tokio = { version = "1.20", features = ["full"] }
+anyhow = "1.0.60"
+clap = { version = "4.0", features = ["derive"] }
+regex = "1.5"
+chrono = "0.4.19"
+rand = "0.8.4"
+
+# Outdated crate for testing version checking
+lazy_static = "1.4.0"  # This should show an update is available
+
+[dev-dependencies]
+# Test dependencies
+criterion = "0.4"
+pretty_assertions = "1.2"
