@@ -496,8 +496,22 @@ return {
 					-- Note: gitsigns doesn't have a general actions picker
 					-- All actions are available through individual keybindings above
 
-					-- Text object for hunks (with greedy selection by default)
-					map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", { desc = "Select hunk" })
+					-- Text objects for hunks
+					-- ih = inside hunk (only the changed lines)
+					map({ "o", "x" }, "ih", ":<C-U>Gitsigns select_hunk<CR>", { desc = "Inside hunk" })
+
+					-- ah = around hunk (includes context lines)
+					map({ "o", "x" }, "ah", function()
+						-- Select hunk with surrounding context
+						-- This allows operations like yah, dah, cah to include context
+						gs.select_hunk({
+							-- Include unchanged lines around the hunk
+							expand_region = {
+								above = 2,  -- Lines above hunk
+								below = 2   -- Lines below hunk
+							}
+						})
+					end, { desc = "Around hunk (with context)" })
 
 					-- Additional visual mode hunk selection commands
 					map("n", "<leader>hx", function()
