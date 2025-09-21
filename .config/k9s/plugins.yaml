@@ -21,21 +21,17 @@ plugins:
 
   # ============== LOGS & MONITORING ==============
 
-  # Stern - Multi-pod log tailing
+  # Stern - Multi-pod log tailing with Splash colors
   stern:
     shortCut: Ctrl-L
-    description: Logs via Stern
+    description: Logs via Stern with Splash
     scopes:
       - pods
       - deployments
-    command: stern
+    command: /Users/shaheislam/dotfiles/.config/k9s/scripts/stern-splash.sh
     background: false
     args:
-      - --tail=100
-      - --timestamps
-      - --context
       - $CONTEXT
-      - -n
       - $NAMESPACE
       - $NAME
 

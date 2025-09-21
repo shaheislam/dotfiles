@@ -121,7 +121,8 @@
       "Bash(yq eval:*)",
       "Bash(/dev/null)",
       "Bash(stern:*)",
-      "Bash(splash:*)"
+      "Bash(splash:*)",
+      "Bash(/Users/shaheislam/dotfiles/.config/k9s/scripts/test-stern-splash.sh context namespace pod)"
     ],
     "deny": [],
     "ask": []
