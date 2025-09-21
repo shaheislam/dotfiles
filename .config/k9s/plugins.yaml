@@ -388,3 +388,387 @@ plugins:
     args:
       - -c
       - "helm diff upgrade -n $NAMESPACE $NAME --reuse-values | less"
+
+  # Helm purge - completely remove release
+  helm-purge:
+    shortCut: Ctrl-P
+    description: Purge Helm release
+    scopes:
+      - helmreleases
+    command: helm
+    background: false
+    confirm: true
+    dangerous: true
+    args:
+      - uninstall
+      - $NAME
+      - -n
+      - $NAMESPACE
+      - --no-hooks
+
+  # Helm rollback to previous version
+  helm-rollback:
+    shortCut: Ctrl-H
+    description: Rollback Helm release
+    scopes:
+      - helmreleases
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - "helm rollback -n $NAMESPACE $NAME"
+
+  # ============== ARGOCD INTEGRATION ==============
+
+  # Sync ArgoCD application
+  argocd-sync:
+    shortCut: Shift-Y
+    description: ArgoCD sync app
+    scopes:
+      - applications
+    command: argocd
+    background: false
+    confirm: true
+    args:
+      - app
+      - sync
+      - $NAME
+      - --force
+      - --prune
+
+  # Show ArgoCD diff
+  argocd-diff:
+    shortCut: Ctrl-D
+    description: ArgoCD diff
+    scopes:
+      - applications
+    command: argocd
+    background: false
+    args:
+      - app
+      - diff
+      - $NAME
+
+  # ============== CERT-MANAGER ==============
+
+  # Check certificate readiness
+  cert-ready:
+    shortCut: Shift-C
+    description: Certificate ready
+    scopes:
+      - certificates
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl get certificate -n $NAMESPACE $NAME -o=jsonpath='{.status.conditions[?(@.type==\"Ready\")].message}'"
+
+  # Force certificate renewal
+  cert-renew:
+    shortCut: Ctrl-C
+    description: Renew certificate
+    scopes:
+      - certificates
+    command: kubectl
+    background: false
+    confirm: true
+    args:
+      - patch
+      - certificate
+      - $NAME
+      - -n
+      - $NAMESPACE
+      - --type=json
+      - -p='[{"op": "replace", "path": "/spec/renewBefore", "value":"99999h"}]'
+
+  # ============== RESOURCE OPTIMIZATION ==============
+
+  # Get resource recommendations
+  resource-recommend:
+    shortCut: Shift-O
+    description: Resource recommendations
+    scopes:
+      - pods
+    command: bash
+    background: false
+    args:
+      - -c
+      - |
+        echo "Analyzing resource usage for $NAME..."
+        kubectl top pod -n $NAMESPACE $NAME --containers
+        echo ""
+        echo "Current requests/limits:"
+        kubectl get pod -n $NAMESPACE $NAME -o json | jq '.spec.containers[] | {name: .name, requests: .resources.requests, limits: .resources.limits}'
+
+  # ============== ADVANCED TROUBLESHOOTING ==============
+
+  # Remove finalizers (for stuck resources)
+  remove-finalizers:
+    shortCut: Ctrl-F
+    description: Remove finalizers (DANGEROUS)
+    scopes:
+      - all
+    command: kubectl
+    background: false
+    confirm: true
+    dangerous: true
+    args:
+      - patch
+      - $RESOURCE_NAME
+      - -n
+      - $NAMESPACE
+      - --type=json
+      - -p='[{"op": "remove", "path": "/metadata/finalizers"}]'
+
+  # Debug PVC by mounting into temp container
+  pvc-debug:
+    shortCut: Shift-P
+    description: Debug PVC
+    scopes:
+      - persistentvolumeclaims
+    command: kubectl
+    background: false
+    args:
+      - run
+      - -it
+      - --rm
+      - pvc-debugger-$RANDOM
+      - --image=busybox
+      - -n
+      - $NAMESPACE
+      - --overrides
+      - |
+        {
+          "spec": {
+            "containers": [{
+              "name": "debugger",
+              "image": "busybox",
+              "command": ["sh"],
+              "stdin": true,
+              "tty": true,
+              "volumeMounts": [{
+                "name": "pvc",
+                "mountPath": "/pvc"
+              }]
+            }],
+            "volumes": [{
+              "name": "pvc",
+              "persistentVolumeClaim": {
+                "claimName": "$NAME"
+              }
+            }]
+          }
+        }
+
+  # DNS debugging
+  dns-trace:
+    shortCut: Ctrl-N
+    description: Trace DNS
+    scopes:
+      - pods
+    command: kubectl
+    background: false
+    args:
+      - exec
+      - -it
+      - -n
+      - $NAMESPACE
+      - $NAME
+      - --
+      - sh
+      - -c
+      - "nslookup kubernetes.default || dig kubernetes.default || host kubernetes.default || echo 'No DNS tools found'"
+
+  # ============== JOB MANAGEMENT ==============
+
+  # Toggle CronJob suspend state
+  cronjob-toggle:
+    shortCut: Ctrl-J
+    description: Toggle CronJob suspend
+    scopes:
+      - cronjobs
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - |
+        suspended=$(kubectl get cronjob -n $NAMESPACE $NAME -o=jsonpath='{.spec.suspend}')
+        new_state=$([ "$suspended" = "true" ] && echo "false" || echo "true")
+        kubectl patch cronjob -n $NAMESPACE $NAME -p "{\"spec\":{\"suspend\":$new_state}}"
+
+  # ============== ADVANCED LOG PARSING ==============
+
+  # Parse JSON logs with jq
+  logs-json:
+    shortCut: j
+    description: Parse JSON logs
+    scopes:
+      - pods
+      - containers
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100 | jq '.' 2>/dev/null || kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100"
+
+  # Bunyan formatted logs
+  logs-bunyan:
+    shortCut: Ctrl-B
+    description: Bunyan format logs
+    scopes:
+      - pods
+      - containers
+    command: bash
+    background: false
+    args:
+      - -c
+      - "kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100 | bunyan 2>/dev/null || kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100"
+
+  # ============== KEDA AUTOSCALING ==============
+
+  # Toggle KEDA ScaledObject
+  keda-toggle:
+    shortCut: Ctrl-K
+    description: Toggle KEDA ScaledObject
+    scopes:
+      - scaledobjects
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - |
+        paused=$(kubectl get scaledobject -n $NAMESPACE $NAME -o=jsonpath='{.metadata.annotations.keda\.sh/paused}')
+        if [ "$paused" = "true" ]; then
+          kubectl annotate scaledobject -n $NAMESPACE $NAME keda.sh/paused-
+        else
+          kubectl annotate scaledobject -n $NAMESPACE $NAME keda.sh/paused=true
+        fi
+
+  # ============== NETWORK DEBUGGING ==============
+
+  # Launch netshoot container for network debugging
+  netshoot:
+    shortCut: Ctrl-S
+    description: Network debug container
+    scopes:
+      - nodes
+      - pods
+    command: kubectl
+    background: false
+    args:
+      - run
+      - -it
+      - --rm
+      - netshoot-$RANDOM
+      - --image=nicolaka/netshoot:latest
+      - -n
+      - $NAMESPACE
+      - --
+      - bash
+
+  # Capture network traffic with tcpdump
+  tcpdump:
+    shortCut: Ctrl-T
+    description: Capture network traffic
+    scopes:
+      - pods
+    command: bash
+    background: false
+    confirm: true
+    args:
+      - -c
+      - "kubectl exec -it -n $NAMESPACE $NAME -- sh -c 'tcpdump -i any -nn -s0 -v port 80 or port 443 2>/dev/null || echo \"tcpdump not available in container\"'"
+
+  # ============== EXTERNAL SECRETS ==============
+
+  # Refresh external secret
+  external-secret-refresh:
+    shortCut: Ctrl-E
+    description: Refresh ExternalSecret
+    scopes:
+      - externalsecrets
+    command: kubectl
+    background: false
+    args:
+      - annotate
+      - externalsecret
+      - -n
+      - $NAMESPACE
+      - $NAME
+      - force-sync="-"
+      - --overwrite
+
+  # ============== CROSSPLANE ==============
+
+  # Get Crossplane resource status
+  crossplane-status:
+    shortCut: Ctrl-X
+    description: Crossplane status
+    scopes:
+      - managed
+      - composite
+    command: kubectl
+    background: false
+    args:
+      - get
+      - $RESOURCE_NAME
+      - -n
+      - $NAMESPACE
+      - -o
+      - json
+      - |
+      - jq
+      - '.status.conditions'
+
+  # ============== ISTIO SERVICE MESH ==============
+
+  # Check Istio proxy config
+  istio-proxy-config:
+    shortCut: Ctrl-I
+    description: Istio proxy config
+    scopes:
+      - pods
+    command: istioctl
+    background: false
+    args:
+      - proxy-config
+      - all
+      - -n
+      - $NAMESPACE
+      - $NAME
+
+  # ============== ARGO ROLLOUTS ==============
+
+  # Promote Argo Rollout
+  argo-promote:
+    shortCut: Ctrl-R
+    description: Promote rollout
+    scopes:
+      - rollouts
+    command: kubectl-argo-rollouts
+    background: false
+    confirm: true
+    args:
+      - promote
+      - -n
+      - $NAMESPACE
+      - $NAME
+
+  # Abort Argo Rollout
+  argo-abort:
+    shortCut: Ctrl-A
+    description: Abort rollout
+    scopes:
+      - rollouts
+    command: kubectl-argo-rollouts
+    background: false
+    confirm: true
+    dangerous: true
+    args:
+      - abort
+      - -n
+      - $NAMESPACE
+      - $NAME

@@ -109,7 +109,8 @@
       "Bash(git -c core.quotepath=false log --pretty=format:\"%H %s\" --date=short -5)",
       "Bash(k9s:*)",
       "Read(//Users/shaheislam/Library/**)",
-      "Read(//Users/shaheislam/.config/**)"
+      "Read(//Users/shaheislam/.config/**)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
