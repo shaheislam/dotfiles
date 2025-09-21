@@ -1,0 +1,12 @@
+k9s:
+  cluster: s189d01-tsc-cluster6-aks
+  namespace:
+    active: default
+    lockFavorites: false
+    favorites:
+      - default
+  view:
+    active: contexts
+  featureGates:
+    nodeShell: false
+  proxy: null

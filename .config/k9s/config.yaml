@@ -92,8 +92,5 @@ k9s:
     # Show icons
     noIcons: false
 
-    # Default namespace to use
-    defaultNamespace: default
-
-    # Skin (theme) - Catppuccin Mocha to match terminal
-    skin: catppuccin-mocha
+    # Skin (theme) - Tokyo Night to match terminal
+    skin: tokyo-night

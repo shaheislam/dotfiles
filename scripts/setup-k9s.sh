@@ -14,7 +14,15 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 DOTFILES_DIR="$HOME/dotfiles"
-K9S_CONFIG_DIR="$HOME/.config/k9s"
+
+# K9s uses different config locations on macOS vs Linux
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS uses Application Support
+    K9S_CONFIG_DIR="$HOME/Library/Application Support/k9s"
+else
+    # Linux uses .config
+    K9S_CONFIG_DIR="$HOME/.config/k9s"
+fi
 
 # Check if dotfiles directory exists
 if [ ! -d "$DOTFILES_DIR/.config/k9s" ]; then

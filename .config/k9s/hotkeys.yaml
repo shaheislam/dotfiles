@@ -1,7 +1,7 @@
 # K9s Hotkeys
 # Custom keyboard shortcuts for quick navigation
 
-hotkeys:
+hotKeys:
   # Quick namespace switching
   shift-0:
     shortCut: Shift-0

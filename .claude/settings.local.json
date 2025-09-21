@@ -105,7 +105,11 @@
       "mcp__context7__get-library-docs",
       "Read(//Users/shaheislam/.config/tmux/**)",
       "Read(//Users/shaheislam/.codex/**)",
-      "Read(//Users/shaheislam/.local/share/nvim/lazy/**)"
+      "Read(//Users/shaheislam/.local/share/nvim/lazy/**)",
+      "Bash(git -c core.quotepath=false log --pretty=format:\"%H %s\" --date=short -5)",
+      "Bash(k9s:*)",
+      "Read(//Users/shaheislam/Library/**)",
+      "Read(//Users/shaheislam/.config/**)"
     ],
     "deny": [],
     "ask": []

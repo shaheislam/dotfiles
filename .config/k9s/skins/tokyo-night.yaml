@@ -1,17 +1,18 @@
 # Tokyo Night Theme for K9s
 # Matches the Tokyo Night theme used in Neovim
+# Modified to support terminal transparency
 
 k9s:
   # Body styles
   body:
     fgColor: "#a9b1d6"
-    bgColor: "#1a1b26"
+    bgColor: "default"      # Use terminal's transparent background
     logoColor: "#7aa2f7"
 
   # Prompt styles
   prompt:
     fgColor: "#a9b1d6"
-    bgColor: "#1a1b26"
+    bgColor: "default"      # Use terminal's transparent background
     suggestColor: "#7aa2f7"
 
   # Info styles
@@ -22,7 +23,7 @@ k9s:
   # Help styles
   help:
     fgColor: "#a9b1d6"
-    bgColor: "#1a1b26"
+    bgColor: "default"      # Use terminal's transparent background
     keyColor: "#7aa2f7"
     numKeyColor: "#bb9af7"
     sectionColor: "#9ece6a"
@@ -43,7 +44,7 @@ k9s:
     # Crumbs styles
     crumbs:
       fgColor: "#a9b1d6"
-      bgColor: "#1a1b26"
+      bgColor: "default"      # Use terminal's transparent background
       activeColor: "#7dcfff"
 
     # Status styles
@@ -60,7 +61,7 @@ k9s:
     # Title styles
     title:
       fgColor: "#a9b1d6"
-      bgColor: "#1a1b26"
+      bgColor: "default"      # Use terminal's transparent background
       highlightColor: "#7dcfff"
       counterColor: "#7aa2f7"
       filterColor: "#bb9af7"
@@ -69,9 +70,9 @@ k9s:
   views:
     # Charts styles
     charts:
-      bgColor: "#1a1b26"
-      chartBgColor: "#1a1b26"
-      dialBgColor: "#1a1b26"
+      bgColor: "default"      # Use terminal's transparent background
+      chartBgColor: "default"  # Use terminal's transparent background
+      dialBgColor: "default"   # Use terminal's transparent background
       defaultDialColors:
         - "#7aa2f7"
         - "#bb9af7"
@@ -91,7 +92,7 @@ k9s:
     # Table styles
     table:
       fgColor: "#a9b1d6"
-      bgColor: "#1a1b26"
+      bgColor: "default"      # Use terminal's transparent background
       cursorFgColor: "#1a1b26"
       cursorBgColor: "#7aa2f7"
       markColor: "#e0af68"
@@ -99,13 +100,13 @@ k9s:
       # Header styles
       header:
         fgColor: "#7dcfff"
-        bgColor: "#1a1b26"
+        bgColor: "default"      # Use terminal's transparent background
         sorterColor: "#73daca"
 
     # Xray styles
     xray:
       fgColor: "#a9b1d6"
-      bgColor: "#1a1b26"
+      bgColor: "default"      # Use terminal's transparent background
       cursorColor: "#7aa2f7"
       cursorTextColor: "#1a1b26"
       graphicColor: "#73daca"
@@ -119,19 +120,19 @@ k9s:
     # Logs styles
     logs:
       fgColor: "#a9b1d6"
-      bgColor: "#1a1b26"
+      bgColor: "default"      # Use terminal's transparent background
       indicator:
         fgColor: "#7aa2f7"
-        bgColor: "#1a1b26"
+        bgColor: "default"      # Use terminal's transparent background
         toggleOnColor: "#73daca"
         toggleOffColor: "#565f89"
 
   # Dialog styles
   dialog:
     fgColor: "#a9b1d6"
-    bgColor: "#24283b"
+    bgColor: "#24283b"        # Keep dialog background for visibility
     buttonFgColor: "#a9b1d6"
-    buttonBgColor: "#1a1b26"
+    buttonBgColor: "#414868"   # Slightly lighter for button visibility
     buttonFocusFgColor: "#1a1b26"
     buttonFocusBgColor: "#7aa2f7"
     labelFgColor: "#e0af68"
