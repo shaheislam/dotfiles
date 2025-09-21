@@ -208,13 +208,8 @@ cask "font-hack-nerd-font"
 cask "font-iosevka-nerd-font"
 
 # GUI Applications
-cask "ghostty"
 cask "wezterm"
-cask "visual-studio-code"
-cask "cursor"
-cask "aerospace"
 cask "session-manager-plugin"
-cask "raycast"
 cask "altair-graphql-client"  # GraphQL IDE for testing and development
 cask "willow"  # Voice assistant application - https://willowvoice.com/
 brew "sketchybar"
