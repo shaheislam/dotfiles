@@ -2565,3 +2565,6 @@ end
 
 
 
+
+# K9s kubectl-node-shell plugin
+fish_add_path /Users/shaheislam/dotfiles/scripts

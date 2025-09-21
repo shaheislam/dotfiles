@@ -110,7 +110,16 @@
       "Bash(k9s:*)",
       "Read(//Users/shaheislam/Library/**)",
       "Read(//Users/shaheislam/.config/**)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(helm plugin:*)",
+      "Bash(if [ -f \"$HOME/.config/k9s/plugins.yaml\" ])",
+      "Bash(then)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(sed:*)",
+      "Bash(~/dotfiles/scripts/install-k9s-dependencies.sh)",
+      "Bash(yq eval:*)",
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []

@@ -41,7 +41,7 @@ plugins:
 
   # Show pod metrics
   top-pod:
-    shortCut: t
+    shortCut: Shift-W
     description: Show metrics
     scopes:
       - pods
@@ -76,7 +76,7 @@ plugins:
 
   # Edit resource in Neovim
   edit-nvim:
-    shortCut: e
+    shortCut: Ctrl-O
     description: Edit in Neovim
     scopes:
       - all
@@ -88,7 +88,7 @@ plugins:
 
   # Copy resource YAML to clipboard
   copy-yaml:
-    shortCut: y
+    shortCut: Ctrl-Y
     description: Copy YAML
     scopes:
       - all
@@ -124,7 +124,7 @@ plugins:
 
   # Exec with sh (for alpine/minimal containers)
   exec-sh:
-    shortCut: s
+    shortCut: F5
     description: sh shell
     scopes:
       - pods
@@ -146,7 +146,7 @@ plugins:
 
   # Enhanced shell with Neovim attempt (for containers with package managers)
   exec-nvim:
-    shortCut: Shift-N
+    shortCut: F6
     description: Shell + try to install nvim
     scopes:
       - pods
@@ -250,7 +250,7 @@ plugins:
 
   # Interactive port-forward
   port-forward-custom:
-    shortCut: Shift-F
+    shortCut: Shift-K
     description: Port-forward
     scopes:
       - pods
@@ -335,7 +335,7 @@ plugins:
 
   # Shell into node
   node-shell:
-    shortCut: Shift-N
+    shortCut: Shift-U
     description: Node shell
     scopes:
       - nodes
@@ -480,13 +480,13 @@ plugins:
       - -n
       - $NAMESPACE
       - --type=json
-      - -p='[{"op": "replace", "path": "/spec/renewBefore", "value":"99999h"}]'
+      - "-p=[{\"op\": \"replace\", \"path\": \"/spec/renewBefore\", \"value\":\"99999h\"}]"
 
   # ============== RESOURCE OPTIMIZATION ==============
 
   # Get resource recommendations
   resource-recommend:
-    shortCut: Shift-O
+    shortCut: Shift-Q
     description: Resource recommendations
     scopes:
       - pods
@@ -519,7 +519,7 @@ plugins:
       - -n
       - $NAMESPACE
       - --type=json
-      - -p='[{"op": "remove", "path": "/metadata/finalizers"}]'
+      - "-p=[{\"op\": \"remove\", \"path\": \"/metadata/finalizers\"}]"
 
   # Debug PVC by mounting into temp container
   pvc-debug:
@@ -651,7 +651,7 @@ plugins:
 
   # Launch netshoot container for network debugging
   netshoot:
-    shortCut: Ctrl-S
+    shortCut: Ctrl-G
     description: Network debug container
     scopes:
       - nodes
@@ -727,7 +727,7 @@ plugins:
 
   # Check Istio proxy config
   istio-proxy-config:
-    shortCut: Ctrl-I
+    shortCut: Ctrl-U
     description: Istio proxy config
     scopes:
       - pods
