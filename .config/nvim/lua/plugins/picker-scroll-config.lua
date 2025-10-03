@@ -84,13 +84,9 @@ return {
     "nvim-mini/mini.animate",
     event = "VeryLazy",
     opts = function()
-      local animate = require("mini.animate")
       return {
         cursor = { enable = false }, -- Disable cursor animation
-        scroll = {
-          -- Enable smooth scrolling with custom timing
-          timing = animate.gen_timing.linear({ duration = 100, unit = "total" }),
-        },
+        scroll = { enable = false }, -- Disable scroll animation to fix lag
         resize = { enable = false }, -- Disable window resize animation
         open = { enable = false },   -- Disable window open animation
         close = { enable = false },  -- Disable window close animation
