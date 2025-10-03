@@ -184,8 +184,9 @@ if status is-interactive
     
     # Command execution time tracking and notifications
     function __fish_command_timer_preexec --on-event fish_preexec
-        # Store command start time
+        # Store command start time (both timestamp and formatted)
         set -g __fish_command_start_time (date +%s)
+        set -g __fish_command_start_formatted (date '+%Y-%m-%d %H:%M:%S')
         set -g __fish_current_command "$argv"
     end
     
@@ -199,10 +200,13 @@ if status is-interactive
             if test $duration -gt 30
                 # Commands longer than 30 seconds - urgent notification
                 echo -e "\a" # Terminal bell
+                set -l finish_time (date '+%Y-%m-%d %H:%M:%S')
                 set_color red --bold
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 echo "⏰ Long command completed! ($(math $duration / 60)m $(math $duration % 60)s)"
                 echo "📝 Command: $__fish_current_command"
+                echo "🕐 Started:  $__fish_command_start_formatted"
+                echo "🕑 Finished: $finish_time"
                 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
                 set_color normal
                 
@@ -227,6 +231,7 @@ if status is-interactive
             
             # Cleanup
             set -e __fish_command_start_time
+            set -e __fish_command_start_formatted
             set -e __fish_current_command
         end
     end
