@@ -3,6 +3,10 @@
 -- Set Snacks as the default picker for LazyVim
 vim.g.lazyvim_picker = "snacks"
 
+-- Line numbers: both absolute and relative displayed side by side
+vim.opt.number = true
+vim.opt.relativenumber = true
+vim.opt.statuscolumn = "%s %{v:lnum} %{v:relnum}"
+
 -- Additional vim options can go here
--- vim.opt.relativenumber = true
 -- vim.opt.wrap = false
