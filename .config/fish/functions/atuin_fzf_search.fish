@@ -18,12 +18,13 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --no-sort \
         --height=80% \
         --query="$cmd_buffer" \
-        --header="Mode: $current_mode | C-d: dir | C-g: global | C-s: session | Enter: execute | →: populate" \
+        --header="Mode: $current_mode | C-d: dir | C-g: global | C-s: session | C-x: delete | Enter: execute | →: populate" \
         --expect="right" \
-        --bind="ctrl-d:reload($atuin_cmd --cwd '$current_dir' 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session | Enter: execute | →: populate)" \
-        --bind="ctrl-g:reload($atuin_cmd --filter-mode global 2>/dev/null)+change-header(Mode: global | C-d: dir | C-g: global | C-s: session | Enter: execute | →: populate)" \
-        --bind="ctrl-s:reload($atuin_cmd --filter-mode session 2>/dev/null)+change-header(Mode: session | C-d: dir | C-g: global | C-s: session | Enter: execute | →: populate)" \
-        --bind="ctrl-r:reload($atuin_cmd --cwd '$current_dir' 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session | Enter: execute | →: populate)" \
+        --bind="ctrl-x:execute-silent(atuin search --delete --cwd '$current_dir' {})+reload($atuin_cmd --cwd '$current_dir' 2>/dev/null)" \
+        --bind="ctrl-d:reload($atuin_cmd --cwd '$current_dir' 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session | C-x: delete | Enter: execute | →: populate)" \
+        --bind="ctrl-g:reload($atuin_cmd --filter-mode global 2>/dev/null)+change-header(Mode: global | C-d: dir | C-g: global | C-s: session | C-x: delete | Enter: execute | →: populate)" \
+        --bind="ctrl-s:reload($atuin_cmd --filter-mode session 2>/dev/null)+change-header(Mode: session | C-d: dir | C-g: global | C-s: session | C-x: delete | Enter: execute | →: populate)" \
+        --bind="ctrl-r:reload($atuin_cmd --cwd '$current_dir' 2>/dev/null)+change-header(Mode: directory | C-d: dir | C-g: global | C-s: session | C-x: delete | Enter: execute | →: populate)" \
         > $tmpfile
 
     set -l fzf_exit_status $status

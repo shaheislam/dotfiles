@@ -122,7 +122,10 @@
       "Bash(/dev/null)",
       "Bash(stern:*)",
       "Bash(splash:*)",
-      "Bash(/Users/shaheislam/dotfiles/.config/k9s/scripts/test-stern-splash.sh context namespace pod)"
+      "Bash(/Users/shaheislam/dotfiles/.config/k9s/scripts/test-stern-splash.sh context namespace pod)",
+      "Bash(atuin history delete:*)",
+      "Bash(atuin history:*)",
+      "Bash(atuin:*)"
     ],
     "deny": [],
     "ask": []
