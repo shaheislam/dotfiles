@@ -10,11 +10,12 @@
 - **ALWAYS** test setup script changes for compatibility with fresh macOS installations
 - **ALWAYS** ensure PATH configurations are added to both Fish and Zsh configs in setup script
 
-### 2. File Location Constraints  
+### 2. File Location Constraints
 - **NEVER** create or modify files outside of `~/dotfiles` directory
 - **ALWAYS** keep all configurations within the dotfiles repository structure
 - **ALWAYS** use relative paths within the dotfiles directory structure
 - **ALWAYS** ensure all tools and configs can be installed via stow or setup script
+- **CRITICAL**: The tmux configuration must ONLY exist at `~/dotfiles/.tmux.conf` - NEVER create tmux.conf in `.config/tmux/` or any other location to avoid conflicts
 
 ## Dotfiles Project Memory Bank
 
