@@ -332,7 +332,7 @@ return {
       },
       message = {
         enabled = true,
-        view = "mini", -- Use mini view for LSP messages
+        view = "cmdline", -- Use cmdline for inline LSP messages
       },
     },
     -- Notification configuration
@@ -348,9 +348,9 @@ return {
     -- Message configuration
     messages = {
       enabled = true,
-      view = "mini",  -- Use mini view for regular messages (less intrusive)
-      view_error = "notify",  -- Use notify for errors (more visible but not a split)
-      view_warn = "notify",  -- Use notify for warnings
+      view = "cmdline",  -- Use cmdline for inline messages at the bottom
+      view_error = "cmdline",  -- Use cmdline for errors (inline)
+      view_warn = "cmdline",  -- Use cmdline for warnings (inline)
       view_history = "split",  -- Keep split buffer for history when explicitly requested
       view_search = "virtualtext",
     },
@@ -364,22 +364,22 @@ return {
     },
     -- Routes to handle specific message types
     routes = {
-      -- Don't auto-show messages in split buffer, use mini view instead
+      -- Show messages in cmdline for inline display
       {
         filter = {
           event = "msg_show",
         },
-        view = "mini",  -- Changed from "split" to "mini" for less intrusive display
+        view = "cmdline",  -- Use cmdline for inline display at bottom
       },
-      -- Route important error messages to notify
+      -- Route important error messages to cmdline (inline)
       {
         filter = {
           event = "msg_show",
           kind = { "error", "Error" },
         },
-        view = "notify",
+        view = "cmdline",
       },
-      -- Route git messages to mini view (changed from split)
+      -- Route git messages to cmdline (inline)
       {
         filter = {
           event = "msg_show",
@@ -395,15 +395,15 @@ return {
             { find = "git add" },
           },
         },
-        view = "mini",  -- Changed from "split" to "mini"
+        view = "cmdline",  -- Use cmdline for inline display
       },
-      -- Route LSP progress to mini (less intrusive)
+      -- Route LSP progress to cmdline (inline)
       {
         filter = {
           event = "lsp",
           kind = "progress",
         },
-        view = "mini",
+        view = "cmdline",
       },
       -- Hide common messages that aren't important
       {
