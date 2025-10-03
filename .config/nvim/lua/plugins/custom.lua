@@ -145,7 +145,6 @@ return {
             "node_modules",
             "^.git/",  -- Only ignore .git directory itself, not .github or .gitignore
             "dist",
-            "build",
             "%.lock",
             "package%-lock%.json",
             "yarn%.lock",
