@@ -152,7 +152,10 @@
       "Bash(venv/bin/python3:*)",
       "Bash(venv/bin/pip:*)",
       "Bash(pkill:*)",
-      "Bash(timeout 30 venv/bin/python:*)"
+      "Bash(timeout 30 venv/bin/python:*)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh api:*)"
     ],
     "deny": [],
     "ask": []
