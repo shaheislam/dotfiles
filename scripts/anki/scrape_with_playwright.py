@@ -201,16 +201,17 @@ async def extract_questions_from_page(page, page_num):
 
     return questions_data['questions']
 
-async def scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock):
+async def scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock, show_progress=True):
     """Scrape a single page with semaphore control for concurrent execution"""
     async with semaphore:
         url = f"{base_url}?page={page_num}"
         page = None
 
         try:
-            # Thread-safe progress printing
-            async with progress_lock:
-                print(f"📄 Page {page_num}/{total_pages}...", end=" ", flush=True)
+            if show_progress:
+                # Thread-safe progress printing
+                async with progress_lock:
+                    print(f"📄 Page {page_num}/{total_pages}...", end=" ", flush=True)
 
             # Create a new page for this task to avoid conflicts
             page = await context.new_page()
@@ -219,17 +220,19 @@ async def scrape_single_page(context, page_num, total_pages, base_url, semaphore
             await page.goto(url, wait_until='domcontentloaded', timeout=15000)
             questions = await extract_questions_from_page(page, page_num)
 
-            async with progress_lock:
-                if questions:
-                    print(f"✓ Found {len(questions)} questions")
-                else:
-                    print(f"⚠️  No questions found")
+            if show_progress:
+                async with progress_lock:
+                    if questions:
+                        print(f"✓ Found {len(questions)} questions")
+                    else:
+                        print(f"⚠️  No questions found")
 
             return (page_num, questions if questions else [])
 
         except Exception as e:
-            async with progress_lock:
-                print(f"❌ Error: {e}")
+            if show_progress:
+                async with progress_lock:
+                    print(f"❌ Error: {e}")
             return (page_num, e)
 
         finally:
@@ -237,31 +240,34 @@ async def scrape_single_page(context, page_num, total_pages, base_url, semaphore
             if page:
                 await page.close()
 
-async def scrape_single_page_with_retry(context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3):
+async def scrape_single_page_with_retry(context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3, show_progress=False):
     """Retry wrapper for scrape_single_page with exponential backoff
 
     Returns: (page_num, questions_or_error, retry_count)
     """
     for attempt in range(max_retries):
-        result = await scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock)
+        result = await scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock, show_progress)
 
         # Check if result is an error (tuple with Exception)
         if isinstance(result[1], Exception):
             if attempt < max_retries - 1:
                 # Exponential backoff: 1s, 2s, 4s
                 wait_time = 2 ** attempt
-                async with progress_lock:
-                    print(f"  ⟳ Retry {attempt + 1}/{max_retries - 1} after {wait_time}s...")
+                # Don't show retry messages when using progress bar
+                if show_progress:
+                    async with progress_lock:
+                        print(f"  ⟳ Retry {attempt + 1}/{max_retries - 1} after {wait_time}s...")
                 await asyncio.sleep(wait_time)
                 continue
             else:
                 # All retries exhausted
-                async with progress_lock:
-                    print(f"  ✗ Failed after {max_retries} attempts")
+                if show_progress:
+                    async with progress_lock:
+                        print(f"  ✗ Failed after {max_retries} attempts")
                 return (result[0], result[1], attempt + 1)
         else:
             # Success on this attempt
-            if attempt > 0:
+            if attempt > 0 and show_progress:
                 async with progress_lock:
                     print(f"  ✓ Succeeded on retry {attempt}")
             return (result[0], result[1], attempt + 1)
@@ -270,17 +276,50 @@ async def scrape_single_page_with_retry(context, page_num, total_pages, base_url
 
 async def scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5):
     """Orchestrate parallel page scraping with semaphore-based concurrency control"""
+    import time
+
     semaphore = asyncio.Semaphore(max_concurrent)
     progress_lock = asyncio.Lock()
 
-    # Create tasks for all pages (starting from page 2) with retry logic
+    # Progress tracking
+    start_time = time.time()
+    completed_pages = {'count': 1}  # Start at 1 (page 1 already scraped)
+
+    async def track_progress_wrapper(page_num):
+        """Wrapper to track progress after each page completes"""
+        result = await scrape_single_page_with_retry(
+            context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3, show_progress=False
+        )
+
+        # Update progress after completion
+        async with progress_lock:
+            completed_pages['count'] += 1
+            elapsed = time.time() - start_time
+            progress_pct = (completed_pages['count'] / total_pages) * 100
+            speed = completed_pages['count'] / elapsed if elapsed > 0 else 0
+            remaining = total_pages - completed_pages['count']
+            eta = remaining / speed if speed > 0 else 0
+
+            print(f"\r📊 Progress: {progress_pct:.1f}% ({completed_pages['count']}/{total_pages}) | "
+                  f"Speed: {speed:.1f} pg/s | ETA: {int(eta)}s", end="", flush=True)
+
+        return result
+
+    # Create tasks for all pages (starting from page 2) with progress tracking
     tasks = [
-        scrape_single_page_with_retry(context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3)
+        track_progress_wrapper(page_num)
         for page_num in range(2, total_pages + 1)
     ]
 
     # Execute all tasks concurrently
+    print()  # New line for progress bar
     results = await asyncio.gather(*tasks, return_exceptions=False)
+    print()  # New line after progress completes
+
+    # Calculate final statistics
+    total_time = time.time() - start_time
+    avg_speed = total_pages / total_time if total_time > 0 else 0
+    print(f"\n⏱️  Scraping completed in {total_time:.1f}s (avg {avg_speed:.1f} pages/sec)")
 
     # Sort results by page number and collect statistics
     all_questions = []
