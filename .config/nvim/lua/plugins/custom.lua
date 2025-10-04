@@ -346,4 +346,27 @@ return {
   --     { "<leader>ai", mode = { "n", "v" }, desc = "Kai AI Assistant (Claude)" }
   --   },
   -- },
+
+  -- Window resize mode for easier split resizing
+  {
+    "Dimfred/resize-mode.nvim",
+    keys = {
+      { "<leader>wr", function() require("resize-mode").start() end, desc = "Resize Mode" },
+    },
+    opts = {
+      horizontal_amount = 3,  -- resize amount for h/l
+      vertical_amount = 2,    -- resize amount for j/k
+      quit_key = "<ESC>",
+      enable_mapping = true,
+      resize_keys = {
+        "h", "j", "k", "l",   -- increase left/down/up/right
+        "H", "J", "K", "L",   -- decrease left/down/up/right
+      },
+      hooks = {
+        on_enter = function()
+          vim.notify("Resize Mode", vim.log.levels.INFO)
+        end,
+      },
+    },
+  },
 }
