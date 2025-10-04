@@ -1,21 +1,45 @@
 #!/usr/bin/env python3
 """
-KCNA Question Scraper using Playwright Library
+Examice Question Scraper using Playwright Library
 Connects to existing Chrome browser to maintain authentication
+Works with any Examice exam (KCNA, AZ-104, etc.)
 """
 
 import asyncio
 import json
 import re
+import sys
 from pathlib import Path
+from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 
 async def extract_questions_from_page(page, page_num):
     """Extract all questions from a single page using DOM queries"""
     questions = []
 
-    # Wait for questions to load
-    await page.wait_for_selector('article', timeout=30000)
+    # Wait for questions to load with better timing
+    # Page 1 has 6 articles (1 header + 5 questions), pages 2+ have 5 articles
+    expected_articles = 6 if page_num == 1 else 5
+
+    try:
+        # Wait for first article to appear
+        await page.wait_for_selector('article', timeout=30000)
+
+        # Give extra time for all articles to load (increased from 1s to 3s)
+        await asyncio.sleep(3)
+
+        # Check article count
+        article_count = await page.evaluate("document.querySelectorAll('article').length")
+
+        # If we don't have enough articles, wait a bit more
+        if article_count < expected_articles:
+            print(f"⏳ Waiting for articles to load... (found {article_count}/{expected_articles})", end=" ")
+            await asyncio.sleep(2)
+            article_count = await page.evaluate("document.querySelectorAll('article').length")
+            print(f"→ {article_count}")
+
+    except Exception as e:
+        print(f"⚠️ Wait error: {e}")
 
     # Execute JavaScript to extract questions directly from DOM
     # Structure: article → DIV (parent) → SECTION (grandparent)
@@ -23,33 +47,53 @@ async def extract_questions_from_page(page, page_num):
     questions_data = await page.evaluate("""
         (pageNum) => {
             const questions = [];
+            const debug = [];
 
-            // Only page 1 has a header article; pages 2-28 don't
+            // Only page 1 has a header article; pages 2+ don't
             const allArticles = Array.from(document.querySelectorAll('article'));
-            const questionArticles = pageNum === 1 ? allArticles.slice(1) : allArticles;
+            debug.push(`Total articles found: ${allArticles.length}`);
 
-            questionArticles.forEach(article => {
+            const questionArticles = pageNum === 1 ? allArticles.slice(1) : allArticles;
+            debug.push(`Question articles to process: ${questionArticles.length}`);
+
+            questionArticles.forEach((article, idx) => {
                 try {
                     // Get question text
                     const questionPara = article.querySelector('p');
-                    if (!questionPara) return;
+                    if (!questionPara) {
+                        debug.push(`Article ${idx}: No question paragraph found`);
+                        return;
+                    }
                     const questionText = questionPara.textContent.trim();
 
                     // Get parent DIV and grandparent SECTION
                     const parent = article.parentElement;
-                    if (!parent) return;
+                    if (!parent) {
+                        debug.push(`Article ${idx}: No parent found`);
+                        return;
+                    }
                     const section = parent.parentElement;
-                    if (!section) return;
+                    if (!section) {
+                        debug.push(`Article ${idx}: No section found`);
+                        return;
+                    }
 
-                    // Get question number from section text
+                    // Get question number and total from section text
                     const sectionText = section.textContent;
-                    const numMatch = sectionText.match(/Question (\\d+) of 138/);
-                    if (!numMatch) return;
+                    const numMatch = sectionText.match(/Question (\\d+) of (\\d+)/);
+                    if (!numMatch) {
+                        debug.push(`Article ${idx}: No question number found in section text`);
+                        return;
+                    }
                     const questionNum = parseInt(numMatch[1]);
+                    const totalQuestions = parseInt(numMatch[2]);
 
                     // Get FIELDSET sibling with options
                     const fieldset = parent.nextElementSibling;
-                    if (!fieldset) return;
+                    if (!fieldset) {
+                        debug.push(`Article ${idx}: No fieldset found`);
+                        return;
+                    }
 
                     // Extract options from checkboxes in fieldset
                     const checkboxes = fieldset.querySelectorAll('[role="checkbox"]');
@@ -62,11 +106,18 @@ async def extract_questions_from_page(page, page_num):
                         }
                     });
 
-                    if (options.length !== 4) return;
+                    // Accept questions with 4 or 5 options (different exams have different formats)
+                    if (options.length < 4 || options.length > 5) {
+                        debug.push(`Article ${idx}: Found ${options.length} options (expected 4-5)`);
+                        return;
+                    }
 
-                    // Extract answer
-                    const answerMatch = sectionText.match(/Correct Answer:\\s*([A-D])/);
-                    if (!answerMatch) return;
+                    // Extract answer (A-E for 5 options, A-D for 4 options)
+                    const answerMatch = sectionText.match(/Correct Answer:\\s*([A-E])/);
+                    if (!answerMatch) {
+                        debug.push(`Article ${idx}: No answer found`);
+                        return;
+                    }
                     const answer = answerMatch[1];
 
                     // Extract explanation from section paragraphs
@@ -93,28 +144,49 @@ async def extract_questions_from_page(page, page_num):
 
                     questions.push({
                         number: questionNum,
+                        total: totalQuestions,
                         question: questionText,
                         options: options,
                         answer: answer,
                         explanation: explanation
                     });
 
+                    debug.push(`Article ${idx}: ✓ Extracted question ${questionNum}`);
+
                 } catch (err) {
-                    console.error('Error extracting question:', err);
+                    debug.push(`Article ${idx}: Error - ${err.message}`);
                 }
             });
 
-            return questions;
+            return { questions, debug };
         }
     """, page_num)
 
-    return questions_data
+    # Show debug info if we found fewer questions than expected
+    if len(questions_data['questions']) < (5 if page_num > 1 else 5):
+        print(f"\n  Debug: {' | '.join(questions_data['debug'])}")
 
-async def scrape_all_pages(browser_url="http://localhost:9222"):
+    return questions_data['questions']
+
+def parse_exam_info(url):
+    """Extract exam information from URL"""
+    # Parse URL: https://examice.com/exams/provider/exam-name/
+    match = re.search(r'/exams/([^/]+)/([^/?]+)', url)
+    if match:
+        provider = match.group(1)
+        exam_code = match.group(2)
+        return {
+            'provider': provider,
+            'exam_code': exam_code,
+            'name': f"{provider}-{exam_code}".replace('/', '-')
+        }
+    return {'provider': 'unknown', 'exam_code': 'exam', 'name': 'exam'}
+
+async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
     """Connect to existing browser and scrape all pages"""
 
     print("=" * 70)
-    print("KCNA Question Scraper - Playwright Direct")
+    print("Examice Question Scraper - Playwright Direct")
     print("=" * 70)
     print()
     print(f"Connecting to Chrome at {browser_url}...")
@@ -140,54 +212,89 @@ async def scrape_all_pages(browser_url="http://localhost:9222"):
 
             page = pages[0]
 
+            # Get exam URL from browser if not provided
+            current_url = page.url
+            if not exam_url:
+                exam_url = current_url
+
+            # Parse exam info from URL
+            exam_info = parse_exam_info(exam_url)
+
+            # Extract base URL (without query parameters)
+            base_url = exam_url.split('?')[0]
+
             print(f"✓ Connected to browser")
-            print(f"  Current URL: {page.url}")
+            print(f"  Current URL: {current_url}")
+            print(f"  Exam: {exam_info['provider'].upper()} - {exam_info['exam_code'].upper()}")
             print()
 
             all_questions = []
-            base_url = "https://examice.com/exams/linux-foundation/kcna/"
+            total_questions = None
+            total_pages = None
 
-            # Scrape all 28 pages
-            for page_num in range(1, 29):
-                url = f"{base_url}?page={page_num}" if page_num > 1 else base_url
+            # First, get total questions from page 1
+            await page.goto(base_url, wait_until='networkidle', timeout=30000)
 
-                print(f"📄 Scraping page {page_num}/28...")
+            # Get total from first page
+            first_page_questions = await extract_questions_from_page(page, 1)
+            if first_page_questions:
+                total_questions = first_page_questions[0]['total']
+                # Estimate total pages (assuming ~5 questions per page)
+                total_pages = (total_questions + 4) // 5
+                print(f"📊 Detected {total_questions} total questions across ~{total_pages} pages")
+                print()
+                all_questions.extend(first_page_questions)
+                print(f"📄 Page 1/{total_pages}... ✓ Found {len(first_page_questions)} questions")
+
+            if not total_pages:
+                print("❌ Could not detect total questions. Please ensure you're on a valid exam page.")
+                return
+
+            # Scrape remaining pages
+            for page_num in range(2, total_pages + 1):
+                url = f"{base_url}?page={page_num}"
+
+                print(f"📄 Page {page_num}/{total_pages}...", end=" ")
 
                 try:
-                    await page.goto(url, wait_until='load', timeout=15000)
-                    await asyncio.sleep(1)  # Give page time to fully render
+                    await page.goto(url, wait_until='networkidle', timeout=30000)
 
                     questions = await extract_questions_from_page(page, page_num)
 
                     if questions:
                         all_questions.extend(questions)
-                        print(f"   ✓ Found {len(questions)} questions")
+                        print(f"✓ Found {len(questions)} questions")
                     else:
-                        print(f"   ⚠️  No questions found on page {page_num}")
+                        print(f"⚠️  No questions found")
 
                 except Exception as e:
-                    print(f"   ❌ Error on page {page_num}: {e}")
+                    print(f"❌ Error: {e}")
                     continue
 
             # Save all questions
             output_dir = Path(__file__).parent / "output"
             output_dir.mkdir(exist_ok=True)
 
-            # Save as JSON
-            json_file = output_dir / "kcna_complete.json"
+            # Dynamic filenames based on exam
+            exam_name = exam_info['name']
+            json_file = output_dir / f"{exam_name}_complete.json"
+            anki_file = output_dir / f"{exam_name}_complete.txt"
+
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(all_questions, f, indent=2, ensure_ascii=False)
 
             print()
             print("=" * 70)
             print(f"✅ Scraping complete!")
-            print(f"✅ Total questions collected: {len(all_questions)}")
+            print(f"✅ Total questions collected: {len(all_questions)}/{total_questions}")
             print(f"✅ Saved to: {json_file}")
             print()
 
             # Generate Anki deck
             print("📝 Generating Anki deck...")
-            anki_file = output_dir / "kcna_complete.txt"
+
+            # Generate tags based on exam info
+            tags = f"examice {exam_info['provider']} {exam_info['exam_code']}".lower()
 
             with open(anki_file, 'w', encoding='utf-8', newline='') as f:
                 import csv
@@ -196,6 +303,7 @@ async def scrape_all_pages(browser_url="http://localhost:9222"):
                 for q in sorted(all_questions, key=lambda x: x['number']):
                     # Front of card
                     front = f"<b>Question {q['number']}:</b><br><br>{q['question']}<br><br>"
+                    # Handle both 4 and 5 option questions
                     for i, opt in enumerate(q['options']):
                         front += f"{chr(65+i)}. {opt}<br>"
 
@@ -204,12 +312,10 @@ async def scrape_all_pages(browser_url="http://localhost:9222"):
                     if q['explanation']:
                         back += f"<i>{q['explanation']}</i>"
 
-                    # Tags
-                    tags = "kcna kubernetes cloud-native linux-foundation"
-
                     writer.writerow([front, back, tags])
 
             print(f"✅ Anki deck saved to: {anki_file}")
+            print(f"✅ Tags: {tags}")
             print()
             print("=" * 70)
             print("🎉 All done! Import the Anki deck:")
@@ -232,31 +338,39 @@ async def scrape_all_pages(browser_url="http://localhost:9222"):
 if __name__ == "__main__":
     print("""
 ╔════════════════════════════════════════════════════════════════════╗
-║                  KCNA Exam Question Scraper                        ║
-║                     Using Playwright Library                       ║
+║              Examice Exam Question Scraper                         ║
+║                Using Playwright Library                            ║
 ╚════════════════════════════════════════════════════════════════════╝
 
 PREREQUISITES:
 --------------
 1. Start Chrome with remote debugging enabled:
 
-   /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \\
-     --remote-debugging-port=9222 \\
-     --user-data-dir=/tmp/chrome-debug
+   ./start_chrome_debug.sh <exam-url>
 
-2. Navigate to: https://examice.com/exams/linux-foundation/kcna/
-   (Make sure you're logged in)
+   Example:
+   ./start_chrome_debug.sh https://examice.com/exams/linux-foundation/kcna/
+   ./start_chrome_debug.sh https://examice.com/exams/microsoft/az-104/
 
-3. Run this script
+2. Make sure you're logged in and can see the questions
 
-The script will automatically navigate all 28 pages and collect all 138
-questions, then generate a ready-to-import Anki deck.
+3. Run this script with optional exam URL:
+
+   python scrape_with_playwright.py [exam-url]
+
+   If no URL provided, will use the current browser page.
 
 Press Ctrl+C to cancel...
 """)
 
+    # Get exam URL from command line or use None to detect from browser
+    exam_url = sys.argv[1] if len(sys.argv) > 1 else None
+
+    if exam_url:
+        print(f"📍 Using provided exam URL: {exam_url}\n")
+
     try:
-        asyncio.run(scrape_all_pages())
+        asyncio.run(scrape_all_pages(exam_url=exam_url))
     except KeyboardInterrupt:
         print("\n\n⚠️  Cancelled by user")
     except Exception as e:

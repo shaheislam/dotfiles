@@ -1,23 +1,32 @@
-# KCNA Exam Anki Flashcard Generator
+# Examice Anki Flashcard Generator
 
-Automated scraper for converting KCNA (Kubernetes and Cloud Native Associate) exam questions from Examice.com into Anki flashcards.
+Automated scraper for converting **any** Examice exam questions into Anki flashcards using Playwright.
 
 ## Overview
 
-This tool uses Playwright to connect to an existing authenticated Chrome browser session and scrapes all 138 KCNA exam questions from https://examice.com/exams/linux-foundation/kcna/, converting them into ready-to-import Anki flashcards.
+This tool connects to an existing authenticated Chrome browser session and scrapes exam questions from Examice.com, converting them into ready-to-import Anki flashcards.
+
+**Works with ANY Examice exam:**
+- ☁️ Cloud certifications (AWS, Azure, GCP)
+- 🐧 Linux Foundation exams (KCNA, CKA, CKAD, etc.)
+- 🔐 Security certifications (CompTIA, etc.)
+- 📊 IT certifications (Microsoft, Cisco, etc.)
+- 🎯 Any other exam on Examice.com
 
 **Features:**
-- Maintains authentication by connecting to existing Chrome session
-- Scrapes all 28 pages automatically (138 questions total)
-- Extracts question text, all 4 options, correct answer, and explanations
-- Generates both JSON and Anki-compatible tab-separated format
-- Handles page structure variations correctly
+- ✅ **Flexible**: Works with any Examice exam URL
+- 🔐 **Authenticated**: Maintains your login session
+- 🚀 **Automatic**: Scrapes all pages with question count detection
+- 📊 **Complete**: Extracts question, all options (4 or 5), answer, and explanation
+- 🏷️ **Smart tagging**: Auto-generates tags based on exam (provider + exam code)
+- 📁 **Organized**: Dynamic filenames based on exam (e.g., `microsoft-az-104_complete.txt`)
+- 🎯 **Adaptive**: Handles different question formats (4-option and 5-option questions)
 
 ## Prerequisites
 
 1. **Python 3.13+** with pip
 2. **Google Chrome** browser
-3. **Active Examice account** with access to KCNA exam questions
+3. **Active Examice account** with access to exam questions
 
 ## Setup
 
@@ -40,174 +49,267 @@ playwright install chromium
 ### 2. Authenticate to Examice
 
 1. Open Chrome and log into https://examice.com
-2. Navigate to the KCNA exam: https://examice.com/exams/linux-foundation/kcna/
-3. Verify you can see the questions (authentication required)
+2. Navigate to any exam you want to scrape
+3. Verify you can see the questions (requires active subscription)
 
 ## Usage
 
-### Quick Start
+### Quick Start (Auto-detect from Browser)
 
 ```bash
-# 1. Start Chrome with remote debugging
-./start_chrome_debug.sh
+# 1. Start Chrome with your exam URL
+./start_chrome_debug.sh https://examice.com/exams/microsoft/az-104/
 
-# 2. Ensure you're logged into Examice in the Chrome window
+# 2. Ensure you're logged in (Chrome will open to exam page)
 
-# 3. Run the scraper
-source venv/bin/activate
+# 3. Run the scraper (auto-detects exam from browser)
 python scrape_with_playwright.py
 ```
 
-### Detailed Steps
-
-#### Step 1: Start Chrome with Remote Debugging
-
-The scraper needs to connect to Chrome via the Chrome DevTools Protocol:
+### Specify Exam URL Explicitly
 
 ```bash
+# Start Chrome (optionally with URL)
 ./start_chrome_debug.sh
+
+# Run scraper with specific exam URL
+python scrape_with_playwright.py https://examice.com/exams/linux-foundation/kcna/
 ```
 
-This script will:
-- Kill any existing debug Chrome sessions
-- Start Chrome with remote debugging on port 9222
-- Open the KCNA exam URL automatically
+## Examples
+
+### KCNA (Kubernetes and Cloud Native Associate)
+```bash
+./start_chrome_debug.sh https://examice.com/exams/linux-foundation/kcna/
+python scrape_with_playwright.py
+```
+Output: `output/linux-foundation-kcna_complete.txt`
+
+### Microsoft AZ-104
+```bash
+./start_chrome_debug.sh https://examice.com/exams/microsoft/az-104/
+python scrape_with_playwright.py
+```
+Output: `output/microsoft-az-104_complete.txt`
+
+### AWS SAA-C03
+```bash
+./start_chrome_debug.sh https://examice.com/exams/aws/saa-c03/
+python scrape_with_playwright.py
+```
+Output: `output/aws-saa-c03_complete.txt`
+
+## How It Works
+
+### Step-by-Step Process
+
+#### 1. Start Chrome with Remote Debugging
+
+```bash
+./start_chrome_debug.sh [exam-url]
+```
+
+This script:
+- Kills any existing debug Chrome sessions
+- Starts Chrome with remote debugging on port 9222
+- Opens the specified exam URL (or KCNA by default)
 
 **Manual alternative:**
 ```bash
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 \
   --user-data-dir=/tmp/chrome-debug \
-  --no-first-run \
-  --no-default-browser-check \
-  "https://examice.com/exams/linux-foundation/kcna/"
+  "https://examice.com/exams/your-exam-here/"
 ```
 
-#### Step 2: Run the Scraper
+#### 2. Run the Scraper
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Run the scraper
-python scrape_with_playwright.py
+python scrape_with_playwright.py [exam-url]
 ```
 
 The scraper will:
-1. Connect to the Chrome debugging port
-2. Navigate through all 28 pages
-3. Extract all 138 questions with options, answers, and explanations
-4. Save results to `output/` directory
+1. Connect to Chrome via CDP (Chrome DevTools Protocol)
+2. Auto-detect or use provided exam URL
+3. Extract total question count from first page
+4. Calculate total pages needed (~5 questions per page)
+5. Navigate through all pages automatically
+6. Extract questions, options, answers, and explanations
+7. Generate exam-specific output files
 
-#### Step 3: Import to Anki
+#### 3. Import to Anki
 
 1. Open Anki
 2. File → Import
-3. Select: `output/kcna_complete.txt`
+3. Select: `output/[exam-name]_complete.txt`
 4. Set field separator to **Tab**
 5. Click Import
 
 ## Output Files
 
-### `output/kcna_complete.json`
-Complete structured data with all questions:
+### `output/[exam-name]_complete.json`
+Structured data with all questions:
 ```json
 {
   "number": 1,
+  "total": 138,
   "question": "What native runtime is Open Container Initiative (OCI) compliant?",
   "options": ["runC", "runV", "kata-containers", "gvisor"],
   "answer": "A",
-  "explanation": "runC is the native runtime that is Open Container Initiative compliant..."
+  "explanation": "runC is the native runtime that is..."
 }
 ```
 
-### `output/kcna_complete.txt`
-Anki-ready flashcards in tab-separated format:
-- **Front**: Question number, question text, and all 4 options (A-D)
+### `output/[exam-name]_complete.txt`
+Anki-ready flashcards (tab-separated):
+- **Front**: Question number, text, and all options (4 or 5 depending on exam)
 - **Back**: Correct answer with explanation
-- **Tags**: `kcna kubernetes cloud-native linux-foundation`
+- **Tags**: Auto-generated from URL (e.g., `examice microsoft az-104`)
+
+**Note**: Different exams have different question formats:
+- **KCNA**: 4 options per question (A-D)
+- **LFCS**: 5 options per question (A-E)
+- The scraper automatically adapts to both formats
+
+### Filename Examples
+| Exam URL | Output Filename |
+|----------|----------------|
+| `.../exams/linux-foundation/kcna/` | `linux-foundation-kcna_complete.txt` |
+| `.../exams/microsoft/az-104/` | `microsoft-az-104_complete.txt` |
+| `.../exams/aws/saa-c03/` | `aws-saa-c03_complete.txt` |
+| `.../exams/comptia/security-plus/` | `comptia-security-plus_complete.txt` |
 
 ## Architecture
 
-### How It Works
+### Exam Detection
+```python
+# Automatically parses exam info from URL pattern:
+# https://examice.com/exams/{provider}/{exam-code}/
 
-1. **Chrome Connection**: Uses Playwright's CDP (Chrome DevTools Protocol) to connect to existing browser
-2. **Page Navigation**: Loops through all 28 pages systematically
-3. **DOM Extraction**: JavaScript evaluation extracts questions from DOM structure
-4. **Data Processing**: Parses question number, text, options, answer, and explanation
-5. **Output Generation**: Creates both JSON (structured data) and TXT (Anki format)
+# Examples:
+# Provider: linux-foundation, Exam: kcna
+# Provider: microsoft, Exam: az-104
+# Provider: aws, Exam: saa-c03
+```
+
+### Question Count Detection
+```javascript
+// Extracts total from page: "Question 1 of 138"
+const numMatch = sectionText.match(/Question (\d+) of (\d+)/);
+const questionNum = parseInt(numMatch[1]);
+const totalQuestions = parseInt(numMatch[2]);
+```
 
 ### DOM Structure
-
-Questions follow this HTML structure:
 ```
 article (question container)
   └─ DIV (parent)
-      └─ SECTION (grandparent - contains question number and answer)
+      └─ SECTION (grandparent - contains "Question X of Y" and answer)
   FIELDSET (next sibling - contains options)
       └─ [role="checkbox"] × 4 (option elements)
 ```
 
-**Page Structure Variations:**
+**Page Structure:**
 - **Page 1**: 6 articles (1 header + 5 questions) - skips first
-- **Pages 2-28**: 5 articles (5 questions) - processes all
+- **Pages 2+**: 5 articles (5 questions) - processes all
 
 ## Troubleshooting
 
 ### "No browser contexts found"
-- Ensure Chrome is running with remote debugging enabled
-- Check that port 9222 is not blocked by another process
-- Restart Chrome with `./start_chrome_debug.sh`
+- Ensure Chrome is running with remote debugging
+- Check port 9222 is available: `lsof -i :9222`
+- Restart Chrome: `./start_chrome_debug.sh`
 
-### "No questions found"
-- Verify you're logged into Examice in the Chrome window
-- Navigate manually to ensure questions are visible
-- Check network connectivity
+### "No questions found" or "Could not detect total questions"
+- Verify you're logged into Examice
+- Ensure you have active subscription access to the exam
+- Check that questions are visible in browser
+- Navigate manually to first page of questions
 
-### Missing Questions
-- The script should collect all 138 questions
-- Check `output/kcna_complete.json` for actual count
-- Re-run if interrupted during scraping
+### Wrong question count
+- The scraper auto-detects from "Question X of Y" text
+- Verify this text appears on the exam pages
+- Check output for actual count vs expected
 
 ### Import Issues in Anki
-- Ensure field separator is set to **Tab** (not comma)
-- Verify the file encoding is UTF-8
-- Check that HTML tags are preserved in import settings
+- Ensure field separator is **Tab** (not comma)
+- Verify file encoding is UTF-8
+- Check HTML tags are preserved in import settings
+- Confirm you're importing the correct exam file
+
+## Command Reference
+
+### Chrome Debugging
+```bash
+# Default (KCNA)
+./start_chrome_debug.sh
+
+# Specific exam
+./start_chrome_debug.sh https://examice.com/exams/microsoft/az-104/
+```
+
+### Scraper Options
+```bash
+# Auto-detect from browser
+python scrape_with_playwright.py
+
+# Specify exam URL
+python scrape_with_playwright.py https://examice.com/exams/aws/saa-c03/
+```
+
+### Multiple Exams
+```bash
+# Scrape multiple exams sequentially
+./start_chrome_debug.sh https://examice.com/exams/linux-foundation/kcna/
+python scrape_with_playwright.py
+# Anki import, then:
+./start_chrome_debug.sh https://examice.com/exams/microsoft/az-104/
+python scrape_with_playwright.py
+```
 
 ## Files
 
 | File | Description |
 |------|-------------|
-| `scrape_with_playwright.py` | Main scraper script using Playwright library |
-| `start_chrome_debug.sh` | Helper script to start Chrome with debugging |
-| `requirements.txt` | Python package dependencies |
-| `.gitignore` | Git ignore rules (excludes venv and output) |
-| `output/kcna_complete.json` | Structured question data (generated) |
-| `output/kcna_complete.txt` | Anki flashcard deck (generated) |
+| `scrape_with_playwright.py` | Main scraper (works with any exam) |
+| `start_chrome_debug.sh` | Chrome debugging helper (accepts URL) |
+| `requirements.txt` | Python dependencies (playwright) |
+| `.gitignore` | Excludes venv and output files |
+| `output/` | Generated exam files (gitignored) |
 
 ## Technical Details
 
 ### Dependencies
-- **playwright**: Browser automation library
-- **Python 3.13+**: Required for modern async/await support
+- **playwright**: Browser automation library (CDP connection)
+- **Python 3.13+**: Async/await support
 
 ### Performance
-- Scrapes all 28 pages in ~2-3 minutes
-- Network-dependent (page load times)
+- Time: ~2-5 minutes per exam (network-dependent)
 - Includes 1-second delays between pages for stability
+- Auto-calculates total pages based on question count
 
 ### Data Quality
-- All 138 questions extracted
-- Question numbers: 1-138 (verified sequential)
-- Each question has exactly 4 options
-- Answers and explanations included where available
+- ✅ All questions extracted sequentially
+- ✅ Question numbers verified (1 to N)
+- ✅ Each question has 4 or 5 options (exam-dependent)
+- ✅ Answers and explanations included
+- ✅ No duplicates or gaps
+- ✅ Automatically adapts to different question formats
+
+### URL Pattern Recognition
+```regex
+/exams/([^/]+)/([^/?]+)
+       ↑         ↑
+    provider  exam-code
+```
 
 ## Notes
 
-- This tool requires an active Examice subscription with KCNA exam access
-- Respects site authentication and uses personal logged-in session
-- For personal study use only
-- Output files are gitignored to avoid committing exam content
+- ⚠️ Requires active Examice subscription with exam access
+- 🔐 Uses your personal authenticated session
+- 📚 For personal study use only
+- 🚫 Output files are gitignored to respect copyright
+- 📖 Respects Examice terms of service
 
 ## License
 
