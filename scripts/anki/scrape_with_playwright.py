@@ -9,9 +9,38 @@ import asyncio
 import json
 import re
 import sys
+import logging
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
+
+def setup_error_logger(output_dir):
+    """Setup error logger that writes to errors.log in output directory"""
+    log_file = output_dir / "errors.log"
+
+    # Create logger
+    logger = logging.getLogger('scraper_errors')
+    logger.setLevel(logging.ERROR)
+
+    # Remove existing handlers to avoid duplicates
+    logger.handlers.clear()
+
+    # Create file handler
+    file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+    file_handler.setLevel(logging.ERROR)
+
+    # Create formatter with timestamp
+    formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)s | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    file_handler.setFormatter(formatter)
+
+    # Add handler to logger
+    logger.addHandler(file_handler)
+
+    return logger
 
 async def extract_questions_from_page(page, page_num):
     """Extract all questions from a single page using DOM queries"""
@@ -201,7 +230,7 @@ async def extract_questions_from_page(page, page_num):
 
     return questions_data['questions']
 
-async def scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock, show_progress=True):
+async def scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock, logger=None, show_progress=True):
     """Scrape a single page with semaphore control for concurrent execution"""
     async with semaphore:
         url = f"{base_url}?page={page_num}"
@@ -230,6 +259,11 @@ async def scrape_single_page(context, page_num, total_pages, base_url, semaphore
             return (page_num, questions if questions else [])
 
         except Exception as e:
+            # Log error with details
+            if logger:
+                error_type = type(e).__name__
+                logger.error(f"Page {page_num} | {error_type} | {url} | {str(e)}")
+
             if show_progress:
                 async with progress_lock:
                     print(f"❌ Error: {e}")
@@ -240,13 +274,13 @@ async def scrape_single_page(context, page_num, total_pages, base_url, semaphore
             if page:
                 await page.close()
 
-async def scrape_single_page_with_retry(context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3, show_progress=False):
+async def scrape_single_page_with_retry(context, page_num, total_pages, base_url, semaphore, progress_lock, logger=None, max_retries=3, show_progress=False):
     """Retry wrapper for scrape_single_page with exponential backoff
 
     Returns: (page_num, questions_or_error, retry_count)
     """
     for attempt in range(max_retries):
-        result = await scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock, show_progress)
+        result = await scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock, logger, show_progress)
 
         # Check if result is an error (tuple with Exception)
         if isinstance(result[1], Exception):
@@ -260,7 +294,11 @@ async def scrape_single_page_with_retry(context, page_num, total_pages, base_url
                 await asyncio.sleep(wait_time)
                 continue
             else:
-                # All retries exhausted
+                # All retries exhausted - log final failure
+                if logger:
+                    error_type = type(result[1]).__name__
+                    logger.error(f"Page {page_num} | FAILED after {max_retries} retries | {error_type} | {str(result[1])}")
+
                 if show_progress:
                     async with progress_lock:
                         print(f"  ✗ Failed after {max_retries} attempts")
@@ -274,7 +312,7 @@ async def scrape_single_page_with_retry(context, page_num, total_pages, base_url
 
     return (result[0], result[1], max_retries)
 
-async def scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5):
+async def scrape_pages_parallel(context, total_pages, base_url, logger=None, max_concurrent=5):
     """Orchestrate parallel page scraping with semaphore-based concurrency control"""
     import time
 
@@ -288,7 +326,7 @@ async def scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5
     async def track_progress_wrapper(page_num):
         """Wrapper to track progress after each page completes"""
         result = await scrape_single_page_with_retry(
-            context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3, show_progress=False
+            context, page_num, total_pages, base_url, semaphore, progress_lock, logger, max_retries=3, show_progress=False
         )
 
         # Update progress after completion
@@ -355,6 +393,127 @@ async def scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5
         print(f"\n⚠️  Warning: {len(failed_pages)} page(s) failed after retries: {failed_pages}")
 
     return all_questions
+
+def validate_questions(questions, expected_total):
+    """Validate scraped questions for completeness and correctness
+
+    Returns: (is_valid, validation_report)
+    """
+    report = {
+        'total_scraped': len(questions),
+        'expected_total': expected_total,
+        'duplicates': [],
+        'gaps': [],
+        'missing_data': [],
+        'is_valid': True
+    }
+
+    if not questions:
+        report['is_valid'] = False
+        return report
+
+    # Check for duplicates and gaps
+    question_numbers = [q['number'] for q in questions]
+    seen_numbers = set()
+
+    for num in question_numbers:
+        if num in seen_numbers:
+            report['duplicates'].append(num)
+            report['is_valid'] = False
+        seen_numbers.add(num)
+
+    # Check for gaps in numbering
+    question_numbers_sorted = sorted(question_numbers)
+    for i in range(len(question_numbers_sorted) - 1):
+        current = question_numbers_sorted[i]
+        next_num = question_numbers_sorted[i + 1]
+        if next_num - current > 1:
+            for missing in range(current + 1, next_num):
+                report['gaps'].append(missing)
+            report['is_valid'] = False
+
+    # Check if we're missing questions from the beginning or end
+    if question_numbers_sorted:
+        if question_numbers_sorted[0] != 1:
+            for missing in range(1, question_numbers_sorted[0]):
+                report['gaps'].append(missing)
+            report['is_valid'] = False
+
+        if question_numbers_sorted[-1] < expected_total:
+            for missing in range(question_numbers_sorted[-1] + 1, expected_total + 1):
+                report['gaps'].append(missing)
+            report['is_valid'] = False
+
+    # Check data completeness for each question
+    for q in questions:
+        issues = []
+
+        if not q.get('question'):
+            issues.append('missing question text')
+
+        if not q.get('answer'):
+            issues.append('missing answer')
+
+        # For multiple choice, should have options
+        if not q.get('isTextQuestion', False):
+            if not q.get('options') or len(q.get('options', [])) < 4:
+                issues.append(f"invalid options count: {len(q.get('options', []))}")
+
+        if issues:
+            report['missing_data'].append({
+                'question_num': q['number'],
+                'issues': issues
+            })
+            report['is_valid'] = False
+
+    return report
+
+def print_validation_report(report):
+    """Print a formatted validation report"""
+    print("\n" + "=" * 70)
+    print("📋 DATA VALIDATION REPORT")
+    print("=" * 70)
+
+    # Overall status
+    if report['is_valid']:
+        print("✅ All validation checks passed!")
+    else:
+        print("⚠️  Validation issues detected")
+
+    # Total count
+    print(f"\n📊 Question Count:")
+    if report['total_scraped'] == report['expected_total']:
+        print(f"   ✅ Total questions: {report['total_scraped']}/{report['expected_total']}")
+    else:
+        print(f"   ❌ Total questions: {report['total_scraped']}/{report['expected_total']} "
+              f"({report['expected_total'] - report['total_scraped']} missing)")
+
+    # Duplicates
+    if not report['duplicates']:
+        print("   ✅ No duplicate questions")
+    else:
+        print(f"   ❌ Found {len(report['duplicates'])} duplicate question(s): {report['duplicates']}")
+
+    # Gaps
+    if not report['gaps']:
+        print("   ✅ No gaps in question numbering")
+    else:
+        gap_summary = report['gaps'][:5]  # Show first 5
+        more = len(report['gaps']) - 5
+        gap_str = str(gap_summary) + (f" (+{more} more)" if more > 0 else "")
+        print(f"   ❌ Found {len(report['gaps'])} gap(s) in numbering: {gap_str}")
+
+    # Data completeness
+    if not report['missing_data']:
+        print("   ✅ All questions have complete data")
+    else:
+        print(f"   ❌ Found {len(report['missing_data'])} question(s) with missing data:")
+        for item in report['missing_data'][:3]:  # Show first 3
+            print(f"      Q{item['question_num']}: {', '.join(item['issues'])}")
+        if len(report['missing_data']) > 3:
+            print(f"      ... and {len(report['missing_data']) - 3} more")
+
+    print("=" * 70)
 
 def parse_exam_info(url):
     """Extract exam information from URL"""
@@ -439,16 +598,24 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
                 print("❌ Could not detect total questions. Please ensure you're on a valid exam page.")
                 return
 
+            # Setup output directory and error logger
+            output_dir = Path(__file__).parent / "output"
+            output_dir.mkdir(exist_ok=True)
+            error_logger = setup_error_logger(output_dir)
+
             # Scrape remaining pages in parallel
             print(f"🚀 Starting parallel scraping (max 5 concurrent pages)...")
             print()
-            parallel_questions = await scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5)
+            parallel_questions = await scrape_pages_parallel(context, total_pages, base_url, error_logger, max_concurrent=5)
             all_questions.extend(parallel_questions)
 
-            # Save all questions
-            output_dir = Path(__file__).parent / "output"
-            output_dir.mkdir(exist_ok=True)
+            # Validate the scraped data
+            print()
+            validation_report = validate_questions(all_questions, total_questions)
+            print_validation_report(validation_report)
+            print()
 
+            # Save all questions (output_dir already created above)
             # Dynamic filenames based on exam
             exam_name = exam_info['name']
             json_file = output_dir / f"{exam_name}_complete.json"
@@ -468,6 +635,11 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             print(f"   - Multiple choice: {multiple_choice}")
             print(f"   - Text-based: {text_based}")
             print(f"✅ Saved to: {json_file}")
+
+            # Show error log location if errors were logged
+            error_log = output_dir / "errors.log"
+            if error_log.exists() and error_log.stat().st_size > 0:
+                print(f"⚠️  Error log: {error_log}")
             print()
 
             # Generate Anki deck
