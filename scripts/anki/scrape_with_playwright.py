@@ -23,20 +23,21 @@ async def extract_questions_from_page(page, page_num):
 
     try:
         # Wait for first article to appear
-        await page.wait_for_selector('article', timeout=30000)
+        await page.wait_for_selector('article', timeout=10000)
 
-        # Give extra time for all articles to load (increased from 1s to 3s)
-        await asyncio.sleep(3)
-
-        # Check article count
-        article_count = await page.evaluate("document.querySelectorAll('article').length")
-
-        # If we don't have enough articles, wait a bit more
-        if article_count < expected_articles:
-            print(f"⏳ Waiting for articles to load... (found {article_count}/{expected_articles})", end=" ")
-            await asyncio.sleep(2)
+        # Smart wait: Wait for expected number of articles instead of fixed sleep
+        # This is much faster and more reliable than sleep-based waiting
+        try:
+            await page.wait_for_function(
+                f"document.querySelectorAll('article').length >= {expected_articles}",
+                timeout=5000
+            )
+        except Exception:
+            # If we timeout, continue anyway - we'll work with what we have
             article_count = await page.evaluate("document.querySelectorAll('article').length")
-            print(f"→ {article_count}")
+            if article_count < expected_articles:
+                # One more short wait for stragglers
+                await asyncio.sleep(1)
 
     except Exception as e:
         print(f"⚠️ Wait error: {e}")
@@ -214,7 +215,8 @@ async def scrape_single_page(context, page_num, total_pages, base_url, semaphore
             # Create a new page for this task to avoid conflicts
             page = await context.new_page()
 
-            await page.goto(url, wait_until='networkidle', timeout=30000)
+            # Use domcontentloaded instead of networkidle for faster loads (2-3x speedup)
+            await page.goto(url, wait_until='domcontentloaded', timeout=15000)
             questions = await extract_questions_from_page(page, page_num)
 
             async with progress_lock:
@@ -329,7 +331,8 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             total_pages = None
 
             # First, get total questions from page 1
-            await page.goto(base_url, wait_until='networkidle', timeout=30000)
+            # Use domcontentloaded for faster initial load
+            await page.goto(base_url, wait_until='domcontentloaded', timeout=15000)
 
             # Get total from first page
             first_page_questions = await extract_questions_from_page(page, 1)
