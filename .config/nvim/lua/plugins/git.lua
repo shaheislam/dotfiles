@@ -383,6 +383,68 @@ return {
 					-- Show deleted lines as virtual text
 					map("n", "<leader>ht", gs.toggle_deleted, { desc = "Toggle deleted" })
 
+					-- Yank deleted lines from current hunk
+					map("n", "<leader>hy", function()
+						-- Get the current hunk
+						local hunks = gs.get_hunks(bufnr)
+						if not hunks or #hunks == 0 then
+							vim.notify("No hunks found", vim.log.levels.WARN)
+							return
+						end
+
+						-- Find the hunk at cursor position
+						local cursor = vim.api.nvim_win_get_cursor(0)
+						local current_line = cursor[1]
+						local target_hunk = nil
+
+						for _, hunk in ipairs(hunks) do
+							-- Check if cursor is within this hunk's range
+							if current_line >= hunk.added.start and current_line <= (hunk.added.start + hunk.added.count) then
+								target_hunk = hunk
+								break
+							end
+						end
+
+						if not target_hunk then
+							vim.notify("No hunk at cursor position", vim.log.levels.WARN)
+							return
+						end
+
+						-- Extract deleted lines from the hunk
+						local deleted_lines = {}
+						if target_hunk.removed and target_hunk.removed.count > 0 then
+							-- Get the diff for this hunk
+							local diff_text = gs.get_hunks(bufnr, { greedy = false })
+
+							-- Get lines from git show for this hunk
+							local file_path = vim.api.nvim_buf_get_name(bufnr)
+							local git_cmd = string.format(
+								"git diff HEAD -- %s | awk '/^@@.*@@/{flag=1; next} flag && /^-/{print substr($0,2)}'",
+								vim.fn.shellescape(file_path)
+							)
+
+							local handle = io.popen(git_cmd)
+							if handle then
+								local result = handle:read("*a")
+								handle:close()
+
+								for line in result:gmatch("[^\r\n]+") do
+									table.insert(deleted_lines, line)
+								end
+							end
+						end
+
+						if #deleted_lines > 0 then
+							-- Join deleted lines and copy to clipboard
+							local content = table.concat(deleted_lines, "\n")
+							vim.fn.setreg('"', content)
+							vim.fn.setreg("+", content) -- Also copy to system clipboard
+							vim.notify(string.format("Yanked %d deleted line(s)", #deleted_lines), vim.log.levels.INFO)
+						else
+							vim.notify("No deleted lines in current hunk", vim.log.levels.WARN)
+						end
+					end, { desc = "Yank deleted lines from hunk" })
+
 					-- Change and reset diff base
 					map("n", "<leader>hC", function()
 						vim.ui.input({ prompt = "Change diff base to: " }, function(base)
