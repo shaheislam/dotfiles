@@ -99,6 +99,7 @@ brew "mas"  # Mac App Store CLI
 # Claude Code - requires manual installation via official installer (https://claude.ai/download)
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
+cask "amazon-q"  # Amazon Q Developer CLI
 
 # File System Tools
 # FUSE-T - kext-less FUSE implementation for macOS (replacement for macFUSE)
