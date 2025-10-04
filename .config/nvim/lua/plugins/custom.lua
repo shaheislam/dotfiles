@@ -395,6 +395,7 @@ return {
       github_hostname = "github.com",
       ssh_aliases = {
         ["github.com-personal"] = "github.com",
+        ["github.com-dfe"] = "github.com",
       },
       suppress_missing_scope = {
         projects_v2 = true,
