@@ -137,7 +137,11 @@
       "Bash(kill:*)",
       "Bash(bunx:*)",
       "Bash(jq:*)",
-      "mcp__aws-diagram__generate_diagram"
+      "mcp__aws-diagram__generate_diagram",
+      "Bash(./install-wizard.sh:*)",
+      "Bash(tmux-fingers:*)",
+      "Bash(pbcopy)",
+      "Bash(pbpaste)"
     ],
     "deny": [],
     "ask": []
