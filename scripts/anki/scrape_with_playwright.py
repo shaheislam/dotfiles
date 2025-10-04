@@ -91,7 +91,7 @@ async def extract_questions_from_page(page, page_num):
                     // Get FIELDSET sibling with options
                     const fieldset = parent.nextElementSibling;
                     if (!fieldset) {
-                        debug.push(`Article ${idx}: No fieldset found`);
+                        debug.push(`Article ${idx}: No fieldset found (parent.nextElementSibling is null)`);
                         return;
                     }
 
@@ -99,26 +99,55 @@ async def extract_questions_from_page(page, page_num):
                     const checkboxes = fieldset.querySelectorAll('[role="checkbox"]');
                     const options = [];
 
+                    if (checkboxes.length === 0) {
+                        debug.push(`Article ${idx}: Fieldset exists but no checkboxes found`);
+                        // Try alternative selector - maybe some questions use different structure
+                        const altCheckboxes = fieldset.querySelectorAll('input[type="checkbox"]');
+                        debug.push(`Article ${idx}: Alternative selector found ${altCheckboxes.length} checkboxes`);
+                    }
+
                     checkboxes.forEach(cb => {
                         const para = cb.querySelector('p');
                         if (para) {
                             options.push(para.textContent.trim());
+                        } else {
+                            // Try getting text directly from checkbox element
+                            const text = cb.textContent.trim();
+                            if (text && text.length > 0) {
+                                options.push(text);
+                            }
                         }
                     });
 
-                    // Accept questions with 4 or 5 options (different exams have different formats)
-                    if (options.length < 4 || options.length > 5) {
-                        debug.push(`Article ${idx}: Found ${options.length} options (expected 4-5)`);
-                        return;
-                    }
+                    // Handle different question types
+                    let answer = '';
+                    let isTextQuestion = false;
 
-                    // Extract answer (A-E for 5 options, A-D for 4 options)
-                    const answerMatch = sectionText.match(/Correct Answer:\\s*([A-E])/);
-                    if (!answerMatch) {
-                        debug.push(`Article ${idx}: No answer found`);
+                    // Accept questions with 4 or 5 options (multiple choice)
+                    if (options.length >= 4 && options.length <= 5) {
+                        // Extract answer (A-E for 5 options, A-D for 4 options)
+                        const answerMatch = sectionText.match(/Correct Answer:\\s*([A-E])/);
+                        if (!answerMatch) {
+                            debug.push(`Article ${idx}: Multiple choice but no answer found`);
+                            return;
+                        }
+                        answer = answerMatch[1];
+                    } else if (options.length === 0) {
+                        // Text-based question (fill-in-blank, code, etc.)
+                        // Try to extract the answer from the section text
+                        const textAnswerMatch = sectionText.match(/Correct Answer:\\s*([^\\n]+)/);
+                        if (textAnswerMatch) {
+                            answer = textAnswerMatch[1].trim();
+                            isTextQuestion = true;
+                            debug.push(`Article ${idx}: ✓ Extracted text-based question ${questionNum} (answer: ${answer.substring(0, 30)}...)`);
+                        } else {
+                            debug.push(`Article ${idx}: Text question but no answer found`);
+                            return;
+                        }
+                    } else {
+                        debug.push(`Article ${idx}: Found ${options.length} options (expected 4-5 or 0) - fieldset.tagName=${fieldset.tagName}`);
                         return;
                     }
-                    const answer = answerMatch[1];
 
                     // Extract explanation from section paragraphs
                     const allParas = Array.from(section.querySelectorAll('p'));
@@ -148,10 +177,13 @@ async def extract_questions_from_page(page, page_num):
                         question: questionText,
                         options: options,
                         answer: answer,
-                        explanation: explanation
+                        explanation: explanation,
+                        isTextQuestion: isTextQuestion
                     });
 
-                    debug.push(`Article ${idx}: ✓ Extracted question ${questionNum}`);
+                    if (!isTextQuestion) {
+                        debug.push(`Article ${idx}: ✓ Extracted question ${questionNum}`);
+                    }
 
                 } catch (err) {
                     debug.push(`Article ${idx}: Error - ${err.message}`);
@@ -283,10 +315,16 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(all_questions, f, indent=2, ensure_ascii=False)
 
+            # Count question types
+            multiple_choice = sum(1 for q in all_questions if not q.get('isTextQuestion', False))
+            text_based = sum(1 for q in all_questions if q.get('isTextQuestion', False))
+
             print()
             print("=" * 70)
             print(f"✅ Scraping complete!")
             print(f"✅ Total questions collected: {len(all_questions)}/{total_questions}")
+            print(f"   - Multiple choice: {multiple_choice}")
+            print(f"   - Text-based: {text_based}")
             print(f"✅ Saved to: {json_file}")
             print()
 
@@ -303,9 +341,15 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
                 for q in sorted(all_questions, key=lambda x: x['number']):
                     # Front of card
                     front = f"<b>Question {q['number']}:</b><br><br>{q['question']}<br><br>"
-                    # Handle both 4 and 5 option questions
-                    for i, opt in enumerate(q['options']):
-                        front += f"{chr(65+i)}. {opt}<br>"
+
+                    # Handle different question types
+                    if q.get('isTextQuestion', False):
+                        # Text-based question (no options)
+                        front += "<i>(Text-based question - see answer for details)</i>"
+                    else:
+                        # Multiple choice - show all options (4 or 5)
+                        for i, opt in enumerate(q['options']):
+                            front += f"{chr(65+i)}. {opt}<br>"
 
                     # Back of card
                     back = f"<b>Answer: {q['answer']}</b><br><br>"

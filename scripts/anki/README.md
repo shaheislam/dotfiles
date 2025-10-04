@@ -20,7 +20,9 @@ This tool connects to an existing authenticated Chrome browser session and scrap
 - 📊 **Complete**: Extracts question, all options (4 or 5), answer, and explanation
 - 🏷️ **Smart tagging**: Auto-generates tags based on exam (provider + exam code)
 - 📁 **Organized**: Dynamic filenames based on exam (e.g., `microsoft-az-104_complete.txt`)
-- 🎯 **Adaptive**: Handles different question formats (4-option and 5-option questions)
+- 🎯 **Adaptive**: Handles multiple question types:
+  - Multiple choice (4 or 5 options)
+  - Text-based (fill-in-blank, code questions)
 
 ## Prerequisites
 
@@ -167,9 +169,10 @@ Anki-ready flashcards (tab-separated):
 - **Tags**: Auto-generated from URL (e.g., `examice microsoft az-104`)
 
 **Note**: Different exams have different question formats:
-- **KCNA**: 4 options per question (A-D)
-- **LFCS**: 5 options per question (A-E)
-- The scraper automatically adapts to both formats
+- **KCNA**: Primarily 4-option multiple choice (A-D)
+- **LFCS**: Mix of 5-option multiple choice (A-E) and text-based questions
+- **Other exams**: May include multiple choice, text-based, or code questions
+- The scraper automatically adapts to all formats
 
 ### Filename Examples
 | Exam URL | Output Filename |
@@ -291,8 +294,10 @@ python scrape_with_playwright.py
 ### Data Quality
 - ✅ All questions extracted sequentially
 - ✅ Question numbers verified (1 to N)
-- ✅ Each question has 4 or 5 options (exam-dependent)
-- ✅ Answers and explanations included
+- ✅ Multiple question types supported:
+  - Multiple choice (4 or 5 options)
+  - Text-based (fill-in, code questions)
+- ✅ Answers and explanations included for all types
 - ✅ No duplicates or gaps
 - ✅ Automatically adapts to different question formats
 
