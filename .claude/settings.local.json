@@ -126,7 +126,17 @@
       "Bash(atuin history delete:*)",
       "Bash(atuin history:*)",
       "Bash(atuin:*)",
-      "WebFetch(domain:awslabs.github.io)"
+      "WebFetch(domain:awslabs.github.io)",
+      "Bash(claude mcp list:*)",
+      "Bash(claude config dir)",
+      "Bash(claude mcp add:*)",
+      "Read(//Users/shaheislam/**)",
+      "Bash(claude mcp:*)",
+      "Bash(npx -y drawio-mcp-server:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(bunx:*)",
+      "Bash(jq:*)"
     ],
     "deny": [],
     "ask": []

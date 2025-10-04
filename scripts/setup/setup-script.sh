@@ -690,16 +690,23 @@ if command -v claude &> /dev/null; then
   claude mcp add --scope user fetch pipx run mcp-server-fetch || echo "Warning: Failed to add fetch MCP"
   claude mcp add --scope user duckduckgo npx duckduckgo-mcp-server || echo "Warning: Failed to add duckduckgo MCP"
 
-  # Database tools
-  claude mcp add --scope user sqlite pipx run mcp-server-sqlite "$HOME/Documents/databases" || echo "Warning: Failed to add sqlite MCP"
-  claude mcp add --scope user postgres npx @modelcontextprotocol/server-postgres || echo "Warning: Failed to add postgres MCP"
+  # Database tools - removed (not needed)
+  # Enterprise integration - removed (not needed)
 
-  # Enterprise integration
-  claude mcp add --scope user slack npx @modelcontextprotocol/server-slack || echo "Warning: Failed to add slack MCP"
-  claude mcp add --scope user airbnb "npx @openbnb/mcp-server-airbnb --ignore-robots-txt" || echo "Warning: Failed to add airbnb MCP"
+  # Additional MCP servers
+  claude mcp add --scope user context7 npx @upstash/context7-mcp || echo "Warning: Failed to add context7 MCP"
+  claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe || echo "Warning: Failed to add steampipe MCP"
+
+  # Airbnb MCP (uses npx per hook exception)
+  # Note: claude mcp add doesn't support passing args like --ignore-robots-txt, so we add it via jq
+  echo "Configuring Airbnb MCP..."
+  jq '.mcpServers.airbnb = {"type": "stdio", "command": "npx", "args": ["-y", "@openbnb/mcp-server-airbnb", "--ignore-robots-txt"], "env": {}}' ~/.claude.json > /tmp/claude_temp.json && mv /tmp/claude_temp.json ~/.claude.json || echo "Warning: Failed to add airbnb MCP"
 
   # Browser automation (Microsoft Playwright)
   claude mcp add --scope user playwright npx @playwright/mcp@latest || echo "Warning: Failed to add playwright MCP"
+
+  # Diagramming tools
+  claude mcp add --scope user drawio npx -y drawio-mcp-server || echo "Warning: Failed to add drawio MCP"
 
   # AWS MCP servers (require uv to be installed)
   echo "Adding AWS MCP servers to Claude Code..."
@@ -711,7 +718,6 @@ if command -v claude &> /dev/null; then
   claude mcp add --scope user aws-terraform uvx awslabs.terraform-mcp-server@latest || echo "Warning: Failed to add aws-terraform MCP"
 
   # AWS services (require AWS credentials)
-  claude mcp add --scope user aws-cost-analysis uvx awslabs.cost-analysis-mcp-server@latest || echo "Warning: Failed to add aws-cost-analysis MCP"
   claude mcp add --scope user aws-iam uvx awslabs.iam-mcp-server@latest || echo "Warning: Failed to add aws-iam MCP"
   claude mcp add --scope user aws-cloudformation uvx awslabs.cfn-mcp-server@latest || echo "Warning: Failed to add aws-cloudformation MCP"
   claude mcp add --scope user aws-dynamodb uvx awslabs.dynamodb-mcp-server@latest || echo "Warning: Failed to add aws-dynamodb MCP"
@@ -725,15 +731,6 @@ if command -v claude &> /dev/null; then
   echo ""
   echo "Note: AWS MCP servers are also configured in Claude Desktop config."
   echo "Both Claude Desktop and Claude Code can now use AWS MCP servers."
-  echo ""
-  echo "Some MCP servers are disabled by default in Claude Desktop:"
-  echo "- exa (requires EXA_API_KEY)"
-  echo "- linear (requires LINEAR_API_KEY)"
-  echo "- slack (requires SLACK_BOT_TOKEN and SLACK_APP_TOKEN)"
-  echo "- postgres (requires POSTGRES_CONNECTION_STRING)"
-  echo ""
-  echo "API-based servers are configured in Claude Code but will fail without credentials."
-  echo "Configure API keys/credentials in the Claude Desktop config file to enable them."
   echo ""
   echo "Note: browser-tools MCP is enabled with error suppression to hide JSON parsing warnings."
   echo "Both browser-tools and playwright MCP are available for browser automation."

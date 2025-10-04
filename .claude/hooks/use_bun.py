@@ -18,6 +18,15 @@ def main():
         if not command:
             sys.exit(0)
 
+        # Exception list: MCP servers that require npx instead of bunx
+        npx_exceptions = [
+            "drawio-mcp-server",  # drawio MCP requires npx per documentation (Desktop only - port conflict)
+            "@openbnb/mcp-server-airbnb",  # airbnb MCP requires npx for compatibility
+        ]
+
+        # Check if command contains any exception patterns
+        is_exception = any(exception in command for exception in npx_exceptions)
+
         # Check for npm, yarn, pnpm commands and npx commands
         npm_pattern = r"\bnpm\s+"
         npx_pattern = r"\bnpx\s+"
@@ -30,7 +39,7 @@ def main():
         if re.search(npm_pattern, command):
             blocked_command = command
             suggested_command = re.sub(r"\bnpm\b", "bun", command)
-        elif re.search(npx_pattern, command):
+        elif re.search(npx_pattern, command) and not is_exception:
             blocked_command = command
             suggested_command = re.sub(r"\bnpx\b", "bunx", command)
         elif re.search(yarn_pattern, command):

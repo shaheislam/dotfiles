@@ -116,16 +116,63 @@
 - **Neovim**: Use LazyVim plugin system, follow LazyVim conventions
 
 ### MCP Server Integration
-- **Browser-Tools MCP**: Requires Chrome extension + bridge server setup
-  1. Add packages to Brewfile: npm packages for MCP and server
-  2. Update setup script to download Chrome extension from GitHub releases
-  3. Extract extension to `.config/browser-tools/chrome-extension/`
-  4. Configure both Claude Desktop and Claude Code MCP configs
-  5. Document manual Chrome extension installation steps
-  6. Use version-specific packages (v1.1.0 for Claude Desktop, v1.2.0 for Claude Code)
-- **AWS MCP Servers**: Use `uvx` command with proper environment variables
-- **Python MCP Servers**: Install via `pipx` and configure with appropriate paths
-- **API-based MCPs**: Add to config but disable by default, document API key requirements
+
+**CRITICAL MCP Configuration Parity Rule**:
+- **ALWAYS** ensure MCP servers are configured in BOTH Claude Desktop AND Claude Code CLI
+- **ALWAYS** maintain parity between both configurations - any MCP added to one must be added to the other
+- **ALWAYS** update both configurations simultaneously when adding/removing MCP servers
+- **ALWAYS** verify parity with `claude mcp list` after making changes to Claude Desktop config
+
+**MCP Configuration Locations**:
+1. **Claude Desktop**: `~/dotfiles/Library/Application Support/Claude/claude_desktop_config.json`
+   - Managed via stow symlink
+   - Use `npx` or `bunx` commands for Node-based MCPs
+   - Use `uvx` for Python-based AWS MCPs
+   - Use `pipx` for other Python MCPs
+
+2. **Claude Code CLI**: Managed via `claude mcp add` commands in setup script
+   - Located in `scripts/setup/setup-script.sh` (line 676+)
+   - Use `bunx` instead of `npx` (per hook requirements)
+   - Use `uvx` for Python-based AWS MCPs
+   - Use `pipx run` for other Python MCPs
+
+**Adding New MCP Servers (Required Steps)**:
+1. Add to Claude Desktop config (`claude_desktop_config.json`)
+2. Add to setup script via `claude mcp add` command
+3. Verify both configurations with:
+   - Restart Claude Desktop app
+   - Run `claude mcp list` to verify Claude Code CLI
+4. Test MCP server functionality in both environments
+
+**Browser-Based MCP Servers** (e.g., browser-tools, drawio):
+- Require browser extension installation
+- Add packages to Brewfile if needed
+- Document manual browser extension installation steps
+- Use version-specific packages when required (v1.1.0 for Claude Desktop, v1.2.0 for Claude Code)
+
+**AWS MCP Servers**:
+- Use `uvx awslabs.<server-name>@latest` command
+- Add environment variables as needed (e.g., `FASTMCP_LOG_LEVEL`, `AWS_DOCUMENTATION_PARTITION`)
+- Ensure GraphViz is installed for aws-diagram-mcp-server
+- All AWS MCPs must be in both Claude Desktop and Claude Code CLI configs
+
+**Python MCP Servers**:
+- Install via `pipx` and configure with appropriate paths
+- Use `pipx run mcp-server-<name>` in setup script
+
+**API-based MCPs**:
+- Add to config but disable by default
+- Document API key requirements in comments
+- Provide setup instructions for users who want to enable them
+
+**MCP Parity Verification**:
+```bash
+# Verify Claude Code CLI MCPs
+claude mcp list
+
+# Check Claude Desktop config
+cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | jq '.mcpServers | keys'
+```
 
 ## Quality Assurance
 
