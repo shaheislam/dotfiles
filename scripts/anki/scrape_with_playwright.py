@@ -42,6 +42,135 @@ def setup_error_logger(output_dir):
 
     return logger
 
+def export_to_csv(questions, output_file):
+    """Export questions to CSV format for spreadsheet analysis"""
+    import csv
+
+    with open(output_file, 'w', encoding='utf-8', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=[
+            'number', 'question', 'answer', 'explanation',
+            'option_a', 'option_b', 'option_c', 'option_d', 'option_e',
+            'is_text_question', 'total'
+        ])
+
+        writer.writeheader()
+
+        for q in sorted(questions, key=lambda x: x['number']):
+            row = {
+                'number': q['number'],
+                'question': q['question'],
+                'answer': q['answer'],
+                'explanation': q.get('explanation', ''),
+                'is_text_question': q.get('isTextQuestion', False),
+                'total': q['total']
+            }
+
+            # Add options (pad with empty strings if fewer than 5)
+            options = q.get('options', [])
+            for i in range(5):
+                key = f'option_{chr(97+i)}'  # a, b, c, d, e
+                row[key] = options[i] if i < len(options) else ''
+
+            writer.writerow(row)
+
+def export_to_markdown(questions, output_file, exam_info):
+    """Export questions to Markdown format for documentation"""
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        # Header
+        f.write(f"# {exam_info['provider'].upper()} {exam_info['exam_code'].upper()} Exam Questions\n\n")
+        f.write(f"**Total Questions:** {len(questions)}\n\n")
+        f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write("---\n\n")
+
+        # Questions
+        for q in sorted(questions, key=lambda x: x['number']):
+            f.write(f"## Question {q['number']}\n\n")
+            f.write(f"{q['question']}\n\n")
+
+            if not q.get('isTextQuestion', False):
+                # Multiple choice - show options
+                for i, opt in enumerate(q['options']):
+                    marker = "✓" if q['answer'] == chr(65+i) else " "
+                    f.write(f"- [{marker}] **{chr(65+i)}.** {opt}\n")
+                f.write("\n")
+
+            f.write(f"**Answer:** {q['answer']}\n\n")
+
+            if q.get('explanation'):
+                f.write(f"**Explanation:**\n\n{q['explanation']}\n\n")
+
+            f.write("---\n\n")
+
+def export_to_apkg(questions, output_file, exam_info):
+    """Export questions to .apkg format (native Anki deck)
+
+    Requires: genanki library (pip install genanki)
+    """
+    import genanki
+
+    # Create a model (card template)
+    model = genanki.Model(
+        1607392319,  # Random model ID
+        f'{exam_info["exam_code"].upper()} Question',
+        fields=[
+            {'name': 'Question'},
+            {'name': 'Answer'},
+        ],
+        templates=[
+            {
+                'name': 'Card 1',
+                'qfmt': '{{Question}}',
+                'afmt': '{{FrontSide}}<hr id="answer">{{Answer}}',
+            },
+        ],
+        css="""
+        .card {
+            font-family: arial;
+            font-size: 20px;
+            text-align: left;
+            color: black;
+            background-color: white;
+        }
+        """
+    )
+
+    # Create deck
+    deck_name = f"{exam_info['provider']} {exam_info['exam_code']}".upper()
+    deck = genanki.Deck(
+        2059400110,  # Random deck ID
+        deck_name
+    )
+
+    # Add notes
+    tags = [exam_info['provider'].lower(), exam_info['exam_code'].lower(), 'examice']
+
+    for q in sorted(questions, key=lambda x: x['number']):
+        # Front of card
+        front = f"<b>Question {q['number']}:</b><br><br>{q['question']}<br><br>"
+
+        if q.get('isTextQuestion', False):
+            front += "<i>(Text-based question - see answer for details)</i>"
+        else:
+            # Multiple choice - show all options
+            for i, opt in enumerate(q['options']):
+                front += f"{chr(65+i)}. {opt}<br>"
+
+        # Back of card
+        back = f"<b>Answer: {q['answer']}</b><br><br>"
+        if q['explanation']:
+            back += f"<i>{q['explanation']}</i>"
+
+        note = genanki.Note(
+            model=model,
+            fields=[front, back],
+            tags=tags
+        )
+        deck.add_note(note)
+
+    # Write package
+    genanki.Package(deck).write_to_file(output_file)
+
 async def extract_questions_from_page(page, page_num):
     """Extract all questions from a single page using DOM queries"""
     questions = []
@@ -682,14 +811,44 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             shutil.copy2(anki_file, documents_file)
             print(f"✅ Copy saved to: {documents_file}")
 
+            # Export to additional formats
+            print()
+            print("📄 Exporting to additional formats...")
+
+            # CSV export
+            csv_file = output_dir / f"{exam_name}_complete.csv"
+            export_to_csv(all_questions, csv_file)
+            print(f"✅ CSV export: {csv_file}")
+
+            # Markdown export
+            md_file = output_dir / f"{exam_name}_complete.md"
+            export_to_markdown(all_questions, md_file, exam_info)
+            print(f"✅ Markdown export: {md_file}")
+
+            # .apkg export (native Anki deck format)
+            apkg_file = output_dir / f"{exam_name}_complete.apkg"
+            export_to_apkg(all_questions, apkg_file, exam_info)
+            print(f"✅ Anki package (.apkg): {apkg_file}")
+
+            # Copy to Documents for easy access
+            documents_apkg = documents_dir / f"{exam_name}_complete.apkg"
+            shutil.copy2(apkg_file, documents_apkg)
+            print(f"✅ Copy saved to: {documents_apkg}")
+
             print()
             print("=" * 70)
-            print("🎉 All done! Import the Anki deck:")
-            print(f"   1. Open Anki")
-            print(f"   2. File → Import")
-            print(f"   3. Select: {anki_file}")
-            print(f"      OR: {documents_file}")
-            print(f"   4. Field separator: Tab")
+            print("🎉 All done! Files exported:")
+            print()
+            print("📦 Anki Import Options:")
+            print(f"   • Tab-delimited: {anki_file}")
+            print(f"                   {documents_file}")
+            print(f"   • Native .apkg:  {apkg_file}")
+            print(f"                   {documents_apkg}")
+            print()
+            print("📊 Analysis & Documentation:")
+            print(f"   • CSV (spreadsheet): {csv_file}")
+            print(f"   • Markdown (docs):   {md_file}")
+            print(f"   • JSON (raw data):   {json_file}")
             print("=" * 70)
 
             await browser.close()
