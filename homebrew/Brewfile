@@ -62,6 +62,7 @@ brew "rust"
 brew "crystal"
 brew "awscli"
 brew "granted"
+brew "e1s"  # Easy AWS ECS CLI (like k9s for ECS)
 brew "kubectl"
 brew "azure-cli"
 brew "imagemagick"
