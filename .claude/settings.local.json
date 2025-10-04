@@ -136,7 +136,8 @@
       "Bash(lsof:*)",
       "Bash(kill:*)",
       "Bash(bunx:*)",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "mcp__aws-diagram__generate_diagram"
     ],
     "deny": [],
     "ask": []

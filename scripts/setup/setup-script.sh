@@ -615,6 +615,9 @@ if command -v pipx &> /dev/null; then
   pipx install mcp-server-fetch || echo "Warning: Failed to install mcp-server-fetch"
   pipx install mcp-server-sqlite || echo "Warning: Failed to install mcp-server-sqlite"
 
+  # Install diagrams package (required for aws-diagram-mcp-server)
+  pipx install diagrams || echo "Warning: Failed to install diagrams"
+
   echo "Python MCP servers installation complete"
 else
   echo "Warning: pipx not found. Install pipx first via Homebrew"
