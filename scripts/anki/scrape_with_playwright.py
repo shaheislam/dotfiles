@@ -200,6 +200,70 @@ async def extract_questions_from_page(page, page_num):
 
     return questions_data['questions']
 
+async def scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock):
+    """Scrape a single page with semaphore control for concurrent execution"""
+    async with semaphore:
+        url = f"{base_url}?page={page_num}"
+        page = None
+
+        try:
+            # Thread-safe progress printing
+            async with progress_lock:
+                print(f"📄 Page {page_num}/{total_pages}...", end=" ", flush=True)
+
+            # Create a new page for this task to avoid conflicts
+            page = await context.new_page()
+
+            await page.goto(url, wait_until='networkidle', timeout=30000)
+            questions = await extract_questions_from_page(page, page_num)
+
+            async with progress_lock:
+                if questions:
+                    print(f"✓ Found {len(questions)} questions")
+                else:
+                    print(f"⚠️  No questions found")
+
+            return (page_num, questions if questions else [])
+
+        except Exception as e:
+            async with progress_lock:
+                print(f"❌ Error: {e}")
+            return (page_num, e)
+
+        finally:
+            # Always close the page when done
+            if page:
+                await page.close()
+
+async def scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5):
+    """Orchestrate parallel page scraping with semaphore-based concurrency control"""
+    semaphore = asyncio.Semaphore(max_concurrent)
+    progress_lock = asyncio.Lock()
+
+    # Create tasks for all pages (starting from page 2)
+    tasks = [
+        scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock)
+        for page_num in range(2, total_pages + 1)
+    ]
+
+    # Execute all tasks concurrently
+    results = await asyncio.gather(*tasks, return_exceptions=False)
+
+    # Sort results by page number and filter out errors
+    all_questions = []
+    failed_pages = []
+
+    for page_num, result in sorted(results, key=lambda x: x[0]):
+        if isinstance(result, Exception):
+            failed_pages.append(page_num)
+        else:
+            all_questions.extend(result)
+
+    if failed_pages:
+        print(f"\n⚠️  Warning: {len(failed_pages)} page(s) failed: {failed_pages}")
+
+    return all_questions
+
 def parse_exam_info(url):
     """Extract exam information from URL"""
     # Parse URL: https://examice.com/exams/provider/exam-name/
@@ -282,26 +346,11 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
                 print("❌ Could not detect total questions. Please ensure you're on a valid exam page.")
                 return
 
-            # Scrape remaining pages
-            for page_num in range(2, total_pages + 1):
-                url = f"{base_url}?page={page_num}"
-
-                print(f"📄 Page {page_num}/{total_pages}...", end=" ")
-
-                try:
-                    await page.goto(url, wait_until='networkidle', timeout=30000)
-
-                    questions = await extract_questions_from_page(page, page_num)
-
-                    if questions:
-                        all_questions.extend(questions)
-                        print(f"✓ Found {len(questions)} questions")
-                    else:
-                        print(f"⚠️  No questions found")
-
-                except Exception as e:
-                    print(f"❌ Error: {e}")
-                    continue
+            # Scrape remaining pages in parallel
+            print(f"🚀 Starting parallel scraping (max 5 concurrent pages)...")
+            print()
+            parallel_questions = await scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5)
+            all_questions.extend(parallel_questions)
 
             # Save all questions
             output_dir = Path(__file__).parent / "output"
