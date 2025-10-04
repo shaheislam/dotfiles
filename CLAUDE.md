@@ -17,6 +17,13 @@
 - **ALWAYS** ensure all tools and configs can be installed via stow or setup script
 - **CRITICAL**: The tmux configuration must ONLY exist at `~/dotfiles/.tmux.conf` - NEVER create tmux.conf in `.config/tmux/` or any other location to avoid conflicts
 
+### 3. Symlink Management
+- **ALWAYS** use GNU Stow for all configuration file symlinking
+- **NEVER** manually create symlinks or copy configuration files to home directory
+- **ALWAYS** ensure new configurations are stow-compatible (proper directory structure)
+- **ALWAYS** test stow operations before considering changes complete
+- **CRITICAL**: All dotfiles must be symlinked from `~/dotfiles` to home directory via `stow` command
+
 ## Dotfiles Project Memory Bank
 
 ### Project Overview
