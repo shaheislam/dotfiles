@@ -8,6 +8,7 @@ tap "morantron/tmux-fingers"
 
 # Taps for AWS tools
 tap "common-fate/granted"
+tap "keidarcy/tap"
 
 # Taps for DevOps tools
 tap "fluxcd/tap"
@@ -62,7 +63,7 @@ brew "rust"
 brew "crystal"
 brew "awscli"
 brew "granted"
-brew "e1s"  # Easy AWS ECS CLI (like k9s for ECS)
+brew "keidarcy/tap/e1s"  # Easy AWS ECS CLI (like k9s for ECS)
 brew "kubectl"
 brew "azure-cli"
 brew "imagemagick"
