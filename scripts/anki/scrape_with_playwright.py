@@ -360,12 +360,21 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
 
             print(f"✅ Anki deck saved to: {anki_file}")
             print(f"✅ Tags: {tags}")
+
+            # Also save to ~/Documents for easy access
+            import shutil
+            documents_dir = Path.home() / "Documents"
+            documents_file = documents_dir / f"{exam_name}_complete.txt"
+            shutil.copy2(anki_file, documents_file)
+            print(f"✅ Copy saved to: {documents_file}")
+
             print()
             print("=" * 70)
             print("🎉 All done! Import the Anki deck:")
             print(f"   1. Open Anki")
             print(f"   2. File → Import")
             print(f"   3. Select: {anki_file}")
+            print(f"      OR: {documents_file}")
             print(f"   4. Field separator: Tab")
             print("=" * 70)
 
