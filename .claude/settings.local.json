@@ -141,7 +141,18 @@
       "Bash(./install-wizard.sh:*)",
       "Bash(tmux-fingers:*)",
       "Bash(pbcopy)",
-      "Bash(pbpaste)"
+      "Bash(pbpaste)",
+      "WebFetch(domain:docs.astral.sh)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(playwright install:*)",
+      "Bash(venv/bin/python:*)",
+      "Bash(venv/bin/python3:*)",
+      "Bash(venv/bin/pip:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout 30 venv/bin/python:*)"
     ],
     "deny": [],
     "ask": []

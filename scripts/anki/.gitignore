@@ -1,0 +1,12 @@
+# Virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Output files
+output/
+*.txt
+*.json
+
+# Progress tracking
+progress.json
