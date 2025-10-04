@@ -125,7 +125,8 @@
       "Bash(/Users/shaheislam/dotfiles/.config/k9s/scripts/test-stern-splash.sh context namespace pod)",
       "Bash(atuin history delete:*)",
       "Bash(atuin history:*)",
-      "Bash(atuin:*)"
+      "Bash(atuin:*)",
+      "WebFetch(domain:awslabs.github.io)"
     ],
     "deny": [],
     "ask": []

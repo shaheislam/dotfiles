@@ -98,6 +98,7 @@ BREW_PACKAGES=(
   "glow"
   "jq"
   "yq"
+  "graphviz"
   "shellcheck"
   "shfmt"
   "gh"
@@ -705,6 +706,7 @@ if command -v claude &> /dev/null; then
 
   # Core AWS tools (no credentials required)
   claude mcp add --scope user aws-documentation uvx awslabs.aws-documentation-mcp-server@latest || echo "Warning: Failed to add aws-documentation MCP"
+  claude mcp add --scope user aws-diagram uvx awslabs.aws-diagram-mcp-server || echo "Warning: Failed to add aws-diagram MCP"
   claude mcp add --scope user aws-cdk uvx awslabs.cdk-mcp-server@latest || echo "Warning: Failed to add aws-cdk MCP"
   claude mcp add --scope user aws-terraform uvx awslabs.terraform-mcp-server@latest || echo "Warning: Failed to add aws-terraform MCP"
 
