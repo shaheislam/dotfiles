@@ -237,32 +237,83 @@ async def scrape_single_page(context, page_num, total_pages, base_url, semaphore
             if page:
                 await page.close()
 
+async def scrape_single_page_with_retry(context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3):
+    """Retry wrapper for scrape_single_page with exponential backoff
+
+    Returns: (page_num, questions_or_error, retry_count)
+    """
+    for attempt in range(max_retries):
+        result = await scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock)
+
+        # Check if result is an error (tuple with Exception)
+        if isinstance(result[1], Exception):
+            if attempt < max_retries - 1:
+                # Exponential backoff: 1s, 2s, 4s
+                wait_time = 2 ** attempt
+                async with progress_lock:
+                    print(f"  ⟳ Retry {attempt + 1}/{max_retries - 1} after {wait_time}s...")
+                await asyncio.sleep(wait_time)
+                continue
+            else:
+                # All retries exhausted
+                async with progress_lock:
+                    print(f"  ✗ Failed after {max_retries} attempts")
+                return (result[0], result[1], attempt + 1)
+        else:
+            # Success on this attempt
+            if attempt > 0:
+                async with progress_lock:
+                    print(f"  ✓ Succeeded on retry {attempt}")
+            return (result[0], result[1], attempt + 1)
+
+    return (result[0], result[1], max_retries)
+
 async def scrape_pages_parallel(context, total_pages, base_url, max_concurrent=5):
     """Orchestrate parallel page scraping with semaphore-based concurrency control"""
     semaphore = asyncio.Semaphore(max_concurrent)
     progress_lock = asyncio.Lock()
 
-    # Create tasks for all pages (starting from page 2)
+    # Create tasks for all pages (starting from page 2) with retry logic
     tasks = [
-        scrape_single_page(context, page_num, total_pages, base_url, semaphore, progress_lock)
+        scrape_single_page_with_retry(context, page_num, total_pages, base_url, semaphore, progress_lock, max_retries=3)
         for page_num in range(2, total_pages + 1)
     ]
 
     # Execute all tasks concurrently
     results = await asyncio.gather(*tasks, return_exceptions=False)
 
-    # Sort results by page number and filter out errors
+    # Sort results by page number and collect statistics
     all_questions = []
     failed_pages = []
+    retry_stats = {
+        'pages_retried': 0,
+        'total_retries': 0,
+        'pages_succeeded_on_retry': 0
+    }
 
-    for page_num, result in sorted(results, key=lambda x: x[0]):
+    for page_num, result, retry_count in sorted(results, key=lambda x: x[0]):
+        # Track retry statistics
+        if retry_count > 1:
+            retry_stats['pages_retried'] += 1
+            retry_stats['total_retries'] += (retry_count - 1)
+            if not isinstance(result, Exception):
+                retry_stats['pages_succeeded_on_retry'] += 1
+
+        # Process result
         if isinstance(result, Exception):
             failed_pages.append(page_num)
         else:
             all_questions.extend(result)
 
+    # Print statistics
+    if retry_stats['pages_retried'] > 0:
+        print(f"\n📊 Retry Statistics:")
+        print(f"   Pages that needed retries: {retry_stats['pages_retried']}")
+        print(f"   Total retry attempts: {retry_stats['total_retries']}")
+        print(f"   Recovered after retry: {retry_stats['pages_succeeded_on_retry']}")
+
     if failed_pages:
-        print(f"\n⚠️  Warning: {len(failed_pages)} page(s) failed: {failed_pages}")
+        print(f"\n⚠️  Warning: {len(failed_pages)} page(s) failed after retries: {failed_pages}")
 
     return all_questions
 
