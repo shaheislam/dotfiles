@@ -9,6 +9,7 @@ import argparse
 import subprocess
 import sys
 import re
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple, Set
@@ -18,11 +19,89 @@ import json
 import webbrowser
 
 
+def setup_logging(output_dir: Path, log_level=logging.INFO, debug_mode=False):
+    """Setup comprehensive logging for CV generation
+
+    Creates log files:
+    - cv_generator.log: All operations
+    - errors.log: Errors only
+    - debug.log: Debug messages (if debug_mode enabled)
+
+    Args:
+        output_dir: Directory for log files
+        log_level: Minimum logging level
+        debug_mode: Enable debug logging
+
+    Returns:
+        Configured logger instance
+    """
+    # Ensure output directory exists
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create logger
+    logger = logging.getLogger('cv_generator')
+    logger.setLevel(logging.DEBUG if debug_mode else log_level)
+
+    # Remove existing handlers
+    logger.handlers.clear()
+
+    # Console handler - INFO level for user feedback
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    console_handler.setFormatter(console_formatter)
+
+    # Main log file - all operations
+    main_log = output_dir / "cv_generator.log"
+    main_handler = logging.FileHandler(main_log, mode='a', encoding='utf-8')
+    main_handler.setLevel(log_level)
+    main_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)s | %(funcName)s:%(lineno)d | %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    main_handler.setFormatter(main_formatter)
+
+    # Error log file - errors only
+    error_log = output_dir / "errors.log"
+    error_handler = logging.FileHandler(error_log, mode='a', encoding='utf-8')
+    error_handler.setLevel(logging.ERROR)
+    error_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)s | %(funcName)s:%(lineno)d | %(message)s\n'
+        'Exception: %(exc_info)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    error_handler.setFormatter(error_formatter)
+
+    # Debug log file (optional)
+    if debug_mode:
+        debug_log = output_dir / "debug.log"
+        debug_handler = logging.FileHandler(debug_log, mode='a', encoding='utf-8')
+        debug_handler.setLevel(logging.DEBUG)
+        debug_formatter = logging.Formatter(
+            '%(asctime)s | DEBUG | %(funcName)s:%(lineno)d | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        debug_handler.setFormatter(debug_formatter)
+        logger.addHandler(debug_handler)
+
+    # Add handlers
+    logger.addHandler(console_handler)
+    logger.addHandler(main_handler)
+    logger.addHandler(error_handler)
+
+    logger.info("Logging initialized for CV generation")
+    return logger
+
+
 class UnifiedCVGenerator:
     """Unified CV generation with metadata-based matching and ATS optimization"""
 
-    def __init__(self):
-        """Initialize generator with configuration"""
+    def __init__(self, debug_mode=False):
+        """Initialize generator with configuration
+
+        Args:
+            debug_mode: Enable debug logging
+        """
         self.base_dir = Path.home() / "dotfiles"
         self.jobapps_dir = self.base_dir / "jobapps"
         self.scripts_dir = self.base_dir / "scripts" / "cv"
@@ -32,6 +111,10 @@ class UnifiedCVGenerator:
         # Ensure directories exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.generated_dir.mkdir(parents=True, exist_ok=True)
+
+        # Setup logging
+        self.logger = setup_logging(self.generated_dir, debug_mode=debug_mode)
+        self.logger.info(f"Initialized CV Generator - Output: {self.output_dir}")
 
         # ATS optimization settings (built-in)
         self.ats_replacements = {
@@ -76,7 +159,7 @@ class UnifiedCVGenerator:
         }
 
         if not Path(job_path).exists():
-            print(f"Warning: Job description not found at {job_path}")
+            self.logger.warning(f"Job description not found at {job_path}")
             return requirements
 
         with open(job_path, 'r') as f:
@@ -159,20 +242,20 @@ class UnifiedCVGenerator:
         requirements['must_have'] = list(dict.fromkeys(requirements['must_have']))[:30]
         requirements['nice_to_have'] = list(dict.fromkeys(requirements['nice_to_have']))[:20]
 
-        print(f"\nDynamically extracted from job description:")
-        print(f"  - {len(requirements['technologies'])} technologies/tools")
-        print(f"  - {len(requirements['keywords'])} keywords")
-        print(f"  - {len(requirements['must_have'])} must-have skills")
-        print(f"  - {len(requirements['nice_to_have'])} nice-to-have skills")
+        self.logger.info(f"Dynamically extracted from job description:")
+        self.logger.info(f"  - {len(requirements['technologies'])} technologies/tools")
+        self.logger.info(f"  - {len(requirements['keywords'])} keywords")
+        self.logger.info(f"  - {len(requirements['must_have'])} must-have skills")
+        self.logger.info(f"  - {len(requirements['nice_to_have'])} nice-to-have skills")
 
         # Show top extracted terms for debugging
         if requirements['technologies']:
-            print(f"\n  Top technologies detected: {', '.join(requirements['technologies'][:10])}")
+            self.logger.info(f"  Top technologies detected: {', '.join(requirements['technologies'][:10])}")
 
         # Debug: Show what we're actually looking for
-        print(f"\nDebug - Key terms we're matching against:")
-        print(f"  Must-have: {', '.join(requirements['must_have'][:10]) if requirements['must_have'] else 'None'}")
-        print(f"  Technologies: {', '.join([t for t in requirements['technologies'] if any(x in t for x in ['security', 'identity', 'entra', 'purview', 'cyber'])][:10])}")
+        self.logger.debug(f"Key terms we're matching against:")
+        self.logger.debug(f"  Must-have: {', '.join(requirements['must_have'][:10]) if requirements['must_have'] else 'None'}")
+        self.logger.debug(f"  Technologies: {', '.join([t for t in requirements['technologies'] if any(x in t for x in ['security', 'identity', 'entra', 'purview', 'cyber'])][:10])}")
 
         return requirements
 
@@ -321,10 +404,10 @@ class UnifiedCVGenerator:
             key=lambda x: x[1],
             reverse=True
         )
-        print("\nTop 15 scoring achievements:")
+        self.logger.info("Top 15 scoring achievements:")
         for i, (achievement, score) in enumerate(sorted_achievements[:15], 1):
             preview = achievement[:60] + "..." if len(achievement) > 60 else achievement
-            print(f"  {i}. Score {score}: {preview}")
+            self.logger.info(f"  {i}. Score {score}: {preview}")
 
         selected = []
 
@@ -467,7 +550,7 @@ class UnifiedCVGenerator:
                     job_title = job_title
 
                 job_titles[position] = job_title
-                print(f"  {position}: {job_title} (based on {count} bullets)")
+                self.logger.debug(f"{position}: {job_title} (based on {count} bullets)")
 
                 # Escape LaTeX special characters in bullets
                 escaped_bullets = []
@@ -498,19 +581,19 @@ class UnifiedCVGenerator:
 
         cv_content = header + template
 
-        print(f"Selected {len(bullets)} bullets based on job requirements")
+        self.logger.info(f"Selected {len(bullets)} bullets based on job requirements")
         if bullets and len(bullets) >= 3:
-            print("Top 3 bullets selected:")
+            self.logger.info("Top 3 bullets selected:")
             for i, bullet in enumerate(bullets[:3], 1):
                 preview = bullet[:80] + "..." if len(bullet) > 80 else bullet
-                print(f"  {i}. {preview}")
+                self.logger.info(f"  {i}. {preview}")
 
         # Debug: Show if security-related bullets are in the selection
         security_bullets = [b for b in bullets if any(term in b.lower() for term in ['security', 'twingate', 'zero trust', 'identity', 'oidc', 'compliance', 'soc'])]
         if security_bullets:
-            print(f"\nSecurity-focused bullets included: {len(security_bullets)}")
+            self.logger.info(f"Security-focused bullets included: {len(security_bullets)}")
         else:
-            print("\nWARNING: No security-focused bullets in selection!")
+            self.logger.warning("No security-focused bullets in selection!")
 
         return cv_content
 
@@ -560,27 +643,27 @@ class UnifiedCVGenerator:
     def generate_both_versions(self, job_path: str, skills_path: str, template_path: str,
                               metadata: Dict, max_bullets: int = 10) -> Tuple[str, str, Dict]:
         """Generate both standard and ATS-optimized versions"""
-        print("=" * 50)
-        print("🚀 Unified CV Generation")
-        print("=" * 50)
+        self.logger.info("=" * 50)
+        self.logger.info("🚀 Unified CV Generation")
+        self.logger.info("=" * 50)
 
         # Parse job description
-        print("📋 Analyzing job requirements...")
+        self.logger.info("📋 Analyzing job requirements...")
         requirements = self.parse_job_description(job_path)
-        print(f"  Found {len(requirements['technologies'])} technologies, {len(requirements['keywords'])} keywords")
+        self.logger.info(f"  Found {len(requirements['technologies'])} technologies, {len(requirements['keywords'])} keywords")
 
         # Load skills with metadata
-        print("📚 Loading skills database...")
+        self.logger.info("📚 Loading skills database...")
         skills = self.load_skills(skills_path)
-        print(f"  Loaded {len(skills['all_achievements'])} achievements with metadata")
+        self.logger.info(f"  Loaded {len(skills['all_achievements'])} achievements with metadata")
 
         # Score and select bullets
-        print("🎯 Scoring achievements based on job match...")
+        self.logger.info("🎯 Scoring achievements based on job match...")
         scored = self.score_achievements(skills, requirements)
         bullets = self.select_bullets(scored, skills, max_bullets=max_bullets)
 
         # Generate standard CV
-        print("📄 Generating standard CV...")
+        self.logger.info("📄 Generating standard CV...")
         standard_latex = self.generate_cv_latex(template_path, bullets, skills, metadata)
 
         # Save standard version
@@ -589,7 +672,7 @@ class UnifiedCVGenerator:
             f.write(standard_latex)
 
         # Generate ATS-optimized version
-        print("🤖 Creating ATS-optimized version...")
+        self.logger.info("🤖 Creating ATS-optimized version...")
         ats_latex = self.create_ats_optimized_version(standard_latex)
 
         # Calculate scores
@@ -607,12 +690,12 @@ class UnifiedCVGenerator:
         with open(ats_tex_path, 'w') as f:
             f.write(ats_latex)
 
-        print(f"  Original ATS Score: {report['original_score']}/100")
-        print(f"  Optimized ATS Score: {report['optimized_score']}/100")
-        print(f"  Improvement: +{report['improvement']} points")
+        self.logger.info(f"  Original ATS Score: {report['original_score']}/100")
+        self.logger.info(f"  Optimized ATS Score: {report['optimized_score']}/100")
+        self.logger.info(f"  Improvement: +{report['improvement']} points")
 
         # Compile both PDFs
-        print("🔨 Compiling PDFs...")
+        self.logger.info("🔨 Compiling PDFs...")
         output_name = f"{metadata['recruiter']}-{metadata['date']}-{metadata['type']}-{metadata['salary']}"
 
         # Compile standard
@@ -631,7 +714,7 @@ class UnifiedCVGenerator:
         compile_script = self.scripts_dir.parent / "compile-cv.sh"
 
         if not compile_script.exists():
-            print(f"Error: Compile script not found at {compile_script}")
+            self.logger.error(f"Compile script not found at {compile_script}")
             return False
 
         try:
@@ -640,9 +723,13 @@ class UnifiedCVGenerator:
                 capture_output=True,
                 text=True
             )
+            if result.returncode == 0:
+                self.logger.info(f"Successfully compiled {output_name}.pdf")
+            else:
+                self.logger.error(f"Compilation failed for {output_name}: {result.stderr}")
             return result.returncode == 0
         except Exception as e:
-            print(f"Compilation error: {e}")
+            self.logger.error(f"Compilation error: {e}", exc_info=True)
             return False
 
     def generate_comparison_report(self, standard_pdf: str, ats_pdf: str,
@@ -780,14 +867,17 @@ def main():
         args.job, args.skills, args.template, metadata, max_bullets=args.max_bullets
     )
 
+    # Get logger for main function
+    logger = logging.getLogger('cv_generator')
+
     # Generate comparison report
     if not args.no_report:
-        print("📊 Generating comparison report...")
+        logger.info("📊 Generating comparison report...")
         html = generator.generate_comparison_report(standard_pdf, ats_pdf, report, metadata)
         report_path = generator.generated_dir / f"unified_report_{metadata['recruiter']}_{metadata['date']}.html"
         with open(report_path, 'w') as f:
             f.write(html)
-        print(f"  Report saved: {report_path}")
+        logger.info(f"  Report saved: {report_path}")
 
         if args.open:
             # Open the HTML report
@@ -802,9 +892,9 @@ def main():
             if ats_pdf_path.exists():
                 subprocess.run(['open', str(ats_pdf)])
 
-    print("\n✅ Unified CV generation complete!")
-    print(f"  Standard: {standard_pdf}")
-    print(f"  ATS-Optimized: {ats_pdf}")
+    logger.info("✅ Unified CV generation complete!")
+    logger.info(f"  Standard: {standard_pdf}")
+    logger.info(f"  ATS-Optimized: {ats_pdf}")
 
     return 0
 

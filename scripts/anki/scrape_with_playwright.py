@@ -15,30 +15,78 @@ from pathlib import Path
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 
-def setup_error_logger(output_dir):
-    """Setup error logger that writes to errors.log in output directory"""
-    log_file = output_dir / "errors.log"
+def setup_logging(output_dir, log_level=logging.INFO):
+    """Setup comprehensive logging with file and console handlers
 
+    Creates multiple log files:
+    - scraper.log: All logging messages (INFO and above)
+    - errors.log: Errors only
+    - debug.log: Debug messages (when log_level=DEBUG)
+
+    Args:
+        output_dir: Directory for log files
+        log_level: Minimum logging level (default: INFO)
+
+    Returns:
+        Logger instance configured with handlers
+    """
     # Create logger
-    logger = logging.getLogger('scraper_errors')
-    logger.setLevel(logging.ERROR)
+    logger = logging.getLogger('examice_scraper')
+    logger.setLevel(logging.DEBUG)  # Capture all levels
 
     # Remove existing handlers to avoid duplicates
     logger.handlers.clear()
 
-    # Create file handler
-    file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
-    file_handler.setLevel(logging.ERROR)
+    # Console handler - INFO and above
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_formatter = logging.Formatter(
+        '%(levelname)s: %(message)s'
+    )
+    console_handler.setFormatter(console_formatter)
 
-    # Create formatter with timestamp
-    formatter = logging.Formatter(
-        '%(asctime)s | %(levelname)s | %(message)s',
+    # Main log file handler - All messages
+    main_log_file = output_dir / "scraper.log"
+    main_handler = logging.FileHandler(main_log_file, mode='a', encoding='utf-8')
+    main_handler.setLevel(log_level)
+    main_formatter = logging.Formatter(
+        '%(asctime)s | %(name)s | %(levelname)s | %(funcName)s:%(lineno)d | %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
-    file_handler.setFormatter(formatter)
+    main_handler.setFormatter(main_formatter)
 
-    # Add handler to logger
-    logger.addHandler(file_handler)
+    # Error log file handler - Errors and critical only
+    error_log_file = output_dir / "errors.log"
+    error_handler = logging.FileHandler(error_log_file, mode='a', encoding='utf-8')
+    error_handler.setLevel(logging.ERROR)
+    error_formatter = logging.Formatter(
+        '%(asctime)s | %(levelname)s | %(funcName)s:%(lineno)d | %(message)s\n'
+        'Details: %(pathname)s\n'
+        'Exception: %(exc_info)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    error_handler.setFormatter(error_formatter)
+
+    # Debug log file handler - Debug messages only (if enabled)
+    if log_level == logging.DEBUG:
+        debug_log_file = output_dir / "debug.log"
+        debug_handler = logging.FileHandler(debug_log_file, mode='a', encoding='utf-8')
+        debug_handler.setLevel(logging.DEBUG)
+        debug_formatter = logging.Formatter(
+            '%(asctime)s | DEBUG | %(funcName)s:%(lineno)d | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        debug_handler.setFormatter(debug_formatter)
+        logger.addHandler(debug_handler)
+
+    # Add all handlers to logger
+    logger.addHandler(console_handler)
+    logger.addHandler(main_handler)
+    logger.addHandler(error_handler)
+
+    # Log initial setup message
+    logger.info(f"Logging initialized - Level: {logging.getLevelName(log_level)}")
+    logger.info(f"Log files: {output_dir}")
 
     return logger
 
@@ -727,21 +775,32 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
                 print("❌ Could not detect total questions. Please ensure you're on a valid exam page.")
                 return
 
-            # Setup output directory and error logger
+            # Setup output directory and logging
             output_dir = Path(__file__).parent / "output"
             output_dir.mkdir(exist_ok=True)
-            error_logger = setup_error_logger(output_dir)
+            logger = setup_logging(output_dir, log_level=logging.INFO)
+
+            logger.info(f"Starting scrape for {total_pages} pages")
+            logger.debug(f"Base URL: {base_url}")
 
             # Scrape remaining pages in parallel
             print(f"🚀 Starting parallel scraping (max 5 concurrent pages)...")
+            logger.info(f"Starting parallel scraping of {total_pages - 1} remaining pages")
             print()
-            parallel_questions = await scrape_pages_parallel(context, total_pages, base_url, error_logger, max_concurrent=5)
+            parallel_questions = await scrape_pages_parallel(context, total_pages, base_url, logger, max_concurrent=5)
             all_questions.extend(parallel_questions)
+            logger.info(f"Parallel scraping complete - collected {len(parallel_questions)} questions")
 
             # Validate the scraped data
             print()
+            logger.info("Validating scraped questions...")
             validation_report = validate_questions(all_questions, total_questions)
             print_validation_report(validation_report)
+
+            if validation_report['is_valid']:
+                logger.info("✓ All validation checks passed")
+            else:
+                logger.warning(f"⚠ Validation issues detected: {len(validation_report.get('gaps', []))} gaps, {len(validation_report.get('duplicates', []))} duplicates")
             print()
 
             # Save all questions (output_dir already created above)
@@ -757,6 +816,9 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             multiple_choice = sum(1 for q in all_questions if not q.get('isTextQuestion', False))
             text_based = sum(1 for q in all_questions if q.get('isTextQuestion', False))
 
+            logger.info(f"Saved {len(all_questions)} questions to {json_file}")
+            logger.info(f"Question breakdown: {multiple_choice} multiple choice, {text_based} text-based")
+
             print()
             print("=" * 70)
             print(f"✅ Scraping complete!")
@@ -769,13 +831,16 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             error_log = output_dir / "errors.log"
             if error_log.exists() and error_log.stat().st_size > 0:
                 print(f"⚠️  Error log: {error_log}")
+                logger.warning(f"Errors were encountered during scraping - see {error_log}")
             print()
 
             # Generate Anki deck
             print("📝 Generating Anki deck...")
+            logger.info("Generating Anki deck in tab-delimited format...")
 
             # Generate tags based on exam info
             tags = f"examice {exam_info['provider']} {exam_info['exam_code']}".lower()
+            logger.debug(f"Anki tags: {tags}")
 
             with open(anki_file, 'w', encoding='utf-8', newline='') as f:
                 import csv
@@ -814,21 +879,28 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             # Export to additional formats
             print()
             print("📄 Exporting to additional formats...")
+            logger.info("Exporting to multiple formats (CSV, Markdown, APKG)...")
 
             # CSV export
             csv_file = output_dir / f"{exam_name}_complete.csv"
+            logger.debug(f"Exporting to CSV: {csv_file}")
             export_to_csv(all_questions, csv_file)
             print(f"✅ CSV export: {csv_file}")
+            logger.info(f"✓ CSV export completed: {csv_file}")
 
             # Markdown export
             md_file = output_dir / f"{exam_name}_complete.md"
+            logger.debug(f"Exporting to Markdown: {md_file}")
             export_to_markdown(all_questions, md_file, exam_info)
             print(f"✅ Markdown export: {md_file}")
+            logger.info(f"✓ Markdown export completed: {md_file}")
 
             # .apkg export (native Anki deck format)
             apkg_file = output_dir / f"{exam_name}_complete.apkg"
+            logger.debug(f"Exporting to APKG: {apkg_file}")
             export_to_apkg(all_questions, apkg_file, exam_info)
             print(f"✅ Anki package (.apkg): {apkg_file}")
+            logger.info(f"✓ APKG export completed: {apkg_file}")
 
             # Copy to Documents for easy access
             documents_apkg = documents_dir / f"{exam_name}_complete.apkg"
@@ -851,10 +923,15 @@ async def scrape_all_pages(browser_url="http://localhost:9222", exam_url=None):
             print(f"   • JSON (raw data):   {json_file}")
             print("=" * 70)
 
+            logger.info("Scraping session completed successfully")
+            logger.info(f"All files exported to: {output_dir}")
             await browser.close()
 
         except Exception as e:
             print(f"❌ Error: {e}")
+            if 'logger' in locals():
+                logger.error(f"Fatal error during scraping: {e}", exc_info=True)
+                logger.error(f"Error type: {type(e).__name__}")
             print()
             print("Make sure Chrome is running with remote debugging enabled:")
             print("  /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \\")
