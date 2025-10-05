@@ -274,3 +274,31 @@ plugins:
 - [ ] Copy YAML to clipboard (Ctrl-Y)
 - [ ] Resource events (Shift-E)
 - [ ] JSON log parsing (j)
+
+## Missing Official Plugins
+
+These plugins are available in the [official k9s repository](https://github.com/derailed/k9s/tree/master/plugins) but not currently installed. Consider adding them in the future based on your needs:
+
+1. **ai-incident-investigation.yaml** - AI-powered incident investigation
+2. **argo-rollouts-powershell.yaml** - PowerShell version of Argo Rollouts commands
+3. **blame.yaml** - Git blame functionality for resources
+4. **carvel.yaml** - Carvel tool integration
+5. **crd-wizard.yaml** - CRD management wizard
+6. **current-ctx-terminal.yaml** - Open terminal with current context
+7. **dup.yaml** - Resource duplication
+8. **duplik8s.yaml** - Another resource duplication tool
+9. **eks-node-viewer.yaml** - EKS node viewer
+10. **job-suspend.yaml** - Job suspension functionality
+11. **k3d-root-shell.yaml** - K3D root shell access
+12. **kube-metrics.yaml** - Kubernetes metrics viewer
+13. **kubectl-get-in-shell.yaml** - Get resource in shell
+14. **liveMigration.yaml** - Live migration support
+15. **log-full.yaml** - Full log viewer
+16. **log-loki.yaml** - Loki log integration
+17. **node-root-shell.yaml** - Node root shell access (you have node-shell but not the root version)
+18. **openssl.yaml** - OpenSSL operations
+19. **rm-ns.yaml** - Namespace removal
+20. **spark-operator.yaml** - Spark operator integration
+21. **start-alpine.yaml** - Start Alpine container
+22. **szero.yaml** - Szero integration
+23. **vector-dev-top.yaml** - Vector dev top view
