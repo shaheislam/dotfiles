@@ -223,15 +223,26 @@ plugins:
   # Scale deployment
   scale:
     shortCut: Shift-S
-    description: Scale
+    description: Scale deployment
     scopes:
       - deployments
+    command: bash
+    background: false
+    args:
+      - -c
+      - "echo 'Enter replica count:' && read replicas && kubectl scale deployment/$NAME -n $NAMESPACE --replicas=$replicas"
+
+  # Scale statefulset
+  scale-sts:
+    shortCut: Alt-S
+    description: Scale statefulset
+    scopes:
       - statefulsets
     command: bash
     background: false
     args:
       - -c
-      - "echo 'Enter replica count:' && read replicas && kubectl scale $RESOURCE_NAME -n $NAMESPACE --replicas=$replicas"
+      - "echo 'Enter replica count:' && read replicas && kubectl scale statefulset/$NAME -n $NAMESPACE --replicas=$replicas"
 
   # ============== NETWORKING ==============
 
