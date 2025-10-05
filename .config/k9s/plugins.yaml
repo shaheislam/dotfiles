@@ -96,27 +96,18 @@ plugins:
 
   # ============== CONTAINER OPERATIONS ==============
 
-  # Exec with bash
+  # Exec with bash (falls back to sh if bash not available)
   exec-bash:
     shortCut: b
-    description: Bash shell
+    description: Bash/sh shell
     scopes:
       - pods
       - containers
-    command: kubectl
+    command: bash
     background: false
     args:
-      - exec
-      - -it
-      - -n
-      - $NAMESPACE
-      - $POD
       - -c
-      - $CONTAINER
-      - --
-      - bash
-      - -c
-      - "export TERM=xterm-256color; export EDITOR=vi; if command -v nvim >/dev/null 2>&1; then export EDITOR=nvim; elif command -v vim >/dev/null 2>&1; then export EDITOR=vim; fi; exec bash"
+      - "kubectl exec -it -n $NAMESPACE $POD -c $NAME -- sh -c 'if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi'"
 
   # Exec with sh (for alpine/minimal containers)
   exec-sh:
@@ -134,7 +125,7 @@ plugins:
       - $NAMESPACE
       - $POD
       - -c
-      - $CONTAINER
+      - $NAME
       - --
       - sh
       - -c
@@ -156,7 +147,7 @@ plugins:
       - $NAMESPACE
       - $POD
       - -c
-      - $CONTAINER
+      - $NAME
       - --
       - bash
       - -c
@@ -197,7 +188,7 @@ plugins:
 
   # Security scan with trivy
   trivy-scan:
-    shortCut: Shift-T
+    shortCut: Shift-V
     description: Security scan
     scopes:
       - containers
@@ -607,7 +598,7 @@ plugins:
     background: false
     args:
       - -c
-      - "kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100 | jq '.' 2>/dev/null || kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100"
+      - "kubectl logs -n $NAMESPACE $POD -c $NAME --tail=100 | jq '.' 2>/dev/null || kubectl logs -n $NAMESPACE $POD -c $NAME --tail=100"
 
   # Bunyan formatted logs
   logs-bunyan:
@@ -620,7 +611,7 @@ plugins:
     background: false
     args:
       - -c
-      - "kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100 | bunyan 2>/dev/null || kubectl logs -n $NAMESPACE $POD -c $CONTAINER --tail=100"
+      - "kubectl logs -n $NAMESPACE $POD -c $NAME --tail=100 | bunyan 2>/dev/null || kubectl logs -n $NAMESPACE $POD -c $NAME --tail=100"
 
   # ============== KEDA AUTOSCALING ==============
 

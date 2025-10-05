@@ -37,21 +37,53 @@ if ! command -v kubectl &> /dev/null; then
     exit 1
 fi
 
-# Check if Docker/Podman is running
-if command -v docker &> /dev/null && docker ps &> /dev/null; then
-    echo_info "Docker is running"
-    RUNTIME="docker"
-elif command -v podman &> /dev/null && podman machine list | grep -qE "Running|running"; then
-    echo_info "Podman is running"
-    RUNTIME="podman"
-    # Set Docker host to use Podman socket
-    export DOCKER_HOST="unix://$(podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
-else
-    echo_error "Neither Docker nor Podman is running. Please start one of them first."
-    echo_info "For Podman: podman machine start"
-    echo_info "For Docker: open Docker Desktop"
+# Detect container runtime
+detect_runtime() {
+    # Check for OrbStack first (highest priority)
+    if command -v orbctl &> /dev/null && orbctl status &> /dev/null 2>&1; then
+        echo_info "OrbStack detected and running"
+        # Clear any Podman DOCKER_HOST settings
+        if [[ "$DOCKER_HOST" == *"podman"* ]]; then
+            echo_warn "Clearing Podman DOCKER_HOST to use OrbStack"
+            unset DOCKER_HOST
+        fi
+        RUNTIME="docker"
+        return 0
+    fi
+
+    # Check for Docker Desktop
+    if command -v docker &> /dev/null && docker ps &> /dev/null 2>&1; then
+        echo_info "Docker is running"
+        RUNTIME="docker"
+        return 0
+    fi
+
+    # Check for Podman
+    if command -v podman &> /dev/null && podman machine list 2>/dev/null | grep -qE "Currently running"; then
+        echo_info "Podman is running"
+        RUNTIME="podman"
+        # Set Docker host to use Podman socket
+        PODMAN_SOCKET=$(podman machine inspect podman-machine-default --format '{{.ConnectionInfo.PodmanSocket.Path}}' 2>/dev/null)
+        if [ -n "$PODMAN_SOCKET" ]; then
+            export DOCKER_HOST="unix://${PODMAN_SOCKET}"
+            echo_info "Using Podman socket: $DOCKER_HOST"
+        else
+            echo_error "Could not get Podman socket path"
+            exit 1
+        fi
+        return 0
+    fi
+
+    # No runtime found
+    echo_error "No container runtime detected. Please start one of:"
+    echo_info "  - OrbStack: open -a OrbStack"
+    echo_info "  - Docker Desktop: open -a Docker"
+    echo_info "  - Podman: podman machine start"
     exit 1
-fi
+}
+
+# Detect and configure runtime
+detect_runtime
 
 # Function to create cluster
 create_cluster() {

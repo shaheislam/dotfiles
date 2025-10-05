@@ -39,7 +39,7 @@
 | `d` | Dive image analysis | Container Ops | Safe |
 | `v` | Show Helm values | Helm | Safe |
 | `Ctrl-F` | Remove finalizers | Troubleshooting | **DANGEROUS** |
-| `Shift-T` | Trivy security scan | Security | Safe |
+| `Shift-V` | Trivy security scan | Security | Safe |
 | `j` | Parse JSON logs | Logs | Safe |
 | `Shift-W` | Show pod metrics | Monitoring | Safe |
 | `Shift-S` | Scale deployment | Deployment | Moderate |
@@ -402,7 +402,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 ```
 
-### Trivy Security Scan (`Shift-T`)
+### Trivy Security Scan (`Shift-V`)
 **Description**: Scan container image for vulnerabilities
 **Scope**: containers
 **Dependencies**: `trivy` (`brew install aquasecurity/trivy/trivy`)
@@ -1240,7 +1240,7 @@ istioctl proxy-config endpoint pod-name   # Endpoints
    - `Shift-D` - Debug container
 
 3. **Security Audit**:
-   - `Shift-T` - Scan image
+   - `Shift-V` - Scan image
    - `d` - Analyze layers
    - `Ctrl-O` - Review security policies
 

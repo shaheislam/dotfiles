@@ -155,7 +155,20 @@
       "Bash(timeout 30 venv/bin/python:*)",
       "Bash(gh auth:*)",
       "Bash(gh repo view:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(/bin/ls:*)",
+      "Bash(git restore:*)",
+      "Bash(/bin/cat ~/.config/k9s/plugins.yaml)",
+      "Bash(/bin/cat ~/dotfiles/.config/k9s/plugins.yaml)",
+      "Bash(/bin/grep -c \"shortCut\" ~/.config/k9s/plugins.yaml)",
+      "Bash(test:*)",
+      "Read(//private/tmp/**)",
+      "Bash(~/dotfiles/scripts/k3s-setup.sh delete:*)",
+      "Bash(~/dotfiles/scripts/minikube-setup.sh create:*)",
+      "Bash(timeout:*)",
+      "Bash(orbctl status:*)",
+      "Bash(./scripts/container-runtime-detect.sh:*)",
+      "Bash(unset DOCKER_HOST)"
     ],
     "deny": [],
     "ask": []
