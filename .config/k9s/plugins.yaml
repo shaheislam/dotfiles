@@ -101,13 +101,19 @@ plugins:
     shortCut: b
     description: Bash/sh shell
     scopes:
-      - pods
       - containers
     command: bash
     background: false
     args:
       - -c
-      - "kubectl exec -it -n $NAMESPACE $POD -c $NAME -- sh -c 'if command -v bash >/dev/null 2>&1; then exec bash; else exec sh; fi'"
+      - |
+        # Try different shell options
+        kubectl exec -it -n $NAMESPACE $POD -c $NAME -- bash 2>/dev/null || \
+        kubectl exec -it -n $NAMESPACE $POD -c $NAME -- sh 2>/dev/null || \
+        kubectl exec -it -n $NAMESPACE $POD -c $NAME -- ash 2>/dev/null || \
+        kubectl exec -it -n $NAMESPACE $POD -c $NAME -- /bin/bash 2>/dev/null || \
+        kubectl exec -it -n $NAMESPACE $POD -c $NAME -- /bin/sh 2>/dev/null || \
+        echo "No shell available in container $NAME (distroless/minimal container)"
 
   # Exec with sh (for alpine/minimal containers)
   exec-sh:

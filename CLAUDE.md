@@ -206,6 +206,13 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | jq '.mcpS
 - Record solutions to common problems
 - Update workflow documentation as processes evolve
 
+### Kubernetes Manifests Management
+- **ALWAYS** place Kubernetes manifest files in `scripts/manifests/` directory
+- **ALWAYS** update `scripts/manifests/README.md` when adding new manifest files
+- **ALWAYS** include in the README: filename, purpose, namespace, container details, usage, and use case
+- **ALWAYS** use descriptive filenames for manifests (e.g., `test-shell-deployment.yaml` not `test.yaml`)
+
 ### Recent Updates
 - **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
 - **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
+- **2025-10-05**: Added Kubernetes manifests directory with documentation requirements

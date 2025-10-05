@@ -168,7 +168,8 @@
       "Bash(timeout:*)",
       "Bash(orbctl status:*)",
       "Bash(./scripts/container-runtime-detect.sh:*)",
-      "Bash(unset DOCKER_HOST)"
+      "Bash(unset DOCKER_HOST)",
+      "Bash(/Users/shaheislam/dotfiles/.config/k9s/scripts/stern-splash.sh orbstack kube-system coredns)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-shell
+  namespace: test
+  labels:
+    app: test-shell
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-shell
+  template:
+    metadata:
+      labels:
+        app: test-shell
+    spec:
+      containers:
+      - name: shell
+        image: busybox:latest
+        command:
+          - sleep
+          - "3600"
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
