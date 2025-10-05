@@ -210,7 +210,7 @@ plugins:
 
   # Restart deployment/statefulset/daemonset
   restart:
-    shortCut: Shift-R
+    shortCut: Shift-T
     description: Restart
     scopes:
       - deployments
@@ -342,7 +342,7 @@ plugins:
 
   # Drain node
   drain-node:
-    shortCut: Shift-D
+    shortCut: Ctrl-W
     description: Drain node
     scopes:
       - nodes
