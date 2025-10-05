@@ -326,17 +326,16 @@ plugins:
     description: Node shell
     scopes:
       - nodes
-    command: kubectl
+    command: /Users/shaheislam/dotfiles/scripts/bin/kubectl-node-shell
     background: false
     confirm: true
     dangerous: true
     args:
-      - node-shell
       - $NAME
 
   # Drain node
   drain-node:
-    shortCut: Ctrl-W
+    shortCut: Ctrl-Q
     description: Drain node
     scopes:
       - nodes

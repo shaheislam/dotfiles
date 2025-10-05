@@ -183,7 +183,11 @@
       "Bash(colima delete:*)",
       "Bash(limactl disk:*)",
       "Bash(docker:*)",
-      "Bash(K9S_CONFIG_DIR=\"$HOME/.config/k9s\" k9s info)"
+      "Bash(K9S_CONFIG_DIR=\"$HOME/.config/k9s\" k9s info)",
+      "Bash(while read plugin)",
+      "Bash(do echo \"=== $plugin ===\")",
+      "Read(///**)",
+      "Bash(~/bin/kubectl-node-shell --help)"
     ],
     "deny": [],
     "ask": []
