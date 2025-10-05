@@ -167,7 +167,7 @@ else # If the OS isn't windows, assume linux
   fi
 
   cmd_arg_prefix=', "--"'
-  cmd_default=', "bash", "-l"'
+  cmd_default=', "sh", "-c", "if command -v bash >/dev/null 2>&1; then exec bash -l; else exec sh; fi"'
   security_context='{"privileged":true}'
 fi
 

@@ -187,7 +187,8 @@
       "Bash(while read plugin)",
       "Bash(do echo \"=== $plugin ===\")",
       "Read(///**)",
-      "Bash(~/bin/kubectl-node-shell --help)"
+      "Bash(~/bin/kubectl-node-shell --help)",
+      "Bash(~/bin/kubectl-node-shell:*)"
     ],
     "deny": [],
     "ask": []
