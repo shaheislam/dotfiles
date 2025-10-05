@@ -30,7 +30,7 @@ options:
   kubeconfig:
     updateDefaultKubeconfig: true
     switchCurrentContext: true
-# Registry disabled for Podman compatibility
+# Local registry configuration (optional)
 # registries:
 #   create:
 #     name: k3d-local-registry

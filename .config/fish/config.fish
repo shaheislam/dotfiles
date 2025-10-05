@@ -59,8 +59,8 @@ if status is-interactive
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
-    # Podman/Docker configuration for k3d
-    set -x DOCKER_HOST "unix:///var/folders/5p/gmrrr9ws5g98h04tn8scp6s40000gn/T/podman/podman-machine-default-api.sock"
+    # Colima Docker configuration
+    set -x DOCKER_HOST "unix://$HOME/.colima/default/docker.sock"
 
     # Load centralized PATH configuration
     source $HOME/.config/fish/paths.fish
@@ -580,13 +580,7 @@ if status is-interactive
     alias klf="kubectl logs -f"
     alias ke="kubectl exec -it"
 
-    # Local Kubernetes clusters
-    alias mk="minikube"
-    alias mkstart="minikube start --driver=docker"
-    alias mkstop="minikube stop"
-    alias mkdel="minikube delete"
-    alias mkdash="minikube dashboard"
-
+    # Local Kubernetes clusters (using Colima + k3d)
     # k3d shortcuts
     alias k3dc="k3d cluster"
     alias k3dcreate="k3d cluster create"
@@ -2191,85 +2185,48 @@ if status is-interactive
         end
     end
 
-    # Quick cluster management functions
-    function kcluster --description "Manage local Kubernetes clusters"
+    # Quick cluster management functions (using Colima + k3d)
+    function kcluster --description "Manage local Kubernetes clusters with k3d on Colima"
         if test (count $argv) -eq 0
-            echo "Usage: kcluster <type> <action> [name]"
-            echo "Types: minikube, k3d, kind"
+            echo "Usage: kcluster <action> [name]"
             echo "Actions: start, stop, delete, list"
+            echo "Note: Using k3d with Colima as the container runtime"
             return 1
         end
 
-        set -l cluster_type $argv[1]
-        set -l action $argv[2]
-        set -l name $argv[3]
+        set -l action $argv[1]
+        set -l name $argv[2]
 
-        switch $cluster_type
-            case minikube mk
-                switch $action
-                    case start
-                        minikube start --driver=docker
-                    case stop
-                        minikube stop
-                    case delete del
-                        minikube delete
-                    case list ls
-                        minikube profile list
-                    case dashboard dash
-                        minikube dashboard
-                    case '*'
-                        echo "Unknown action: $action"
+        # Ensure Colima is running
+        if not colima status &>/dev/null
+            echo "Starting Colima..."
+            colima start --runtime docker --cpu 4 --memory 8 --disk 60
+        end
+
+        switch $action
+            case start create
+                if test -n "$name"
+                    k3d cluster create $name
+                else
+                    k3d cluster create dev
                 end
-
-            case k3d
-                switch $action
-                    case start create
-                        if test -n "$name"
-                            k3d cluster create $name
-                        else
-                            k3d cluster create mycluster
-                        end
-                    case stop
-                        if test -n "$name"
-                            k3d cluster stop $name
-                        else
-                            echo "Name required for k3d stop"
-                        end
-                    case delete del
-                        if test -n "$name"
-                            k3d cluster delete $name
-                        else
-                            echo "Name required for k3d delete"
-                        end
-                    case list ls
-                        k3d cluster list
-                    case '*'
-                        echo "Unknown action: $action"
+            case stop
+                if test -n "$name"
+                    k3d cluster stop $name
+                else
+                    echo "Name required for stop"
                 end
-
-            case kind
-                switch $action
-                    case start create
-                        if test -n "$name"
-                            kind create cluster --name $name
-                        else
-                            kind create cluster
-                        end
-                    case delete del
-                        if test -n "$name"
-                            kind delete cluster --name $name
-                        else
-                            kind delete cluster
-                        end
-                    case list ls
-                        kind get clusters
-                    case '*'
-                        echo "Unknown action: $action"
+            case delete del
+                if test -n "$name"
+                    k3d cluster delete $name
+                else
+                    echo "Name required for delete"
                 end
-
+            case list ls
+                k3d cluster list
             case '*'
-                echo "Unknown cluster type: $cluster_type"
-                echo "Supported: minikube, k3d, kind"
+                echo "Unknown action: $action"
+                echo "Supported actions: start, stop, delete, list"
         end
     end
 
@@ -2573,7 +2530,3 @@ end
 
 # K9s kubectl-node-shell plugin
 fish_add_path /Users/shaheislam/dotfiles/scripts
-
-# Added by OrbStack: command-line tools and integration
-# This won't be added again if you remove it.
-source ~/.orbstack/shell/init2.fish 2>/dev/null || :

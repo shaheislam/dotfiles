@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-logging
+  namespace: test
+  labels:
+    app: test-logging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: test-logging
+  template:
+    metadata:
+      labels:
+        app: test-logging
+    spec:
+      containers:
+      - name: logger
+        image: busybox:latest
+        command:
+          - sh
+          - -c
+          - |
+            POD_NAME=${HOSTNAME}
+            COUNTER=0
+            while true; do
+              COUNTER=$((COUNTER + 1))
+              echo "[$(date '+%Y-%m-%d %H:%M:%S')] Pod: ${POD_NAME} | Message #${COUNTER} | Status: Running"
+
+              # Occasionally log different levels
+              if [ $((COUNTER % 10)) -eq 0 ]; then
+                echo "[WARN] Pod: ${POD_NAME} | Warning message at count ${COUNTER}"
+              fi
+
+              if [ $((COUNTER % 20)) -eq 0 ]; then
+                echo "[ERROR] Pod: ${POD_NAME} | Error simulation at count ${COUNTER} (not a real error)"
+              fi
+
+              if [ $((COUNTER % 15)) -eq 0 ]; then
+                echo "[INFO] Pod: ${POD_NAME} | Health check passed at count ${COUNTER}"
+              fi
+
+              sleep 5
+            done
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"
+      - name: json-logger
+        image: busybox:latest
+        command:
+          - sh
+          - -c
+          - |
+            POD_NAME=${HOSTNAME}
+            COUNTER=0
+            while true; do
+              COUNTER=$((COUNTER + 1))
+              # Output JSON formatted logs
+              echo "{\"timestamp\":\"$(date -Iseconds)\",\"pod\":\"${POD_NAME}\",\"container\":\"json-logger\",\"level\":\"info\",\"message\":\"Log entry ${COUNTER}\",\"counter\":${COUNTER}}"
+
+              # Occasionally output different log levels in JSON
+              if [ $((COUNTER % 8)) -eq 0 ]; then
+                echo "{\"timestamp\":\"$(date -Iseconds)\",\"pod\":\"${POD_NAME}\",\"container\":\"json-logger\",\"level\":\"warn\",\"message\":\"Performance threshold reached\",\"counter\":${COUNTER},\"metric\":\"cpu\",\"value\":75}"
+              fi
+
+              if [ $((COUNTER % 12)) -eq 0 ]; then
+                echo "{\"timestamp\":\"$(date -Iseconds)\",\"pod\":\"${POD_NAME}\",\"container\":\"json-logger\",\"level\":\"error\",\"message\":\"Connection timeout simulation\",\"counter\":${COUNTER},\"error_code\":\"TIMEOUT_001\"}"
+              fi
+
+              sleep 5
+            done
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "10m"
+          limits:
+            memory: "64Mi"
+            cpu: "50m"

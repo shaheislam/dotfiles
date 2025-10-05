@@ -183,6 +183,7 @@ brew "kubens"    # Quick namespace switching
 
 # Container Tools
 brew "podman"
+brew "colima"    # Container runtime for macOS
 # brew "buildah" # Not available on macOS
 brew "skopeo"
 

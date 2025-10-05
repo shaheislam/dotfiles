@@ -1178,13 +1178,7 @@ else
   log_info "kubectl config already exists"
 fi
 
-# Initialize minikube if installed
-if command -v minikube &> /dev/null; then
-  log_info "Minikube installed. Initialize with: minikube start"
-  log_info "Use 'minikube config set driver docker' to use Docker driver"
-fi
-
-# Initialize k3d if installed
+# Initialize k3d with Colima if installed
 if command -v k3d &> /dev/null; then
   log_info "k3d installed. Create cluster with: k3d cluster create mycluster"
   log_info "List clusters with: k3d cluster list"

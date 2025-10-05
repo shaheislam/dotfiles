@@ -33,6 +33,33 @@ kubectl apply -f test-simple-deployment.yaml
 
 **Use Case**: Quick testing of k9s exec functionality, minimal resource usage for testing in constrained environments.
 
+### test-logging-deployment.yaml
+**Purpose**: Multi-replica deployment for testing logging and stern functionality
+**Namespace**: `test`
+**Replicas**: 2 pods
+**Containers per pod**:
+- `logger` - Outputs plain text logs with timestamps, different log levels (INFO, WARN, ERROR)
+- `json-logger` - Outputs JSON-formatted logs for testing JSON log parsing
+
+**Features**:
+- Each pod logs unique messages with its hostname
+- Logs every 5 seconds with incrementing counter
+- Mixed log levels (INFO, WARN, ERROR) at different intervals
+- One container outputs plain text, another outputs JSON
+- Minimal resource usage
+
+**Usage**:
+```bash
+kubectl apply -f test-logging-deployment.yaml
+```
+
+**Testing with k9s**:
+- `Ctrl-L` on deployment - View aggregated logs from all pods with stern
+- `j` on a pod - Parse JSON logs from json-logger container
+- Standard logs view - See plain text logs from logger container
+
+**Use Case**: Testing stern multi-pod log aggregation, JSON log parsing, log level highlighting, and container log differentiation.
+
 ## Cleanup
 
 To remove all test resources:

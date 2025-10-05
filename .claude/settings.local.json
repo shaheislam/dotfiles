@@ -169,7 +169,20 @@
       "Bash(orbctl status:*)",
       "Bash(./scripts/container-runtime-detect.sh:*)",
       "Bash(unset DOCKER_HOST)",
-      "Bash(/Users/shaheislam/dotfiles/.config/k9s/scripts/stern-splash.sh orbstack kube-system coredns)"
+      "Bash(/Users/shaheislam/dotfiles/.config/k9s/scripts/stern-splash.sh orbstack kube-system coredns)",
+      "Bash(orbctl start:*)",
+      "Bash(docker context:*)",
+      "Bash(colima start:*)",
+      "Bash(colima status:*)",
+      "Bash(osascript:*)",
+      "Bash(sudo rm:*)",
+      "Bash(brew cleanup:*)",
+      "Read(//private/var/lib/**)",
+      "Bash(colima list:*)",
+      "Bash(colima stop:*)",
+      "Bash(colima delete:*)",
+      "Bash(limactl disk:*)",
+      "Bash(docker:*)"
     ],
     "deny": [],
     "ask": []
