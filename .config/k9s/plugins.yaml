@@ -310,7 +310,7 @@ plugins:
 
   # Get all resources in namespace
   get-all:
-    shortCut: Shift-A
+    shortCut: Shift-R
     description: Get all resources
     scopes:
       - namespaces
@@ -712,7 +712,7 @@ plugins:
       - $NAMESPACE
       - -o
       - json
-      - |
+      - "|"
       - jq
       - '.status.conditions'
 

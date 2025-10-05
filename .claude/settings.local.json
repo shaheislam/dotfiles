@@ -182,7 +182,8 @@
       "Bash(colima stop:*)",
       "Bash(colima delete:*)",
       "Bash(limactl disk:*)",
-      "Bash(docker:*)"
+      "Bash(docker:*)",
+      "Bash(K9S_CONFIG_DIR=\"$HOME/.config/k9s\" k9s info)"
     ],
     "deny": [],
     "ask": []
