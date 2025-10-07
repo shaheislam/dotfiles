@@ -41,7 +41,15 @@ return {
     end,
   },
 
-  -- 3. Treesitter configuration (textobjects is included in LazyVim by default)
+  -- 3. Window maximizer/zoom toggle
+  {
+    "szw/vim-maximizer",
+    keys = {
+      { "<leader>wz", "<cmd>MaximizerToggle<cr>", desc = "Toggle window zoom" },
+    },
+  },
+
+  -- 5. Treesitter configuration (textobjects is included in LazyVim by default)
   {
     "nvim-treesitter/nvim-treesitter",
     opts = function(_, opts)
@@ -87,7 +95,7 @@ return {
     end,
   },
 
-  -- 4. MISSING: TODO comments highlighting
+  -- 6. MISSING: TODO comments highlighting
   {
     "folke/todo-comments.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
@@ -103,7 +111,7 @@ return {
     },
   },
 
-  -- 5. MISSING: Better code folding
+  -- 7. MISSING: Better code folding
   {
     "kevinhwang91/nvim-ufo",
     dependencies = "kevinhwang91/promise-async",
@@ -127,7 +135,7 @@ return {
     },
   },
 
-  -- 6. MISSING: Trouble.nvim for better diagnostics
+  -- 8. MISSING: Trouble.nvim for better diagnostics
   {
     "folke/trouble.nvim",
     dependencies = { "nvim-tree/nvim-web-devicons" },
@@ -142,7 +150,7 @@ return {
     },
   },
 
-  -- 7. MISSING: Notification system
+  -- 9. MISSING: Notification system
   {
     "rcarriga/nvim-notify",
     opts = {
@@ -162,7 +170,7 @@ return {
     end,
   },
 
-  -- 8. MISSING: Better buffer management
+  -- 10. MISSING: Better buffer management
   {
     "akinsho/bufferline.nvim",
     event = "VeryLazy",
@@ -194,7 +202,7 @@ return {
     },
   },
 
-  -- 9. MISSING: Leap.nvim for faster navigation
+  -- 11. MISSING: Leap.nvim for faster navigation
   {
     "ggandor/leap.nvim",
     enabled = true,
@@ -214,7 +222,7 @@ return {
     end,
   },
 
-  -- 10. MISSING: Mini.nvim suite for small utilities
+  -- 12. MISSING: Mini.nvim suite for small utilities
   {
     "nvim-mini/mini.nvim",
     version = false,
@@ -244,7 +252,7 @@ return {
     end,
   },
 
-  -- 11. MISSING: Zen mode for focused writing
+  -- 13. MISSING: Zen mode for focused writing
   {
     "folke/zen-mode.nvim",
     cmd = "ZenMode",
@@ -260,7 +268,7 @@ return {
     keys = { { "<leader>z", "<cmd>ZenMode<cr>", desc = "Zen Mode" } },
   },
 
-  -- 12. MISSING: Code actions preview
+  -- 14. MISSING: Code actions preview
   {
     "aznhe21/actions-preview.nvim",
     event = "LspAttach",
@@ -269,7 +277,7 @@ return {
     end,
   },
 
-  -- 13. MISSING: Refactoring tools
+  -- 15. MISSING: Refactoring tools
   {
     "ThePrimeagen/refactoring.nvim",
     dependencies = {
