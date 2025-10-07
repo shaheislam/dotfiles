@@ -5,6 +5,9 @@ return {
   -- Telescope configuration with preview scrolling
   {
     "nvim-telescope/telescope.nvim",
+    dependencies = {
+      "nvim-telescope/telescope-live-grep-args.nvim",
+    },
     opts = {
       defaults = {
         -- Enable smooth scrolling
@@ -23,6 +26,8 @@ return {
             -- Add half-page scrolling for smoother experience
             ["<C-b>"] = require("telescope.actions").preview_scrolling_up,
             ["<C-f>"] = require("telescope.actions").preview_scrolling_down,
+            -- Fuzzy refine: switch to fuzzy filtering on current results
+            ["<C-Space>"] = require("telescope.actions").to_fuzzy_refine,
           },
           -- Normal mode mappings
           n = {
@@ -32,10 +37,19 @@ return {
             ["<C-l>"] = require("telescope.actions").preview_scrolling_right,
             ["<C-b>"] = require("telescope.actions").preview_scrolling_up,
             ["<C-f>"] = require("telescope.actions").preview_scrolling_down,
+            -- Fuzzy refine: switch to fuzzy filtering on current results
+            ["<C-Space>"] = require("telescope.actions").to_fuzzy_refine,
           },
         },
       },
     },
+    config = function(_, opts)
+      local telescope = require("telescope")
+      telescope.setup(opts)
+
+      -- Load live-grep-args extension if available
+      pcall(telescope.load_extension, "live_grep_args")
+    end,
   },
 
   -- Snacks configuration with preview scrolling
@@ -65,6 +79,9 @@ return {
               -- Horizontal scrolling
               ["<C-h>"] = { "preview_scroll_left", mode = { "i", "n" } },
               ["<C-l>"] = { "preview_scroll_right", mode = { "i", "n" } },
+              -- Toggle live mode: switch between live search and fuzzy filtering
+              -- Default is <C-g>, also adding <C-Space> for consistency with Telescope
+              ["<C-Space>"] = { "toggle_live", mode = { "i", "n" } },
             },
           },
         },

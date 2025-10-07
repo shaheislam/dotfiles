@@ -188,7 +188,8 @@
       "Bash(do echo \"=== $plugin ===\")",
       "Read(///**)",
       "Bash(~/bin/kubectl-node-shell --help)",
-      "Bash(~/bin/kubectl-node-shell:*)"
+      "Bash(~/bin/kubectl-node-shell:*)",
+      "WebFetch(domain:www.lazyvim.org)"
     ],
     "deny": [],
     "ask": []
