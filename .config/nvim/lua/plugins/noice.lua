@@ -12,6 +12,8 @@ return {
   keys = {
     -- Escape key to dismiss all messages (only in normal mode)
     { "<Esc>", function() require("noice").cmd("dismiss") end, desc = "Dismiss All Messages", mode = "n" },
+    -- Ctrl-C to dismiss messages in any mode
+    { "<C-c>", function() require("noice").cmd("dismiss") end, desc = "Dismiss Messages", mode = {"n", "i", "v"} },
     -- Quick access to history (in addition to LazyVim's <leader>snh)
     { "<leader>mh", function() require("noice").cmd("history") end, desc = "Message History" },
     { "<leader>ml", function() require("noice").cmd("last") end, desc = "Last Message" },
@@ -386,6 +388,18 @@ return {
         filter = {
           event = "msg_show",
           kind = "search_count",
+        },
+        opts = { skip = true },
+      },
+      -- Skip quickfix navigation messages
+      {
+        filter = {
+          event = "msg_show",
+          any = {
+            { find = "^%[Quickfix List%]" },
+            { find = "%(location list%)" },
+            { find = "^%d+ of %d+" }, -- "1 of 10" type messages
+          },
         },
         opts = { skip = true },
       },
