@@ -58,7 +58,7 @@ config.adjust_window_size_when_changing_font_size = false
 config.keys = {
   -- Toggle fullscreen (omerxx style)
   {
-    key = 'q',
+    key = 'f',
     mods = 'CTRL',
     action = wezterm.action.ToggleFullScreen,
   },
