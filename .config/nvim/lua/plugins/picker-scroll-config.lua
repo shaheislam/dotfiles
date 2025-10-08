@@ -7,6 +7,8 @@ return {
     "nvim-telescope/telescope.nvim",
     dependencies = {
       "nvim-telescope/telescope-live-grep-args.nvim",
+      "kkharji/sqlite.lua",  -- Required for smart history
+      "nvim-telescope/telescope-smart-history.nvim",
     },
     opts = {
       defaults = {
@@ -14,6 +16,11 @@ return {
         scroll_strategy = "limit", -- or "cycle" if you prefer wrapping
         layout_config = {
           scroll_speed = 3, -- Number of lines to scroll (lower = smoother)
+        },
+        -- Per-picker history configuration
+        history = {
+          path = vim.fn.stdpath("data") .. "/databases/telescope_history.sqlite3",
+          limit = 100,
         },
         mappings = {
           -- Insert mode mappings
@@ -48,9 +55,18 @@ return {
     },
     config = function(_, opts)
       local telescope = require("telescope")
+
+      -- Create database directory if it doesn't exist
+      local data_path = vim.fn.stdpath("data")
+      local db_dir = data_path .. "/databases"
+      if vim.fn.isdirectory(db_dir) == 0 then
+        vim.fn.mkdir(db_dir, "p")
+      end
+
       telescope.setup(opts)
 
-      -- Load live-grep-args extension if available
+      -- Load extensions
+      telescope.load_extension("smart_history")
       pcall(telescope.load_extension, "live_grep_args")
     end,
   },
