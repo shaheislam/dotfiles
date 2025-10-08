@@ -30,11 +30,13 @@ stow .
 Choose one of these methods:
 
 **Method A: Clone with submodules (recommended)**
+
 ```bash
 git clone --recurse-submodules https://github.com/yourusername/dotfiles.git ~/dotfiles
 ```
 
 **Method B: Clone then initialize submodules**
+
 ```bash
 git clone https://github.com/yourusername/dotfiles.git ~/dotfiles
 cd ~/dotfiles
@@ -51,6 +53,7 @@ cd ~/dotfiles
 ```
 
 **What the setup script does:**
+
 - Installs Homebrew (if not present)
 - Installs packages from `homebrew/Brewfile`
 - Sets up Fish shell and plugins via Fisher
@@ -73,6 +76,7 @@ This creates symlinks from `~/dotfiles` to your home directory.
 ### 4. Post-Installation Setup
 
 #### Shell Configuration
+
 ```bash
 # Set Fish as default shell
 chsh -s /opt/homebrew/bin/fish
@@ -82,14 +86,18 @@ exec fish
 ```
 
 #### Tmux Plugin Installation
+
 Start tmux and install plugins:
+
 ```bash
 tmux
 # Press: Ctrl-Space + I (capital i)
 ```
 
 #### Neovim Setup
+
 First time opening Neovim will install plugins automatically:
+
 ```bash
 nvim
 # Wait for LazyVim to install all plugins
@@ -98,18 +106,23 @@ nvim
 ## Manual Steps (If Needed)
 
 ### Fix tmux-continuum Debug Output
+
 If you see debug output in tmux:
+
 ```bash
 ./scripts/fix_tmux_continuum.sh
 ```
 
 ### Build tmux-fingers Plugin
+
 If tmux-fingers isn't working:
+
 ```bash
 ./scripts/build_tmux_fingers.sh
 ```
 
 ### Update tmux Plugins
+
 ```bash
 # In tmux session
 # Press: Ctrl-Space + U
@@ -139,12 +152,14 @@ nvim --version  # Should show recent version
 ### Common Issues
 
 **1. Homebrew Installation Fails**
+
 ```bash
 # Manually install Homebrew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
 **2. tmux Plugins Not Working**
+
 ```bash
 # Manually install TPM
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
@@ -153,6 +168,7 @@ git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ```
 
 **3. Fish Plugins Missing**
+
 ```bash
 # Reinstall Fisher
 curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
@@ -160,6 +176,7 @@ fisher update
 ```
 
 **4. Stow Conflicts**
+
 ```bash
 # Remove conflicting files first
 rm ~/.gitconfig ~/.tmux.conf  # etc.
@@ -167,6 +184,7 @@ stow .
 ```
 
 **5. tmux-fingers Not Building**
+
 ```bash
 # Check Crystal installation
 brew install crystal
@@ -209,6 +227,7 @@ make clean && make
 cd ~/dotfiles
 git pull
 
+
 # Update submodules
 git submodule update --remote --recursive
 
@@ -228,30 +247,35 @@ brew update && brew upgrade
 This repository includes comprehensive GitHub Actions workflows for quality assurance and automation:
 
 ### Continuous Integration (`ci.yml`)
+
 - **Configuration Validation**: JSON, YAML, shell script syntax checking
 - **Security Scanning**: Detects exposed secrets and vulnerabilities
 - **Documentation Checks**: Markdown validation and broken link detection
 - **Cross-Platform Testing**: Tests on macOS and Ubuntu
 
 ### Setup Testing (`setup-test.yml`)
+
 - **Fresh Installation Tests**: Validates setup script on clean macOS environments
 - **Compatibility Testing**: Tests on both Intel and Apple Silicon Macs
 - **Symlink Verification**: Ensures all configurations link correctly
 - **Installation Reports**: Generates detailed installation logs
 
 ### Weekly Maintenance (`weekly-maintenance.yml`)
+
 - **Dependency Updates**: Checks for outdated Homebrew packages
 - **Security Audits**: Scans for vulnerabilities in dependencies
 - **Cleanup Reports**: Identifies large files and broken symlinks
 - **Auto-PR Creation**: Creates PRs for necessary updates
 
 ### PR Validation (`pr-validation.yml`)
+
 - **Code Formatting**: Enforces consistent formatting standards
 - **Commit Message Validation**: Ensures conventional commit format
 - **Compatibility Checks**: Validates POSIX compliance
 - **Security Review**: CodeQL analysis and secret detection
 
 ### Sync & Deploy (`sync.yml`)
+
 - **Release Bundles**: Creates downloadable dotfiles packages
 - **Change Validation**: Tests critical file modifications
 - **Sync Notifications**: Reminds to sync changes across machines
@@ -286,6 +310,7 @@ Add these badges to show workflow status:
 ## Support
 
 For issues or questions:
+
 1. Check this troubleshooting section
 2. Review setup script output for errors
 3. Check individual component documentation

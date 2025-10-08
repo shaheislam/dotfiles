@@ -364,6 +364,31 @@ return {
     },
     -- Routes to handle specific message types
     routes = {
+      -- Hide common messages that aren't important (MUST come before general msg_show route)
+      {
+        filter = {
+          event = "msg_show",
+          any = {
+            { find = "^%d+L, %d+B" },  -- File write messages
+            { find = "; after #%d+" },  -- Undo messages
+            { find = "; before #%d+" }, -- Redo messages
+            { find = "^%d+ changes?;" }, -- More undo/redo messages
+            { find = "^%d+ fewer lines" }, -- Line deletion messages
+            { find = "^%d+ more lines" }, -- Line addition messages
+            { find = "Already at oldest change" }, -- Undo limit reached
+            { find = "Already at newest change" }, -- Redo limit reached
+          },
+        },
+        opts = { skip = true },
+      },
+      -- Hide search count messages
+      {
+        filter = {
+          event = "msg_show",
+          kind = "search_count",
+        },
+        opts = { skip = true },
+      },
       -- Show messages in cmdline for inline display
       {
         filter = {
@@ -404,31 +429,6 @@ return {
           kind = "progress",
         },
         view = "cmdline",
-      },
-      -- Hide common messages that aren't important
-      {
-        filter = {
-          event = "msg_show",
-          any = {
-            { find = "^%d+L, %d+B" },  -- File write messages
-            { find = "; after #%d+" },  -- Undo messages
-            { find = "; before #%d+" }, -- Redo messages
-            { find = "^%d+ changes?;" }, -- More undo/redo messages
-            { find = "^%d+ fewer lines" }, -- Line deletion messages
-            { find = "^%d+ more lines" }, -- Line addition messages
-            { find = "Already at oldest change" }, -- Undo limit reached
-            { find = "Already at newest change" }, -- Redo limit reached
-          },
-        },
-        opts = { skip = true },
-      },
-      -- Hide search count messages
-      {
-        filter = {
-          event = "msg_show",
-          kind = "search_count",
-        },
-        opts = { skip = true },
       },
     },
   },
