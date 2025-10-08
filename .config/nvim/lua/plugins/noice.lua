@@ -243,6 +243,19 @@ return {
         end
       end,
     })
+
+    -- Map Esc to dismiss messages in normal mode
+    -- Using defer to ensure it runs after LazyVim keymaps are loaded
+    vim.defer_fn(function()
+      vim.keymap.set("n", "<Esc>", function()
+        -- First do normal Esc behavior
+        vim.cmd("nohlsearch")
+        -- Then dismiss noice messages
+        pcall(function()
+          require("noice").cmd("dismiss")
+        end)
+      end, { desc = "Clear Highlight and Dismiss Noice Messages", silent = true })
+    end, 100)
   end,
   opts = {
     -- Cmdline configuration
