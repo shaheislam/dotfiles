@@ -72,6 +72,12 @@ return {
       timeout = 2000,  -- Shorter timeout for notify view
     })
 
+    -- Configure nvim-notify for instant notifications (no animations)
+    require("notify").setup({
+      stages = "static",  -- Disable animations for instant appearance/dismissal
+      timeout = 2000,     -- Match noice timeout
+    })
+
     opts.views.mini = vim.tbl_deep_extend("force", opts.views.mini or {}, {
       backend = "mini",
       relative = "editor",
