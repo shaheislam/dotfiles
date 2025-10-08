@@ -30,7 +30,7 @@ return {
         
         -- ============== UI EXTRAS ==============
         "lazyvim.plugins.extras.ui.alpha",             -- Dashboard/startup screen
-        "lazyvim.plugins.extras.ui.mini-animate",      -- Smooth animations
+        -- "lazyvim.plugins.extras.ui.mini-animate",      -- Smooth animations
         "lazyvim.plugins.extras.ui.mini-indentscope",  -- Active indent guides
         "lazyvim.plugins.extras.ui.treesitter-context", -- Sticky function headers
         
