@@ -184,7 +184,7 @@ return {
       return vim.tbl_deep_extend("force", opts, {
         defaults = {
           file_ignore_patterns = {
-            "node_modules", ".git", "dist", "build", "%.lock", "package%-lock%.json",
+            "node_modules", "^.git/", "dist", "/build/", "%.lock", "package%-lock%.json",
             "yarn%.lock", "%.log", "%.cache", "%.min%.js", "%.min%.css"
           },
           layout_config = {
