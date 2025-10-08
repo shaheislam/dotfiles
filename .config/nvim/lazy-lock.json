@@ -17,7 +17,7 @@
   "distant.nvim": { "branch": "v0.3", "commit": "67d6b066e8490725718b79f643966f4eafc7da3c" },
   "flash.nvim": { "branch": "main", "commit": "b68bda044d68e4026c4e1ec6df3c5afd7eb8e341" },
   "friendly-snippets": { "branch": "main", "commit": "572f5660cf05f8cd8834e096d7b4c921ba18e175" },
-  "fzf": { "branch": "master", "commit": "b51bc6b50e90169553c48209c00c5f4d548ec0a0" },
+  "fzf": { "branch": "master", "commit": "c38c6cad794c040e5ef66485922f4d1a9fdab678" },
   "fzf.vim": { "branch": "master", "commit": "879db51d0965515cdaef9b7f6bdeb91c65d2829e" },
   "github-actions-yaml.vim": { "branch": "master", "commit": "728374ef59b11a5f5991ea2560d149a4ae33fd22" },
   "gitsigns.nvim": { "branch": "main", "commit": "1ee5c1fd068c81f9dd06483e639c2aa4587dc197" },
