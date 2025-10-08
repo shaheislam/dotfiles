@@ -10,8 +10,6 @@ return {
   -- LazyVim already defines keys under <leader>sn prefix
   -- We'll add our custom shortcuts that don't conflict
   keys = {
-    -- Escape key to dismiss all messages (only in normal mode)
-    { "<Esc>", function() require("noice").cmd("dismiss") end, desc = "Dismiss All Messages", mode = "n" },
     -- Ctrl-C to dismiss messages in any mode
     { "<C-c>", function() require("noice").cmd("dismiss") end, desc = "Dismiss Messages", mode = {"n", "i", "v"} },
     -- Quick access to history (in addition to LazyVim's <leader>snh)
@@ -63,25 +61,34 @@ return {
     -- Initialize persistent messages as disabled by default
     vim.g.noice_persistent_messages = false
 
-    -- Override the mini view to respect our timeout and add a border
+    -- Override views for better auto-dismiss behavior
     opts.views = opts.views or {}
+
+    -- Use notify view (corner notifications) instead of mini (centered popups)
+    -- notify view is less intrusive and works better with smart_move
+    opts.views.notify = vim.tbl_deep_extend("force", opts.views.notify or {}, {
+      backend = "notify",
+      fallback = "mini",
+      timeout = 2000,  -- Shorter timeout for notify view
+    })
+
     opts.views.mini = vim.tbl_deep_extend("force", opts.views.mini or {}, {
       backend = "mini",
       relative = "editor",
-      align = "center",  -- Center the message text
-      timeout = 3000,
+      align = "center",
+      timeout = false,  -- Disable timeout - rely only on smart_move for dismissal
       position = {
-        row = "50%",  -- Center vertically in the window
-        col = "50%",  -- Center horizontally in the window
+        row = "50%",
+        col = "50%",
       },
       size = "auto",
       border = {
-        style = "double",  -- Use double-line border for better visibility
-        padding = { 0, 2 },  -- Add more horizontal padding for readability
+        style = "double",
+        padding = { 0, 2 },
       },
       win_options = {
         winblend = 0,
-        winhighlight = "Normal:Normal,FloatBorder:DiagnosticInfo",  -- Add border highlighting
+        winhighlight = "Normal:Normal,FloatBorder:DiagnosticInfo",
       },
     })
 
@@ -227,6 +234,15 @@ return {
         end
       end,
     })
+
+    -- Auto-dismiss messages on cursor movement (when not in persistent mode)
+    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+      callback = function()
+        if not vim.g.noice_persistent_messages then
+          require("noice").cmd("dismiss")
+        end
+      end,
+    })
   end,
   opts = {
     -- Cmdline configuration
@@ -345,14 +361,14 @@ return {
     -- Smart move - messages disappear on cursor move when not in persistent mode
     smart_move = {
       enabled = true, -- Enable auto-hiding on cursor move
-      excluded_filetypes = { "cmp_menu", "cmp_docs", "notify" },
+      excluded_filetypes = { "cmp_menu", "cmp_docs" },  -- Removed "notify" to enable smart_move for notifications
     },
     -- Message configuration
     messages = {
       enabled = true,
-      view = "cmdline",  -- Use cmdline for inline messages at the bottom
-      view_error = "cmdline",  -- Use cmdline for errors (inline)
-      view_warn = "cmdline",  -- Use cmdline for warnings (inline)
+      view = "notify",  -- Use notify view (corner) for most messages
+      view_error = "notify",  -- Use notify for errors
+      view_warn = "notify",  -- Use notify for warnings
       view_history = "split",  -- Keep split buffer for history when explicitly requested
       view_search = "virtualtext",
     },
@@ -403,46 +419,20 @@ return {
         },
         opts = { skip = true },
       },
-      -- Show messages in cmdline for inline display
+      -- Show messages in notify view (corner notifications)
       {
         filter = {
           event = "msg_show",
         },
-        view = "cmdline",  -- Use cmdline for inline display at bottom
+        view = "notify",  -- Use notify view for corner notifications
       },
-      -- Route important error messages to cmdline (inline)
-      {
-        filter = {
-          event = "msg_show",
-          kind = { "error", "Error" },
-        },
-        view = "cmdline",
-      },
-      -- Route git messages to cmdline (inline)
-      {
-        filter = {
-          event = "msg_show",
-          any = {
-            { find = "^Your branch" },
-            { find = "^On branch" },
-            { find = "^nothing to commit" },
-            { find = "^Untracked files" },
-            { find = "^Changes" },
-            { find = "^modified:" },
-            { find = "^deleted:" },
-            { find = "^new file:" },
-            { find = "git add" },
-          },
-        },
-        view = "cmdline",  -- Use cmdline for inline display
-      },
-      -- Route LSP progress to cmdline (inline)
+      -- Route LSP progress to notify (less intrusive)
       {
         filter = {
           event = "lsp",
           kind = "progress",
         },
-        view = "cmdline",
+        opts = { skip = true },  -- Skip LSP progress messages entirely
       },
     },
   },
