@@ -28,6 +28,9 @@ return {
             ["<C-f>"] = require("telescope.actions").preview_scrolling_down,
             -- Fuzzy refine: switch to fuzzy filtering on current results
             ["<C-Space>"] = require("telescope.actions").to_fuzzy_refine,
+            -- Prompt history navigation (Vim-style)
+            ["<C-p>"] = require("telescope.actions").cycle_history_prev,
+            ["<C-n>"] = require("telescope.actions").cycle_history_next,
           },
           -- Normal mode mappings
           n = {
