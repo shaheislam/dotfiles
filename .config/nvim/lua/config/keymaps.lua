@@ -11,6 +11,17 @@ vim.keymap.set("n", "-", "<cmd>Oil<cr>", { desc = "Open parent directory", silen
 vim.keymap.set("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit all", silent = true })
 vim.keymap.set("n", "<leader>ww", "<cmd>w<cr>", { desc = "Save file", silent = true })
 
+-- Theme toggle function
+local function ToggleTheme()
+  if vim.g.colors_name == "catppuccin-mocha" then
+    vim.cmd("colorscheme onedark")
+  else
+    vim.cmd("colorscheme catppuccin-mocha")
+  end
+end
+
+vim.keymap.set('n', '<leader>tt', ToggleTheme, { desc = "Toggle theme" })
+
 -- Disable LazyVim's LazyGit keybindings
 pcall(vim.keymap.del, "n", "<leader>gg")
 pcall(vim.keymap.del, "n", "<leader>gG")

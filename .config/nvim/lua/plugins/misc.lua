@@ -75,6 +75,27 @@ return {
     end,
   },
 
+  -- OneDark theme (alternative theme for toggling)
+  {
+    "navarasu/onedark.nvim",
+    lazy = false,
+    priority = 999, -- Load after catppuccin
+    opts = {
+      style = 'dark',
+      transparent = true, -- Match catppuccin transparency
+      term_colors = true,
+      ending_tildes = false,
+      cmp_itemkind_reverse = false,
+      code_style = {
+        comments = 'italic',
+        keywords = 'none',
+        functions = 'none',
+        strings = 'none',
+        variables = 'none'
+      },
+    },
+  },
+
   -- Terraform support (autocmd for .tf files)
   {
     "hashivim/vim-terraform",
