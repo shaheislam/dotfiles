@@ -190,7 +190,8 @@
       "Bash(~/bin/kubectl-node-shell --help)",
       "Bash(~/bin/kubectl-node-shell:*)",
       "WebFetch(domain:www.lazyvim.org)",
-      "WebFetch(domain:vi.stackexchange.com)"
+      "WebFetch(domain:vi.stackexchange.com)",
+      "Bash(xargs cat:*)"
     ],
     "deny": [],
     "ask": []
