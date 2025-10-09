@@ -189,7 +189,8 @@
       "Read(///**)",
       "Bash(~/bin/kubectl-node-shell --help)",
       "Bash(~/bin/kubectl-node-shell:*)",
-      "WebFetch(domain:www.lazyvim.org)"
+      "WebFetch(domain:www.lazyvim.org)",
+      "WebFetch(domain:vi.stackexchange.com)"
     ],
     "deny": [],
     "ask": []

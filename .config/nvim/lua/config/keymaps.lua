@@ -32,6 +32,10 @@ end
 
 vim.keymap.set('n', '<leader>tt', CycleTheme, { desc = "Cycle themes" })
 
+-- Terminal mode keymaps
+-- Double-tap Esc to exit terminal mode (preserves single Esc for shell operations)
+vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
+
 -- Disable LazyVim's LazyGit keybindings
 pcall(vim.keymap.del, "n", "<leader>gg")
 pcall(vim.keymap.del, "n", "<leader>gG")
