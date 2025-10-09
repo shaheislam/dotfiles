@@ -44,6 +44,21 @@ vim.api.nvim_create_autocmd("TermOpen", {
 })
 
 -- ============================================================================
+-- Git Integration
+-- ============================================================================
+
+-- Git commit message helper: spell check + cursor positioning
+vim.api.nvim_create_autocmd("FileType", {
+  group = augroup("git_commit"),
+  pattern = "gitcommit",
+  callback = function()
+    vim.opt_local.spell = true
+    vim.cmd("normal! gg")
+    vim.cmd("startinsert")
+  end,
+})
+
+-- ============================================================================
 -- Performance Optimizations
 -- ============================================================================
 
