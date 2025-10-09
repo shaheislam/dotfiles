@@ -186,3 +186,111 @@ vim.api.nvim_create_autocmd("BufReadPre", {
     end
   end,
 })
+
+-- ============================================================================
+-- LSP Integration
+-- ============================================================================
+
+-- Organize imports automatically on save (Python, Go, TypeScript)
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = augroup("organize_imports"),
+  pattern = { "*.py", "*.go", "*.ts", "*.tsx" },
+  callback = function()
+    local params = vim.lsp.util.make_range_params()
+    params.context = { only = { "source.organizeImports" } }
+    local result = vim.lsp.buf_request_sync(0, "textDocument/codeAction", params, 3000)
+    for _, res in pairs(result or {}) do
+      for _, action in pairs(res.result or {}) do
+        if action.edit then
+          vim.lsp.util.apply_workspace_edit(action.edit, "utf-8")
+        end
+      end
+    end
+  end,
+})
+
+-- Auto-close LSP preview windows when leaving insert mode
+vim.api.nvim_create_autocmd("InsertLeave", {
+  group = augroup("close_preview"),
+  callback = function()
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
+      local config = vim.api.nvim_win_get_config(win)
+      if config.relative ~= "" then
+        vim.api.nvim_win_close(win, false)
+      end
+    end
+  end,
+})
+
+-- ============================================================================
+-- Code Quality & Standards
+-- ============================================================================
+
+-- Visual indicator for long lines in code files
+vim.api.nvim_create_autocmd("FileType", {
+  group = augroup("long_line_warning"),
+  pattern = { "python", "go", "typescript", "javascript", "lua", "rust" },
+  callback = function()
+    vim.opt_local.colorcolumn = "80,100,120"
+  end,
+})
+
+-- ============================================================================
+-- Test Navigation
+-- ============================================================================
+
+-- Toggle between test and implementation files
+vim.api.nvim_create_autocmd("FileType", {
+  group = augroup("test_navigation"),
+  pattern = { "python", "go", "typescript", "javascript" },
+  callback = function()
+    vim.keymap.set("n", "<leader>gt", function()
+      local current_file = vim.fn.expand("%")
+      local test_patterns = {
+        -- Python patterns
+        { from = "(.+)%.py$", to = "test_%1.py" },
+        { from = "test_(.+)%.py$", to = "%1.py" },
+        -- Go patterns
+        { from = "(.+)%.go$", to = "%1_test.go" },
+        { from = "(.+)_test%.go$", to = "%1.go" },
+        -- TypeScript/JavaScript patterns
+        { from = "(.+)%.ts$", to = "%1.test.ts" },
+        { from = "(.+)%.test%.ts$", to = "%1.ts" },
+        { from = "(.+)%.js$", to = "%1.test.js" },
+        { from = "(.+)%.test%.js$", to = "%1.js" },
+      }
+
+      for _, pattern in ipairs(test_patterns) do
+        local test_file = current_file:gsub(pattern.from, pattern.to)
+        if test_file ~= current_file and vim.fn.filereadable(test_file) == 1 then
+          vim.cmd("edit " .. test_file)
+          return
+        end
+      end
+
+      vim.notify("No corresponding test/implementation file found", vim.log.levels.WARN)
+    end, { desc = "Toggle between test and implementation" })
+  end,
+})
+
+-- ============================================================================
+-- Session Management
+-- ============================================================================
+
+-- Save fold state when leaving buffer
+vim.api.nvim_create_autocmd("BufWinLeave", {
+  group = augroup("save_folds"),
+  pattern = "*.*",
+  callback = function()
+    vim.cmd("silent! mkview")
+  end,
+})
+
+-- Restore fold state when entering buffer
+vim.api.nvim_create_autocmd("BufWinEnter", {
+  group = augroup("restore_folds"),
+  pattern = "*.*",
+  callback = function()
+    vim.cmd("silent! loadview")
+  end,
+})
