@@ -239,16 +239,16 @@ if status is-interactive
         end
     end
     
-    # Visual feedback for command success/failure
-    function __fish_command_status_indicator --on-event fish_postexec
-        set -l last_status $status
-        if test $last_status -ne 0
-            # Command failed - visual alert
-            set_color red --bold
-            echo "✗ Command failed with exit code: $last_status"
-            set_color normal
-        end
-    end
+    # Visual feedback for command success/failure (disabled)
+    # function __fish_command_status_indicator --on-event fish_postexec
+    #     set -l last_status $status
+    #     if test $last_status -ne 0
+    #         # Command failed - visual alert
+    #         set_color red --bold
+    #         echo "✗ Command failed with exit code: $last_status"
+    #         set_color normal
+    #     end
+    # end
     
     
     # Loading indicator for slow commands
