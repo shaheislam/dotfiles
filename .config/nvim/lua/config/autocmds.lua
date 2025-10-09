@@ -41,6 +41,66 @@ vim.api.nvim_create_autocmd("FocusLost", {
 })
 
 -- ============================================================================
+-- Template Insertion
+-- ============================================================================
+
+-- Insert shebang and boilerplate for new shell scripts
+vim.api.nvim_create_autocmd("BufNewFile", {
+  group = augroup("template_sh"),
+  pattern = "*.sh",
+  callback = function()
+    vim.cmd([[
+      0put ='#!/usr/bin/env bash'
+      0put =''
+      0put ='set -euo pipefail'
+      0put =''
+      $d
+      normal! G
+      startinsert
+    ]])
+  end,
+})
+
+-- Insert shebang and docstring template for new Python files
+vim.api.nvim_create_autocmd("BufNewFile", {
+  group = augroup("template_py"),
+  pattern = "*.py",
+  callback = function()
+    vim.cmd([[
+      0put ='#!/usr/bin/env python3'
+      0put ='\"\"\"'
+      0put ='\"\"\"'
+      0put =''
+      $d
+      normal! 2G
+      startinsert!
+    ]])
+  end,
+})
+
+-- ============================================================================
+-- UI Enhancements
+-- ============================================================================
+
+-- Only show cursorline in active window
+vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
+  group = augroup("cursorline_focus"),
+  callback = function()
+    local ft = vim.bo.filetype
+    if ft ~= "neo-tree" and ft ~= "Trouble" and ft ~= "toggleterm" then
+      vim.opt_local.cursorline = true
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd({ "WinLeave", "BufLeave" }, {
+  group = augroup("cursorline_unfocus"),
+  callback = function()
+    vim.opt_local.cursorline = false
+  end,
+})
+
+-- ============================================================================
 -- Terminal Integration
 -- ============================================================================
 
