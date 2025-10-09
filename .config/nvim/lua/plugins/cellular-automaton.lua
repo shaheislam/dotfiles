@@ -11,5 +11,10 @@ return {
       "<cmd>CellularAutomaton game_of_life<CR>",
       desc = "Game of life",
     },
+    {
+      "<leader>scr",
+      "<cmd>CellularAutomaton scramble<CR>",
+      desc = "Scramble",
+    },
   },
 }
