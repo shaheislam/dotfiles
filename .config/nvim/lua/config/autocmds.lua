@@ -29,6 +29,18 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 })
 
 -- ============================================================================
+-- File Management
+-- ============================================================================
+
+-- Auto-save all buffers when switching away from Neovim
+vim.api.nvim_create_autocmd("FocusLost", {
+  group = augroup("auto_save"),
+  callback = function()
+    vim.cmd("silent! wa")
+  end,
+})
+
+-- ============================================================================
 -- Terminal Integration
 -- ============================================================================
 
