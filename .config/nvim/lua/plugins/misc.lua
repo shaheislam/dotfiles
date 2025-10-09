@@ -96,6 +96,22 @@ return {
     },
   },
 
+  -- Tokyo Night Storm theme (third theme for cycling)
+  {
+    "folke/tokyonight.nvim",
+    lazy = false,
+    priority = 998, -- Load after catppuccin and onedark
+    opts = {
+      style = "storm",
+      transparent = true,
+      terminal_colors = true,
+      styles = {
+        comments = { italic = true },
+        keywords = { italic = false },
+      },
+    },
+  },
+
   -- Terraform support (autocmd for .tf files)
   {
     "hashivim/vim-terraform",
