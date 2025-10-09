@@ -1,0 +1,9 @@
+# Ignore any authentication tokens or credentials
+# Only config.json structure should be tracked
+*.pem
+*.key
+*.crt
+
+# Ignore any runtime or cache files
+.buildNodeID
+buildkit/
