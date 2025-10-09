@@ -1,7 +1,7 @@
 -- TypeScript/JavaScript LSP configuration with inlay hints
 return {
-  -- Import LazyVim's TypeScript extra for base configuration
-  { import = "lazyvim.plugins.extras.lang.typescript" },
+  -- NOTE: LazyVim's TypeScript extra is now imported in init.lua to fix import order
+  -- This file only contains additional TypeScript LSP configuration
 
   -- Enhance the TypeScript LSP configuration with inlay hints
   {

@@ -2,41 +2,9 @@
 -- Complete LSP setup for DevOps engineering with LazyVim
 
 return {
-  -- Configure LazyVim to load DevOps-specific language extras
-  {
-    "LazyVim/LazyVim",
-    opts = {
-      -- Enable all DevOps-relevant language extras
-      extras = {
-        -- Infrastructure as Code
-        "lazyvim.plugins.extras.lang.terraform",
-        "lazyvim.plugins.extras.lang.ansible",
-        "lazyvim.plugins.extras.lang.helm",
-        
-        -- Containers & Orchestration
-        "lazyvim.plugins.extras.lang.docker",
-        
-        -- Configuration Languages
-        "lazyvim.plugins.extras.lang.yaml",
-        "lazyvim.plugins.extras.lang.json",
-        "lazyvim.plugins.extras.lang.toml",
-        
-        -- Scripting Languages
-        -- "lazyvim.plugins.extras.lang.python", -- Disabled - using basedpyright instead
-        "lazyvim.plugins.extras.lang.go",
-        "lazyvim.plugins.extras.lang.rust",
-        
-        -- Database
-        "lazyvim.plugins.extras.lang.sql",
-        
-        -- Documentation
-        "lazyvim.plugins.extras.lang.markdown",
-        
-        -- Version Control
-        "lazyvim.plugins.extras.lang.git",
-      },
-    },
-  },
+  -- NOTE: LazyVim language extras have been moved to init.lua to fix import order
+  -- The extras (terraform, ansible, helm, docker, yaml, json, toml, go, rust, sql, markdown, git)
+  -- are now imported in the correct order in init.lua
 
   -- Mason configuration is now in mason-fix.lua to avoid conflicts
   -- The ensure_installed list has been moved to mason-lspconfig
