@@ -8,5 +8,8 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.statuscolumn = "%s %{v:lnum} %{v:relnum}"
 
+-- Python provider configuration
+vim.g.python3_host_prog = '/opt/homebrew/bin/python3.11'
+
 -- Additional vim options can go here
 -- vim.opt.wrap = false

@@ -193,7 +193,9 @@
       "WebFetch(domain:vi.stackexchange.com)",
       "Bash(xargs cat:*)",
       "Bash(lua:*)",
-      "Bash(luac:*)"
+      "Bash(luac:*)",
+      "Bash(pip3 list:*)",
+      "Bash(python3.11:*)"
     ],
     "deny": [],
     "ask": []

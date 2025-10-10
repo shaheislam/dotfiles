@@ -1033,6 +1033,20 @@ else
   echo "Warning: Neovim not found. Skipping plugin installation."
 fi
 
+# Install pynvim for Neovim Python support
+echo "=== Installing pynvim for Neovim Python support ==="
+if command -v python3.11 &> /dev/null; then
+  echo "Installing pynvim for Python 3.11..."
+  python3.11 -m pip install --quiet pynvim
+  echo "pynvim installed successfully"
+elif command -v python3 &> /dev/null; then
+  echo "Installing pynvim for system Python 3..."
+  python3 -m pip install --quiet pynvim
+  echo "pynvim installed successfully"
+else
+  echo "Warning: Python 3 not found. Skipping pynvim installation."
+fi
+
 # Run p10k configuration if it doesn't exist
 if [ ! -f "$HOME/.p10k.zsh" ]; then
   echo "=== Setting up Powerlevel10k ==="
