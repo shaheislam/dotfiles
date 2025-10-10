@@ -70,7 +70,17 @@ function M.setup()
   vim.api.nvim_create_autocmd("CursorHold", {
     group = augroup("diagnostic_hover"),
     callback = function()
-      -- Only show if there are diagnostics on the current line
+      -- Check if diagnostics are enabled globally
+      local diagnostics_enabled = true
+      if vim.diagnostic.is_enabled then
+        diagnostics_enabled = vim.diagnostic.is_enabled()
+      end
+
+      -- Only show if diagnostics are enabled AND there are diagnostics on the current line
+      if not diagnostics_enabled then
+        return
+      end
+
       local diagnostics = vim.diagnostic.get(0, { lnum = vim.fn.line(".") - 1 })
       if #diagnostics > 0 then
         -- Check if any floating window is already open
