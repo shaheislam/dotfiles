@@ -159,7 +159,12 @@ function M.setup()
     group = augroup("url_highlight"),
     pattern = "*",
     callback = function()
+      -- Highlight URLs with protocol
       vim.fn.matchadd("Underlined", [[\v<(https?|ftp|file)://[^ \t\n\r]+]])
+      -- Highlight URLs starting with www.
+      vim.fn.matchadd("Underlined", "\\v<www\\.[a-zA-Z0-9][-a-zA-Z0-9._]+[a-zA-Z0-9/]")
+      -- Highlight domain-like patterns (e.g., google.com)
+      vim.fn.matchadd("Underlined", "\\v<[a-zA-Z0-9][-a-zA-Z0-9]+\\.[a-zA-Z]{2,}(/[^ \\t\\n\\r]*)?")
     end,
   })
 
@@ -172,9 +177,17 @@ function M.setup()
         local url = vim.fn.expand("<cWORD>")
         -- Remove surrounding quotes and brackets
         url = url:gsub("^[\"'<({[]", ""):gsub("[\"'>)}]$", "")
+
+        -- Check if it's already a valid URL with protocol
         if url:match("^https?://") or url:match("^ftp://") then
           vim.fn.system({ "open", url })
           vim.notify("Opening: " .. url, vim.log.levels.INFO)
+        -- Check if it looks like a URL without protocol
+        elseif url:match("^www%.") or url:match("%.%w+$") then
+          -- Add https:// prefix for URLs without protocol
+          local full_url = "https://" .. url
+          vim.fn.system({ "open", full_url })
+          vim.notify("Opening: " .. full_url, vim.log.levels.INFO)
         else
           vim.notify("No URL found under cursor", vim.log.levels.WARN)
         end
