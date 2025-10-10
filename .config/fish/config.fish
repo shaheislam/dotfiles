@@ -654,6 +654,10 @@ if status is-interactive
     alias gwtp="git worktree prune"
     alias gwtm="git worktree move"
 
+    # Git local exclude management
+    alias gls="gitlocal-setup"
+    alias glsd="gitlocal-setup --dry-run"
+
     # Functions from extended config
     function gis
         if test -n "$argv[1]"

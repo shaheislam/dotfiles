@@ -1,3 +1,6 @@
+# Local git excludes symlink (for personal, non-committed patterns)
+.gitignore_local
+
 # Tmux plugin manager and plugins
 .tmux/plugins/
 

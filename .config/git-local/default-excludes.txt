@@ -1,0 +1,47 @@
+# Default patterns for local git excludes
+# These patterns will be applied to all repositories
+
+# Symlink to this file for easy editing
+.gitignore_local
+
+# Local configuration files
+*.local
+*.local.*
+.env.local
+.env.*.local
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Language-specific local configs
+.pyrightconfig.json
+pyrightconfig.json
+.eslintrc.local.json
+tsconfig.local.json
+.prettierrc.local
+
+# Personal notes and TODOs
+NOTES.md
+TODO.local.md
+.notes/
+
+# Local test files
+*.test.local.*
+*.spec.local.*
+
+# Debug and profiling
+*.prof
+*.profile
+.debug/
+
+# Personal scripts
+.scripts/
+local-scripts/
