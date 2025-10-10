@@ -131,11 +131,7 @@ return {
     ft = { "yaml.ansible", "ansible" },
   },
 
-  -- Better JSON schemas
-  {
-    "b0o/schemastore.nvim",
-    lazy = true,
-    version = false,
-  },
+  -- Removed schemastore.nvim - was causing issues and not actively used
+  -- JSON schemas are handled directly through LSP configuration
 
 }
