@@ -130,8 +130,9 @@
       }
     ]
   },
-  "alwaysThinkingEnabled": false,
+  "alwaysThinkingEnabled": true,
   "feedbackSurveyState": {
     "lastShownTime": 1754048208633
-  }
+  },
+  "model": "opus"
 }

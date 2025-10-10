@@ -191,7 +191,9 @@
       "Bash(~/bin/kubectl-node-shell:*)",
       "WebFetch(domain:www.lazyvim.org)",
       "WebFetch(domain:vi.stackexchange.com)",
-      "Bash(xargs cat:*)"
+      "Bash(xargs cat:*)",
+      "Bash(lua:*)",
+      "Bash(luac:*)"
     ],
     "deny": [],
     "ask": []

@@ -294,3 +294,311 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
     vim.cmd("silent! loadview")
   end,
 })
+
+-- ============================================================================
+-- Advanced LSP Enhancements
+-- ============================================================================
+
+-- Highlight symbol references under cursor
+vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+  group = augroup("lsp_document_highlight"),
+  callback = function()
+    local clients = vim.lsp.get_active_clients({ bufnr = 0 })
+    for _, client in pairs(clients) do
+      if client.server_capabilities.documentHighlightProvider then
+        vim.lsp.buf.document_highlight()
+      end
+    end
+  end,
+})
+
+-- Clear reference highlights when cursor moves
+vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+  group = augroup("lsp_document_highlight_clear"),
+  callback = function()
+    vim.lsp.buf.clear_references()
+  end,
+})
+
+-- Auto-refresh code lens - DISABLED by default to avoid API errors
+-- Uncomment if you want automatic code lens refresh and your LSP servers support it
+--[[
+vim.api.nvim_create_autocmd({ "BufEnter", "InsertLeave", "BufWritePost" }, {
+  group = augroup("lsp_codelens_refresh"),
+  callback = function(args)
+    local bufnr = args.buf
+    if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_buf_is_loaded(bufnr) then
+      return
+    end
+    if vim.bo[bufnr].buftype ~= "" then
+      return
+    end
+    local clients = vim.lsp.get_active_clients({ bufnr = bufnr })
+    for _, client in pairs(clients) do
+      if client.server_capabilities and client.server_capabilities.codeLensProvider then
+        pcall(vim.lsp.codelens.refresh)
+      end
+    end
+  end,
+})
+--]]
+
+-- Show diagnostics in hover window when cursor is on a line with diagnostics
+vim.api.nvim_create_autocmd("CursorHold", {
+  group = augroup("lsp_diagnostic_hover"),
+  callback = function()
+    -- Only show if there are diagnostics on the current line
+    local diagnostics = vim.diagnostic.get(0, { lnum = vim.fn.line(".") - 1 })
+    if #diagnostics > 0 then
+      vim.diagnostic.open_float(nil, {
+        focusable = false,
+        close_events = { "BufLeave", "CursorMoved", "InsertEnter", "FocusLost" },
+        border = "rounded",
+        source = "always",
+        prefix = " ",
+        scope = "cursor",
+      })
+    end
+  end,
+})
+
+-- ============================================================================
+-- Code Quality Enhancements
+-- ============================================================================
+
+-- Highlight TODO, FIXME, NOTE, WARNING comments
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter" }, {
+  group = augroup("todo_comments"),
+  callback = function()
+    vim.fn.matchadd("Todo", [[\<\(TODO\|FIXME\|CHANGED\|XXX\|IDEA\|HACK\):]])
+    vim.fn.matchadd("Debug", [[\<\(NOTE\|INFO\|IDEA\):]])
+    vim.fn.matchadd("ErrorMsg", [[\<\(BUG\|ERROR\|DANGER\):]])
+    vim.fn.matchadd("WarningMsg", [[\<\(WARNING\|CAUTION\|DEPRECATED\):]])
+  end,
+})
+
+-- Highlight URLs in comments and strings
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter" }, {
+  group = augroup("url_highlight"),
+  pattern = "*",
+  callback = function()
+    vim.fn.matchadd("Underlined", [[\v<(https?|ftp|file)://[^ \t\n\r]+]])
+  end,
+})
+
+-- ============================================================================
+-- Smart File Management
+-- ============================================================================
+
+-- Auto-create parent directories when saving a file
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = augroup("auto_create_dir"),
+  callback = function(event)
+    if event.match:match("^%w%w+://") then
+      return
+    end
+    local file = vim.loop.fs_realpath(event.match) or event.match
+    vim.fn.mkdir(vim.fn.fnamemodify(file, ":p:h"), "p")
+  end,
+})
+
+-- Smart indent detection based on file content
+vim.api.nvim_create_autocmd("BufReadPost", {
+  group = augroup("detect_indent"),
+  callback = function()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, 100, false)
+    local tabs, spaces_2, spaces_4 = 0, 0, 0
+
+    for _, line in ipairs(lines) do
+      if line:match("^\t") then
+        tabs = tabs + 1
+      elseif line:match("^  [^ ]") then
+        spaces_2 = spaces_2 + 1
+      elseif line:match("^    [^ ]") then
+        spaces_4 = spaces_4 + 1
+      end
+    end
+
+    -- Set indentation based on what's most common
+    if tabs > spaces_2 and tabs > spaces_4 then
+      vim.opt_local.expandtab = false
+      vim.opt_local.tabstop = 4
+      vim.opt_local.shiftwidth = 4
+    elseif spaces_2 > spaces_4 then
+      vim.opt_local.expandtab = true
+      vim.opt_local.tabstop = 2
+      vim.opt_local.shiftwidth = 2
+    elseif spaces_4 > 0 then
+      vim.opt_local.expandtab = true
+      vim.opt_local.tabstop = 4
+      vim.opt_local.shiftwidth = 4
+    end
+  end,
+})
+
+-- ============================================================================
+-- Language-Specific Enhancements
+-- ============================================================================
+
+-- Python: Auto-activate virtual environment
+vim.api.nvim_create_autocmd({ "BufEnter", "BufWinEnter" }, {
+  group = augroup("python_venv"),
+  pattern = "*.py",
+  callback = function()
+    -- Look for venv in project root
+    local venv_path = vim.fn.getcwd() .. "/venv"
+    local venv_bin = venv_path .. "/bin/activate"
+    if vim.fn.filereadable(venv_bin) == 1 then
+      vim.env.VIRTUAL_ENV = venv_path
+      vim.env.PATH = venv_path .. "/bin:" .. vim.env.PATH
+    end
+  end,
+})
+
+-- Go: Format imports and code on save
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = augroup("go_format"),
+  pattern = "*.go",
+  callback = function()
+    local params = vim.lsp.util.make_range_params()
+    params.context = { only = { "source.organizeImports" } }
+    local result = vim.lsp.buf_request_sync(0, "textDocument/codeAction", params, 1000)
+    for _, res in pairs(result or {}) do
+      for _, action in pairs(res.result or {}) do
+        if action.edit then
+          vim.lsp.util.apply_workspace_edit(action.edit, "utf-8")
+        end
+      end
+    end
+    vim.lsp.buf.format({ async = false })
+  end,
+})
+
+-- Rust: Auto-reload when Cargo.toml changes
+vim.api.nvim_create_autocmd("BufWritePost", {
+  group = augroup("cargo_reload"),
+  pattern = "Cargo.toml",
+  callback = function()
+    vim.notify("Cargo.toml updated, reloading workspace...", vim.log.levels.INFO)
+    vim.cmd("LspRestart")
+  end,
+})
+
+-- ============================================================================
+-- Performance Monitoring
+-- ============================================================================
+
+-- Warn when opening files with extremely long lines (potential performance issue)
+vim.api.nvim_create_autocmd("BufReadPost", {
+  group = augroup("long_line_warning"),
+  callback = function()
+    local max_line_length = 0
+    local lines = vim.api.nvim_buf_get_lines(0, 0, 100, false) -- Check first 100 lines
+    for _, line in ipairs(lines) do
+      max_line_length = math.max(max_line_length, #line)
+    end
+    if max_line_length > 5000 then
+      vim.notify(
+        string.format("Warning: File contains very long lines (%d chars), performance may be impacted", max_line_length),
+        vim.log.levels.WARN
+      )
+    end
+  end,
+})
+
+-- ============================================================================
+-- Mason Package Manager Auto-Update
+-- ============================================================================
+
+-- Automatically update Mason packages in the background
+vim.api.nvim_create_autocmd("VimEnter", {
+  group = augroup("mason_auto_update"),
+  callback = function()
+    -- Configuration
+    local update_interval_hours = 24 -- How often to check for updates
+    local notify_on_update = true -- Show notification when updates are found
+    local data_path = vim.fn.stdpath("data") .. "/mason_last_update"
+
+    -- Check if enough time has passed since last update
+    local function should_update()
+      local ok, last_update = pcall(vim.fn.readfile, data_path)
+      if not ok or #last_update == 0 then
+        return true
+      end
+
+      local last_timestamp = tonumber(last_update[1])
+      if not last_timestamp then
+        return true
+      end
+
+      local current_time = os.time()
+      local hours_passed = (current_time - last_timestamp) / 3600
+      return hours_passed >= update_interval_hours
+    end
+
+    -- Save the current timestamp
+    local function save_timestamp()
+      vim.fn.writefile({ tostring(os.time()) }, data_path)
+    end
+
+    -- Run the update if needed
+    if should_update() then
+      -- Delay execution to ensure Mason is fully loaded
+      vim.defer_fn(function()
+        -- Check if Mason is available
+        local ok, mason = pcall(require, "mason")
+        if not ok then
+          return
+        end
+
+        -- Run MasonUpdate silently in the background
+        vim.schedule(function()
+          -- Save timestamp before running update
+          save_timestamp()
+
+          -- Create a temporary buffer to capture output
+          local bufnr = vim.api.nvim_create_buf(false, true)
+
+          -- Run MasonUpdate command silently
+          local success = pcall(function()
+            -- Temporarily redirect messages
+            local old_notify = vim.notify
+            local updates_found = false
+
+            vim.notify = function(msg, level)
+              -- Check if updates were found
+              if msg and msg:match("updated") then
+                updates_found = true
+              end
+              -- Suppress Mason UI messages during update
+              if not (msg and msg:match("Mason")) then
+                old_notify(msg, level)
+              end
+            end
+
+            -- Run the update command
+            vim.cmd("silent! MasonUpdate")
+
+            -- Restore original notify
+            vim.notify = old_notify
+
+            -- Show notification if configured and updates were found
+            if notify_on_update and updates_found then
+              vim.notify("Mason packages updated successfully", vim.log.levels.INFO, { title = "Mason" })
+            end
+          end)
+
+          -- Clean up temporary buffer
+          if vim.api.nvim_buf_is_valid(bufnr) then
+            vim.api.nvim_buf_delete(bufnr, { force = true })
+          end
+
+          if not success and notify_on_update then
+            -- Only show error if something actually went wrong
+            -- Silently ignore if Mason just isn't ready yet
+          end
+        end)
+      end, 2000) -- Wait 2 seconds after VimEnter to ensure everything is loaded
+    end
+  end,
+})
