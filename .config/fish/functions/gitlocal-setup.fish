@@ -15,6 +15,7 @@ end
 # Add completions for the function
 complete -c gitlocal-setup -f -a "(ls -d ~/*/)" -d "Directory to process"
 complete -c gitlocal-setup -l dry-run -d "Show what would be done without making changes"
+complete -c gitlocal-setup -l force -d "Overwrite existing exclude files with template"
 complete -c gitlocal-setup -l add-pattern -x -d "Add custom pattern to all exclude files"
 complete -c gitlocal-setup -l verbose -s v -d "Show detailed output"
 complete -c gitlocal-setup -l help -s h -d "Show help message"

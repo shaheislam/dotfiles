@@ -3,7 +3,7 @@
 # Sets up local git excludes with convenient symlinks for all repos in a directory
 # Safe to run multiple times - won't overwrite existing configurations
 
-set -euo pipefail
+set -uo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 # Configuration
 DEFAULT_DIR=""
 DRY_RUN=false
+FORCE_MODE=false
 ADD_PATTERNS=()
 VERBOSE=false
 
@@ -30,6 +31,11 @@ while [[ $# -gt 0 ]]; do
         --dry-run)
             DRY_RUN=true
             echo -e "${YELLOW}Running in DRY RUN mode - no changes will be made${NC}"
+            shift
+            ;;
+        --force)
+            FORCE_MODE=true
+            echo -e "${YELLOW}Running in FORCE mode - existing exclude files will be overwritten${NC}"
             shift
             ;;
         --add-pattern)
@@ -50,6 +56,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --dry-run          Show what would be done without making changes"
+            echo "  --force            Overwrite existing exclude files with template"
             echo "  --add-pattern PAT  Add custom pattern to all exclude files"
             echo "  --verbose, -v      Show detailed output"
             echo "  --help, -h         Show this help message"
@@ -58,6 +65,7 @@ while [[ $# -gt 0 ]]; do
             echo "  $0                           # Process all repos in ~/work"
             echo "  $0 ~/projects                # Process all repos in ~/projects"
             echo "  $0 --dry-run                 # See what would be done"
+            echo "  $0 --force                   # Overwrite existing exclude files"
             echo "  $0 --add-pattern '*.local'   # Add pattern to all repos"
             exit 0
             ;;
@@ -106,6 +114,47 @@ log_verbose() {
     if [[ "$VERBOSE" == true ]]; then
         echo -e "${BLUE}[VERBOSE]${NC} $1"
     fi
+}
+
+# Function to extract custom patterns from existing exclude file
+extract_custom_patterns() {
+    local exclude_file="$1"
+    local -a custom_patterns=()
+
+    if [[ -f "$exclude_file" ]]; then
+        # Read all non-comment, non-empty lines
+        while IFS= read -r line; do
+            # Skip comments and empty lines
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line// }" ]] && continue
+
+            # Check if this pattern is NOT in our defaults
+            local is_custom=true
+            for default_pattern in "${DEFAULT_EXCLUDES[@]}"; do
+                if [[ "$line" == "$default_pattern" ]]; then
+                    is_custom=false
+                    break
+                fi
+            done
+
+            # If it's custom and not already in our list, add it
+            if [[ "$is_custom" == true ]]; then
+                local already_added=false
+                for existing in "${custom_patterns[@]}"; do
+                    if [[ "$existing" == "$line" ]]; then
+                        already_added=true
+                        break
+                    fi
+                done
+                if [[ "$already_added" == false ]]; then
+                    custom_patterns+=("$line")
+                fi
+            fi
+        done < "$exclude_file"
+    fi
+
+    # Return the array by printing each element
+    printf '%s\n' "${custom_patterns[@]}"
 }
 
 # Function to setup exclude file for a single repo
@@ -160,14 +209,29 @@ setup_repo_exclude() {
     local needs_update=false
     local actions=()
 
-    if [[ "$exclude_exists" == false ]]; then
+    if [[ "$FORCE_MODE" == true ]] && [[ "$exclude_exists" == true ]]; then
+        actions+=("Force overwrite exclude file with template")
+        needs_update=true
+    elif [[ "$exclude_exists" == false ]]; then
         actions+=("Create exclude file")
         needs_update=true
-    fi
+    elif [[ "$exclude_exists" == true ]] && [[ "$FORCE_MODE" == false ]]; then
+        # Check if any patterns are missing or if we have custom patterns to preserve
+        local has_missing=false
+        for pattern in "${DEFAULT_EXCLUDES[@]}"; do
+            if ! grep -qF "$pattern" "$exclude_file" 2>/dev/null; then
+                has_missing=true
+                break
+            fi
+        done
 
-    if [[ "$has_gitignore_local" == false ]]; then
-        actions+=("Add .gitignore_local to excludes")
-        needs_update=true
+        # Extract custom patterns to see if we need to reorganize
+        mapfile -t TEMP_CUSTOM < <(extract_custom_patterns "$exclude_file")
+
+        if [[ "$has_missing" == true ]] || [[ ${#TEMP_CUSTOM[@]} -gt 0 ]]; then
+            actions+=("Smart merge: ensure all defaults + preserve custom patterns")
+            needs_update=true
+        fi
     fi
 
     if [[ "$symlink_exists" == false ]]; then
@@ -175,18 +239,6 @@ setup_repo_exclude() {
         needs_update=true
     elif [[ "$symlink_correct" == false ]]; then
         actions+=("Fix .gitignore_local symlink")
-        needs_update=true
-    fi
-
-    # Check if we need to add any patterns
-    if [[ "$exclude_exists" == true ]]; then
-        for pattern in "${DEFAULT_EXCLUDES[@]}" "${ADD_PATTERNS[@]}"; do
-            if ! grep -qF "$pattern" "$exclude_file" 2>/dev/null; then
-                actions+=("Add pattern: $pattern")
-                needs_update=true
-            fi
-        done
-    else
         needs_update=true
     fi
 
@@ -214,8 +266,12 @@ setup_repo_exclude() {
     echo -e "${GREEN}  Applying changes...${NC}"
 
     # Create or update exclude file
-    if [[ "$exclude_exists" == false ]]; then
-        log_verbose "  Creating new exclude file"
+    if [[ "$FORCE_MODE" == true ]] || [[ "$exclude_exists" == false ]]; then
+        if [[ "$FORCE_MODE" == true ]] && [[ "$exclude_exists" == true ]]; then
+            log_verbose "  Force mode: Overwriting existing exclude file"
+        else
+            log_verbose "  Creating new exclude file"
+        fi
         cat > "$exclude_file" << 'EOF'
 # Local git excludes - patterns that won't be committed
 # This file is symlinked to .gitignore_local for easy editing
@@ -225,26 +281,76 @@ EOF
         for pattern in "${DEFAULT_EXCLUDES[@]}"; do
             echo "$pattern" >> "$exclude_file"
         done
-    else
-        # Add missing patterns
-        for pattern in "${DEFAULT_EXCLUDES[@]}" "${ADD_PATTERNS[@]}"; do
-            if ! grep -qF "$pattern" "$exclude_file" 2>/dev/null; then
-                log_verbose "  Adding pattern: $pattern"
-                echo "$pattern" >> "$exclude_file"
-            fi
+        # Add any custom patterns from command line
+        for pattern in "${ADD_PATTERNS[@]}"; do
+            echo "$pattern" >> "$exclude_file"
         done
+    else
+        # Smart merge mode (non-force): preserve custom patterns while ensuring all defaults
+        log_verbose "  Smart merge: Preserving custom patterns while ensuring defaults"
+
+        # Extract existing custom patterns
+        mapfile -t CUSTOM_PATTERNS < <(extract_custom_patterns "$exclude_file")
+
+        # Rewrite the file with clean structure
+        cat > "$exclude_file" << 'EOF'
+# Local git excludes - patterns that won't be committed
+# This file is symlinked to .gitignore_local for easy editing
+
+EOF
+        # Add all default patterns
+        echo "# Standard excludes" >> "$exclude_file"
+        for pattern in "${DEFAULT_EXCLUDES[@]}"; do
+            echo "$pattern" >> "$exclude_file"
+        done
+
+        # Add command-line patterns if any
+        if [[ ${#ADD_PATTERNS[@]} -gt 0 ]]; then
+            echo "" >> "$exclude_file"
+            echo "# Added via command line" >> "$exclude_file"
+            for pattern in "${ADD_PATTERNS[@]}"; do
+                # Only add if not already in defaults
+                local is_duplicate=false
+                for default in "${DEFAULT_EXCLUDES[@]}"; do
+                    if [[ "$pattern" == "$default" ]]; then
+                        is_duplicate=true
+                        break
+                    fi
+                done
+                if [[ "$is_duplicate" == false ]]; then
+                    echo "$pattern" >> "$exclude_file"
+                fi
+            done
+        fi
+
+        # Add preserved custom patterns
+        if [[ ${#CUSTOM_PATTERNS[@]} -gt 0 ]]; then
+            echo "" >> "$exclude_file"
+            echo "# Custom patterns (preserved)" >> "$exclude_file"
+            for pattern in "${CUSTOM_PATTERNS[@]}"; do
+                # Skip if it's in ADD_PATTERNS (to avoid duplicates)
+                local is_duplicate=false
+                for added in "${ADD_PATTERNS[@]}"; do
+                    if [[ "$pattern" == "$added" ]]; then
+                        is_duplicate=true
+                        break
+                    fi
+                done
+                if [[ "$is_duplicate" == false ]]; then
+                    echo "$pattern" >> "$exclude_file"
+                fi
+            done
+        fi
     fi
 
     # Create or fix symlink
     if [[ "$symlink_exists" == false ]]; then
         log_verbose "  Creating symlink .gitignore_local -> .git/info/exclude"
-        cd "$repo_dir"
-        ln -s .git/info/exclude .gitignore_local
+        (cd "$repo_dir" && ln -s .git/info/exclude .gitignore_local)
     elif [[ "$symlink_correct" == false ]]; then
         log_verbose "  Fixing symlink .gitignore_local"
         rm -f "$gitignore_local"
-        cd "$repo_dir"
-        ln -s .git/info/exclude .gitignore_local
+        (cd "$repo_dir" && ln -s .git/info/exclude .gitignore_local)
     fi
 
     echo -e "${GREEN}  ✓ Setup complete${NC}"
@@ -273,6 +379,11 @@ if [[ ${#GIT_REPOS[@]} -eq 0 ]]; then
 fi
 
 echo -e "Found ${GREEN}${#GIT_REPOS[@]}${NC} repositories"
+
+# Debug: Show first few repos
+if [[ "$VERBOSE" == true ]]; then
+    echo "Debug: First 3 repos: ${GIT_REPOS[0]}, ${GIT_REPOS[1]}, ${GIT_REPOS[2]}"
+fi
 
 # Process each repository
 for repo in "${GIT_REPOS[@]}"; do

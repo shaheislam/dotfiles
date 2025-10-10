@@ -196,7 +196,8 @@
       "Bash(luac:*)",
       "Bash(pip3 list:*)",
       "Bash(python3.11:*)",
-      "Bash(/Users/shaheislam/dotfiles/scripts/tools/setup-git-local-excludes.sh:*)"
+      "Bash(/Users/shaheislam/dotfiles/scripts/tools/setup-git-local-excludes.sh:*)",
+      "Bash(~/dotfiles/scripts/tools/setup-git-local-excludes.sh:*)"
     ],
     "deny": [],
     "ask": []

@@ -656,6 +656,7 @@ if status is-interactive
 
     # Git local exclude management
     alias gls="gitlocal-setup"
+    alias glsf="gitlocal-setup --force"
     alias glsd="gitlocal-setup --dry-run"
 
     # Functions from extended config

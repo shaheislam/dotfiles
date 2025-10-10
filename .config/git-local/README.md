@@ -14,6 +14,13 @@ This directory contains tools and templates for managing local git excludes acro
 ### Setup all repos in ~/work
 ```bash
 gitlocal-setup
+# Or use alias: gls
+```
+
+### Force overwrite existing exclude files
+```bash
+gitlocal-setup --force
+# Or use alias: glsf
 ```
 
 ### Setup a specific directory
@@ -24,6 +31,7 @@ gitlocal-setup ~/projects
 ### Dry run to see what would be done
 ```bash
 gitlocal-setup --dry-run
+# Or use alias: glsd
 ```
 
 ### Add custom patterns to all repos
@@ -92,13 +100,42 @@ nvim .gitignore_local
 cat .gitignore_local
 ```
 
+## Smart Merge Mode (Default)
+
+By default, the script runs in **smart merge mode**, which:
+- **Ensures all defaults**: Makes sure every default pattern is present
+- **Preserves custom patterns**: Keeps any patterns you've added manually
+- **Organizes cleanly**: Separates standard excludes from custom patterns
+- **Removes duplicates**: Automatically deduplicates patterns
+
+This is the best of both worlds - you get consistency without losing customizations.
+
+## Force Mode
+
+Use `--force` (or alias `glsf`) when you want to:
+- **Reset to defaults**: Clean up messy or outdated exclude files
+- **Remove custom patterns**: Start fresh with only the default patterns
+- **Fix corrupted files**: Overwrite problematic exclude files
+- **Ensure uniformity**: Apply exactly the same patterns to all repos
+
+```bash
+# Force overwrite all repos in ~/work
+glsf
+
+# Force overwrite specific directory
+gitlocal-setup ~/projects --force
+```
+
+⚠️ **Note**: Force mode will remove any custom patterns you've added manually. Use smart merge (default) if you want to preserve custom patterns.
+
 ## Benefits
 
 1. **Team-Friendly**: Your personal configs don't pollute the shared repository
 2. **Convenient**: `.gitignore_local` symlink makes editing easy
 3. **Consistent**: Same setup across all your repos
-4. **Safe**: Won't overwrite existing configurations
+4. **Safe**: Normal mode preserves existing configurations
 5. **Flexible**: Add project-specific patterns as needed
+6. **Controllable**: Force mode available when you need a clean slate
 
 ## Common Use Cases
 
@@ -150,6 +187,13 @@ This system works seamlessly with:
 ### Re-run to catch new repos
 ```bash
 gitlocal-setup
+# Or: gls
+```
+
+### Force reset all repos to template
+```bash
+gitlocal-setup --force
+# Or: glsf
 ```
 
 ### Update patterns in all repos
@@ -160,6 +204,7 @@ gitlocal-setup --add-pattern "*.newpattern"
 ### Check setup status
 ```bash
 gitlocal-setup --dry-run
+# Or: glsd
 ```
 
 ## Tips
