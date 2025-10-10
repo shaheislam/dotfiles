@@ -40,7 +40,7 @@ For each git repository, the script:
 3. **Adds common patterns** that should be excluded locally:
    - `.gitignore_local` (the symlink itself)
    - `*.local` files
-   - Editor configs (`.vscode/`, `.idea/`)
+   - Editor configs (`.vscode/`, `.idea/`, `.claude/`, `.codex/`)
    - Language-specific configs (`.pyrightconfig.json`, etc.)
    - Personal notes and scripts
 

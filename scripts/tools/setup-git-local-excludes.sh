@@ -90,6 +90,8 @@ DEFAULT_EXCLUDES=(
     ".env.local"
     ".vscode/"
     ".idea/"
+    ".claude/"
+    ".codex/"
     ".DS_Store"
     "*.swp"
     "*.swo"
