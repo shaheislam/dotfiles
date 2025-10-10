@@ -95,6 +95,32 @@ function M.setup()
     end,
   })
 
+  -- Transparent floating windows for all themes
+  local function set_transparent_floats()
+    -- Make floating windows transparent by linking to Normal
+    vim.api.nvim_set_hl(0, "NormalFloat", { link = "Normal" })
+    vim.api.nvim_set_hl(0, "FloatBorder", { link = "Normal" })
+    -- Optional: Make diagnostic floating windows specifically transparent
+    vim.api.nvim_set_hl(0, "DiagnosticFloatingError", { link = "DiagnosticError" })
+    vim.api.nvim_set_hl(0, "DiagnosticFloatingWarn", { link = "DiagnosticWarn" })
+    vim.api.nvim_set_hl(0, "DiagnosticFloatingInfo", { link = "DiagnosticInfo" })
+    vim.api.nvim_set_hl(0, "DiagnosticFloatingHint", { link = "DiagnosticHint" })
+  end
+
+  -- Apply on colorscheme changes
+  vim.api.nvim_create_autocmd("ColorScheme", {
+    group = augroup("transparent_floats"),
+    callback = set_transparent_floats,
+  })
+
+  -- Also apply on startup after colorscheme is loaded
+  vim.api.nvim_create_autocmd("VimEnter", {
+    group = augroup("transparent_floats_init"),
+    callback = function()
+      vim.defer_fn(set_transparent_floats, 100) -- Small delay to ensure theme is fully loaded
+    end,
+  })
+
   -- Auto-resize splits when window is resized
   vim.api.nvim_create_autocmd("VimResized", {
     group = augroup("resize_splits"),
