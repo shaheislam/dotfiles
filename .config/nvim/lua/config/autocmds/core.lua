@@ -140,8 +140,9 @@ function M.setup()
     group = augroup("term_settings"),
     callback = function()
       vim.cmd("startinsert")
-      vim.opt_local.number = false
-      vim.opt_local.relativenumber = false
+      vim.opt_local.number = true
+      vim.opt_local.relativenumber = true
+      vim.opt_local.statuscolumn = "%s %{v:lnum} %{v:relnum}"
       vim.opt_local.signcolumn = "no"
     end,
   })
