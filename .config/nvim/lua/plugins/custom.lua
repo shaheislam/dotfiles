@@ -347,9 +347,10 @@ return {
   --   },
   -- },
 
-  -- Window resize mode for easier split resizing
+  -- Window resize mode for easier split resizing (disabled - using viewport.nvim instead)
   {
     "Dimfred/resize-mode.nvim",
+    enabled = false,
     keys = {
       { "<leader>wr", function() require("resize-mode").start() end, desc = "Resize Mode" },
     },
