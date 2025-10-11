@@ -99,6 +99,7 @@
   "promise-async": { "branch": "main", "commit": "119e8961014c9bfaf1487bf3c2a393d254f337e2" },
   "prototool": { "branch": "dev", "commit": "a6d064684c011c8482f4218c681a66a64031fb1d" },
   "pulumi-lsp": { "branch": "main", "commit": "94cdf45381bc9d8f44fda9e5a6ef6db05f7616e5" },
+  "quicker.nvim": { "branch": "master", "commit": "12a2291869a326424b1cbee937f4f80334433012" },
   "rainbow_csv": { "branch": "master", "commit": "3dbbfd7d17536aebfb80f571255548495574c32b" },
   "rainbow_parentheses.vim": { "branch": "master", "commit": "27e7cd73fec9d1162169180399ff8ea9fa28b003" },
   "refactoring.nvim": { "branch": "master", "commit": "74b608dfee827c2372250519d433cc21cb083407" },
