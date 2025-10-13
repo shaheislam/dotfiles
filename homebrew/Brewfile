@@ -39,6 +39,7 @@ brew "tmux"
 brew "morantron/tmux-fingers/tmux-fingers"
 brew "thefuck"
 brew "atuin"
+brew "asciinema"  # Terminal session recorder
 brew "carapace"  # Multi-shell completion generator
 # brew "lazygit"  # Removed - not using LazyGit
 brew "lazydocker"
