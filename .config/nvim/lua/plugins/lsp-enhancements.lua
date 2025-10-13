@@ -93,7 +93,7 @@ return {
       { "[w", function() vim.diagnostic.goto_prev({ severity = vim.diagnostic.severity.WARN }) end, desc = "Previous Warning" },
 
       -- Diagnostic actions
-      { "<leader>cd", vim.diagnostic.open_float, desc = "Line Diagnostics" },
+      { "<leader>cl", vim.diagnostic.open_float, desc = "Line Diagnostics" },
       { "<leader>cD", "<cmd>Telescope diagnostics bufnr=0<cr>", desc = "Buffer Diagnostics" },
       { "<leader>cW", "<cmd>Telescope diagnostics<cr>", desc = "Workspace Diagnostics" },
 

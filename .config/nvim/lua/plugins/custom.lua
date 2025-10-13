@@ -324,9 +324,6 @@ return {
           end,
         })
       end, desc = "Zoxide jump to Oil" },
-
-      -- Alternative: Zoxide with default behavior (changes cwd)
-      { "<leader>cD", "<cmd>Telescope zoxide list<cr>", desc = "Zoxide jump (default)" },
     },
   },
 
