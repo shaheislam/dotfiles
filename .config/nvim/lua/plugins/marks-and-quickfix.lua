@@ -132,6 +132,11 @@ return {
           require("quicker").close()
         end, "Close quickfix")
 
+        -- Toggle to buffer above
+        map("n", "<Tab>", function()
+          vim.cmd("wincmd k")
+        end, "Switch to buffer")
+
         -- Open entry in buffer above (keep quickfix open)
         map("n", "<CR>", function()
           local qf_idx = vim.fn.line('.')
@@ -171,6 +176,25 @@ return {
           require("quicker").toggle({ loclist = true })
         end,
         desc = "Toggle loclist",
+      },
+      {
+        "<Tab>",
+        function()
+          -- Only work when NOT in quickfix window
+          local current_win = vim.fn.getwininfo(vim.fn.win_getid())[1]
+          if current_win.quickfix == 1 then
+            return -- Let the local quickfix mapping handle it
+          end
+
+          -- Find and jump to quickfix window
+          for _, win in ipairs(vim.fn.getwininfo()) do
+            if win.quickfix == 1 then
+              vim.fn.win_gotoid(win.winid)
+              return
+            end
+          end
+        end,
+        desc = "Jump to quickfix",
       },
       {
         "[q",
