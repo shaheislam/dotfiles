@@ -187,6 +187,31 @@ function M.setup()
     end,
   })
 
+  -- Auto-refresh quickfix when a buffer in the list is modified
+  vim.api.nvim_create_autocmd("BufWritePost", {
+    group = augroup("quickfix_auto_refresh"),
+    callback = function(event)
+      -- Check if quickfix window is open
+      local qf_wins = vim.fn.getqflist({ winid = 0 })
+      if qf_wins.winid == 0 then
+        return -- Quickfix not open, nothing to do
+      end
+
+      -- Get current buffer number
+      local bufnr = event.buf
+
+      -- Check if this buffer is in the quickfix list
+      local qf_list = vim.fn.getqflist()
+      for _, item in ipairs(qf_list) do
+        if item.bufnr == bufnr then
+          -- Buffer is in quickfix, refresh it (nil = quickfix, not loclist)
+          require("quicker").refresh(nil, { keep_diagnostics = true })
+          break
+        end
+      end
+    end,
+  })
+
   -- Auto-close certain windows with q
   vim.api.nvim_create_autocmd("FileType", {
     group = augroup("close_with_q"),

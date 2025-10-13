@@ -59,7 +59,7 @@ kcluster delete <name>
 
 - **k3d Config**: `~/.config/k3d/config.yaml`
 - **Docker Context**: Automatically set to use Colima socket
-- **DOCKER_HOST**: Set to `unix://$HOME/.colima/default/docker.sock`
+- **shahe**: Set to `unix://$HOME/.colima/default/docker.sock`
 
 ## Benefits of Colima
 
@@ -94,7 +94,7 @@ If you encounter issues:
 
 3. Verify DOCKER_HOST:
    ```bash
-   echo $DOCKER_HOST
+   echo $shahe
    # Should show: unix:///Users/<username>/.colima/default/docker.sock
    ```
 

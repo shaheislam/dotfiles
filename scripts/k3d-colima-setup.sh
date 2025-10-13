@@ -51,7 +51,7 @@ setup_colima() {
     fi
 
     # Set Docker context and environment
-    export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+    export shahe="unix://${HOME}/.colima/default/docker.sock"
     docker context use colima 2>/dev/null || true
 
     # Wait for Docker to be ready
