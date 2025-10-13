@@ -29,14 +29,7 @@ return {
         },
       },
       keymaps = {
-        ["<leader>f"] = {
-          desc = "Fuzzy find files",
-          callback = function()
-            require("telescope.builtin").find_files({
-              cwd = require("oil").get_current_dir()
-            })
-          end,
-        },
+        -- Removed <leader>f mapping to avoid conflict with LazyVim's default <leader>ff
       },
     },
     keys = {
