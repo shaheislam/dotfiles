@@ -43,6 +43,16 @@ function M.setup()
     end,
   })
 
+  -- Auto-save buffer when switching to another buffer
+  vim.api.nvim_create_autocmd("BufLeave", {
+    group = augroup("auto_save_buffer_switch"),
+    callback = function()
+      if vim.bo.modified and not vim.bo.readonly and vim.fn.expand("%") ~= "" then
+        vim.cmd("silent! write")
+      end
+    end,
+  })
+
   -- Auto-create parent directories when saving a file
   vim.api.nvim_create_autocmd("BufWritePre", {
     group = augroup("auto_create_dir"),
