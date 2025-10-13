@@ -3,6 +3,10 @@
 -- Set Snacks as the default picker for LazyVim
 vim.g.lazyvim_picker = "snacks"
 
+-- DISABLE auto-formatting globally (both conform.nvim and LSP)
+-- Toggle with <leader>uF to re-enable
+vim.g.autoformat = false
+
 -- Line numbers: both absolute and relative displayed side by side
 vim.opt.number = true
 vim.opt.relativenumber = true

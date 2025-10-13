@@ -6,33 +6,38 @@ return {
   {
     "stevearc/conform.nvim",
     opts = function(_, opts)
-      opts.format_on_save = function(bufnr)
-        -- Disable format on save for specific filetypes
-        local disable_filetypes = { c = true, cpp = true, markdown = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          return false
-        end
+      -- DISABLED: Auto-formatting disabled to preserve manual formatting
+      -- Toggle with <leader>uf (buffer) or <leader>uF (global) to re-enable
+      opts.format_on_save = false
 
-        -- Disable for large files
-        local max_lines = 10000
-        if vim.api.nvim_buf_line_count(bufnr) > max_lines then
-          return false
-        end
-
-        -- Use LSP formatting for Go (gofmt/goimports via gopls)
-        if vim.bo[bufnr].filetype == "go" then
-          return {
-            timeout_ms = 2000,
-            lsp_format = "prefer", -- Use LSP formatting when available
-          }
-        end
-
-        -- Return default settings for other filetypes
-        return {
-          timeout_ms = 500,
-          lsp_format = "fallback", -- Use LSP as fallback if no formatter configured
-        }
-      end
+      -- Original format_on_save function (commented out):
+      -- opts.format_on_save = function(bufnr)
+      --   -- Disable format on save for specific filetypes
+      --   local disable_filetypes = { c = true, cpp = true, markdown = true }
+      --   if disable_filetypes[vim.bo[bufnr].filetype] then
+      --     return false
+      --   end
+      --
+      --   -- Disable for large files
+      --   local max_lines = 10000
+      --   if vim.api.nvim_buf_line_count(bufnr) > max_lines then
+      --     return false
+      --   end
+      --
+      --   -- Use LSP formatting for Go (gofmt/goimports via gopls)
+      --   if vim.bo[bufnr].filetype == "go" then
+      --     return {
+      --       timeout_ms = 2000,
+      --       lsp_format = "prefer", -- Use LSP formatting when available
+      --     }
+      --   end
+      --
+      --   -- Return default settings for other filetypes
+      --   return {
+      --     timeout_ms = 500,
+      --     lsp_format = "fallback", -- Use LSP as fallback if no formatter configured
+      --   }
+      -- end
 
       -- Configure specific formatters
       opts.formatters_by_ft = vim.tbl_deep_extend("force", opts.formatters_by_ft or {}, {
@@ -41,7 +46,7 @@ return {
         typescript = { "prettier", "eslint" },
         javascriptreact = { "prettier", "eslint" },
         typescriptreact = { "prettier", "eslint" },
-        json = { "prettier" },
+        -- json = { "prettier" }, -- Disabled: prettier normalizes formatting, doesn't preserve intent
         yaml = { "prettier" },
         markdown = { "prettier", "markdownlint" },
         html = { "prettier" },
@@ -61,7 +66,7 @@ return {
           prepend_args = { "-i", "2", "-ci" }, -- 2 spaces, indent case statements
         },
         prettier = {
-          prepend_args = { "--prose-wrap", "always" },
+          prepend_args = { "--prose-wrap", "always", "--print-width", "200" },
         },
         black = {
           prepend_args = { "--fast", "--line-length", "100" },
