@@ -1,6 +1,7 @@
 -- Enhanced Marks and Quickfix List Management
 -- marks.nvim: Visual bookmark indicators in the sign column
 -- quicker.nvim: Better quickfix/location list management
+-- nvim-pqf: Pretty quickfix formatting with better readability
 
 return {
   -- Visual bookmark/mark indicators
@@ -205,7 +206,27 @@ return {
     },
   },
 
-  -- Optional: Enhanced quickfix preview (works well with quicker.nvim)
+  -- Pretty quickfix formatting for better readability
+  {
+    "yorickpeterse/nvim-pqf",
+    ft = "qf",
+    config = function()
+      require("pqf").setup({
+        signs = {
+          error = "E",
+          warning = "W",
+          info = "I",
+          hint = "H",
+        },
+        -- Maximum number of lines to show for each entry
+        max_filename_length = 0, -- 0 = no limit
+        -- Show the line number in the quickfix list
+        show_line_numbers = true,
+      })
+    end,
+  },
+
+  -- Optional: Enhanced quickfix preview (works well with quicker.nvim and nvim-pqf)
   {
     "kevinhwang91/nvim-bqf",
     ft = "qf",
