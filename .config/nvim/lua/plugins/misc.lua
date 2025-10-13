@@ -190,7 +190,7 @@ return {
   {
     "simnalamburt/vim-mundo",
     cmd = { "MundoToggle", "MundoShow" },
-    keys = { { "<leader>u", "<cmd>MundoToggle<cr>", desc = "Undo Tree" } },
+    keys = { { "<leader>U", "<cmd>MundoToggle<cr>", desc = "Undo Tree" } },
   },
 
   -- Telescope configuration

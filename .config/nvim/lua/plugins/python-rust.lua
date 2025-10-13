@@ -95,7 +95,7 @@ return {
           on_attach = function(client, bufnr)
             -- Set up keymaps for Rust development
             local opts = { buffer = bufnr, silent = true }
-            vim.keymap.set("n", "<leader>ca", function() vim.cmd.RustLsp('codeAction') end, vim.tbl_extend("force", opts, { desc = "Rust Code Action" }))
+            vim.keymap.set("n", "<leader>cra", function() vim.cmd.RustLsp('codeAction') end, vim.tbl_extend("force", opts, { desc = "Rust Code Action" }))
             vim.keymap.set("n", "<leader>dr", function() vim.cmd.RustLsp('debuggables') end, vim.tbl_extend("force", opts, { desc = "Rust Debuggables" }))
             vim.keymap.set("n", "<leader>rr", function() vim.cmd.RustLsp('runnables') end, vim.tbl_extend("force", opts, { desc = "Rust Runnables" }))
             vim.keymap.set("n", "<leader>rt", function() vim.cmd.RustLsp('testables') end, vim.tbl_extend("force", opts, { desc = "Rust Testables" }))
@@ -262,7 +262,7 @@ return {
             vim.keymap.set("n", "<leader>cd", function() crates.show_dependencies_popup() end, vim.tbl_extend("force", opts, { desc = "Show crate dependencies" }))
             vim.keymap.set("n", "<leader>cu", function() crates.update_crate() end, vim.tbl_extend("force", opts, { desc = "Update crate" }))
             vim.keymap.set("v", "<leader>cu", function() crates.update_crates() end, vim.tbl_extend("force", opts, { desc = "Update selected crates" }))
-            vim.keymap.set("n", "<leader>ca", function() crates.update_all_crates() end, vim.tbl_extend("force", opts, { desc = "Update all crates" }))
+            vim.keymap.set("n", "<leader>cua", function() crates.update_all_crates() end, vim.tbl_extend("force", opts, { desc = "Update all crates" }))
             vim.keymap.set("n", "<leader>cU", function() crates.upgrade_crate() end, vim.tbl_extend("force", opts, { desc = "Upgrade crate" }))
             vim.keymap.set("v", "<leader>cU", function() crates.upgrade_crates() end, vim.tbl_extend("force", opts, { desc = "Upgrade selected crates" }))
             vim.keymap.set("n", "<leader>cA", function() crates.upgrade_all_crates() end, vim.tbl_extend("force", opts, { desc = "Upgrade all crates" }))
