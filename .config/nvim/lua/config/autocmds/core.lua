@@ -191,31 +191,63 @@ function M.setup()
   -- Uses debounced timer to wait for LSP diagnostics and batch rapid saves
   local qf_refresh_timer = vim.loop.new_timer()
 
+  -- Configurable delay (ms) to wait for LSP diagnostics before refreshing
+  -- Increase to 200-250ms if you have slow LSP servers
+  local QF_REFRESH_DELAY = vim.g.qf_refresh_delay or 150
+
+  -- Cleanup timer on exit to prevent resource leaks
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = augroup("quickfix_cleanup"),
+    callback = function()
+      if qf_refresh_timer then
+        qf_refresh_timer:stop()
+        qf_refresh_timer:close()
+      end
+    end,
+  })
+
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = augroup("quickfix_auto_refresh"),
     callback = function(event)
-      -- Check if quickfix window is open
+      -- Early exit: Check if quickfix window is open
       local qf_wins = vim.fn.getqflist({ winid = 0 })
       if qf_wins.winid == 0 then
         return -- Quickfix not open, nothing to do
       end
 
-      -- Stop any pending refresh (debouncing)
+      -- Early exit: Check if this buffer is in the quickfix list BEFORE starting timer
+      -- This optimization avoids unnecessary timer operations for unrelated buffers
+      local bufnr = event.buf
+      local qf_list = vim.fn.getqflist()
+      local buffer_in_qf = false
+      for _, item in ipairs(qf_list) do
+        if item.bufnr == bufnr then
+          buffer_in_qf = true
+          break
+        end
+      end
+
+      if not buffer_in_qf then
+        return -- Buffer not in quickfix, nothing to refresh
+      end
+
+      -- Stop any pending refresh (debouncing multiple rapid saves)
       qf_refresh_timer:stop()
 
-      -- Start timer with 150ms delay to allow LSP diagnostics to update
-      qf_refresh_timer:start(150, 0, vim.schedule_wrap(function()
-        -- Get current buffer number
-        local bufnr = event.buf
+      -- Start timer with configurable delay to allow LSP diagnostics to update
+      -- vim.schedule_wrap() is CRITICAL for thread safety when calling Vim API from async context
+      qf_refresh_timer:start(QF_REFRESH_DELAY, 0, vim.schedule_wrap(function()
+        -- Refresh quickfix with error handling (nil = quickfix, not loclist)
+        local ok, err = pcall(function()
+          require("quicker").refresh(nil, { keep_diagnostics = true })
+        end)
 
-        -- Check if this buffer is in the quickfix list
-        local qf_list = vim.fn.getqflist()
-        for _, item in ipairs(qf_list) do
-          if item.bufnr == bufnr then
-            -- Buffer is in quickfix, refresh it (nil = quickfix, not loclist)
-            require("quicker").refresh(nil, { keep_diagnostics = true })
-            break
-          end
+        -- Optional: Uncomment to get notifications when refresh happens (useful for debugging)
+        -- if ok then
+        --   vim.notify("Quickfix refreshed", vim.log.levels.INFO, { title = "Quickfix" })
+        -- else
+        if not ok then
+          vim.notify("Failed to refresh quickfix: " .. tostring(err), vim.log.levels.WARN, { title = "Quickfix" })
         end
       end))
     end,
