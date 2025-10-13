@@ -64,10 +64,9 @@ return {
         buflisted = false,
         number = false,
         relativenumber = false,
-        signcolumn = "no",
-        winfixheight = false,  -- Changed to false to allow dynamic height
+        signcolumn = "auto",
+        winfixheight = true,
         wrap = false,
-        scrolloff = 0,  -- Allow scrolling to the very top/bottom
       },
       -- Set to false to disable the default keymaps
       keys = {
@@ -88,10 +87,35 @@ return {
       },
       -- Callback function to run any custom logic or keymaps for the quickfix buffer
       on_qf = function(bufnr)
-        -- Move quickfix to top and make it take up most of the screen
-        vim.cmd("wincmd K")
-        -- Take up 70% of the screen height
-        vim.cmd("resize " .. math.floor(vim.o.lines * 0.7))
+        -- Keep quickfix at bottom with fixed height
+        vim.cmd("wincmd J")
+        vim.cmd("resize 10")
+
+        -- Helper function to jump to quickfix item location
+        local function jump_to_qf_item()
+          local qf_idx = vim.fn.line('.')
+          local qf_list = vim.fn.getqflist()
+          local item = qf_list[qf_idx]
+
+          if item and item.bufnr > 0 then
+            -- Move to buffer window above
+            vim.cmd("wincmd k")
+            -- Jump to the exact location
+            vim.cmd(qf_idx .. "cc")
+            -- Center the line on screen
+            vim.cmd("normal! zz")
+            -- Return to quickfix window
+            vim.cmd("wincmd j")
+          end
+        end
+
+        -- Automatically show file in buffer above when navigating
+        vim.api.nvim_create_autocmd("CursorMoved", {
+          buffer = bufnr,
+          callback = function()
+            jump_to_qf_item()
+          end,
+        })
 
         -- Add custom keymaps for quickfix buffer
         local function map(mode, lhs, rhs, desc)
@@ -103,62 +127,35 @@ return {
           require("quicker").refresh()
         end, "Refresh quickfix")
 
-        -- Toggle quickfix open/close
+        -- Close quickfix
         map("n", "q", function()
           require("quicker").close()
         end, "Close quickfix")
 
-        -- Open entry and close quickfix
+        -- Open entry in buffer above (keep quickfix open)
         map("n", "<CR>", function()
-          vim.cmd([[.cc]])
-          require("quicker").close()
-        end, "Open and close quickfix")
+          local qf_idx = vim.fn.line('.')
+          vim.cmd("wincmd k")
+          vim.cmd(qf_idx .. "cc")
+          vim.cmd("normal! zz")
+        end, "Open entry")
 
-        -- Toggle between full height and normal height
-        map("n", "<C-f>", function()
-          local current_height = vim.fn.winheight(0)
-          local full_height = math.floor(vim.o.lines * 0.7)
-          if current_height >= full_height - 2 then
-            -- Switch to normal height
-            vim.cmd("resize 10")
-          else
-            -- Switch to full height
-            vim.cmd("resize " .. full_height)
-          end
-        end, "Toggle full height")
+        -- Navigate to next item
+        map("n", "j", function()
+          vim.cmd("normal! j")
+          jump_to_qf_item()
+        end, "Next item")
 
-        -- Toggle position between top and bottom
-        map("n", "<C-t>", function()
-          local win = vim.fn.win_getid()
-          local pos = vim.fn.win_screenpos(win)
-          if pos[1] <= 2 then
-            vim.cmd("wincmd J")  -- Move to bottom
-            vim.cmd("resize 10") -- Reset to normal size when at bottom
-          else
-            vim.cmd("wincmd K")  -- Move to top
-            vim.cmd("resize " .. math.floor(vim.o.lines * 0.7)) -- Full height when at top
-          end
-        end, "Toggle quickfix position")
-
-        -- Enable quickfix editing
-        map("n", "<C-q>", function()
-          vim.bo[bufnr].modifiable = true
-          vim.bo[bufnr].readonly = false
-          print("Quickfix edit mode enabled - make changes and press <C-s> to save")
-        end, "Enable quickfix editing")
-
-        -- Save quickfix edits
-        map("n", "<C-s>", function()
-          require("quicker").save()
-          vim.bo[bufnr].modifiable = false
-          print("Quickfix changes saved")
-        end, "Save quickfix edits")
+        -- Navigate to previous item
+        map("n", "k", function()
+          vim.cmd("normal! k")
+          jump_to_qf_item()
+        end, "Previous item")
       end,
       -- Set to false to disable vim.ui.select hijacking
       use_default_opts = true,
-      -- Max height of the quickfix window (number of lines)
-      -- Set to nil or a high number to allow full height
-      max_height = nil,
+      -- Max height of the quickfix window
+      max_height = 10,
     },
     keys = {
       {
@@ -236,14 +233,12 @@ return {
     },
     opts = {
       auto_enable = true,
-      auto_resize_height = true, -- Automatically resize quickfix window height
+      auto_resize_height = false, -- Don't auto-resize
       preview = {
-        win_height = 15,          -- Height of preview window
-        win_vheight = 15,         -- Height of preview window when vertical split
-        delay_syntax = 80,        -- Delay for syntax highlighting in preview
-        border = "rounded",       -- Border style
-        show_title = true,        -- Show preview title
-        should_preview_cb = nil,  -- Callback to determine if preview should be shown
+        auto_preview = false, -- Disable automatic preview
+        border = "none",
+        show_title = false,
+        should_preview_cb = function() return false end, -- Never show preview
       },
       filter = {
         fzf = {
