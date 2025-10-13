@@ -188,6 +188,9 @@ function M.setup()
   })
 
   -- Auto-refresh quickfix when a buffer in the list is modified
+  -- Uses debounced timer to wait for LSP diagnostics and batch rapid saves
+  local qf_refresh_timer = vim.loop.new_timer()
+
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = augroup("quickfix_auto_refresh"),
     callback = function(event)
@@ -197,18 +200,24 @@ function M.setup()
         return -- Quickfix not open, nothing to do
       end
 
-      -- Get current buffer number
-      local bufnr = event.buf
+      -- Stop any pending refresh (debouncing)
+      qf_refresh_timer:stop()
 
-      -- Check if this buffer is in the quickfix list
-      local qf_list = vim.fn.getqflist()
-      for _, item in ipairs(qf_list) do
-        if item.bufnr == bufnr then
-          -- Buffer is in quickfix, refresh it (nil = quickfix, not loclist)
-          require("quicker").refresh(nil, { keep_diagnostics = true })
-          break
+      -- Start timer with 150ms delay to allow LSP diagnostics to update
+      qf_refresh_timer:start(150, 0, vim.schedule_wrap(function()
+        -- Get current buffer number
+        local bufnr = event.buf
+
+        -- Check if this buffer is in the quickfix list
+        local qf_list = vim.fn.getqflist()
+        for _, item in ipairs(qf_list) do
+          if item.bufnr == bufnr then
+            -- Buffer is in quickfix, refresh it (nil = quickfix, not loclist)
+            require("quicker").refresh(nil, { keep_diagnostics = true })
+            break
+          end
         end
-      end
+      end))
     end,
   })
 
