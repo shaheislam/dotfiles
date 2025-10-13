@@ -102,8 +102,32 @@ return {
             vim.cmd("wincmd k")
             -- Jump to the exact location
             vim.cmd(qf_idx .. "cc")
+
+            -- Ensure syntax highlighting is properly enabled
+            local current_buf = vim.api.nvim_get_current_buf()
+
+            -- Explicitly detect filetype if not already set
+            if vim.bo[current_buf].filetype == "" then
+              vim.cmd("filetype detect")
+            end
+
+            -- Enable syntax highlighting
+            if vim.bo[current_buf].syntax == "" then
+              vim.bo[current_buf].syntax = vim.bo[current_buf].filetype
+            end
+
+            -- Ensure treesitter is attached if available
+            local ok, ts_highlighter = pcall(require, "vim.treesitter.highlighter")
+            if ok and ts_highlighter then
+              pcall(ts_highlighter.active, current_buf)
+            end
+
             -- Center the line on screen
             vim.cmd("normal! zz")
+
+            -- Force a redraw to apply highlighting
+            vim.cmd("redraw")
+
             -- Return to quickfix window
             vim.cmd("wincmd j")
           end
