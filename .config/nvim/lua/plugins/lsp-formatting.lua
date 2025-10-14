@@ -48,7 +48,7 @@ return {
         typescriptreact = { "prettier", "eslint" },
         -- json = { "prettier" }, -- Disabled: prettier normalizes formatting, doesn't preserve intent
         yaml = { "prettier" },
-        markdown = { "prettier", "markdownlint" },
+        markdown = { "prettier" },
         html = { "prettier" },
         css = { "prettier" },
         scss = { "prettier" },

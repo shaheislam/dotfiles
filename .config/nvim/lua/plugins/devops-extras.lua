@@ -368,7 +368,7 @@ return {
         fish = { "fish_indent" },
         
         -- Documentation
-        markdown = { "prettier", "markdownlint" },
+        markdown = { "prettier" },
         
         -- Containers
         dockerfile = { "hadolint" },
