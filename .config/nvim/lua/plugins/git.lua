@@ -223,21 +223,33 @@ return {
 		},
 		config = function()
 			require("gitsigns").setup({
+				count_chars = {
+					[1] = "",
+					[2] = "₂",
+					[3] = "₃",
+					[4] = "₄",
+					[5] = "₅",
+					[6] = "₆",
+					[7] = "₇",
+					[8] = "₈",
+					[9] = "₉",
+					["+"] = "₊",
+				},
 				signs = {
-					add = { text = "│" },
-					change = { text = "│" },
-					delete = { text = "_" },
-					topdelete = { text = "‾" },
-					changedelete = { text = "~" },
-					untracked = { text = "┆" },
+					add = { show_count = true, text = "│" },
+					change = { show_count = true, text = "│" },
+					delete = { show_count = true, text = "_" },
+					topdelete = { show_count = true, text = "‾" },
+					changedelete = { show_count = true, text = "~" },
+					untracked = { show_count = false, text = "┆" },
 				},
 				-- Staged signs configuration (shows different signs for staged changes)
 				signs_staged = {
-					add = { text = "▎" }, -- Left thick bar for staged adds
-					change = { text = "▎" }, -- Left thick bar for staged changes
-					delete = { text = "▸" }, -- Triangle for staged deletions
-					topdelete = { text = "▾" }, -- Down triangle for staged top deletions
-					changedelete = { text = "▊" }, -- Block for staged change+delete
+					add = { show_count = true, text = "▎" }, -- Left thick bar for staged adds
+					change = { show_count = true, text = "▎" }, -- Left thick bar for staged changes
+					delete = { show_count = true, text = "▸" }, -- Triangle for staged deletions
+					topdelete = { show_count = true, text = "▾" }, -- Down triangle for staged top deletions
+					changedelete = { show_count = true, text = "▊" }, -- Block for staged change+delete
 				},
 				signs_staged_enable = true, -- Enable staged signs display
 				numhl = true, -- Line number highlighting
