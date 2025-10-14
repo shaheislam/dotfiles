@@ -2108,6 +2108,10 @@ if status is-interactive
     bind \e\t carapace_fzf_complete
     bind -M insert \e\t carapace_fzf_complete
 
+    # Git wildcard auto-quoting on Enter
+    bind \r git-quote-wildcards
+    bind -M insert \r git-quote-wildcards
+
     # Custom Atuin keybindings for different filter modes
     # Up arrow - directory search (default behavior)
     bind \e\[A _atuin_search_directory
