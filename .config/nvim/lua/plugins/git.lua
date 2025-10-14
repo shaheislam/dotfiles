@@ -345,7 +345,7 @@ return {
 						gs.nav_hunk("prev", { target = "unstaged" })
 					end, { desc = "Previous unstaged hunk" })
 
-					-- Hunk actions (using <leader>h prefix to avoid conflicts with Neogit)
+					-- Hunk actions
 					map("n", "<leader>hs", gs.stage_hunk, { desc = "Stage hunk" })
 					map("n", "<leader>hr", gs.reset_hunk, { desc = "Reset hunk" })
 					map("v", "<leader>hs", function()
@@ -649,82 +649,7 @@ return {
 		},
 	},
 
-	-- Neogit with floating window support
-	{
-		"NeogitOrg/neogit",
-		dependencies = {
-			"nvim-lua/plenary.nvim",
-			"sindrets/diffview.nvim",
-			"nvim-telescope/telescope.nvim",
-		},
-		config = function()
-			require("neogit").setup({
-				-- Main window as floating
-				kind = "floating",
-
-				-- Configure floating window properties
-				floating = {
-					relative = "editor",
-					width = 0.9,
-					height = 0.8,
-					style = "minimal",
-					border = "rounded",
-				},
-
-				-- Commit editor configuration
-				commit_editor = {
-					kind = "floating",
-					show_staged_diff = false,
-					spell_check = false,
-				},
-				commit_view = {
-					kind = "floating",
-					verify_commit = false,
-				},
-				commit_popup = {
-					kind = "floating",
-				},
-				editor = {
-					kind = "floating",
-				},
-
-				-- Visual configuration
-				signs = {
-					section = { ">", "v" },
-					item = { ">", "v" },
-					hunk = { "", "" },
-				},
-
-				-- Integrations
-				integrations = {
-					telescope = true,
-					diffview = true,
-				},
-
-				-- Graph style
-				graph_style = "unicode",
-
-				-- Additional settings
-				disable_line_numbers = false,
-				console_timeout = 5000,
-				auto_show_console = false,
-				disable_insert_on_commit = true,
-				process = {
-					silent = true,
-				},
-				notification_icon = "󰊢",
-			})
-		end,
-		keys = {
-			{ "<leader>ng", "<cmd>Neogit<cr>", desc = "Neogit Status" },
-			{ "<leader>nc", "<cmd>Neogit kind=floating commit<cr>", desc = "Neogit Commit" },
-			{ "<leader>np", "<cmd>Neogit kind=floating push<cr>", desc = "Neogit Push" },
-			{ "<leader>nl", "<cmd>Neogit kind=floating pull<cr>", desc = "Neogit Pull" },
-			{ "<leader>nb", "<cmd>Neogit kind=floating branch<cr>", desc = "Neogit Branch" },
-		},
-	},
-
-	-- Enable fugitive for :Git commands (works alongside Neogit)
+	-- Enable fugitive for :Git commands
 	{
 		"tpope/vim-fugitive",
 		config = function()
