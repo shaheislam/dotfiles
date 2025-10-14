@@ -35,6 +35,12 @@ vim.keymap.set('n', '<leader>tt', CycleTheme, { desc = "Cycle themes" })
 -- Double-tap Esc to exit terminal mode (preserves single Esc for shell operations)
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
 
+-- Fix <leader>fT to actually open terminal in CWD
+-- LazyVim's default doesn't pass cwd option despite the description saying it should
+vim.keymap.set('n', '<leader>fT', function()
+  require('snacks').terminal(nil, { cwd = vim.fn.getcwd() })
+end, { desc = "Terminal (cwd)" })
+
 -- Disable LazyVim's LazyGit keybindings
 pcall(vim.keymap.del, "n", "<leader>gg")
 pcall(vim.keymap.del, "n", "<leader>gG")
