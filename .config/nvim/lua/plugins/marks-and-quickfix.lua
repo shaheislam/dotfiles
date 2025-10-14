@@ -210,6 +210,11 @@ return {
             return -- Let the local quickfix mapping handle it
           end
 
+          -- Save current buffer before switching to ensure quickfix sees latest changes
+          if vim.bo.modified and not vim.bo.readonly and vim.fn.expand("%") ~= "" then
+            vim.cmd("silent! write")
+          end
+
           -- Find and jump to quickfix window
           for _, win in ipairs(vim.fn.getwininfo()) do
             if win.quickfix == 1 then
