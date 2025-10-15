@@ -1,4 +1,4 @@
-function git-quote-wildcards --description "Auto-quote wildcards in git commands before execution"
+function git_quote_wildcards --description "Auto-quote wildcards in git commands before execution"
     # This function is bound to the Enter key in config.fish
     # When you type a git command with wildcards like:
     #   git restore .github/workflows/postgres*
