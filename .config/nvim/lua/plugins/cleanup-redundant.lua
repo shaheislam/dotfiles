@@ -2,15 +2,10 @@
 return {
   -- Disable redundant plugins
   { "nvim-mini/mini.files", enabled = false },
-  { "nvim-pack/nvim-spectre", enabled = false },
-  { "rmagatti/auto-session", enabled = false },
-  { "numToStr/Comment.nvim", enabled = false },
   { "svermeulen/vim-yoink", enabled = false },
   { "svermeulen/vim-cutlass", enabled = false },
   { "nathanaelkane/vim-indent-guides", enabled = false },
-  { "easymotion/vim-easymotion", enabled = false },
   { "tpope/vim-surround", enabled = false },
-  { "svermeulen/vim-subversive", enabled = false }, -- Causing treesitter query errors
 
   -- Ensure these alternatives are loaded (LazyVim provides most of them)
   -- ts-comments.nvim is included by default in LazyVim
