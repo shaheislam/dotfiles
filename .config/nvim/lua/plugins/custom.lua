@@ -344,9 +344,7 @@ return {
       "nvim-telescope/telescope.nvim",
       "nvim-tree/nvim-web-devicons",
     },
-    cmd = "Octo",
     keys = {
-      { "<leader>go", "<cmd>Octo<cr>", desc = "Octo Menu" },
       { "<leader>gi", "<cmd>Octo issue list<cr>", desc = "List Issues" },
       { "<leader>gp", "<cmd>Octo pr list<cr>", desc = "List PRs" },
       { "<leader>gc", "<cmd>Octo pr create<cr>", desc = "Create PR" },
