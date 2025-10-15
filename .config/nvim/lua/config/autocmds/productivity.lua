@@ -221,17 +221,17 @@ function M.setup()
         vim.opt_local.expandtab = false
         vim.opt_local.tabstop = 4
         vim.opt_local.shiftwidth = 4
-        vim.notify("Detected: tabs (width 4)", vim.log.levels.INFO)
+        -- vim.notify("Detected: tabs (width 4)", vim.log.levels.INFO)
       elseif spaces_2 > spaces_4 then
         vim.opt_local.expandtab = true
         vim.opt_local.tabstop = 2
         vim.opt_local.shiftwidth = 2
-        vim.notify("Detected: 2 spaces", vim.log.levels.INFO)
+        -- vim.notify("Detected: 2 spaces", vim.log.levels.INFO)
       elseif spaces_4 > 0 then
         vim.opt_local.expandtab = true
         vim.opt_local.tabstop = 4
         vim.opt_local.shiftwidth = 4
-        vim.notify("Detected: 4 spaces", vim.log.levels.INFO)
+        -- vim.notify("Detected: 4 spaces", vim.log.levels.INFO)
       end
     end,
   })
