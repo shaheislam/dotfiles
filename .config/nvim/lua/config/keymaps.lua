@@ -38,7 +38,10 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode" }
 -- Fix <leader>fT to actually open terminal in CWD
 -- LazyVim's default doesn't pass cwd option despite the description saying it should
 vim.keymap.set('n', '<leader>fT', function()
-  require('snacks').terminal(nil, { cwd = vim.fn.getcwd() })
+  require('snacks').terminal(nil, {
+    cwd = vim.fn.getcwd(),
+    auto_close = true,  -- Ensure buffer closes when shell exits with <C-d>
+  })
 end, { desc = "Terminal (cwd)" })
 
 -- Disable LazyVim's LazyGit keybindings

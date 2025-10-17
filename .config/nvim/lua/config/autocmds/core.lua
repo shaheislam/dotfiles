@@ -146,6 +146,7 @@ function M.setup()
   -- ============================================================================
 
   -- Automatically enter insert mode when opening terminal + clean UI
+  -- Note: Snacks.nvim handles auto_close for its terminals via configuration
   vim.api.nvim_create_autocmd("TermOpen", {
     group = augroup("term_settings"),
     callback = function()
