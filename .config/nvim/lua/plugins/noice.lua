@@ -438,6 +438,17 @@ return {
         },
         opts = { skip = true },
       },
+      -- Skip empty or whitespace-only messages (fixes blank notifications from auto-save)
+      {
+        filter = {
+          event = "msg_show",
+          any = {
+            { find = "^%s*$" }, -- Empty or whitespace-only
+            { find = "^\".*\" %d+L, %d+B written$" }, -- Explicit write messages
+          },
+        },
+        opts = { skip = true },
+      },
       -- Show messages in notify view (corner notifications)
       {
         filter = {
