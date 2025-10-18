@@ -6,6 +6,28 @@ return {
   {
     "stevearc/conform.nvim",
     opts = function(_, opts)
+      -- Helper to get formatter command with Nix priority
+      local function get_formatter_cmd(formatter_name)
+        if _G.get_nix_formatter_cmd then
+          return _G.get_nix_formatter_cmd(formatter_name, formatter_name)
+        end
+        -- Fallback to standard executable check
+        if vim.fn.executable(formatter_name) == 1 then
+          return formatter_name
+        end
+        return nil
+      end
+
+      -- Function to filter available formatters
+      local function filter_available_formatters(formatters)
+        local available = {}
+        for _, formatter in ipairs(formatters) do
+          if get_formatter_cmd(formatter) then
+            table.insert(available, formatter)
+          end
+        end
+        return available
+      end
       -- DISABLED: Auto-formatting disabled to preserve manual formatting
       -- Toggle with <leader>uf (buffer) or <leader>uF (global) to re-enable
       opts.format_on_save = false
@@ -39,45 +61,51 @@ return {
       --   }
       -- end
 
-      -- Configure specific formatters
+      -- Configure specific formatters (filtered by availability)
       opts.formatters_by_ft = vim.tbl_deep_extend("force", opts.formatters_by_ft or {}, {
-        python = { "ruff_format", "black" }, -- Ruff first, black as fallback
-        javascript = { "prettier", "eslint" },
-        typescript = { "prettier", "eslint" },
-        javascriptreact = { "prettier", "eslint" },
-        typescriptreact = { "prettier", "eslint" },
-        -- json = { "prettier" }, -- Disabled: prettier normalizes formatting, doesn't preserve intent
-        yaml = { "prettier" },
-        markdown = { "prettier" },
-        html = { "prettier" },
-        css = { "prettier" },
-        scss = { "prettier" },
-        lua = { "stylua" },
-        rust = { "rustfmt" },
-        go = { "gofumpt", "goimports" },
-        sh = { "shfmt" },
-        terraform = { "terraform_fmt" },
-        sql = { "sqlfmt", "sql-formatter" },
+        python = filter_available_formatters({ "ruff_format", "black" }), -- Ruff first, black as fallback
+        javascript = filter_available_formatters({ "prettier", "eslint" }),
+        typescript = filter_available_formatters({ "prettier", "eslint" }),
+        javascriptreact = filter_available_formatters({ "prettier", "eslint" }),
+        typescriptreact = filter_available_formatters({ "prettier", "eslint" }),
+        -- json = filter_available_formatters({ "prettier" }), -- Disabled: prettier normalizes formatting
+        yaml = filter_available_formatters({ "prettier" }),
+        markdown = filter_available_formatters({ "prettier" }),
+        html = filter_available_formatters({ "prettier" }),
+        css = filter_available_formatters({ "prettier" }),
+        scss = filter_available_formatters({ "prettier" }),
+        lua = filter_available_formatters({ "stylua" }),
+        rust = filter_available_formatters({ "rustfmt" }),
+        go = filter_available_formatters({ "gofumpt", "goimports" }),
+        sh = filter_available_formatters({ "shfmt" }),
+        terraform = filter_available_formatters({ "terraform_fmt" }),
+        sql = filter_available_formatters({ "sqlfmt", "sql-formatter" }),
+        nix = filter_available_formatters({ "nixpkgs-fmt", "nixfmt" }),
       })
 
-      -- Custom formatter configurations
-      opts.formatters = vim.tbl_deep_extend("force", opts.formatters or {}, {
-        shfmt = {
-          prepend_args = { "-i", "2", "-ci" }, -- 2 spaces, indent case statements
-        },
-        prettier = {
-          prepend_args = { "--prose-wrap", "always", "--print-width", "200" },
-        },
-        black = {
-          prepend_args = { "--fast", "--line-length", "100" },
-        },
-        stylua = {
-          prepend_args = { "--indent-type", "Spaces", "--indent-width", "2" },
-        },
-        rustfmt = {
-          prepend_args = { "--edition", "2021" },
-        },
-      })
+      -- Custom formatter configurations with Nix-aware command paths
+      local formatter_configs = {}
+
+      -- Configure each formatter with its Nix-provided path
+      local formatters_to_configure = {
+        shfmt = { prepend_args = { "-i", "2", "-ci" } }, -- 2 spaces, indent case statements
+        prettier = { prepend_args = { "--prose-wrap", "always", "--print-width", "200" } },
+        black = { prepend_args = { "--fast", "--line-length", "100" } },
+        stylua = { prepend_args = { "--indent-type", "Spaces", "--indent-width", "2" } },
+        rustfmt = { prepend_args = { "--edition", "2021" } },
+        nixpkgs_fmt = { command = get_formatter_cmd("nixpkgs-fmt") },
+        gofumpt = { command = get_formatter_cmd("gofumpt") },
+        goimports = { command = get_formatter_cmd("goimports") },
+      }
+
+      for name, config in pairs(formatters_to_configure) do
+        local cmd = config.command or get_formatter_cmd(name)
+        if cmd then
+          formatter_configs[name] = vim.tbl_extend("force", config, { command = cmd })
+        end
+      end
+
+      opts.formatters = vim.tbl_deep_extend("force", opts.formatters or {}, formatter_configs)
 
       return opts
     end,

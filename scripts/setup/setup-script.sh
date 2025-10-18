@@ -1099,6 +1099,163 @@ else
   log_warning "direnv not installed. Install with: brew install direnv"
 fi
 
+# Install and configure Nix package manager
+echo "=== Installing Nix Package Manager ==="
+if ! command -v nix &> /dev/null; then
+  log_info "Nix not found, installing..."
+
+  # Use the Determinate Systems installer for better macOS support
+  if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm; then
+    log_success "Nix installed successfully"
+
+    # Source Nix for current session
+    if [ -f '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+      . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+    fi
+  else
+    log_error "Failed to install Nix package manager"
+    log_info "You can manually install Nix later from https://nixos.org/download"
+  fi
+else
+  log_success "Nix already installed"
+fi
+
+# Configure Nix
+if command -v nix &> /dev/null; then
+  echo "=== Configuring Nix ==="
+
+  # Create Nix config directory
+  mkdir -p "$HOME/.config/nix"
+
+  # Enable experimental features (flakes and nix-command)
+  if [ ! -f "$HOME/.config/nix/nix.conf" ]; then
+    cat > "$HOME/.config/nix/nix.conf" << 'EOF'
+# Enable experimental features
+experimental-features = nix-command flakes
+
+# Build settings
+max-jobs = auto
+cores = 0
+sandbox = true
+
+# Substituters (binary caches)
+substituters = https://cache.nixos.org https://nix-community.cachix.org
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+
+# Garbage collection
+keep-outputs = true
+keep-derivations = true
+EOF
+    log_success "Nix configuration created"
+  else
+    log_info "Nix configuration already exists"
+  fi
+
+  # Create Nix directory structure in dotfiles
+  if [ ! -d "$HOME/dotfiles/nix" ]; then
+    log_info "Creating Nix directory structure..."
+    mkdir -p "$HOME/dotfiles/nix/flake-templates"
+    mkdir -p "$HOME/dotfiles/nix/project-templates"
+    log_success "Nix directories created"
+  fi
+
+  # Test Nix installation
+  if nix --version &> /dev/null; then
+    NIX_VERSION=$(nix --version | awk '{print $3}')
+    log_success "Nix $NIX_VERSION configured successfully"
+  else
+    log_warning "Nix installed but not fully configured - may need to restart shell"
+  fi
+
+  # Install Home Manager
+  echo "=== Setting up Home Manager ==="
+  if [ ! -f "$HOME/.config/home-manager/flake.nix" ]; then
+    log_info "Home Manager configuration not found, setting up..."
+
+    # Symlink Home Manager configuration from dotfiles if it exists
+    if [ -d "$HOME/dotfiles/.config/home-manager" ]; then
+      # Remove any existing directory first
+      rm -rf "$HOME/.config/home-manager" 2>/dev/null || true
+      ln -sf "$HOME/dotfiles/.config/home-manager" "$HOME/.config/home-manager"
+      log_success "Home Manager configuration symlinked from dotfiles"
+    else
+      log_warning "Home Manager configuration not found in dotfiles"
+      log_info "You can manually set it up later with 'nix run home-manager/master -- init'"
+    fi
+  else
+    log_info "Home Manager configuration already exists"
+  fi
+
+  # Activate Home Manager if config exists
+  if [ -f "$HOME/.config/home-manager/flake.nix" ]; then
+    log_info "Activating Home Manager configuration..."
+    if cd "$HOME/.config/home-manager" && nix run . -- switch --flake . 2>/dev/null; then
+      log_success "Home Manager activated - global packages now available"
+    else
+      log_warning "Home Manager activation failed - run 'hm-switch' manually after restarting shell"
+    fi
+    cd - > /dev/null
+  fi
+else
+  log_warning "Nix installation skipped or failed"
+fi
+
+# Install and configure Nix LSPs (Hybrid Approach)
+echo "=== Setting up Nix LSP Hybrid Configuration ==="
+if command -v nix &> /dev/null; then
+  log_info "Setting up Nix-managed LSPs with hybrid approach..."
+
+  # Install global baseline LSPs via nix-env
+  if [ -f "$HOME/dotfiles/scripts/install-lsps-global.sh" ]; then
+    log_info "Installing global baseline LSPs..."
+    if bash "$HOME/dotfiles/scripts/install-lsps-global.sh"; then
+      log_success "Global LSPs installed successfully"
+    else
+      log_warning "Some LSPs may have failed to install - check manually"
+    fi
+  else
+    log_warning "install-lsps-global.sh not found - skipping LSP installation"
+  fi
+
+  # Activate hybrid setup with direnv integration
+  if [ -f "$HOME/dotfiles/scripts/activate-nix-lsps.sh" ]; then
+    log_info "Activating hybrid LSP configuration..."
+    if bash "$HOME/dotfiles/scripts/activate-nix-lsps.sh" hybrid; then
+      log_success "Hybrid LSP setup activated - global baseline + project overrides ready"
+    else
+      log_warning "Hybrid setup activation had issues - run './scripts/activate-nix-lsps.sh' manually"
+    fi
+  else
+    log_warning "activate-nix-lsps.sh not found - manual setup required"
+  fi
+
+  # Verify LSP status
+  if [ -f "$HOME/dotfiles/scripts/check-lsp-status.sh" ]; then
+    log_info "Checking LSP status..."
+    # Run status check but capture output to avoid cluttering setup
+    if bash "$HOME/dotfiles/scripts/check-lsp-status.sh" > /tmp/lsp-status.log 2>&1; then
+      LSP_COUNT=$(grep "Total LSPs found:" /tmp/lsp-status.log | awk '{print $4}')
+      NIX_COUNT=$(grep "From Nix:" /tmp/lsp-status.log | awk '{print $3}')
+      if [ -n "$LSP_COUNT" ] && [ "$LSP_COUNT" -gt 0 ]; then
+        log_success "LSP setup verified: $LSP_COUNT LSPs found, $NIX_COUNT from Nix"
+      else
+        log_warning "No LSPs detected - run './scripts/check-lsp-status.sh' to diagnose"
+      fi
+    fi
+  fi
+
+  echo ""
+  echo "📚 Nix LSP Hybrid Setup Complete!"
+  echo "   • Global baseline LSPs installed via nix-env"
+  echo "   • direnv configured for project-specific overrides"
+  echo "   • Use './scripts/check-lsp-status.sh' to verify status"
+  echo "   • See NIX_LSP_SETUP.md for usage instructions"
+  echo ""
+else
+  log_warning "Nix not available - LSP setup skipped"
+  log_info "Install Nix first, then run './scripts/activate-nix-lsps.sh hybrid'"
+fi
+
 # Apply macOS system defaults for developers
 echo "=== Applying macOS developer defaults ==="
 if [[ "$OSTYPE" == "darwin"* ]]; then
