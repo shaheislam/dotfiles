@@ -281,7 +281,7 @@ if test -e /nix
         if test -f "$HOME/.config/home-manager/flake.nix"
             echo "Switching to Home Manager configuration..."
             cd "$HOME/.config/home-manager" && \
-            nix build .#homeConfigurations.shaheislam.activationPackage && \
+            nix build ".#homeConfigurations.$USER.activationPackage" && \
             ./result/activate && \
             cd -
         else
@@ -295,7 +295,7 @@ if test -e /nix
             echo "Updating Home Manager configuration..."
             cd "$HOME/.config/home-manager" && \
             nix flake update && \
-            nix build .#homeConfigurations.shaheislam.activationPackage && \
+            nix build ".#homeConfigurations.$USER.activationPackage" && \
             ./result/activate && \
             cd -
         else

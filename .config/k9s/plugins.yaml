@@ -28,6 +28,8 @@ plugins:
     scopes:
       - pods
       - deployments
+    # NOTE: K9s doesn't support $HOME variable expansion
+    # This path needs to be updated per system or use a symlink
     command: /Users/shaheislam/dotfiles/.config/k9s/scripts/stern-splash.sh
     background: false
     args:
@@ -337,6 +339,8 @@ plugins:
     description: Node shell
     scopes:
       - nodes
+    # NOTE: K9s doesn't support $HOME variable expansion
+    # This path needs to be updated per system or use kubectl-node-shell if in PATH
     command: /Users/shaheislam/dotfiles/scripts/bin/kubectl-node-shell
     background: false
     confirm: true
