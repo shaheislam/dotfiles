@@ -160,20 +160,7 @@ else
   brew install --cask wezterm
 fi
 
-# Install Visual Studio Code
-if app_installed "Visual Studio Code"; then
-  echo "Visual Studio Code already installed"
-else
-  echo "Installing Visual Studio Code..."
-  brew install --cask visual-studio-code
-fi
-
-if app_installed "Cursor"; then
-  echo "Cursor already installed"
-else
-  echo "Installing Cursor..."
-  brew install --cask cursor
-fi
+# VSCode and Cursor removed from setup
 
 # Install ueberzugpp (for image display in terminals like iTerm2)
 if ! command -v ueberzugpp &> /dev/null; then
@@ -864,15 +851,7 @@ export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 
-# Add VSCode bin to PATH
-if [ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]; then
-  export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-fi
-
-# Add Cursor bin to PATH
-if [ -d "/Applications/Cursor.app/Contents/Resources/app/bin" ]; then
-  export PATH="$PATH:/Applications/Cursor.app/Contents/Resources/app/bin"
-fi
+# VSCode and Cursor PATH entries removed
 
 # Initialize tools
 eval "$(zoxide init zsh)"
@@ -928,27 +907,7 @@ if command -v thefuck > /dev/null 2>&1; then
   eval $(thefuck --alias)
 fi
 
-# VSCode function
-code() {
-  if command -v code &> /dev/null; then
-    command code "$@"
-  elif [ -d "/Applications/Visual Studio Code.app" ]; then
-    open -a "Visual Studio Code" "$@"
-  else
-    echo "VSCode is not installed or not found in the expected location."
-  fi
-}
-
-# Cursor function
-cursor() {
-  if command -v cursor &> /dev/null; then
-    command cursor "$@"
-  elif [ -d "/Applications/Cursor.app" ]; then
-    open -a "Cursor" "$@"
-  else
-    echo "Cursor is not installed or not found in the expected location."
-  fi
-}
+# VSCode and Cursor functions removed
 
 # AWS SSO function
 function aws-sso() {
