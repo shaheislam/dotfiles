@@ -28,10 +28,7 @@ echo "$(date +%s)" > "$STATE_FILE"
       echo "complete" > "${STATE_FILE}.complete"
 
       # Send system notification
-      tmux display-message "🔔 Activity completed in window ${WINDOW}"
-
-      # Ring bell for system notification
-      tmux display -p '\a' > /dev/null
+      tmux display-message "Activity completed in window ${WINDOW}"
     fi
   fi
 ) &
