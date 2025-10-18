@@ -73,10 +73,10 @@ require("lazy").setup({
   },
   defaults = {
     lazy = false,
-    version = false, -- always use the latest git commit
+    version = "*", -- respect version constraints and lockfile
   },
   install = { colorscheme = { "catppuccin-mocha", "habamax" } },
-  checker = { enabled = true }, -- automatically check for plugin updates
+  checker = { enabled = false }, -- disable automatic update checks (use :Lazy update manually)
   performance = {
     rtp = {
       -- disable some rtp plugins
