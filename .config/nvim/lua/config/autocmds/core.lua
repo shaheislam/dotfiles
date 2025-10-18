@@ -75,6 +75,62 @@ function M.setup()
     end,
   })
 
+  -- Auto-open Oil when all buffers are deleted
+  vim.api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
+    group = augroup("oil_on_empty"),
+    callback = function(event)
+      -- Don't trigger during Vim startup
+      if not vim.v.vim_did_enter then
+        return
+      end
+
+      -- Use defer to let buffer deletion complete
+      vim.defer_fn(function()
+        -- Check if Oil is already open in any window
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+          local buf = vim.api.nvim_win_get_buf(win)
+          if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].filetype == "oil" then
+            return -- Oil is already open
+          end
+        end
+
+        -- Check for any real buffers (with content or a file name)
+        local has_real_buffer = false
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted then
+            -- Skip the buffer being deleted
+            if buf ~= event.buf then
+              -- Check if buffer has a name (file) or has been modified (has content)
+              local name = vim.api.nvim_buf_get_name(buf)
+              local modified = vim.bo[buf].modified
+              local lines = vim.api.nvim_buf_get_lines(buf, 0, 1, false)
+              local has_content = #lines > 0 and lines[1] ~= ""
+
+              -- It's a real buffer if it has a file name, is modified, or has content
+              if name ~= "" or modified or has_content then
+                has_real_buffer = true
+                break
+              end
+            end
+          end
+        end
+
+        -- If no real buffers exist, open Oil
+        if not has_real_buffer then
+          vim.schedule(function()
+            local ok = pcall(function()
+              require("oil").open(vim.fn.getcwd())
+            end)
+            if not ok then
+              -- Fallback to command
+              pcall(vim.cmd, "Oil")
+            end
+          end)
+        end
+      end, 50) -- Short delay to ensure buffer deletion completes
+    end,
+  })
+
   -- ============================================================================
   -- UI Enhancements
   -- ============================================================================
