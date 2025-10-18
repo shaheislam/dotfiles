@@ -22,6 +22,7 @@
 .claude/backups/
 .claude/audio/
 .claude/hooks/logs/
+.claude/statsig/
 
 # Ignore frequently changing log and data files
 .claude/audio_hook.log
