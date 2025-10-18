@@ -77,6 +77,8 @@ return {
       stages = "static",  -- Disable animations for instant appearance/dismissal
       timeout = 2000,     -- Match noice timeout
     })
+    -- Force immediate redraw to ensure notifications render synchronously
+    vim.cmd("redraw")
 
     opts.views.mini = vim.tbl_deep_extend("force", opts.views.mini or {}, {
       backend = "mini",
@@ -123,20 +125,36 @@ return {
     require("noice").setup(opts)
 
     -- Monkey-patch the mini backend to use dynamic timeouts
-    vim.defer_fn(function()
-      local ok, Mini = pcall(require, "noice.view.backend.mini")
-      if ok and Mini then
-        local original_show = Mini.show
+    -- Immediate execution (no defer) to prevent race conditions with early notifications
+    local ok, Mini = pcall(require, "noice.view.backend.mini")
+    if ok and Mini then
+      local original_show = Mini.show
 
-        Mini.show = function(self)
-          -- Override timeout before showing
-          if self._opts then
-            self._opts.timeout = vim.g.noice_persistent_messages and 30000 or 3000
-          end
-          return original_show(self)
+      Mini.show = function(self)
+        -- Override timeout before showing
+        if self._opts then
+          self._opts.timeout = vim.g.noice_persistent_messages and 30000 or 3000
         end
+        -- Call original show and force immediate redraw
+        local result = original_show(self)
+        vim.cmd("redraw")
+        return result
       end
-    end, 100)
+    end
+
+    -- Monkey-patch the notify backend for synchronous rendering
+    local ok_notify, Notify = pcall(require, "noice.view.backend.notify")
+    if ok_notify and Notify then
+      local original_show_notify = Notify.show
+
+      Notify.show = function(self)
+        -- Call original show
+        local result = original_show_notify(self)
+        -- Force immediate redraw to ensure content is visible
+        vim.cmd("redraw!")
+        return result
+      end
+    end
 
     -- Store the original notify function
     local notify = require("notify")
@@ -438,17 +456,35 @@ return {
         },
         opts = { skip = true },
       },
-      -- Skip empty or whitespace-only messages (fixes blank notifications from auto-save)
+      -- Handle confirmation prompts explicitly (MUST come before empty message filter)
       {
         filter = {
           event = "msg_show",
           any = {
-            { find = "^%s*$" }, -- Empty or whitespace-only
-            { find = "^\".*\" %d+L, %d+B written$" }, -- Explicit write messages
+            { find = "Save changes" },
+            { find = "%[Y%]es" },
+            { find = "%[N%]o" },
+            { find = "%[C%]ancel" },
           },
         },
-        opts = { skip = true },
+        view = "mini",  -- Use mini view for confirmations
+        opts = {
+          timeout = false,  -- No auto-dismiss for confirmations
+          replace = false,  -- Don't replace previous notifications
+        },
       },
+      -- TEMPORARILY DISABLED FOR DEBUGGING - Testing if this blocks confirmation prompts
+      -- Skip empty or whitespace-only messages (fixes blank notifications from auto-save)
+      -- {
+      --   filter = {
+      --     event = "msg_show",
+      --     any = {
+      --       { find = "^%s*$" }, -- Empty or whitespace-only
+      --       { find = "^\".*\" %d+L, %d+B written$" }, -- Explicit write messages
+      --     },
+      --   },
+      --   opts = { skip = true },
+      -- },
       -- Show messages in notify view (corner notifications)
       {
         filter = {
