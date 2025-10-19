@@ -2,6 +2,7 @@
 -- <M-g>: Switch to Global scope (~/work)
 -- <M-s>: Switch to Service/Repo scope (parent under ~/work)
 -- <M-l>: Switch to Local scope (cwd)
+-- <M-d>: Switch to current buffer's Directory
 
 -- Store the original buffer number before opening telescope
 -- This lets us check if we came from an Oil buffer
@@ -65,6 +66,23 @@ return {
           end
         end
         -- Fallback to vim's cwd
+        return vim.fn.getcwd()
+      end
+
+      -- Helper function to get the current buffer's directory
+      -- Returns the directory of the file being edited, not cwd or Oil directory
+      local function get_buffer_dir()
+        if original_bufnr and vim.api.nvim_buf_is_valid(original_bufnr) then
+          local bufname = vim.api.nvim_buf_get_name(original_bufnr)
+          if bufname and bufname ~= "" then
+            -- Get the directory of the file
+            local dir = vim.fn.fnamemodify(bufname, ":h")
+            if dir and dir ~= "" then
+              return dir
+            end
+          end
+        end
+        -- Fallback to cwd if no valid buffer
         return vim.fn.getcwd()
       end
 
@@ -152,6 +170,10 @@ return {
         change_scope(prompt_bufnr, get_local_dir(), "Local")
       end
 
+      opts.defaults.mappings.i["<M-d>"] = function(prompt_bufnr)
+        change_scope(prompt_bufnr, get_buffer_dir(), "Buffer Dir")
+      end
+
       -- Add scope toggle mappings for normal mode (Alt-based)
       opts.defaults.mappings.n["<M-g>"] = function(prompt_bufnr)
         change_scope(prompt_bufnr, vim.fn.expand("~/work"), "Global")
@@ -165,6 +187,10 @@ return {
 
       opts.defaults.mappings.n["<M-l>"] = function(prompt_bufnr)
         change_scope(prompt_bufnr, get_local_dir(), "Local")
+      end
+
+      opts.defaults.mappings.n["<M-d>"] = function(prompt_bufnr)
+        change_scope(prompt_bufnr, get_buffer_dir(), "Buffer Dir")
       end
 
       return opts
