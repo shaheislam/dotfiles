@@ -4,44 +4,40 @@
 return {
   {
     "chancez/viewport.nvim",
-    keys = {
-      { "<leader>wv", function() require("viewport.resize").start() end, desc = "Viewport Resize Mode" },
-      { "<leader>wn", function() require("viewport.navigate").start() end, desc = "Viewport Navigate Mode" },
-    },
+    lazy = false, -- Load immediately since we need setup
     config = function()
-      -- Setup resize mode
-      require("viewport.resize").setup({
-        resize_amount = 2, -- Amount to resize by for each keypress
-        mappings = {
-          preset = "relative", -- Use relative mode for smart position-aware resizing
-          -- In relative mode:
-          -- h = shrink width (smart)
-          -- l = grow width (smart)
-          -- j = grow height (smart)
-          -- k = shrink height (smart)
-          -- <Esc> = exit resize mode
+      local viewport = require("viewport")
+
+      -- Setup viewport with both modes
+      viewport.setup({
+        resize_mode = {
+          resize_amount = 2, -- Amount to resize by for each keypress
+          mappings = {
+            preset = "relative", -- Use relative mode for smart position-aware resizing
+            -- In relative mode:
+            -- h = shrink width (smart)
+            -- l = grow width (smart)
+            -- j = grow height (smart)
+            -- k = shrink height (smart)
+            -- <Esc> = exit resize mode
+          },
+        },
+        navigate_mode = {
+          mappings = {
+            preset = "default", -- Use default navigation mappings
+            -- Default mappings include:
+            -- h/j/k/l = focus navigation
+            -- H/J/K/L = swap windows
+            -- s = select mode
+            -- <Esc> = exit navigate mode
+          },
         },
       })
 
-      -- Setup navigate mode
-      require("viewport.navigate").setup({
-        mappings = {
-          -- Focus navigation (move to window)
-          ['h'] = require('viewport.navigate.actions').focus_left,
-          ['j'] = require('viewport.navigate.actions').focus_below,
-          ['k'] = require('viewport.navigate.actions').focus_above,
-          ['l'] = require('viewport.navigate.actions').focus_right,
-          -- Window swapping (swap and follow)
-          ['H'] = require('viewport.navigate.actions').swap_left,
-          ['J'] = require('viewport.navigate.actions').swap_below,
-          ['K'] = require('viewport.navigate.actions').swap_above,
-          ['L'] = require('viewport.navigate.actions').swap_right,
-          -- Quick select with letter labels
-          ['s'] = require('viewport.navigate.actions').select_mode,
-          -- Exit navigate mode
-          ['<Esc>'] = 'stop',
-        },
-      })
+      -- Set up keymaps
+      vim.keymap.set('n', '<leader>wv', viewport.start_resize_mode, { desc = "Viewport Resize Mode" })
+      vim.keymap.set('n', '<leader>wn', viewport.start_navigate_mode, { desc = "Viewport Navigate Mode" })
+      vim.keymap.set('n', '<leader>ws', viewport.start_select_mode, { desc = "Viewport Select Mode" })
     end,
   },
 
@@ -54,6 +50,7 @@ return {
         vim.list_extend(opts.spec, {
           { "<leader>wv", desc = "Viewport Resize Mode" },
           { "<leader>wn", desc = "Viewport Navigate Mode" },
+          { "<leader>ws", desc = "Viewport Select Mode" },
         })
       end
     end,
