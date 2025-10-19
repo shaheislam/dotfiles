@@ -3,6 +3,7 @@
 -- <M-s>: Switch to Service/Repo scope (parent under ~/work)
 -- <M-l>: Switch to Local scope (cwd)
 -- <M-d>: Switch to current buffer's Directory
+-- <M-p>: Switch to Parent directory (refine up one level)
 
 -- Store the original buffer number before opening telescope
 -- This lets us check if we came from an Oil buffer
@@ -84,6 +85,25 @@ return {
         end
         -- Fallback to cwd if no valid buffer
         return vim.fn.getcwd()
+      end
+
+      -- Helper function to get the parent directory of current picker scope
+      local function get_parent_dir(prompt_bufnr)
+        local current_picker = action_state.get_current_picker(prompt_bufnr)
+        -- Try to get cwd from picker options, fallback to vim's cwd
+        local current_cwd = (current_picker.finder and current_picker.finder.cwd)
+                         or current_picker.cwd
+                         or vim.fn.getcwd()
+
+        local parent = vim.fn.fnamemodify(current_cwd, ":h")
+
+        -- Prevent going above root
+        if parent == current_cwd or parent == "" or parent == "." then
+          vim.notify("Already at filesystem root", vim.log.levels.WARN)
+          return nil
+        end
+
+        return parent
       end
 
       -- Custom action to change search scope dynamically
@@ -174,6 +194,14 @@ return {
         change_scope(prompt_bufnr, get_buffer_dir(), "Buffer Dir")
       end
 
+      opts.defaults.mappings.i["<M-p>"] = function(prompt_bufnr)
+        local parent = get_parent_dir(prompt_bufnr)
+        if parent then
+          local parent_name = vim.fn.fnamemodify(parent, ":t")
+          change_scope(prompt_bufnr, parent, "Parent: " .. parent_name)
+        end
+      end
+
       -- Add scope toggle mappings for normal mode (Alt-based)
       opts.defaults.mappings.n["<M-g>"] = function(prompt_bufnr)
         change_scope(prompt_bufnr, vim.fn.expand("~/work"), "Global")
@@ -191,6 +219,14 @@ return {
 
       opts.defaults.mappings.n["<M-d>"] = function(prompt_bufnr)
         change_scope(prompt_bufnr, get_buffer_dir(), "Buffer Dir")
+      end
+
+      opts.defaults.mappings.n["<M-p>"] = function(prompt_bufnr)
+        local parent = get_parent_dir(prompt_bufnr)
+        if parent then
+          local parent_name = vim.fn.fnamemodify(parent, ":t")
+          change_scope(prompt_bufnr, parent, "Parent: " .. parent_name)
+        end
       end
 
       return opts
