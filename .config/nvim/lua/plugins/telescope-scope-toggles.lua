@@ -28,24 +28,26 @@ return {
         end
       end
 
-      -- Helper function to get the service repo directory
+      -- Helper function to get the git repository root directory
+      -- Works with any git repository (dotfiles, work projects, etc.)
       local function get_service_repo_dir()
-        local cwd = vim.fn.getcwd()
-        local work_dir = vim.fn.expand("~/work")
-
-        if not vim.startswith(cwd, work_dir) then
-          return work_dir
+        -- First, try to get git root from Oil's current directory if applicable
+        if original_bufnr and vim.api.nvim_buf_is_valid(original_bufnr) then
+          local ft = vim.api.nvim_buf_get_option(original_bufnr, "filetype")
+          if ft == "oil" then
+            local oil_dir = require("oil").get_current_dir(original_bufnr)
+            if oil_dir then
+              -- Find git root from Oil directory
+              local git_root = vim.fs.find(".git", { path = oil_dir, upward = true })[1]
+              if git_root then
+                return vim.fn.fnamemodify(git_root, ":h")
+              end
+            end
+          end
         end
 
-        local relative = cwd:sub(#work_dir + 2)
-        local first_slash = relative:find("/")
-
-        if first_slash then
-          local service_name = relative:sub(1, first_slash - 1)
-          return work_dir .. "/" .. service_name
-        else
-          return cwd
-        end
+        -- Fallback: use LazyVim's git root detection
+        return LazyVim.root.git()
       end
 
       -- Helper function to get the local directory
@@ -141,7 +143,9 @@ return {
       end
 
       opts.defaults.mappings.i["<M-s>"] = function(prompt_bufnr)
-        change_scope(prompt_bufnr, get_service_repo_dir(), "Service")
+        local git_root = get_service_repo_dir()
+        local repo_name = vim.fn.fnamemodify(git_root, ":t")
+        change_scope(prompt_bufnr, git_root, "Git: " .. repo_name)
       end
 
       opts.defaults.mappings.i["<M-l>"] = function(prompt_bufnr)
@@ -154,7 +158,9 @@ return {
       end
 
       opts.defaults.mappings.n["<M-s>"] = function(prompt_bufnr)
-        change_scope(prompt_bufnr, get_service_repo_dir(), "Service")
+        local git_root = get_service_repo_dir()
+        local repo_name = vim.fn.fnamemodify(git_root, ":t")
+        change_scope(prompt_bufnr, git_root, "Git: " .. repo_name)
       end
 
       opts.defaults.mappings.n["<M-l>"] = function(prompt_bufnr)
