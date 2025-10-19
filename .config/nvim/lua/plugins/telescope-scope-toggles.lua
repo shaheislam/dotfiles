@@ -4,10 +4,16 @@
 -- <M-l>: Switch to Local scope (cwd)
 -- <M-d>: Switch to current buffer's Directory
 -- <M-p>: Switch to Parent directory (refine up one level)
+-- <M-b>: Navigate back in directory history
+-- <M-n>: Navigate forward in directory history
 
 -- Store the original buffer number before opening telescope
 -- This lets us check if we came from an Oil buffer
 local original_bufnr = nil
+
+-- Directory history tracking
+local dir_history = {}
+local history_index = 0
 
 return {
   {
@@ -106,14 +112,45 @@ return {
         return parent
       end
 
+      -- Add directory to history
+      local function add_to_history(cwd, scope_name)
+        -- Don't add duplicates if same as current position
+        if history_index > 0 and dir_history[history_index] then
+          if dir_history[history_index].cwd == cwd then
+            return
+          end
+        end
+
+        -- Truncate forward history when making a new navigation
+        for i = history_index + 1, #dir_history do
+          dir_history[i] = nil
+        end
+
+        -- Add new entry
+        table.insert(dir_history, { cwd = cwd, scope_name = scope_name })
+        history_index = #dir_history
+      end
+
       -- Custom action to change search scope dynamically
-      local function change_scope(prompt_bufnr, new_cwd, scope_name)
+      -- skip_history: if true, don't add to history (used when navigating history)
+      local function change_scope(prompt_bufnr, new_cwd, scope_name, skip_history)
         local current_picker = action_state.get_current_picker(prompt_bufnr)
         local finder = current_picker.finder
 
         -- Get the current prompt text and picker title
         local prompt = action_state.get_current_line()
         local original_title = current_picker.prompt_title or ""
+
+        -- Add to history unless we're navigating history
+        if not skip_history then
+          -- If this is the first navigation (history is empty), capture current location first
+          if #dir_history == 0 then
+            local current_cwd = (finder and finder.cwd) or current_picker.cwd or vim.fn.getcwd()
+            local current_scope = original_title:match("%((.-)%)") or "Initial"
+            add_to_history(current_cwd, current_scope)
+          end
+          add_to_history(new_cwd, scope_name)
+        end
 
         -- Close current picker
         actions.close(prompt_bufnr)
@@ -169,6 +206,33 @@ return {
         end)
       end
 
+      -- Navigate through directory history
+      -- direction: -1 for back, 1 for forward
+      local function navigate_history(prompt_bufnr, direction)
+        if #dir_history == 0 then
+          vim.notify("No directory history", vim.log.levels.WARN)
+          return
+        end
+
+        local new_index = history_index + direction
+
+        if new_index < 1 then
+          vim.notify("Already at oldest directory in history", vim.log.levels.WARN)
+          return
+        end
+
+        if new_index > #dir_history then
+          vim.notify("Already at newest directory in history", vim.log.levels.WARN)
+          return
+        end
+
+        history_index = new_index
+        local entry = dir_history[history_index]
+
+        -- Navigate without adding to history
+        change_scope(prompt_bufnr, entry.cwd, entry.scope_name, true)
+      end
+
       -- Ensure mappings table exists
       opts.defaults = opts.defaults or {}
       opts.defaults.mappings = opts.defaults.mappings or {}
@@ -202,6 +266,14 @@ return {
         end
       end
 
+      opts.defaults.mappings.i["<M-b>"] = function(prompt_bufnr)
+        navigate_history(prompt_bufnr, -1)
+      end
+
+      opts.defaults.mappings.i["<M-n>"] = function(prompt_bufnr)
+        navigate_history(prompt_bufnr, 1)
+      end
+
       -- Add scope toggle mappings for normal mode (Alt-based)
       opts.defaults.mappings.n["<M-g>"] = function(prompt_bufnr)
         change_scope(prompt_bufnr, vim.fn.expand("~/work"), "Global")
@@ -227,6 +299,14 @@ return {
           local parent_name = vim.fn.fnamemodify(parent, ":t")
           change_scope(prompt_bufnr, parent, "Parent: " .. parent_name)
         end
+      end
+
+      opts.defaults.mappings.n["<M-b>"] = function(prompt_bufnr)
+        navigate_history(prompt_bufnr, -1)
+      end
+
+      opts.defaults.mappings.n["<M-n>"] = function(prompt_bufnr)
+        navigate_history(prompt_bufnr, 1)
       end
 
       return opts
