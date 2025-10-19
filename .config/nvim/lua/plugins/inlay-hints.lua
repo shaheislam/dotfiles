@@ -13,37 +13,45 @@ return {
       -- Setup hooks for all servers
       servers = {},
     },
-    init = function()
-      -- Hook into LSP attach to enable native inlay hints
-      local lsp_attach = vim.api.nvim_create_augroup("lsp_inlay_hints", { clear = true })
-
-      vim.api.nvim_create_autocmd("LspAttach", {
-        group = lsp_attach,
-        callback = function(args)
-          local client = vim.lsp.get_client_by_id(args.data.client_id)
-          local bufnr = args.buf
-
-          -- Enable native inlay hints if supported
-          if client and client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
-            vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
-          end
-        end,
-      })
-    end,
+    -- Note: LspAttach autocmd for enabling inlay hints is handled in lua/config/autocmds/lsp.lua
+    -- to avoid duplication and conflicts
     keys = {
-      -- Toggle inlay hints globally
+      -- Toggle inlay hints globally (all buffers with LSP attached)
       {
         "<leader>uh",
         function()
           if vim.lsp.inlay_hint then
-            vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+            -- Get all buffers with LSP clients attached
+            local buffers = vim.api.nvim_list_bufs()
+            local has_any_enabled = false
+            local lsp_buffers = {}
+
+            -- Check which buffers have LSP and inlay hints
+            for _, buf in ipairs(buffers) do
+              if vim.api.nvim_buf_is_loaded(buf) then
+                local clients = vim.lsp.get_clients({ bufnr = buf })
+                if #clients > 0 then
+                  table.insert(lsp_buffers, buf)
+                  if vim.lsp.inlay_hint.is_enabled({ bufnr = buf }) then
+                    has_any_enabled = true
+                  end
+                end
+              end
+            end
+
+            -- Toggle all LSP buffers to the opposite state
+            local new_state = not has_any_enabled
+            for _, buf in ipairs(lsp_buffers) do
+              vim.lsp.inlay_hint.enable(new_state, { bufnr = buf })
+            end
+
             vim.notify(
-              "Inlay Hints " .. (vim.lsp.inlay_hint.is_enabled() and "Enabled" or "Disabled"),
+              "Inlay Hints (Global) " .. (new_state and "Enabled" or "Disabled"),
               vim.log.levels.INFO
             )
           end
         end,
-        desc = "Toggle Inlay Hints",
+        desc = "Toggle Inlay Hints (Global)",
       },
       -- Toggle for current buffer only
       {
