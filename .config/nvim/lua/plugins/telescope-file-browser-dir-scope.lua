@@ -60,12 +60,23 @@ return {
         end
       end
 
-      -- Configure telescope file_browser extension and add <C-f> mappings
+      -- Configure telescope file_browser extension and add <M-f> mappings
       telescope.setup({
         extensions = {
           file_browser = {
-            theme = "ivy",
+            -- Use floating window to align with other telescope pickers
+            theme = nil, -- Don't use ivy theme, use default floating
             hijack_netrw = false, -- Don't hijack netrw, we use Oil.nvim
+            -- Match the layout config from your main telescope defaults
+            layout_strategy = "horizontal",
+            layout_config = {
+              horizontal = {
+                preview_width = 0.6,
+                preview_cutoff = 120,
+              },
+              width = 0.9,
+              height = 0.9,
+            },
             mappings = {
               ["i"] = {
                 -- Add custom file_browser mappings here if needed
