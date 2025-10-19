@@ -58,7 +58,9 @@ return {
       {
         "<leader>fg",
         function()
-          require("telescope").extensions.live_grep_args.live_grep_args()
+          require("telescope").extensions.live_grep_args.live_grep_args({
+            default_text = "",  -- Start with empty prompt instead of history
+          })
         end,
         desc = "Live Grep with Args",
       },

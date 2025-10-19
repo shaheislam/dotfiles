@@ -206,13 +206,7 @@ return {
         })
       end, desc = "Find Files (Custom)" },
 
-      { "<leader>fg", function()
-        require("telescope.builtin").live_grep({
-          additional_args = function()
-            return {"--glob", "!*test*", "--glob", "!*spec*", "--glob", "!*.min.*"}
-          end
-        })
-      end, desc = "Live Grep (No Tests)" },
+      -- <leader>fg mapping moved to telescope-live-grep-args.lua for better grep functionality
 
       -- Marks integration
       { "<leader>fm", "<cmd>Telescope marks<cr>", desc = "Find marks" },
