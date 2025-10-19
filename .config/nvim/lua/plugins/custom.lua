@@ -30,6 +30,25 @@ return {
       },
       keymaps = {
         -- Removed <leader>f mapping to avoid conflict with LazyVim's default <leader>ff
+        -- Add Oil-specific telescope mappings that use Oil's current directory
+        ["<leader>ff"] = {
+          function()
+            require("telescope.builtin").find_files({
+              cwd = require("oil").get_current_dir(),
+              prompt_title = "Find Files (Oil Directory)",
+            })
+          end,
+          desc = "Find files in Oil directory",
+        },
+        ["<leader>fg"] = {
+          function()
+            require("telescope.builtin").live_grep({
+              cwd = require("oil").get_current_dir(),
+              prompt_title = "Live Grep (Oil Directory)",
+            })
+          end,
+          desc = "Live grep in Oil directory",
+        },
       },
     },
     keys = {
