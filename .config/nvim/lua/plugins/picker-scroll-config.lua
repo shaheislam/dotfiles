@@ -11,49 +11,47 @@ return {
       "kkharji/sqlite.lua",  -- Required for smart history
       "nvim-telescope/telescope-smart-history.nvim",
     },
-    opts = {
-      defaults = {
-        -- Enable smooth scrolling
-        scroll_strategy = "limit", -- or "cycle" if you prefer wrapping
-        layout_config = {
-          scroll_speed = 3, -- Number of lines to scroll (lower = smoother)
-        },
-        -- Per-picker history configuration
-        history = {
-          path = vim.fn.stdpath("data") .. "/databases/telescope_history.sqlite3",
-          limit = 100,
-        },
-        mappings = {
-          -- Insert mode mappings
-          i = {
-            ["<C-u>"] = require("telescope.actions").preview_scrolling_up,
-            ["<C-d>"] = require("telescope.actions").preview_scrolling_down,
-            -- Keep other useful mappings
-            ["<C-h>"] = require("telescope.actions").preview_scrolling_left,
-            ["<C-l>"] = require("telescope.actions").preview_scrolling_right,
-            -- Add half-page scrolling for smoother experience
-            ["<C-b>"] = require("telescope.actions").preview_scrolling_up,
-            ["<C-f>"] = require("telescope.actions").preview_scrolling_down,
-            -- Fuzzy refine: switch to fuzzy filtering on current results
-            ["<C-Space>"] = require("telescope.actions").to_fuzzy_refine,
-            -- Prompt history navigation (Vim-style)
-            ["<C-p>"] = require("telescope.actions").cycle_history_prev,
-            ["<C-n>"] = require("telescope.actions").cycle_history_next,
+    opts = function()
+      local actions = require("telescope.actions")
+      return {
+        defaults = {
+          -- Enable smooth scrolling
+          scroll_strategy = "limit", -- or "cycle" if you prefer wrapping
+          layout_config = {
+            scroll_speed = 3, -- Number of lines to scroll (lower = smoother)
           },
-          -- Normal mode mappings
-          n = {
-            ["<C-u>"] = require("telescope.actions").preview_scrolling_up,
-            ["<C-d>"] = require("telescope.actions").preview_scrolling_down,
-            ["<C-h>"] = require("telescope.actions").preview_scrolling_left,
-            ["<C-l>"] = require("telescope.actions").preview_scrolling_right,
-            ["<C-b>"] = require("telescope.actions").preview_scrolling_up,
-            ["<C-f>"] = require("telescope.actions").preview_scrolling_down,
-            -- Fuzzy refine: switch to fuzzy filtering on current results
-            ["<C-Space>"] = require("telescope.actions").to_fuzzy_refine,
+          -- Per-picker history configuration
+          history = {
+            path = vim.fn.stdpath("data") .. "/databases/telescope_history.sqlite3",
+            limit = 100,
+          },
+          mappings = {
+            -- Insert mode mappings
+            i = {
+              ["<C-u>"] = actions.preview_scrolling_up,
+              ["<C-d>"] = actions.preview_scrolling_down,
+              -- Add half-page scrolling for smoother experience
+              ["<C-b>"] = actions.preview_scrolling_up,
+              ["<C-f>"] = actions.preview_scrolling_down,
+              -- Fuzzy refine: switch to fuzzy filtering on current results
+              ["<C-Space>"] = actions.to_fuzzy_refine,
+              -- Prompt history navigation (Vim-style)
+              ["<C-p>"] = actions.cycle_history_prev,
+              ["<C-n>"] = actions.cycle_history_next,
+            },
+            -- Normal mode mappings
+            n = {
+              ["<C-u>"] = actions.preview_scrolling_up,
+              ["<C-d>"] = actions.preview_scrolling_down,
+              ["<C-b>"] = actions.preview_scrolling_up,
+              ["<C-f>"] = actions.preview_scrolling_down,
+              -- Fuzzy refine: switch to fuzzy filtering on current results
+              ["<C-Space>"] = actions.to_fuzzy_refine,
+            },
           },
         },
-      },
-    },
+      }
+    end,
     config = function(_, opts)
       local telescope = require("telescope")
 
@@ -221,8 +219,6 @@ return {
       keys["<C-d>"] = { "preview_scroll_down", mode = { "i", "n" } }
       keys["<C-b>"] = { "preview_page_up", mode = { "i", "n" } }
       keys["<C-f>"] = { "preview_page_down", mode = { "i", "n" } }
-      keys["<C-h>"] = { "preview_scroll_left", mode = { "i", "n" } }
-      keys["<C-l>"] = { "preview_scroll_right", mode = { "i", "n" } }
 
       -- Toggle live mode
       keys["<C-Space>"] = { "toggle_live", mode = { "i", "n" } }
