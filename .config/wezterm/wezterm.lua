@@ -3,56 +3,9 @@
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
--- Font configuration with ligatures and enhanced styling
--- Options: 'JetBrainsMono Nerd Font', 'VictorMono Nerd Font', 'CaskaydiaCove Nerd Font'
-config.font = wezterm.font_with_fallback({
-  {
-    family = 'JetBrainsMono Nerd Font',
-    weight = 'Medium',
-    harfbuzz_features = { 'calt=1', 'liga=1', 'dlig=1', 'ss01=1', 'ss02=1' }, -- Enable ligatures
-  },
-  'JetBrainsMono Nerd Font',
-})
-
--- Font size
+-- Font configuration
+config.font = wezterm.font('JetBrainsMono Nerd Font', { weight = 'Medium' })
 config.font_size = 14.0
-
--- Enhanced font rendering
-config.freetype_load_target = 'Normal'
-config.freetype_render_target = 'HorizontalLcd'
-
--- Font rules for italic and bold contexts
-config.font_rules = {
-  -- Italic
-  {
-    intensity = 'Normal',
-    italic = true,
-    font = wezterm.font({
-      family = 'JetBrainsMono Nerd Font',
-      weight = 'Medium',
-      style = 'Italic',
-    }),
-  },
-  -- Bold
-  {
-    intensity = 'Bold',
-    italic = false,
-    font = wezterm.font({
-      family = 'JetBrainsMono Nerd Font',
-      weight = 'Bold',
-    }),
-  },
-  -- Bold + Italic
-  {
-    intensity = 'Bold',
-    italic = true,
-    font = wezterm.font({
-      family = 'JetBrainsMono Nerd Font',
-      weight = 'Bold',
-      style = 'Italic',
-    }),
-  },
-}
 
 -- Color scheme - Catppuccin Mocha for consistency
 config.color_scheme = 'Catppuccin Mocha'

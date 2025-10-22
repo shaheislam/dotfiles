@@ -22,15 +22,15 @@ return {
       styles = {
         comments = { "italic" },
         conditionals = { "italic" },
-        loops = { "italic" },
-        functions = { "italic" },
-        keywords = { "bold", "italic" },
+        loops = {},
+        functions = {},
+        keywords = {},
         strings = {},
         variables = {},
         numbers = {},
-        booleans = { "bold" },
+        booleans = {},
         properties = {},
-        types = { "bold", "italic" },
+        types = {},
         operators = {},
       },
       integrations = {
@@ -87,20 +87,10 @@ return {
       cmp_itemkind_reverse = false,
       code_style = {
         comments = 'italic',
-        keywords = 'bold,italic',
-        functions = 'italic',
+        keywords = 'none',
+        functions = 'none',
         strings = 'none',
         variables = 'none'
-      },
-      highlights = {
-        -- Enhanced styling for specific syntax groups
-        ["@type"] = { fmt = "bold,italic" },
-        ["@type.builtin"] = { fmt = "bold,italic" },
-        ["@keyword"] = { fmt = "bold,italic" },
-        ["@keyword.function"] = { fmt = "bold,italic" },
-        ["@boolean"] = { fmt = "bold" },
-        ["@conditional"] = { fmt = "italic" },
-        ["@repeat"] = { fmt = "italic" },
       },
     },
     config = function(_, opts)
