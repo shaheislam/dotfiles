@@ -25,6 +25,7 @@ require("lazy").setup({
     -- Import LazyVim extras (SECOND - these are the built-in extensions)
     -- Note: We're importing the extras that were in recommended-lazyvim-extras.lua
     -- { import = "lazyvim.plugins.extras.ai.codeium" }, -- Removed: AI code completion not needed
+    { import = "lazyvim.plugins.extras.coding.blink" }, -- Modern completion with blink.cmp
     { import = "lazyvim.plugins.extras.coding.mini-surround" },
     { import = "lazyvim.plugins.extras.coding.neogen" },
     { import = "lazyvim.plugins.extras.coding.yanky" },

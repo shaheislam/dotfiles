@@ -7,6 +7,8 @@ from typing import Optional, List, Dict, Union
 from dataclasses import dataclass
 import json  # This import should be sorted by ruff
 
+my_str = "hello"
+my_str.
 
 # Test basedpyright type checking
 @dataclass
@@ -20,6 +22,7 @@ def greet(person: Person) -> str:
     """Greet a person with type hints."""
     # Basedpyright should infer the return type
     return f"Hello, {person.name}!"
+
 
 
 def process_data(data: Union[str, None]) -> str:

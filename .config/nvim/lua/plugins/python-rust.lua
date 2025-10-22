@@ -198,7 +198,6 @@ return {
         thousands_separator = ",",
         notification_title = "Crates",
         curl_args = { "-sL", "--retry", "1" },
-        disable_invalid_feature_diagnostic = false,
         text = {
           loading = "   Loading...",
           version = "   %s",
@@ -230,17 +229,9 @@ return {
           padding = 1,
         },
         completion = {
+          -- Enable blink.cmp integration for crates.nvim
           cmp = {
-            enabled = true,
-            use_custom_kind = true,
-            kind_text = {
-              version = "Version",
-              feature = "Feature",
-            },
-            kind_highlight = {
-              version = "CmpItemKindVersion",
-              feature = "CmpItemKindFeature",
-            },
+            enabled = false, -- Disable nvim-cmp integration
           },
           crates = {
             enabled = true,
@@ -289,16 +280,9 @@ return {
     end,
   },
 
-  -- nvim-cmp integration for crates.nvim
-  {
-    "hrsh7th/nvim-cmp",
-    dependencies = { "saecki/crates.nvim" },
-    opts = function(_, opts)
-      local cmp = require("cmp")
-      opts.sources = cmp.config.sources(vim.list_extend(opts.sources or {}, {
-        { name = "crates" },
-      }))
-      return opts
-    end,
-  },
+  -- Note: crates.nvim completion with blink.cmp requires blink.compat
+  -- For now, crates.nvim will work via LSP integration only
+  -- To enable crates completion in blink.cmp:
+  -- 1. Install blink.compat: Add { "saghen/blink.compat", version = "*" } to dependencies
+  -- 2. Configure provider with module = "blink.compat.source"
 }
