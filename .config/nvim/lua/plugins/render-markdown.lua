@@ -5,12 +5,18 @@ return {
     "nvim-mini/mini.nvim"
   },
   ft = "markdown",
+  -- Disable for large markdown files to prevent lag
+  enabled = function()
+    local line_count = vim.api.nvim_buf_line_count(0)
+    return line_count < 5000
+  end,
   opts = {
     -- File types to render
     file_types = { "markdown" },
 
-    -- Render modes - when to show rendered view
-    render_modes = { "n", "c", "t" },
+    -- Render modes - only in normal mode for performance
+    -- Removed "c" and "t" modes to reduce lag during scrolling
+    render_modes = { "n" },
 
     -- Headings with beautiful styling
     heading = {

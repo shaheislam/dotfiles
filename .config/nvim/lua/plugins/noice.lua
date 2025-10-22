@@ -77,8 +77,8 @@ return {
       stages = "static",  -- Disable animations for instant appearance/dismissal
       timeout = 2000,     -- Match noice timeout
     })
-    -- Force immediate redraw to ensure notifications render synchronously
-    vim.cmd("redraw")
+    -- Schedule redraw to avoid blocking
+    vim.schedule(function() vim.cmd("redraw") end)
 
     opts.views.mini = vim.tbl_deep_extend("force", opts.views.mini or {}, {
       backend = "mini",
@@ -135,9 +135,9 @@ return {
         if self._opts then
           self._opts.timeout = vim.g.noice_persistent_messages and 30000 or 3000
         end
-        -- Call original show and force immediate redraw
+        -- Call original show and schedule redraw
         local result = original_show(self)
-        vim.cmd("redraw")
+        vim.schedule(function() vim.cmd("redraw") end)
         return result
       end
     end
@@ -150,8 +150,8 @@ return {
       Notify.show = function(self)
         -- Call original show
         local result = original_show_notify(self)
-        -- Force immediate redraw to ensure content is visible
-        vim.cmd("redraw!")
+        -- Schedule redraw to avoid blocking
+        vim.schedule(function() vim.cmd("redraw") end)
         return result
       end
     end

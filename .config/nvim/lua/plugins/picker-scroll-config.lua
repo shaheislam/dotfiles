@@ -238,18 +238,11 @@ return {
     end,
   },
 
-  -- Optional: Add mini.animate for even smoother scrolling animations
-  {
-    "nvim-mini/mini.animate",
-    event = "VeryLazy",
-    opts = function()
-      return {
-        cursor = { enable = false }, -- Disable cursor animation
-        scroll = { enable = false }, -- Disable scroll animation to fix lag
-        resize = { enable = false }, -- Disable window resize animation
-        open = { enable = false },   -- Disable window open animation
-        close = { enable = false },  -- Disable window close animation
-      }
-    end,
-  },
+  -- mini.animate - DISABLED to prevent scrolling lag
+  -- Even with all animations disabled, the plugin adds overhead
+  -- Uncomment only if you need specific animations
+  -- {
+  --   "nvim-mini/mini.animate",
+  --   enabled = false,
+  -- },
 }
