@@ -103,12 +103,8 @@ config.adjust_window_size_when_changing_font_size = false
 
 -- Key bindings (enhanced with omerxx style)
 config.keys = {
-  -- Toggle fullscreen (omerxx style)
-  {
-    key = 'f',
-    mods = 'CTRL',
-    action = wezterm.action.ToggleFullScreen,
-  },
+  -- Removed Ctrl-f fullscreen binding to avoid conflict with Neovim scrolling
+  -- Use macOS native Cmd+Ctrl+F for fullscreen instead
   -- Clear scrollback
   {
     key = "'",

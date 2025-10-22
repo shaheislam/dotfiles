@@ -60,3 +60,8 @@ end, { desc = "Terminal (cwd)" })
 pcall(vim.keymap.del, "n", "<leader>gg")
 pcall(vim.keymap.del, "n", "<leader>gG")
 pcall(vim.keymap.del, "n", "<leader>gL")
+
+-- Custom scrolling keymaps
+-- Remap Ctrl-f to scroll up (half-page) instead of full-page down
+vim.keymap.set({'n', 'v'}, '<C-f>', '<C-u>', { desc = "Scroll up (half-page)", silent = true })
+-- Keep Ctrl-d for scroll down (half-page) - LazyVim default
