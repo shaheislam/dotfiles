@@ -208,6 +208,9 @@ brew "task"
 brew "jj"  # Jujutsu version control system
 
 # Nerd Fonts
+# Note: DankMono Nerd Font is manually installed from https://github.com/saifulapm/my-fonts
+# Primary: DankMono Nerd Font (manual installation)
+# Fallback: JetBrains Mono Nerd Font, Iosevka Nerd Font
 cask "font-jetbrains-mono-nerd-font"
 cask "font-fira-code-nerd-font"
 cask "font-hack-nerd-font"

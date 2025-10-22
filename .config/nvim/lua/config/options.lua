@@ -18,5 +18,8 @@ vim.opt.statuscolumn = "%s %C%{v:lnum} %{v:relnum}"
 -- Python provider configuration
 vim.g.python3_host_prog = '/opt/homebrew/bin/python3.11'
 
+-- Font configuration for GUI clients (Neovide, VimR, etc.)
+vim.opt.guifont = "DankMono Nerd Font:h14"
+
 -- Additional vim options can go here
 -- vim.opt.wrap = false

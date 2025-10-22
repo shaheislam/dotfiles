@@ -4,14 +4,14 @@ local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
 -- Font configuration with ligatures and enhanced styling
--- Options: 'JetBrainsMono Nerd Font', 'VictorMono Nerd Font', 'CaskaydiaCove Nerd Font'
+-- Options: 'DankMono Nerd Font', 'JetBrainsMono Nerd Font', 'VictorMono Nerd Font'
 config.font = wezterm.font_with_fallback({
   {
-    family = 'JetBrainsMono Nerd Font',
-    weight = 'Medium',
-    harfbuzz_features = { 'calt=1', 'liga=1', 'dlig=1', 'ss01=1', 'ss02=1' }, -- Enable ligatures
+    family = 'DankMono Nerd Font',
+    weight = 'Regular',
+    harfbuzz_features = { 'calt=1', 'liga=1', 'dlig=1' }, -- Enable ligatures
   },
-  'JetBrainsMono Nerd Font',
+  'JetBrainsMono Nerd Font', -- Fallback
 })
 
 -- Font size
@@ -28,8 +28,8 @@ config.font_rules = {
     intensity = 'Normal',
     italic = true,
     font = wezterm.font({
-      family = 'JetBrainsMono Nerd Font',
-      weight = 'Medium',
+      family = 'DankMono Nerd Font',
+      weight = 'Regular',
       style = 'Italic',
     }),
   },
@@ -38,7 +38,7 @@ config.font_rules = {
     intensity = 'Bold',
     italic = false,
     font = wezterm.font({
-      family = 'JetBrainsMono Nerd Font',
+      family = 'DankMono Nerd Font',
       weight = 'Bold',
     }),
   },
@@ -47,7 +47,7 @@ config.font_rules = {
     intensity = 'Bold',
     italic = true,
     font = wezterm.font({
-      family = 'JetBrainsMono Nerd Font',
+      family = 'DankMono Nerd Font',
       weight = 'Bold',
       style = 'Italic',
     }),

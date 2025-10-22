@@ -128,6 +128,22 @@ for font in "${NERD_FONTS[@]}"; do
   fi
 done
 
+# DankMono Nerd Font - Manual Installation Required
+# Note: DankMono is not available via Homebrew and must be installed manually
+# Source: https://github.com/saifulapm/my-fonts
+# Installation steps:
+#   1. Clone the repository: git clone https://github.com/saifulapm/my-fonts.git /tmp/my-fonts
+#   2. Install fonts: cp /tmp/my-fonts/DankMono\ Nerd\ Font/*.otf ~/Library/Fonts/
+#   3. Restart applications to use the new font
+echo "=== DankMono Nerd Font ==="
+if fc-list 2>/dev/null | grep -qi "DankMono"; then
+  echo "✓ DankMono Nerd Font is installed"
+else
+  echo "⚠ DankMono Nerd Font not found - install manually from:"
+  echo "  https://github.com/saifulapm/my-fonts"
+  echo "  Then: cp /tmp/my-fonts/DankMono\ Nerd\ Font/*.otf ~/Library/Fonts/"
+fi
+
 # Install GUI applications via Homebrew Cask (only if not already present)
 echo "=== Installing GUI applications via Homebrew Cask ==="
 
@@ -1429,7 +1445,7 @@ echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Claude Code: CLI tool with SuperClaude framework"
 echo "- AI Tools: OpenAI Codex CLI, Claude Code Router"
 echo "- Image display: ueberzugpp, imagemagick"
-echo "- Fonts: JetBrains Mono Nerd Font, Fira Code Nerd Font, Hack Nerd Font"
+echo "- Fonts: DankMono Nerd Font (manual), Iosevka Nerd Font, JetBrains Mono Nerd Font (fallback)"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
 echo "- Mac App Store apps: Kinda Vim for Safari"
 echo "- Personal repositories: Obsidian vault at ~/obsidian"
@@ -1450,7 +1466,7 @@ if ! command -v claude &> /dev/null; then
 fi
 
 echo "1. Close and reopen your terminal to use Fish shell (or run 'exec fish')"
-echo "2. Configure iTerm2 to use 'JetBrainsMono Nerd Font' in Preferences → Profiles → Text"
+echo "2. DankMono Nerd Font is now configured for WezTerm, tmux, and Neovim"
 echo "3. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
 echo "4. Start sketchybar: 'brew services start sketchybar'"
 echo "5. Restart Claude Desktop to load MCP servers"
