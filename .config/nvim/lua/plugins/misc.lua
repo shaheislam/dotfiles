@@ -1,11 +1,11 @@
 -- ~/.config/nvim/lua/plugins/misc.lua
 return {
-  -- Override LazyVim's default colorscheme to Catppuccin Mocha
+  -- Catppuccin Mocha theme (available for toggling)
   {
     "catppuccin/nvim",
     name = "catppuccin",
     lazy = false,
-    priority = 1000,
+    priority = 999,
     opts = {
       flavour = "mocha",
       transparent_background = true,
@@ -71,15 +71,14 @@ return {
     },
     config = function(_, opts)
       require("catppuccin").setup(opts)
-      vim.cmd([[colorscheme catppuccin-mocha]])
     end,
   },
 
-  -- OneDark theme (alternative theme for toggling)
+  -- OneDark theme (default theme)
   {
     "navarasu/onedark.nvim",
     lazy = false,
-    priority = 999, -- Load after catppuccin
+    priority = 1000, -- Highest priority to load as default
     opts = {
       style = 'dark',
       transparent = true, -- Match catppuccin transparency
@@ -94,13 +93,17 @@ return {
         variables = 'none'
       },
     },
+    config = function(_, opts)
+      require("onedark").setup(opts)
+      vim.cmd([[colorscheme onedark]])
+    end,
   },
 
   -- Tokyo Night Storm theme (third theme for cycling)
   {
     "folke/tokyonight.nvim",
     lazy = false,
-    priority = 998, -- Load after catppuccin and onedark
+    priority = 998,
     opts = {
       style = "storm",
       transparent = true,
