@@ -12,7 +12,19 @@ vim.keymap.set("n", "<leader>fs", "<cmd>w<cr>", { desc = "Save file", silent = t
 
 -- Theme cycling function
 local function CycleTheme()
-  local themes = { "catppuccin-mocha", "onedark", "tokyonight-storm" }
+  local themes = {
+    "onedark",           -- Default
+    "catppuccin-mocha",  -- Original
+    "tokyonight-storm",  -- Original
+    "kanagawa",          -- Japanese art
+    "rose-pine",         -- Warm elegant
+    "nordfox",           -- Nightfox variant
+    "gruvbox-material",  -- Modern Gruvbox
+    "everforest",        -- Green forest
+    "github_dark",       -- GitHub dark
+    "cyberdream",        -- Cyberpunk
+    "nord",              -- Arctic blue
+  }
   local current = vim.g.colors_name
 
   -- Find current theme index

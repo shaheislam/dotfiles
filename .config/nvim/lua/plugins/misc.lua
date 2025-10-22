@@ -115,6 +115,138 @@ return {
     },
   },
 
+  -- Kanagawa theme - Japanese art inspired
+  {
+    "rebelot/kanagawa.nvim",
+    lazy = false,
+    priority = 997,
+    opts = {
+      transparent = true,
+      terminal_colors = true,
+      colors = {
+        theme = {
+          all = {
+            ui = {
+              bg_gutter = "none"
+            }
+          }
+        }
+      },
+    },
+  },
+
+  -- Rose Pine theme - Elegant warm palette
+  {
+    "rose-pine/neovim",
+    name = "rose-pine",
+    lazy = false,
+    priority = 996,
+    opts = {
+      variant = "main", -- main, moon, or dawn
+      dark_variant = "main",
+      dim_inactive_windows = false,
+      extend_background_behind_borders = true,
+      styles = {
+        bold = true,
+        italic = true,
+        transparency = true,
+      },
+    },
+  },
+
+  -- Nightfox theme - Multiple variants
+  {
+    "EdenEast/nightfox.nvim",
+    lazy = false,
+    priority = 995,
+    opts = {
+      options = {
+        transparent = true,
+        terminal_colors = true,
+        dim_inactive = false,
+        styles = {
+          comments = "italic",
+          keywords = "bold",
+          types = "italic,bold",
+        },
+      },
+    },
+  },
+
+  -- Gruvbox Material theme - Modern Gruvbox
+  {
+    "sainnhe/gruvbox-material",
+    lazy = false,
+    priority = 994,
+    config = function()
+      vim.g.gruvbox_material_background = "medium" -- soft, medium, hard
+      vim.g.gruvbox_material_transparent_background = 1
+      vim.g.gruvbox_material_enable_italic = 1
+      vim.g.gruvbox_material_enable_bold = 1
+    end,
+  },
+
+  -- Everforest theme - Comfortable green forest
+  {
+    "sainnhe/everforest",
+    lazy = false,
+    priority = 993,
+    config = function()
+      vim.g.everforest_background = "medium" -- hard, medium, soft
+      vim.g.everforest_transparent_background = 1
+      vim.g.everforest_enable_italic = 1
+      vim.g.everforest_better_performance = 1
+    end,
+  },
+
+  -- GitHub theme - GitHub's color schemes
+  {
+    "projekt0n/github-nvim-theme",
+    lazy = false,
+    priority = 992,
+    config = function()
+      require("github-theme").setup({
+        options = {
+          transparent = true,
+          terminal_colors = true,
+          dim_inactive = false,
+          styles = {
+            comments = "italic",
+            keywords = "bold",
+            types = "italic,bold",
+          },
+        },
+      })
+    end,
+  },
+
+  -- Cyberdream theme - Modern cyberpunk aesthetic
+  {
+    "scottmckendry/cyberdream.nvim",
+    lazy = false,
+    priority = 991,
+    opts = {
+      transparent = true,
+      italic_comments = true,
+      hide_fillchars = true,
+      borderless_telescope = true,
+    },
+  },
+
+  -- Nord theme - Arctic bluish theme
+  {
+    "shaunsingh/nord.nvim",
+    lazy = false,
+    priority = 990,
+    config = function()
+      vim.g.nord_contrast = true
+      vim.g.nord_borders = false
+      vim.g.nord_disable_background = true -- Transparent background
+      vim.g.nord_italic = true
+      vim.g.nord_bold = false
+    end,
+  },
+
   -- Terraform support (autocmd for .tf files)
   {
     "hashivim/vim-terraform",
