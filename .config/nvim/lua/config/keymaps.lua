@@ -29,7 +29,7 @@ local function CycleTheme()
   vim.cmd("colorscheme " .. themes[next_index])
 end
 
-vim.keymap.set('n', '<leader>tt', CycleTheme, { desc = "Cycle themes" })
+vim.keymap.set('n', '<leader>th', CycleTheme, { desc = "Cycle themes" })
 
 -- Terminal mode keymaps
 -- Double-tap Esc to exit terminal mode (preserves single Esc for shell operations)
