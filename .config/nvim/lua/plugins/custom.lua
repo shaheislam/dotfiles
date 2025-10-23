@@ -78,6 +78,9 @@ return {
     "svermeulen/vim-yoink",
     dependencies = { "svermeulen/vim-cutlass" },
     config = function()
+      -- Enable delete operations to be added to yank history when using cutlass
+      vim.g.yoinkIncludeDeleteOperations = 1
+
       -- vim-yoink mappings
       vim.keymap.set('n', 'p', '<plug>(YoinkPaste_p)')
       vim.keymap.set('n', 'P', '<plug>(YoinkPaste_P)')

@@ -239,6 +239,10 @@ return {
       opts.defaults.mappings.i = opts.defaults.mappings.i or {}
       opts.defaults.mappings.n = opts.defaults.mappings.n or {}
 
+      -- Note: These default mappings use Alt-key combinations (<M-...>) which don't conflict
+      -- with extension-specific mappings like telescope-undo's <cr> mapping.
+      -- Telescope properly prioritizes extension mappings over defaults for the same key.
+
       -- Add scope toggle mappings for insert mode (Alt-based)
       opts.defaults.mappings.i["<M-g>"] = function(prompt_bufnr)
         change_scope(prompt_bufnr, vim.fn.expand("~/work"), "Global")

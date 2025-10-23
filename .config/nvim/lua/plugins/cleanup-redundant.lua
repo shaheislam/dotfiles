@@ -2,8 +2,9 @@
 return {
   -- Disable redundant plugins
   { "nvim-mini/mini.files", enabled = false },
-  { "svermeulen/vim-yoink", enabled = false },
-  { "svermeulen/vim-cutlass", enabled = false },
+  -- vim-yoink and vim-cutlass are enabled in custom.lua - don't disable here
+  -- { "svermeulen/vim-yoink", enabled = false },
+  -- { "svermeulen/vim-cutlass", enabled = false },
   { "nathanaelkane/vim-indent-guides", enabled = false },
   { "tpope/vim-surround", enabled = false },
 
