@@ -2,33 +2,28 @@
 -- View and search through your undo history using Telescope
 -- Usage: <leader>fu to open undo history
 -- Mappings:
--- - <cr> restore the selected undo state (simplified to just Enter)
+-- - <cr> restore the selected undo state
 -- - y yank additions to clipboard
 -- - Y yank deletions to clipboard
 
 return {
   {
     "debugloop/telescope-undo.nvim",
+    dependencies = { "nvim-telescope/telescope.nvim" },
+  },
+  {
+    "nvim-telescope/telescope.nvim",
     dependencies = {
-      {
-        "nvim-telescope/telescope.nvim",
-        dependencies = { "nvim-lua/plenary.nvim" },
-      },
+      { "debugloop/telescope-undo.nvim" },
     },
-    config = function()
-      local telescope = require("telescope")
+    opts = function(_, opts)
       local actions = require("telescope-undo.actions")
 
-      -- Merge our undo extension config with existing telescope setup
-      telescope.setup({
+      return vim.tbl_deep_extend("force", opts, {
         extensions = {
           undo = {
             use_delta = true,
             side_by_side = false,
-            layout_strategy = "vertical",
-            layout_config = {
-              preview_height = 0.8,
-            },
             mappings = {
               i = {
                 ["<cr>"] = actions.restore,
@@ -44,8 +39,10 @@ return {
           },
         },
       })
-
-      -- Load the undo extension
+    end,
+    config = function(_, opts)
+      local telescope = require("telescope")
+      telescope.setup(opts)
       telescope.load_extension("undo")
     end,
     keys = {

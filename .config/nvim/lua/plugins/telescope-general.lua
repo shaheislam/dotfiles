@@ -24,6 +24,7 @@ return {
     opts = function(_, opts)
       return vim.tbl_deep_extend("force", opts, {
         defaults = {
+          default_text = "",  -- Prevent picking up vim's search register on first load
           file_ignore_patterns = {
             "node_modules", "^.git/", "dist", "/build/", "%.lock", "package%-lock%.json",
             "yarn%.lock", "%.log", "%.cache", "%.min%.js", "%.min%.css"
