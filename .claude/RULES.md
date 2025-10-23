@@ -24,6 +24,13 @@ Simple actionable rules for Claude Code framework operation.
 - Use project's existing import styles and organization
 - Respect framework lifecycles and best practices
 
+### Git Commit Standards
+- **NEVER** use emojis in commit messages
+- **NEVER** reference "Claude", "Claude Code", or any AI assistant names in commits
+- Use conventional commit format: `type: brief description`
+- Keep commits professional, clear, and tool-agnostic
+- Focus on what changed and why, not who or what tool made the change
+
 ### Systematic Codebase Changes
 - **MANDATORY**: Complete project-wide discovery before any changes
 - Search ALL file types for ALL variations of target terms
@@ -58,6 +65,8 @@ Simple actionable rules for Claude Code framework operation.
 ❌ Override safety protocols
 ❌ Make reactive codebase changes
 ❌ Mark complete without verification
+❌ Use emojis in commit messages
+❌ Reference AI assistants in commits
 
 ### Auto-Triggers
 - Wave mode: complexity ≥0.7 + multiple domains
