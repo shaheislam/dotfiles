@@ -14,6 +14,7 @@ local config = {
   load_performance = true, -- Performance optimizations
   load_productivity = true, -- Productivity enhancements
   load_languages = true, -- Language-specific settings
+  load_styling = true, -- Consistent styling across colorschemes (recommended)
 
   -- Feature flags (used by various modules)
   auto_refresh_codelens = false, -- Enable auto-refresh of code lens (may cause issues with some LSPs)
@@ -52,6 +53,7 @@ load_module("lsp", config.load_lsp)
 load_module("performance", config.load_performance)
 load_module("productivity", config.load_productivity)
 load_module("languages", config.load_languages)
+load_module("styling", config.load_styling)
 
 -- ============================================================================
 -- Module Information
@@ -65,6 +67,7 @@ load_module("languages", config.load_languages)
 -- * performance.lua  - Performance optimizations and resource management
 -- * productivity.lua - Workflow enhancements and automation
 -- * languages.lua    - Language-specific settings and keymaps
+-- * styling.lua      - Consistent italic/bold styling across all colorschemes
 --
 -- You can disable any module by setting the corresponding config option to false above.
 --

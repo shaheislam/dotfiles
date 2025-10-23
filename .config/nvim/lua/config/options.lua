@@ -18,5 +18,10 @@ vim.opt.statuscolumn = "%s %C%{v:lnum} %{v:relnum}"
 -- Python provider configuration
 vim.g.python3_host_prog = '/opt/homebrew/bin/python3.11'
 
+-- Font configuration for GUI clients (Neovide, VimR, nvim-qt, etc.)
+-- This setting ONLY affects GUI Neovim applications, NOT terminal Neovim
+-- Terminal font is controlled by your terminal emulator (WezTerm, etc.)
+vim.opt.guifont = "JetBrainsMono Nerd Font:h14"
+
 -- Additional vim options can go here
 -- vim.opt.wrap = false
