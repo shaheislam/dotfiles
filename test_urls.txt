@@ -16,6 +16,6 @@ github.com/user/repo
 stackoverflow.com/questions/123
 
 Email-like (should not open):
-user@example.com
+test1@example.com
 
 Test by placing cursor on each URL and pressing gx
