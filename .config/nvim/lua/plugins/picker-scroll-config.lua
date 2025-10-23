@@ -25,10 +25,6 @@ return {
             path = vim.fn.stdpath("data") .. "/databases/telescope_history.sqlite3",
             limit = 100,
           },
-          -- Disable treesitter highlighting in preview to avoid errors
-          preview = {
-            treesitter = false,
-          },
           mappings = {
             -- Insert mode mappings
             i = {
