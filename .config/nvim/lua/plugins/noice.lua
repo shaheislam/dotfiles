@@ -500,7 +500,7 @@ return {
         },
         opts = { skip = true },  -- Skip LSP progress messages entirely
       },
-      -- Also skip LSP progress messages that come through msg_show (basedpyright)
+      -- Also skip LSP progress messages that come through msg_show (basedpyright and others)
       {
         filter = {
           event = "msg_show",
@@ -510,6 +510,28 @@ return {
             { find = "Loading" },
             { find = "Checking" },
             { find = "Analyzing" },
+            { find = "Searching" },
+            { find = "references for" },
+            { find = "pyright" },
+            { find = "basedpyright" },
+          },
+        },
+        opts = { skip = true },
+      },
+      -- Skip LSP progress notifications (separate from msg_show)
+      {
+        filter = {
+          event = "notify",
+          any = {
+            { find = "Finding references" },
+            { find = "Indexing" },
+            { find = "Loading" },
+            { find = "Checking" },
+            { find = "Analyzing" },
+            { find = "Searching" },
+            { find = "references for" },
+            { find = "pyright" },
+            { find = "basedpyright" },
           },
         },
         opts = { skip = true },

@@ -59,6 +59,16 @@ return {
         pyright = false,
       },
       setup = {
+        basedpyright = function(_, opts)
+          -- Disable progress notifications for basedpyright
+          local lspconfig = require("lspconfig")
+          lspconfig.basedpyright.setup(vim.tbl_deep_extend("force", opts, {
+            handlers = {
+              ["$/progress"] = function() end, -- Completely suppress progress notifications
+            },
+          }))
+          return true -- Prevent LazyVim from setting up basedpyright again
+        end,
         ruff = function()
           -- Run ruff on save
           vim.api.nvim_create_autocmd({ "BufWritePost" }, {
