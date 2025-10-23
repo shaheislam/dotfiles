@@ -97,7 +97,6 @@ return {
   "christoomey/vim-sort-motion",
   "junegunn/vim-peekaboo",
   "tpope/vim-rsi",
-  "simnalamburt/vim-mundo",
 
   -- Missing plugins from your original config
   -- "ap/vim-css-color", -- Disabled: causing E121 errors with undefined b:css_color_pat

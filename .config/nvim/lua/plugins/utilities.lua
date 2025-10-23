@@ -21,9 +21,4 @@ return {
     "easymotion/vim-easymotion",
     keys = "<leader><leader>", -- Only load when actually using easymotion
   },
-  {
-    "simnalamburt/vim-mundo",
-    cmd = { "MundoToggle", "MundoShow" },
-    keys = { { "<leader>U", "<cmd>MundoToggle<cr>", desc = "Undo Tree" } },
-  },
 }
