@@ -29,22 +29,21 @@ return {
         },
       },
       keymaps = {
-        -- Removed <leader>f mapping to avoid conflict with LazyVim's default <leader>ff
-        -- Add Oil-specific telescope mappings that use Oil's current directory
+        -- Oil-specific fzf-lua mappings that use Oil's current directory
         ["<leader>ff"] = {
           function()
-            require("telescope.builtin").find_files({
+            require("fzf-lua").files({
               cwd = require("oil").get_current_dir(),
-              prompt_title = "Find Files (Oil Directory)",
+              prompt = "Find Files (Oil Directory)> ",
             })
           end,
           desc = "Find files in Oil directory",
         },
         ["<leader>fg"] = {
           function()
-            require("telescope.builtin").live_grep({
+            require("fzf-lua").live_grep({
               cwd = require("oil").get_current_dir(),
-              prompt_title = "Live Grep (Oil Directory)",
+              prompt = "Live Grep (Oil Directory)> ",
             })
           end,
           desc = "Live grep in Oil directory",
@@ -135,7 +134,7 @@ return {
   "tpope/vim-surround",
   "tpope/vim-repeat",
 
-  -- FZF integration
+  -- FZF integration (legacy compatibility)
   {
     "junegunn/fzf",
     build = function()
@@ -143,207 +142,6 @@ return {
     end
   },
   "junegunn/fzf.vim",
-
-  -- Custom search exclusions for Telescope
-  {
-    "nvim-telescope/telescope.nvim",
-    dependencies = {
-      "nvim-telescope/telescope-fzf-native.nvim",
-      "nvim-telescope/telescope-file-browser.nvim",
-      build = "make",
-    },
-    config = function()
-      require("telescope").setup({
-        defaults = {
-          file_ignore_patterns = {
-            "node_modules",
-            "^.git/",  -- Only ignore .git directory itself, not .github or .gitignore
-            "dist",
-            "%.lock",
-            "package%-lock%.json",
-            "yarn%.lock",
-            "%.log",
-            "%.cache",
-            "%.min%.js",
-            "%.min%.css"
-          },
-          -- Enable multi-selection and better search
-          vimgrep_arguments = {
-            "rg",
-            "--color=never",
-            "--no-heading",
-            "--with-filename",
-            "--line-number",
-            "--column",
-            "--smart-case",
-            "--hidden",
-            "--glob=!.git/*",
-          },
-          -- Layout configuration
-          layout_strategy = "horizontal",
-          layout_config = {
-            horizontal = {
-              preview_width = 0.6,
-              preview_cutoff = 120,
-            },
-            vertical = {
-              preview_height = 0.5,
-            },
-            width = 0.9,
-            height = 0.9,
-          },
-          -- Ensure syntax highlighting in previews
-          preview = {
-            treesitter = true,
-            syntax = true,
-          },
-        },
-        pickers = {
-          find_files = {
-            -- Remove custom find_command to use default fuzzy finder
-            hidden = true,
-            -- Add these options for better search
-            find_command = nil, -- Use default telescope finder
-          },
-          -- Git picker specific configurations
-          git_commits = {
-            layout_config = {
-              preview_width = 0.7,
-            },
-          },
-          git_bcommits = {
-            layout_config = {
-              preview_width = 0.7,
-            },
-          },
-          git_branches = {
-            layout_config = {
-              preview_width = 0.6,
-            },
-            show_remote_tracking_branches = false,
-          },
-          git_status = {
-            layout_config = {
-              preview_width = 0.6,
-            },
-          },
-          git_stash = {
-            layout_config = {
-              preview_width = 0.7,
-            },
-          },
-        },
-      })
-
-      -- Load fzf extension for better fuzzy finding
-      require("telescope").load_extension("fzf")
-    end,
-    keys = {
-      -- Custom search exclusions
-      { "<leader>fG", function()
-        require("telescope.builtin").live_grep({
-          additional_args = function()
-            return {"--glob", "!*test*", "--glob", "!*spec*", "--glob", "!*.min.*"}
-          end
-        })
-      end, desc = "Live Grep (No Tests)" },
-
-      { "<leader>fF", function()
-        require("telescope.builtin").find_files({
-          hidden = true,
-          no_ignore = false,
-          follow = true,
-        })
-      end, desc = "Find Files (Custom)" },
-    },
-  },
-
-  -- Macros
-  {
-    "folke/which-key.nvim",
-    opts = function(_, opts)
-      -- Add your custom which-key mappings
-      if opts.spec then
-        vim.list_extend(opts.spec, {
-          { "<leader>fF", desc = "Find Files (Custom)" },
-          { "<leader>fG", desc = "Live Grep (No Tests)" },
-        })
-      end
-    end,
-  },
-
-  -- Project management
-  {
-    "ahmedkhalf/project.nvim",
-    opts = {
-      manual_mode = false,
-      detection_methods = { "lsp", "pattern" },
-      patterns = { ".git", "_darcs", ".hg", ".bzr", ".svn", "Makefile", "package.json", "Cargo.toml" },
-      show_hidden = false,
-      silent_chdir = true,
-    },
-    event = "VeryLazy",
-    config = function(_, opts)
-      require("project_nvim").setup(opts)
-      require("telescope").load_extension("projects")
-    end,
-    keys = {
-      { "<leader>fp", "<cmd>Telescope projects<cr>", desc = "Projects" },
-    },
-  },
-
-  -- Telescope-zoxide integration with oil.nvim
-  {
-    "jvgrootveld/telescope-zoxide",
-    dependencies = {
-      "nvim-telescope/telescope.nvim",
-      "stevearc/oil.nvim",
-    },
-    config = function()
-      require("telescope").load_extension("zoxide")
-    end,
-    keys = {
-      -- Zoxide jump that changes pwd AND opens oil.nvim
-      { "<leader>cd", function()
-        require("telescope").extensions.zoxide.list({
-          attach_mappings = function(_, map)
-            local actions = require("telescope.actions")
-            local action_state = require("telescope.actions.state")
-
-            -- Override enter to change directory AND open oil
-            map("i", "<CR>", function(prompt_bufnr)
-              local selection = action_state.get_selected_entry()
-              actions.close(prompt_bufnr)
-              if selection and selection.path then
-                -- Change working directory first
-                vim.cmd("cd " .. vim.fn.fnameescape(selection.path))
-                -- Then open oil in that directory
-                require("oil").open(selection.path)
-              end
-            end)
-
-            -- Also map for normal mode
-            map("n", "<CR>", function(prompt_bufnr)
-              local selection = action_state.get_selected_entry()
-              actions.close(prompt_bufnr)
-              if selection and selection.path then
-                -- Change working directory first
-                vim.cmd("cd " .. vim.fn.fnameescape(selection.path))
-                -- Then open oil in that directory
-                require("oil").open(selection.path)
-              end
-            end)
-
-            return true
-          end,
-        })
-      end, desc = "Zoxide jump to Oil" },
-    },
-  },
-
-  -- Telescope undo removed - using Snacks undo instead
-  -- Snacks provides undo functionality through the snacks_picker extra
-  -- Access it with <leader>su (default LazyVim binding)
 
   -- Kai-Neovim Claude AI Integration (disabled - missing config)
   -- {

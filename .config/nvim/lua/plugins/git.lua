@@ -4,11 +4,13 @@ return {
 	{
 		"lewis6991/gitsigns.nvim",
 		event = { "BufReadPre", "BufNewFile" },
-		dependencies = {
-			"nvim-telescope/telescope.nvim",
-		},
 		keys = {
-			-- Snacks git files picker
+			-- Git pickers now use fzf-lua (configured in fzf-lua.lua)
+			-- <leader>gC - Git buffer commits (fzf-lua)
+			-- <leader>gb - Git branches with stash (fzf-lua)
+			-- <leader>gs - Git stash (fzf-lua)
+
+			-- Snacks git pickers
 			{
 				"<leader>gf",
 				function()
@@ -16,170 +18,6 @@ return {
 				end,
 				desc = "Git files (Snacks)",
 			},
-
-			{
-				"<leader>gC",
-				function()
-					require("telescope.builtin").git_bcommits({
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.6,
-							},
-							width = 0.9,
-							height = 0.9,
-						},
-					})
-				end,
-				desc = "Git buffer commits",
-			},
-
-			{
-				"<leader>gb",
-				function()
-					local actions = require("telescope.actions")
-					require("telescope.builtin").git_branches({
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.5,
-							},
-							width = 0.9,
-							height = 0.9,
-						},
-						attach_mappings = function(_, map)
-							-- Custom branch switching with stash handling
-							local switch_branch = function(prompt_bufnr)
-								local selection = require("telescope.actions.state").get_selected_entry()
-								if selection == nil then
-									return
-								end
-
-								actions.close(prompt_bufnr)
-								local branch = selection.value
-
-								-- Check for uncommitted changes
-								local has_changes = vim.fn.system("bash -c 'git status --porcelain'"):match("%S")
-
-								if has_changes then
-									local choice = vim.fn.confirm(
-										"You have uncommitted changes. What would you like to do?",
-										"&Stash and switch\n&Cancel",
-										1
-									)
-
-									if choice == 1 then
-										-- Stash changes with a descriptive message
-										local stash_msg = string.format(
-											"WIP on %s before switching to %s",
-											vim.fn.system("bash -c 'git branch --show-current'"):gsub("\n", ""),
-											branch
-										)
-										vim.fn.system(string.format("bash -c \"git stash push -m '%s'\"", stash_msg))
-										vim.notify("Changes stashed: " .. stash_msg, vim.log.levels.INFO)
-
-										-- Now switch branch
-										local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
-										if vim.v.shell_error == 0 then
-											vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
-										else
-											vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
-										end
-									end
-								else
-									-- No changes, switch directly
-									local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
-									if vim.v.shell_error == 0 then
-										vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
-									else
-										vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
-									end
-								end
-							end
-
-							map("i", "<cr>", switch_branch)
-							map("n", "<cr>", switch_branch)
-							return true
-						end,
-					})
-				end,
-				desc = "Git branches (smart checkout)",
-			},
-
-			-- Additional git shortcuts
-			{
-				"<leader>gB",
-				function()
-					local actions = require("telescope.actions")
-					require("telescope.builtin").git_branches({
-						show_remote_tracking_branches = true,
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.5,
-							},
-							width = 0.9,
-							height = 0.9,
-						},
-						attach_mappings = function(_, map)
-							-- Use the same smart branch switcher for remote branches
-							local switch_branch = function(prompt_bufnr)
-								local selection = require("telescope.actions.state").get_selected_entry()
-								if selection == nil then
-									return
-								end
-
-								actions.close(prompt_bufnr)
-								local branch = selection.value
-
-								-- Check for uncommitted changes
-								local has_changes = vim.fn.system("bash -c 'git status --porcelain'"):match("%S")
-
-								if has_changes then
-									local choice = vim.fn.confirm(
-										"You have uncommitted changes. What would you like to do?",
-										"&Stash and switch\n&Cancel",
-										1
-									)
-
-									if choice == 1 then
-										-- Stash changes with a descriptive message
-										local stash_msg = string.format(
-											"WIP on %s before switching to %s",
-											vim.fn.system("bash -c 'git branch --show-current'"):gsub("\n", ""),
-											branch
-										)
-										vim.fn.system(string.format("bash -c \"git stash push -m '%s'\"", stash_msg))
-										vim.notify("Changes stashed: " .. stash_msg, vim.log.levels.INFO)
-
-										-- Now switch branch
-										local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
-										if vim.v.shell_error == 0 then
-											vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
-										else
-											vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
-										end
-									end
-								else
-									-- No changes, switch directly
-									local result = vim.fn.system(string.format("bash -c 'git checkout %s'", branch))
-									if vim.v.shell_error == 0 then
-										vim.notify("Switched to branch: " .. branch, vim.log.levels.INFO)
-									else
-										vim.notify("Failed to switch branch: " .. result, vim.log.levels.ERROR)
-									end
-								end
-							end
-
-							map("i", "<cr>", switch_branch)
-							map("n", "<cr>", switch_branch)
-							return true
-						end,
-					})
-				end,
-				desc = "Git branches (with remote)",
-			},
-
 			{
 				"<leader>gl",
 				function()
@@ -187,38 +25,19 @@ return {
 				end,
 				desc = "Git log (Snacks)",
 			},
-
 			{
-				"<leader>gs",
+				"<leader>gS",
 				function()
 					require("snacks.picker").git_status()
 				end,
 				desc = "Git status (Snacks)",
 			},
-
 			{
 				"<leader>gD",
 				function()
 					require("snacks.picker").git_diff()
 				end,
 				desc = "Git diff (Snacks)",
-			},
-
-			{
-				"<leader>gS",
-				function()
-					require("telescope.builtin").git_stash({
-						layout_strategy = "horizontal",
-						layout_config = {
-							horizontal = {
-								preview_width = 0.6,
-							},
-							width = 0.9,
-							height = 0.9,
-						},
-					})
-				end,
-				desc = "Git stash",
 			},
 		},
 		config = function()
