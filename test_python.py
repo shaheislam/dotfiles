@@ -24,7 +24,6 @@ def greet(person: Person) -> str:
     return f"Hello, {person.name}!"
 
 
-
 def process_data(data: Union[str, None]) -> str:
     """Test basedpyright's better None handling detection."""
     # Basedpyright should warn here about potential None

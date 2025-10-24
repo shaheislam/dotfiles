@@ -193,7 +193,7 @@ return {
             prompt = "Select Directory> ",
             cwd = opts.cwd or vim.fn.getcwd(),
             file_icons = true,
-            fd_opts = "--type d",  -- Only directories
+            fd_opts = "--type d --exclude .git/objects --exclude .git/refs --exclude node_modules",  -- Only directories, exclude bloat
             actions = {
               ["default"] = function(selected)
                 if not selected or #selected == 0 then return end
@@ -201,9 +201,9 @@ return {
                 local selected_dir = selected[1]
                 if not selected_dir then return end
 
-                -- Extract directory path
-                local dir = selected_dir:match("^[^:]+")
-                if not dir then return end
+                -- Extract directory path (handle both file-style entries and plain paths)
+                local dir = selected_dir:match("^[^:]+") or selected_dir
+                if not dir or dir == "" then return end
 
                 -- Make absolute path
                 local abs_dir = vim.fn.fnamemodify(dir, ":p")
