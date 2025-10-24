@@ -182,22 +182,23 @@ return {
         end
       end
 
-      -- Recursive folder browser
+      -- Recursive folder browser using official fzf_exec pattern
       local function browse_folders(cwd, original_prompt, original_query)
-        local path = require("fzf-lua.path")
+        local fzf_lua = require("fzf-lua")
 
-        require("fzf-lua").files({
+        -- Build fd command with exclusions
+        local fd_cmd = "fd --type d --exclude .git/objects --exclude .git/refs --exclude node_modules"
+
+        fzf_lua.fzf_exec(fd_cmd, {
           prompt = "Select Directory> ",
           cwd = cwd,
-          file_icons = true,
-          fd_opts = "--type d --exclude .git/objects --exclude .git/refs --exclude node_modules",
           actions = {
             ["default"] = function(selected)
               -- Enter: Navigate into selected folder (recursive)
               if not selected or #selected == 0 then return end
-              -- Extract clean path from fzf-lua entry (strips icons, etc.)
-              local entry = path.entry_to_file(selected[1], { cwd = cwd })
-              local abs_dir = entry.path
+              -- selected[1] is clean path relative to cwd
+              local selected_dir = selected[1]
+              local abs_dir = vim.fn.fnamemodify(cwd .. "/" .. selected_dir, ":p")
 
               vim.schedule(function()
                 browse_folders(abs_dir, original_prompt, original_query)
@@ -206,19 +207,18 @@ return {
             ["ctrl-x"] = function(selected)
               -- Ctrl-x: Exit folder browser and open files/grep in selected directory
               if not selected or #selected == 0 then return end
-              -- Extract clean path from fzf-lua entry (strips icons, etc.)
-              local entry = path.entry_to_file(selected[1], { cwd = cwd })
-              local abs_dir = entry.path
+              local selected_dir = selected[1]
+              local abs_dir = vim.fn.fnamemodify(cwd .. "/" .. selected_dir, ":p")
 
               vim.schedule(function()
                 if original_prompt:match("Grep") or original_prompt:match("RG") then
-                  require("fzf-lua").live_grep({
+                  fzf_lua.live_grep({
                     cwd = abs_dir,
                     query = original_query,
                     prompt = "Live Grep (Selected Dir)> "
                   })
                 else
-                  require("fzf-lua").files({
+                  fzf_lua.files({
                     cwd = abs_dir,
                     query = original_query,
                     prompt = "Find Files (Selected Dir)> "
