@@ -11,5 +11,8 @@ return {
       auto_insert = true,
       start_insert = true,
     },
+    picker = {
+      enabled = false,
+    },
   },
 }
