@@ -116,10 +116,12 @@ return {
                 prompt = "Recent Files (" .. scope_name .. ")> "
               })
             elseif prompt:match("Grep") or prompt:match("RG") then
+              local cwd_full = vim.fn.fnamemodify(new_cwd, ":~")
               require("fzf-lua").live_grep({
                 cwd = new_cwd,
                 query = query,
-                prompt = "Live Grep (" .. scope_name .. ")> "
+                prompt = "Live Grep> ",
+                fzf_opts = { ["--header"] = "📁 " .. cwd_full }
               })
             else
               require("fzf-lua").files({
@@ -166,10 +168,12 @@ return {
                 prompt = "Recent Files (" .. entry.scope_name .. ")> "
               })
             elseif prompt:match("Grep") or prompt:match("RG") then
+              local cwd_full = vim.fn.fnamemodify(entry.cwd, ":~")
               require("fzf-lua").live_grep({
                 cwd = entry.cwd,
                 query = query,
-                prompt = "Live Grep (" .. entry.scope_name .. ")> "
+                prompt = "Live Grep> ",
+                fzf_opts = { ["--header"] = "📁 " .. cwd_full }
               })
             else
               require("fzf-lua").files({
@@ -211,17 +215,20 @@ return {
               local abs_dir = vim.fn.fnamemodify(cwd .. "/" .. selected_dir, ":p")
 
               vim.schedule(function()
+                local cwd_full = vim.fn.fnamemodify(abs_dir, ":~")
                 if original_prompt:match("Grep") or original_prompt:match("RG") then
                   fzf_lua.live_grep({
                     cwd = abs_dir,
                     query = original_query,
-                    prompt = "Live Grep (Selected Dir)> "
+                    prompt = "Live Grep> ",
+                    fzf_opts = { ["--header"] = "📁 " .. cwd_full }
                   })
                 else
                   fzf_lua.files({
                     cwd = abs_dir,
                     query = original_query,
-                    prompt = "Find Files (Selected Dir)> "
+                    prompt = "Find Files> ",
+                    fzf_opts = { ["--header"] = "📁 " .. cwd_full }
                   })
                 end
               end)
@@ -503,7 +510,15 @@ return {
       { "<leader>fR", function() require("fzf-lua").oldfiles({ prompt = "Recent Files (Global)> " }) end, desc = "Recent Files (Global)" },
 
       -- Grep pickers
-      { "<leader>fg", function() require("fzf-lua").live_grep() end, desc = "Live Grep with Args" },
+      { "<leader>fg", function()
+        local cwd = vim.fn.getcwd()
+        local cwd_full = vim.fn.fnamemodify(cwd, ":~")
+        require("fzf-lua").live_grep({
+          prompt = "Live Grep> ",
+          fzf_opts = { ["--header"] = "📁 " .. cwd_full },
+          resume = false  -- Force fresh session with current directory
+        })
+      end, desc = "Live Grep with Args" },
       { "<leader>fG", function() require("fzf-lua").live_grep({ rg_opts = "--column --line-number --no-heading --color=always --smart-case --glob '!*test*' --glob '!*spec*' --glob '!*.min.*'" }) end, desc = "Live Grep (No Tests)" },
       { "<leader>fw", function() require("fzf-lua").grep_cword() end, desc = "Grep word under cursor" },
       { "<leader>fW", function() require("fzf-lua").grep_cWORD() end, desc = "Grep WORD under cursor" },
