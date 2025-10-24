@@ -266,24 +266,35 @@ return {
             scrollbar = "float",
           },
           on_create = function()
-            -- Set up Tab key to toggle focus between search and preview
+            -- Set up Tab key to toggle focus between search and preview only
+            -- Get the FzfWin instance to access window IDs
+            local win = require("fzf-lua.win")
+
             -- In terminal mode (fzf search buffer)
             vim.keymap.set("t", "<Tab>", function()
-              vim.cmd("stopinsert")  -- Exit insert mode in terminal
-              vim.cmd("wincmd w")    -- Switch to next window
+              local self = win.__SELF()
+              if self and self.preview_winid and vim.api.nvim_win_is_valid(self.preview_winid) then
+                vim.cmd("stopinsert")  -- Exit insert mode in terminal
+                vim.api.nvim_set_current_win(self.preview_winid)  -- Switch directly to preview
+              end
             end, { buffer = true, silent = true })
 
             -- Set up Tab in normal mode for preview window
             -- This gets applied when we switch to the preview buffer
             vim.api.nvim_create_autocmd("WinEnter", {
               callback = function()
-                local buf = vim.api.nvim_get_current_buf()
-                if vim.bo[buf].buftype ~= "terminal" then
-                  -- We're in the preview window
+                local self = win.__SELF()
+                if not self then return end
+
+                local current_win = vim.api.nvim_get_current_win()
+                -- Check if we're in the preview window
+                if self.preview_winid and current_win == self.preview_winid then
                   vim.keymap.set("n", "<Tab>", function()
-                    vim.cmd("wincmd w")  -- Switch back to search
-                    vim.cmd("startinsert")  -- Re-enter insert mode in terminal
-                  end, { buffer = buf, silent = true })
+                    if self.fzf_winid and vim.api.nvim_win_is_valid(self.fzf_winid) then
+                      vim.api.nvim_set_current_win(self.fzf_winid)  -- Switch directly to search
+                      vim.cmd("startinsert")  -- Re-enter insert mode in terminal
+                    end
+                  end, { buffer = vim.api.nvim_win_get_buf(current_win), silent = true })
                 end
               end,
             })
