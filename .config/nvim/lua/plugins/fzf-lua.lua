@@ -265,6 +265,29 @@ return {
             horizontal = "right:60%",
             scrollbar = "float",
           },
+          on_create = function()
+            -- Set up Tab key to toggle focus between search and preview
+            -- In terminal mode (fzf search buffer)
+            vim.keymap.set("t", "<Tab>", function()
+              vim.cmd("stopinsert")  -- Exit insert mode in terminal
+              vim.cmd("wincmd w")    -- Switch to next window
+            end, { buffer = true, silent = true })
+
+            -- Set up Tab in normal mode for preview window
+            -- This gets applied when we switch to the preview buffer
+            vim.api.nvim_create_autocmd("WinEnter", {
+              callback = function()
+                local buf = vim.api.nvim_get_current_buf()
+                if vim.bo[buf].buftype ~= "terminal" then
+                  -- We're in the preview window
+                  vim.keymap.set("n", "<Tab>", function()
+                    vim.cmd("wincmd w")  -- Switch back to search
+                    vim.cmd("startinsert")  -- Re-enter insert mode in terminal
+                  end, { buffer = buf, silent = true })
+                end
+              end,
+            })
+          end,
         },
 
         -- File ignore patterns (matching telescope config)
