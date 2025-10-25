@@ -187,8 +187,13 @@ return {
       end
 
       -- Recursive folder browser using official fzf_exec pattern
-      local function browse_folders(cwd, original_prompt, original_query)
+      local function browse_folders(cwd, original_prompt, original_query, initial_call)
         local fzf_lua = require("fzf-lua")
+
+        -- Initialize history on first call
+        if initial_call and #dir_history == 0 then
+          add_to_history(cwd, "Initial")
+        end
 
         -- Build fd command with exclusions
         local fd_cmd = "fd --type d --exclude .git/objects --exclude .git/refs --exclude node_modules"
@@ -203,6 +208,9 @@ return {
               -- selected[1] is clean path relative to cwd
               local selected_dir = selected[1]
               local abs_dir = vim.fn.fnamemodify(cwd .. "/" .. selected_dir, ":p")
+
+              -- Add to history when navigating into a directory
+              add_to_history(abs_dir, "Browse")
 
               vim.schedule(function()
                 browse_folders(abs_dir, original_prompt, original_query)
@@ -232,19 +240,70 @@ return {
                   })
                 end
               end)
+            end,
+            ["alt-b"] = function()
+              -- Navigate back in history
+              if #dir_history == 0 then
+                vim.notify("No directory history", vim.log.levels.WARN)
+                return
+              end
+
+              if history_index > 1 then
+                history_index = history_index - 1
+                local entry = dir_history[history_index]
+
+                vim.schedule(function()
+                  browse_folders(entry.cwd, original_prompt, original_query)
+                end)
+              else
+                vim.notify("At oldest directory in history", vim.log.levels.WARN)
+              end
+            end,
+            ["alt-f"] = function()
+              -- Navigate forward in history
+              if #dir_history == 0 then
+                vim.notify("No directory history", vim.log.levels.WARN)
+                return
+              end
+
+              if history_index < #dir_history then
+                history_index = history_index + 1
+                local entry = dir_history[history_index]
+
+                vim.schedule(function()
+                  browse_folders(entry.cwd, original_prompt, original_query)
+                end)
+              else
+                vim.notify("At newest directory in history", vim.log.levels.WARN)
+              end
+            end,
+            ["alt-p"] = function()
+              -- Navigate to parent directory
+              local parent = vim.fn.fnamemodify(cwd, ":h")
+              if parent == cwd or parent == "" or parent == "." then
+                vim.notify("Already at filesystem root", vim.log.levels.WARN)
+                return
+              end
+
+              -- Add parent to history
+              add_to_history(parent, "Parent")
+
+              vim.schedule(function()
+                browse_folders(parent, original_prompt, original_query)
+              end)
             end
           }
         })
       end
 
-      -- Directory selector action (equivalent to <M-f>)
+      -- Directory selector action (now <M-o>)
       local function select_directory()
         return function(_, opts)
           local query = opts.__call_opts and opts.__call_opts.query or ""
           local current_picker_prompt = opts.prompt or ""
           local current_cwd = opts.cwd or vim.fn.getcwd()
 
-          browse_folders(current_cwd, current_picker_prompt, query)
+          browse_folders(current_cwd, current_picker_prompt, query, true)
         end
       end
 
@@ -319,7 +378,7 @@ return {
             end, "Parent"),
             ["alt-b"] = navigate_history(-1),
             ["alt-n"] = navigate_history(1),
-            ["alt-f"] = select_directory(),
+            ["alt-o"] = select_directory(),
           },
         },
 
@@ -342,7 +401,7 @@ return {
             end, "Parent"),
             ["alt-b"] = navigate_history(-1),
             ["alt-n"] = navigate_history(1),
-            ["alt-f"] = select_directory(),
+            ["alt-o"] = select_directory(),
             -- Advanced grep controls
             ["ctrl-g"] = { actions.grep_lgrep },
             ["ctrl-r"] = { actions.toggle_ignore },
