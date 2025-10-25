@@ -60,8 +60,11 @@ return {
       end
 
       local function get_parent_dir(cwd)
-        local parent = vim.fn.fnamemodify(cwd or vim.fn.getcwd(), ":h")
-        if parent == cwd or parent == "" or parent == "." then
+        -- Normalize path first - :p gives full path, :h removes trailing component
+        local normalized = vim.fn.fnamemodify(cwd or vim.fn.getcwd(), ":p:h")
+        -- Get parent of normalized path
+        local parent = vim.fn.fnamemodify(normalized, ":h")
+        if parent == normalized or parent == "" or parent == "." then
           vim.notify("Already at filesystem root", vim.log.levels.WARN)
           return nil
         end
