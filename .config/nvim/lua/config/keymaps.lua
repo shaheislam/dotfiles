@@ -12,10 +12,6 @@ vim.keymap.set("n", "<leader>fs", "<cmd>w<cr>", { desc = "Save file", silent = t
 
 -- Theme toggling removed - now using fzf-lua colorscheme picker
 
--- Terminal mode keymaps
--- Double-tap Esc to exit terminal mode (preserves single Esc for shell operations)
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = "Exit terminal mode" })
-
 -- Fix <leader>fT to actually open terminal in CWD
 -- LazyVim's default doesn't pass cwd option despite the description saying it should
 vim.keymap.set('n', '<leader>fT', function()
