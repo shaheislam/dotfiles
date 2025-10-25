@@ -313,6 +313,17 @@ return {
         -- Global options
         global_resume = true,
         global_resume_query = true,
+
+        -- Global keymaps for fzf
+        keymap = {
+          fzf = {
+            ["ctrl-u"] = "preview-up",
+            ["ctrl-d"] = "preview-down",
+            ["ctrl-b"] = "preview-page-up",
+            ["ctrl-f"] = "preview-page-down",
+          },
+        },
+
         winopts = {
           height = 0.85,
           width = 0.85,
