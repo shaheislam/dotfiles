@@ -646,8 +646,63 @@ return {
       -- Resume last picker
       { "<leader>f<leader>", function() require("fzf-lua").resume() end, desc = "Resume last picker" },
 
-      -- FZF-Lua builtin picker
-      { "<leader>fz", function() require("fzf-lua").builtin() end, desc = "FZF-Lua Builtin Pickers" },
+      -- FZF-Lua builtin picker (enhanced with advanced-git-search)
+      {
+        "<leader>fz",
+        function()
+          local fzf = require("fzf-lua")
+
+          -- fzf-lua native pickers
+          local fzf_pickers = {
+            "files", "git_files", "oldfiles", "buffers",
+            "live_grep", "grep_cword", "grep_cWORD", "grep_visual",
+            "git_commits", "git_bcommits", "git_branches", "git_status", "git_stash",
+            "lsp_references", "lsp_definitions", "lsp_declarations", "lsp_typedefs",
+            "lsp_implementations", "lsp_document_symbols", "lsp_workspace_symbols",
+            "diagnostics_document", "diagnostics_workspace",
+            "commands", "command_history", "search_history",
+            "marks", "jumps", "changes", "registers",
+            "help_tags", "man_pages", "colorschemes",
+            "keymaps", "filetypes", "highlights",
+          }
+
+          -- advanced-git-search operations (only if plugin is installed)
+          local advanced_git = {
+            "AdvancedGitSearch search_log_content",
+            "AdvancedGitSearch search_log_content_file",
+            "AdvancedGitSearch diff_commit_line",
+            "AdvancedGitSearch diff_commit_file",
+            "AdvancedGitSearch diff_branch_file",
+            "AdvancedGitSearch checkout_reflog",
+          }
+
+          -- Combine lists
+          local all_pickers = vim.list_extend(vim.deepcopy(fzf_pickers), advanced_git)
+
+          fzf.fzf_exec(all_pickers, {
+            prompt = "FZF-Lua Pickers> ",
+            actions = {
+              ["default"] = function(selected)
+                if not selected or #selected == 0 then return end
+                local picker = selected[1]
+
+                -- Check if it's an AdvancedGitSearch command
+                if picker:match("^AdvancedGitSearch") then
+                  vim.cmd(picker)
+                else
+                  -- It's an fzf-lua native picker
+                  if fzf[picker] then
+                    fzf[picker]()
+                  else
+                    vim.notify("Picker not found: " .. picker, vim.log.levels.WARN)
+                  end
+                end
+              end
+            }
+          })
+        end,
+        desc = "FZF-Lua Builtin Pickers (Enhanced)"
+      },
     },
   },
 
