@@ -289,6 +289,7 @@ return {
   -- Optional: Enhanced quickfix preview (works well with quicker.nvim and nvim-pqf)
   {
     "kevinhwang91/nvim-bqf",
+    branch = "main", -- Use main branch for latest treesitter compatibility
     ft = "qf",
     dependencies = {
       "nvim-treesitter/nvim-treesitter",
