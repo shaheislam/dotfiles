@@ -198,8 +198,11 @@ return {
         -- Build fd command with exclusions
         local fd_cmd = "fd --type d --exclude .git/objects --exclude .git/refs --exclude node_modules"
 
+        -- Show current directory in prompt
+        local cwd_full = vim.fn.fnamemodify(cwd, ":~")
+
         fzf_lua.fzf_exec(fd_cmd, {
-          prompt = "Select Directory> ",
+          prompt = "📁 " .. cwd_full .. " > ",
           cwd = cwd,
           actions = {
             ["default"] = function(selected)
