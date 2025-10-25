@@ -634,6 +634,9 @@ return {
 
       -- Resume last picker
       { "<leader>f<leader>", function() require("fzf-lua").resume() end, desc = "Resume last picker" },
+
+      -- FZF-Lua builtin picker
+      { "<leader>fz", function() require("fzf-lua").builtin() end, desc = "FZF-Lua Builtin Pickers" },
     },
   },
 
