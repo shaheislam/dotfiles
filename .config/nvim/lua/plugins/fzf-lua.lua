@@ -720,17 +720,30 @@ return {
       {
         "<leader>cd",
         function()
-          -- Use fzf-lua's built-in zoxide picker
+          -- Use fzf-lua's built-in zoxide picker with concise path display
+          local home = vim.fn.expand("~")
+
           require("fzf-lua").zoxide({
             prompt = "Zoxide> ",
+            -- Custom command that strips home directory for display
+            cmd = "zoxide query --list --score | sed 's|" .. home .. "/||g'",
             actions = {
               ["default"] = function(selected)
                 if not selected or #selected == 0 then return end
-                local dir = selected[1]:match("^[^%s]+") or selected[1]
+                -- Extract the path (second field after tab)
+                local line = selected[1]
+                local _, path = line:match("^(%s*%S+)%s+(.+)$")
+                if not path then return end
+
+                -- Reconstruct full path if it was transformed
+                if not path:match("^/") then
+                  path = home .. "/" .. path
+                end
+
                 -- Change working directory
-                vim.cmd("cd " .. vim.fn.fnameescape(dir))
+                vim.cmd("cd " .. vim.fn.fnameescape(path))
                 -- Open oil in that directory
-                require("oil").open(dir)
+                require("oil").open(path)
               end
             }
           })
