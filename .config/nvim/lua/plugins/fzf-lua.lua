@@ -321,9 +321,18 @@ return {
         global_resume = true,
         global_resume_query = true,
 
+        -- Global fzf options - including history file for search persistence
+        fzf_opts = {
+          -- Enable history for all pickers - this will save search history per picker type
+          -- and automatically enable ctrl-p/ctrl-n for history navigation
+          ["--history"] = vim.fn.stdpath("data") .. "/fzf-lua-history",
+        },
+
         -- Global keymaps for fzf
         keymap = {
           fzf = {
+            -- History navigation is automatically enabled when --history is set
+            -- ctrl-p and ctrl-n will work by default for navigating history
             ["ctrl-f"] = "preview-up",        -- Scroll up (line by line)
             ["ctrl-d"] = "preview-down",      -- Scroll down (line by line)
             ["ctrl-b"] = "preview-page-up",   -- Page up
