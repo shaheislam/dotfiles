@@ -346,8 +346,107 @@ return {
 
       -- ===== Search History Action =====
 
-      -- Function to search through picker history dynamically with fzf
-      local function search_history_action()
+      -- Helper function to find all history files in the data directory
+      local function get_all_history_files(picker_type)
+        local history_dir = vim.fn.stdpath("data") .. "/fzf-lua-history"
+        if vim.fn.isdirectory(history_dir) == 0 then
+          return {}
+        end
+
+        local files = {}
+        -- Use vim.loop (uv) to read directory
+        local handle = vim.loop.fs_scandir(history_dir)
+        if handle then
+          while true do
+            local name, type = vim.loop.fs_scandir_next(handle)
+            if not name then break end
+            if type == "file" then
+              -- Filter by picker type if specified
+              if picker_type and name:match("___" .. picker_type .. "$") then
+                table.insert(files, history_dir .. "/" .. name)
+              elseif not picker_type or picker_type == "" then
+                -- Include all files that don't have a picker type suffix
+                if not name:match("___") then
+                  table.insert(files, history_dir .. "/" .. name)
+                end
+              end
+            end
+          end
+        end
+        return files
+      end
+
+      -- Helper function to find history files within git repository
+      local function get_git_repo_history_files(picker_type)
+        local git_root = vim.fs.find(".git", { path = vim.fn.getcwd(), upward = true })[1]
+        if not git_root then
+          return {}
+        end
+        git_root = vim.fn.fnamemodify(git_root, ":h")
+
+        local history_dir = vim.fn.stdpath("data") .. "/fzf-lua-history"
+        if vim.fn.isdirectory(history_dir) == 0 then
+          return {}
+        end
+
+        local files = {}
+        -- Convert git root to safe filename pattern
+        local safe_git_root = git_root:gsub("/", "__"):gsub("^__", ""):gsub(":", "")
+
+        local handle = vim.loop.fs_scandir(history_dir)
+        if handle then
+          while true do
+            local name, type = vim.loop.fs_scandir_next(handle)
+            if not name then break end
+            if type == "file" then
+              -- Check if this file belongs to a directory within the git repo
+              if name:find(safe_git_root, 1, true) then
+                if picker_type and name:match("___" .. picker_type .. "$") then
+                  table.insert(files, history_dir .. "/" .. name)
+                elseif not picker_type or picker_type == "" then
+                  if not name:match("___") then
+                    table.insert(files, history_dir .. "/" .. name)
+                  end
+                end
+              end
+            end
+          end
+        end
+        return files
+      end
+
+      -- Helper function to aggregate history from multiple files
+      local function aggregate_history_from_files(files)
+        local all_history = {}
+        local seen = {}
+
+        -- Read all files and collect unique entries
+        for _, file_path in ipairs(files) do
+          if vim.fn.filereadable(file_path) == 1 then
+            for line in io.lines(file_path) do
+              if line and #line > 2 and not seen[line] then
+                seen[line] = true
+                table.insert(all_history, line)
+              end
+            end
+          end
+        end
+
+        -- Sort by most recently used (this is a simple approach, could be enhanced)
+        -- In practice, newer entries tend to be at the end of files
+        local reversed = {}
+        for i = #all_history, 1, -1 do
+          table.insert(reversed, all_history[i])
+        end
+
+        return reversed
+      end
+
+      -- Store the last used opts for scope switching
+      local last_history_opts = {}
+
+      -- Function to search through picker history dynamically with fzf and scope support
+      local function search_history_action(initial_scope)
         return function(_, opts)
           local prompt = opts.prompt or ""
           local current_cwd = opts.cwd or vim.fn.getcwd()
@@ -417,143 +516,238 @@ return {
             end
           end
 
-          -- Debug: Show what picker type was detected
-          -- vim.notify("Detected picker type: " .. picker_type .. " (prompt: " .. prompt .. ")", vim.log.levels.INFO)
+          -- Start with provided scope or default to local
+          local current_scope = initial_scope or "local"
+          -- Debug: Show what scope we're starting with (uncomment for debugging)
+          -- vim.notify("Starting history search with scope: " .. current_scope, vim.log.levels.INFO)
 
-          -- Get the history file path
-          local history_file = get_history_path(picker_type)
+          -- Function to get history based on scope
+          local function get_history_for_scope(scope)
+            if scope == "local" then
+              -- Current directory only
+              local history_file = get_history_path(picker_type)
+              if vim.fn.filereadable(history_file) == 0 then
+                return {}
+              end
 
-          -- Check if history file exists
-          if vim.fn.filereadable(history_file) == 0 then
-            vim.notify("No history found for " .. picker_type .. " picker", vim.log.levels.WARN)
-            return
-          end
-
-          -- Read history file and reverse it (most recent first)
-          local history_lines = {}
-          for line in io.lines(history_file) do
-            -- Filter out very short entries (likely incomplete typing) and empty lines
-            if line and #line > 2 then
-              table.insert(history_lines, 1, line) -- Insert at beginning for reverse order
-            end
-          end
-
-          -- Remove duplicates while preserving order (most recent occurrence)
-          local seen = {}
-          local unique_history = {}
-          for _, line in ipairs(history_lines) do
-            -- Additional filtering: skip entries that look like incomplete typing
-            if not seen[line] and line and #line > 2 then
-              seen[line] = true
-              table.insert(unique_history, line)
-            end
-          end
-
-          if #unique_history == 0 then
-            vim.notify("History is empty", vim.log.levels.WARN)
-            return
-          end
-
-          -- Launch fzf to search through history
-          require('fzf-lua').fzf_exec(unique_history, {
-            prompt = "Search History (" .. picker_type .. ")> ",
-            actions = {
-              ["default"] = function(selected)
-                if not selected or #selected == 0 then return end
-                local query = selected[1]
-
-                -- Re-launch the original picker with the selected query
-                vim.schedule(function()
-                  if picker_type == "files" then
-                    require('fzf-lua').files({ query = query, cwd = current_cwd })
-                  elseif picker_type == "grep" then
-                    require('fzf-lua').live_grep({ query = query, cwd = current_cwd })
-                  elseif picker_type == "buffers" then
-                    require('fzf-lua').buffers({ query = query })
-                  elseif picker_type == "oldfiles" then
-                    require('fzf-lua').oldfiles({ query = query, cwd = current_cwd })
-                  elseif picker_type == "git_files" then
-                    require('fzf-lua').git_files({ query = query })
-                  elseif picker_type == "git_commits" then
-                    require('fzf-lua').git_commits({ query = query })
-                  elseif picker_type == "git_bcommits" then
-                    require('fzf-lua').git_bcommits({ query = query })
-                  elseif picker_type == "git_branches" then
-                    require('fzf-lua').git_branches({ query = query })
-                  elseif picker_type == "git_stash" then
-                    require('fzf-lua').git_stash({ query = query })
-                  elseif picker_type == "lsp_references" then
-                    require('fzf-lua').lsp_references({ query = query })
-                  elseif picker_type == "lsp_definitions" then
-                    require('fzf-lua').lsp_definitions({ query = query })
-                  elseif picker_type == "lsp_implementations" then
-                    require('fzf-lua').lsp_implementations({ query = query })
-                  elseif picker_type == "lsp_doc_symbols" then
-                    require('fzf-lua').lsp_document_symbols({ query = query })
-                  elseif picker_type == "lsp_workspace_symbols" then
-                    require('fzf-lua').lsp_workspace_symbols({ query = query })
-                  elseif picker_type == "lsp_symbols" then
-                    require('fzf-lua').lsp_symbols({ query = query })
-                  else
-                    -- Fallback to files picker
-                    require('fzf-lua').files({ query = query, cwd = current_cwd })
-                  end
-                end)
-              end,
-              ["ctrl-e"] = function(selected)
-                -- Ctrl-e: Edit history (remove selected entry)
-                if not selected or #selected == 0 then return end
-                local query_to_remove = selected[1]
-
-                -- Remove the selected query from unique_history
-                local new_history = {}
-                for _, line in ipairs(unique_history) do
-                  if line ~= query_to_remove then
-                    table.insert(new_history, line)
-                  end
-                end
-
-                -- Write back to file (in original order - oldest first)
-                local file = io.open(history_file, "w")
-                if file then
-                  -- Reverse back to original order for writing
-                  for i = #new_history, 1, -1 do
-                    file:write(new_history[i] .. "\n")
-                  end
-                  file:close()
-                  vim.notify("Removed from history: " .. query_to_remove, vim.log.levels.INFO)
-
-                  -- Re-launch the history search with updated list
-                  vim.schedule(function()
-                    search_history_action()(_, opts)
-                  end)
-                else
-                  vim.notify("Failed to update history file", vim.log.levels.ERROR)
-                end
-              end,
-              ["ctrl-c"] = function()
-                -- Ctrl-c: Clear all history for this picker
-                local confirm = vim.fn.confirm(
-                  "Clear all history for " .. picker_type .. "?",
-                  "&Yes\n&No",
-                  2
-                )
-                if confirm == 1 then
-                  local file = io.open(history_file, "w")
-                  if file then
-                    file:close()
-                    vim.notify("Cleared history for " .. picker_type, vim.log.levels.INFO)
-                  else
-                    vim.notify("Failed to clear history", vim.log.levels.ERROR)
-                  end
+              local history_lines = {}
+              for line in io.lines(history_file) do
+                if line and #line > 2 then
+                  table.insert(history_lines, 1, line) -- Insert at beginning for reverse order
                 end
               end
-            },
-            winopts = {
-              height = 0.4,
-              width = 0.6,
-            },
-          })
+              return history_lines
+
+            elseif scope == "service" then
+              -- All directories in git repository
+              local files = get_git_repo_history_files(picker_type)
+              if #files == 0 then
+                return {}
+              end
+              return aggregate_history_from_files(files)
+
+            elseif scope == "global" then
+              -- All history files
+              local files = get_all_history_files(picker_type)
+              if #files == 0 then
+                return {}
+              end
+              return aggregate_history_from_files(files)
+            end
+
+            return {}
+          end
+
+          -- Function to refresh history display
+          local function refresh_history_display(scope)
+            current_scope = scope
+
+            -- Get history for current scope
+            local history_lines = get_history_for_scope(scope)
+
+            -- Remove duplicates while preserving order (most recent occurrence)
+            local seen = {}
+            local unique_history = {}
+            for _, line in ipairs(history_lines) do
+              if not seen[line] and line and #line > 2 then
+                seen[line] = true
+                table.insert(unique_history, line)
+              end
+            end
+
+            if #unique_history == 0 then
+              -- Return a message instead of nil to allow scope switching to continue
+              return { "[No " .. scope .. " history found for " .. picker_type .. "]" }
+            end
+
+            return unique_history
+          end
+
+          -- Get initial history
+          local unique_history = refresh_history_display("local")
+          if not unique_history then
+            unique_history = { "[No local history found for " .. picker_type .. "]" }
+          end
+
+          -- Create header text
+          local function make_header(scope)
+            return "Mode: " .. scope .. " | C-d: local | C-s: service/git | C-g: global | C-e: delete | C-c: clear"
+          end
+
+          -- Store opts for scope switching
+          last_history_opts = opts
+
+          -- Helper function to launch history with a specific scope
+          local function launch_history_with_scope(scope)
+            local history = refresh_history_display(scope)
+            if history then
+              require('fzf-lua').fzf_exec(history, {
+                prompt = "Search History (" .. picker_type .. " - " .. scope .. ")> ",
+                fzf_opts = {
+                  ["--header"] = make_header(scope),
+                },
+                actions = {
+                  ["default"] = function(selected)
+                    if not selected or #selected == 0 then return end
+                    local query = selected[1]
+
+                    -- Don't launch picker for placeholder messages
+                    if query:match("^%[No .* history found") then
+                      return
+                    end
+
+                    -- Re-launch the original picker with the selected query
+                    vim.schedule(function()
+                      if picker_type == "files" then
+                        require('fzf-lua').files({ query = query, cwd = current_cwd })
+                      elseif picker_type == "grep" then
+                        require('fzf-lua').live_grep({ query = query, cwd = current_cwd })
+                      elseif picker_type == "buffers" then
+                        require('fzf-lua').buffers({ query = query })
+                      elseif picker_type == "oldfiles" then
+                        require('fzf-lua').oldfiles({ query = query, cwd = current_cwd })
+                      elseif picker_type == "git_files" then
+                        require('fzf-lua').git_files({ query = query })
+                      elseif picker_type == "git_commits" then
+                        require('fzf-lua').git_commits({ query = query })
+                      elseif picker_type == "git_bcommits" then
+                        require('fzf-lua').git_bcommits({ query = query })
+                      elseif picker_type == "git_branches" then
+                        require('fzf-lua').git_branches({ query = query })
+                      elseif picker_type == "git_stash" then
+                        require('fzf-lua').git_stash({ query = query })
+                      elseif picker_type == "lsp_references" then
+                        require('fzf-lua').lsp_references({ query = query })
+                      elseif picker_type == "lsp_definitions" then
+                        require('fzf-lua').lsp_definitions({ query = query })
+                      elseif picker_type == "lsp_implementations" then
+                        require('fzf-lua').lsp_implementations({ query = query })
+                      elseif picker_type == "lsp_doc_symbols" then
+                        require('fzf-lua').lsp_document_symbols({ query = query })
+                      elseif picker_type == "lsp_workspace_symbols" then
+                        require('fzf-lua').lsp_workspace_symbols({ query = query })
+                      elseif picker_type == "lsp_symbols" then
+                        require('fzf-lua').lsp_symbols({ query = query })
+                      else
+                        -- Fallback to files picker
+                        require('fzf-lua').files({ query = query, cwd = current_cwd })
+                      end
+                    end)
+                  end,
+                  ["ctrl-d"] = function()
+                    vim.cmd("stopinsert")
+                    vim.schedule(function()
+                      launch_history_with_scope("local")
+                    end)
+                  end,
+                  ["ctrl-s"] = function()
+                    vim.cmd("stopinsert")
+                    vim.schedule(function()
+                      launch_history_with_scope("service")
+                    end)
+                  end,
+                  ["ctrl-g"] = function()
+                    vim.cmd("stopinsert")
+                    vim.schedule(function()
+                      launch_history_with_scope("global")
+                    end)
+                  end,
+                  ["ctrl-e"] = function(selected)
+                    -- Edit functionality (only for local scope)
+                    if not selected or #selected == 0 then return end
+                    local query_to_remove = selected[1]
+
+                    if query_to_remove:match("^%[No .* history found") then
+                      return
+                    end
+
+                    if scope ~= "local" then
+                      vim.notify("Can only edit local history. Switch to local mode (Ctrl-d) first.", vim.log.levels.WARN)
+                      return
+                    end
+
+                    -- Get local history file
+                    local history_file = get_history_path(picker_type)
+
+                    -- Remove the selected query from history
+                    local new_history = {}
+                    for _, line in ipairs(history) do
+                      if line ~= query_to_remove then
+                        table.insert(new_history, line)
+                      end
+                    end
+
+                    -- Write back to file
+                    local file = io.open(history_file, "w")
+                    if file then
+                      for i = #new_history, 1, -1 do
+                        file:write(new_history[i] .. "\n")
+                      end
+                      file:close()
+                      vim.notify("Removed from history: " .. query_to_remove, vim.log.levels.INFO)
+
+                      -- Re-launch with same scope
+                      vim.schedule(function()
+                        launch_history_with_scope(scope)
+                      end)
+                    else
+                      vim.notify("Failed to update history file", vim.log.levels.ERROR)
+                    end
+                  end,
+                  ["ctrl-c"] = function()
+                    -- Clear functionality (only for local scope)
+                    if scope ~= "local" then
+                      vim.notify("Can only clear local history. Switch to local mode (Ctrl-d) first.", vim.log.levels.WARN)
+                      return
+                    end
+
+                    local confirm = vim.fn.confirm(
+                      "Clear local history for " .. picker_type .. "?",
+                      "&Yes\n&No",
+                      2
+                    )
+                    if confirm == 1 then
+                      local history_file = get_history_path(picker_type)
+                      local file = io.open(history_file, "w")
+                      if file then
+                        file:close()
+                        vim.notify("Cleared local history for " .. picker_type, vim.log.levels.INFO)
+                      else
+                        vim.notify("Failed to clear history", vim.log.levels.ERROR)
+                      end
+                    end
+                  end
+                },
+                winopts = {
+                  height = 0.4,
+                  width = 0.6,
+                },
+              })
+            end
+          end
+
+          -- Launch initial history with current scope
+          launch_history_with_scope(current_scope)
         end
       end
 
