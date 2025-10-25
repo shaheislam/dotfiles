@@ -287,9 +287,8 @@ return {
             end,
             ["alt-p"] = function()
               -- Navigate to parent directory
-              local parent = vim.fn.fnamemodify(cwd, ":h")
-              if parent == cwd or parent == "" or parent == "." then
-                vim.notify("Already at filesystem root", vim.log.levels.WARN)
+              local parent = get_parent_dir(cwd)
+              if not parent then
                 return
               end
 
