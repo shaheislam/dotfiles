@@ -317,10 +317,10 @@ return {
         -- Global keymaps for fzf
         keymap = {
           fzf = {
-            ["ctrl-u"] = "preview-up",
-            ["ctrl-d"] = "preview-down",
-            ["ctrl-b"] = "preview-page-up",
-            ["ctrl-f"] = "preview-page-down",
+            ["ctrl-f"] = "preview-up",        -- Scroll up (line by line)
+            ["ctrl-d"] = "preview-down",      -- Scroll down (line by line)
+            ["ctrl-b"] = "preview-page-up",   -- Page up
+            -- ["ctrl-u"] is now free for other uses
           },
         },
 
