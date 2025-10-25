@@ -303,17 +303,6 @@ return {
         })
       end
 
-      -- Directory selector action (now <M-o>)
-      local function select_directory()
-        return function(_, opts)
-          local query = opts.__call_opts and opts.__call_opts.query or ""
-          local current_picker_prompt = opts.prompt or ""
-          local current_cwd = opts.cwd or vim.fn.getcwd()
-
-          browse_folders(current_cwd, current_picker_prompt, query, true)
-        end
-      end
-
       -- ===== Helper function for PWD-based history =====
 
       local function get_history_path(picker_type)
@@ -342,6 +331,230 @@ return {
         end
 
         return history_dir .. "/" .. filename
+      end
+
+      -- Directory selector action (now <M-o>)
+      local function select_directory()
+        return function(_, opts)
+          local query = opts.__call_opts and opts.__call_opts.query or ""
+          local current_picker_prompt = opts.prompt or ""
+          local current_cwd = opts.cwd or vim.fn.getcwd()
+
+          browse_folders(current_cwd, current_picker_prompt, query, true)
+        end
+      end
+
+      -- ===== Search History Action =====
+
+      -- Function to search through picker history dynamically with fzf
+      local function search_history_action()
+        return function(_, opts)
+          local prompt = opts.prompt or ""
+          local current_cwd = opts.cwd or vim.fn.getcwd()
+
+          -- Determine picker type from multiple sources
+          local picker_type = "default"
+
+          -- First, try to detect from the command if available
+          if opts.cmd then
+            local cmd = tostring(opts.cmd)
+            if cmd:match("fd") or cmd:match("find") then
+              picker_type = "files"
+            elseif cmd:match("rg") or cmd:match("grep") then
+              picker_type = "grep"
+            end
+          end
+
+          -- Then try prompt detection with case-insensitive matching
+          local prompt_lower = prompt:lower()
+          if prompt_lower:match("find") or prompt_lower:match("files") then
+            picker_type = "files"
+          elseif prompt_lower:match("grep") or prompt_lower:match("rg") or prompt_lower:match("search") then
+            picker_type = "grep"
+          elseif prompt_lower:match("buffer") then
+            picker_type = "buffers"
+          elseif prompt_lower:match("recent") or prompt_lower:match("oldfile") or prompt_lower:match("history") then
+            picker_type = "oldfiles"
+          elseif prompt_lower:match("git") then
+            if prompt_lower:match("file") then
+              picker_type = "git_files"
+            elseif prompt_lower:match("buffer") and prompt_lower:match("commit") then
+              picker_type = "git_bcommits"
+            elseif prompt_lower:match("commit") then
+              picker_type = "git_commits"
+            elseif prompt_lower:match("branch") then
+              picker_type = "git_branches"
+            elseif prompt_lower:match("stash") then
+              picker_type = "git_stash"
+            end
+          elseif prompt_lower:match("lsp") then
+            if prompt_lower:match("reference") then
+              picker_type = "lsp_references"
+            elseif prompt_lower:match("definition") then
+              picker_type = "lsp_definitions"
+            elseif prompt_lower:match("implementation") then
+              picker_type = "lsp_implementations"
+            elseif prompt_lower:match("document") and prompt_lower:match("symbol") then
+              picker_type = "lsp_doc_symbols"
+            elseif prompt_lower:match("workspace") and prompt_lower:match("symbol") then
+              picker_type = "lsp_workspace_symbols"
+            else
+              picker_type = "lsp_symbols"
+            end
+          end
+
+          -- Additional detection from opts fields
+          if picker_type == "default" then
+            -- Check for specific options that identify the picker
+            if opts.fd_opts or opts.find_opts then
+              picker_type = "files"
+            elseif opts.rg_opts or opts.grep_opts then
+              picker_type = "grep"
+            elseif opts.show_all_buffers ~= nil then
+              picker_type = "buffers"
+            elseif opts.include_current_session ~= nil then
+              picker_type = "oldfiles"
+            end
+          end
+
+          -- Debug: Show what picker type was detected
+          -- vim.notify("Detected picker type: " .. picker_type .. " (prompt: " .. prompt .. ")", vim.log.levels.INFO)
+
+          -- Get the history file path
+          local history_file = get_history_path(picker_type)
+
+          -- Check if history file exists
+          if vim.fn.filereadable(history_file) == 0 then
+            vim.notify("No history found for " .. picker_type .. " picker", vim.log.levels.WARN)
+            return
+          end
+
+          -- Read history file and reverse it (most recent first)
+          local history_lines = {}
+          for line in io.lines(history_file) do
+            -- Filter out very short entries (likely incomplete typing) and empty lines
+            if line and #line > 2 then
+              table.insert(history_lines, 1, line) -- Insert at beginning for reverse order
+            end
+          end
+
+          -- Remove duplicates while preserving order (most recent occurrence)
+          local seen = {}
+          local unique_history = {}
+          for _, line in ipairs(history_lines) do
+            -- Additional filtering: skip entries that look like incomplete typing
+            if not seen[line] and line and #line > 2 then
+              seen[line] = true
+              table.insert(unique_history, line)
+            end
+          end
+
+          if #unique_history == 0 then
+            vim.notify("History is empty", vim.log.levels.WARN)
+            return
+          end
+
+          -- Launch fzf to search through history
+          require('fzf-lua').fzf_exec(unique_history, {
+            prompt = "Search History (" .. picker_type .. ")> ",
+            actions = {
+              ["default"] = function(selected)
+                if not selected or #selected == 0 then return end
+                local query = selected[1]
+
+                -- Re-launch the original picker with the selected query
+                vim.schedule(function()
+                  if picker_type == "files" then
+                    require('fzf-lua').files({ query = query, cwd = current_cwd })
+                  elseif picker_type == "grep" then
+                    require('fzf-lua').live_grep({ query = query, cwd = current_cwd })
+                  elseif picker_type == "buffers" then
+                    require('fzf-lua').buffers({ query = query })
+                  elseif picker_type == "oldfiles" then
+                    require('fzf-lua').oldfiles({ query = query, cwd = current_cwd })
+                  elseif picker_type == "git_files" then
+                    require('fzf-lua').git_files({ query = query })
+                  elseif picker_type == "git_commits" then
+                    require('fzf-lua').git_commits({ query = query })
+                  elseif picker_type == "git_bcommits" then
+                    require('fzf-lua').git_bcommits({ query = query })
+                  elseif picker_type == "git_branches" then
+                    require('fzf-lua').git_branches({ query = query })
+                  elseif picker_type == "git_stash" then
+                    require('fzf-lua').git_stash({ query = query })
+                  elseif picker_type == "lsp_references" then
+                    require('fzf-lua').lsp_references({ query = query })
+                  elseif picker_type == "lsp_definitions" then
+                    require('fzf-lua').lsp_definitions({ query = query })
+                  elseif picker_type == "lsp_implementations" then
+                    require('fzf-lua').lsp_implementations({ query = query })
+                  elseif picker_type == "lsp_doc_symbols" then
+                    require('fzf-lua').lsp_document_symbols({ query = query })
+                  elseif picker_type == "lsp_workspace_symbols" then
+                    require('fzf-lua').lsp_workspace_symbols({ query = query })
+                  elseif picker_type == "lsp_symbols" then
+                    require('fzf-lua').lsp_symbols({ query = query })
+                  else
+                    -- Fallback to files picker
+                    require('fzf-lua').files({ query = query, cwd = current_cwd })
+                  end
+                end)
+              end,
+              ["ctrl-e"] = function(selected)
+                -- Ctrl-e: Edit history (remove selected entry)
+                if not selected or #selected == 0 then return end
+                local query_to_remove = selected[1]
+
+                -- Remove the selected query from unique_history
+                local new_history = {}
+                for _, line in ipairs(unique_history) do
+                  if line ~= query_to_remove then
+                    table.insert(new_history, line)
+                  end
+                end
+
+                -- Write back to file (in original order - oldest first)
+                local file = io.open(history_file, "w")
+                if file then
+                  -- Reverse back to original order for writing
+                  for i = #new_history, 1, -1 do
+                    file:write(new_history[i] .. "\n")
+                  end
+                  file:close()
+                  vim.notify("Removed from history: " .. query_to_remove, vim.log.levels.INFO)
+
+                  -- Re-launch the history search with updated list
+                  vim.schedule(function()
+                    search_history_action()(_, opts)
+                  end)
+                else
+                  vim.notify("Failed to update history file", vim.log.levels.ERROR)
+                end
+              end,
+              ["ctrl-c"] = function()
+                -- Ctrl-c: Clear all history for this picker
+                local confirm = vim.fn.confirm(
+                  "Clear all history for " .. picker_type .. "?",
+                  "&Yes\n&No",
+                  2
+                )
+                if confirm == 1 then
+                  local file = io.open(history_file, "w")
+                  if file then
+                    file:close()
+                    vim.notify("Cleared history for " .. picker_type, vim.log.levels.INFO)
+                  else
+                    vim.notify("Failed to clear history", vim.log.levels.ERROR)
+                  end
+                end
+              end
+            },
+            winopts = {
+              height = 0.4,
+              width = 0.6,
+            },
+          })
+        end
       end
 
       -- ===== Main Configuration =====
@@ -481,6 +694,7 @@ return {
             ["alt-b"] = navigate_history(-1),
             ["alt-n"] = navigate_history(1),
             ["alt-o"] = select_directory(),
+            ["ctrl-r"] = search_history_action(),  -- Search history
           },
         },
 
@@ -512,6 +726,7 @@ return {
             ["alt-o"] = select_directory(),
             -- Advanced grep controls
             ["ctrl-g"] = { actions.grep_lgrep },
+            ["ctrl-q"] = search_history_action(),  -- Search history (moved from ctrl-r)
             ["ctrl-r"] = { actions.toggle_ignore },
             ["ctrl-h"] = { actions.toggle_hidden },
           },
@@ -544,6 +759,7 @@ return {
             ["alt-b"] = navigate_history(-1),
             ["alt-n"] = navigate_history(1),
             ["ctrl-d"] = { actions.buf_del, actions.resume },
+            ["ctrl-r"] = search_history_action(),  -- Search history
           },
         },
 
@@ -571,6 +787,7 @@ return {
             end, "Parent"),
             ["alt-b"] = navigate_history(-1),
             ["alt-n"] = navigate_history(1),
+            ["ctrl-r"] = search_history_action(),  -- Search history
           },
         },
 
@@ -584,6 +801,9 @@ return {
                 ["--history"] = get_history_path("git_files"),
               }
             end,
+            actions = {
+              ["ctrl-r"] = search_history_action(),  -- Search history
+            },
           },
           commits = {
             prompt = "Git Commits> ",
@@ -596,6 +816,7 @@ return {
             end,
             actions = {
               ["default"] = actions.git_checkout,
+              ["ctrl-r"] = search_history_action(),  -- Search history
             },
           },
           bcommits = {
@@ -609,6 +830,7 @@ return {
             end,
             actions = {
               ["default"] = actions.git_buf_edit,
+              ["ctrl-r"] = search_history_action(),  -- Search history
             },
           },
           branches = {
@@ -621,6 +843,7 @@ return {
               }
             end,
             actions = {
+              ["ctrl-r"] = search_history_action(),  -- Search history
               ["default"] = function(selected)
                 if not selected or #selected == 0 then return end
 
@@ -679,6 +902,7 @@ return {
             actions = {
               ["default"] = actions.git_stash_apply,
               ["ctrl-x"] = actions.git_stash_drop,
+              ["ctrl-r"] = search_history_action(),  -- Search history
             },
           },
         },
