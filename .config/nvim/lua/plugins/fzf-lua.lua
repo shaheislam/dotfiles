@@ -646,8 +646,60 @@ return {
       -- Resume last picker
       { "<leader>f<leader>", function() require("fzf-lua").resume() end, desc = "Resume last picker" },
 
-      -- FZF-Lua builtin picker
-      { "<leader>fz", function() require("fzf-lua").builtin() end, desc = "FZF-Lua Builtin Pickers" },
+      -- FZF-Lua builtin picker with neoclip integration
+      {
+        "<leader>fz",
+        function()
+          local fzf = require("fzf-lua")
+
+          -- Create custom builtin menu including neoclip
+          fzf.fzf_exec(function(cb)
+            -- Add standard fzf-lua builtins
+            local builtins = {
+              "files", "git_files", "grep", "live_grep", "grep_cword", "grep_cWORD",
+              "buffers", "tabs", "lines", "blines",
+              "tags", "btags", "marks", "jumps", "changes",
+              "registers", "keymaps", "commands", "command_history",
+              "help_tags", "man_pages", "colorschemes",
+              "git_commits", "git_bcommits", "git_branches", "git_status", "git_stash",
+              "lsp_references", "lsp_definitions", "lsp_declarations", "lsp_typedefs",
+              "lsp_implementations", "lsp_document_symbols", "lsp_workspace_symbols",
+              "diagnostics_document", "diagnostics_workspace",
+              "oldfiles", "quickfix", "loclist",
+            }
+
+            for _, builtin in ipairs(builtins) do
+              cb(builtin)
+            end
+
+            -- Add neoclip as a custom entry
+            cb("yank_history")
+
+            cb(nil)  -- Signal completion
+          end, {
+            prompt = "FZF-Lua Builtins> ",
+            actions = {
+              ["default"] = function(selected)
+                if not selected or #selected == 0 then return end
+                local choice = selected[1]
+
+                -- Handle neoclip specially
+                if choice == "yank_history" then
+                  vim.schedule(function()
+                    require("neoclip.fzf")()
+                  end)
+                else
+                  -- Launch standard builtin
+                  vim.schedule(function()
+                    fzf[choice]()
+                  end)
+                end
+              end
+            }
+          })
+        end,
+        desc = "FZF-Lua Builtin Pickers"
+      },
     },
   },
 
@@ -716,6 +768,39 @@ return {
           })
         end,
         desc = "Projects"
+      },
+    },
+  },
+
+  -- Yank history with neoclip
+  {
+    "AckslD/nvim-neoclip.lua",
+    dependencies = {
+      "ibhagwan/fzf-lua",
+      "kkharji/sqlite.lua",  -- Required for persistent history
+    },
+    opts = {
+      default_register = '+',  -- Use system clipboard
+      enable_persistent_history = true,
+      keys = {
+        fzf = {
+          select = 'default',
+          paste = 'ctrl-p',
+          paste_behind = 'ctrl-k',
+          custom = {},
+        },
+      },
+    },
+    config = function(_, opts)
+      require("neoclip").setup(opts)
+    end,
+    keys = {
+      {
+        "<leader>fy",
+        function()
+          require("neoclip.fzf")()
+        end,
+        desc = "Yank History"
       },
     },
   },
