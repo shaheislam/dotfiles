@@ -691,6 +691,9 @@ return {
       -- Resume last picker
       { "<leader>f<leader>", function() require("fzf-lua").resume() end, desc = "Resume last picker" },
 
+      -- Quickfix list
+      { "<leader>fq", function() require("fzf-lua").quickfix() end, desc = "Quickfix list" },
+
       -- FZF-Lua builtin picker with neoclip integration
       {
         "<leader>fz",
