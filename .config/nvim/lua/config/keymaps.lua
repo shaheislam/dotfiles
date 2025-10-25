@@ -10,38 +10,7 @@ vim.keymap.set("n", "-", "<cmd>Oil<cr>", { desc = "Open parent directory", silen
 -- Removed <leader>qq as LazyVim already provides this
 vim.keymap.set("n", "<leader>fs", "<cmd>w<cr>", { desc = "Save file", silent = true })
 
--- Theme cycling function
-local function CycleTheme()
-  local themes = {
-    "onedark",           -- Default
-    "catppuccin-mocha",  -- Original
-    "tokyonight-storm",  -- Original
-    "kanagawa",          -- Japanese art
-    "rose-pine",         -- Warm elegant
-    "nordfox",           -- Nightfox variant
-    "gruvbox-material",  -- Modern Gruvbox
-    "everforest",        -- Green forest
-    "github_dark",       -- GitHub dark
-    "cyberdream",        -- Cyberpunk
-    "nord",              -- Arctic blue
-  }
-  local current = vim.g.colors_name
-
-  -- Find current theme index
-  local current_index = 1
-  for i, theme in ipairs(themes) do
-    if theme == current then
-      current_index = i
-      break
-    end
-  end
-
-  -- Cycle to next theme (wrap around)
-  local next_index = (current_index % #themes) + 1
-  vim.cmd("colorscheme " .. themes[next_index])
-end
-
-vim.keymap.set('n', '<leader>th', CycleTheme, { desc = "Cycle themes" })
+-- Theme toggling removed - now using fzf-lua colorscheme picker
 
 -- Terminal mode keymaps
 -- Double-tap Esc to exit terminal mode (preserves single Esc for shell operations)
