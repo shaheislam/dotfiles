@@ -210,7 +210,8 @@ return {
               if not selected or #selected == 0 then return end
               -- selected[1] is clean path relative to cwd
               local selected_dir = selected[1]
-              local abs_dir = vim.fn.fnamemodify(cwd .. "/" .. selected_dir, ":p")
+              -- Properly join paths - fnamemodify with :p on cwd already adds trailing slash
+              local abs_dir = vim.fn.fnamemodify(cwd, ":p") .. selected_dir
 
               -- Add to history when navigating into a directory
               add_to_history(abs_dir, "Browse")
@@ -223,7 +224,8 @@ return {
               -- Ctrl-x: Exit folder browser and open files/grep in selected directory
               if not selected or #selected == 0 then return end
               local selected_dir = selected[1]
-              local abs_dir = vim.fn.fnamemodify(cwd .. "/" .. selected_dir, ":p")
+              -- Properly join paths - fnamemodify with :p on cwd already adds trailing slash
+              local abs_dir = vim.fn.fnamemodify(cwd, ":p") .. selected_dir
 
               vim.schedule(function()
                 local cwd_full = vim.fn.fnamemodify(abs_dir, ":~")
