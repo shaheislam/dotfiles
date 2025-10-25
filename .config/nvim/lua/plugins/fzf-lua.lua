@@ -723,17 +723,36 @@ return {
           -- Use fzf-lua's built-in zoxide picker with concise path display
           local home = vim.fn.expand("~")
 
+          -- Determine preview command based on available tools
+          local preview_cmd
+          if vim.fn.executable("eza") == 1 then
+            preview_cmd = "eza -la --color=always --icons -g --group-directories-first"
+          elseif vim.fn.executable("lsd") == 1 then
+            preview_cmd = "lsd -la --color=always --icon=always --group-directories-first --literal"
+          else
+            preview_cmd = "ls -la"
+          end
+
           require("fzf-lua").zoxide({
             prompt = "Zoxide> ",
             -- Custom command that strips home directory for display
             cmd = "zoxide query --list --score | sed 's|" .. home .. "/||g'",
+            -- Preview uses shell script to reconstruct full path
+            preview = "bash -c 'path=$(echo {2..} | xargs); [[ \"$path\" != /* ]] && path=\"" .. home .. "/$path\"; " .. preview_cmd .. " \"$path\"'",
             actions = {
               ["default"] = function(selected)
                 if not selected or #selected == 0 then return end
-                -- Extract the path (second field after tab)
+                -- Extract the path (second field after tab or spaces)
                 local line = selected[1]
-                local _, path = line:match("^(%s*%S+)%s+(.+)$")
-                if not path then return end
+                -- Try tab separator first, then space separator
+                local _, path = line:match("^(%s*%S+)\t(.+)$")
+                if not path then
+                  _, path = line:match("^(%s*%S+)%s+(.+)$")
+                end
+                if not path then
+                  vim.notify("Could not extract path from: " .. line, vim.log.levels.ERROR)
+                  return
+                end
 
                 -- Reconstruct full path if it was transformed
                 if not path:match("^/") then
