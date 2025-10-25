@@ -688,7 +688,15 @@ return {
 
                 -- Check if it's an AdvancedGitSearch command
                 if picker:match("^AdvancedGitSearch") then
-                  vim.cmd(picker)
+                  -- Check if the command exists
+                  if vim.fn.exists(":AdvancedGitSearch") == 2 then
+                    vim.cmd(picker)
+                  else
+                    vim.notify(
+                      "AdvancedGitSearch plugin not installed. Add it to your plugins.",
+                      vim.log.levels.WARN
+                    )
+                  end
                 else
                   -- It's an fzf-lua native picker
                   if fzf[picker] then
