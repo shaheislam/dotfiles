@@ -121,7 +121,7 @@ return {
                 cwd = new_cwd,
                 query = query,
                 prompt = "Live Grep> ",
-                fzf_opts = { ["--header"] = "📁 " .. cwd_full }
+                fzf_opts = { ["--header"] = cwd_full }
               })
             else
               require("fzf-lua").files({
@@ -173,7 +173,7 @@ return {
                 cwd = entry.cwd,
                 query = query,
                 prompt = "Live Grep> ",
-                fzf_opts = { ["--header"] = "📁 " .. cwd_full }
+                fzf_opts = { ["--header"] = cwd_full }
               })
             else
               require("fzf-lua").files({
@@ -202,7 +202,7 @@ return {
         local cwd_full = vim.fn.fnamemodify(cwd, ":~")
 
         fzf_lua.fzf_exec(fd_cmd, {
-          prompt = "📁 " .. cwd_full .. " > ",
+          prompt = cwd_full .. " > ",
           cwd = cwd,
           actions = {
             ["default"] = function(selected)
@@ -234,14 +234,14 @@ return {
                     cwd = abs_dir,
                     query = original_query,
                     prompt = "Live Grep> ",
-                    fzf_opts = { ["--header"] = "📁 " .. cwd_full }
+                    fzf_opts = { ["--header"] = cwd_full }
                   })
                 else
                   fzf_lua.files({
                     cwd = abs_dir,
                     query = original_query,
                     prompt = "Find Files> ",
-                    fzf_opts = { ["--header"] = "📁 " .. cwd_full }
+                    fzf_opts = { ["--header"] = cwd_full }
                   })
                 end
               end)
