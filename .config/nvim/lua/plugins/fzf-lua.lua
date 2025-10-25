@@ -367,12 +367,50 @@ return {
                 local current_win = vim.api.nvim_get_current_win()
                 -- Check if we're in the preview window
                 if self.preview_winid and current_win == self.preview_winid then
+                  local preview_buf = vim.api.nvim_win_get_buf(current_win)
+
+                  -- Tab: Switch back to search
                   vim.keymap.set("n", "<Tab>", function()
                     if self.fzf_winid and vim.api.nvim_win_is_valid(self.fzf_winid) then
                       vim.api.nvim_set_current_win(self.fzf_winid)  -- Switch directly to search
                       vim.cmd("startinsert")  -- Re-enter insert mode in terminal
                     end
-                  end, { buffer = vim.api.nvim_win_get_buf(current_win), silent = true })
+                  end, { buffer = preview_buf, silent = true })
+
+                  -- i: Make preview buffer editable and enter insert mode
+                  vim.keymap.set("n", "i", function()
+                    -- Get the currently previewed entry from the previewer
+                    if not self._previewer or not self._previewer.last_entry then
+                      vim.notify("No preview entry available", vim.log.levels.WARN)
+                      return
+                    end
+
+                    local entry_str = self._previewer.last_entry
+
+                    -- Use fzf-lua's path module to parse the entry
+                    local path = require("fzf-lua.path")
+                    local entry = path.entry_to_file(entry_str, self._o)
+
+                    if not entry or not entry.path then
+                      vim.notify("Could not extract file path from entry", vim.log.levels.WARN)
+                      return
+                    end
+
+                    local file_path = entry.path
+
+                    -- Make the preview buffer editable
+                    vim.bo[preview_buf].modifiable = true
+                    vim.bo[preview_buf].readonly = false
+
+                    -- Set the buffer name to the file path so it can be saved
+                    vim.api.nvim_buf_set_name(preview_buf, file_path)
+
+                    -- Mark as modified so user knows they need to save
+                    vim.bo[preview_buf].modified = false
+
+                    -- Enter insert mode
+                    vim.cmd("startinsert")
+                  end, { buffer = preview_buf, silent = true, desc = "Edit in preview buffer" })
                 end
               end,
             })
