@@ -460,10 +460,12 @@ return {
         files = {
           prompt = "Find Files> ",
           fd_opts = "--color=never --type f --hidden --follow --exclude .git --exclude node_modules --exclude dist --exclude '*.lock' --exclude package-lock.json --exclude yarn.lock --exclude '*.log' --exclude '*.cache' --exclude '*.min.js' --exclude '*.min.css'",
-          -- PWD-based history for file picker
-          fzf_opts = {
-            ["--history"] = get_history_path("files"),
-          },
+          -- PWD-based history for file picker (evaluated dynamically)
+          fzf_opts = function()
+            return {
+              ["--history"] = get_history_path("files"),
+            }
+          end,
           actions = {
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
@@ -487,10 +489,12 @@ return {
           prompt = "Live Grep> ",
           input_prompt = "Grep For> ",
           rg_opts = "--column --line-number --no-heading --color=always --smart-case --max-columns=4096 --hidden --glob '!.git/*' --glob '!node_modules/*' --glob '!dist/*' --glob '!*.lock' --glob '!*.log' --glob '!*.cache' --glob '!*.min.js' --glob '!*.min.css'",
-          -- PWD-based history for grep picker
-          fzf_opts = {
-            ["--history"] = get_history_path("grep"),
-          },
+          -- PWD-based history for grep picker (evaluated dynamically)
+          fzf_opts = function()
+            return {
+              ["--history"] = get_history_path("grep"),
+            }
+          end,
           actions = {
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
@@ -523,10 +527,12 @@ return {
           sort_mru = true,
           sort_lastused = true,
           show_all_buffers = true,
-          -- PWD-based history for buffers picker
-          fzf_opts = {
-            ["--history"] = get_history_path("buffers"),
-          },
+          -- PWD-based history for buffers picker (evaluated dynamically)
+          fzf_opts = function()
+            return {
+              ["--history"] = get_history_path("buffers"),
+            }
+          end,
           actions = {
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
@@ -546,10 +552,12 @@ return {
           prompt = "Recent Files> ",
           cwd_only = false,
           include_current_session = true,
-          -- PWD-based history for oldfiles picker
-          fzf_opts = {
-            ["--history"] = get_history_path("oldfiles"),
-          },
+          -- PWD-based history for oldfiles picker (evaluated dynamically)
+          fzf_opts = function()
+            return {
+              ["--history"] = get_history_path("oldfiles"),
+            }
+          end,
           actions = {
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
@@ -570,18 +578,22 @@ return {
         git = {
           files = {
             prompt = "Git Files> ",
-            -- PWD-based history for git files
-            fzf_opts = {
-              ["--history"] = get_history_path("git_files"),
-            },
+            -- PWD-based history for git files (evaluated dynamically)
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("git_files"),
+              }
+            end,
           },
           commits = {
             prompt = "Git Commits> ",
             preview = "git show --color {1}",
-            -- PWD-based history for git commits
-            fzf_opts = {
-              ["--history"] = get_history_path("git_commits"),
-            },
+            -- PWD-based history for git commits (evaluated dynamically)
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("git_commits"),
+              }
+            end,
             actions = {
               ["default"] = actions.git_checkout,
             },
@@ -589,10 +601,12 @@ return {
           bcommits = {
             prompt = "Git Buffer Commits> ",
             preview = "git show --color {1}",
-            -- PWD-based history for git buffer commits
-            fzf_opts = {
-              ["--history"] = get_history_path("git_bcommits"),
-            },
+            -- PWD-based history for git buffer commits (evaluated dynamically)
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("git_bcommits"),
+              }
+            end,
             actions = {
               ["default"] = actions.git_buf_edit,
             },
@@ -600,10 +614,12 @@ return {
           branches = {
             prompt = "Git Branches> ",
             preview = "git log --graph --pretty=oneline --abbrev-commit --color {1}",
-            -- PWD-based history for git branches
-            fzf_opts = {
-              ["--history"] = get_history_path("git_branches"),
-            },
+            -- PWD-based history for git branches (evaluated dynamically)
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("git_branches"),
+              }
+            end,
             actions = {
               ["default"] = function(selected)
                 if not selected or #selected == 0 then return end
@@ -654,10 +670,12 @@ return {
           stash = {
             prompt = "Git Stash> ",
             preview = "git stash show --color -p {1}",
-            -- PWD-based history for git stash
-            fzf_opts = {
-              ["--history"] = get_history_path("git_stash"),
-            },
+            -- PWD-based history for git stash (evaluated dynamically)
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("git_stash"),
+              }
+            end,
             actions = {
               ["default"] = actions.git_stash_apply,
               ["ctrl-x"] = actions.git_stash_drop,
@@ -669,36 +687,48 @@ return {
         lsp = {
           symbols = {
             symbol_style = 1,
-            -- PWD-based history for LSP symbols
-            fzf_opts = {
-              ["--history"] = get_history_path("lsp_symbols"),
-            },
+            -- PWD-based history for LSP symbols (evaluated dynamically)
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("lsp_symbols"),
+              }
+            end,
           },
-          -- Add history for other LSP pickers that might be used
+          -- Add history for other LSP pickers that might be used (evaluated dynamically)
           references = {
-            fzf_opts = {
-              ["--history"] = get_history_path("lsp_references"),
-            },
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("lsp_references"),
+              }
+            end,
           },
           definitions = {
-            fzf_opts = {
-              ["--history"] = get_history_path("lsp_definitions"),
-            },
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("lsp_definitions"),
+              }
+            end,
           },
           implementations = {
-            fzf_opts = {
-              ["--history"] = get_history_path("lsp_implementations"),
-            },
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("lsp_implementations"),
+              }
+            end,
           },
           document_symbols = {
-            fzf_opts = {
-              ["--history"] = get_history_path("lsp_doc_symbols"),
-            },
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("lsp_doc_symbols"),
+              }
+            end,
           },
           workspace_symbols = {
-            fzf_opts = {
-              ["--history"] = get_history_path("lsp_workspace_symbols"),
-            },
+            fzf_opts = function()
+              return {
+                ["--history"] = get_history_path("lsp_workspace_symbols"),
+              }
+            end,
           },
         },
       }
