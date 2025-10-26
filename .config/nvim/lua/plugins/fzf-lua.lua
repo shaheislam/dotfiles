@@ -5,6 +5,7 @@
 local original_bufnr = nil
 local dir_history = {}
 local history_index = 0
+local current_scope = "Local"  -- Track current scope for header display
 
 -- ===== Helper functions for directory-specific history =====
 
@@ -196,6 +197,7 @@ return {
           end
 
           add_to_history(new_cwd, scope_name)
+          current_scope = scope_name  -- Update current scope for header display
 
           -- Determine picker type from prompt
           local prompt = opts.prompt or ""
@@ -219,8 +221,11 @@ return {
               require("fzf-lua").live_grep({
                 cwd = new_cwd,
                 query = query,
-                prompt = "Live Grep> ",
-                fzf_opts = { ["--header"] = cwd_full }
+                prompt = "Live Grep (" .. scope_name .. ")> ",
+                fzf_opts = {
+                  ["--header"] = "📁 " .. cwd_full,
+                  ["--history"] = get_history_path("grep", new_cwd),
+                }
               })
             else
               require("fzf-lua").files({
@@ -249,6 +254,7 @@ return {
 
           history_index = new_index
           local entry = dir_history[history_index]
+          current_scope = entry.scope_name  -- Update current scope for header display
 
           -- Relaunch picker without adding to history
           local prompt = opts.prompt or ""
@@ -271,8 +277,11 @@ return {
               require("fzf-lua").live_grep({
                 cwd = entry.cwd,
                 query = query,
-                prompt = "Live Grep> ",
-                fzf_opts = { ["--header"] = cwd_full }
+                prompt = "Live Grep (" .. entry.scope_name .. ")> ",
+                fzf_opts = {
+                  ["--header"] = "📁 " .. cwd_full,
+                  ["--history"] = get_history_path("grep", entry.cwd),
+                }
               })
             else
               require("fzf-lua").files({
@@ -1466,8 +1475,11 @@ return {
         local cwd = vim.fn.getcwd()
         local cwd_full = vim.fn.fnamemodify(cwd, ":~")
         require("fzf-lua").live_grep({
-          prompt = "Live Grep> ",
-          fzf_opts = { ["--header"] = "📁 " .. cwd_full },
+          prompt = "Live Grep (" .. current_scope .. ")> ",
+          fzf_opts = {
+            ["--header"] = "📁 " .. cwd_full,
+            ["--history"] = get_history_path("grep", cwd),
+          },
           resume = false  -- Force fresh session with current directory
         })
       end, desc = "Live Grep with Args" },
