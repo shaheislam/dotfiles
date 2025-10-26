@@ -702,15 +702,19 @@ return {
             end
 
             if scope == "local" then
+              -- Normalize CWD first - remove trailing slashes before getting history path
+              local normalized_cwd = cwd:gsub("/+$", "")
+
               -- Current directory only - read ONLY the history file for this exact directory
-              local history_file = get_history_path(picker_type, cwd)
+              local history_file = get_history_path(picker_type, normalized_cwd)
+
+              -- Debug: Uncomment to see what file is being checked
+              -- vim.notify("Local scope checking file: " .. history_file, vim.log.levels.INFO)
+              -- vim.notify("For CWD: " .. normalized_cwd, vim.log.levels.INFO)
 
               if vim.fn.filereadable(history_file) == 0 then
                 return {}
               end
-
-              -- Normalize CWD for consistent comparison
-              local normalized_cwd = cwd:gsub("/+$", "")
 
               local all_history = {}
               local seen = {}
