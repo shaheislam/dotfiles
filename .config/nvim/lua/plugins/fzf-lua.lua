@@ -1121,6 +1121,7 @@ return {
             }
           end,
           actions = {
+            ["default"] = actions.file_edit_or_qf,  -- Explicitly set default file open action
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
               local git_root = get_service_repo_dir()
@@ -1151,6 +1152,7 @@ return {
             }
           end,
           actions = {
+            ["default"] = actions.file_edit_or_qf,  -- Explicitly set default file open action
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
               local git_root = get_service_repo_dir()
@@ -1190,6 +1192,7 @@ return {
             }
           end,
           actions = {
+            ["default"] = actions.buf_edit_or_qf,  -- Explicitly set default buffer open action
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
               local git_root = get_service_repo_dir()
@@ -1216,6 +1219,7 @@ return {
             }
           end,
           actions = {
+            ["default"] = actions.file_edit_or_qf,  -- Explicitly set default file open action
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
               local git_root = get_service_repo_dir()
