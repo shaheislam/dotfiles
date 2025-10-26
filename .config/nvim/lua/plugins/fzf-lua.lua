@@ -223,7 +223,7 @@ return {
                 query = query,
                 prompt = "Live Grep (" .. scope_name .. ")> ",
                 winopts = {
-                  title = " 📁 " .. cwd_full .. " ",
+                  title = " " .. cwd_full .. " ",
                 },
                 fzf_opts = {
                   ["--history"] = get_history_path("grep", new_cwd),
@@ -281,7 +281,7 @@ return {
                 query = query,
                 prompt = "Live Grep (" .. entry.scope_name .. ")> ",
                 winopts = {
-                  title = " 📁 " .. cwd_full .. " ",
+                  title = " " .. cwd_full .. " ",
                 },
                 fzf_opts = {
                   ["--history"] = get_history_path("grep", entry.cwd),
@@ -347,7 +347,7 @@ return {
                     query = original_query,
                     prompt = "Live Grep> ",
                     winopts = {
-                      title = " 📁 " .. cwd_full .. " ",
+                      title = " " .. cwd_full .. " ",
                     },
                     fzf_opts = {
                       ["--history"] = get_history_path("grep", abs_dir),
@@ -829,7 +829,7 @@ return {
                           query = query,
                           cwd = scope_cwd,
                           winopts = {
-                            title = " 📁 " .. cwd_full .. " ",
+                            title = " " .. cwd_full .. " ",
                           },
                           fzf_opts = {
                             ["--history"] = get_history_path("grep", scope_cwd),
@@ -1496,7 +1496,7 @@ return {
         require("fzf-lua").live_grep({
           prompt = "Live Grep (" .. current_scope .. ")> ",
           winopts = {
-            title = " 📁 " .. cwd_full .. " ",
+            title = " " .. cwd_full .. " ",
           },
           fzf_opts = {
             ["--history"] = get_history_path("grep", cwd),
