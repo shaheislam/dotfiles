@@ -517,6 +517,9 @@ return {
           local prompt = opts.prompt or ""
           local current_cwd = opts.cwd or vim.fn.getcwd()
 
+          -- Determine the actual local directory (could be Oil directory)
+          local local_cwd = get_local_dir()  -- This respects Oil context
+
           -- Determine picker type from multiple sources
           local picker_type = "default"
 
@@ -596,34 +599,58 @@ return {
             end
 
             if scope == "local" then
-              -- Current directory only - filter to exact CWD matches
-              local history_file = get_history_path(picker_type, cwd)
-              if vim.fn.filereadable(history_file) == 0 then
+              -- Current directory only - aggregate from all files then filter to exact CWD
+              -- Use same pattern as service/global to ensure we find entries regardless of which file they're in
+              local files
+              if git_root then
+                -- If in a git repo, search git repo history files (like service scope does)
+                files = get_git_repo_history_files(picker_type)
+              else
+                -- If not in a git repo, search all history files (like global scope does)
+                files = get_all_history_files(picker_type)
+              end
+
+              if #files == 0 then
                 return {}
               end
 
               -- Normalize CWD for consistent comparison
               local normalized_cwd = cwd:gsub("/+$", "")
 
-              local history_lines = {}
-              for line in io.lines(history_file) do
-                if line and #line > 2 then
-                  local entry_cwd = extract_cwd_from_entry(line)
-                  if entry_cwd then
-                    -- Normalize entry CWD and compare
-                    local normalized_entry_cwd = entry_cwd:gsub("/+$", "")
-                    if normalized_entry_cwd == normalized_cwd then
-                      -- Extract just the search term for display
-                      local search_term = extract_search_from_entry(line)
-                      table.insert(history_lines, 1, search_term)
+              local all_history = {}
+              local seen = {}
+
+              -- Read all files and filter to entries from the exact local directory
+              for _, file_path in ipairs(files) do
+                if vim.fn.filereadable(file_path) == 1 then
+                  for line in io.lines(file_path) do
+                    if line and #line > 2 then
+                      local entry_cwd = extract_cwd_from_entry(line)
+                      if entry_cwd then
+                        -- Normalize entry CWD and compare
+                        local normalized_entry_cwd = entry_cwd:gsub("/+$", "")
+                        if normalized_entry_cwd == normalized_cwd then
+                          -- Extract just the search term for display
+                          local search_term = extract_search_from_entry(line)
+                          if not seen[search_term] then
+                            seen[search_term] = true
+                            table.insert(all_history, search_term)
+                          end
+                        end
+                      end
+                      -- Don't show unprefixed entries in local scope
+                      -- We can't determine which directory they belong to
                     end
                   end
-                  -- Don't show unprefixed entries in local scope
-                  -- We can't determine which directory they belong to
-                  -- They'll get prefixes within 100ms and then appear correctly
                 end
               end
-              return history_lines
+
+              -- Reverse to show most recent first
+              local reversed = {}
+              for i = #all_history, 1, -1 do
+                table.insert(reversed, all_history[i])
+              end
+              return reversed
 
             elseif scope == "service" then
               -- All directories in git repository
@@ -731,8 +758,8 @@ return {
             return unique_history
           end
 
-          -- Get initial history
-          local unique_history = refresh_history_display("local", current_cwd)
+          -- Get initial history using the correct directory for local scope
+          local unique_history = refresh_history_display("local", local_cwd)
           if not unique_history then
             unique_history = { "[No local history found for " .. picker_type .. "]" }
           end
@@ -747,7 +774,17 @@ return {
 
           -- Helper function to launch history with a specific scope
           local function launch_history_with_scope(scope, cwd)
-            local history = refresh_history_display(scope, cwd)
+            -- Use the appropriate directory for each scope
+            local scope_cwd
+            if scope == "local" then
+              scope_cwd = local_cwd  -- Use the Oil/local directory
+            elseif scope == "service" then
+              scope_cwd = get_service_repo_dir() or current_cwd  -- Use git root
+            else
+              scope_cwd = cwd  -- Use provided cwd for global
+            end
+
+            local history = refresh_history_display(scope, scope_cwd)
             if history then
               require('fzf-lua').fzf_exec(history, {
                 prompt = "Search History (" .. picker_type .. " - " .. scope .. ")> ",
@@ -767,13 +804,13 @@ return {
                     -- Re-launch the original picker with the selected query
                     vim.schedule(function()
                       if picker_type == "files" then
-                        require('fzf-lua').files({ query = query, cwd = cwd })
+                        require('fzf-lua').files({ query = query, cwd = scope_cwd })
                       elseif picker_type == "grep" then
-                        require('fzf-lua').live_grep({ query = query, cwd = cwd })
+                        require('fzf-lua').live_grep({ query = query, cwd = scope_cwd })
                       elseif picker_type == "buffers" then
                         require('fzf-lua').buffers({ query = query })
                       elseif picker_type == "oldfiles" then
-                        require('fzf-lua').oldfiles({ query = query, cwd = cwd })
+                        require('fzf-lua').oldfiles({ query = query, cwd = scope_cwd })
                       elseif picker_type == "git_files" then
                         require('fzf-lua').git_files({ query = query })
                       elseif picker_type == "git_commits" then
@@ -798,7 +835,7 @@ return {
                         require('fzf-lua').lsp_symbols({ query = query })
                       else
                         -- Fallback to files picker
-                        require('fzf-lua').files({ query = query, cwd = cwd })
+                        require('fzf-lua').files({ query = query, cwd = scope_cwd })
                       end
                     end)
                   end,
@@ -834,8 +871,8 @@ return {
                       return
                     end
 
-                    -- Get local history file (use cwd from closure)
-                    local history_file = get_history_path(picker_type)
+                    -- Get local history file using the correct scope_cwd
+                    local history_file = get_history_path(picker_type, scope_cwd)
 
                     -- Read the file and remove the matching entry
                     local new_lines = {}
@@ -848,7 +885,7 @@ return {
                           -- Keep the line if it's either:
                           -- 1. From a different directory
                           -- 2. Has a different search term
-                          if entry_cwd and entry_cwd ~= cwd then
+                          if entry_cwd and entry_cwd ~= scope_cwd then
                             -- Different directory, keep it
                             table.insert(new_lines, line)
                           elseif search_term ~= query_to_remove then
@@ -871,7 +908,7 @@ return {
 
                       -- Re-launch with same scope
                       vim.schedule(function()
-                        launch_history_with_scope(scope, cwd)
+                        launch_history_with_scope(scope, scope_cwd)
                       end)
                     else
                       vim.notify("Failed to update history file", vim.log.levels.ERROR)
@@ -890,7 +927,7 @@ return {
                       2
                     )
                     if confirm == 1 then
-                      local history_file = get_history_path(picker_type)
+                      local history_file = get_history_path(picker_type, scope_cwd)
 
                       -- Read the file and keep only entries from other directories
                       local new_lines = {}
@@ -899,7 +936,7 @@ return {
                           if line and #line > 0 then
                             local entry_cwd = extract_cwd_from_entry(line)
                             -- Keep entries from other directories
-                            if entry_cwd and entry_cwd ~= cwd then
+                            if entry_cwd and entry_cwd ~= scope_cwd then
                               table.insert(new_lines, line)
                             end
                           end
@@ -913,7 +950,7 @@ return {
                           file:write(line .. "\n")
                         end
                         file:close()
-                        vim.notify("Cleared local history for " .. picker_type .. " in " .. vim.fn.fnamemodify(cwd, ":~"), vim.log.levels.INFO)
+                        vim.notify("Cleared local history for " .. picker_type .. " in " .. vim.fn.fnamemodify(scope_cwd, ":~"), vim.log.levels.INFO)
                       else
                         vim.notify("Failed to clear history", vim.log.levels.ERROR)
                       end
