@@ -636,8 +636,14 @@ return {
                             table.insert(all_history, search_term)
                           end
                         end
+                      elseif not entry_cwd then
+                        -- Backward compatibility: unprefixed entries
+                        -- History files are already filtered to git repo, so unprefixed entries belong here
+                        if not seen[line] then
+                          seen[line] = true
+                          table.insert(all_history, line)
+                        end
                       end
-                      -- Removed backward compatibility code
                     end
                   end
                 end
