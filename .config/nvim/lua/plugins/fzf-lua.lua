@@ -112,6 +112,44 @@ return {
     opts = function()
       local actions = require("fzf-lua.actions")
 
+      -- ===== Custom action wrapper to handle cwd properly =====
+      local function file_edit_with_cwd(selected, opts)
+        if not selected or #selected == 0 then return end
+
+        -- Get the cwd from opts
+        local cwd = opts.cwd or vim.fn.getcwd()
+
+        -- Process each selected file
+        for _, entry in ipairs(selected) do
+          -- Parse the entry to get the file path
+          local path = require("fzf-lua.path")
+          local file = path.entry_to_file(entry, opts)
+
+          if file and file.path then
+            -- Resolve the file path properly
+            local filepath = file.path
+
+            -- If path is relative, make it absolute using the picker's cwd
+            if not vim.startswith(filepath, "/") and not vim.startswith(filepath, "~") then
+              filepath = cwd .. "/" .. filepath
+            end
+
+            -- Normalize the path (resolve .., ., etc.)
+            filepath = vim.fn.fnamemodify(filepath, ":p")
+
+            -- Open the file
+            local cmd = "edit"
+            if file.line and file.line > 0 then
+              cmd = cmd .. " +" .. file.line
+            end
+            if file.col and file.col > 0 then
+              cmd = cmd .. " -c 'normal! " .. file.col .. "|'"
+            end
+            vim.cmd(cmd .. " " .. vim.fn.fnameescape(filepath))
+          end
+        end
+      end
+
       -- ===== Helper Functions for Scope Toggle =====
 
       local function get_service_repo_dir()
@@ -1121,7 +1159,7 @@ return {
             }
           end,
           actions = {
-            ["default"] = actions.file_edit_or_qf,  -- Explicitly set default file open action
+            ["default"] = file_edit_with_cwd,  -- Custom action to handle cwd properly
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
               local git_root = get_service_repo_dir()
@@ -1152,7 +1190,7 @@ return {
             }
           end,
           actions = {
-            ["default"] = actions.file_edit_or_qf,  -- Explicitly set default file open action
+            ["default"] = file_edit_with_cwd,  -- Custom action to handle cwd properly
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
               local git_root = get_service_repo_dir()
@@ -1219,7 +1257,7 @@ return {
             }
           end,
           actions = {
-            ["default"] = actions.file_edit_or_qf,  -- Explicitly set default file open action
+            ["default"] = file_edit_with_cwd,  -- Custom action to handle cwd properly
             ["alt-g"] = create_scope_action(function() return vim.fn.expand("~/work") end, "Global"),
             ["alt-s"] = create_scope_action(function()
               local git_root = get_service_repo_dir()
