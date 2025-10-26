@@ -103,6 +103,46 @@ local function process_history_file(history_file, cwd)
   end
 end
 
+-- Ensure history file has CWD prefixes (called before reading for local scope)
+-- This ensures unprefixed entries written by fzf during picker session get prefixed immediately
+local function ensure_history_prefixed(history_file, cwd)
+  if vim.fn.filereadable(history_file) == 0 then
+    return
+  end
+
+  -- Normalize CWD: remove trailing slashes for consistent comparison
+  local normalized_cwd = cwd:gsub("/+$", "")
+
+  local lines = {}
+  local modified = false
+
+  -- Read existing history
+  for line in io.lines(history_file) do
+    if line and #line > 0 then
+      -- Check if line already has CWD prefix
+      if not line:match("^/[^|]+|") then
+        -- Add normalized CWD prefix (unprefixed entries are from current session in this directory)
+        table.insert(lines, normalized_cwd .. "|" .. line)
+        modified = true
+      else
+        -- Keep prefixed entries as-is (already normalized by process_history_file)
+        table.insert(lines, line)
+      end
+    end
+  end
+
+  -- Write back if modified
+  if modified then
+    local file = io.open(history_file, "w")
+    if file then
+      for _, line in ipairs(lines) do
+        file:write(line .. "\n")
+      end
+      file:close()
+    end
+  end
+end
+
 return {
   -- fzf-lua main plugin
   {
@@ -646,6 +686,13 @@ return {
           -- Debug: Show what scope we're starting with (uncomment for debugging)
           -- vim.notify("Starting history search with scope: " .. current_scope, vim.log.levels.INFO)
 
+          -- Ensure local history file is prefixed before reading (critical for local scope)
+          -- This handles unprefixed entries written by fzf during the current picker session
+          if picker_type and picker_type ~= "default" then
+            local local_history_file = get_history_path(picker_type, local_cwd)
+            ensure_history_prefixed(local_history_file, local_cwd)
+          end
+
           -- Function to get history based on scope
           local function get_history_for_scope(scope, cwd)
             -- Use provided cwd parameter instead of calling getcwd()
@@ -655,18 +702,10 @@ return {
             end
 
             if scope == "local" then
-              -- Current directory only - aggregate from all files then filter to exact CWD
-              -- Use same pattern as service/global to ensure we find entries regardless of which file they're in
-              local files
-              if git_root then
-                -- If in a git repo, search git repo history files (like service scope does)
-                files = get_git_repo_history_files(picker_type)
-              else
-                -- If not in a git repo, search all history files (like global scope does)
-                files = get_all_history_files(picker_type)
-              end
+              -- Current directory only - read ONLY the history file for this exact directory
+              local history_file = get_history_path(picker_type, cwd)
 
-              if #files == 0 then
+              if vim.fn.filereadable(history_file) == 0 then
                 return {}
               end
 
@@ -676,26 +715,28 @@ return {
               local all_history = {}
               local seen = {}
 
-              -- Read all files and filter to entries from the exact local directory
-              for _, file_path in ipairs(files) do
-                if vim.fn.filereadable(file_path) == 1 then
-                  for line in io.lines(file_path) do
-                    if line and #line > 2 then
-                      local entry_cwd = extract_cwd_from_entry(line)
-                      if entry_cwd then
-                        -- Normalize entry CWD and compare
-                        local normalized_entry_cwd = entry_cwd:gsub("/+$", "")
-                        if normalized_entry_cwd == normalized_cwd then
-                          -- Extract just the search term for display
-                          local search_term = extract_search_from_entry(line)
-                          if not seen[search_term] then
-                            seen[search_term] = true
-                            table.insert(all_history, search_term)
-                          end
-                        end
+              -- Read ONLY the local history file for this directory
+              for line in io.lines(history_file) do
+                if line and #line > 2 then
+                  local entry_cwd = extract_cwd_from_entry(line)
+                  if entry_cwd then
+                    -- Normalize entry CWD and compare
+                    local normalized_entry_cwd = entry_cwd:gsub("/+$", "")
+                    if normalized_entry_cwd == normalized_cwd then
+                      -- Extract just the search term for display
+                      local search_term = extract_search_from_entry(line)
+                      if not seen[search_term] then
+                        seen[search_term] = true
+                        table.insert(all_history, search_term)
                       end
-                      -- Don't show unprefixed entries in local scope
-                      -- We can't determine which directory they belong to
+                    end
+                    -- Skip entries from other directories (shouldn't be in this file, but be safe)
+                  else
+                    -- Defensive fallback: unprefixed entry found despite ensure_history_prefixed
+                    -- Treat as belonging to current directory (this file should be for current dir)
+                    if not seen[line] then
+                      seen[line] = true
+                      table.insert(all_history, line)
                     end
                   end
                 end
