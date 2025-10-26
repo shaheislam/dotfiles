@@ -1596,7 +1596,6 @@ return {
       {
         "<leader>cd",
         function()
-          -- Use fzf-lua's built-in zoxide picker with concise path display
           local home = vim.fn.expand("~")
 
           -- Determine preview command based on available tools
@@ -1609,39 +1608,68 @@ return {
             preview_cmd = "ls -la"
           end
 
-          require("fzf-lua").zoxide({
-            prompt = "Zoxide> ",
-            -- Custom command that strips home directory for display
-            cmd = "zoxide query --list --score | sed 's|" .. home .. "/||g'",
-            -- Preview uses shell script to reconstruct full path
-            preview = "bash -c 'path=$(echo {2..} | xargs); [[ \"$path\" != /* ]] && path=\"" .. home .. "/$path\"; " .. preview_cmd .. " \"$path\"'",
-            actions = {
-              ["default"] = function(selected)
-                if not selected or #selected == 0 then return end
-                -- Extract the path (second field after tab or spaces)
-                local line = selected[1]
-                -- Try tab separator first, then space separator
-                local _, path = line:match("^(%s*%S+)\t(.+)$")
-                if not path then
-                  _, path = line:match("^(%s*%S+)%s+(.+)$")
-                end
-                if not path then
-                  vim.notify("Could not extract path from: " .. line, vim.log.levels.ERROR)
-                  return
-                end
+          -- Recursive function to launch zoxide picker with optional query
+          local function launch_zoxide_picker(initial_query)
+            require("fzf-lua").zoxide({
+              prompt = "Zoxide (Ctrl-T=fill, Enter=cd)> ",
+              query = initial_query or "",
+              -- Custom command that strips home directory for display
+              cmd = "zoxide query --list --score | sed 's|" .. home .. "/||g'",
+              -- Preview uses shell script to reconstruct full path
+              preview = "bash -c 'path=$(echo {2..} | xargs); [[ \"$path\" != /* ]] && path=\"" .. home .. "/$path\"; " .. preview_cmd .. " \"$path\"'",
+              actions = {
+                ["default"] = function(selected)
+                  if not selected or #selected == 0 then return end
+                  -- Extract the path (second field after tab or spaces)
+                  local line = selected[1]
+                  -- Try tab separator first, then space separator
+                  local _, path = line:match("^(%s*%S+)\t(.+)$")
+                  if not path then
+                    _, path = line:match("^(%s*%S+)%s+(.+)$")
+                  end
+                  if not path then
+                    vim.notify("Could not extract path from: " .. line, vim.log.levels.ERROR)
+                    return
+                  end
 
-                -- Reconstruct full path if it was transformed
-                if not path:match("^/") then
-                  path = home .. "/" .. path
-                end
+                  -- Reconstruct full path if it was transformed
+                  if not path:match("^/") then
+                    path = home .. "/" .. path
+                  end
 
-                -- Change working directory
-                vim.cmd("cd " .. vim.fn.fnameescape(path))
-                -- Open oil in that directory
-                require("oil").open(path)
-              end
-            }
-          })
+                  -- Change working directory
+                  vim.cmd("cd " .. vim.fn.fnameescape(path))
+                  -- Open oil in that directory
+                  require("oil").open(path)
+                end,
+                ["ctrl-t"] = function(selected)
+                  if not selected or #selected == 0 then return end
+                  -- Extract the path (displayed value, not reconstructed full path)
+                  local line = selected[1]
+                  local _, path = line:match("^(%s*%S+)\t(.+)$")
+                  if not path then
+                    _, path = line:match("^(%s*%S+)%s+(.+)$")
+                  end
+                  if not path then
+                    vim.notify("Could not extract path from: " .. line, vim.log.levels.ERROR)
+                    return
+                  end
+
+                  -- Use the displayed path as-is for the query (don't reconstruct)
+                  -- Add trailing slash to indicate we're navigating into this directory
+                  local query = path .. "/"
+
+                  -- Restart picker with selected path as query for further navigation
+                  vim.schedule(function()
+                    launch_zoxide_picker(query)
+                  end)
+                end
+              }
+            })
+          end
+
+          -- Launch initial picker
+          launch_zoxide_picker()
         end,
         desc = "Zoxide jump to Oil"
       },
