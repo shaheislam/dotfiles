@@ -109,6 +109,11 @@ return {
               return
             end
 
+            -- Check if buffer is still valid before accessing it
+            if not vim.api.nvim_buf_is_valid(bufnr) then
+              return
+            end
+
             local new_dir = nil
 
             -- Check if this is an Oil buffer

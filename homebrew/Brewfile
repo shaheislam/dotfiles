@@ -196,6 +196,7 @@ brew "entr"
 
 # Document Processing
 cask "mactex-no-gui"  # LaTeX compiler for CV generation
+brew "pandoc"  # Document format converter (required for OVIWrite)
 
 # CI/CD & Automation Tools
 brew "act"
