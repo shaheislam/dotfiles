@@ -6,6 +6,90 @@ local original_bufnr = nil
 local dir_history = {}
 local history_index = 0
 
+-- ===== Helper functions for directory-specific history =====
+
+-- Get history file path for current directory and picker type
+local function get_history_path(picker_type)
+  -- Create history directory if it doesn't exist
+  local history_dir = vim.fn.stdpath("data") .. "/fzf-lua-history"
+  -- Use vim.loop (uv) for more reliable directory creation
+  local ok = vim.loop.fs_mkdir(history_dir, 493) -- 493 = 0755 in octal
+  if not ok and vim.fn.isdirectory(history_dir) == 0 then
+    -- If single mkdir failed and dir doesn't exist, try creating parent dirs
+    vim.fn.system("mkdir -p " .. vim.fn.shellescape(history_dir))
+  end
+
+  -- Get current working directory and convert to safe filename
+  local cwd = vim.fn.getcwd()
+  -- Replace path separators with double underscores for readability
+  local safe_cwd = cwd:gsub("/", "__"):gsub("^__", ""):gsub(":", "")
+
+  -- Optional: Include picker type in filename for separate histories
+  local filename = picker_type and (safe_cwd .. "___" .. picker_type) or safe_cwd
+
+  -- Limit filename length to avoid filesystem issues
+  if #filename > 200 then
+    -- Use hash for very long paths
+    local hash = vim.fn.sha256(cwd)
+    filename = hash:sub(1, 16) .. (picker_type and ("___" .. picker_type) or "")
+  end
+
+  return history_dir .. "/" .. filename
+end
+
+-- Extract search term from history entry (removes CWD prefix if present)
+local function extract_search_from_entry(entry)
+  -- Check if entry has CWD prefix
+  local _, search = entry:match("^([^|]+)|(.+)$")
+  if search then
+    return search
+  end
+  -- Backward compatibility: return entry as-is if no prefix
+  return entry
+end
+
+-- Extract CWD from history entry
+local function extract_cwd_from_entry(entry)
+  local cwd = entry:match("^([^|]+)|")
+  return cwd
+end
+
+-- Post-process history file to add CWD prefixes
+local function process_history_file(history_file)
+  if vim.fn.filereadable(history_file) == 0 then
+    return
+  end
+
+  local cwd = vim.fn.getcwd()
+  local lines = {}
+  local modified = false
+
+  -- Read existing history
+  for line in io.lines(history_file) do
+    if line and #line > 0 then
+      -- Check if line already has CWD prefix
+      if not line:match("^/[^|]+|") then
+        -- Add CWD prefix
+        table.insert(lines, cwd .. "|" .. line)
+        modified = true
+      else
+        table.insert(lines, line)
+      end
+    end
+  end
+
+  -- Write back if modified
+  if modified then
+    local file = io.open(history_file, "w")
+    if file then
+      for _, line in ipairs(lines) do
+        file:write(line .. "\n")
+      end
+      file:close()
+    end
+  end
+end
+
 return {
   -- fzf-lua main plugin
   {
@@ -303,36 +387,6 @@ return {
         })
       end
 
-      -- ===== Helper function for PWD-based history =====
-
-      local function get_history_path(picker_type)
-        -- Create history directory if it doesn't exist
-        local history_dir = vim.fn.stdpath("data") .. "/fzf-lua-history"
-        -- Use vim.loop (uv) for more reliable directory creation
-        local ok = vim.loop.fs_mkdir(history_dir, 493) -- 493 = 0755 in octal
-        if not ok and vim.fn.isdirectory(history_dir) == 0 then
-          -- If single mkdir failed and dir doesn't exist, try creating parent dirs
-          vim.fn.system("mkdir -p " .. vim.fn.shellescape(history_dir))
-        end
-
-        -- Get current working directory and convert to safe filename
-        local cwd = vim.fn.getcwd()
-        -- Replace path separators with double underscores for readability
-        local safe_cwd = cwd:gsub("/", "__"):gsub("^__", ""):gsub(":", "")
-
-        -- Optional: Include picker type in filename for separate histories
-        local filename = picker_type and (safe_cwd .. "___" .. picker_type) or safe_cwd
-
-        -- Limit filename length to avoid filesystem issues
-        if #filename > 200 then
-          -- Use hash for very long paths
-          local hash = vim.fn.sha256(cwd)
-          filename = hash:sub(1, 16) .. (picker_type and ("___" .. picker_type) or "")
-        end
-
-        return history_dir .. "/" .. filename
-      end
-
       -- Directory selector action (now <M-o>)
       local function select_directory()
         return function(_, opts)
@@ -523,8 +577,14 @@ return {
 
           -- Function to get history based on scope
           local function get_history_for_scope(scope)
+            local current_cwd = vim.fn.getcwd()
+            local git_root = vim.fs.find(".git", { path = current_cwd, upward = true })[1]
+            if git_root then
+              git_root = vim.fn.fnamemodify(git_root, ":h")
+            end
+
             if scope == "local" then
-              -- Current directory only
+              -- Current directory only - filter to exact CWD matches
               local history_file = get_history_path(picker_type)
               if vim.fn.filereadable(history_file) == 0 then
                 return {}
@@ -533,7 +593,19 @@ return {
               local history_lines = {}
               for line in io.lines(history_file) do
                 if line and #line > 2 then
-                  table.insert(history_lines, 1, line) -- Insert at beginning for reverse order
+                  local entry_cwd = extract_cwd_from_entry(line)
+                  if entry_cwd then
+                    -- Only include entries from the exact current directory
+                    if entry_cwd == current_cwd then
+                      -- Extract just the search term for display
+                      local search_term = extract_search_from_entry(line)
+                      table.insert(history_lines, 1, search_term)
+                    end
+                  else
+                    -- Backward compatibility: old entries without CWD prefix
+                    -- Only show them if we're in the base directory of the history file
+                    table.insert(history_lines, 1, line)
+                  end
                 end
               end
               return history_lines
@@ -544,15 +616,75 @@ return {
               if #files == 0 then
                 return {}
               end
-              return aggregate_history_from_files(files)
+
+              local all_history = {}
+              local seen = {}
+
+              -- Read all files and filter to entries within the git repo
+              for _, file_path in ipairs(files) do
+                if vim.fn.filereadable(file_path) == 1 then
+                  for line in io.lines(file_path) do
+                    if line and #line > 2 then
+                      local entry_cwd = extract_cwd_from_entry(line)
+                      if entry_cwd and git_root then
+                        -- Check if entry is from within the current git repository
+                        if entry_cwd:find(git_root, 1, true) == 1 then
+                          local search_term = extract_search_from_entry(line)
+                          if not seen[search_term] then
+                            seen[search_term] = true
+                            table.insert(all_history, search_term)
+                          end
+                        end
+                      elseif not entry_cwd then
+                        -- Backward compatibility
+                        if not seen[line] then
+                          seen[line] = true
+                          table.insert(all_history, line)
+                        end
+                      end
+                    end
+                  end
+                end
+              end
+
+              -- Reverse to show most recent first
+              local reversed = {}
+              for i = #all_history, 1, -1 do
+                table.insert(reversed, all_history[i])
+              end
+              return reversed
 
             elseif scope == "global" then
-              -- All history files
+              -- All history files - extract search terms without CWD prefix
               local files = get_all_history_files(picker_type)
               if #files == 0 then
                 return {}
               end
-              return aggregate_history_from_files(files)
+
+              local all_history = {}
+              local seen = {}
+
+              -- Read all files and extract search terms
+              for _, file_path in ipairs(files) do
+                if vim.fn.filereadable(file_path) == 1 then
+                  for line in io.lines(file_path) do
+                    if line and #line > 2 then
+                      local search_term = extract_search_from_entry(line)
+                      if not seen[search_term] then
+                        seen[search_term] = true
+                        table.insert(all_history, search_term)
+                      end
+                    end
+                  end
+                end
+              end
+
+              -- Reverse to show most recent first
+              local reversed = {}
+              for i = #all_history, 1, -1 do
+                table.insert(reversed, all_history[i])
+              end
+              return reversed
             end
 
             return {}
@@ -686,22 +818,38 @@ return {
                       return
                     end
 
-                    -- Get local history file
+                    -- Get local history file and current CWD
                     local history_file = get_history_path(picker_type)
+                    local current_cwd = vim.fn.getcwd()
 
-                    -- Remove the selected query from history
-                    local new_history = {}
-                    for _, line in ipairs(history) do
-                      if line ~= query_to_remove then
-                        table.insert(new_history, line)
+                    -- Read the file and remove the matching entry
+                    local new_lines = {}
+                    if vim.fn.filereadable(history_file) == 1 then
+                      for line in io.lines(history_file) do
+                        if line and #line > 0 then
+                          local entry_cwd = extract_cwd_from_entry(line)
+                          local search_term = extract_search_from_entry(line)
+
+                          -- Keep the line if it's either:
+                          -- 1. From a different directory
+                          -- 2. Has a different search term
+                          if entry_cwd and entry_cwd ~= current_cwd then
+                            -- Different directory, keep it
+                            table.insert(new_lines, line)
+                          elseif search_term ~= query_to_remove then
+                            -- Same directory but different search, keep it
+                            table.insert(new_lines, line)
+                          end
+                          -- Otherwise, skip the line (it's the one we want to remove)
+                        end
                       end
                     end
 
                     -- Write back to file
                     local file = io.open(history_file, "w")
                     if file then
-                      for i = #new_history, 1, -1 do
-                        file:write(new_history[i] .. "\n")
+                      for _, line in ipairs(new_lines) do
+                        file:write(line .. "\n")
                       end
                       file:close()
                       vim.notify("Removed from history: " .. query_to_remove, vim.log.levels.INFO)
@@ -722,16 +870,36 @@ return {
                     end
 
                     local confirm = vim.fn.confirm(
-                      "Clear local history for " .. picker_type .. "?",
+                      "Clear local history for " .. picker_type .. " in current directory?",
                       "&Yes\n&No",
                       2
                     )
                     if confirm == 1 then
                       local history_file = get_history_path(picker_type)
+                      local current_cwd = vim.fn.getcwd()
+
+                      -- Read the file and keep only entries from other directories
+                      local new_lines = {}
+                      if vim.fn.filereadable(history_file) == 1 then
+                        for line in io.lines(history_file) do
+                          if line and #line > 0 then
+                            local entry_cwd = extract_cwd_from_entry(line)
+                            -- Keep entries from other directories
+                            if entry_cwd and entry_cwd ~= current_cwd then
+                              table.insert(new_lines, line)
+                            end
+                          end
+                        end
+                      end
+
+                      -- Write back to file (will be empty if all entries were from current dir)
                       local file = io.open(history_file, "w")
                       if file then
+                        for _, line in ipairs(new_lines) do
+                          file:write(line .. "\n")
+                        end
                         file:close()
-                        vim.notify("Cleared local history for " .. picker_type, vim.log.levels.INFO)
+                        vim.notify("Cleared local history for " .. picker_type .. " in " .. vim.fn.fnamemodify(current_cwd, ":~"), vim.log.levels.INFO)
                       else
                         vim.notify("Failed to clear history", vim.log.levels.ERROR)
                       end
@@ -1157,13 +1325,41 @@ return {
       local fzf = require("fzf-lua")
       local original_fns = {}
 
-      -- Wrap all picker functions to capture original buffer
+      -- Wrap all picker functions to capture original buffer and process history
       for name, fn in pairs(fzf) do
         if type(fn) == "function" and not name:match("^_") then
           original_fns[name] = fn
-          fzf[name] = function(...)
+          fzf[name] = function(picker_opts, ...)
             original_bufnr = vim.api.nvim_get_current_buf()
-            return original_fns[name](...)
+
+            -- Call the original function
+            local result = original_fns[name](picker_opts, ...)
+
+            -- Post-process history file after picker closes
+            vim.defer_fn(function()
+              -- Determine picker type for history file
+              local picker_type = nil
+              if name == "files" or name == "git_files" then
+                picker_type = "files"
+              elseif name == "live_grep" or name == "grep" or name == "grep_cword" or name == "grep_cWORD" or name == "grep_visual" then
+                picker_type = "grep"
+              elseif name == "buffers" then
+                picker_type = "buffers"
+              elseif name == "oldfiles" then
+                picker_type = "oldfiles"
+              elseif name:match("^git_") then
+                picker_type = name
+              elseif name:match("^lsp_") then
+                picker_type = name
+              end
+
+              if picker_type then
+                local history_file = get_history_path(picker_type)
+                process_history_file(history_file)
+              end
+            end, 100) -- Small delay to ensure fzf has written to the file
+
+            return result
           end
         end
       end
