@@ -61,29 +61,82 @@ return {
     config = function(_, opts)
       require("oil").setup(opts)
 
-      -- Create custom :Cd command that changes directory and opens oil
-      vim.api.nvim_create_user_command("Cd", function(cmd_opts)
-        local path = cmd_opts.args
-        if path == "" then
-          path = vim.fn.expand("~")
-        end
+      -- Guard flag to prevent recursion between DirChanged and BufEnter
+      local changing_dir = false
 
-        -- Expand path (handle ~, ., .., etc.)
-        path = vim.fn.fnamemodify(path, ":p")
+      -- Automatically update Oil view when directory changes via :cd
+      vim.api.nvim_create_autocmd("DirChanged", {
+        pattern = "*",
+        callback = function()
+          if changing_dir then
+            return
+          end
 
-        -- Change directory
-        vim.cmd("cd " .. vim.fn.fnameescape(path))
-
-        -- Open oil in the new directory
-        require("oil").open(path)
-      end, {
-        nargs = "?",
-        complete = "dir",
-        desc = "Change directory and open in Oil",
+          -- Check if any buffer is an Oil buffer
+          for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].filetype == "oil" then
+              -- Update Oil to show the new working directory
+              changing_dir = true
+              require("oil").open(vim.fn.getcwd())
+              vim.schedule(function()
+                changing_dir = false
+              end)
+              break
+            end
+          end
+        end,
+        desc = "Update Oil view when directory changes",
       })
 
-      -- Make :cd automatically use our custom Cd command
-      vim.cmd("cabbrev cd Cd")
+      -- Automatically update pwd when switching buffers (autochdir + Oil sync)
+      vim.api.nvim_create_autocmd("BufEnter", {
+        pattern = "*",
+        callback = function(args)
+          if changing_dir then
+            return
+          end
+
+          local bufnr = args.buf
+
+          -- Skip special buffer types
+          local buftype = vim.bo[bufnr].buftype
+          if buftype ~= "" and buftype ~= "acwrite" then
+            return
+          end
+
+          vim.schedule(function()
+            if changing_dir then
+              return
+            end
+
+            local new_dir = nil
+
+            -- Check if this is an Oil buffer
+            if vim.bo[bufnr].filetype == "oil" then
+              new_dir = require("oil").get_current_dir(bufnr)
+            else
+              -- For regular file buffers, get the file's directory
+              local bufname = vim.api.nvim_buf_get_name(bufnr)
+              if bufname ~= "" and vim.fn.filereadable(bufname) == 1 then
+                new_dir = vim.fn.fnamemodify(bufname, ":p:h")
+              end
+            end
+
+            -- Change directory if we have a new directory and it's different from current
+            if new_dir and vim.fn.isdirectory(new_dir) == 1 then
+              local current_dir = vim.fn.getcwd()
+              if new_dir ~= current_dir then
+                changing_dir = true
+                vim.cmd("cd " .. vim.fn.fnameescape(new_dir))
+                vim.schedule(function()
+                  changing_dir = false
+                end)
+              end
+            end
+          end)
+        end,
+        desc = "Auto-change directory to match current buffer (Oil + autochdir)",
+      })
     end,
   },
 
