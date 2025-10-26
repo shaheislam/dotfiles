@@ -1611,12 +1611,19 @@ return {
           -- Recursive function to launch zoxide picker with optional query
           local function launch_zoxide_picker(initial_query)
             require("fzf-lua").zoxide({
-              prompt = "Zoxide (Ctrl-T=fill, Enter=cd)> ",
+              prompt = "Zoxide (Tab=fill, Enter=cd)> ",
               query = initial_query or "",
               -- Custom command that strips home directory for display
               cmd = "zoxide query --list --score | sed 's|" .. home .. "/||g'",
               -- Preview uses shell script to reconstruct full path
               preview = "bash -c 'path=$(echo {2..} | xargs); [[ \"$path\" != /* ]] && path=\"" .. home .. "/$path\"; " .. preview_cmd .. " \"$path\"'",
+              winopts = {
+                -- Override the global on_create to prevent Tab from toggling preview
+                on_create = function()
+                  -- Don't set up the Tab toggle for this picker
+                  -- Tab will be handled by the fzf-lua action below
+                end,
+              },
               actions = {
                 ["default"] = function(selected)
                   if not selected or #selected == 0 then return end
@@ -1642,7 +1649,7 @@ return {
                   -- Open oil in that directory
                   require("oil").open(path)
                 end,
-                ["ctrl-t"] = function(selected)
+                ["tab"] = function(selected)
                   if not selected or #selected == 0 then return end
                   -- Extract the path (displayed value, not reconstructed full path)
                   local line = selected[1]
