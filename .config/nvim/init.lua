@@ -36,7 +36,6 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.editor.leap" },
     -- { import = "lazyvim.plugins.extras.editor.mini-diff" }, -- Disabled: conflicts with gitsigns
     { import = "lazyvim.plugins.extras.editor.mini-files" },
-    { import = "lazyvim.plugins.extras.editor.navic" },
     { import = "lazyvim.plugins.extras.editor.outline" },
     { import = "lazyvim.plugins.extras.editor.refactoring" },
     -- { import = "lazyvim.plugins.extras.ui.alpha" }, -- Removed: conflicts with snacks picker
