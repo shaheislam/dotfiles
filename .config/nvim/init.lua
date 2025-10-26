@@ -40,7 +40,7 @@ require("lazy").setup({
     { import = "lazyvim.plugins.extras.editor.refactoring" },
     -- { import = "lazyvim.plugins.extras.ui.alpha" }, -- Removed: conflicts with snacks picker
     { import = "lazyvim.plugins.extras.ui.mini-indentscope" },
-    { import = "lazyvim.plugins.extras.ui.treesitter-context" },
+    -- { import = "lazyvim.plugins.extras.ui.treesitter-context" }, -- Removed: compatibility issues with fzf-lua
     { import = "lazyvim.plugins.extras.util.dot" },
     { import = "lazyvim.plugins.extras.util.gitui" },
     { import = "lazyvim.plugins.extras.util.mini-hipatterns" },
