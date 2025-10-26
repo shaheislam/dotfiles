@@ -27,7 +27,9 @@ return {
     "jghauser/auto-pandoc.nvim",
     dependencies = { "nvim-lua/plenary.nvim" },
     ft = "markdown",
-    opts = {},
+    config = function()
+      require('auto-pandoc')
+    end,
   },
 
   -- Better Markdown and Org-mode header highlighting
