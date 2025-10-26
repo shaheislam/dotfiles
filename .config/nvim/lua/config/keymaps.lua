@@ -26,6 +26,14 @@ pcall(vim.keymap.del, "n", "<leader>gg")
 pcall(vim.keymap.del, "n", "<leader>gG")
 pcall(vim.keymap.del, "n", "<leader>gL")
 
+-- Open current repository in GitHub
+local function open_github()
+  vim.cmd("!bash " .. vim.fn.expand("$HOME") .. "/dotfiles/scripts/open-github.sh")
+end
+
+vim.keymap.set("n", "<leader>go", open_github, { desc = "Open repo in GitHub", silent = true })
+vim.api.nvim_create_user_command("Ghro", open_github, { desc = "Open current repository in GitHub" })
+
 -- Custom scrolling keymaps
 -- Remap Ctrl-f to scroll up (half-page) instead of full-page down
 vim.keymap.set({'n', 'v'}, '<C-f>', '<C-u>', { desc = "Scroll up (half-page)", silent = true })
