@@ -55,12 +55,12 @@ local function extract_cwd_from_entry(entry)
 end
 
 -- Post-process history file to add CWD prefixes
-local function process_history_file(history_file)
+local function process_history_file(history_file, cwd)
   if vim.fn.filereadable(history_file) == 0 then
     return
   end
 
-  local cwd = vim.fn.getcwd()
+  -- Use passed cwd parameter instead of calling getcwd()
   local lines = {}
   local modified = false
 
@@ -576,9 +576,9 @@ return {
           -- vim.notify("Starting history search with scope: " .. current_scope, vim.log.levels.INFO)
 
           -- Function to get history based on scope
-          local function get_history_for_scope(scope)
-            local current_cwd = vim.fn.getcwd()
-            local git_root = vim.fs.find(".git", { path = current_cwd, upward = true })[1]
+          local function get_history_for_scope(scope, cwd)
+            -- Use provided cwd parameter instead of calling getcwd()
+            local git_root = vim.fs.find(".git", { path = cwd, upward = true })[1]
             if git_root then
               git_root = vim.fn.fnamemodify(git_root, ":h")
             end
@@ -596,14 +596,15 @@ return {
                   local entry_cwd = extract_cwd_from_entry(line)
                   if entry_cwd then
                     -- Only include entries from the exact current directory
-                    if entry_cwd == current_cwd then
+                    if entry_cwd == cwd then
                       -- Extract just the search term for display
                       local search_term = extract_search_from_entry(line)
                       table.insert(history_lines, 1, search_term)
                     end
                   else
-                    -- Backward compatibility: old entries without CWD prefix
-                    -- Only show them if we're in the base directory of the history file
+                    -- Backward compatibility: unprefixed entries in this history file
+                    -- History file path is based on directory, so unprefixed entries belong here
+                    -- This allows new searches to be visible immediately before post-processing
                     table.insert(history_lines, 1, line)
                   end
                 end
@@ -635,13 +636,8 @@ return {
                             table.insert(all_history, search_term)
                           end
                         end
-                      elseif not entry_cwd then
-                        -- Backward compatibility
-                        if not seen[line] then
-                          seen[line] = true
-                          table.insert(all_history, line)
-                        end
                       end
+                      -- Removed backward compatibility code
                     end
                   end
                 end
@@ -691,11 +687,11 @@ return {
           end
 
           -- Function to refresh history display
-          local function refresh_history_display(scope)
+          local function refresh_history_display(scope, cwd)
             current_scope = scope
 
             -- Get history for current scope
-            local history_lines = get_history_for_scope(scope)
+            local history_lines = get_history_for_scope(scope, cwd)
 
             -- Remove duplicates while preserving order (most recent occurrence)
             local seen = {}
@@ -716,7 +712,7 @@ return {
           end
 
           -- Get initial history
-          local unique_history = refresh_history_display("local")
+          local unique_history = refresh_history_display("local", current_cwd)
           if not unique_history then
             unique_history = { "[No local history found for " .. picker_type .. "]" }
           end
@@ -730,8 +726,8 @@ return {
           last_history_opts = opts
 
           -- Helper function to launch history with a specific scope
-          local function launch_history_with_scope(scope)
-            local history = refresh_history_display(scope)
+          local function launch_history_with_scope(scope, cwd)
+            local history = refresh_history_display(scope, cwd)
             if history then
               require('fzf-lua').fzf_exec(history, {
                 prompt = "Search History (" .. picker_type .. " - " .. scope .. ")> ",
@@ -751,13 +747,13 @@ return {
                     -- Re-launch the original picker with the selected query
                     vim.schedule(function()
                       if picker_type == "files" then
-                        require('fzf-lua').files({ query = query, cwd = current_cwd })
+                        require('fzf-lua').files({ query = query, cwd = cwd })
                       elseif picker_type == "grep" then
-                        require('fzf-lua').live_grep({ query = query, cwd = current_cwd })
+                        require('fzf-lua').live_grep({ query = query, cwd = cwd })
                       elseif picker_type == "buffers" then
                         require('fzf-lua').buffers({ query = query })
                       elseif picker_type == "oldfiles" then
-                        require('fzf-lua').oldfiles({ query = query, cwd = current_cwd })
+                        require('fzf-lua').oldfiles({ query = query, cwd = cwd })
                       elseif picker_type == "git_files" then
                         require('fzf-lua').git_files({ query = query })
                       elseif picker_type == "git_commits" then
@@ -782,26 +778,26 @@ return {
                         require('fzf-lua').lsp_symbols({ query = query })
                       else
                         -- Fallback to files picker
-                        require('fzf-lua').files({ query = query, cwd = current_cwd })
+                        require('fzf-lua').files({ query = query, cwd = cwd })
                       end
                     end)
                   end,
                   ["ctrl-d"] = function()
                     vim.cmd("stopinsert")
                     vim.schedule(function()
-                      launch_history_with_scope("local")
+                      launch_history_with_scope("local", cwd)
                     end)
                   end,
                   ["ctrl-s"] = function()
                     vim.cmd("stopinsert")
                     vim.schedule(function()
-                      launch_history_with_scope("service")
+                      launch_history_with_scope("service", cwd)
                     end)
                   end,
                   ["ctrl-g"] = function()
                     vim.cmd("stopinsert")
                     vim.schedule(function()
-                      launch_history_with_scope("global")
+                      launch_history_with_scope("global", cwd)
                     end)
                   end,
                   ["ctrl-e"] = function(selected)
@@ -818,9 +814,8 @@ return {
                       return
                     end
 
-                    -- Get local history file and current CWD
+                    -- Get local history file (use cwd from closure)
                     local history_file = get_history_path(picker_type)
-                    local current_cwd = vim.fn.getcwd()
 
                     -- Read the file and remove the matching entry
                     local new_lines = {}
@@ -833,7 +828,7 @@ return {
                           -- Keep the line if it's either:
                           -- 1. From a different directory
                           -- 2. Has a different search term
-                          if entry_cwd and entry_cwd ~= current_cwd then
+                          if entry_cwd and entry_cwd ~= cwd then
                             -- Different directory, keep it
                             table.insert(new_lines, line)
                           elseif search_term ~= query_to_remove then
@@ -856,7 +851,7 @@ return {
 
                       -- Re-launch with same scope
                       vim.schedule(function()
-                        launch_history_with_scope(scope)
+                        launch_history_with_scope(scope, cwd)
                       end)
                     else
                       vim.notify("Failed to update history file", vim.log.levels.ERROR)
@@ -876,7 +871,6 @@ return {
                     )
                     if confirm == 1 then
                       local history_file = get_history_path(picker_type)
-                      local current_cwd = vim.fn.getcwd()
 
                       -- Read the file and keep only entries from other directories
                       local new_lines = {}
@@ -885,7 +879,7 @@ return {
                           if line and #line > 0 then
                             local entry_cwd = extract_cwd_from_entry(line)
                             -- Keep entries from other directories
-                            if entry_cwd and entry_cwd ~= current_cwd then
+                            if entry_cwd and entry_cwd ~= cwd then
                               table.insert(new_lines, line)
                             end
                           end
@@ -899,7 +893,7 @@ return {
                           file:write(line .. "\n")
                         end
                         file:close()
-                        vim.notify("Cleared local history for " .. picker_type .. " in " .. vim.fn.fnamemodify(current_cwd, ":~"), vim.log.levels.INFO)
+                        vim.notify("Cleared local history for " .. picker_type .. " in " .. vim.fn.fnamemodify(cwd, ":~"), vim.log.levels.INFO)
                       else
                         vim.notify("Failed to clear history", vim.log.levels.ERROR)
                       end
@@ -915,7 +909,7 @@ return {
           end
 
           -- Launch initial history with current scope
-          launch_history_with_scope(current_scope)
+          launch_history_with_scope(current_scope, current_cwd)
         end
       end
 
@@ -1331,6 +1325,8 @@ return {
           original_fns[name] = fn
           fzf[name] = function(picker_opts, ...)
             original_bufnr = vim.api.nvim_get_current_buf()
+            -- Capture CWD at picker open time (before any directory changes)
+            local picker_cwd = picker_opts and picker_opts.cwd or vim.fn.getcwd()
 
             -- Call the original function
             local result = original_fns[name](picker_opts, ...)
@@ -1355,7 +1351,7 @@ return {
 
               if picker_type then
                 local history_file = get_history_path(picker_type)
-                process_history_file(history_file)
+                process_history_file(history_file, picker_cwd)
               end
             end, 100) -- Small delay to ensure fzf has written to the file
 
