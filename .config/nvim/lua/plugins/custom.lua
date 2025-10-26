@@ -58,6 +58,42 @@ return {
       -- Override any existing <leader>e mappings immediately
       vim.keymap.set("n", "<leader>e", "<cmd>Oil<cr>", { desc = "Open File Browser", silent = true })
     end,
+    config = function(_, opts)
+      require("oil").setup(opts)
+
+      -- Create custom :Cd command that changes directory and opens oil
+      vim.api.nvim_create_user_command("Cd", function(cmd_opts)
+        local path = cmd_opts.args
+        if path == "" then
+          path = vim.fn.expand("~")
+        end
+
+        -- Expand path (handle ~, ., .., etc.)
+        path = vim.fn.fnamemodify(path, ":p")
+
+        -- Change directory
+        vim.cmd("cd " .. vim.fn.fnameescape(path))
+
+        -- Open oil in the new directory
+        require("oil").open(path)
+      end, {
+        nargs = "?",
+        complete = "dir",
+        desc = "Change directory and open in Oil",
+      })
+
+      -- Optional: Also create autocmd to update oil on DirChanged
+      -- Uncomment if you want oil to automatically update when directory changes
+      -- vim.api.nvim_create_autocmd("DirChanged", {
+      --   pattern = "*",
+      --   callback = function()
+      --     if vim.bo.filetype == "oil" then
+      --       require("oil").open(vim.fn.getcwd())
+      --     end
+      --   end,
+      --   desc = "Update Oil view when directory changes",
+      -- })
+    end,
   },
 
 
