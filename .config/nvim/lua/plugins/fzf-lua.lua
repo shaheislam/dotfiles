@@ -9,7 +9,7 @@ local history_index = 0
 -- ===== Helper functions for directory-specific history =====
 
 -- Get history file path for current directory and picker type
-local function get_history_path(picker_type)
+local function get_history_path(picker_type, cwd)
   -- Create history directory if it doesn't exist
   local history_dir = vim.fn.stdpath("data") .. "/fzf-lua-history"
   -- Use vim.loop (uv) for more reliable directory creation
@@ -19,8 +19,8 @@ local function get_history_path(picker_type)
     vim.fn.system("mkdir -p " .. vim.fn.shellescape(history_dir))
   end
 
-  -- Get current working directory and convert to safe filename
-  local cwd = vim.fn.getcwd()
+  -- Use provided cwd parameter or fall back to current directory
+  cwd = cwd or vim.fn.getcwd()
   -- Replace path separators with double underscores for readability
   local safe_cwd = cwd:gsub("/", "__"):gsub("^__", ""):gsub(":", "")
 
@@ -597,7 +597,7 @@ return {
 
             if scope == "local" then
               -- Current directory only - filter to exact CWD matches
-              local history_file = get_history_path(picker_type)
+              local history_file = get_history_path(picker_type, cwd)
               if vim.fn.filereadable(history_file) == 0 then
                 return {}
               end
@@ -1370,7 +1370,7 @@ return {
               end
 
               if picker_type then
-                local history_file = get_history_path(picker_type)
+                local history_file = get_history_path(picker_type, picker_cwd)
                 process_history_file(history_file, picker_cwd)
               end
             end, 100) -- Small delay to ensure fzf has written to the file
