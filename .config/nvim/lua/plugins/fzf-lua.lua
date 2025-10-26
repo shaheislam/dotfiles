@@ -920,8 +920,8 @@ return {
             ["alt-o"] = select_directory(),
             -- Advanced grep controls
             ["ctrl-g"] = { actions.grep_lgrep },
-            ["ctrl-q"] = search_history_action(),  -- Search history (moved from ctrl-r)
-            ["ctrl-r"] = { actions.toggle_ignore },
+            ["ctrl-r"] = search_history_action(),  -- Search history
+            ["ctrl-t"] = { actions.toggle_ignore },
             ["ctrl-h"] = { actions.toggle_hidden },
           },
           -- Enable interactive ripgrep mode
