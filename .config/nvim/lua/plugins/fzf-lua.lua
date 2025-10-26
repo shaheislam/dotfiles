@@ -1411,7 +1411,7 @@ return {
           fzf[name] = function(picker_opts, ...)
             original_bufnr = vim.api.nvim_get_current_buf()
             -- Capture CWD at picker open time (before any directory changes)
-            local picker_cwd = picker_opts and picker_opts.cwd or vim.fn.getcwd()
+            local picker_cwd = (type(picker_opts) == "table" and picker_opts.cwd) or vim.fn.getcwd()
 
             -- Call the original function
             local result = original_fns[name](picker_opts, ...)
