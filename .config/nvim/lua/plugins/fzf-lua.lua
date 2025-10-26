@@ -222,8 +222,10 @@ return {
                 cwd = new_cwd,
                 query = query,
                 prompt = "Live Grep (" .. scope_name .. ")> ",
+                winopts = {
+                  title = " 📁 " .. cwd_full .. " ",
+                },
                 fzf_opts = {
-                  ["--header"] = "📁 " .. cwd_full,
                   ["--history"] = get_history_path("grep", new_cwd),
                 }
               })
@@ -278,8 +280,10 @@ return {
                 cwd = entry.cwd,
                 query = query,
                 prompt = "Live Grep (" .. entry.scope_name .. ")> ",
+                winopts = {
+                  title = " 📁 " .. cwd_full .. " ",
+                },
                 fzf_opts = {
-                  ["--header"] = "📁 " .. cwd_full,
                   ["--history"] = get_history_path("grep", entry.cwd),
                 }
               })
@@ -342,7 +346,12 @@ return {
                     cwd = abs_dir,
                     query = original_query,
                     prompt = "Live Grep> ",
-                    fzf_opts = { ["--header"] = cwd_full }
+                    winopts = {
+                      title = " 📁 " .. cwd_full .. " ",
+                    },
+                    fzf_opts = {
+                      ["--history"] = get_history_path("grep", abs_dir),
+                    }
                   })
                 else
                   fzf_lua.files({
@@ -812,10 +821,20 @@ return {
 
                     -- Re-launch the original picker with the selected query
                     vim.schedule(function()
+                      local cwd_full = vim.fn.fnamemodify(scope_cwd, ":~")
                       if picker_type == "files" then
                         require('fzf-lua').files({ query = query, cwd = scope_cwd })
                       elseif picker_type == "grep" then
-                        require('fzf-lua').live_grep({ query = query, cwd = scope_cwd })
+                        require('fzf-lua').live_grep({
+                          query = query,
+                          cwd = scope_cwd,
+                          winopts = {
+                            title = " 📁 " .. cwd_full .. " ",
+                          },
+                          fzf_opts = {
+                            ["--history"] = get_history_path("grep", scope_cwd),
+                          }
+                        })
                       elseif picker_type == "buffers" then
                         require('fzf-lua').buffers({ query = query })
                       elseif picker_type == "oldfiles" then
@@ -1476,8 +1495,10 @@ return {
         local cwd_full = vim.fn.fnamemodify(cwd, ":~")
         require("fzf-lua").live_grep({
           prompt = "Live Grep (" .. current_scope .. ")> ",
+          winopts = {
+            title = " 📁 " .. cwd_full .. " ",
+          },
           fzf_opts = {
-            ["--header"] = "📁 " .. cwd_full,
             ["--history"] = get_history_path("grep", cwd),
           },
           resume = false  -- Force fresh session with current directory
