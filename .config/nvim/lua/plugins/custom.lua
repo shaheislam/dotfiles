@@ -104,6 +104,19 @@ return {
             return
           end
 
+          -- CRITICAL: Display buffer FIRST (synchronously) before directory change
+          -- This ensures the buffer is shown immediately when opened
+          local current_win_buf = vim.api.nvim_win_get_buf(0)
+          if current_win_buf ~= bufnr then
+            -- Only switch if this is a regular file buffer (not Oil or other special buffers)
+            local filetype = vim.bo[bufnr].filetype
+            if filetype ~= "oil" and vim.bo[bufnr].buftype == "" then
+              -- Switch to the buffer in the current window
+              vim.api.nvim_set_current_buf(bufnr)
+            end
+          end
+
+          -- THEN change directory (asynchronously) to avoid blocking
           vim.schedule(function()
             if changing_dir then
               return

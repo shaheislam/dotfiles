@@ -137,7 +137,7 @@ return {
             -- Normalize the path (resolve .., ., etc.)
             filepath = vim.fn.fnamemodify(filepath, ":p")
 
-            -- Open the file
+            -- Open the file (BufEnter autocmd will handle buffer display)
             local cmd = "edit"
             if file.line and file.line > 0 then
               cmd = cmd .. " +" .. file.line
