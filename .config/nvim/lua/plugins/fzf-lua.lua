@@ -60,7 +60,9 @@ local function process_history_file(history_file, cwd)
     return
   end
 
-  -- Use passed cwd parameter instead of calling getcwd()
+  -- Normalize CWD: remove trailing slashes for consistent comparison
+  local normalized_cwd = cwd:gsub("/+$", "")
+
   local lines = {}
   local modified = false
 
@@ -69,11 +71,21 @@ local function process_history_file(history_file, cwd)
     if line and #line > 0 then
       -- Check if line already has CWD prefix
       if not line:match("^/[^|]+|") then
-        -- Add CWD prefix
-        table.insert(lines, cwd .. "|" .. line)
+        -- Add normalized CWD prefix
+        table.insert(lines, normalized_cwd .. "|" .. line)
         modified = true
       else
-        table.insert(lines, line)
+        -- Normalize existing prefixed entries too
+        local entry_cwd, search = line:match("^([^|]+)|(.+)$")
+        if entry_cwd and search then
+          local normalized_entry_cwd = entry_cwd:gsub("/+$", "")
+          table.insert(lines, normalized_entry_cwd .. "|" .. search)
+          if normalized_entry_cwd ~= entry_cwd then
+            modified = true
+          end
+        else
+          table.insert(lines, line)
+        end
       end
     end
   end
@@ -590,23 +602,25 @@ return {
                 return {}
               end
 
+              -- Normalize CWD for consistent comparison
+              local normalized_cwd = cwd:gsub("/+$", "")
+
               local history_lines = {}
               for line in io.lines(history_file) do
                 if line and #line > 2 then
                   local entry_cwd = extract_cwd_from_entry(line)
                   if entry_cwd then
-                    -- Only include entries from the exact current directory
-                    if entry_cwd == cwd then
+                    -- Normalize entry CWD and compare
+                    local normalized_entry_cwd = entry_cwd:gsub("/+$", "")
+                    if normalized_entry_cwd == normalized_cwd then
                       -- Extract just the search term for display
                       local search_term = extract_search_from_entry(line)
                       table.insert(history_lines, 1, search_term)
                     end
-                  else
-                    -- Backward compatibility: unprefixed entries in this history file
-                    -- History file path is based on directory, so unprefixed entries belong here
-                    -- This allows new searches to be visible immediately before post-processing
-                    table.insert(history_lines, 1, line)
                   end
+                  -- Don't show unprefixed entries in local scope
+                  -- We can't determine which directory they belong to
+                  -- They'll get prefixes within 100ms and then appear correctly
                 end
               end
               return history_lines
