@@ -335,146 +335,149 @@ return {
       wk.setup(opts)
 
       -- Nix-specific keymaps
-      wk.register({
-        ["<leader>n"] = {
-          name = "+nix",
-          d = {
-            function()
-              vim.cmd("!nix develop")
-            end,
-            "Enter Nix develop shell",
-          },
-          u = {
-            function()
-              vim.cmd("!nix flake update")
-            end,
-            "Update flake.lock",
-          },
-          s = {
-            function()
-              -- Show current LSP information
-              local clients = vim.lsp.get_active_clients()
-              if #clients == 0 then
-                vim.notify("No active LSP clients", vim.log.levels.INFO)
-                return
-              end
+      wk.add({
+        { "<leader>n", group = "nix" },
+        {
+          "<leader>nd",
+          function()
+            vim.cmd("!nix develop")
+          end,
+          desc = "Enter Nix develop shell",
+        },
+        {
+          "<leader>nu",
+          function()
+            vim.cmd("!nix flake update")
+          end,
+          desc = "Update flake.lock",
+        },
+        {
+          "<leader>ns",
+          function()
+            -- Show current LSP information
+            local clients = vim.lsp.get_active_clients()
+            if #clients == 0 then
+              vim.notify("No active LSP clients", vim.log.levels.INFO)
+              return
+            end
 
-              local msg = "Active LSP Servers:\n"
-              for _, client in ipairs(clients) do
-                msg = msg .. "• " .. client.name
+            local msg = "Active LSP Servers:\n"
+            for _, client in ipairs(clients) do
+              msg = msg .. "• " .. client.name
 
-                -- Try to show if it's from Nix or Mason
-                if client.config and client.config.cmd and client.config.cmd[1] then
-                  local cmd = client.config.cmd[1]
-                  if cmd:match("/nix/store/") then
-                    msg = msg .. " (Nix)"
-                  elseif cmd:match("/mason/") then
-                    msg = msg .. " (Mason)"
-                  else
-                    msg = msg .. " (System)"
-                  end
-                end
-                msg = msg .. "\n"
-              end
-
-              vim.notify(msg, vim.log.levels.INFO, { title = "LSP Status" })
-            end,
-            "Show LSP status",
-          },
-          l = {
-            function()
-              -- List available LSPs in current environment
-              local lsps = {
-                { cmd = "gopls", name = "Go" },
-                { cmd = "rust-analyzer", name = "Rust" },
-                { cmd = "typescript-language-server", name = "TypeScript" },
-                { cmd = "basedpyright-langserver", name = "Python (Basedpyright)" },
-                { cmd = "pyright-langserver", name = "Python (Pyright)" },
-                { cmd = "terraform-ls", name = "Terraform" },
-                { cmd = "ansible-language-server", name = "Ansible" },
-                { cmd = "helm_ls", name = "Helm" },
-                { cmd = "nil", name = "Nix" },
-                { cmd = "lua-language-server", name = "Lua" },
-              }
-
-              local available = {}
-              local unavailable = {}
-
-              for _, lsp in ipairs(lsps) do
-                if vim.fn.executable(lsp.cmd) == 1 then
-                  table.insert(available, "✓ " .. lsp.name .. " (" .. lsp.cmd .. ")")
+              -- Try to show if it's from Nix or Mason
+              if client.config and client.config.cmd and client.config.cmd[1] then
+                local cmd = client.config.cmd[1]
+                if cmd:match("/nix/store/") then
+                  msg = msg .. " (Nix)"
+                elseif cmd:match("/mason/") then
+                  msg = msg .. " (Mason)"
                 else
-                  table.insert(unavailable, "✗ " .. lsp.name .. " (" .. lsp.cmd .. ")")
+                  msg = msg .. " (System)"
                 end
               end
+              msg = msg .. "\n"
+            end
 
-              local msg = "Available LSPs in current environment:\n\n"
-              if #available > 0 then
-                msg = msg .. table.concat(available, "\n")
+            vim.notify(msg, vim.log.levels.INFO, { title = "LSP Status" })
+          end,
+          desc = "Show LSP status",
+        },
+        {
+          "<leader>nl",
+          function()
+            -- List available LSPs in current environment
+            local lsps = {
+              { cmd = "gopls", name = "Go" },
+              { cmd = "rust-analyzer", name = "Rust" },
+              { cmd = "typescript-language-server", name = "TypeScript" },
+              { cmd = "basedpyright-langserver", name = "Python (Basedpyright)" },
+              { cmd = "pyright-langserver", name = "Python (Pyright)" },
+              { cmd = "terraform-ls", name = "Terraform" },
+              { cmd = "ansible-language-server", name = "Ansible" },
+              { cmd = "helm_ls", name = "Helm" },
+              { cmd = "nil", name = "Nix" },
+              { cmd = "lua-language-server", name = "Lua" },
+            }
+
+            local available = {}
+            local unavailable = {}
+
+            for _, lsp in ipairs(lsps) do
+              if vim.fn.executable(lsp.cmd) == 1 then
+                table.insert(available, "✓ " .. lsp.name .. " (" .. lsp.cmd .. ")")
               else
-                msg = msg .. "No LSPs found in current environment"
+                table.insert(unavailable, "✗ " .. lsp.name .. " (" .. lsp.cmd .. ")")
               end
+            end
 
-              if #unavailable > 0 then
-                msg = msg .. "\n\nNot available:\n" .. table.concat(unavailable, "\n")
-              end
+            local msg = "Available LSPs in current environment:\n\n"
+            if #available > 0 then
+              msg = msg .. table.concat(available, "\n")
+            else
+              msg = msg .. "No LSPs found in current environment"
+            end
 
-              vim.notify(msg, vim.log.levels.INFO, { title = "LSP Availability" })
-            end,
-            "List available LSPs",
-          },
-          f = {
-            function()
-              -- List available formatters and their sources
-              local formatters = {
-                { cmd = "stylua", name = "Lua" },
-                { cmd = "black", name = "Python (Black)" },
-                { cmd = "ruff", name = "Python (Ruff)" },
-                { cmd = "prettier", name = "JS/TS/Markdown" },
-                { cmd = "gofumpt", name = "Go (gofumpt)" },
-                { cmd = "goimports", name = "Go (goimports)" },
-                { cmd = "rustfmt", name = "Rust" },
-                { cmd = "nixpkgs-fmt", name = "Nix" },
-                { cmd = "shfmt", name = "Shell" },
-                { cmd = "terraform", name = "Terraform" },
-                { cmd = "taplo", name = "TOML" },
-                { cmd = "sqlfmt", name = "SQL" },
-              }
+            if #unavailable > 0 then
+              msg = msg .. "\n\nNot available:\n" .. table.concat(unavailable, "\n")
+            end
 
-              local available = {}
-              local unavailable = {}
+            vim.notify(msg, vim.log.levels.INFO, { title = "LSP Availability" })
+          end,
+          desc = "List available LSPs",
+        },
+        {
+          "<leader>nf",
+          function()
+            -- List available formatters and their sources
+            local formatters = {
+              { cmd = "stylua", name = "Lua" },
+              { cmd = "black", name = "Python (Black)" },
+              { cmd = "ruff", name = "Python (Ruff)" },
+              { cmd = "prettier", name = "JS/TS/Markdown" },
+              { cmd = "gofumpt", name = "Go (gofumpt)" },
+              { cmd = "goimports", name = "Go (goimports)" },
+              { cmd = "rustfmt", name = "Rust" },
+              { cmd = "nixpkgs-fmt", name = "Nix" },
+              { cmd = "shfmt", name = "Shell" },
+              { cmd = "terraform", name = "Terraform" },
+              { cmd = "taplo", name = "TOML" },
+              { cmd = "sqlfmt", name = "SQL" },
+            }
 
-              for _, fmt in ipairs(formatters) do
-                local cmd_path = get_tool_cmd(fmt.cmd, fmt.cmd, "formatter")
-                if cmd_path then
-                  local source = "System"
-                  if cmd_path:match("/nix/store/") then
-                    source = "Nix"
-                  elseif cmd_path:match("/mason/") then
-                    source = "Mason"
-                  end
-                  table.insert(available, string.format("✓ %s (%s) [%s]", fmt.name, fmt.cmd, source))
-                else
-                  table.insert(unavailable, "✗ " .. fmt.name .. " (" .. fmt.cmd .. ")")
+            local available = {}
+            local unavailable = {}
+
+            for _, fmt in ipairs(formatters) do
+              local cmd_path = get_tool_cmd(fmt.cmd, fmt.cmd, "formatter")
+              if cmd_path then
+                local source = "System"
+                if cmd_path:match("/nix/store/") then
+                  source = "Nix"
+                elseif cmd_path:match("/mason/") then
+                  source = "Mason"
                 end
-              end
-
-              local msg = "Available Formatters:\n\n"
-              if #available > 0 then
-                msg = msg .. table.concat(available, "\n")
+                table.insert(available, string.format("✓ %s (%s) [%s]", fmt.name, fmt.cmd, source))
               else
-                msg = msg .. "No formatters found in current environment"
+                table.insert(unavailable, "✗ " .. fmt.name .. " (" .. fmt.cmd .. ")")
               end
+            end
 
-              if #unavailable > 0 then
-                msg = msg .. "\n\nNot available:\n" .. table.concat(unavailable, "\n")
-                msg = msg .. "\n\nNote: Uncomment formatters in your Nix config to enable them"
-              end
+            local msg = "Available Formatters:\n\n"
+            if #available > 0 then
+              msg = msg .. table.concat(available, "\n")
+            else
+              msg = msg .. "No formatters found in current environment"
+            end
 
-              vim.notify(msg, vim.log.levels.INFO, { title = "Formatter Availability" })
-            end,
-            "List available formatters",
-          },
+            if #unavailable > 0 then
+              msg = msg .. "\n\nNot available:\n" .. table.concat(unavailable, "\n")
+              msg = msg .. "\n\nNote: Uncomment formatters in your Nix config to enable them"
+            end
+
+            vim.notify(msg, vim.log.levels.INFO, { title = "Formatter Availability" })
+          end,
+          desc = "List available formatters",
         },
       })
     end,
