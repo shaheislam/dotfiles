@@ -82,17 +82,8 @@ return {
         desc = "Change directory and open in Oil",
       })
 
-      -- Optional: Also create autocmd to update oil on DirChanged
-      -- Uncomment if you want oil to automatically update when directory changes
-      -- vim.api.nvim_create_autocmd("DirChanged", {
-      --   pattern = "*",
-      --   callback = function()
-      --     if vim.bo.filetype == "oil" then
-      --       require("oil").open(vim.fn.getcwd())
-      --     end
-      --   end,
-      --   desc = "Update Oil view when directory changes",
-      -- })
+      -- Make :cd automatically use our custom Cd command
+      vim.cmd("cabbrev cd Cd")
     end,
   },
 
