@@ -1,7 +1,7 @@
 -- ~/.config/nvim/lua/config/options.lua
 
--- Set Snacks as the default picker for LazyVim
-vim.g.lazyvim_picker = "snacks"
+-- Set fzf-lua as the default picker for LazyVim
+vim.g.lazyvim_picker = "fzf-lua"
 
 -- DISABLE auto-formatting globally (both conform.nvim and LSP)
 -- Toggle with <leader>uF to re-enable

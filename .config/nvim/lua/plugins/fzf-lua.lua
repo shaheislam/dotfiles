@@ -1535,19 +1535,8 @@ return {
       -- Apply configuration
       fzf.setup(opts)
 
-      -- Register as LazyVim picker
-      if LazyVim and LazyVim.pick then
-        LazyVim.pick.register({
-          name = "fzf-lua",
-          commands = {
-            files = "files",
-            live_grep = "live_grep",
-            buffers = "buffers",
-            oldfiles = "oldfiles",
-            git_files = "git_files",
-          },
-        })
-      end
+      -- Don't register with LazyVim.pick to avoid conflicts
+      -- We use direct fzf-lua commands via keybindings instead
     end,
 
     keys = {

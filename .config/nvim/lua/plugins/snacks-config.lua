@@ -15,4 +15,8 @@ return {
       enabled = false,
     },
   },
+  init = function()
+    -- Silence the picker warning by overriding LazyVim.pick.want before LazyVim checks it
+    vim.g.lazyvim_picker = "fzf-lua"
+  end,
 }
