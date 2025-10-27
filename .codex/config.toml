@@ -1,2 +1,5 @@
 [projects."/Users/shahe/dotfiles"]
 trust_level = "trusted"
+
+[projects."/Users/shaheislam/dotfiles"]
+trust_level = "trusted"

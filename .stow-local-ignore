@@ -10,3 +10,6 @@ LICENSE
 scripts/
 homebrew/
 CLAUDE\.md
+
+# Nix home-manager (managed by Nix, not stow)
+\.config/home-manager
