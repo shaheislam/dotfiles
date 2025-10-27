@@ -419,11 +419,15 @@ return {
     },
     -- Routes to handle specific message types
     routes = {
-      -- Skip presence.nvim notifications
+      -- Skip presence.nvim notifications (all events)
       {
         filter = {
-          event = "notify",
-          find = "%[presence%.nvim%]",
+          any = {
+            { event = "notify", find = "%[presence%.nvim%]" },
+            { event = "msg_show", find = "%[presence%.nvim%]" },
+            { find = "presence%.nvim" },
+            { find = "Activity already set" },
+          },
         },
         opts = { skip = true },
       },

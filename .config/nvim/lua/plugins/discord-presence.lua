@@ -37,9 +37,9 @@ return {
         -- Client configuration
         client_id = "793271441293967371", -- Default Discord Application ID
 
-        -- Logging (enabled for troubleshooting)
-        log_level = "debug", -- See :messages for debug output
-        debounce_timeout = 10, -- Seconds to debounce events (avoid spamming Discord API)
+        -- Logging (disabled to reduce noise)
+        log_level = nil, -- Disable all logging
+        debounce_timeout = 30, -- Seconds to debounce events (avoid spamming Discord API)
       })
     end,
     keys = {
