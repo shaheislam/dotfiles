@@ -2,7 +2,7 @@
 
 # Get the current path from tmux or use PWD
 if command -v tmux &> /dev/null && tmux info &> /dev/null 2>&1; then
-    target_path=$(tmux run "echo #{pane_start_path}")
+    target_path=$(tmux display-message -p "#{pane_current_path}")
 else
     target_path="$PWD"
 fi
