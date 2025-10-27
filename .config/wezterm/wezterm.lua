@@ -143,6 +143,20 @@ config.keys = {
     mods = 'CMD',
     action = wezterm.action.ActivatePaneDirection 'Down',
   },
+  -- Open Claude in new tab (aligned with tmux: Ctrl-s a)
+  {
+    key = 'a',
+    mods = 'CMD',
+    action = wezterm.action.SpawnCommandInNewTab {
+      args = { '/opt/homebrew/bin/fish', '-c', 'claude' },
+    },
+  },
+  -- Open Neovim in current directory (aligned with tmux: Ctrl-s e)
+  {
+    key = 'e',
+    mods = 'CMD',
+    action = wezterm.action.SendString('nvim .\n'),
+  },
 }
 
 -- Mouse bindings (omerxx style - Ctrl+Click to open links)
