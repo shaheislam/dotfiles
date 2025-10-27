@@ -419,6 +419,14 @@ return {
     },
     -- Routes to handle specific message types
     routes = {
+      -- Skip presence.nvim notifications
+      {
+        filter = {
+          event = "notify",
+          find = "%[presence%.nvim%]",
+        },
+        opts = { skip = true },
+      },
       -- Hide common messages that aren't important (MUST come before general msg_show route)
       {
         filter = {
