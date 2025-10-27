@@ -323,20 +323,6 @@ return {
   --   },
   -- },
 
-  -- ============== SESSION MANAGEMENT ==============
-  
-  -- Better session management for projects
-  {
-    "rmagatti/auto-session",
-    config = function()
-      require("auto-session").setup({
-        log_level = "error",
-        auto_session_suppress_dirs = { "~/", "~/Downloads", "/" },
-        auto_session_use_git_branch = true,
-      })
-    end,
-  },
-
   -- ============== PERFORMANCE MONITORING ==============
   
   -- Startup time analysis

@@ -3,12 +3,6 @@
 -- Extracted from misc.lua for better organization
 
 return {
-  -- Disable persistence.nvim
-  {
-    "folke/persistence.nvim",
-    enabled = false,
-  },
-
   -- Configure nvim-possession for session management
   {
     "gennaro-tedesco/nvim-possession",
