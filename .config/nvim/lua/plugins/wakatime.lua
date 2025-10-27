@@ -34,7 +34,29 @@ return {
       { "<leader>wk", "<cmd>WakaTimeApiKey<cr>", desc = "WakaTime: Set API Key" },
 
       -- View stats (requires API key configured and some coding activity)
-      { "<leader>wd", "<cmd>WakaTimeToday<cr>", desc = "WakaTime: Today's Stats" },
+      {
+        "<leader>wd",
+        function()
+          -- Try the vim command first
+          vim.cmd("WakaTimeToday")
+
+          -- If no output after 1 second, try CLI directly
+          vim.defer_fn(function()
+            local handle = io.popen("wakatime-cli --today 2>&1")
+            if handle then
+              local result = handle:read("*a")
+              handle:close()
+              if result and result ~= "" then
+                -- Show result in a notification
+                vim.notify(result, vim.log.levels.INFO, { title = "WakaTime Today" })
+              else
+                vim.notify("No data yet. Code for a few minutes and try again.", vim.log.levels.WARN)
+              end
+            end
+          end, 1000)
+        end,
+        desc = "WakaTime: Today's Stats",
+      },
 
       -- Open dashboard in browser
       {
