@@ -449,13 +449,14 @@ return {
 						},
 						on_open = function(term)
 							vim.cmd("startinsert!")
-							vim.api.nvim_buf_set_keymap(
-								term.bufnr,
-								"n",
-								"q",
-								"<cmd>close<CR>",
-								{ noremap = true, silent = true }
-							)
+							-- Validate buffer exists before setting keymap
+							if vim.api.nvim_buf_is_valid(term.bufnr) then
+								vim.keymap.set("n", "q", "<cmd>close<CR>", {
+									buffer = term.bufnr,
+									noremap = true,
+									silent = true,
+								})
+							end
 						end,
 						on_close = function(term)
 							vim.cmd("startinsert!")
