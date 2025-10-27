@@ -18,4 +18,3 @@ stackoverflow.com/questions/123
 Email-like (should not open):
 test1@example.com
 
-Test by placing cursor on each URL and pressing gx
