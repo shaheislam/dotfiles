@@ -1022,6 +1022,123 @@ else
   echo "Warning: Python 3 not found. Skipping pynvim installation."
 fi
 
+# Setup Pulse (Coding Activity Tracker)
+echo "=== Setting up Pulse (Coding Activity Tracker) ==="
+
+# Start Redis service (required for Pulse)
+log_info "Starting Redis service..."
+if command -v brew &> /dev/null; then
+  brew services start redis 2>/dev/null || log_warning "Redis service may already be running"
+  log_success "Redis service started"
+else
+  log_warning "Homebrew not found - cannot start Redis service"
+fi
+
+# Build and install Pulse binaries
+if ! command -v pulse-server &> /dev/null || ! command -v pulse-client &> /dev/null; then
+  log_info "Building Pulse from source..."
+  if command -v go &> /dev/null; then
+    cd /tmp || exit
+    if [ -d "pulse" ]; then
+      rm -rf pulse
+    fi
+
+    if git clone https://github.com/viccon/pulse.git; then
+      cd pulse || exit
+      if go build -o pulse-server ./cmd/server && go build -o pulse-client ./cmd/client; then
+        mkdir -p ~/bin
+        cp pulse-server ~/bin/
+        cp pulse-client ~/bin/
+        chmod +x ~/bin/pulse-server ~/bin/pulse-client
+        log_success "Pulse binaries installed to ~/bin/"
+      else
+        log_error "Failed to build Pulse binaries"
+      fi
+      cd ~ || exit
+      rm -rf /tmp/pulse
+    else
+      log_error "Failed to clone Pulse repository"
+    fi
+  else
+    log_error "Go not installed - cannot build Pulse. Install with: brew install go"
+  fi
+else
+  log_success "Pulse binaries already installed"
+fi
+
+# Create Pulse configuration
+log_info "Configuring Pulse..."
+mkdir -p ~/.pulse/logs ~/.pulse/data
+
+if [ ! -f ~/.pulse/config.yaml ]; then
+  cat > ~/.pulse/config.yaml << 'EOF'
+server:
+  name: "pulse-server"
+  hostname: "localhost"
+  port: "1122"
+  aggregationInterval: "15m"
+  segmentationInterval: "5m"
+  segmentSizeKB: "10"
+database:
+  address: "localhost:6379"
+  password: ""
+EOF
+  log_success "Pulse configuration created at ~/.pulse/config.yaml"
+else
+  log_success "Pulse configuration already exists"
+fi
+
+# Setup Pulse launch daemon (auto-start on login)
+log_info "Setting up Pulse launch daemon..."
+PULSE_PLIST=~/Library/LaunchAgents/dev.shaheislam.pulse.plist
+
+if [ ! -f "$PULSE_PLIST" ]; then
+  mkdir -p ~/Library/LaunchAgents
+  cat > "$PULSE_PLIST" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>dev.shaheislam.pulse</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/Users/shaheislam/.pulse/logs/stderr.log</string>
+    <key>StandardOutPath</key>
+    <string>/Users/shaheislam/.pulse/logs/stdout.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string><![CDATA[/Users/shaheislam/bin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/opt/homebrew/sbin]]></string>
+    </dict>
+    <key>WorkingDirectory</key>
+    <string>/Users/shaheislam</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/shaheislam/bin/pulse-server</string>
+    </array>
+    <key>KeepAlive</key>
+    <true/>
+  </dict>
+</plist>
+EOF
+
+  # Load the daemon
+  if command -v pulse-server &> /dev/null; then
+    launchctl load "$PULSE_PLIST" 2>/dev/null && log_success "Pulse daemon configured and started" || log_warning "Pulse daemon configured but not started - may need manual start"
+  else
+    log_warning "Pulse daemon configured but server binary not found - will start after installation"
+  fi
+else
+  log_success "Pulse daemon already configured"
+fi
+
+log_success "Pulse setup complete!"
+log_info "View Pulse logs: tail -f ~/.pulse/logs/stdout.log"
+log_info "Query data: redis-cli KEYS \"*\""
+log_info "Server status: launchctl list | grep pulse"
+
 # Run p10k configuration if it doesn't exist
 if [ ! -f "$HOME/.p10k.zsh" ]; then
   echo "=== Setting up Powerlevel10k ==="

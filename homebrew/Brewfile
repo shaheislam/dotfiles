@@ -85,7 +85,7 @@ brew "tealdeer"
 brew "glow"
 brew "jq"
 brew "yq"
-brew "wakatime-cli"  # Required for :WakaTimeToday command in Neovim
+brew "redis"  # Required for Pulse coding activity tracking
 brew "graphviz"  # Required for aws-diagram-mcp-server
 brew "w3m"       # For tmpmail HTML email rendering
 brew "curl"      # For tmpmail API calls
