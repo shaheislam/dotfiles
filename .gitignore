@@ -42,6 +42,9 @@ jobapps/output/
 # .claude/*.md           - Documentation files
 # .claude/settings.json  - Main settings
 
+# Neovim config (managed in separate repo at ~/neovim)
+.config/nvim
+
 # macOS
 .DS_Store
 
