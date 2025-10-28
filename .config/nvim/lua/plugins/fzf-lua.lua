@@ -1094,6 +1094,8 @@ return {
           -- Enable history for all pickers with PWD-based storage
           -- ctrl-p/ctrl-n will automatically work for history navigation
           ["--history"] = get_history_path("default"),
+          -- Enable multi-selection with Tab/Shift-Tab
+          ["--multi"] = true,
         },
 
         -- Global keymaps for fzf
@@ -1125,7 +1127,7 @@ return {
             local win = require("fzf-lua.win")
 
             -- In terminal mode (fzf search buffer)
-            vim.keymap.set("t", "<Tab>", function()
+            vim.keymap.set("t", "<C-t>", function()
               local self = win.__SELF()
               if self and self.preview_winid and vim.api.nvim_win_is_valid(self.preview_winid) then
                 vim.cmd("stopinsert")  -- Exit insert mode in terminal
@@ -1145,8 +1147,8 @@ return {
                 if self.preview_winid and current_win == self.preview_winid then
                   local preview_buf = vim.api.nvim_win_get_buf(current_win)
 
-                  -- Tab: Switch back to search
-                  vim.keymap.set("n", "<Tab>", function()
+                  -- Ctrl-t: Switch back to search
+                  vim.keymap.set("n", "<C-t>", function()
                     if self.fzf_winid and vim.api.nvim_win_is_valid(self.fzf_winid) then
                       vim.api.nvim_set_current_win(self.fzf_winid)  -- Switch directly to search
                       vim.cmd("startinsert")  -- Re-enter insert mode in terminal
