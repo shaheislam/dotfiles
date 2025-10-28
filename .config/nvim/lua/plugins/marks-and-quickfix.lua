@@ -299,13 +299,8 @@ return {
       auto_enable = true,
       auto_resize_height = false, -- Don't auto-resize
       preview = {
-        auto_preview = true, -- Enable automatic preview with syntax highlighting
-        border = "rounded",
-        show_title = true,
-        delay_syntax = 80, -- Delay before enabling syntax highlighting
-        win_height = 12, -- Preview window height
-        win_vheight = 12,
-        wrap = false,
+        auto_preview = false, -- Disable the middle preview window
+        should_preview_cb = function() return false end, -- Never show preview
       },
       filter = {
         fzf = {
