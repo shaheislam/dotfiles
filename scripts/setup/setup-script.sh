@@ -1402,6 +1402,39 @@ else
   log_info "Obsidian vault already exists at ~/obsidian"
 fi
 
+# Clone neovim configuration repository
+if [ ! -d "$HOME/neovim" ]; then
+  echo "Cloning Neovim configuration repository..."
+  if git clone git@github.com:shaheislam/neovim.git "$HOME/neovim"; then
+    log_success "Neovim repository cloned successfully"
+
+    # Create symlink from dotfiles to neovim repo
+    if [ -d "$HOME/dotfiles/.config/nvim" ] && [ ! -L "$HOME/dotfiles/.config/nvim" ]; then
+      echo "Removing existing nvim directory to create symlink..."
+      rm -rf "$HOME/dotfiles/.config/nvim"
+    fi
+    ln -sf "../../neovim" "$HOME/dotfiles/.config/nvim"
+    log_success "Symlink created from ~/dotfiles/.config/nvim to ~/neovim"
+  else
+    log_warning "Failed to clone neovim repository - you may need to set up SSH keys first"
+    log_info "You can manually clone it later with: git clone git@github.com:shaheislam/neovim.git ~/neovim"
+  fi
+else
+  log_info "Neovim repository already exists at ~/neovim"
+
+  # Ensure symlink exists even if repo was already cloned
+  if [ ! -L "$HOME/dotfiles/.config/nvim" ]; then
+    if [ -d "$HOME/dotfiles/.config/nvim" ]; then
+      echo "Removing existing nvim directory to create symlink..."
+      rm -rf "$HOME/dotfiles/.config/nvim"
+    fi
+    ln -sf "../../neovim" "$HOME/dotfiles/.config/nvim"
+    log_success "Symlink created from ~/dotfiles/.config/nvim to ~/neovim"
+  else
+    log_info "Neovim symlink already exists"
+  fi
+fi
+
 # Setup SSH config
 echo "=== Setting up SSH configuration ==="
 if [ -f "$HOME/dotfiles/.ssh/config" ] && [ ! -L "$HOME/.ssh/config" ]; then

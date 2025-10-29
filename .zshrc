@@ -33,15 +33,7 @@ export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 
-# Add VSCode bin to PATH
-if [ -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" ]; then
-  export PATH="$PATH:/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-fi
-
-# Add Cursor bin to PATH
-if [ -d "/Applications/Cursor.app/Contents/Resources/app/bin" ]; then
-  export PATH="$PATH:/Applications/Cursor.app/Contents/Resources/app/bin"
-fi
+# VSCode and Cursor PATH entries removed
 
 # Initialize tools
 eval "$(zoxide init zsh)"
@@ -97,27 +89,7 @@ if command -v thefuck > /dev/null 2>&1; then
   eval $(thefuck --alias)
 fi
 
-# VSCode function
-code() {
-  if command -v code &> /dev/null; then
-    command code "$@"
-  elif [ -d "/Applications/Visual Studio Code.app" ]; then
-    open -a "Visual Studio Code" "$@"
-  else
-    echo "VSCode is not installed or not found in the expected location."
-  fi
-}
-
-# Cursor function
-cursor() {
-  if command -v cursor &> /dev/null; then
-    command cursor "$@"
-  elif [ -d "/Applications/Cursor.app" ]; then
-    open -a "Cursor" "$@"
-  else
-    echo "Cursor is not installed or not found in the expected location."
-  fi
-}
+# VSCode and Cursor functions removed
 
 # AWS SSO function
 function aws-sso() {
