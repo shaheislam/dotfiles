@@ -172,6 +172,16 @@
         "@turbot/steampipe-mcp",
         "postgresql://steampipe@localhost:9193/steampipe"
       ]
+    },
+    "genai-toolbox": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@googlegenai/genai-toolbox"
+      ],
+      "env": {
+        "DATABASE_URL": "sqlite:///Users/shahe/dotfiles/test-data/test.db"
+      }
     }
   }
 }

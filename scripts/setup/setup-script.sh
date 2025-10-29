@@ -700,7 +700,7 @@ if command -v claude &> /dev/null; then
   # Enterprise integration - removed (not needed)
 
   # Additional MCP servers
-  claude mcp add --scope user context7 npx @upstash/context7-mcp || echo "Warning: Failed to add context7 MCP"
+  claude mcp add --scope user context7 bunx @upstash/context7-mcp || echo "Warning: Failed to add context7 MCP"
   claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe || echo "Warning: Failed to add steampipe MCP"
 
   # Airbnb MCP (uses npx per hook exception)
@@ -709,10 +709,14 @@ if command -v claude &> /dev/null; then
   jq '.mcpServers.airbnb = {"type": "stdio", "command": "npx", "args": ["-y", "@openbnb/mcp-server-airbnb", "--ignore-robots-txt"], "env": {}}' ~/.claude.json > /tmp/claude_temp.json && mv /tmp/claude_temp.json ~/.claude.json || echo "Warning: Failed to add airbnb MCP"
 
   # Browser automation (Microsoft Playwright)
-  claude mcp add --scope user playwright npx @playwright/mcp@latest || echo "Warning: Failed to add playwright MCP"
+  claude mcp add --scope user playwright bunx @playwright/mcp@latest || echo "Warning: Failed to add playwright MCP"
 
   # Diagramming tools
   claude mcp add --scope user drawio npx -y drawio-mcp-server || echo "Warning: Failed to add drawio MCP"
+
+  # Database tools (Google GenAI Toolbox)
+  # Note: Requires DATABASE_URL env var to be set for database access
+  claude mcp add --scope user genai-toolbox bunx @googlegenai/genai-toolbox || echo "Warning: Failed to add genai-toolbox MCP"
 
   # AWS MCP servers (require uv to be installed)
   echo "Adding AWS MCP servers to Claude Code..."
