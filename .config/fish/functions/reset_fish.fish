@@ -3,8 +3,8 @@ function reset_fish --description "Reset Fish shell to clean state"
     commandline -r ""
     commandline -f repaint
 
-    # Clear any clipboard issues
-    echo -n "" | pbcopy
+    # Clear any clipboard issues (cross-platform)
+    echo -n "" | clipboard_copy
 
     # Reset key bindings for vi mode
     if test "$fish_key_bindings" = "fish_vi_key_bindings"

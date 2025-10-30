@@ -1,0 +1,124 @@
+name: Validate Dotfiles
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: validate-dotfiles-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  comprehensive-validation:
+    name: Comprehensive Validation (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare environment (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fish zsh tmux curl git
+
+      - name: Prepare environment (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install fish tmux || true
+
+      - name: Run comprehensive validation
+        env:
+          HOME: ${{ github.workspace }}
+        run: |
+          bash scripts/validate-comprehensive.sh | tee validation-${{ matrix.os }}.log
+
+      - name: Upload validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-logs-${{ matrix.os }}
+          path: validation-${{ matrix.os }}.log
+
+  setup-dry-run-linux:
+    name: Setup Dry Run (Linux, ${{ matrix.profile }})
+    strategy:
+      matrix:
+        profile: [minimal, standard, comprehensive]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl bash coreutils
+          echo "Runner sudo available: $(sudo -n true 2>/dev/null && echo yes || echo no)"
+
+      - name: Run setup.sh in safe dry-run
+        env:
+          # Use an isolated HOME so tests read repo configs at $HOME/.config
+          HOME: ${{ runner.temp }}/dotfiles-home
+          # Ensure no network-dependent installs and skip mutating steps
+          FORCE_OFFLINE: "true"
+        run: |
+          mkdir -p "$HOME"
+          # Mirror repo configs into HOME for summary rendering only
+          rsync -a . "$HOME" --exclude '.git' --exclude 'tmux-logs' || true
+          cd "$HOME"
+          # Run with all skip flags to avoid system changes
+          bash scripts/setup.sh \
+            --dry-run \
+            --profile "${{ matrix.profile }}" \
+            --skip-packages \
+            --skip-shells \
+            --skip-dotfiles \
+            --skip-fonts-apps | tee setup-dryrun-${{ matrix.profile }}.log
+
+      - name: Upload setup dry-run logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: setup-dryrun-logs-linux-${{ matrix.profile }}
+          path: ${{ runner.temp }}/dotfiles-home/setup-dryrun-${{ matrix.profile }}.log
+  setup-dry-run-macos:
+    name: Setup Dry Run (macOS, ${{ matrix.profile }})
+    strategy:
+      matrix:
+        profile: [minimal, standard, comprehensive]
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run setup.sh in safe dry-run
+        env:
+          HOME: ${{ runner.temp }}/dotfiles-home
+          FORCE_OFFLINE: "true"
+        run: |
+          mkdir -p "$HOME"
+          rsync -a . "$HOME" --exclude '.git' --exclude 'tmux-logs' || true
+          cd "$HOME"
+          bash scripts/setup.sh \
+            --dry-run \
+            --profile "${{ matrix.profile }}" \
+            --skip-packages \
+            --skip-shells \
+            --skip-dotfiles \
+            --skip-fonts-apps | tee setup-dryrun-macos-${{ matrix.profile }}.log
+
+      - name: Upload setup dry-run logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: setup-dryrun-logs-macos-${{ matrix.profile }}
+          path: ${{ runner.temp }}/dotfiles-home/setup-dryrun-macos-${{ matrix.profile }}.log
+

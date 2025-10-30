@@ -1,0 +1,97 @@
+# Docker Compose - Multi-Distribution Test Matrix
+# Parallel testing across all supported Linux distributions
+
+version: '3.8'
+
+services:
+  # Ubuntu 22.04 LTS - Primary test target
+  test-ubuntu:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/ubuntu.Dockerfile
+    image: dotfiles-test:ubuntu
+    container_name: dotfiles-test-ubuntu
+    command: /home/testuser/dotfiles/scripts/docker/scripts/run-all-tests.sh
+    environment:
+      - TERM=xterm-256color
+      - CI=true
+    networks:
+      - dotfiles-test
+
+  # Debian 12 Bookworm - Stable base
+  test-debian:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/debian.Dockerfile
+    image: dotfiles-test:debian
+    container_name: dotfiles-test-debian
+    command: /home/testuser/dotfiles/scripts/docker/scripts/run-all-tests.sh
+    environment:
+      - TERM=xterm-256color
+      - CI=true
+    networks:
+      - dotfiles-test
+
+  # Fedora 40 - Modern packages
+  test-fedora:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/fedora.Dockerfile
+    image: dotfiles-test:fedora
+    container_name: dotfiles-test-fedora
+    command: /home/testuser/dotfiles/scripts/docker/scripts/run-all-tests.sh
+    environment:
+      - TERM=xterm-256color
+      - CI=true
+    networks:
+      - dotfiles-test
+
+  # Arch Linux - Bleeding edge
+  test-arch:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/arch.Dockerfile
+    image: dotfiles-test:arch
+    container_name: dotfiles-test-arch
+    command: /home/testuser/dotfiles/scripts/docker/scripts/run-all-tests.sh
+    environment:
+      - TERM=xterm-256color
+      - CI=true
+    networks:
+      - dotfiles-test
+
+  # Alpine Linux - Minimal/musl
+  test-alpine:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/alpine.Dockerfile
+    image: dotfiles-test:alpine
+    container_name: dotfiles-test-alpine
+    command: /home/testuser/dotfiles/scripts/docker/scripts/run-all-tests.sh
+    environment:
+      - TERM=xterm-256color
+      - CI=true
+    networks:
+      - dotfiles-test
+
+networks:
+  dotfiles-test:
+    driver: bridge
+
+# Usage:
+#
+# Build all images:
+#   docker-compose -f docker-compose.test.yml build
+#
+# Run tests on all distributions (parallel):
+#   docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+#
+# Run tests on specific distribution:
+#   docker-compose -f docker-compose.test.yml up test-ubuntu
+#
+# Build and test specific distribution:
+#   docker-compose -f docker-compose.test.yml up --build test-debian
+#
+# Clean up:
+#   docker-compose -f docker-compose.test.yml down
+#   docker-compose -f docker-compose.test.yml down --rmi all --volumes

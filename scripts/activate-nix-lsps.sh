@@ -16,10 +16,26 @@ if [ "$1" = "hybrid" ] || [ -z "$1" ]; then
     echo "  • Project-specific overrides (via direnv)"
     echo ""
 
-    # Check if direnv is installed
+    # Check if direnv is installed (OS-aware)
     if ! command -v direnv &> /dev/null; then
-        echo "⚠️  direnv not found. Installing with Homebrew..."
-        brew install direnv
+        echo "⚠️  direnv not found. Installing..."
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            brew install direnv
+        else
+            # Linux package managers
+            if command -v apt-get &> /dev/null; then
+                sudo apt-get install -y direnv
+            elif command -v dnf &> /dev/null; then
+                sudo dnf install -y direnv
+            elif command -v yum &> /dev/null; then
+                sudo yum install -y direnv
+            elif command -v pacman &> /dev/null; then
+                sudo pacman -S --noconfirm direnv
+            else
+                echo "❌ Cannot install direnv automatically. Please install it manually."
+                exit 1
+            fi
+        fi
         echo "✓ direnv installed"
     fi
 

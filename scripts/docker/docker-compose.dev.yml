@@ -1,0 +1,126 @@
+# Docker Compose - Development Environment
+# Interactive shells with live dotfiles mounting for rapid development
+
+version: '3.8'
+
+services:
+  # Ubuntu 22.04 LTS - Interactive development
+  dev-ubuntu:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/ubuntu.Dockerfile
+    image: dotfiles-test:ubuntu
+    container_name: dotfiles-dev-ubuntu
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../..:/home/testuser/dotfiles:rw
+    working_dir: /home/testuser/dotfiles
+    command: /usr/bin/fish
+    environment:
+      - TERM=xterm-256color
+    networks:
+      - dotfiles-dev
+
+  # Debian 12 Bookworm - Interactive development
+  dev-debian:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/debian.Dockerfile
+    image: dotfiles-test:debian
+    container_name: dotfiles-dev-debian
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../..:/home/testuser/dotfiles:rw
+    working_dir: /home/testuser/dotfiles
+    command: /usr/bin/fish
+    environment:
+      - TERM=xterm-256color
+    networks:
+      - dotfiles-dev
+
+  # Fedora 40 - Interactive development
+  dev-fedora:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/fedora.Dockerfile
+    image: dotfiles-test:fedora
+    container_name: dotfiles-dev-fedora
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../..:/home/testuser/dotfiles:rw
+    working_dir: /home/testuser/dotfiles
+    command: /usr/bin/fish
+    environment:
+      - TERM=xterm-256color
+    networks:
+      - dotfiles-dev
+
+  # Arch Linux - Interactive development
+  dev-arch:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/arch.Dockerfile
+    image: dotfiles-test:arch
+    container_name: dotfiles-dev-arch
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../..:/home/testuser/dotfiles:rw
+    working_dir: /home/testuser/dotfiles
+    command: /usr/bin/fish
+    environment:
+      - TERM=xterm-256color
+    networks:
+      - dotfiles-dev
+
+  # Alpine Linux - Interactive development
+  dev-alpine:
+    build:
+      context: ../..
+      dockerfile: scripts/docker/dockerfiles/alpine.Dockerfile
+    image: dotfiles-test:alpine
+    container_name: dotfiles-dev-alpine
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../..:/home/testuser/dotfiles:rw
+    working_dir: /home/testuser/dotfiles
+    command: /usr/bin/fish
+    environment:
+      - TERM=xterm-256color
+    networks:
+      - dotfiles-dev
+
+networks:
+  dotfiles-dev:
+    driver: bridge
+
+# Usage:
+#
+# Start interactive Ubuntu shell (live development):
+#   docker-compose -f docker-compose.dev.yml run --rm dev-ubuntu
+#
+# Start interactive Debian shell:
+#   docker-compose -f docker-compose.dev.yml run --rm dev-debian
+#
+# Start interactive Fedora shell:
+#   docker-compose -f docker-compose.dev.yml run --rm dev-fedora
+#
+# Start interactive Arch shell:
+#   docker-compose -f docker-compose.dev.yml run --rm dev-arch
+#
+# Start interactive Alpine shell:
+#   docker-compose -f docker-compose.dev.yml run --rm dev-alpine
+#
+# Bash instead of Fish:
+#   docker-compose -f docker-compose.dev.yml run --rm dev-ubuntu /bin/bash
+#
+# Build before starting:
+#   docker-compose -f docker-compose.dev.yml build dev-ubuntu
+#   docker-compose -f docker-compose.dev.yml run --rm dev-ubuntu
+#
+# Note: Changes to dotfiles in the container are immediately reflected on the host
+#       and vice versa due to volume mounting.

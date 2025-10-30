@@ -212,7 +212,62 @@ cat ~/Library/Application\ Support/Claude/claude_desktop_config.json | jq '.mcpS
 - **ALWAYS** include in the README: filename, purpose, namespace, container details, usage, and use case
 - **ALWAYS** use descriptive filenames for manifests (e.g., `test-shell-deployment.yaml` not `test.yaml`)
 
+### Docker Container Testing for Linux Compatibility
+- **Purpose**: Test dotfiles installation on Linux distributions without requiring a full VM
+- **Location**: All testing infrastructure in `scripts/docker/` directory
+- **Runtime**: Uses Colima (already installed) for container management
+
+**Testing Workflow**:
+1. **Start Colima**: `./scripts/docker/colima-setup.sh start`
+2. **Build Test Image**: `docker build -f scripts/docker/dockerfiles/ubuntu.Dockerfile -t dotfiles-test:ubuntu .`
+3. **Run Tests**: `docker run --rm dotfiles-test:ubuntu /home/testuser/dotfiles/scripts/docker/scripts/run-all-tests.sh`
+4. **Interactive Testing**: `docker run -it --rm dotfiles-test:ubuntu`
+
+**What Gets Tested**:
+- ✅ Package manager detection (apt/dnf/pacman)
+- ✅ GNU Stow symlink operations
+- ✅ Fish and Zsh shell configurations
+- ✅ Environment variables (including BAT_PAGING fix)
+- ✅ CLI tool configurations
+- ✅ PATH configurations
+- ⚠️ Homebrew packages (translated to Linux equivalents)
+- ❌ macOS-specific tools (skipped)
+
+**Key Files**:
+- `scripts/docker/README.md` - Comprehensive testing documentation
+- `scripts/docker/colima-setup.sh` - Colima management helper
+- `scripts/docker/dockerfiles/ubuntu.Dockerfile` - Ubuntu 22.04 test environment
+- `scripts/docker/scripts/run-all-tests.sh` - Main test orchestrator
+- `scripts/docker/scripts/test-*.sh` - Individual test suites
+
+**Best Practices**:
+- **ALWAYS** test dotfiles changes in containers before deploying to production Linux
+- **ALWAYS** start with Ubuntu tests (most common Linux distribution)
+- **ALWAYS** verify stow operations complete successfully
+- **ALWAYS** check shell configs load without errors
+- **NEVER** skip testing when making cross-platform changes
+
+**Development Mode**:
+```bash
+# Mount local dotfiles for live testing
+docker run -it --rm -v ~/dotfiles:/home/testuser/dotfiles dotfiles-test:ubuntu
+```
+
+**Troubleshooting**:
+- **Colima issues**: Run `./scripts/docker/colima-setup.sh restart`
+- **Build failures**: Check `scripts/docker/.dockerignore` and rebuild with `--no-cache`
+- **Test failures**: Review test output in `/tmp/dotfiles-test-results/*.log` inside container
+- **BAT_PAGING errors**: Ensure the fix is in both `.config/fish/config.fish` and `.zshrc`
+
+**Future Enhancements**:
+- Multi-distribution support (Debian, Fedora, Arch, Alpine)
+- Docker Compose for parallel multi-distro testing
+- Automated Brewfile translation to Linux package managers
+- CI/CD integration for continuous testing
+
 ### Recent Updates
+- **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
+- **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)
 - **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
 - **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
 - **2025-10-05**: Added Kubernetes manifests directory with documentation requirements

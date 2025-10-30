@@ -1,0 +1,76 @@
+# Docker build context exclusions for dotfiles testing
+# This speeds up builds and reduces image size
+
+# Version control
+.git/
+.gitignore
+
+# macOS specific
+.DS_Store
+Library/
+*.app
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+
+# Test results (created during testing)
+scripts/docker/test-results/
+test-results/
+coverage/
+
+# SSH and secrets (should never be in containers)
+.ssh/
+*.pem
+*.key
+*.cer
+*.p12
+.env
+.env.*
+secrets/
+
+# Colima/Docker runtime
+.colima/
+
+# Large binary files
+*.tar
+*.tar.gz
+*.zip
+*.dmg
+*.pkg
+
+# Homebrew (macOS specific)
+homebrew/Brewfile.lock.json

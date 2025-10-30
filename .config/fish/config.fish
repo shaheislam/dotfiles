@@ -56,6 +56,10 @@ if status is-interactive
 
     # Environment Variables
     set -x BAT_THEME "Catppuccin Mocha"
+    set -x BAT_PAGING "never"  # Prevents FZF preview file descriptor errors
+    # Pager defaults (avoid tools reading a bad $PAGER value)
+    set -x PAGER less
+    set -x MANPAGER "less -R"
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
@@ -601,7 +605,7 @@ if status is-interactive
     alias ncdu="ncdu --color dark"  # NCurses disk usage
     # alias sed="sd"  # Disabled - breaks completion scripts that expect real sed
     alias sedd="sd"  # Use 'sedd' for the sd tool instead
-    alias cut="choose"  # Better cut/awk
+    # alias cut="choose"  # Disabled - choose-rust is not a drop-in replacement for cut (different CLI interface)
     alias loc="tokei"  # Code statistics
     alias duf="duf"  # Better df
 
@@ -662,7 +666,7 @@ if status is-interactive
     # Functions from extended config
     function gis
         if test -n "$argv[1]"
-            gh gist create -p $argv[1] | grep https | tee >(pbcopy)
+            gh gist create -p $argv[1] | grep https | tee >(clipboard_copy)
         else
             gisls
         end
@@ -862,7 +866,7 @@ if status is-interactive
     end
 
     function tb
-        nc termbin.com 9999 | pbcopy
+        nc termbin.com 9999 | clipboard_copy
     end
 
     # AWS SSO function with fzf selection

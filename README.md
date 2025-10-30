@@ -1,27 +1,30 @@
 # Dotfiles
 
-Personal macOS development environment configuration with Fish shell, tmux, Neovim (LazyVim), and comprehensive tooling.
+Cross-platform development environment configuration with Fish shell, tmux, Neovim (LazyVim), and comprehensive tooling. Works seamlessly on macOS and Linux.
 
 ## Quick Start
 
 ```bash
 # Clone with submodules
-git clone --recurse-submodules https://github.com/yourusername/dotfiles.git ~/dotfiles
+git clone --recurse-submodules https://github.com/shaheislam/dotfiles.git ~/dotfiles
 
-# Run automated setup
+# Run unified setup (auto-detects OS)
 cd ~/dotfiles
-./scripts/setup-script.sh
+./scripts/setup.sh
 
-# Create symlinks
-stow .
+# Or with specific profile
+./scripts/setup.sh --profile minimal    # Essential tools only
+./scripts/setup.sh --profile dev        # Development focused
+./scripts/setup.sh --profile comprehensive  # Everything
 ```
 
 ## Prerequisites
 
-- macOS (tested on macOS 14+)
+- **OS**: macOS (14+) or Linux (Ubuntu, Debian, RHEL, Fedora, Arch)
+- **Architecture**: x86_64 or ARM64/aarch64
 - Git
-- Internet connection
-- Admin privileges for Homebrew installation
+- Internet connection (or offline bundle for air-gapped environments)
+- Admin privileges (sudo) for package installation
 
 ## Detailed Installation Steps
 
@@ -45,33 +48,33 @@ git submodule update --init --recursive
 
 ### 2. Run Setup Script
 
-The setup script handles all dependencies and configurations:
+The unified setup script handles all dependencies, configurations, and dotfile symlinking:
 
 ```bash
 cd ~/dotfiles
-./scripts/setup-script.sh
+./scripts/setup.sh
 ```
 
 **What the setup script does:**
 
-- Installs Homebrew (if not present)
-- Installs packages from `homebrew/Brewfile`
-- Sets up Fish shell and plugins via Fisher
-- Installs and configures tmux plugins
-- Applies tmux-continuum debug fix
-- Builds tmux-fingers plugin (requires Crystal)
-- Configures development tools (fzf, vim-plug, etc.)
-- Sets up Node.js formatters
+- Detects OS and architecture automatically
+- Installs package manager (Homebrew on macOS, apt/yum/dnf/pacman on Linux)
+- Installs packages based on selected profile
+- Sets up shell environments (Fish, Zsh, Starship)
+- Installs language runtimes (Node.js via nvm, Rust via rustup)
+- Configures tmux with TPM
+- Creates symlinks using GNU Stow
+- Tracks installation state for resumability
 
-### 3. Create Symlinks
+**Installation Profiles:**
 
-Use GNU Stow to create symbolic links:
+- `minimal`: Essential tools only (fastest)
+- `standard`: Balanced setup (default)
+- `comprehensive`: All tools installed
+- `dev`: Development-focused
+- `ops`: DevOps/SRE focused
 
-```bash
-stow .
-```
-
-This creates symlinks from `~/dotfiles` to your home directory.
+See [UNIFIED-SETUP.md](scripts/UNIFIED-SETUP.md) for complete documentation.
 
 ### 4. Post-Installation Setup
 
@@ -316,6 +319,34 @@ For issues or questions:
 3. Check individual component documentation
 4. Verify prerequisites are met
 
+## Unified Setup System
+
+This repository uses a unified cross-platform setup system. See [scripts/UNIFIED-SETUP.md](scripts/UNIFIED-SETUP.md) for:
+
+- Complete command-line options reference
+- Profile customization guide
+- Architecture and OS support details
+- Offline installation for air-gapped environments
+- Troubleshooting and advanced features
+
+### Platform Support
+
+- **macOS**: Homebrew package manager, Apple Silicon and Intel support
+- **Linux**: apt (Debian/Ubuntu), yum/dnf (RHEL/Fedora), pacman (Arch)
+- **Architecture**: x86_64, ARM64/aarch64, ARMv7 (limited)
+
+### Backward Compatibility
+
+Legacy setup scripts are preserved with compatibility wrappers:
+
+```bash
+# macOS (old)
+./scripts/setup-compat.sh
+
+# Linux (old)
+./scripts/linux/setup-aws-workspace-compat.sh
+```
+
 ---
 
-**Note**: This setup is optimized for macOS development environments. Some configurations may need adjustment for other systems.
+**Note**: This setup works on both macOS and Linux with automatic platform detection. See [UNIFIED-SETUP.md](scripts/UNIFIED-SETUP.md) for platform-specific details.

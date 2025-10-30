@@ -166,7 +166,7 @@ cask "ngrok"
 # Better File/System Tools
 brew "dust"
 brew "sd"
-brew "choose"
+brew "choose-rust"
 brew "tokei"
 brew "ncdu"
 

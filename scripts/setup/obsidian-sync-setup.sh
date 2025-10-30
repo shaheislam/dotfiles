@@ -12,16 +12,40 @@ if [ ! -d "$VAULT_DIR/.git" ]; then
     exit 1
 fi
 
-# Check for fswatch
-if ! command -v fswatch >/dev/null 2>&1; then
-    echo "📦 Installing fswatch..."
-    if command -v brew >/dev/null 2>&1; then
-        brew install fswatch
-    else
-        echo "❌ Error: fswatch not installed and Homebrew not found"
-        echo "Please install fswatch manually"
-        exit 1
+# Check for file watching tool (OS-aware)
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    # macOS: use fswatch
+    if ! command -v fswatch >/dev/null 2>&1; then
+        echo "📦 Installing fswatch..."
+        if command -v brew >/dev/null 2>&1; then
+            brew install fswatch
+        else
+            echo "❌ Error: fswatch not installed and Homebrew not found"
+            exit 1
+        fi
     fi
+    FILE_WATCHER="fswatch"
+else
+    # Linux: use inotify-tools (inotifywait)
+    if ! command -v inotifywait >/dev/null 2>&1; then
+        echo "📦 Installing inotify-tools..."
+        if command -v apt-get &> /dev/null; then
+            sudo apt-get install -y inotify-tools
+        elif command -v dnf &> /dev/null; then
+            sudo dnf install -y inotify-tools
+        elif command -v yum &> /dev/null; then
+            sudo yum install -y inotify-tools
+        elif command -v pacman &> /dev/null; then
+            sudo pacman -S --noconfirm inotify-tools
+        else
+            echo "❌ Error: Cannot install inotify-tools automatically"
+            echo "Please install inotify-tools manually"
+            exit 1
+        fi
+    fi
+    FILE_WATCHER="inotifywait"
+    echo "ℹ️  Note: Using inotifywait instead of fswatch on Linux"
+    echo "   The watcher script will need to be adapted for inotifywait syntax"
 fi
 
 # Create hooks directory if it doesn't exist
