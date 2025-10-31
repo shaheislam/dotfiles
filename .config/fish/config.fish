@@ -273,7 +273,7 @@ if status is-interactive
 
     # Carapace completions initialization
     if command -v carapace >/dev/null
-        carapace _carapace | source
+        carapace _carapace fish | source
     end
 
     # Auto-attach to tmux session 'main' or create it if it doesn't exist
