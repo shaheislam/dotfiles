@@ -7,8 +7,6 @@ from typing import Optional, List, Dict, Union
 from dataclasses import dataclass
 import json  # This import should be sorted by ruff
 
-my_str = "hello"
-my_str.
 
 # Test basedpyright type checking
 @dataclass
@@ -31,7 +29,6 @@ def process_data(data: Union[str, None]) -> str:
     return data.upper()  # This should trigger a warning
 
 
-test tett est test teet tete tetete etet ete te te te tet et
 def calculate_sum(numbers: List[int]) -> int:
     """Calculate sum with type hints."""
     total = 0
@@ -54,9 +51,9 @@ def unused_function():
 
 
 # Test code formatting (ruff should format this)
-def poorly_formatted(a,b,c):  # Missing spaces after commas
-    result=a+b+c  # Missing spaces around operators
-    return     result  # Extra spaces
+def poorly_formatted(a, b, c):  # Missing spaces after commas
+    result = a + b + c  # Missing spaces around operators
+    return result  # Extra spaces
 
 
 # Test import sorting (ruff should reorganize imports at the top)

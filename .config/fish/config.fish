@@ -522,6 +522,7 @@ if status is-interactive
     end
 
     alias n=nvim
+    alias nvm="env NVIM_APPNAME=nvim-mini nvim"  # Minimal Neovim config
     alias lg=lazygit
     alias ld=lazydocker
     alias fixterm="stty sane"
@@ -2546,3 +2547,6 @@ end
 
 # K9s kubectl-node-shell plugin
 fish_add_path $HOME/dotfiles/scripts
+
+# Nix profile for LSPs
+fish_add_path $HOME/.nix-profile/bin

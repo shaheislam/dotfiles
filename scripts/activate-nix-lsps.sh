@@ -42,12 +42,20 @@ if [ "$1" = "hybrid" ] || [ -z "$1" ]; then
     echo "Step 1: Installing global baseline LSPs..."
     echo "----------------------------------------"
     if [ -f ~/dotfiles/scripts/install-lsps-global.sh ]; then
-        read -p "Install global LSPs now? (y/n) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            ~/dotfiles/scripts/install-lsps-global.sh
+        # Check if running interactively
+        if [ -t 0 ]; then
+            # Interactive mode - ask user
+            read -p "Install global LSPs now? (y/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                ~/dotfiles/scripts/install-lsps-global.sh
+            else
+                echo "Skipped. Run './scripts/install-lsps-global.sh' later."
+            fi
         else
-            echo "Skipped. Run './scripts/install-lsps-global.sh' later."
+            # Non-interactive mode - auto-install
+            echo "Installing global LSPs (non-interactive mode)..."
+            ~/dotfiles/scripts/install-lsps-global.sh
         fi
     fi
 

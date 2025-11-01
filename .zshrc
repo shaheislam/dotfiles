@@ -32,6 +32,7 @@ export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
+export PATH="$HOME/.nix-profile/bin:$PATH"
 
 # Pager defaults (avoid tools reading a bad $PAGER value)
 export PAGER="less"
