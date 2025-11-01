@@ -688,6 +688,8 @@ if command -v opencode &> /dev/null; then
   echo "   - Use 'opencode auth login' to add your API keys for LLM providers"
   echo "   - Run '/init' in your project directory to create an AGENTS.md file"
   echo "   - Opencode supports OpenCode Zen and various LLM providers"
+  echo "   - LSP Integration: Uses your Nix-managed LSP servers (auto-download disabled)"
+  echo "     Environment: OPENCODE_DISABLE_LSP_DOWNLOAD=true prevents duplicate LSPs"
 else
   echo "Opencode not installed yet."
   echo "Install with: brew install sst/tap/opencode"
@@ -1612,7 +1614,7 @@ echo "- Security tools: vet (safe remote script execution), gitleaks (secret det
 echo "- AWS log tools: aws-log-viewer (interactive s3grep TUI)"
 echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Claude Code: CLI tool with SuperClaude framework"
-echo "- AI Tools: OpenAI Codex CLI, Claude Code Router, Opencode"
+echo "- AI Tools: OpenAI Codex CLI, Claude Code Router, Opencode (with Nix LSP integration)"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: DankMono Nerd Font (manual), Iosevka Nerd Font, JetBrains Mono Nerd Font (fallback)"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"

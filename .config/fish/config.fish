@@ -2550,3 +2550,8 @@ fish_add_path $HOME/dotfiles/scripts
 
 # Nix profile for LSPs
 fish_add_path $HOME/.nix-profile/bin
+
+# Opencode LSP integration with Nix
+# Prevent Opencode from downloading its own LSP servers
+# Uses Nix-managed LSP servers instead (from PATH)
+set -gx OPENCODE_DISABLE_LSP_DOWNLOAD true
