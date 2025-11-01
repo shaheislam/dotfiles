@@ -70,7 +70,8 @@ install_lsp "yaml-language-server" "YAML LSP"
 install_lsp "yamllint" "YAML Linter"
 
 # Ansible
-install_lsp "ansible-language-server" "Ansible LSP"
+# Note: ansible-language-server was removed from nixpkgs (unmaintained)
+# install_lsp "ansible-language-server" "Ansible LSP"
 install_lsp "ansible-lint" "Ansible Linter"
 
 # Helm
