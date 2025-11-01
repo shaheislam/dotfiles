@@ -1013,7 +1013,7 @@ fi
 
 # Create necessary directories
 echo "=== Creating configuration directories ==="
-mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish}
+mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish,opencode}
 mkdir -p "$HOME/Library/Application Support/Claude"
 mkdir -p "$HOME/Documents/databases"
 
