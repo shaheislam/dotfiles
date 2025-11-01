@@ -18,6 +18,9 @@ tap "fairwindsops/tap"
 # Tap for Splash log colorizer
 tap "joshi4/splash"
 
+# Tap for Opencode AI coding agent
+tap "sst/tap"
+
 # CLI Tools
 brew "zsh-vi-mode"
 brew "bat"
@@ -103,6 +106,7 @@ brew "mas"  # Mac App Store CLI
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
 cask "amazon-q"  # Amazon Q Developer CLI
+brew "sst/tap/opencode"  # AI coding agent built for the terminal
 
 # File System Tools
 # FUSE-T - kext-less FUSE implementation for macOS (replacement for macFUSE)

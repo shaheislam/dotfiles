@@ -679,6 +679,21 @@ else
   log_warning "npm not found. Install Node.js first to use OpenAI Codex CLI"
 fi
 
+# Configure Opencode AI coding agent
+echo "=== Configuring Opencode ==="
+if command -v opencode &> /dev/null; then
+  log_success "Opencode already installed at: $(which opencode)"
+  echo "ℹ️  Opencode is ready!"
+  echo "   - Run 'opencode' to start the AI coding agent"
+  echo "   - Use 'opencode auth login' to add your API keys for LLM providers"
+  echo "   - Run '/init' in your project directory to create an AGENTS.md file"
+  echo "   - Opencode supports OpenCode Zen and various LLM providers"
+else
+  echo "Opencode not installed yet."
+  echo "Install with: brew install sst/tap/opencode"
+  log_warning "Opencode needs installation via Homebrew"
+fi
+
 # Configure Claude Code MCP servers (user scope)
 echo "=== Configuring Claude Code MCP servers ==="
 if command -v claude &> /dev/null; then
@@ -1597,7 +1612,7 @@ echo "- Security tools: vet (safe remote script execution), gitleaks (secret det
 echo "- AWS log tools: aws-log-viewer (interactive s3grep TUI)"
 echo "- MCP tools: pipx, browser-tools, Python MCP servers"
 echo "- Claude Code: CLI tool with SuperClaude framework"
-echo "- AI Tools: OpenAI Codex CLI, Claude Code Router"
+echo "- AI Tools: OpenAI Codex CLI, Claude Code Router, Opencode"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: DankMono Nerd Font (manual), Iosevka Nerd Font, JetBrains Mono Nerd Font (fallback)"
 echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
