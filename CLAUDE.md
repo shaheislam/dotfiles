@@ -115,6 +115,33 @@
 - **tmux**: Use TPM, update `.tmux.conf` with plugin definitions
 - **Neovim**: Use LazyVim plugin system, follow LazyVim conventions
 
+### LSP (Language Server Protocol) Configuration
+
+**Nix-Based LSP Inheritance System**:
+- **ALWAYS** refer to `nix/README.md` for LSP architecture and inheritance patterns
+- **ALWAYS** use Nix flakes for project-specific LSP versions (not Mason.nvim)
+- **ALWAYS** test LSP inheritance with `scripts/test-lsp-inheritance.sh`
+- **CRITICAL**: Three-tier system: Global baseline → Project override → Neovim detection
+
+**Documentation Locations**:
+- `nix/README.md` - Complete LSP inheritance architecture and patterns
+- `nix/TESTING.md` - Step-by-step validation procedures for testing LSP isolation
+- `nix/QUICK_START.md` - Quick reference for common LSP operations
+- `nix/project-templates/` - Language-specific templates with validation guides
+- `scripts/test-lsp-inheritance.sh` - Automated test suite for LSP inheritance
+
+**Key Concepts**:
+- **Global Baseline**: LSPs installed via home-manager/nix-env, available everywhere
+- **Project Override**: Per-project LSP versions via flake.nix, activated by direnv
+- **Isolation**: Different projects can use different LSP versions without conflicts
+- **PATH Precedence**: Project LSPs naturally override global via Nix shell PATH
+
+**Common Workflows**:
+1. **Create Project with Custom LSP**: Use templates from `nix/project-templates/`
+2. **Override LSP Version**: Add to project's flake.nix with different nixpkgs channel
+3. **Test Multi-Project Setup**: Follow procedures in `nix/TESTING.md`
+4. **Validate System**: Run `scripts/test-lsp-inheritance.sh`
+
 ### MCP Server Integration
 
 **CRITICAL MCP Configuration Parity Rule**:
