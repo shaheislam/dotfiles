@@ -446,6 +446,11 @@ phase_4_cloud_tools() {
         print_success "Claude Code Router configuration linked from dotfiles"
     fi
 
+    # Ensure claude wrapper is executable (runs Claude under Node 20 only)
+    if [[ -f "$DOTFILES_ROOT/scripts/bin/claude" ]]; then
+        chmod +x "$DOTFILES_ROOT/scripts/bin/claude" 2>/dev/null || true
+    fi
+
     # Install OpenAI Codex CLI (with sudo fallback for Linux)
     if ! command_exists codex; then
         print_step "Installing OpenAI Codex CLI..."
