@@ -174,6 +174,9 @@ brew "choose-rust"
 brew "tokei"
 brew "ncdu"
 
+# Keyboard Remapping Tools
+cask "karabiner-elements"  # macOS keyboard remapping tool (Caps Lock ↔ Escape swap)
+
 # Infrastructure Tools
 brew "pulumi"
 # brew "packer" # License changed to BUSL - install manually if needed

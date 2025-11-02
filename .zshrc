@@ -32,11 +32,6 @@ export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
-export PATH="$HOME/.nix-profile/bin:$PATH"
-
-# Pager defaults (avoid tools reading a bad $PAGER value)
-export PAGER="less"
-export MANPAGER="less -R"
 
 # VSCode and Cursor PATH entries removed
 
@@ -88,7 +83,6 @@ alias kn="kubens"
 
 # bat theme
 export BAT_THEME=tokyonight_night
-export BAT_PAGING="never"  # Prevents FZF preview file descriptor errors
 
 # thefuck
 if command -v thefuck > /dev/null 2>&1; then

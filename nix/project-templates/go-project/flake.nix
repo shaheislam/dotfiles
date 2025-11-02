@@ -91,6 +91,9 @@
           GOPROXY = "https://proxy.golang.org,direct";
           GOSUMDB = "sum.golang.org";
           GOPRIVATE = "github.com/your-org/*";  # Customize for private repos
+
+          # Nix LSP detection (for Neovim integration)
+          NIX_LSP_ENABLED = "true";
         };
 
         # Alternative shell for testing
@@ -109,6 +112,9 @@
             go version
             echo "Run tests with: richgo test ./..."
           '';
+
+          # Nix LSP detection (for Neovim integration)
+          NIX_LSP_ENABLED = "true";
         };
 
         # Shell for building containers
@@ -125,6 +131,9 @@
             echo "Build with ko: ko build ."
             echo "Release with: goreleaser release --snapshot"
           '';
+
+          # Nix LSP detection (for Neovim integration)
+          NIX_LSP_ENABLED = "true";
         };
       });
 }

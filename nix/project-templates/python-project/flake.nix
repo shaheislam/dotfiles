@@ -147,6 +147,9 @@
           PYTHONUNBUFFERED = "1";
           PIP_NO_CACHE_DIR = "1";
           VIRTUAL_ENV_DISABLE_PROMPT = "1";  # Let shell prompt handle this
+
+          # Nix LSP detection (for Neovim integration)
+          NIX_LSP_ENABLED = "true";
         };
 
         # Minimal shell for CI/testing

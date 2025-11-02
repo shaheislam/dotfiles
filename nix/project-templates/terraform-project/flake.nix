@@ -78,6 +78,9 @@
           TF_PLUGIN_CACHE_DIR = "$HOME/.terraform.d/plugin-cache";
           TF_CLI_ARGS_plan = "-parallelism=10";
           TF_CLI_ARGS_apply = "-parallelism=10";
+
+          # Nix LSP detection (for Neovim integration)
+          NIX_LSP_ENABLED = "true";
         };
       });
 }

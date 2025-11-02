@@ -1173,6 +1173,39 @@ log_info "View Pulse logs: tail -f ~/.pulse/logs/stdout.log"
 log_info "Query data: redis-cli KEYS \"*\""
 log_info "Server status: launchctl list | grep pulse"
 
+# Setup Karabiner-Elements keyboard remapper
+echo "=== Setting up Karabiner-Elements keyboard remapper ==="
+
+if [ "$(uname)" == "Darwin" ]; then
+  if [ -d "/Library/Application Support/org.pqrs/Karabiner-Elements" ] || [ -d "/Applications/Karabiner-Elements.app" ]; then
+    log_success "Karabiner-Elements is installed"
+
+    # Ensure karabiner config directory exists
+    mkdir -p "$HOME/.config/karabiner"
+
+    # Symlink config if needed (can't use stow due to Karabiner's own files in directory)
+    if [ -L "$HOME/.config/karabiner/karabiner.json" ]; then
+      log_success "Karabiner-Elements configuration already symlinked"
+    elif [ -f "$HOME/.config/karabiner/karabiner.json" ]; then
+      log_info "Backing up existing Karabiner config and creating symlink"
+      mv "$HOME/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json.backup"
+      ln -sf "$HOME/dotfiles/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
+      log_success "Karabiner-Elements configuration symlinked (backup created)"
+    elif [ -f "$HOME/dotfiles/.config/karabiner/karabiner.json" ]; then
+      ln -sf "$HOME/dotfiles/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
+      log_success "Karabiner-Elements configuration symlinked"
+    else
+      log_warning "Karabiner-Elements configuration not found in dotfiles"
+    fi
+
+    log_info "Key mappings: Caps Lock ↔ Escape"
+    log_info "Edit config: Open Karabiner-Elements app or edit ~/.config/karabiner/karabiner.json"
+  else
+    log_warning "Karabiner-Elements not found"
+    log_info "Install with: brew install --cask karabiner-elements"
+  fi
+fi
+
 # Run p10k configuration if it doesn't exist
 if [ ! -f "$HOME/.p10k.zsh" ]; then
   echo "=== Setting up Powerlevel10k ==="

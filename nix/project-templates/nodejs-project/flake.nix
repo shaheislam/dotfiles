@@ -175,6 +175,9 @@
           NODE_ENV = "development";
           BROWSER = "none";  # Prevent auto-opening browser
           FORCE_COLOR = "1";  # Force colored output in terminals
+
+          # Nix LSP detection (for Neovim integration)
+          NIX_LSP_ENABLED = "true";
         };
 
         # Production build shell

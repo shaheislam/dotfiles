@@ -115,6 +115,15 @@
 - **tmux**: Use TPM, update `.tmux.conf` with plugin definitions
 - **Neovim**: Use LazyVim plugin system, follow LazyVim conventions
 
+### Keyboard Remapping
+- **Tool**: Karabiner-Elements (macOS-only, GUI-based configuration)
+- **Configuration**: `.config/karabiner/karabiner.json` (managed via stow)
+- **Primary Mapping**: Caps Lock ↔ Escape swap
+- **Installation**: Via Brewfile cask
+- **Setup**: Configuration is symlinked via stow, automatically applied by Karabiner-Elements
+- **Management**: Edit via Karabiner-Elements GUI app or directly in `~/.config/karabiner/karabiner.json`
+- **Note**: Karabiner-Elements runs as a background service, no LaunchAgent needed
+
 ### LSP (Language Server Protocol) Configuration
 
 **Nix-Based LSP Inheritance System**:
