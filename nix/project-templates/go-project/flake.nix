@@ -14,7 +14,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         # Go version selection (customize as needed)
-        goVersion = pkgs.go_1_21;  # or pkgs.go_1_22, pkgs.go, etc.
+        goVersion = pkgs.go;  # Latest stable Go (or use pkgs.go_1_23, pkgs.go_1_24, etc. for specific versions)
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
