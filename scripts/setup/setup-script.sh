@@ -679,6 +679,19 @@ else
   log_warning "npm not found. Install Node.js first to use OpenAI Codex CLI"
 fi
 
+# Install AWS CDK CLI globally
+echo "=== Installing AWS CDK CLI ==="
+if command -v cdk &> /dev/null; then
+  log_success "AWS CDK already installed ($(cdk --version))"
+else
+  log_info "Installing AWS CDK globally..."
+  if bun install -g aws-cdk || npm install -g aws-cdk; then
+    log_success "AWS CDK installed successfully ($(cdk --version))"
+  else
+    log_error "Failed to install AWS CDK"
+  fi
+fi
+
 # Configure Opencode AI coding agent
 echo "=== Configuring Opencode ==="
 if command -v opencode &> /dev/null; then
