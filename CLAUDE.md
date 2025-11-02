@@ -266,6 +266,7 @@ docker run -it --rm -v ~/dotfiles:/home/testuser/dotfiles dotfiles-test:ubuntu
 - CI/CD integration for continuous testing
 
 ### Recent Updates
+- **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
 - **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
 - **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)
 - **2025-01-26**: Aligned Fish and Zsh configurations for feature parity

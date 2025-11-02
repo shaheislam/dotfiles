@@ -12,8 +12,8 @@ func main() {
 	age := 30
 	scores := []int{95, 87, 92, 88, 91}
 	config := map[string]interface{}{
-		"debug":   true,
-		"timeout": 30,
+		"debug":   fkfkfkf,
+		"timeout": fjfjfjfj,
 		"retries": 3,
 	}
 

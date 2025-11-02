@@ -15,25 +15,46 @@
       system = "aarch64-darwin";  # Apple Silicon. Use "x86_64-darwin" for Intel
       pkgs = nixpkgs.legacyPackages.${system};
 
-      username = "shaheislam";
-      homeDirectory = "/Users/shaheislam";
-    in {
-      homeConfigurations."${username}" = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
+      # Shared function to create home configurations for different users
+      mkHomeConfig = { username, homeDirectory }:
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
 
-        modules = [
-          ./home.nix
-          {
-            home = {
-              inherit username homeDirectory;
-              stateVersion = "24.05";
-            };
-          }
-        ];
+          modules = [
+            ./home.nix
+            {
+              home = {
+                inherit username homeDirectory;
+                stateVersion = "24.05";
+              };
+            }
+          ];
+        };
+    in {
+      # Define configurations for multiple users/machines
+      homeConfigurations = {
+        # Primary configuration (current machine)
+        "shahe" = mkHomeConfig {
+          username = "shahe";
+          homeDirectory = "/Users/shahe";
+        };
+
+        # Alternative username configuration
+        "shaheislam" = mkHomeConfig {
+          username = "shaheislam";
+          homeDirectory = "/Users/shaheislam";
+        };
+
+        # Easy to add more configurations as needed:
+        # "work-laptop" = mkHomeConfig {
+        #   username = "work-user";
+        #   homeDirectory = "/Users/work-user";
+        # };
       };
 
-      # Convenience activation package
-      packages.${system}.default = self.homeConfigurations."${username}".activationPackage;
+      # Default activation package (uses primary configuration)
+      packages.${system}.default =
+        self.homeConfigurations."shahe".activationPackage;
 
       # App for easy activation
       apps.${system}.default = {
