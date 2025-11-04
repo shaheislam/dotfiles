@@ -145,11 +145,6 @@ let
     echo "🚀 Global Development Environment Loaded"
     echo "   Base: ~/dotfiles/nix/global"
 
-    # Show if we're in a nested environment
-    if [ -n "$NIX_GCROOT" ]; then
-      echo "   Extended by: $NIX_GCROOT"
-    fi
-
     # Set common environment variables
     export GLOBAL_NIX_PROFILE="true"
 
