@@ -30,10 +30,6 @@ else
     set -x PYTHONPATH /usr/lib/python3/dist-packages
 end
 
-# Claude Code
-fish_add_path -p $HOME/.claude/local     # Claude local installation (prioritized)
-fish_add_path $HOME/.claude/local/bin    # Claude local binaries
-
 # Dotfiles scripts
 fish_add_path $HOME/dotfiles/scripts/bin
 

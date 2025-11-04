@@ -1998,6 +1998,7 @@ if status is-interactive
         if not git rev-parse --git-dir >/dev/null 2>&1
             echo "Not in a git repository"
             return 1
+fish_add_path ~/.claude/local/node_modules/.bin
         end
 
         set -l worktrees (git worktree list 2>/dev/null | grep -v '(bare)')
