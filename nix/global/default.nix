@@ -2,11 +2,14 @@
 # This provides a base development environment that projects can inherit from
 # Projects can either extend this (add more packages) or override it completely
 
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {}, pkgs-unstable ? pkgs }:
 
 let
   # Import LSP versions
-  lspVersions = import ../lsp-versions.nix { inherit pkgs; };
+  lspVersions = import ../lsp-versions.nix {
+    inherit pkgs;
+    pkgs-unstable = pkgs-unstable;
+  };
 
   # Common development packages used across most projects
   commonDevPackages = with pkgs; [
@@ -28,8 +31,8 @@ let
     # lspVersions.golang.gofumpt  # Formatter - enable per project
 
     # Python
-    # basedpyright not available in nixpkgs 24.05 - use pyright
-    lspVersions.python.pyright
+    # Using basedpyright from unstable channel
+    lspVersions.python.basedpyright
     lspVersions.python.ruff-lsp
     lspVersions.python.debugpy
     # lspVersions.python.black  # Formatter - enable per project

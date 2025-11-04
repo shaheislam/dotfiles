@@ -1,7 +1,7 @@
 # LSP Version Registry for Nix-based LSP Management
 # This file defines centralized LSP versions for consistent development environments
 
-{ pkgs }:
+{ pkgs, pkgs-unstable ? pkgs }:
 {
   # Go Language Server
   golang = {
@@ -46,7 +46,9 @@
 
   # Python Language Servers
   python = {
-    # basedpyright not available in nixpkgs 24.05 - available in unstable/25.05
+    # basedpyright from unstable channel (not available in 24.05)
+    basedpyright = pkgs-unstable.basedpyright;
+    # Keep pyright from stable as fallback
     pyright = pkgs.nodePackages.pyright;
     pylsp = pkgs.python3Packages.python-lsp-server;
     # ruff-lsp is the LSP wrapper for ruff (modern: use `ruff server` when available)

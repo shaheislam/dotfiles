@@ -1038,6 +1038,13 @@ if command -v nvim &> /dev/null; then
   echo "Installing Neovim plugins via Lazy.nvim..."
   nvim --headless "+Lazy! sync" +qa
   echo "Neovim plugins installed successfully"
+
+  # Ensure custom Treesitter query directory exists for overrides
+  echo "Setting up custom Treesitter query overrides..."
+  if [ -d "$HOME/neovim" ]; then
+    mkdir -p "$HOME/neovim/queries/python"
+    echo "Custom query directory created/verified at ~/neovim/queries/python"
+  fi
 else
   echo "Warning: Neovim not found. Skipping plugin installation."
 fi
