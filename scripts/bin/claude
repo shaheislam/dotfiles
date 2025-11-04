@@ -20,18 +20,39 @@ fi
 
 # Locate the real Claude binary
 REAL_CLAUDE=""
+
+# 1) Preferred local installs
 if [[ -x "$HOME/.claude/local/bin/claude" ]]; then
   REAL_CLAUDE="$HOME/.claude/local/bin/claude"
 elif [[ -x "$HOME/.claude/local/node_modules/.bin/claude" ]]; then
   REAL_CLAUDE="$HOME/.claude/local/node_modules/.bin/claude"
-else
-  # Fallback: try whatever is on PATH that is not this wrapper
-  if command -v claude >/dev/null 2>&1; then
-    REAL_CLAUDE_CMD=$(command -v claude)
-    if [[ "$REAL_CLAUDE_CMD" != "$0" ]]; then
-      REAL_CLAUDE="$REAL_CLAUDE_CMD"
+fi
+
+# 2) Common user-local location
+if [[ -z "$REAL_CLAUDE" && -x "$HOME/.local/bin/claude" && "$HOME/.local/bin/claude" != "$0" ]]; then
+  REAL_CLAUDE="$HOME/.local/bin/claude"
+fi
+
+# 3) Homebrew locations
+if [[ -z "$REAL_CLAUDE" ]]; then
+  for CAND in \
+    "/opt/homebrew/bin/claude" \
+    "/usr/local/bin/claude"; do
+    if [[ -x "$CAND" && "$CAND" != "$0" ]]; then
+      REAL_CLAUDE="$CAND"
+      break
     fi
-  fi
+  done
+fi
+
+# 4) Any other PATH occurrence (skip this wrapper)
+if [[ -z "$REAL_CLAUDE" ]]; then
+  while IFS= read -r CAND; do
+    if [[ "$CAND" != "$0" && -x "$CAND" ]]; then
+      REAL_CLAUDE="$CAND"
+      break
+    fi
+  done < <(command -v -a claude 2>/dev/null | awk 'notseen[$0]++')
 fi
 
 if [[ -z "$REAL_CLAUDE" || ! -x "$REAL_CLAUDE" ]]; then
