@@ -46,9 +46,10 @@
 
   # Python Language Servers
   python = {
-    basedpyright = pkgs.basedpyright or null;  # basedpyright if available
+    # basedpyright not available in nixpkgs 24.05 - available in unstable/25.05
     pyright = pkgs.nodePackages.pyright;
     pylsp = pkgs.python3Packages.python-lsp-server;
+    # ruff-lsp is the LSP wrapper for ruff (modern: use `ruff server` when available)
     ruff = pkgs.ruff-lsp;
     ruff-lsp = pkgs.ruff-lsp;
     # Formatters - enable per project

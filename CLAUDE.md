@@ -11,11 +11,12 @@
 - **ALWAYS** ensure PATH configurations are added to both Fish and Zsh configs in setup script
 
 ### 2. File Location Constraints
-- **NEVER** create or modify files outside of `~/dotfiles` directory
+- **NEVER** create or modify files outside of `~/dotfiles` directory (EXCEPT `~/neovim` for Neovim config)
 - **ALWAYS** keep all configurations within the dotfiles repository structure
 - **ALWAYS** use relative paths within the dotfiles directory structure
 - **ALWAYS** ensure all tools and configs can be installed via stow or setup script
 - **CRITICAL**: The tmux configuration must ONLY exist at `~/dotfiles/.tmux.conf` - NEVER create tmux.conf in `.config/tmux/` or any other location to avoid conflicts
+- **EXCEPTION**: Neovim configuration lives in `~/neovim` (separate repository) and is NOT part of dotfiles
 
 ### 3. Symlink Management
 - **ALWAYS** use GNU Stow for all configuration file symlinking
@@ -35,7 +36,8 @@
 ### Architecture
 - **Package Management**: Homebrew with centralized Brewfile
 - **Shell**: Fish as primary, Zsh as secondary with Oh My Zsh
-- **Editor**: Neovim with LazyVim distribution
+- **Editor**: Neovim (managed separately in ~/neovim repository)
+- **LSP Management**: Nix-based global LSPs via ~/dotfiles/nix/global
 - **Terminal**: Multiple options (Ghostty, WezTerm, iTerm2)
 - **Multiplexer**: tmux with extensive plugin system
 - **Automation**: Comprehensive setup script for new installations
@@ -43,8 +45,23 @@
 ### Core Components
 - **homebrew/**: Brewfile for package management
 - **scripts/**: Setup and utility scripts
-- **.config/**: Application configurations (fish, nvim, tmux, etc.)
+- **.config/**: Application configurations (fish, tmux, etc.)
+- **nix/**: Nix flakes for global LSP management
 - **Various dotfiles**: Shell configs, git config, tool configs
+
+### Neovim Configuration
+- **Location**: `~/neovim` (separate Git repository)
+- **Symlink**: `~/.config/nvim` → `~/neovim` (manual symlink, not managed by stow)
+- **Syncing**: Neovim config is version-controlled separately and cloned to all devices
+- **LSP Config**: Located in `~/neovim/lua/plugins/lsp.lua`
+- **IMPORTANT**: Dotfiles does NOT contain Neovim configuration - it only manages Nix LSP infrastructure
+
+### LSP Management
+- **Global LSPs**: Defined in `~/dotfiles/nix/global/` (version registry in `nix/lsp-versions.nix`)
+- **Auto-loading**: `~/.envrc` loads global environment via direnv
+- **Inheritance**: All subdirectories of `~` inherit global LSPs automatically
+- **Project Override**: Per-project `.envrc` files can override with project-specific LSP versions
+- **Configuration**: Neovim LSP config in `~/neovim/lua/plugins/lsp.lua` detects and uses Nix-provided LSPs
 
 ## Development Standards
 

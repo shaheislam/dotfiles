@@ -1,0 +1,38 @@
+[tool.pyright]
+# Minimal pyproject.toml to enable LSP attachment globally
+# This file serves as a root marker for basedpyright LSP
+
+# Use basic type checking (can be "off", "basic", or "strict")
+typeCheckingMode = "basic"
+
+# Include all Python files under this directory tree
+include = ["."]
+
+# Exclude common non-project directories
+exclude = [
+    "**/__pycache__",
+    "**/.venv",
+    "**/venv",
+    "**/node_modules",
+    "**/.git",
+]
+
+[tool.ruff]
+# Minimal ruff configuration for linting
+# Select common rule sets
+select = ["E", "F", "W"]  # pycodestyle errors, pyflakes, warnings
+
+# Ignore some common annoyances
+ignore = []
+
+# Line length
+line-length = 120
+
+# Exclude directories
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "node_modules",
+]

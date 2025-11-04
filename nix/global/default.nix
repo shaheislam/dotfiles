@@ -28,10 +28,8 @@ let
     # lspVersions.golang.gofumpt  # Formatter - enable per project
 
     # Python
-    # Use basedpyright if available, otherwise pyright
-    (if lspVersions.python.basedpyright != null
-     then lspVersions.python.basedpyright
-     else lspVersions.python.pyright)
+    # basedpyright not available in nixpkgs 24.05 - use pyright
+    lspVersions.python.pyright
     lspVersions.python.ruff-lsp
     lspVersions.python.debugpy
     # lspVersions.python.black  # Formatter - enable per project
