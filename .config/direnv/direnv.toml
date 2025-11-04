@@ -1,0 +1,18 @@
+# direnv configuration for optimized Nix integration
+# See: https://direnv.net/man/direnv.toml.1.html
+
+[global]
+# Disable "taking a while" warnings (they're annoying for Nix)
+warn_timeout = "0s"
+
+# Enable stricter mode for better security
+strict_env = true
+
+# Increase timeout for Nix flake evaluations (they can be slow)
+load_dotenv = true
+
+# Auto-allow direnv in your home directory and common project paths
+[whitelist]
+prefix = [
+  "/Users/shaheislam",
+]
