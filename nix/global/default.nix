@@ -74,6 +74,12 @@ let
     lspVersions.json.json-lsp
     lspVersions.json.jsonlint
 
+    # GraphQL
+    lspVersions.graphql.stable
+
+    # Protocol Buffers
+    lspVersions.protobuf.bufls
+
     # Ansible
     lspVersions.ansible.stable
 

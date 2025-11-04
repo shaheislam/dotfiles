@@ -95,7 +95,7 @@
   docker = {
     dockerls = pkgs.dockerfile-language-server-nodejs;
     dockerfile-language-server = pkgs.dockerfile-language-server-nodejs;
-    docker-compose-language-service = pkgs.nodePackages.dockerfile-language-server-nodejs;
+    docker-compose-language-service = pkgs.docker-compose-language-service;
     hadolint = pkgs.hadolint;
   };
 
