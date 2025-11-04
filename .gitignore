@@ -87,7 +87,8 @@ test/
 .jj/
 
 # Environment files
-.envrc
+# Note: The global .envrc at dotfiles root is tracked (for Nix global environment)
+# Project-specific .envrc files should not be committed
 .direnv/
 .env
 .claude.json
