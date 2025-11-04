@@ -217,16 +217,6 @@ else
 fi
 
 
-# Install SketchyBar (status bar) - needs special handling
-if ! command -v sketchybar &> /dev/null; then
-  echo "=== Installing SketchyBar ==="
-  brew tap FelixKratz/formulae
-  brew install sketchybar
-  brew services start sketchybar
-else
-  echo "SketchyBar already installed"
-fi
-
 # Install Oh My Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
   echo "=== Installing Oh My Zsh ==="
@@ -1028,7 +1018,7 @@ fi
 
 # Create necessary directories
 echo "=== Creating configuration directories ==="
-mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,sketchybar,atuin,fish,opencode}
+mkdir -p "$HOME/.config/"{nvim,ghostty,wezterm,aerospace,atuin,fish,opencode}
 mkdir -p "$HOME/Library/Application Support/Claude"
 mkdir -p "$HOME/Documents/databases"
 
@@ -1670,7 +1660,7 @@ echo "- Claude Code: CLI tool with SuperClaude framework"
 echo "- AI Tools: OpenAI Codex CLI, Claude Code Router, Opencode (with Nix LSP integration)"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: DankMono Nerd Font (manual), Iosevka Nerd Font, JetBrains Mono Nerd Font (fallback)"
-echo "- macOS apps: ghostty, wezterm, aerospace, sketchybar"
+echo "- macOS apps: ghostty, wezterm, aerospace"
 echo "- Mac App Store apps: Kinda Vim for Safari"
 echo "- Personal repositories: Obsidian vault at ~/obsidian"
 echo "- Sports tools: footyres (football results CLI)"
@@ -1692,7 +1682,6 @@ fi
 echo "1. Close and reopen your terminal to use Fish shell (or run 'exec fish')"
 echo "2. DankMono Nerd Font is now configured for WezTerm, tmux, and Neovim"
 echo "3. Configure aerospace with 'aerospace --config ~/.config/aerospace/aerospace.toml'"
-echo "4. Start sketchybar: 'brew services start sketchybar'"
 echo "5. Restart Claude Desktop to load MCP servers"
 echo "6. Verify Claude Code MCP servers with 'claude mcp list' (after installing Claude Code if needed)"
 echo "7. SuperClaude framework is ready via stow symlinks at ~/.claude/"
