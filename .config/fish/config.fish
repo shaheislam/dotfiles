@@ -2552,6 +2552,9 @@ fish_add_path $HOME/dotfiles/scripts
 # Nix profile for LSPs
 fish_add_path $HOME/.nix-profile/bin
 
+# Terraform provisioning tool
+fish_add_path /Users/mohammedislam/work/terraform-provision
+
 # Opencode LSP integration with Nix
 # Prevent Opencode from downloading its own LSP servers
 # Uses Nix-managed LSP servers instead (from PATH)

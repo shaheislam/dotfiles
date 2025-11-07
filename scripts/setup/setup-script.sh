@@ -102,6 +102,7 @@ BREW_PACKAGES=(
   "shellcheck"
   "shfmt"
   "gh"
+  "terraform_landscape"
 )
 
 for package in "${BREW_PACKAGES[@]}"; do
@@ -290,7 +291,7 @@ if command -v fish &> /dev/null; then
   done
 
   echo "Fisher and Fish plugins installation complete"
-  
+
   # Initialize Carapace completions for Fish
   if command -v carapace &> /dev/null; then
     echo "Setting up Carapace completions for Fish..."
@@ -395,7 +396,7 @@ echo "=== Running TPM plugin installation ==="
 if command -v tmux &> /dev/null && [ -f "$HOME/.tmux/plugins/tpm/bin/install_plugins" ]; then
   echo "Installing/updating tmux plugins via TPM..."
   $HOME/.tmux/plugins/tpm/bin/install_plugins || echo "Note: TPM plugin installation may need to be run from within tmux"
-  
+
   # Force install critical plugins if they're missing
   if [ ! -d "$HOME/.tmux/plugins/tmux-cpu" ]; then
     echo "Force installing tmux-cpu plugin..."
@@ -405,7 +406,7 @@ if command -v tmux &> /dev/null && [ -f "$HOME/.tmux/plugins/tpm/bin/install_plu
     echo "Force installing tmux-battery plugin..."
     git clone https://github.com/tmux-plugins/tmux-battery "$HOME/.tmux/plugins/tmux-battery" || log_warning "Failed to clone tmux-battery"
   fi
-  
+
   echo "Tmux plugins installation attempted. If any failed, start tmux and press 'prefix' + 'I' (Ctrl-Space + I)"
 else
   echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (Ctrl-Space + I) to install the plugins."
@@ -1170,6 +1171,22 @@ log_info "View Pulse logs: tail -f ~/.pulse/logs/stdout.log"
 log_info "Query data: redis-cli KEYS \"*\""
 log_info "Server status: launchctl list | grep pulse"
 
+# Install consul-template
+echo "=== Installing consul-template ==="
+if ! command -v consul-template &> /dev/null; then
+  log_info "Downloading consul-template..."
+  cd /tmp || exit
+  curl -L https://releases.hashicorp.com/consul-template/0.41.3/consul-template_0.41.3_darwin_arm64.zip -o consul-template.zip
+  unzip -q consul-template.zip
+  mkdir -p ~/bin
+  mv consul-template ~/bin/
+  chmod +x ~/bin/consul-template
+  rm consul-template.zip
+  log_success "consul-template installed to ~/bin/"
+else
+  log_success "consul-template already installed"
+fi
+
 # Setup Karabiner-Elements keyboard remapper
 echo "=== Setting up Karabiner-Elements keyboard remapper ==="
 
@@ -1202,6 +1219,18 @@ if [ "$(uname)" == "Darwin" ]; then
     log_info "Install with: brew install --cask karabiner-elements"
   fi
 fi
+
+# Setup Bash configuration
+echo "=== Setting up Bash configuration ==="
+log_info "Bash config files (.bashrc, .bash_profile) are managed by stow"
+log_info "These provide PATH consistency and tool integrations across Fish, Zsh, and Bash"
+if [ -L "$HOME/.bashrc" ] && [ -L "$HOME/.bash_profile" ]; then
+  log_success "Bash configuration files already symlinked"
+else
+  log_info "Run 'cd ~/dotfiles && stow .' to symlink Bash configs"
+fi
+log_info "Test Bash: Type 'bash' from Fish/Zsh to switch shells"
+log_info "Features: Starship prompt, zoxide, direnv, atuin, fzf, asdf"
 
 # Run p10k configuration if it doesn't exist
 if [ ! -f "$HOME/.p10k.zsh" ]; then
@@ -1356,61 +1385,11 @@ else
   log_warning "Nix installation skipped or failed"
 fi
 
-# Install and configure Nix LSPs (Hybrid Approach)
-echo "=== Setting up Nix LSP Hybrid Configuration ==="
-if command -v nix &> /dev/null; then
-  log_info "Setting up Nix-managed LSPs with hybrid approach..."
-
-  # Install global baseline LSPs via nix-env
-  if [ -f "$HOME/dotfiles/scripts/install-lsps-global.sh" ]; then
-    log_info "Installing global baseline LSPs..."
-    if bash "$HOME/dotfiles/scripts/install-lsps-global.sh"; then
-      log_success "Global LSPs installed successfully"
-    else
-      log_warning "Some LSPs may have failed to install - check manually"
-    fi
-  else
-    log_warning "install-lsps-global.sh not found - skipping LSP installation"
-  fi
-
-  # Activate hybrid setup with direnv integration
-  if [ -f "$HOME/dotfiles/scripts/activate-nix-lsps.sh" ]; then
-    log_info "Activating hybrid LSP configuration..."
-    if bash "$HOME/dotfiles/scripts/activate-nix-lsps.sh" hybrid; then
-      log_success "Hybrid LSP setup activated - global baseline + project overrides ready"
-    else
-      log_warning "Hybrid setup activation had issues - run './scripts/activate-nix-lsps.sh' manually"
-    fi
-  else
-    log_warning "activate-nix-lsps.sh not found - manual setup required"
-  fi
-
-  # Verify LSP status
-  if [ -f "$HOME/dotfiles/scripts/check-lsp-status.sh" ]; then
-    log_info "Checking LSP status..."
-    # Run status check but capture output to avoid cluttering setup
-    if bash "$HOME/dotfiles/scripts/check-lsp-status.sh" > /tmp/lsp-status.log 2>&1; then
-      LSP_COUNT=$(grep "Total LSPs found:" /tmp/lsp-status.log | awk '{print $4}')
-      NIX_COUNT=$(grep "From Nix:" /tmp/lsp-status.log | awk '{print $3}')
-      if [ -n "$LSP_COUNT" ] && [ "$LSP_COUNT" -gt 0 ]; then
-        log_success "LSP setup verified: $LSP_COUNT LSPs found, $NIX_COUNT from Nix"
-      else
-        log_warning "No LSPs detected - run './scripts/check-lsp-status.sh' to diagnose"
-      fi
-    fi
-  fi
-
-  echo ""
-  echo "📚 Nix LSP Hybrid Setup Complete!"
-  echo "   • Global baseline LSPs installed via nix-env"
-  echo "   • direnv configured for project-specific overrides"
-  echo "   • Use './scripts/check-lsp-status.sh' to verify status"
-  echo "   • See NIX_LSP_SETUP.md for usage instructions"
-  echo ""
-else
-  log_warning "Nix not available - LSP setup skipped"
-  log_info "Install Nix first, then run './scripts/activate-nix-lsps.sh hybrid'"
-fi
+# LSP Installation (Manual)
+echo ""
+log_info "LSP installation is available but not run automatically"
+log_info "To install LSPs when ready: cd ~/dotfiles && ./scripts/activate-nix-lsps.sh hybrid"
+echo ""
 
 # Apply macOS system defaults for developers
 echo "=== Applying macOS developer defaults ==="
@@ -1597,11 +1576,11 @@ echo "=== Running stow to create symlinks ==="
 if command -v stow &> /dev/null; then
   cd "$HOME/dotfiles" || exit
   log_info "Creating symlinks with stow..."
-  
+
   # Run stow with adopt flag to handle existing files
   if stow . --adopt --verbose 2>&1 | tee /tmp/stow-output.log; then
     log_success "Dotfiles symlinked successfully"
-    
+
     # Check if any files were adopted
     if grep -q "LINK:" /tmp/stow-output.log; then
       log_info "Some existing files were adopted into dotfiles - review git status"
@@ -1610,7 +1589,7 @@ if command -v stow &> /dev/null; then
     log_error "Stow encountered errors - check /tmp/stow-output.log"
     log_info "You can manually run: cd ~/dotfiles && stow . --adopt"
   fi
-  
+
   # Clean up log file
   rm -f /tmp/stow-output.log
 

@@ -33,6 +33,11 @@ export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 
+# Terraform provisioning tool (only if directory exists)
+if [ -d "/Users/mohammedislam/work/terraform-provision" ]; then
+    export PATH="/Users/mohammedislam/work/terraform-provision:$PATH"
+fi
+
 # VSCode and Cursor PATH entries removed
 
 # Initialize tools

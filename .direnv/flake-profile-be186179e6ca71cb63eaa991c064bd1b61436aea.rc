@@ -39,7 +39,7 @@ LD='ld'
 export LD
 LD_DYLD_PATH='/usr/lib/dyld'
 export LD_DYLD_PATH
-LINENO='77'
+LINENO='79'
 MACHTYPE='aarch64-apple-darwin24.1.0'
 MACOSX_DEPLOYMENT_TARGET='11.0'
 export MACOSX_DEPLOYMENT_TARGET
@@ -47,13 +47,13 @@ NIX_BINTOOLS='/nix/store/xlfmp2why46nrid5ssp7lrxb2fc5l7fx-cctools-binutils-darwi
 export NIX_BINTOOLS
 NIX_BINTOOLS_WRAPPER_TARGET_HOST_aarch64_apple_darwin='1'
 export NIX_BINTOOLS_WRAPPER_TARGET_HOST_aarch64_apple_darwin
-NIX_BUILD_CORES='10'
+NIX_BUILD_CORES='14'
 export NIX_BUILD_CORES
 NIX_CC='/nix/store/ykbj4vy7p4gzhfm59say7q4pmddv8ja7-clang-wrapper-16.0.6'
 export NIX_CC
 NIX_CC_WRAPPER_TARGET_HOST_aarch64_apple_darwin='1'
 export NIX_CC_WRAPPER_TARGET_HOST_aarch64_apple_darwin
-NIX_CFLAGS_COMPILE='-F/nix/store/08gkz81fvzhwyla4ya5rs6wj74kggc30-apple-framework-CoreFoundation-11.0.0/Library/Frameworks  -frandom-seed=sdvz0pc09w -isysroot /nix/store/sdxhp1bk4l6zcl8dgsviyv5x3a06swbi-sdkroot-11.0/MacOSX11.0.sdk -isystem /nix/store/hyszxgyjyfr7gh7wlggf373bdvcwkhv0-libcxx-16.0.6-dev/include -isystem /nix/store/3jvsg0q3g3yr4r7j45k9m6nzxs5wisvf-compiler-rt-libc-16.0.6-dev/include -isystem /nix/store/fsmn71sdim0fj2vrgjr26vj9mk4r1cf2-gnumake-4.4.1/include -isystem /nix/store/3v8vm04aa5d8jvxhmk3jpi0rsc6y8ag1-python3-3.11.10/include -isystem /nix/store/9cn58pjrsq6z6j40s1643yksz6a8z57h-postgresql-15.10/include -isystem /nix/store/ajpc1l7apv0kag11rq9n4lw3qg1rj13n-sqlite-3.45.3-dev/include -iframework /nix/store/08gkz81fvzhwyla4ya5rs6wj74kggc30-apple-framework-CoreFoundation-11.0.0/Library/Frameworks -isystem /nix/store/z17njjix0mwdk1pkmj2zmvdksx7d4kp7-libobjc-11.0.0/include -isystem /nix/store/hyszxgyjyfr7gh7wlggf373bdvcwkhv0-libcxx-16.0.6-dev/include -isystem /nix/store/3jvsg0q3g3yr4r7j45k9m6nzxs5wisvf-compiler-rt-libc-16.0.6-dev/include -isystem /nix/store/fsmn71sdim0fj2vrgjr26vj9mk4r1cf2-gnumake-4.4.1/include -isystem /nix/store/3v8vm04aa5d8jvxhmk3jpi0rsc6y8ag1-python3-3.11.10/include -isystem /nix/store/9cn58pjrsq6z6j40s1643yksz6a8z57h-postgresql-15.10/include -isystem /nix/store/ajpc1l7apv0kag11rq9n4lw3qg1rj13n-sqlite-3.45.3-dev/include -iframework /nix/store/08gkz81fvzhwyla4ya5rs6wj74kggc30-apple-framework-CoreFoundation-11.0.0/Library/Frameworks -isystem /nix/store/z17njjix0mwdk1pkmj2zmvdksx7d4kp7-libobjc-11.0.0/include'
+NIX_CFLAGS_COMPILE='-F/nix/store/08gkz81fvzhwyla4ya5rs6wj74kggc30-apple-framework-CoreFoundation-11.0.0/Library/Frameworks  -frandom-seed=dp51ld3pmf -isysroot /nix/store/sdxhp1bk4l6zcl8dgsviyv5x3a06swbi-sdkroot-11.0/MacOSX11.0.sdk -isystem /nix/store/hyszxgyjyfr7gh7wlggf373bdvcwkhv0-libcxx-16.0.6-dev/include -isystem /nix/store/3jvsg0q3g3yr4r7j45k9m6nzxs5wisvf-compiler-rt-libc-16.0.6-dev/include -isystem /nix/store/fsmn71sdim0fj2vrgjr26vj9mk4r1cf2-gnumake-4.4.1/include -isystem /nix/store/3v8vm04aa5d8jvxhmk3jpi0rsc6y8ag1-python3-3.11.10/include -isystem /nix/store/9cn58pjrsq6z6j40s1643yksz6a8z57h-postgresql-15.10/include -isystem /nix/store/ajpc1l7apv0kag11rq9n4lw3qg1rj13n-sqlite-3.45.3-dev/include -iframework /nix/store/08gkz81fvzhwyla4ya5rs6wj74kggc30-apple-framework-CoreFoundation-11.0.0/Library/Frameworks -isystem /nix/store/z17njjix0mwdk1pkmj2zmvdksx7d4kp7-libobjc-11.0.0/include -isystem /nix/store/hyszxgyjyfr7gh7wlggf373bdvcwkhv0-libcxx-16.0.6-dev/include -isystem /nix/store/3jvsg0q3g3yr4r7j45k9m6nzxs5wisvf-compiler-rt-libc-16.0.6-dev/include -isystem /nix/store/fsmn71sdim0fj2vrgjr26vj9mk4r1cf2-gnumake-4.4.1/include -isystem /nix/store/3v8vm04aa5d8jvxhmk3jpi0rsc6y8ag1-python3-3.11.10/include -isystem /nix/store/9cn58pjrsq6z6j40s1643yksz6a8z57h-postgresql-15.10/include -isystem /nix/store/ajpc1l7apv0kag11rq9n4lw3qg1rj13n-sqlite-3.45.3-dev/include -iframework /nix/store/08gkz81fvzhwyla4ya5rs6wj74kggc30-apple-framework-CoreFoundation-11.0.0/Library/Frameworks -isystem /nix/store/z17njjix0mwdk1pkmj2zmvdksx7d4kp7-libobjc-11.0.0/include'
 export NIX_CFLAGS_COMPILE
 NIX_DONT_SET_RPATH='1'
 export NIX_DONT_SET_RPATH
@@ -191,7 +191,7 @@ name='nix-shell-env'
 export name
 nativeBuildInputs=''
 export nativeBuildInputs
-out='/Users/shaheislam/dotfiles/outputs/out'
+out='/Users/mohammedislam/dotfiles/outputs/out'
 export out
 outputBin='out'
 outputDev='out'
@@ -223,7 +223,7 @@ preConfigurePhases=' updateAutotoolsGnuConfigScriptsPhase'
 declare -a preFixupHooks=('_moveToShare' '_multioutDocs' '_multioutDevs' )
 preferLocalBuild='1'
 export preferLocalBuild
-prefix='/Users/shaheislam/dotfiles/outputs/out'
+prefix='/Users/mohammedislam/dotfiles/outputs/out'
 declare -a propagatedBuildDepFiles=('propagated-build-build-deps' 'propagated-native-build-inputs' 'propagated-build-target-deps' )
 propagatedBuildInputs=''
 export propagatedBuildInputs

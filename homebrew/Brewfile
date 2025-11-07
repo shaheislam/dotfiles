@@ -23,6 +23,9 @@ tap "sst/tap"
 
 # CLI Tools
 brew "zsh-vi-mode"
+# Bash enhancements
+brew "bash-completion@2"  # Programmable completion for Bash 4.2+ (matches modern Homebrew bash)
+brew "bash-git-prompt"    # Git-aware bash prompt (alternative to Starship for pure bash environments)
 brew "bat"
 brew "git-delta"
 brew "eza"
@@ -182,6 +185,7 @@ brew "pulumi"
 # brew "packer" # License changed to BUSL - install manually if needed
 # brew "vault" # License changed to BUSL - install manually if needed
 # brew "consul" # License changed to BUSL - install manually if needed
+# brew "consul-template" # HashiCorp BUSL license - install manually via setup script
 # brew "nomad" # License changed to BUSL - install manually if needed
 
 # Kubernetes Local Development Tools

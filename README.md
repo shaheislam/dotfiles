@@ -60,7 +60,7 @@ cd ~/dotfiles
 - Detects OS and architecture automatically
 - Installs package manager (Homebrew on macOS, apt/yum/dnf/pacman on Linux)
 - Installs packages based on selected profile
-- Sets up shell environments (Fish, Zsh, Starship)
+- Sets up shell environments (Fish, Zsh, Bash, Starship)
 - Installs language runtimes (Node.js via nvm, Rust via rustup)
 - Configures tmux with TPM
 - Creates symlinks using GNU Stow
