@@ -54,7 +54,7 @@ def unused_function():
 def poorly_formatted(a, b, c):  # Missing spaces after commas
     result = a + b + c  # Missing spaces around operators
     return result  # Extra spaces
-
+post_mortem
 
 # Test import sorting (ruff should reorganize imports at the top)
 class DataProcessor:

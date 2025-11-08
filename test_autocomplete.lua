@@ -14,7 +14,6 @@ local function test_completion()
   -- Try typing: vim.api.nvim_<Tab> (should show vim API functions)
 
   -- Try typing: string.f<Tab> (should show format, find, etc.)
-
 end
 
 -- Instructions:
@@ -25,3 +24,4 @@ end
 -- 5. Use Shift-Tab to navigate backwards
 -- 6. Use Ctrl-Space to manually trigger completion if needed
 -- 7. Use Ctrl-Y or Enter as alternative ways to accept
+
