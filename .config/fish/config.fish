@@ -1498,10 +1498,6 @@ if status is-interactive
         set fish_tmux_autoname_session true
     end
 
-    # Tmux function with correct TERM
-    function tmux
-        env TERM=xterm-256color /opt/homebrew/bin/tmux $argv
-    end
 
     # Git worktree functions
     function gwtaf --description "Add worktree for existing branch in ../repo-branch format"
