@@ -47,7 +47,7 @@ NIX_BINTOOLS='/nix/store/xlfmp2why46nrid5ssp7lrxb2fc5l7fx-cctools-binutils-darwi
 export NIX_BINTOOLS
 NIX_BINTOOLS_WRAPPER_TARGET_HOST_aarch64_apple_darwin='1'
 export NIX_BINTOOLS_WRAPPER_TARGET_HOST_aarch64_apple_darwin
-NIX_BUILD_CORES='14'
+NIX_BUILD_CORES='10'
 export NIX_BUILD_CORES
 NIX_CC='/nix/store/ykbj4vy7p4gzhfm59say7q4pmddv8ja7-clang-wrapper-16.0.6'
 export NIX_CC
@@ -191,7 +191,7 @@ name='nix-shell-env'
 export name
 nativeBuildInputs=''
 export nativeBuildInputs
-out='/Users/mohammedislam/dotfiles/outputs/out'
+out='/Users/shahe/dotfiles/outputs/out'
 export out
 outputBin='out'
 outputDev='out'
@@ -223,7 +223,7 @@ preConfigurePhases=' updateAutotoolsGnuConfigScriptsPhase'
 declare -a preFixupHooks=('_moveToShare' '_multioutDocs' '_multioutDevs' )
 preferLocalBuild='1'
 export preferLocalBuild
-prefix='/Users/mohammedislam/dotfiles/outputs/out'
+prefix='/Users/shahe/dotfiles/outputs/out'
 declare -a propagatedBuildDepFiles=('propagated-build-build-deps' 'propagated-native-build-inputs' 'propagated-build-target-deps' )
 propagatedBuildInputs=''
 export propagatedBuildInputs
