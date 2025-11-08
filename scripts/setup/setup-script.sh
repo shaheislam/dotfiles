@@ -804,7 +804,7 @@ else
 fi
 
 # Make tmux formatting scripts executable
-for script in tmux-cpu-formatted.sh tmux-ram-formatted.sh tmux-battery-formatted.sh; do
+for script in tmux-cpu-formatted.sh tmux-ram-formatted.sh tmux-battery-formatted.sh tmux-window-color.sh; do
   if [ -f "$HOME/dotfiles/scripts/tmux/$script" ]; then
     chmod +x "$HOME/dotfiles/scripts/tmux/$script"
     log_success "$script is now executable"
