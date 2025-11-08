@@ -7,7 +7,7 @@ Your tmux setup uses a single, unified session manager that integrates tmux sess
 
 | Keybinding | Tool | Description |
 |------------|------|-------------|
-| `Ctrl-Space + S` | Session Manager | Unified interface for all session management |
+| `Ctrl-s + S` | Session Manager | Unified interface for all session management |
 
 ## Session Manager
 
@@ -31,22 +31,22 @@ The session manager provides a unified interface with three types of entries:
 ## Usage Examples
 
 ### Quick Session Switch
-1. Press `Ctrl-Space + S`
+1. Press `Ctrl-s + S`
 2. Type to filter existing sessions (marked with `[S]`)
 3. Press Enter to switch
 
 ### Launch Tmuxinator Project
-1. Press `Ctrl-Space + S`
+1. Press `Ctrl-s + S`
 2. Select a `[T]` entry (tmuxinator template)
 3. Press Enter to launch the full layout
 
 ### Create Session from Recent Directory
-1. Press `Ctrl-Space + S`
+1. Press `Ctrl-s + S`
 2. Select a `[Z]` entry (recent directory from zoxide)
 3. Press Enter to create/switch to session
 
 ### Create Session from Any Path
-1. Press `Ctrl-Space + S`
+1. Press `Ctrl-s + S`
 2. Type a full path (e.g., `~/work/project` or `/usr/local/bin`)
 3. Press Enter to create a session in that directory
    - Session name will be based on the directory name

@@ -407,9 +407,9 @@ if command -v tmux &> /dev/null && [ -f "$HOME/.tmux/plugins/tpm/bin/install_plu
     git clone https://github.com/tmux-plugins/tmux-battery "$HOME/.tmux/plugins/tmux-battery" || log_warning "Failed to clone tmux-battery"
   fi
 
-  echo "Tmux plugins installation attempted. If any failed, start tmux and press 'prefix' + 'I' (Ctrl-Space + I)"
+  echo "Tmux plugins installation attempted. If any failed, start tmux and press 'prefix' + 'I' (Ctrl-s + I)"
 else
-  echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (Ctrl-Space + I) to install the plugins."
+  echo "Tmux setup complete. After starting tmux, press 'prefix' + 'I' (Ctrl-s + I) to install the plugins."
 fi
 
 # Apply tmux-continuum fix
@@ -973,49 +973,9 @@ fi
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 EOF
 
-# Create basic .tmux.conf file
-if [ ! -f "$HOME/.config/tmux/tmux.conf" ]; then
-  echo "=== Creating tmux configuration ==="
-  mkdir -p "$HOME/.config/tmux"
-  cat > "$HOME/.config/tmux/tmux.conf" << 'EOF'
-# Set prefix to Ctrl-Space
-unbind C-b
-set -g prefix C-Space
-bind C-Space send-prefix
-
-# Enable mouse mode
-set -g mouse on
-
-# Start window numbering at 1
-set -g base-index 1
-setw -g pane-base-index 1
-
-# Set larger history limit
-set -g history-limit 5000
-
-# Enable vi mode
-setw -g mode-keys vi
-
-# Split panes with | and -
-bind | split-window -h
-bind - split-window -v
-unbind '"'
-unbind %
-
-# Reload tmux config
-bind r source-file ~/.config/tmux/tmux.conf \; display "Reloaded!"
-
-# Enable 256 colors
-set -g default-terminal "screen-256color"
-set -ga terminal-overrides ",xterm-256color:Tc"
-EOF
-
-  # Create a symlink for backward compatibility
-  ln -sf "$HOME/.config/tmux/tmux.conf" "$HOME/.tmux.conf"
-  echo "Created tmux configuration at ~/.config/tmux/tmux.conf with symlink at ~/.tmux.conf"
-else
-  echo "tmux configuration already exists"
-fi
+# Note: tmux configuration is managed via stow from ~/dotfiles/.tmux.conf
+# No need to create a separate config file here as it violates our dotfiles rules
+# The stow command earlier in the script handles symlinking .tmux.conf properly
 
 # Create necessary directories
 echo "=== Creating configuration directories ==="
