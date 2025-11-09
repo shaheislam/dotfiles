@@ -372,14 +372,6 @@ else
   install_tmux_plugin "tmux-cpu" "https://github.com/tmux-plugins/tmux-cpu"
 fi
 
-# Apply Dracula theme customizations
-echo "=== Applying Dracula theme customizations ==="
-if [ -f "$(pwd)/scripts/setup-tmux-dracula.sh" ]; then
-  bash "$(pwd)/scripts/setup-tmux-dracula.sh"
-else
-  echo "Warning: setup-tmux-dracula.sh script not found"
-fi
-
 # Create tmux config directory if it doesn't exist
 mkdir -p "$HOME/.tmux"
 
@@ -803,8 +795,8 @@ else
   log_warning "tmux-url-handler.sh not found"
 fi
 
-# Make tmux formatting scripts executable
-for script in tmux-cpu-formatted.sh tmux-ram-formatted.sh tmux-battery-formatted.sh tmux-window-color.sh; do
+# Make essential tmux scripts executable (minimal setup)
+for script in tmux-activity-monitor.sh tmux-activity-clear.sh tmux-session-manager.sh tmux-session-trash.sh tmux-url-handler.sh; do
   if [ -f "$HOME/dotfiles/scripts/tmux/$script" ]; then
     chmod +x "$HOME/dotfiles/scripts/tmux/$script"
     log_success "$script is now executable"
