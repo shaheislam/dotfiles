@@ -177,8 +177,9 @@ brew "choose-rust"
 brew "tokei"
 brew "ncdu"
 
-# Keyboard Remapping Tools
+# Keyboard & Display Tools
 cask "karabiner-elements"  # macOS keyboard remapping tool (Caps Lock ↔ Escape swap)
+cask "keycastr"  # Keystroke visualizer for screencasts and presentations
 
 # Infrastructure Tools
 brew "pulumi"

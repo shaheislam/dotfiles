@@ -169,6 +169,18 @@ else
   brew install --cask willow
 fi
 
+# Install KeyCastr (Keystroke Visualizer)
+if app_installed "KeyCastr"; then
+  echo "KeyCastr already installed"
+else
+  echo "Installing KeyCastr..."
+  brew install --cask keycastr
+  echo "⚠️  KeyCastr requires accessibility permissions:"
+  echo "   1. Open KeyCastr from Applications"
+  echo "   2. Grant 'Input Monitoring' permission when prompted"
+  echo "   3. Configure display preferences as needed"
+fi
+
 # Install WezTerm
 if app_installed "WezTerm"; then
   echo "WezTerm already installed"
@@ -1591,7 +1603,7 @@ echo "- Claude Code: CLI tool with SuperClaude framework"
 echo "- AI Tools: OpenAI Codex CLI, Claude Code Router, Opencode (with Nix LSP integration)"
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: DankMono Nerd Font (manual), Iosevka Nerd Font, JetBrains Mono Nerd Font (fallback)"
-echo "- macOS apps: ghostty, wezterm, aerospace"
+echo "- macOS apps: ghostty, wezterm, aerospace, keycastr (requires accessibility permissions)"
 echo "- Mac App Store apps: Kinda Vim for Safari"
 echo "- Personal repositories: Obsidian vault at ~/obsidian"
 echo "- Sports tools: footyres (football results CLI)"
