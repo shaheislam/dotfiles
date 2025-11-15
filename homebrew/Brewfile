@@ -49,9 +49,6 @@ brew "asciinema"  # Terminal session recorder
 brew "carapace"  # Multi-shell completion generator
 # brew "lazygit"  # Removed - not using LazyGit
 brew "lazydocker"
-brew "yazi"
-brew "ffmpegthumbnailer"  # For video thumbnails in yazi
-brew "unar"  # For archive preview in yazi
 brew "splash"  # Log colorizer
 brew "fish"
 brew "fswatch"  # For Obsidian auto-sync
@@ -76,7 +73,6 @@ brew "kubectl"
 brew "azure-cli"
 brew "imagemagick"
 brew "Azure/kubelogin/kubelogin"
-brew "ueberzugpp"
 brew "reattach-to-user-namespace"
 brew "bottom"
 brew "htop"
@@ -88,7 +84,6 @@ brew "fastfetch"
 brew "uv"
 brew "onefetch"
 brew "tealdeer"
-brew "glow"
 brew "jq"
 brew "yq"
 brew "redis"  # Required for Pulse coding activity tracking

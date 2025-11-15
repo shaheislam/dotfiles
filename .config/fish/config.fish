@@ -308,16 +308,6 @@ if status is-interactive
     alias tmpm="tmpmail"  # Check temp mailbox
     alias altair="open -a 'Altair GraphQL Client'"  # Open Altair GraphQL Client
 
-    # Yazi shell wrapper for directory navigation
-    function yy --description "Navigate with yazi and change directory on exit"
-        set tmp (mktemp -t "yazi-cwd.XXXXXX")
-        yazi $argv --cwd-file="$tmp"
-        if set cwd (command cat -- "$tmp"); and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
-            cd -- "$cwd"
-        end
-        rm -f -- "$tmp"
-    end
-
     # Splash log colorizer integration
     # Automatically pipe common log-producing commands through splash
     if command -v splash >/dev/null
