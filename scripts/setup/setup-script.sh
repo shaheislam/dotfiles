@@ -316,14 +316,9 @@ else
   echo "Warning: Fish shell not found. Skipping Fisher plugin installation."
 fi
 
-# Install and setup fzf
-if [ ! -d "$HOME/.fzf" ]; then
-  echo "=== Installing fzf ==="
-  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-  ~/.fzf/install --all --no-bash --no-fish
-else
-  echo "fzf already installed"
-fi
+# fzf installation removed - managed by Homebrew (macOS) or package managers (Linux)
+# Manual git installation caused version conflicts and outdated versions
+# See Brewfile for macOS or linux-packages.sh for Linux
 
 # Install fzf-git.sh
 if [ ! -d "$HOME/fzf-git.sh" ]; then

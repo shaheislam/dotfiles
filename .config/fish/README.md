@@ -31,11 +31,20 @@ This Fish shell configuration replicates all the functionality from your `.zshrc
 
 ### ✅ Additional Features:
 
-- **Git+FZF integration** - Fish-native functions replacing `fzf-git.sh`:
-  - `gb_fzf` - Browse and select git branches with preview
-  - `gc_fzf` - Browse and select git commits with preview
-  - `gf_fzf` - Browse and select git files with preview
-  - `gm_fzf` - Browse modified files with git diff preview
+- **Git+FZF integration** - Dual-mode git workflow:
+  - **CTRL-G keybindings** (via fzf-git.sh):
+    - `CTRL-G CTRL-F` - Files
+    - `CTRL-G CTRL-B` - Branches
+    - `CTRL-G CTRL-H` - Commit hashes
+    - `CTRL-G CTRL-T` - Tags
+    - `CTRL-G CTRL-R` - Remotes
+    - `CTRL-G CTRL-S` - Stashes
+  - **Tab completions** (custom):
+    - `git add <TAB>` - Show only uncommitted files
+    - `git checkout <TAB>` - Show branches
+    - `git switch <TAB>` - Show all branches
+    - `git branch -d <TAB>` - Show deletable branches
+    - `git merge <TAB>` - Show mergeable branches
 
 ## Key Differences from Zsh
 
@@ -49,7 +58,7 @@ This Fish shell configuration replicates all the functionality from your `.zshrc
 ### New Shortcuts & Abbreviations:
 
 - **Git**: `g`, `ga`, `gc`, `gp`, `gst`, etc.
-- **Git+FZF**: `gb_fzf`, `gc_fzf`, `gf_fzf`, `gm_fzf`
+- **Git+FZF**: `CTRL-G CTRL-{F,B,H,T,R,S}` keybindings + smart tab completions
 - **Kubectl**: `kgp`, `kgs`, `kgd`, `kaf`, etc.
 - **History search**: `Ctrl+R` for FZF history search
 - **File search**: `Ctrl+T` for FZF file search
@@ -107,7 +116,7 @@ If something doesn't work as expected:
 ### Common Issues:
 
 - **mise warnings** (e.g., "missing: terraform@1.7.4") are just informational and won't prevent Fish from working
-- **fzf-git.sh compatibility**: The original `fzf-git.sh` is bash/zsh-specific and has been replaced with Fish-native functions
+- **fzf version**: Ensure fzf ≥0.53.0 for `--tmux` support (Homebrew provides latest, avoid Nix version conflicts)
 - **Syntax errors**: Make sure you're not mixing bash/zsh syntax in Fish configuration
 
 ## Going Back to Zsh
