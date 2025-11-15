@@ -23,7 +23,7 @@
         ripgrep
         fd
         bat
-        fzf
+        # fzf  # Managed by Homebrew to ensure latest version
       ];
     };
   };

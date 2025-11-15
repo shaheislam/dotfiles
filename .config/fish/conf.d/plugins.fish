@@ -74,26 +74,21 @@ if command -v fzf >/dev/null
     # Bind to Ctrl+R for history search
     bind \cr fzf_select_history
 
-    # Git+FZF functions (replaces fzf-git.sh functionality)
-    function fzf_git_branch
-        git branch -a --color=always | grep -v '/HEAD\s' | fzf --ansi --preview 'git log --oneline --graph --date=short --color=always --pretty="format:%C(auto)%cd %h%d %s" (echo {} | sed "s/.* //" | sed "s#remotes/[^/]*/##")' | sed 's/.* //' | sed 's#remotes/[^/]*/##'
-    end
-
-    function fzf_git_commit
-        git log --graph --color=always --format="%C(auto)%h%d %s %C(black)%C(bold)%cr" | fzf --ansi --no-sort --reverse --tiebreak=index --preview 'echo {} | grep -o "[a-f0-9]\{7\}" | head -1 | xargs git show --color=always' | grep -o "[a-f0-9]\{7\}" | head -1
-    end
-
-    function fzf_git_file
-        git ls-files | fzf --preview 'bat --color=always --line-range=:50 {}'
-    end
-
-    function fzf_git_modified
-        git diff --name-only | fzf --preview 'git diff --color=always {}'
-    end
-
-    # Git+FZF abbreviations for easy access
-    abbr -a gb_fzf 'fzf_git_branch'
-    abbr -a gc_fzf 'fzf_git_commit'
-    abbr -a gf_fzf 'fzf_git_file'
-    abbr -a gm_fzf 'fzf_git_modified'
+    # =============================================================================
+    # Git+FZF Integration
+    # =============================================================================
+    # Git functionality is now provided by fzf-git.sh (loaded via conf.d/fzf-git.fish)
+    # Use CTRL-G keybindings:
+    #   CTRL-G CTRL-F - Files
+    #   CTRL-G CTRL-B - Branches
+    #   CTRL-G CTRL-T - Tags
+    #   CTRL-G CTRL-R - Remotes
+    #   CTRL-G CTRL-H - Commit Hashes
+    #   CTRL-G CTRL-S - Stashes
+    #   CTRL-G CTRL-L - Reflogs
+    #   CTRL-G CTRL-W - Worktrees
+    #
+    # Tab completion is also available for git commands:
+    #   git add <TAB>, git checkout <TAB>, git merge <TAB>, etc.
+    # =============================================================================
 end

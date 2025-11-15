@@ -29,7 +29,7 @@
     # === Search & Navigation ===
     ripgrep
     fd
-    fzf
+    # fzf  # Managed by Homebrew to ensure latest version
     bat
     eza
     tree
@@ -102,11 +102,11 @@
       # Configuration is managed by your dotfiles
     };
 
-    # fzf configuration (minimal - just enable it)
-    fzf = {
-      enable = true;
-      # Configuration is managed by your dotfiles
-    };
+    # fzf configuration - Disabled, managed by Homebrew instead
+    # fzf = {
+    #   enable = true;
+    #   # Configuration is managed by your dotfiles
+    # };
 
     # Note: bat and zoxide are installed as packages above
     # Their configurations are managed by your existing dotfiles
