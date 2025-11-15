@@ -9,10 +9,6 @@ function _fifc_kubectl_preview
     echo "PWD: $PWD" >> $debug_file
     echo "KUBECONFIG: $KUBECONFIG" >> $debug_file
 
-    # Also output to stderr for immediate feedback
-    echo "=== KUBECTL PREVIEW CALLED ===" >&2
-    echo "Candidate: $fifc_candidate" >&2
-
     # Extract the resource type from the command line
     # e.g., "kubectl get deployment" -> "deployment"
     set -l cmd_parts (string split " " "$fifc_commandline")
