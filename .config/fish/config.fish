@@ -274,6 +274,10 @@ if status is-interactive
     # Carapace completions initialization
     if command -v carapace >/dev/null
         carapace _carapace fish | source
+        # Remove Carapace's kubectl completions (Fish 4.1+ blocks autoload after complete -e)
+        # Then explicitly source Fish-native evanlucas/fish-kubectl-completions
+        complete -e kubectl
+        source ~/.config/fish/completions/kubectl.fish
     end
 
     # Auto-attach to tmux session 'main' or create it if it doesn't exist
