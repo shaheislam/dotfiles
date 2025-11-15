@@ -9,14 +9,9 @@ function kubectl --wraps kubectl --description "Kubectl with fzf for get command
         if not string match -q -- '-*' $resource
             # Skip fzf if -o/--output flag is present (user wants direct output)
             if not string match -q -- '*-o*' "$argv"; and not string match -q -- '*--output*' "$argv"
-                # Use fzf for interactive selection with YAML preview
-                # DEBUG: Log that we're calling the wrapper
-                echo "DEBUG: Calling wrapper with resource=$resource, extra_args=$extra_args" >&2
-                echo "DEBUG: KUBECONFIG=$KUBECONFIG" >&2
-
-                # Use bash wrapper to avoid Fish-specific issues with fzf
-                # Explicitly pass KUBECONFIG environment variable
-                env KUBECONFIG=$KUBECONFIG /tmp/kubectl-fzf-wrapper.sh $resource $extra_args
+                # Use bash wrapper for fzf integration (configurable via KUBECTL_FZF_OPTS)
+                # Wrapper location: ~/.config/fish/functions/kubectl-fzf-wrapper.sh
+                env KUBECONFIG=$KUBECONFIG ~/.config/fish/functions/kubectl-fzf-wrapper.sh $resource $extra_args
                 return
             end
         end

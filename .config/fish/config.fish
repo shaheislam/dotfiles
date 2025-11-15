@@ -310,6 +310,18 @@ if status is-interactive
 
     # Note: kubectl wrapper function defined in ~/.config/fish/functions/kubectl.fish
     # Provides automatic fzf integration for 'kubectl get' commands with YAML preview
+    #
+    # Kubectl FZF Keybindings (default):
+    #   ctrl-d    - Scroll preview down (page)
+    #   ctrl-u    - Scroll preview up (page)
+    #   ctrl-f    - Scroll preview down (line)
+    #   ctrl-b    - Scroll preview up (line)
+    #   ctrl-y    - View full YAML in pager
+    #   ctrl-e    - View kubectl describe in pager
+    #   enter     - Select resource
+    #
+    # Customize keybindings by setting KUBECTL_FZF_OPTS:
+    # set -gx KUBECTL_FZF_OPTS "--bind='ctrl-p:preview-up' --bind='ctrl-n:preview-down'"
 
     # Splash log colorizer integration
     # Automatically pipe common log-producing commands through splash
