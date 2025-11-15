@@ -1300,6 +1300,23 @@ EOF
     log_info "Nix configuration already exists"
   fi
 
+  # Configure system-level trusted users (for Determinate Systems Nix installer)
+  if [ -f "/etc/nix/nix.custom.conf" ]; then
+    if ! sudo grep -q "^trusted-users.*@admin" /etc/nix/nix.custom.conf 2>/dev/null; then
+      log_info "Adding @admin to Nix trusted users..."
+      echo "trusted-users = root @admin" | sudo tee -a /etc/nix/nix.custom.conf > /dev/null
+      log_success "Nix trusted users configured"
+
+      # Restart Nix daemon to apply changes
+      if sudo launchctl list | grep -q "systems.determinate.nix-daemon"; then
+        sudo launchctl kickstart -k system/systems.determinate.nix-daemon
+        log_success "Nix daemon restarted"
+      fi
+    else
+      log_info "Nix trusted users already configured"
+    fi
+  fi
+
   # Create Nix directory structure in dotfiles
   if [ ! -d "$HOME/dotfiles/nix" ]; then
     log_info "Creating Nix directory structure..."

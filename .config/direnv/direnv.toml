@@ -11,6 +11,9 @@ strict_env = true
 # Increase timeout for Nix flake evaluations (they can be slow)
 load_dotenv = true
 
+# Hide environment variable diff to reduce output noise
+hide_env_diff = true
+
 # Auto-allow direnv in your home directory and common project paths
 [whitelist]
 prefix = [
