@@ -6,7 +6,7 @@
 
 let
   # Import LSP versions
-  lspVersions = import ../lsp-versions.nix {
+  lspVersions = import ./lsp-versions.nix {
     inherit pkgs;
     pkgs-unstable = pkgs-unstable;
   };

@@ -21,7 +21,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         # Import LSP versions if needed
-        lspVersions = import ../../lsp-versions.nix { inherit pkgs; };
+        lspVersions = import ../global/lsp-versions.nix { inherit pkgs; };
       in {
         devShells = {
           # Default: Extend the global environment

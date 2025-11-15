@@ -15,7 +15,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         # Import LSP versions
-        lspVersions = import ../../lsp-versions.nix { inherit pkgs; };
+        lspVersions = import ../global/lsp-versions.nix { inherit pkgs; };
 
         devPackages = with pkgs; [
           # LSPs for Backend Languages

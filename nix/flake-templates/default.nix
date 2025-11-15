@@ -18,7 +18,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         # Import LSP versions
-        lspVersions = import ../../lsp-versions.nix { inherit pkgs; };
+        lspVersions = import ../global/lsp-versions.nix { inherit pkgs; };
 
         # Custom packages or overrides
         customPackages = {
