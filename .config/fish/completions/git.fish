@@ -46,7 +46,12 @@ end
 # =============================================================================
 # git add - Show only uncommitted files (modified, untracked, deleted)
 # =============================================================================
-complete -c git -n '__fish_git_using_command add' --no-files -a '
+
+# First, explicitly prevent any file completions for git add
+complete -c git -n '__fish_git_using_command add' -f
+
+# Then add our custom completion for uncommitted files only
+complete -c git -n '__fish_git_using_command add' -a '
     (
         git status --porcelain 2>/dev/null | while read -l status_line
             set -l file_path (string sub -s 4 -- $status_line)
@@ -62,7 +67,8 @@ complete -c git -n '__fish_git_using_command add' --no-files -a '
 # =============================================================================
 # git rm - Show only tracked files
 # =============================================================================
-complete -c git -n '__fish_git_using_command rm' --no-files -a '
+complete -c git -n '__fish_git_using_command rm' -f
+complete -c git -n '__fish_git_using_command rm' -a '
     (
         git ls-files 2>/dev/null
     )
@@ -71,7 +77,8 @@ complete -c git -n '__fish_git_using_command rm' --no-files -a '
 # =============================================================================
 # git restore - Show modified files (staged and unstaged)
 # =============================================================================
-complete -c git -n '__fish_git_using_command restore' --no-files -a '
+complete -c git -n '__fish_git_using_command restore' -f
+complete -c git -n '__fish_git_using_command restore' -a '
     (
         git status --porcelain 2>/dev/null | while read -l status_line
             set -l status (string sub -l 2 -- $status_line | string trim)
@@ -91,7 +98,8 @@ complete -c git -n '__fish_git_using_command restore' --no-files -a '
 # git checkout - Show branches (context-aware)
 # When used without file paths, show branches
 # =============================================================================
-complete -c git -n '__fish_git_using_command checkout; and not __fish_seen_argument -b' --no-files -a '
+complete -c git -n '__fish_git_using_command checkout; and not __fish_seen_argument -b' -f
+complete -c git -n '__fish_git_using_command checkout; and not __fish_seen_argument -b' -a '
     (
         # Show local and remote branches
         git branch -a --format="%(refname:short)" 2>/dev/null | string replace "origin/" ""
@@ -101,7 +109,8 @@ complete -c git -n '__fish_git_using_command checkout; and not __fish_seen_argum
 # =============================================================================
 # git switch - Show all branches (local + remote)
 # =============================================================================
-complete -c git -n '__fish_git_using_command switch; and not __fish_seen_argument -c' --no-files -a '
+complete -c git -n '__fish_git_using_command switch; and not __fish_seen_argument -c' -f
+complete -c git -n '__fish_git_using_command switch; and not __fish_seen_argument -c' -a '
     (
         git branch -a --format="%(refname:short)" 2>/dev/null | string replace "origin/" ""
     )
@@ -110,7 +119,8 @@ complete -c git -n '__fish_git_using_command switch; and not __fish_seen_argumen
 # =============================================================================
 # git branch -d/-D - Show local branches (exclude current branch)
 # =============================================================================
-complete -c git -n '__fish_git_using_command branch; and __fish_seen_argument -d -D' --no-files -a '
+complete -c git -n '__fish_git_using_command branch; and __fish_seen_argument -d -D' -f
+complete -c git -n '__fish_git_using_command branch; and __fish_seen_argument -d -D' -a '
     (
         set -l current_branch (git branch --show-current 2>/dev/null)
         git branch --format="%(refname:short)" 2>/dev/null | while read -l branch
@@ -125,7 +135,8 @@ complete -c git -n '__fish_git_using_command branch; and __fish_seen_argument -d
 # =============================================================================
 # git merge - Show branches to merge into current
 # =============================================================================
-complete -c git -n '__fish_git_using_command merge' --no-files -a '
+complete -c git -n '__fish_git_using_command merge' -f
+complete -c git -n '__fish_git_using_command merge' -a '
     (
         set -l current_branch (git branch --show-current 2>/dev/null)
         git branch -a --format="%(refname:short)" 2>/dev/null | while read -l branch
@@ -140,7 +151,8 @@ complete -c git -n '__fish_git_using_command merge' --no-files -a '
 # =============================================================================
 # git reset - Show staged and modified files
 # =============================================================================
-complete -c git -n '__fish_git_using_command reset; and not __fish_seen_argument --hard --soft --mixed' --no-files -a '
+complete -c git -n '__fish_git_using_command reset; and not __fish_seen_argument --hard --soft --mixed' -f
+complete -c git -n '__fish_git_using_command reset; and not __fish_seen_argument --hard --soft --mixed' -a '
     (
         # Show files that are staged or modified
         git diff --name-only --cached 2>/dev/null
@@ -151,7 +163,8 @@ complete -c git -n '__fish_git_using_command reset; and not __fish_seen_argument
 # =============================================================================
 # git reset --hard/--soft/--mixed - Show commit references
 # =============================================================================
-complete -c git -n '__fish_git_using_command reset; and __fish_seen_argument --hard --soft --mixed' --no-files -a '
+complete -c git -n '__fish_git_using_command reset; and __fish_seen_argument --hard --soft --mixed' -f
+complete -c git -n '__fish_git_using_command reset; and __fish_seen_argument --hard --soft --mixed' -a '
     (
         # Show recent commits
         git log --oneline --max-count=20 --format="%h" 2>/dev/null

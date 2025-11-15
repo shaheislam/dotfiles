@@ -11,9 +11,19 @@ if status is-interactive
     set -qU fifc_open_keybinding
     or set -U fifc_open_keybinding ctrl-o
 
+    # Wrapper to use fzf-git.sh for git commands, FIFC for everything else
+    function _fifc_or_git_fzf
+        set -l cmd (commandline -opc)
+        if test (count $cmd) -gt 0; and test "$cmd[1]" = "git"
+            _git_fzf_tab_complete
+        else
+            _fifc
+        end
+    end
+
     for mode in default insert
-        bind --mode $mode \t _fifc
-        bind --mode $mode $fifc_keybinding _fifc
+        bind --mode $mode \t _fifc_or_git_fzf
+        bind --mode $mode $fifc_keybinding _fifc_or_git_fzf
     end
 
     # Set sources rules
