@@ -81,10 +81,6 @@ alias k="kubectl"
 alias kc="kubectx"
 alias kn="kubens"
 
-# bat theme
-export BAT_THEME=tokyonight_night
-export BAT_PAGING="auto"  # Prevents FZF preview file descriptor errors
-
 # thefuck
 if command -v thefuck > /dev/null 2>&1; then
   eval $(thefuck --alias)
