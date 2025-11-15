@@ -308,6 +308,9 @@ if status is-interactive
     alias tmpm="tmpmail"  # Check temp mailbox
     alias altair="open -a 'Altair GraphQL Client'"  # Open Altair GraphQL Client
 
+    # Note: kubectl wrapper function defined in ~/.config/fish/functions/kubectl.fish
+    # Provides automatic fzf integration for 'kubectl get' commands with YAML preview
+
     # Splash log colorizer integration
     # Automatically pipe common log-producing commands through splash
     if command -v splash >/dev/null
@@ -319,20 +322,6 @@ if status is-interactive
                 command docker $argv | splash
             else
                 command docker $argv
-            end
-        end
-
-        # Kubectl commands with kubecolor and splash
-        function kubectl --description "Kubectl with kubecolor and colored logs"
-            if test "$argv[1]" = "logs"
-                # Use regular kubectl for logs and pipe through splash
-                command kubectl $argv | splash
-            else if command -v kubecolor >/dev/null
-                # Use kubecolor for other kubectl commands
-                kubecolor $argv
-            else
-                # Fallback to regular kubectl
-                command kubectl $argv
             end
         end
 

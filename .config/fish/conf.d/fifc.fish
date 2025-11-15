@@ -40,6 +40,11 @@ end
 
 # Load fifc preview rules only when fish is launched fzf
 if set -q _fifc_launched_by_fzf
+    # Custom kubectl preview rule - must come first to match before generic rules
+    fifc \
+        -n 'string match -q "kubectl *" "$fifc_commandline"; or string match -q "k *" "$fifc_commandline"' \
+        -p _fifc_kubectl_preview
+
     # Builtin preview/open commands
     fifc \
         -n 'test "$fifc_group" = "options"' \
