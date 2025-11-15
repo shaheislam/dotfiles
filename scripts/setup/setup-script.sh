@@ -294,6 +294,9 @@ if command -v fish &> /dev/null; then
     "oh-my-fish/plugin-bang-bang"
     "jhillyerd/plugin-git"
     "PatrickF1/fzf.fish"
+    "jethrokuan/z"
+    "franciscolourenco/done"
+    "gazorby/fifc"
   )
 
   # Install each plugin
