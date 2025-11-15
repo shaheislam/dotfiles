@@ -63,7 +63,7 @@ if command -v fzf &> /dev/null; then
 fi
 
 # BAT_PAGING fix (prevents FZF preview errors)
-export BAT_PAGING="never"
+export BAT_PAGING="auto"
 
 # Editor Configuration
 export EDITOR="nvim"
