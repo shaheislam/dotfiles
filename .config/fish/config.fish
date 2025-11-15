@@ -2529,10 +2529,10 @@ if status is-interactive
     bind -M insert \cr atuin_fzf_search
 
     # Ensure fifc Tab binding takes precedence over autopair.fish
-    # This rebinds Tab to fifc after all plugins have loaded
-    if functions -q _fifc
-        bind \t _fifc
-        bind -M insert \t _fifc
+    # This rebinds Tab to the fifc/git wrapper after all plugins have loaded
+    if functions -q _fifc_or_git_fzf
+        bind \t _fifc_or_git_fzf
+        bind -M insert \t _fifc_or_git_fzf
     end
 end
 
