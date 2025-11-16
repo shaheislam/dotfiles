@@ -12,13 +12,16 @@
 
   outputs = { self, nixpkgs, home-manager, flake-utils, ... }:
     let
-      system = "aarch64-darwin";  # Apple Silicon. Use "x86_64-darwin" for Intel
-      pkgs = nixpkgs.legacyPackages.${system};
+      # Detect current system architecture automatically
+      # Works on: Apple Silicon (aarch64-darwin), Intel Mac (x86_64-darwin),
+      # Linux ARM (aarch64-linux), Linux x86 (x86_64-linux)
+      currentSystem = builtins.currentSystem or "aarch64-darwin";
 
-      # Shared function to create home configurations for different users
-      mkHomeConfig = { username, homeDirectory }:
+      # Shared function to create home configurations for any user
+      # Usage: mkHomeConfig { username = "yourname"; }
+      mkHomeConfig = { username, homeDirectory ? "/Users/${username}", system ? currentSystem }:
         home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
+          pkgs = nixpkgs.legacyPackages.${system};
 
           modules = [
             ./home.nix
@@ -30,36 +33,61 @@
             }
           ];
         };
+
+      # Dynamic username detection from environment (requires --impure)
+      # Used by setup scripts for automatic configuration
+      dynamicUser = builtins.getEnv "USER";
+      # Fallback to "user" if USER env var is empty (shouldn't happen but defensive)
+      detectedUser = if dynamicUser != "" then dynamicUser else "user";
+
+      # Smart path detection for macOS vs Linux
+      # Checks if /Users exists (macOS) or falls back to /home (Linux)
+      detectedHomeDir =
+        if builtins.pathExists "/Users"
+        then "/Users/${detectedUser}"   # macOS
+        else "/home/${detectedUser}";   # Linux
     in {
-      # Define configurations for multiple users/machines
+      # homeConfigurations: Add your username(s) here
+      # Then use: home-manager switch --flake ~/.config/home-manager#yourname
       homeConfigurations = {
-        # Primary configuration (current machine)
+        # DYNAMIC DEFAULT - Auto-detects current user (requires --impure flag)
+        # Usage: home-manager switch --flake .#default --impure
+        # Perfect for setup scripts that need to work on any device/user
+        # Automatically detects macOS (/Users/) vs Linux (/home/)
+        default = mkHomeConfig {
+          username = detectedUser;
+          homeDirectory = detectedHomeDir;
+        };
+
+        # EXPLICIT CONFIGURATIONS - For manual/reproducible use (no --impure needed)
+        # Usage: home-manager switch --flake .#shahe
         "shahe" = mkHomeConfig {
           username = "shahe";
-          homeDirectory = "/Users/shahe";
         };
 
-        # Alternative username configuration
         "shaheislam" = mkHomeConfig {
           username = "shaheislam";
-          homeDirectory = "/Users/shaheislam";
         };
 
-        # Easy to add more configurations as needed:
+        # Easy to add more users for different devices:
         # "work-laptop" = mkHomeConfig {
         #   username = "work-user";
-        #   homeDirectory = "/Users/work-user";
+        #   # Optionally override home directory:
+        #   # homeDirectory = "/home/work-user";  # For Linux
+        # };
+
+        # "personal-macbook" = mkHomeConfig {
+        #   username = "personal";
         # };
       };
+    } // flake-utils.lib.eachDefaultSystem (system: {
+      # Per-system outputs (packages and apps for each architecture)
+      # These work automatically regardless of which username you use
+      packages.default = self.homeConfigurations."shaheislam".activationPackage;
 
-      # Default activation package (uses primary configuration)
-      packages.${system}.default =
-        self.homeConfigurations."shahe".activationPackage;
-
-      # App for easy activation
-      apps.${system}.default = {
+      apps.default = {
         type = "app";
         program = "${self.packages.${system}.default}/bin/home-manager";
       };
-    };
+    });
 }

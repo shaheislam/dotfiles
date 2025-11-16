@@ -1353,8 +1353,12 @@ EOF
   # Activate Home Manager if config exists
   if [ -f "$HOME/.config/home-manager/flake.nix" ]; then
     log_info "Activating Home Manager configuration..."
-    if cd "$HOME/.config/home-manager" && nix run . -- switch --flake . 2>/dev/null; then
-      log_success "Home Manager activated - global packages now available"
+    log_info "Detecting current user: $USER"
+    # Use --impure to allow dynamic user detection via environment variables
+    # This enables the setup script to work on any device/user automatically
+    if cd "$HOME/.config/home-manager" && nix run . -- switch --flake .#default --impure 2>/dev/null; then
+      log_success "Home Manager activated for user: $USER"
+      log_success "Global packages now available"
     else
       log_warning "Home Manager activation failed - run 'hm-switch' manually after restarting shell"
     fi
