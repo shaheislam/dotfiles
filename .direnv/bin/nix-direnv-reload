@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -e
-if [[ ! -d "/Users/shahe/dotfiles" ]]; then
+if [[ ! -d "/Users/mohammedislam/dotfiles" ]]; then
   echo "Cannot find source directory; Did you move it?"
-  echo "(Looking for "/Users/shahe/dotfiles")"
+  echo "(Looking for "/Users/mohammedislam/dotfiles")"
   echo 'Cannot force reload with this script - use "direnv reload" manually and then try again'
   exit 1
 fi
 
 # rebuild the cache forcefully
-_nix_direnv_force_reload=1 direnv exec "/Users/shahe/dotfiles" true
+_nix_direnv_force_reload=1 direnv exec "/Users/mohammedislam/dotfiles" true
 
 # Update the mtime for .envrc.
 # This will cause direnv to reload again - but without re-building.
-touch "/Users/shahe/dotfiles/.envrc"
+touch "/Users/mohammedislam/dotfiles/.envrc"
 
 # Also update the timestamp of whatever profile_rc we have.
 # This makes sure that we know we are up to date.
-touch -r "/Users/shahe/dotfiles/.envrc" "/Users/shahe/dotfiles/.direnv"/*.rc
+touch -r "/Users/mohammedislam/dotfiles/.envrc" "/Users/mohammedislam/dotfiles/.direnv"/*.rc

@@ -3,5 +3,11 @@ function _autopair_tab
 
     string match --quiet --regex -- '\$[^\s]*"$' (commandline --current-token) &&
         commandline --function end-of-line --function backward-delete-char
-    commandline --function complete
+
+    # Delegate to fifc/git wrapper if available, otherwise use standard complete
+    if functions -q _fifc_or_git_fzf
+        _fifc_or_git_fzf
+    else
+        commandline --function complete
+    end
 end

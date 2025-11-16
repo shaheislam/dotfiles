@@ -45,6 +45,10 @@ jobapps/output/
 # Neovim config (managed in separate repo at ~/neovim)
 .config/nvim
 
+# Fish shell - device-specific universal variables
+.config/fish/fish_variables
+.config/fish/fish_history
+
 # macOS
 .DS_Store
 
