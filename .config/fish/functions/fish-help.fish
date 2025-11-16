@@ -37,6 +37,13 @@ function fish-help --description "Show custom Fish commands and features"
     echo "  fixterm           - Fix terminal (stty sane)"
     echo ""
 
+    echo "📖 Help Documentation:"
+    echo "  fish-help (fh)    - Show this Fish commands reference"
+    echo "  fzf-help          - Comprehensive FZF search syntax and keybindings"
+    echo "  nix-help (nh)     - Nix LSP inheritance system guide"
+    echo "  lsp-help (lh)     - LSP operations and configuration reference"
+    echo ""
+
     echo "💡 Tips:"
     echo "  - In WezTerm, arrow keys work in Ctrl+R history search"
     echo "  - SSH keys are managed via SSH agent with host aliases"
