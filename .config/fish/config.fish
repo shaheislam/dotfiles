@@ -55,6 +55,8 @@ if status is-interactive
     bind -M default \e\[D backward-char
 
     # Environment Variables
+    set -x BAT_THEME "tokyonight_night"
+    set -x BAT_PAGING "never"  # Prevents FZF preview file descriptor errors
     # Pager defaults (avoid tools reading a bad $PAGER value)
     set -x PAGER less
     set -x MANPAGER "less -R"

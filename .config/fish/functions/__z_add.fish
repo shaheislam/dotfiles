@@ -7,7 +7,7 @@ function __z_add -d "Add PATH to .z file"
         end
     end
 
-    set -l tmpfile (mktemp $Z_DATA.XXXXXX)
+    set -l tmpfile (mktemp "$Z_DATA.XXXXXX")
 
     if test -f $tmpfile
         set -l path (string replace --all \\ \\\\ $PWD)
