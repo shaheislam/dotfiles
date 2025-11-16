@@ -114,6 +114,29 @@ if status is-interactive
         mise settings add idiomatic_version_file_enable_tools ruby
     end
 
+    # ==================== FZF Configuration ====================
+    #
+    # FZF Search Syntax:
+    #   ^pattern    - Match beginning of line (e.g., ^README matches README.md at start)
+    #   pattern$    - Match end of line (e.g., .md$ matches all markdown files)
+    #   'pattern1 | pattern2' - OR operator (e.g., '.yml$ | .yaml$' matches both)
+    #   'pattern1 pattern2'   - AND operator (e.g., 'config .fish' matches both terms)
+    #   !pattern    - NOT operator (e.g., '!test' excludes test files)
+    #
+    # Example combinations:
+    #   '.ts$ | .tsx$'        - All TypeScript files
+    #   '.yml$ !secrets'      - YAML files excluding those with 'secrets'
+    #   '^src/ .ts$'          - TypeScript files in src directory
+    #
+    # Common Keybindings (see fzf-help for full list):
+    #   ctrl-/      - Toggle preview
+    #   ctrl-u/d    - Preview page up/down
+    #   ctrl-y/e    - Preview line up/down
+    #   ctrl-a      - Select all
+    #   ctrl-x      - Deselect all
+    #   tab         - Select/deselect item
+    #   shift-tab   - Select/deselect and move up
+
     # FZF configuration - enhanced version combining both configs
     if command -v fzf >/dev/null
         fzf --fish | source
@@ -168,7 +191,9 @@ if status is-interactive
         --bind='ctrl-u:preview-page-up' \
         --bind='ctrl-d:preview-page-down' \
         --bind='ctrl-y:preview-up' \
-        --bind='ctrl-e:preview-down'"
+        --bind='ctrl-e:preview-down' \
+        --bind='ctrl-a:select-all' \
+        --bind='ctrl-x:deselect-all'"
     
     # File preview with bat using Catppuccin theme and minimal style
     set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {}' \
@@ -1623,7 +1648,8 @@ if status is-interactive
             --prompt="Select process to kill (TAB for multiple): " \
             --height=80% \
             --border \
-            --header="PID | User | CPU% | MEM% | Command" \
+            --header="TAB: select | ENTER: confirm | ESC: cancel | ctrl-a: select all
+PID | User | CPU% | MEM% | Command" \
             --preview='echo {}' \
             --preview-window=down:3:wrap)
 
@@ -1652,6 +1678,7 @@ if status is-interactive
             --height=80% \
             --border \
             --header-lines=1 \
+            --header="ENTER: view details | ctrl-k: kill | ctrl-r: refresh | ctrl-/: toggle preview" \
             --bind='ctrl-k:execute-silent(kill -9 {1})+reload(procs --color=disable)' \
             --bind='ctrl-r:reload(procs --color=disable)' \
             --preview='procs {1} --tree' \
@@ -1733,7 +1760,8 @@ if status is-interactive
             --prompt="Filter listening ports (ESC to exit): " \
             --height=80% \
             --border \
-            --header="COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
+            --header="ENTER: view details | ctrl-/: toggle preview | ESC: exit
+COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             --preview='echo {} | awk "{print \"Process: \" \$1 \"\\nPID: \" \$2 \"\\nUser: \" \$3 \"\\nPort: \" \$9}"' \
             --preview-window=right:40%:wrap
     end
@@ -1744,6 +1772,7 @@ if status is-interactive
             --height=80% \
             --border \
             --header-lines=1 \
+            --header="Sorted by memory usage | ENTER: view | ctrl-/: toggle preview | ESC: exit" \
             --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nMemory: \" \$4 \"\\nCPU: \" \$3 \"\\nCommand: \"}" && echo {} | command cut -d" " -f5-' \
             --preview-window=right:40%:wrap
     end
@@ -1754,6 +1783,7 @@ if status is-interactive
             --height=80% \
             --border \
             --header-lines=1 \
+            --header="Sorted by CPU usage | ENTER: view | ctrl-/: toggle preview | ESC: exit" \
             --preview='echo {} | awk "{print \"PID: \" \$1 \"\\nCPU: \" \$3 \"\\nMemory: \" \$4 \"\\nCommand: \"}" && echo {} | command cut -d" " -f5-' \
             --preview-window=right:40%:wrap
     end
@@ -1775,6 +1805,7 @@ if status is-interactive
                 --height=100% \
                 --border \
                 --header-lines=1 \
+                --header="ctrl-k: kill | ctrl-r: refresh | ctrl-/: toggle preview | ENTER: details | ESC: exit" \
                 --bind='ctrl-k:execute(kill -9 {1})+reload(procs --color=disable)' \
                 --bind='ctrl-r:reload(procs --color=disable)' \
                 --preview='procs {1} --tree' \
@@ -1798,6 +1829,7 @@ if status is-interactive
                 --height=100% \
                 --border \
                 --header-lines=1 \
+                --header="ctrl-k: kill process | ctrl-r: refresh | ctrl-/: toggle preview | ENTER: details | ESC: exit" \
                 --bind='ctrl-k:execute(kill -9 {2})+reload(sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null)' \
                 --bind='ctrl-r:reload(sudo lsof -iTCP -sTCP:LISTEN -n -P 2>/dev/null)' \
                 --preview='echo "Process: {1}\nPID: {2}\nUser: {3}\nPort: {9}"' \
