@@ -3,7 +3,8 @@
 # Scans all git repositories under ~/work for configuration issues
 # Checks: git exclude symlinks, Nix flake configurations
 
-set -e
+# Note: Not using set -e because arithmetic increments can return 0
+set -u
 
 # Colors for output
 RED='\033[0;31m'
@@ -356,7 +357,7 @@ print_summary() {
 
     echo -e "${CYAN}Repositories Scanned:${NC} $REPOS_SCANNED"
     echo -e "${CYAN}Repositories with Issues:${NC} $REPOS_WITH_ISSUES"
-    echo -e "${CYAN}Clean Repositories:${NC} ${#REPOS_CLEAN[@]}"
+    echo -e "${CYAN}Clean Repositories:${NC} ${REPOS_CLEAN[@]+"${#REPOS_CLEAN[@]}"}"
     echo ""
     echo -e "${CYAN}Total Issues Found:${NC} $ISSUES_FOUND"
     echo -e "${CYAN}Fixes Applied:${NC} $FIXES_APPLIED"
@@ -364,7 +365,7 @@ print_summary() {
     echo ""
 
     # Issue breakdown
-    if [[ ${#REPOS_MISSING_SYMLINK[@]} -gt 0 ]]; then
+    if [[ ${REPOS_MISSING_SYMLINK[@]+"${#REPOS_MISSING_SYMLINK[@]}"} -gt 0 ]]; then
         echo -e "${YELLOW}Missing .gitignore_local symlink (${#REPOS_MISSING_SYMLINK[@]}):${NC}"
         for repo in "${REPOS_MISSING_SYMLINK[@]}"; do
             echo "  - $(basename "$repo")"
@@ -372,7 +373,7 @@ print_summary() {
         echo ""
     fi
 
-    if [[ ${#REPOS_SYMLINK_WRONG_TARGET[@]} -gt 0 ]]; then
+    if [[ ${REPOS_SYMLINK_WRONG_TARGET[@]+"${#REPOS_SYMLINK_WRONG_TARGET[@]}"} -gt 0 ]]; then
         echo -e "${YELLOW}Wrong symlink target (${#REPOS_SYMLINK_WRONG_TARGET[@]}):${NC}"
         for repo in "${REPOS_SYMLINK_WRONG_TARGET[@]}"; do
             echo "  - $(basename "$repo")"
@@ -380,7 +381,7 @@ print_summary() {
         echo ""
     fi
 
-    if [[ ${#REPOS_MISSING_SELF_REFERENCE[@]} -gt 0 ]]; then
+    if [[ ${REPOS_MISSING_SELF_REFERENCE[@]+"${#REPOS_MISSING_SELF_REFERENCE[@]}"} -gt 0 ]]; then
         echo -e "${YELLOW}Missing .gitignore_local in exclude (${#REPOS_MISSING_SELF_REFERENCE[@]}):${NC}"
         for repo in "${REPOS_MISSING_SELF_REFERENCE[@]}"; do
             echo "  - $(basename "$repo")"
@@ -388,7 +389,7 @@ print_summary() {
         echo ""
     fi
 
-    if [[ ${#REPOS_MISSING_FLAKE[@]} -gt 0 ]] && [[ "$VERBOSE" == true ]]; then
+    if [[ ${REPOS_MISSING_FLAKE[@]+"${#REPOS_MISSING_FLAKE[@]}"} -gt 0 ]] && [[ "$VERBOSE" == true ]]; then
         echo -e "${BLUE}Repositories without Nix flake (${#REPOS_MISSING_FLAKE[@]}):${NC}"
         for repo in "${REPOS_MISSING_FLAKE[@]}"; do
             echo "  - $(basename "$repo")"
@@ -396,7 +397,7 @@ print_summary() {
         echo ""
     fi
 
-    if [[ ${#REPOS_STALE_FLAKE_LOCK[@]} -gt 0 ]]; then
+    if [[ ${REPOS_STALE_FLAKE_LOCK[@]+"${#REPOS_STALE_FLAKE_LOCK[@]}"} -gt 0 ]]; then
         echo -e "${YELLOW}Stale flake.lock (${#REPOS_STALE_FLAKE_LOCK[@]}):${NC}"
         for repo in "${REPOS_STALE_FLAKE_LOCK[@]}"; do
             echo "  - $(basename "$repo")"
