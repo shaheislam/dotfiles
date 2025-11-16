@@ -23,8 +23,8 @@ if status is-interactive
     bind -M insert \eg\cb '_git_fzf_branch_actions'
 
     # ALT-G ? - Show help for git fzf actions
-    bind -M default '\eg?' '_git_fzf_actions_help'
-    bind -M insert '\eg?' '_git_fzf_actions_help'
+    bind -M default \eg\? '_git_fzf_actions_help'
+    bind -M insert \eg\? '_git_fzf_actions_help'
 end
 
 # Help function for git fzf actions
