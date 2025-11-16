@@ -79,6 +79,35 @@ ENVIRONMENT VARIABLES:
   FZF_ALT_C_OPTS         Options for directory search (alt-c)
   KUBECTL_FZF_OPTS       Custom kubectl fzf options
 
+ZSH-SPECIFIC FEATURES (if using Zsh):
+  **                     Trigger fzf completion (e.g., cd **<TAB>)
+                         Uses custom _fzf_compgen_path() and _fzf_compgen_dir()
+
+  Command-specific previews via _fzf_comprun():
+    cd **<TAB>           Shows directory tree preview
+    export **<TAB>       Shows variable value preview
+    ssh **<TAB>          Shows DNS lookup preview
+    kubectl **<TAB>      Shows YAML resource preview
+    docker **<TAB>       Shows container inspect preview
+    git **<TAB>          Shows git object/file preview
+    <any> **<TAB>        Shows file content with bat
+
+  Custom completion functions:
+    git <TAB>            Fuzzy search all git commands
+    kubectl <TAB>        Fuzzy search k8s API resources
+    docker <TAB>         Fuzzy search running containers
+
+FISH-SPECIFIC FEATURES:
+  alt-tab              Trigger carapace fzf completion
+  Keybindings from fzf.fish plugin:
+    alt-c (esc+c)      Search directories
+    alt-f (esc+f)      Search files
+    ctrl-r             Search history (via Atuin)
+    alt-l (esc+l)      Search git log
+    alt-s (esc+s)      Search git status
+    alt-p (esc+p)      Search processes
+    ctrl-v             Search variables
+
 For more information: https://github.com/junegunn/fzf
 "
 
