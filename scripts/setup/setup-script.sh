@@ -315,6 +315,18 @@ if command -v fish &> /dev/null; then
   else
     echo "Note: Carapace not installed yet. Run 'brew install carapace' for enhanced completions"
   fi
+
+  # Generate kubectl aliases for Fish
+  echo "=== Generating kubectl aliases for Fish ==="
+  ALIASES_FILE="$DOTFILES_DIR/.config/fish/conf.d/kubectl-aliases.fish"
+
+  if [ -f "$DOTFILES_DIR/scripts/generate-kubectl-aliases.py" ]; then
+    python3 "$DOTFILES_DIR/scripts/generate-kubectl-aliases.py" fish > "$ALIASES_FILE"
+    echo "Generated kubectl aliases: $ALIASES_FILE"
+  else
+    echo "Warning: kubectl-aliases generation script not found. Run:"
+    echo "  curl -o $DOTFILES_DIR/scripts/generate-kubectl-aliases.py https://raw.githubusercontent.com/ahmetb/kubectl-aliases/master/generate_aliases.py"
+  fi
 else
   echo "Warning: Fish shell not found. Skipping Fisher plugin installation."
 fi
