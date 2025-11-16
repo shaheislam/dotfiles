@@ -11,19 +11,9 @@ if status is-interactive
     set -qU fifc_open_keybinding
     or set -U fifc_open_keybinding ctrl-o
 
-    # Wrapper to use fzf-git.sh for git commands, FIFC for everything else
-    function _fifc_or_git_fzf
-        set -l cmd (commandline -opc)
-        if test (count $cmd) -gt 0; and test "$cmd[1]" = "git"
-            _git_fzf_tab_complete
-        else
-            _fifc
-        end
-    end
-
     for mode in default insert
-        bind --mode $mode \t _fifc_or_git_fzf
-        bind --mode $mode $fifc_keybinding _fifc_or_git_fzf
+        bind --mode $mode \t _fifc
+        bind --mode $mode $fifc_keybinding _fifc
     end
 
     # Set sources rules
@@ -40,11 +30,6 @@ end
 
 # Load fifc preview rules only when fish is launched fzf
 if set -q _fifc_launched_by_fzf
-    # Custom kubectl preview rule - must come first to match before generic rules
-    fifc \
-        -n 'string match -q "kubectl *" "$fifc_commandline"; or string match -q "k *" "$fifc_commandline"' \
-        -p _fifc_kubectl_preview
-
     # Builtin preview/open commands
     fifc \
         -n 'test "$fifc_group" = "options"' \

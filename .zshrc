@@ -71,55 +71,6 @@ export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 
-# Advanced FZF completion functions for Zsh
-
-# Custom path completion generator (used by ** trigger)
-_fzf_compgen_path() {
-  fd --hidden --exclude .git . "$1"
-}
-
-# Custom directory completion generator (used by cd ** etc.)
-_fzf_compgen_dir() {
-  fd --type=d --hidden --exclude .git . "$1"
-}
-
-# Command-specific completion preview behavior
-_fzf_comprun() {
-  local command=$1
-  shift
-
-  case "$command" in
-    cd)           fzf --preview 'eza --tree --icons --level=2 --color=always {} 2>/dev/null || tree -C {} | head -200' "$@" ;;
-    export|unset) fzf --preview "eval 'echo \$'{}" "$@" ;;
-    ssh)          fzf --preview 'dig {}' "$@" ;;
-    kubectl)      fzf --preview 'kubectl get {} -o yaml 2>/dev/null | bat --language=yaml --color=always' "$@" ;;
-    docker)       fzf --preview 'docker inspect {} 2>/dev/null | bat --language=json --color=always' "$@" ;;
-    git)          fzf --preview 'git show --color=always {} 2>/dev/null || bat --color=always {}' "$@" ;;
-    *)            fzf --preview 'bat --color=always --line-range=:500 {} 2>/dev/null || cat {}' "$@" ;;
-  esac
-}
-
-# Custom Git command completion with fzf
-_fzf_complete_git() {
-  _fzf_complete --multi --reverse --prompt="Git> " -- "$@" < <(
-    git --help -a 2>/dev/null | grep -E '^\s+' | awk '{print $1}' | sort -u
-  )
-}
-
-# Custom kubectl completion with fzf (context-aware)
-_fzf_complete_kubectl() {
-  _fzf_complete --multi --reverse --prompt="Kubectl> " -- "$@" < <(
-    kubectl api-resources --verbs=list -o name 2>/dev/null | sort
-  )
-}
-
-# Custom docker completion with fzf
-_fzf_complete_docker() {
-  _fzf_complete --multi --reverse --prompt="Docker> " -- "$@" < <(
-    docker ps --format '{{.Names}}' 2>/dev/null
-  )
-}
-
 # Aliases
 alias python=python3
 alias cd="z"
@@ -129,6 +80,9 @@ alias cat="bat"
 alias k="kubectl"
 alias kc="kubectx"
 alias kn="kubens"
+
+# bat theme
+export BAT_THEME=tokyonight_night
 
 # thefuck
 if command -v thefuck > /dev/null 2>&1; then
