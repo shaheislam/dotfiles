@@ -83,7 +83,7 @@
     } // flake-utils.lib.eachDefaultSystem (system: {
       # Per-system outputs (packages and apps for each architecture)
       # These work automatically regardless of which username you use
-      packages.default = self.homeConfigurations."shaheislam".activationPackage;
+      packages.default = self.homeConfigurations."default".activationPackage;
 
       apps.default = {
         type = "app";
