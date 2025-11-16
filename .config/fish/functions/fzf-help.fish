@@ -60,10 +60,28 @@ DOCKER KEYBINDINGS:
   ctrl-s            Stop container
   ctrl-r            Restart container
 
-GIT KEYBINDINGS (fzf-git functions):
-  ctrl-o            Open in browser/tool
-  alt-e             Edit file
-  ctrl-d            View diff
+GIT KEYBINDINGS:
+  Selection Mode (CTRL-G) - From junegunn/fzf-git.sh:
+    ctrl-g ctrl-f   Files
+    ctrl-g ctrl-b   Branches
+    ctrl-g ctrl-h   Commit hashes
+    ctrl-g ctrl-t   Tags
+    ctrl-g ctrl-r   Remotes
+    ctrl-g ctrl-s   Stashes
+    ctrl-g ctrl-l   Reflogs
+    ctrl-g ctrl-w   Worktrees
+    ctrl-g ctrl-e   Each ref
+
+  Action Mode (ALT-G) - Custom git actions:
+    alt-g f         File actions (add/reset + operations)
+    alt-g c         Commit actions (checkout/reset/rebase/cherry-pick)
+    alt-g b         Branch actions (checkout/merge/rebase)
+    alt-g ?         Show git actions help
+
+  Within fzf interface:
+    ctrl-o          Open in browser/tool
+    alt-e           Edit file
+    ctrl-d          View diff
 
 TIPS:
   • Use quotes for complex searches: '.yml\$ | .yaml\$ !secrets'
