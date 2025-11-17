@@ -182,6 +182,10 @@
       "env": {
         "DATABASE_URL": "sqlite:///Users/shahe/dotfiles/test-data/test.db"
       }
+    },
+    "deepwiki": {
+      "url": "https://mcp.deepwiki.com/sse",
+      "transport": "sse"
     }
   }
 }

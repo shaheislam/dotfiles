@@ -753,6 +753,9 @@ if command -v claude &> /dev/null; then
   # Note: Requires DATABASE_URL env var to be set for database access
   claude mcp add --scope user genai-toolbox bunx @googlegenai/genai-toolbox || echo "Warning: Failed to add genai-toolbox MCP"
 
+  # Documentation tools
+  claude mcp add --scope user deepwiki https://mcp.deepwiki.com/sse -t sse || echo "Warning: Failed to add deepwiki MCP"
+
   # AWS MCP servers (require uv to be installed)
   echo "Adding AWS MCP servers to Claude Code..."
 
