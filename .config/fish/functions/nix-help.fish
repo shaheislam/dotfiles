@@ -92,7 +92,7 @@ PATTERN 1: DEFAULT INHERITANCE (Recommended)
 Use when: You want everything from global + a few extras
 
   {
-    inputs.dotfiles.url = \"path:/Users/shahe/dotfiles/nix/global\";
+    inputs.dotfiles.url = \"path:/Users/shaheislam/dotfiles/nix/global\";
 
     devShells.default = pkgs.mkShell {
       inputsFrom = [ dotfiles.outputs.devShells.\${system}.default ];
