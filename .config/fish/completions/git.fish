@@ -170,3 +170,194 @@ complete -c git -n '__fish_git_using_command reset; and __fish_seen_argument --h
         git log --oneline --max-count=20 --format="%h" 2>/dev/null
     )
 ' -d 'Commit'
+
+# =============================================================================
+# git push - Show remotes, then branches
+# =============================================================================
+complete -c git -n '__fish_git_using_command push' -f
+
+# First argument: show remotes
+complete -c git -n '__fish_git_using_command push; and test (count (commandline -opc)) -eq 2' -a '
+    (
+        git remote 2>/dev/null
+    )
+' -d 'Remote'
+
+# Second argument: show local branches after remote is specified
+complete -c git -n '__fish_git_using_command push; and test (count (commandline -opc)) -eq 3' -a '
+    (
+        git branch --format="%(refname:short)" 2>/dev/null
+    )
+' -d 'Local branch'
+
+# =============================================================================
+# git pull - Show remotes, then remote branches
+# =============================================================================
+complete -c git -n '__fish_git_using_command pull' -f
+
+# First argument: show remotes
+complete -c git -n '__fish_git_using_command pull; and test (count (commandline -opc)) -eq 2' -a '
+    (
+        git remote 2>/dev/null
+    )
+' -d 'Remote'
+
+# Second argument: show remote branches after remote is specified
+complete -c git -n '__fish_git_using_command pull; and test (count (commandline -opc)) -eq 3' -a '
+    (
+        set -l remote (commandline -opc)[-1]
+        git branch -r --format="%(refname:short)" 2>/dev/null | string match "$remote/*" | string replace "$remote/" ""
+    )
+' -d 'Remote branch'
+
+# =============================================================================
+# git fetch - Show remotes
+# =============================================================================
+complete -c git -n '__fish_git_using_command fetch' -f
+complete -c git -n '__fish_git_using_command fetch' -a '
+    (
+        git remote 2>/dev/null
+    )
+' -d 'Remote'
+
+# =============================================================================
+# git stash - Show stash operations and entries
+# =============================================================================
+complete -c git -n '__fish_git_using_command stash' -f
+
+# git stash pop/apply/drop/show/branch - Show stash entries
+complete -c git -n '__fish_git_using_command stash; and __fish_seen_argument pop apply drop show branch' -a '
+    (
+        git stash list --format="%gd" 2>/dev/null
+    )
+' -d 'Stash entry'
+
+# =============================================================================
+# git rebase - Show branches to rebase onto
+# =============================================================================
+complete -c git -n '__fish_git_using_command rebase' -f
+complete -c git -n '__fish_git_using_command rebase; and not __fish_seen_argument -i --interactive' -a '
+    (
+        set -l current_branch (git branch --show-current 2>/dev/null)
+        git branch -a --format="%(refname:short)" 2>/dev/null | while read -l branch
+            # Exclude current branch
+            if test "$branch" != "$current_branch"
+                echo (string replace "origin/" "" -- $branch)
+            end
+        end
+    )
+' -d 'Branch to rebase onto'
+
+# git rebase -i/--interactive - Show commits for interactive rebase
+complete -c git -n '__fish_git_using_command rebase; and __fish_seen_argument -i --interactive' -a '
+    (
+        # Show recent commits
+        git log --oneline --max-count=20 --format="%h" 2>/dev/null
+    )
+' -d 'Commit'
+
+# =============================================================================
+# git cherry-pick - Show commits to cherry-pick
+# =============================================================================
+complete -c git -n '__fish_git_using_command cherry-pick' -f
+complete -c git -n '__fish_git_using_command cherry-pick' -a '
+    (
+        # Show recent commits from all branches
+        git log --all --oneline --max-count=50 --format="%h" 2>/dev/null
+    )
+' -d 'Commit to cherry-pick'
+
+# =============================================================================
+# git revert - Show commits to revert
+# =============================================================================
+complete -c git -n '__fish_git_using_command revert' -f
+complete -c git -n '__fish_git_using_command revert' -a '
+    (
+        # Show recent commits
+        git log --oneline --max-count=20 --format="%h" 2>/dev/null
+    )
+' -d 'Commit to revert'
+
+# =============================================================================
+# git show - Show commits, branches, or tags
+# =============================================================================
+complete -c git -n '__fish_git_using_command show' -f
+complete -c git -n '__fish_git_using_command show' -a '
+    (
+        # Show recent commits
+        git log --oneline --max-count=20 --format="%h" 2>/dev/null
+        # Show branches
+        git branch -a --format="%(refname:short)" 2>/dev/null | string replace "origin/" ""
+        # Show tags
+        git tag 2>/dev/null
+    )
+' -d 'Commit/Branch/Tag'
+
+# =============================================================================
+# git tag -d - Show tags for deletion
+# =============================================================================
+complete -c git -n '__fish_git_using_command tag; and __fish_seen_argument -d --delete' -f
+complete -c git -n '__fish_git_using_command tag; and __fish_seen_argument -d --delete' -a '
+    (
+        git tag 2>/dev/null
+    )
+' -d 'Tag to delete'
+
+# =============================================================================
+# git remote - Show remote operations and names
+# =============================================================================
+complete -c git -n '__fish_git_using_command remote' -f
+
+# git remote remove/show/prune/get-url - Show remote names
+complete -c git -n '__fish_git_using_command remote; and __fish_seen_argument remove rm show prune get-url set-url' -a '
+    (
+        git remote 2>/dev/null
+    )
+' -d 'Remote name'
+
+# =============================================================================
+# git diff - Context-aware (branches, commits, or staged files)
+# =============================================================================
+complete -c git -n '__fish_git_using_command diff' -f
+complete -c git -n '__fish_git_using_command diff; and not __fish_seen_argument --cached --staged' -a '
+    (
+        # Show branches for comparison
+        git branch -a --format="%(refname:short)" 2>/dev/null | string replace "origin/" ""
+        # Show recent commits
+        git log --oneline --max-count=10 --format="%h" 2>/dev/null
+        # Show tags
+        git tag 2>/dev/null
+    )
+' -d 'Branch/Commit/Tag'
+
+# git diff --cached/--staged - Show staged files
+complete -c git -n '__fish_git_using_command diff; and __fish_seen_argument --cached --staged' -a '
+    (
+        git diff --name-only --cached 2>/dev/null
+    )
+' -d 'Staged file'
+
+# =============================================================================
+# git log - Show branches/tags as starting points
+# =============================================================================
+complete -c git -n '__fish_git_using_command log' -f
+complete -c git -n '__fish_git_using_command log' -a '
+    (
+        # Show branches
+        git branch -a --format="%(refname:short)" 2>/dev/null | string replace "origin/" ""
+        # Show tags
+        git tag 2>/dev/null
+    )
+' -d 'Branch/Tag'
+
+# =============================================================================
+# git worktree - Show worktree operations
+# =============================================================================
+complete -c git -n '__fish_git_using_command worktree' -f
+
+# git worktree remove - Show worktrees
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument remove' -a '
+    (
+        git worktree list --porcelain 2>/dev/null | grep '^worktree' | cut -d' ' -f2
+    )
+' -d 'Worktree path'

@@ -14,10 +14,10 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
         case add rm restore
             # File operations - show uncommitted/tracked files
             __fzf_git_sh files
-        case branch checkout switch merge
+        case branch checkout switch merge rebase
             # Branch operations
             __fzf_git_sh branches
-        case log show diff
+        case log show diff cherry-pick revert
             # Commit operations
             __fzf_git_sh hashes
         case reset
@@ -28,7 +28,7 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
             else
                 __fzf_git_sh files
             end
-        case remote
+        case push pull fetch remote
             # Remote operations
             __fzf_git_sh remotes
         case stash
@@ -37,6 +37,10 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
         case tag
             # Tag operations
             __fzf_git_sh tags
+        case worktree
+            # Worktree operations - fall back to FIFC for now
+            # (fzf-git.sh has worktrees support but may need custom integration)
+            _fifc
         case '*'
             # Fall back to FIFC for other git commands
             _fifc
