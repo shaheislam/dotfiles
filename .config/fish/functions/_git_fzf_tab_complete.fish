@@ -28,8 +28,17 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
             else
                 __fzf_git_sh files
             end
-        case push pull fetch remote
-            # Remote operations
+        case push pull fetch
+            # Context-aware routing: remotes first, then branches
+            if test (count $cmd) -ge 3
+                # Already have remote, show branches
+                __fzf_git_sh branches
+            else
+                # Need to select remote first
+                __fzf_git_sh remotes
+            end
+        case remote
+            # Remote management operations
             __fzf_git_sh remotes
         case stash
             # Stash operations
