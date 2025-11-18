@@ -113,6 +113,7 @@ if status is-interactive
 
     # Configure mise settings
     if command -v mise >/dev/null
+        mise activate fish | source
         mise settings add idiomatic_version_file_enable_tools ruby
     end
 
@@ -2575,6 +2576,9 @@ end
 
 
 
+
+# Mise shims for version-managed tools (must be early in PATH)
+fish_add_path $HOME/.local/share/mise/shims
 
 # K9s kubectl-node-shell plugin
 fish_add_path $HOME/dotfiles/scripts
