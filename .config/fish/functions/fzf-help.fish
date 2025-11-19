@@ -9,8 +9,8 @@ QUICK REFERENCE - Most Used Commands:
   fe                File/directory explorer with preview
   fzf-help          Show this comprehensive help guide
 
-  Git:       gco (checkout)  gstash (stashes)  gx (delete branches)
-  Docker:    dps (containers)  dimg (images)
+  Git:       gco (checkout)  gstash (stashes)  CTRL-G CTRL-B (branches)
+  Docker:    CTRL-D CTRL-C (containers)  CTRL-D CTRL-I (images)  CTRL-D CTRL-V (volumes)
   K8s:       kctx (context)  kns (namespace)  kpod (pods)
   Process:   killp  psf  mem  cpu  procmon
   Ports:     port  ports  portmon
@@ -111,17 +111,39 @@ GITHUB GIST FUNCTIONS:
  DOCKER OPERATIONS
 ═══════════════════════════════════════════════════════════════════════════
 
-dps             Select Docker container for operations
-  • enter       View container logs
-  • ctrl-s      Open shell in container
-  • ctrl-r      Restart container
-  • ctrl-d      Delete container
+SELECTION MODE (CTRL-D) - Docker FZF Integration:
+  ctrl-d ctrl-c   Containers (running) - Select running container
+  ctrl-d ctrl-a   All Containers - Select any container (including stopped)
+  ctrl-d ctrl-i   Images - Select Docker image
+  ctrl-d ctrl-v   Volumes - Select Docker volume
+  ctrl-d ctrl-n   Networks - Select Docker network
+  ctrl-d ctrl-s   Compose Services - Select docker-compose service
+  ctrl-d ?        Help - Show Docker FZF bindings
 
-dcon            Select Docker container (simple selector)
-dimg            Select Docker image for operations
-  • enter       Inspect image
-  • ctrl-r      Remove image
-  • ctrl-p      Pull image
+  Within fzf docker interfaces:
+    ctrl-e        Execute shell in container
+    ctrl-l        View logs (follow mode)
+    ctrl-s        Stop/Start (context-dependent)
+    ctrl-r        Restart/Run (context-dependent)
+    ctrl-x        Remove (containers/images/volumes/networks)
+    ctrl-i        Inspect (detailed info)
+    alt-a         Show all (toggle filter)
+
+TAB COMPLETION - Context-aware Docker command completion:
+  docker ps <TAB>           List containers
+  docker exec <TAB>         Select running container
+  docker logs <TAB>         Select any container
+  docker rm <TAB>           Select stopped containers
+  docker images <TAB>       List images
+  docker rmi <TAB>          Select image to remove
+  docker volume ls <TAB>    List volumes
+  docker network ls <TAB>   List networks
+  docker compose up <TAB>   Select compose service
+
+LEGACY FUNCTIONS (deprecated, use CTRL-D instead):
+  dps             Select Docker container for operations
+  dcon            Select Docker container (simple selector)
+  dimg            Select Docker image for operations
 
 ═══════════════════════════════════════════════════════════════════════════
  KUBERNETES OPERATIONS
@@ -298,8 +320,10 @@ Custom completion functions:
 ═══════════════════════════════════════════════════════════════════════════
 
 Git Actions:      alt-g ?  (detailed git workflow help)
+Docker Actions:   ctrl-d ?  (detailed docker workflow help)
 FZF Project:      https://github.com/junegunn/fzf
 FZF Git:          https://github.com/junegunn/fzf-git.sh
+FZF Docker:       Custom integration (fzf-docker.sh in functions/)
 FZF Fish Plugin:  https://github.com/PatrickF1/fzf.fish
 
 ═══════════════════════════════════════════════════════════════════════════

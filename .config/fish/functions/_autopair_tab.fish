@@ -4,9 +4,9 @@ function _autopair_tab
     string match --quiet --regex -- '\$[^\s]*"$' (commandline --current-token) &&
         commandline --function end-of-line --function backward-delete-char
 
-    # Delegate to fifc/git wrapper if available, otherwise use standard complete
-    if functions -q _fifc_or_git_fzf
-        _fifc_or_git_fzf
+    # Delegate to fifc/git/docker wrapper if available, otherwise use standard complete
+    if functions -q _fifc_or_fzf
+        _fifc_or_fzf
     else
         commandline --function complete
     end

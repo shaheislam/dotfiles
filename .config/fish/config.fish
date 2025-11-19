@@ -1596,8 +1596,22 @@ if status is-interactive
         end
     end
 
-    # Docker container management with fzf
-    function dps --description "Select Docker container with fzf for various operations"
+    # ========================================================================
+    # DEPRECATED Docker Functions - Use CTRL-D keybindings instead
+    # ========================================================================
+    # These functions are kept for backward compatibility but are deprecated.
+    # Use the new FZF Docker integration with CTRL-D keybindings:
+    #   CTRL-D CTRL-C  - Running containers
+    #   CTRL-D CTRL-A  - All containers
+    #   CTRL-D CTRL-I  - Images
+    #   CTRL-D CTRL-V  - Volumes
+    #   CTRL-D CTRL-N  - Networks
+    #   CTRL-D CTRL-S  - Compose services
+    # See: fzf-help for complete documentation
+    # ========================================================================
+
+    # Docker container management with fzf (DEPRECATED - use CTRL-D CTRL-C or CTRL-D CTRL-A)
+    function dps --description "[DEPRECATED] Select Docker container with fzf for various operations"
         set -l containers (docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}" | tail -n +2)
 
         if test -z "$containers"
@@ -1953,8 +1967,8 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
         ports | head -10
     end
 
-    # Docker image management with fzf
-    function dimg --description "Select Docker image with fzf for various operations"
+    # Docker image management with fzf (DEPRECATED - use CTRL-D CTRL-I)
+    function dimg --description "[DEPRECATED] Select Docker image with fzf for various operations"
         set -l images (docker images --format "table {{.ID}}\t{{.Repository}}:{{.Tag}}\t{{.Size}}" | tail -n +2)
 
         if test -z "$images"
@@ -2321,8 +2335,8 @@ fish_add_path ~/.claude/local/node_modules/.bin
         kubectl top pods 2>/dev/null || echo "Metrics server not installed"
     end
 
-    # Docker container selector with fzf
-    function dcon --description "Select Docker container with fzf"
+    # Docker container selector with fzf (DEPRECATED - use CTRL-D CTRL-C)
+    function dcon --description "[DEPRECATED] Select Docker container with fzf"
         if not command -v docker >/dev/null
             echo "Docker not installed"
             return 1
@@ -2565,10 +2579,10 @@ if status is-interactive
     bind -M insert \cr atuin_fzf_search
 
     # Ensure fifc Tab binding takes precedence over autopair.fish
-    # This rebinds Tab to the fifc/git wrapper after all plugins have loaded
-    if functions -q _fifc_or_git_fzf
-        bind \t _fifc_or_git_fzf
-        bind -M insert \t _fifc_or_git_fzf
+    # This rebinds Tab to the fifc/git/docker wrapper after all plugins have loaded
+    if functions -q _fifc_or_fzf
+        bind \t _fifc_or_fzf
+        bind -M insert \t _fifc_or_fzf
     end
 end
 
