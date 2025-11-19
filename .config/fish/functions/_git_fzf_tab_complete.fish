@@ -120,8 +120,11 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                         end
                         # Fallback to native completion if fzf cancelled or repo detection failed
                         complete
-                    else if test $arg_count -ge 1
-                        # Path provided: do nothing (path is complete)
+                    else if test $arg_count -eq 1
+                        # Path provided, need branch: show branch picker
+                        __fzf_git_sh branches 2>/dev/null || complete
+                    else if test $arg_count -ge 2
+                        # Both path and branch provided: complete
                         return
                     end
                 end
