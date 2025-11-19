@@ -48,9 +48,76 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
             # Tag operations
             __fzf_git_sh tags 2>/dev/null || _fifc 2>/dev/null || complete
         case worktree
-            # Worktree operations - fall back to FIFC for now
-            # (fzf-git.sh has worktrees support but may need custom integration)
-            _fifc 2>/dev/null || complete
+            # Context-aware worktree completion
+            set -l worktree_cmd (commandline -opc)
+
+            # Check if 'add' subcommand is present
+            if contains -- add $worktree_cmd
+                # Parse arguments to determine position
+                set -l has_branch_flag false
+                set -l branch_flag_value ""
+                set -l non_flag_args
+                set -l i 4  # Start after 'git worktree add' (index 4 onwards)
+
+                while test $i -le (count $worktree_cmd)
+                    set -l arg $worktree_cmd[$i]
+
+                    if test "$arg" = "-b"; or test "$arg" = "-B"
+                        set has_branch_flag true
+                        # Next arg should be the new branch name
+                        set i (math $i + 1)
+                        if test $i -le (count $worktree_cmd)
+                            set branch_flag_value $worktree_cmd[$i]
+                        end
+                    else if not string match -qr -- '^-' $arg
+                        # Non-flag argument
+                        set -a non_flag_args $arg
+                    end
+
+                    set i (math $i + 1)
+                end
+
+                set -l arg_count (count $non_flag_args)
+
+                # Position-based routing
+                if test $has_branch_flag = true
+                    # git worktree add -b <new-branch> [path] [base-branch]
+                    if test $arg_count -eq 0
+                        # Check if branch name provided yet
+                        if test -z "$branch_flag_value"
+                            # Show existing branches as reference/hints
+                            __fzf_git_sh branches 2>/dev/null || complete
+                        else
+                            # Branch name provided: auto-suggest path
+                            set -l repo (basename (git rev-parse --show-toplevel 2>/dev/null) 2>/dev/null)
+                            if test -n "$repo"
+                                # Suggest default path pattern and return
+                                # Next TAB will trigger branch selection
+                                commandline --current-token --replace "../$repo-$branch_flag_value"
+                                return
+                            end
+                            # Fallback if repo detection fails
+                            complete
+                        end
+                    else if test $arg_count -ge 1
+                        # Path provided: select base branch with fzf
+                        __fzf_git_sh branches 2>/dev/null || complete
+                    end
+                else
+                    # git worktree add [path] [existing-branch]
+                    if test $arg_count -eq 0
+                        # Need path: trigger native Fish completion
+                        commandline --function complete
+                        return
+                    else if test $arg_count -ge 1
+                        # Path provided: select existing branch with fzf
+                        __fzf_git_sh branches 2>/dev/null || complete
+                    end
+                end
+            else
+                # Other worktree operations: show existing worktrees
+                __fzf_git_sh worktrees 2>/dev/null || _fifc 2>/dev/null || complete
+            end
         case '*'
             # Fall back to FIFC for other git commands
             _fifc 2>/dev/null || complete

@@ -337,6 +337,38 @@ complete -c git -n '__fish_git_using_command tag' -s d -l delete -d 'Delete tag'
 complete -c git -n '__fish_git_using_command tag' -s l -l list -d 'List tags'
 
 # =============================================================================
+# git worktree - Worktree operations
+# =============================================================================
+complete -c git -n '__fish_git_using_command worktree' -f
+
+# Subcommands
+complete -c git -n '__fish_git_using_command worktree; and test (count (commandline -opc)) -eq 2' \
+    -a 'add list lock move prune remove repair unlock' -d 'Worktree operation'
+
+# Show existing worktrees for operations like remove, move, lock, unlock, repair
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument remove move lock unlock repair' -a '
+    (
+        git worktree list --porcelain 2>/dev/null | grep "^worktree" | cut -d" " -f2
+    )
+' -d 'Worktree path'
+
+# Show branches for 'worktree add' when path already specified
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add; and test (count (commandline -opc)) -ge 3' -a '
+    (
+        git branch --format="%(refname:short)" 2>/dev/null
+    )
+' -d 'Branch'
+
+# Common flags for 'worktree add'
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add' -s b -d 'Create new branch'
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add' -s B -d 'Create/reset branch'
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add' -l detach -d 'Detach HEAD'
+
+# Common flags for 'worktree list'
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument list' -l porcelain -d 'Machine-readable output'
+complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument list' -s v -l verbose -d 'Show additional info'
+
+# =============================================================================
 # Common git subcommands
 # =============================================================================
-complete -c git -n 'test (count (commandline -opc)) -eq 1' -a 'add branch checkout cherry-pick clone commit diff fetch init log merge pull push rebase reset restore revert rm show stash status switch tag' -d 'Command'
+complete -c git -n 'test (count (commandline -opc)) -eq 1' -a 'add branch checkout cherry-pick clone commit diff fetch init log merge pull push rebase reset restore revert rm show stash status switch tag worktree' -d 'Command'
