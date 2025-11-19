@@ -129,7 +129,7 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                         # Check if branch name provided yet
                         if test -z "$branch_flag_value"
                             # Show existing branches as reference/hints
-                            __fzf_git_sh branches 2>/dev/null || complete
+                            __fzf_git_sh branches 2>/dev/null || return
                         else
                             # Branch name provided: auto-suggest path
                             set -l repo (basename (git rev-parse --show-toplevel 2>/dev/null) 2>/dev/null)
@@ -140,11 +140,11 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                                 return
                             end
                             # Fallback if repo detection fails
-                            complete
+                            return
                         end
                     else if test $arg_count -ge 1
                         # Path provided: select base branch with fzf
-                        __fzf_git_sh branches 2>/dev/null || complete
+                        __fzf_git_sh branches 2>/dev/null || return
                     end
                 else
                     # git worktree add [path] [existing-branch]
@@ -161,11 +161,11 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                                 return
                             end
                         end
-                        # Fallback to native completion if fzf cancelled or repo detection failed
-                        complete
+                        # Fallback gracefully if fzf cancelled or repo detection failed
+                        return
                     else if test $arg_count -eq 1
                         # Path provided, need branch: show branch picker
-                        __fzf_git_sh branches 2>/dev/null || complete
+                        __fzf_git_sh branches 2>/dev/null || return
                     else if test $arg_count -ge 2
                         # Both path and branch provided: complete
                         return
