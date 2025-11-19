@@ -106,12 +106,23 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                 else
                     # git worktree add [path] [existing-branch]
                     if test $arg_count -eq 0
-                        # Need path: trigger native Fish completion
-                        commandline --function complete
-                        return
+                        # No args yet: show branch picker, then auto-fill path
+                        set -l fzf_git_sh_path (realpath (status dirname))
+                        set -l selected_branch (SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run branches 2>/dev/null | string trim)
+
+                        if test -n "$selected_branch"
+                            # Branch selected: auto-fill path pattern
+                            set -l repo (basename (git rev-parse --show-toplevel 2>/dev/null) 2>/dev/null)
+                            if test -n "$repo"
+                                commandline --current-token --replace "../$repo-$selected_branch "
+                                return
+                            end
+                        end
+                        # Fallback to native completion if fzf cancelled or repo detection failed
+                        complete
                     else if test $arg_count -ge 1
-                        # Path provided: select existing branch with fzf
-                        __fzf_git_sh branches 2>/dev/null || complete
+                        # Path provided: do nothing (path is complete)
+                        return
                     end
                 end
             else
