@@ -94,6 +94,12 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
             # Context-aware worktree completion
             set -l worktree_cmd (commandline -opc)
 
+            # At position 2 (git worktree <TAB>), show subcommands via native completion
+            if test (count $worktree_cmd) -eq 2
+                _fifc 2>/dev/null || return
+                return
+            end
+
             # Check if 'add' subcommand is present
             if contains -- add $worktree_cmd
                 # Parse arguments to determine position
@@ -173,7 +179,7 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                 end
             else
                 # Other worktree operations: show existing worktrees
-                __fzf_git_sh worktrees 2>/dev/null || _fifc 2>/dev/null || complete
+                __fzf_git_sh worktrees 2>/dev/null || _fifc 2>/dev/null || return
             end
         case '*'
             # Fall back to FIFC for other git commands
