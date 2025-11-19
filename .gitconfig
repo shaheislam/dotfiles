@@ -1,5 +1,28 @@
 [core]
 	excludesfile = /Users/mohammedislam/.gitignore_global
+	pager = delta
+
 [user]
 	name = Shahe Islam
 	email = shaheislam@users.noreply.github.com
+
+[delta]
+	navigate = true
+	light = false
+	side-by-side = true
+	line-numbers = true
+	syntax-theme = Catppuccin Mocha
+	hyperlinks = true
+	hyperlinks-file-link-format = "file://{path}"
+
+[interactive]
+	diffFilter = delta --color-only
+
+[merge]
+	conflictstyle = diff3
+
+[diff]
+	colorMoved = default
+
+[pager]
+	blame = bat --style=plain
