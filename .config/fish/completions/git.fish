@@ -128,6 +128,15 @@ complete -c git -n '__fish_git_using_command commit' -l amend -d 'Amend previous
 complete -c git -n '__fish_git_using_command commit' -s v -l verbose -d 'Show diff in editor'
 complete -c git -n '__fish_git_using_command commit' -l no-verify -d 'Skip hooks'
 complete -c git -n '__fish_git_using_command commit' -s S -l gpg-sign -d 'GPG sign commit'
+complete -c git -n '__fish_git_using_command commit' -l fixup -d 'Fixup commit for rebase' -x
+complete -c git -n '__fish_git_using_command commit' -l squash -d 'Squash commit for rebase' -x
+
+# Show recent commits for --fixup/--squash
+complete -c git -n '__fish_git_using_command commit; and __fish_seen_argument --fixup --squash' -a '
+    (
+        git log --oneline --max-count=20 --format="%h" 2>/dev/null
+    )
+' -d 'Recent commit'
 
 # =============================================================================
 # git diff - Show files and commits
@@ -157,6 +166,26 @@ complete -c git -n '__fish_git_using_command diff' -a '
 complete -c git -n '__fish_git_using_command diff' -l staged -l cached -d 'Show staged changes'
 complete -c git -n '__fish_git_using_command diff' -l stat -d 'Show diffstat only'
 complete -c git -n '__fish_git_using_command diff' -l name-only -d 'Show only filenames'
+
+# =============================================================================
+# git show - Show various types of objects
+# =============================================================================
+complete -c git -n '__fish_git_using_command show' -f
+
+# Show commits by default
+complete -c git -n '__fish_git_using_command show; and not __fish_seen_argument --stat --name-only' -a '
+    (
+        git log --oneline --max-count=20 --format="%h" 2>/dev/null
+        git branch --format="%(refname:short)" 2>/dev/null
+        git tag 2>/dev/null
+    )
+' -d 'Commit/Branch/Tag'
+
+# Common show flags
+complete -c git -n '__fish_git_using_command show' -l stat -d 'Show diffstat'
+complete -c git -n '__fish_git_using_command show' -l name-only -d 'Show only filenames'
+complete -c git -n '__fish_git_using_command show' -l pretty -d 'Format output' -x
+complete -c git -n '__fish_git_using_command show' -l oneline -d 'One line per commit'
 
 # =============================================================================
 # git log - Show recent commits and branches
@@ -369,6 +398,48 @@ complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument 
 complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument list' -s v -l verbose -d 'Show additional info'
 
 # =============================================================================
+# git reflog - Reflog operations
+# =============================================================================
+complete -c git -n '__fish_git_using_command reflog' -f
+complete -c git -n '__fish_git_using_command reflog' -a 'show delete expire' -d 'Reflog subcommand'
+complete -c git -n '__fish_git_using_command reflog' -l all -d 'Show all refs'
+
+# =============================================================================
+# git bisect - Binary search for bugs
+# =============================================================================
+complete -c git -n '__fish_git_using_command bisect' -f
+complete -c git -n '__fish_git_using_command bisect' -a 'start bad good skip reset visualize replay log run' -d 'Bisect subcommand'
+
+# =============================================================================
+# git blame - Show what revision and author last modified each line
+# =============================================================================
+complete -c git -n '__fish_git_using_command blame' -f
+complete -c git -n '__fish_git_using_command blame' -s L -d 'Annotate only given line range' -x
+complete -c git -n '__fish_git_using_command blame' -s C -d 'Detect lines moved/copied'
+complete -c git -n '__fish_git_using_command blame' -l show-email -d 'Show author email'
+
+# =============================================================================
+# git cherry - Find commits not merged upstream
+# =============================================================================
+complete -c git -n '__fish_git_using_command cherry' -f
+complete -c git -n '__fish_git_using_command cherry' -s v -d 'Show commit subjects'
+complete -c git -n '__fish_git_using_command cherry' -a '
+    (
+        git branch --format="%(refname:short)" 2>/dev/null
+    )
+' -d 'Branch'
+
+# =============================================================================
+# git submodule - Submodule operations
+# =============================================================================
+complete -c git -n '__fish_git_using_command submodule' -f
+complete -c git -n '__fish_git_using_command submodule; and test (count (commandline -opc)) -eq 2' \
+    -a 'add update init deinit foreach status summary sync' -d 'Submodule operation'
+complete -c git -n '__fish_git_using_command submodule; and __fish_seen_argument add' -l branch -d 'Track branch' -x
+complete -c git -n '__fish_git_using_command submodule; and __fish_seen_argument update' -l init -d 'Initialize submodules'
+complete -c git -n '__fish_git_using_command submodule; and __fish_seen_argument update' -l recursive -d 'Recursive update'
+
+# =============================================================================
 # Common git subcommands
 # =============================================================================
-complete -c git -n 'test (count (commandline -opc)) -eq 1' -a 'add branch checkout cherry-pick clone commit diff fetch init log merge pull push rebase reset restore revert rm show stash status switch tag worktree' -d 'Command'
+complete -c git -n 'test (count (commandline -opc)) -eq 1' -a 'add bisect blame branch checkout cherry cherry-pick clone commit diff fetch init log merge pull push rebase reflog reset restore revert rm show stash status submodule switch tag worktree' -d 'Command'

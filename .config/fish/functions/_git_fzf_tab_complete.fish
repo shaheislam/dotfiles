@@ -18,9 +18,35 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
         case branch checkout switch merge rebase
             # Branch operations
             __fzf_git_sh branches 2>/dev/null || _fifc 2>/dev/null || complete
-        case log show diff cherry-pick revert
+        case log diff cherry-pick revert
             # Commit operations
             __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null || complete
+        case show
+            # Context-aware show: files with --stat/--name-only, commits otherwise
+            if string match -qr -- '--stat|--name-only' (commandline -opc)
+                __fzf_git_sh files 2>/dev/null || _fifc 2>/dev/null || complete
+            else
+                __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null || complete
+            end
+        case commit
+            # Context-aware commit: hashes for --fixup, normal completion otherwise
+            if string match -qr -- '--fixup' (commandline -opc)
+                __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null || complete
+            else
+                _fifc 2>/dev/null || complete
+            end
+        case reflog
+            # Reflog operations - show reflog entries
+            __fzf_git_sh lreflogs 2>/dev/null || complete
+        case bisect
+            # Bisect operations - show commits for start/good/bad
+            __fzf_git_sh hashes 2>/dev/null || complete
+        case blame
+            # Blame operations - show files to blame
+            __fzf_git_sh files 2>/dev/null || complete
+        case cherry
+            # Cherry operations - show branches for comparison
+            __fzf_git_sh branches 2>/dev/null || complete
         case reset
             # Reset can be files or hashes depending on flags
             # Check if --hard, --soft, or --mixed is present
@@ -29,7 +55,24 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
             else
                 __fzf_git_sh files 2>/dev/null || _fifc 2>/dev/null || complete
             end
-        case push pull fetch
+        case push
+            # Context-aware push: remotes first, then branches
+            # Count non-flag arguments to determine position
+            set -l push_args
+            for arg in $cmd[3..-1]
+                if not string match -qr -- '^-' $arg
+                    set -a push_args $arg
+                end
+            end
+
+            if test (count $push_args) -eq 0
+                # No remote yet: show remotes
+                __fzf_git_sh remotes 2>/dev/null || _fifc 2>/dev/null || complete
+            else
+                # Have remote: show branch picker
+                __fzf_git_sh branches 2>/dev/null || _fifc 2>/dev/null || complete
+            end
+        case pull fetch
             # Context-aware routing: remotes first, then branches
             if test (count $cmd) -ge 3
                 # Already have remote, show branches
