@@ -15,7 +15,13 @@ function _docker_fzf_tab_complete -d "Map docker subcommands to fzf-docker.sh co
         case ps
             # Container listing
             __fzf_docker_sh containers 2>/dev/null || _fifc 2>/dev/null || complete
-        case start stop restart kill pause unpause
+        case stop
+            # Stop containers - show running containers only
+            __fzf_docker_sh running_containers 2>/dev/null || _fifc 2>/dev/null || complete
+        case start
+            # Start containers - show stopped containers only
+            __fzf_docker_sh stopped_containers 2>/dev/null || _fifc 2>/dev/null || complete
+        case restart kill pause unpause
             # Container operations - show all containers
             __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete
         case exec attach
@@ -107,7 +113,11 @@ function _docker_fzf_tab_complete -d "Map docker subcommands to fzf-docker.sh co
                 switch $container_cmd
                     case ls
                         __fzf_docker_sh containers 2>/dev/null || _fifc 2>/dev/null || complete
-                    case start stop restart kill pause unpause
+                    case stop
+                        __fzf_docker_sh running_containers 2>/dev/null || _fifc 2>/dev/null || complete
+                    case start
+                        __fzf_docker_sh stopped_containers 2>/dev/null || _fifc 2>/dev/null || complete
+                    case restart kill pause unpause
                         __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete
                     case rm
                         __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete

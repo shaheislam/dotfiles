@@ -42,6 +42,12 @@ if [[ $1 == --list ]]; then
     all_containers() {
       docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.CreatedAt}}" | tail -n +2
     }
+    running_containers() {
+      docker ps --filter "status=running" --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | tail -n +2
+    }
+    stopped_containers() {
+      docker ps -a --filter "status=exited" --filter "status=created" --format "table {{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Status}}\t{{.CreatedAt}}" | tail -n +2
+    }
     images() {
       docker images --format "table {{.ID}}\t{{.Repository}}:{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | tail -n +2
     }
@@ -59,6 +65,14 @@ if [[ $1 == --list ]]; then
       all-containers)
         echo 'CTRL-E (exec) ╱ CTRL-L (logs) ╱ CTRL-X (remove) ╱ CTRL-S (start) ╱ CTRL-R (restart)'
         all_containers
+        ;;
+      running-containers)
+        echo 'CTRL-S (stop) ╱ CTRL-R (restart) ╱ CTRL-L (logs) ╱ ALT-A (show all)'
+        running_containers
+        ;;
+      stopped-containers)
+        echo 'CTRL-S (start) ╱ CTRL-X (remove) ╱ CTRL-L (logs) ╱ ALT-A (show all)'
+        stopped_containers
         ;;
       images)
         echo 'CTRL-X (remove) ╱ CTRL-R (run) ╱ CTRL-I (inspect) ╱ CTRL-T (tag)'
@@ -147,6 +161,44 @@ _fzf_docker_all_containers() {
     --bind "ctrl-x:reload(docker rm -f {1} > /dev/null; bash \"$__fzf_docker\" --list all-containers)" \
     --bind "ctrl-s:reload(docker start {1} > /dev/null; bash \"$__fzf_docker\" --list all-containers)" \
     --bind "ctrl-r:reload(docker restart {1} > /dev/null; bash \"$__fzf_docker\" --list all-containers)" \
+    --preview "echo '=== Container Info ==='; docker inspect {1} | jq -C '.[0] | {Name, Image, State, NetworkSettings}'; echo; echo '=== Recent Logs ==='; docker logs --tail 50 {1}" "$@" |
+  awk '{print $1}'
+}
+
+_fzf_docker_running_containers() {
+  _fzf_docker_check || return
+
+  bash "$__fzf_docker" --list running-containers |
+  _fzf_docker_fzf --ansi \
+    --border-label '🐳 Containers (Running) ' \
+    --header-lines 1 \
+    --tiebreak begin \
+    --preview-window down,border-top,40% \
+    --no-hscroll \
+    --bind 'ctrl-/:change-preview-window(down,70%|hidden|)' \
+    --bind "ctrl-s:reload(docker stop {1} > /dev/null; bash \"$__fzf_docker\" --list running-containers)" \
+    --bind "ctrl-r:reload(docker restart {1} > /dev/null; bash \"$__fzf_docker\" --list running-containers)" \
+    --bind "ctrl-l:execute:docker logs -f {1} < /dev/tty > /dev/tty" \
+    --bind "alt-a:change-border-label(🐳 Containers (All))+reload:bash \"$__fzf_docker\" --list all-containers" \
+    --preview "echo '=== Container Info ==='; docker inspect {1} | jq -C '.[0] | {Name, Image, State, NetworkSettings}'; echo; echo '=== Recent Logs ==='; docker logs --tail 50 {1}" "$@" |
+  awk '{print $1}'
+}
+
+_fzf_docker_stopped_containers() {
+  _fzf_docker_check || return
+
+  bash "$__fzf_docker" --list stopped-containers |
+  _fzf_docker_fzf --ansi \
+    --border-label '🐳 Containers (Stopped) ' \
+    --header-lines 1 \
+    --tiebreak begin \
+    --preview-window down,border-top,40% \
+    --no-hscroll \
+    --bind 'ctrl-/:change-preview-window(down,70%|hidden|)' \
+    --bind "ctrl-s:reload(docker start {1} > /dev/null; bash \"$__fzf_docker\" --list stopped-containers)" \
+    --bind "ctrl-x:reload(docker rm -f {1} > /dev/null; bash \"$__fzf_docker\" --list stopped-containers)" \
+    --bind "ctrl-l:execute:docker logs -f {1} < /dev/tty > /dev/tty" \
+    --bind "alt-a:change-border-label(🐳 Containers (All))+reload:bash \"$__fzf_docker\" --list all-containers" \
     --preview "echo '=== Container Info ==='; docker inspect {1} | jq -C '.[0] | {Name, Image, State, NetworkSettings}'; echo; echo '=== Recent Logs ==='; docker logs --tail 50 {1}" "$@" |
   awk '{print $1}'
 }
@@ -309,6 +361,6 @@ elif [[ -n "${ZSH_VERSION:-}" ]]; then
     done
   }
 fi
-__fzf_docker_init containers all_containers images volumes networks compose_services '?list_bindings'
+__fzf_docker_init containers all_containers running_containers stopped_containers images volumes networks compose_services '?list_bindings'
 
 fi # --------------------------------------------------------------------------
