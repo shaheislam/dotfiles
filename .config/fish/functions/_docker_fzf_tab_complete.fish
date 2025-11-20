@@ -21,7 +21,13 @@ function _docker_fzf_tab_complete -d "Map docker subcommands to fzf-docker.sh co
         case start
             # Start containers - show stopped containers only
             __fzf_docker_sh stopped_containers 2>/dev/null || _fifc 2>/dev/null || complete
-        case restart kill pause unpause
+        case pause
+            # Pause containers - show running containers only
+            __fzf_docker_sh running_containers 2>/dev/null || _fifc 2>/dev/null || complete
+        case unpause
+            # Unpause containers - show frozen/paused containers only
+            __fzf_docker_sh frozen_containers 2>/dev/null || _fifc 2>/dev/null || complete
+        case restart kill
             # Container operations - show all containers
             __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete
         case exec attach
@@ -31,8 +37,8 @@ function _docker_fzf_tab_complete -d "Map docker subcommands to fzf-docker.sh co
             # Container inspection - show all containers
             __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete
         case rm
-            # Remove containers - show stopped containers
-            __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete
+            # Remove containers - show stopped containers only (running requires -f)
+            __fzf_docker_sh stopped_containers 2>/dev/null || _fifc 2>/dev/null || complete
         case images
             # Image listing
             __fzf_docker_sh images 2>/dev/null || _fifc 2>/dev/null || complete
@@ -117,10 +123,14 @@ function _docker_fzf_tab_complete -d "Map docker subcommands to fzf-docker.sh co
                         __fzf_docker_sh running_containers 2>/dev/null || _fifc 2>/dev/null || complete
                     case start
                         __fzf_docker_sh stopped_containers 2>/dev/null || _fifc 2>/dev/null || complete
-                    case restart kill pause unpause
+                    case pause
+                        __fzf_docker_sh running_containers 2>/dev/null || _fifc 2>/dev/null || complete
+                    case unpause
+                        __fzf_docker_sh frozen_containers 2>/dev/null || _fifc 2>/dev/null || complete
+                    case restart kill
                         __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete
                     case rm
-                        __fzf_docker_sh all_containers 2>/dev/null || _fifc 2>/dev/null || complete
+                        __fzf_docker_sh stopped_containers 2>/dev/null || _fifc 2>/dev/null || complete
                     case exec attach
                         __fzf_docker_sh containers 2>/dev/null || _fifc 2>/dev/null || complete
                     case logs inspect stats top

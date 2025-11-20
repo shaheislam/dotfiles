@@ -86,6 +86,14 @@ package-lock.json
 # Test files
 testfolder/
 test/
+scripts/tests/
+
+# SSH keys and sensitive test data
+**/ssh_host_*_key
+**/ssh_host_*_key.pub
+**/.ssh/authorized_keys
+**/sshd.pid
+**/sshd_config
 
 # Version control
 .jj/
