@@ -231,7 +231,11 @@ complete -c git -n '__fish_git_using_command rebase' -f
 
 complete -c git -n '__fish_git_using_command rebase' -a '
     (
+        # Local branches
         git branch --format="%(refname:short)" 2>/dev/null
+        # Remote branches with full paths (e.g., origin/main)
+        git branch -r --format="%(refname:short)" 2>/dev/null | grep -v HEAD
+        # Recent commits
         git log --oneline --max-count=20 --format="%h" 2>/dev/null
     )
 ' -d 'Branch/Commit'
