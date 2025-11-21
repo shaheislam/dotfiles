@@ -26,7 +26,6 @@ function fish-help --description "Show custom Fish commands and features"
     echo "  la, l             - List files with icons (eza)"
     echo "  cat               - View files with syntax highlighting (bat)"
     echo "  lg                - LazyGit"
-    echo "  ld                - LazyDocker"
     echo ""
 
     echo "🔧 Other Utilities:"
