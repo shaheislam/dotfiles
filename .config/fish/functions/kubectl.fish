@@ -7,8 +7,11 @@ function kubectl --wraps kubectl --description "Kubectl with fzf for get command
 
         # Skip fzf if resource starts with dash (it's a flag)
         if not string match -q -- '-*' $resource
-            # Skip fzf if -o/--output flag is present (user wants direct output)
-            if not string match -q -- '*-o*' "$argv"; and not string match -q -- '*--output*' "$argv"
+            # Skip fzf if a specific resource name is already provided (3rd arg that's not a flag)
+            if test (count $argv) -ge 3; and not string match -q -- '-*' $argv[3]
+                # User specified a specific resource, don't use FZF
+            else if not string match -q -- '*-o*' "$argv"; and not string match -q -- '*--output*' "$argv"
+                # Skip fzf if -o/--output flag is present (user wants direct output)
                 # Use bash wrapper for fzf integration (configurable via KUBECTL_FZF_OPTS)
                 # Wrapper location: ~/.config/fish/functions/kubectl-fzf-wrapper.sh
                 env KUBECONFIG=$KUBECONFIG ~/.config/fish/functions/kubectl-fzf-wrapper.sh $resource $extra_args
