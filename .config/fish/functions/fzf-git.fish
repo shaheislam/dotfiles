@@ -4,12 +4,21 @@ function __fzf_git_sh
     # having to modify `$PATH`.
     set --function fzf_git_sh_path (realpath (status dirname))
 
-    # Run the FZF git script and capture the result
-    set --function result (SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run $argv | string join ' ')
+    # Get the current token to use as query and to replace
+    set --function current_token (commandline --current-token)
+
+    # Run the FZF git script and capture the result, passing the current token as query
+    set --function result (FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --query='$current_token'" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run $argv | string join ' ')
 
     # Only insert the result if something was selected (not cancelled with ESC)
     if test -n "$result"
-        commandline --insert "$result "
+        if test -n "$current_token"
+            # Replace the current token with the result
+            commandline --current-token --replace "$result "
+        else
+            # Insert if no current token
+            commandline --insert "$result "
+        end
     end
 end
 

@@ -160,7 +160,8 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                     if test $arg_count -eq 0
                         # No args yet: show branch picker, then auto-fill path
                         set -l fzf_git_sh_path (realpath (status dirname))
-                        set -l selected_branch (SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run branches 2>/dev/null | string trim)
+                        set -l current_token (commandline --current-token)
+                        set -l selected_branch (FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --query='$current_token'" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run branches 2>/dev/null | string trim)
 
                         if test -n "$selected_branch"
                             # Branch selected: auto-fill path pattern
