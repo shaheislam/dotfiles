@@ -676,6 +676,19 @@ else
   log_warning "npm not found. Install Node.js first to use OpenAI Codex CLI"
 fi
 
+# Install iximiuz labctl CLI
+echo "=== Installing iximiuz labctl CLI ==="
+if ! command -v labctl &> /dev/null; then
+  echo "Installing iximiuz labctl CLI..."
+  if curl -sf https://labs.iximiuz.com/cli/install.sh | sh; then
+    log_success "iximiuz labctl CLI installed"
+  else
+    log_warning "Failed to install iximiuz labctl CLI (optional)"
+  fi
+else
+  log_success "iximiuz labctl CLI already installed"
+fi
+
 # Install AWS CDK CLI globally
 echo "=== Installing AWS CDK CLI ==="
 if command -v cdk &> /dev/null; then

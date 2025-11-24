@@ -474,6 +474,18 @@ phase_4_cloud_tools() {
         print_success "OpenAI Codex CLI already installed at: $(which codex)"
     fi
 
+    # Install iximiuz labctl CLI
+    if ! command_exists labctl; then
+        print_step "Installing iximiuz labctl CLI..."
+        if curl -sf https://labs.iximiuz.com/cli/install.sh | sh >/dev/null 2>&1; then
+            print_success "iximiuz labctl CLI installed"
+        else
+            log_verbose "iximiuz labctl installation skipped (optional)"
+        fi
+    else
+        print_success "iximiuz labctl CLI already installed at: $(which labctl)"
+    fi
+
     # Configure Claude Code MCP servers
     if command_exists claude; then
         print_step "Configuring Claude Code MCP servers..."
