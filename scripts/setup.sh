@@ -753,7 +753,6 @@ phase_9_fonts_and_apps() {
             "raycast"
             "wezterm"
             "nikitabobko/tap/aerospace"
-            "willow"
             "amazon-q"
             "ngrok"
             "altair-graphql-client"
@@ -771,26 +770,6 @@ phase_9_fonts_and_apps() {
                 fi
             fi
         done
-
-        # Install Mac App Store applications
-        if command_exists mas; then
-            print_step "Installing Mac App Store applications..."
-            if mas account >/dev/null 2>&1; then
-                # Install Kinda Vim for Safari
-                if mas list | grep -q "1609556629"; then
-                    print_success "Kinda Vim for Safari already installed"
-                else
-                    mas install 1609556629 >/dev/null 2>&1 && \
-                        print_success "Kinda Vim for Safari installed" || \
-                        print_warning "Failed to install Kinda Vim for Safari"
-                fi
-            else
-                print_warning "Not signed into Mac App Store - skipping App Store applications"
-                echo "  To install manually:"
-                echo "  1. Sign into Mac App Store"
-                echo "  2. Run: mas install 1609556629  # Kinda Vim for Safari"
-            fi
-        fi
 
         # Execute macOS defaults configuration
         if [[ -f "$DOTFILES_ROOT/scripts/setup/macos-defaults.sh" ]]; then
@@ -863,11 +842,18 @@ phase_10_advanced_features() {
                 print_success "Personal Neovim config cloned to ~/neovim" || \
                 log_verbose "Neovim config clone skipped"
 
-            # Create symlink from dotfiles to repository
+            # Create symlink in home directory (manual symlink, not managed by stow)
             if [[ -d "$HOME/neovim" ]]; then
-                if [[ ! -L "$DOTFILES_ROOT/.config/nvim" ]]; then
-                    ln -sf "$HOME/neovim" "$DOTFILES_ROOT/.config/nvim"
-                    log_verbose "Symlinked ~/dotfiles/.config/nvim → ~/neovim"
+                if [[ ! -L "$HOME/.config/nvim" ]]; then
+                    ln -sf "$HOME/neovim" "$HOME/.config/nvim"
+                    print_success "Created symlink: ~/.config/nvim → ~/neovim"
+                fi
+
+                # Trust mise configuration if mise is installed
+                if command -v mise &>/dev/null && [[ -f "$HOME/neovim/mise.toml" ]]; then
+                    mise trust "$HOME/neovim/mise.toml" &>/dev/null && \
+                        print_success "Trusted mise configuration for Neovim" || \
+                        log_verbose "mise trust skipped"
                 fi
             fi
         fi

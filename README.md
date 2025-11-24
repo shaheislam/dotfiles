@@ -99,12 +99,40 @@ tmux
 
 #### Neovim Setup
 
-First time opening Neovim will install plugins automatically:
+The Neovim configuration is managed separately in the `~/neovim` repository (not part of dotfiles).
+
+**Automatic Setup** (recommended if using setup script):
 
 ```bash
-nvim
-# Wait for LazyVim to install all plugins
+# Set environment variable before running setup script
+NVIM_REPO=git@github.com:user/neovim.git ./scripts/setup.sh
 ```
+
+The setup script will automatically:
+- Clone your neovim repository to `~/neovim`
+- Create symlink `~/.config/nvim` → `~/neovim`
+- Trust the mise configuration
+- Install required Python version
+
+**Manual Setup** (if setup script was not used):
+
+```bash
+# 1. Clone your neovim configuration
+git clone git@github.com:user/neovim.git ~/neovim
+
+# 2. Create manual symlink (NOT managed by stow)
+ln -sf ~/neovim ~/.config/nvim
+
+# 3. Trust mise configuration
+mise trust ~/neovim/mise.toml
+mise install
+
+# 4. Open Neovim to bootstrap lazy.nvim and install plugins
+nvim
+# Wait for lazy.nvim to clone itself and install all plugins
+```
+
+**Note**: See [CLAUDE.md](CLAUDE.md#neovim-configuration) for detailed setup instructions, troubleshooting, and common issues.
 
 ## Manual Steps (If Needed)
 

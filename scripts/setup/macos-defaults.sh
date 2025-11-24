@@ -28,6 +28,9 @@ defaults write NSGlobalDomain AppleKeyboardUIMode -int 3
 defaults write NSGlobalDomain KeyRepeat -int 1
 defaults write NSGlobalDomain InitialKeyRepeat -int 10
 
+# Disable press-and-hold for accents (enable key repeat)
+defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false
+
 # =============================================================================
 # Finder
 # =============================================================================

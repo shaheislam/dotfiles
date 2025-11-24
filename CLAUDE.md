@@ -56,6 +56,69 @@
 - **LSP Config**: Located in `~/neovim/lua/plugins/lsp.lua`
 - **IMPORTANT**: Dotfiles does NOT contain Neovim configuration - it only manages Nix LSP infrastructure
 
+#### Manual Setup Steps (First-Time Installation)
+
+**Automatic Setup** (if using setup script with `NVIM_REPO` environment variable):
+```bash
+NVIM_REPO=git@github.com:user/neovim.git ./scripts/setup.sh
+```
+The setup script will automatically:
+- Clone the neovim repository to `~/neovim`
+- Create the symlink `~/.config/nvim` → `~/neovim`
+- Trust the mise configuration (`mise trust ~/neovim/mise.toml`)
+
+**Manual Setup** (if setup script was not used):
+
+1. **Retrieve SSH Keys from 1Password**:
+
+   **Option A - Automated** (if 1Password CLI is configured):
+   ```bash
+   # Run the automated setup script
+   ./scripts/setup/setup-1password-ssh-keys.sh
+   # This will automatically retrieve keys, set permissions, and add to ssh-agent
+   ```
+
+   **Option B - Manual**:
+   ```bash
+   # Copy private key from 1Password to ~/.ssh/shaheislam-github
+   # Set correct permissions (CRITICAL for SSH to work)
+   chmod 600 ~/.ssh/shaheislam-github
+   chmod 644 ~/.ssh/shaheislam-github.pub
+
+   # Add key to SSH agent
+   ssh-add ~/.ssh/shaheislam-github
+   ```
+
+2. **Clone Neovim Configuration**:
+   ```bash
+   git clone git@github.com:user/neovim.git ~/neovim
+
+   # Create manual symlink (NOT managed by stow)
+   ln -sf ~/neovim ~/.config/nvim
+   ```
+
+3. **Trust mise Configuration**:
+   ```bash
+   # Required for mise to use the Python version specified in mise.toml
+   mise trust ~/neovim/mise.toml
+
+   # Install the specified Python version
+   mise install
+   ```
+
+4. **Bootstrap LazyVim Plugins**:
+   ```bash
+   # Open nvim - it will automatically bootstrap lazy.nvim and install all plugins
+   nvim
+   # Wait for lazy.nvim to clone itself and install all 70 plugins from lazy-lock.json
+   ```
+
+**Common Issues**:
+- **"Permission denied (publickey)"**: SSH key permissions are wrong or key not added to ssh-agent
+- **"E492: Not an editor command: Lazy"**: Symlink is incorrect or bootstrap didn't run
+- **"mise ERROR: not trusted"**: Run `mise trust ~/neovim/mise.toml`
+- **Neovim loads empty config**: Verify symlink with `readlink ~/.config/nvim` (should point to `/Users/[user]/neovim`)
+
 ### LSP Management
 - **Global LSPs**: Defined in `~/dotfiles/nix/global/` (version registry in `nix/lsp-versions.nix`)
 - **Auto-loading**: `~/.envrc` loads global environment via direnv

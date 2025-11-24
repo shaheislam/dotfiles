@@ -161,14 +161,6 @@ else
   brew install --cask raycast
 fi
 
-# Install Willow Voice Assistant
-if app_installed "Willow"; then
-  echo "Willow already installed"
-else
-  echo "Installing Willow Voice Assistant..."
-  brew install --cask willow
-fi
-
 # Install KeyCastr (Keystroke Visualizer)
 if app_installed "KeyCastr"; then
   echo "KeyCastr already installed"
@@ -829,33 +821,6 @@ for script in tmux-activity-monitor.sh tmux-activity-clear.sh tmux-session-manag
     log_warning "$script not found"
   fi
 done
-
-# Install Mac App Store applications using mas
-echo "=== Installing Mac App Store Applications ==="
-if command -v mas &> /dev/null; then
-  # Check if signed into Mac App Store
-  if mas account &> /dev/null; then
-    log_info "Installing Kinda Vim for Safari..."
-    if mas install 1609556629; then  # Kinda Vim for Safari
-      log_success "Kinda Vim for Safari installed successfully"
-      echo "ℹ️  To enable Kinda Vim:"
-      echo "   1. Open Safari"
-      echo "   2. Go to Safari → Settings → Extensions"
-      echo "   3. Enable 'Kinda Vim for Safari'"
-      echo ""
-    else
-      log_warning "Failed to install Kinda Vim for Safari - may already be installed"
-    fi
-  else
-    log_warning "Not signed into Mac App Store - skipping App Store applications"
-    echo "ℹ️  To install manually:"
-    echo "   1. Sign into Mac App Store"
-    echo "   2. Run: mas install 1609556629  # Kinda Vim for Safari"
-    echo ""
-  fi
-else
-  log_error "mas (Mac App Store CLI) not found - should be installed via Brewfile"
-fi
 
 # Setup atuin
 if command -v atuin &> /dev/null && [ ! -f "$HOME/.local/share/atuin/key" ]; then
@@ -1638,7 +1603,6 @@ echo "- AI Tools: OpenAI Codex CLI, Claude Code Router, Opencode (with Nix LSP i
 echo "- Image display: ueberzugpp, imagemagick"
 echo "- Fonts: DankMono Nerd Font (manual), Iosevka Nerd Font, JetBrains Mono Nerd Font (fallback)"
 echo "- macOS apps: ghostty, wezterm, aerospace, keycastr (requires accessibility permissions)"
-echo "- Mac App Store apps: Kinda Vim for Safari"
 echo "- Personal repositories: Obsidian vault at ~/obsidian"
 echo "- Sports tools: footyres (football results CLI)"
 echo ""

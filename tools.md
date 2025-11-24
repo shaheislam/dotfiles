@@ -232,10 +232,6 @@ A collection of useful development tools, libraries, and resources used in this 
 
 ### System
 - **[SketchyBar](https://github.com/FelixKratz/SketchyBar)** - macOS status bar
-- **[Willow](https://willowvoice.com/)** - Voice assistant application
-
-### Safari Extensions
-- **Kinda Vim for Safari** - Vim-like navigation for Safari
 
 ## File System
 
