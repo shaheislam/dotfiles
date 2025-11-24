@@ -1126,6 +1126,42 @@ log_info "View Pulse logs: tail -f ~/.pulse/logs/stdout.log"
 log_info "Query data: redis-cli KEYS \"*\""
 log_info "Server status: launchctl list | grep pulse"
 
+# Setup SSH Key Auto-loading LaunchAgent
+echo "=== Setting up SSH Key Auto-loading ==="
+SSH_LAUNCH_AGENT=~/Library/LaunchAgents/com.user.ssh-add.plist
+SSH_LAUNCH_AGENT_SOURCE=~/dotfiles/Library/LaunchAgents/com.user.ssh-add.plist
+
+# Create LaunchAgents directory if it doesn't exist
+mkdir -p ~/Library/LaunchAgents
+
+# Copy LaunchAgent file if not already present
+if [ ! -f "$SSH_LAUNCH_AGENT" ]; then
+  if [ -f "$SSH_LAUNCH_AGENT_SOURCE" ]; then
+    cp "$SSH_LAUNCH_AGENT_SOURCE" "$SSH_LAUNCH_AGENT"
+    log_success "SSH LaunchAgent file installed"
+  else
+    log_warning "SSH LaunchAgent source file not found in dotfiles"
+  fi
+fi
+
+# Load the LaunchAgent if not already loaded
+if [ -f "$SSH_LAUNCH_AGENT" ]; then
+  if launchctl list | grep -q "com.user.ssh-add"; then
+    log_success "SSH key auto-loading already configured and running"
+  else
+    # Load the LaunchAgent
+    if launchctl load "$SSH_LAUNCH_AGENT" 2>/dev/null; then
+      log_success "SSH key auto-loading LaunchAgent loaded successfully"
+      log_info "SSH keys will automatically load on every login"
+    else
+      log_warning "Failed to load SSH LaunchAgent - you may need to load it manually"
+      log_info "To load manually: launchctl load $SSH_LAUNCH_AGENT"
+    fi
+  fi
+else
+  log_warning "SSH LaunchAgent file not found"
+fi
+
 # Install consul-template
 echo "=== Installing consul-template ==="
 if ! command -v consul-template &> /dev/null; then
