@@ -1,54 +1,81 @@
-# Simple Kubectl Completions for Fish
+# kubectl FZF Native Completions for Fish
 
 ## Overview
 
-This provides simple, lightweight kubectl completions for Fish shell - similar to the ZSH FZF completions but without the complexity.
+FZF-powered kubectl completions that leverage native `__fish_kubectl_*` functions from the official kubectl completions. This provides the best of both worlds: comprehensive native completion support with FZF's interactive selection.
+
+## Architecture
+
+```
+kubectl-simple.fish (entry point)
+  ↓ __kubectl_smart_complete()
+  ↓
+kubectl_fzf_native.fish (FZF wrapper)
+  ↓
+kubectl.fish (native 226K comprehensive completions)
+  ├── __fish_kubectl_print_resource
+  ├── __fish_kubectl_print_pod_containers
+  ├── __fish_kubectl_print_resource_ports
+  ├── __fish_kubectl_print_resource_types
+  ├── __fish_kubectl_get_config
+  └── ... (many more native functions)
+```
 
 ## Features
 
-- **Namespace-aware**: Extracts namespace from `-n` or `--namespace` flags
-- **Context-aware**: Provides appropriate completions based on kubectl command
-- **Simple and fast**: No fancy previews or complex FZF features
-- **Works with aliases**: Supports `kubectl`, `k`, and `kubecolor`
+- **FZF interactive selection**: Fuzzy search for pods, resources, namespaces
+- **Preview windows**: See resource details while selecting
+- **Container completion**: `-c` flag completes actual container names
+- **Port completion**: port-forward shows actual port numbers
+- **CRD support**: Custom Resource Definitions with 30s caching
+- **All resource types**: Native completions cover all kubectl resources
+- **Toggle support**: `kubectl_toggle_fzf` to switch FZF on/off
 
 ## What it completes
 
-- **Namespaces**: After `-n` or `--namespace`
-- **Pods**: For `logs`, `exec`, `port-forward`, and when after `get pods`, `describe pods`, `delete pods`
-- **Deployments**: When after `get deployment`, `describe deployment`, `delete deployment`
-- **Services**: When after `get service`, `describe service`, `delete service`
-- **ConfigMaps**: When after `get configmap`, `describe configmap`, `delete configmap`
-
-## Usage
-
-Just use TAB as normal:
-
-```bash
-kubectl get pods [TAB]         # Lists pods
-kubectl -n [TAB]               # Lists namespaces
-kubectl logs [TAB]             # Lists pods
-kubectl describe deployment [TAB]  # Lists deployments
-k exec [TAB]                   # Lists pods (works with k alias)
-```
+| Context | Completions | Preview |
+|---------|-------------|---------|
+| `kubectl logs [TAB]` | Pods | Pod description |
+| `kubectl logs pod -c [TAB]` | Container names | - |
+| `kubectl exec [TAB]` | Pods | Pod details |
+| `kubectl port-forward [TAB]` | Pods, svc/, deploy/ | Resource details |
+| `kubectl port-forward pod [TAB]` | Port numbers | - |
+| `kubectl get [TAB]` | Resource types | - |
+| `kubectl get pods [TAB]` | Pod names | Pod description |
+| `kubectl -n [TAB]` | Namespaces | - |
+| `kubectl config use-context [TAB]` | Contexts | - |
 
 ## Files
 
-- `~/.config/fish/functions/kubectl_simple_complete.fish` - Main completion logic
-- `~/.config/fish/completions/kubectl-simple.fish` - Registers completions
+- `~/.config/fish/completions/kubectl-simple.fish` - Entry point
+- `~/.config/fish/functions/kubectl_fzf_native.fish` - FZF wrapper
+- `~/.config/fish/completions/kubectl.fish` - Native completions (226K)
 
-## How it works
+## Usage
 
-1. Parses the current command line to understand context
-2. Extracts namespace if specified
-3. Returns appropriate list of resources
-4. Fish's completion system handles the rest
+```bash
+# Normal tab completion with FZF
+kubectl get pods [TAB]         # FZF picker with preview
 
-## Comparison with complex version
+# Toggle FZF mode
+kubectl_toggle_fzf             # Disable FZF for plain completions
 
-This is much simpler than the previous implementation:
-- No FZF preview windows
-- No complex keybindings
-- No resource type detection
-- Just returns lists for completion
+# Works with aliases
+k logs [TAB]                   # Uses same completions
+kubecolor get pods [TAB]       # Also supported
+```
 
-This makes it more reliable and less likely to conflict with other tools like fifc.
+## Key Bindings in FZF
+
+- `Enter` - Select item
+- `Ctrl-/` - Toggle preview window
+- Type to filter - Fuzzy search
+
+## Benefits over previous implementation
+
+1. **~14K less code** - Uses native functions instead of reimplementing
+2. **Container completion** - Native function parses pod spec for containers
+3. **Port completion** - Shows actual port numbers from resources
+4. **CRD support** - Native completions include custom resources
+5. **More flags** - Native has comprehensive flag support
+6. **Better maintained** - kubectl.fish is updated with kubectl releases
