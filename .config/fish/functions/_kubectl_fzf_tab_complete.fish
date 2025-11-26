@@ -13,7 +13,7 @@ function _kubectl_fzf_tab_complete -d "FZF tab completion for kubectl"
 
     if test -n "$result"
         # Replace current token with selection
-        commandline -t -- $result
+        commandline -t -- "$result "
     end
 
     commandline -f repaint
