@@ -82,7 +82,7 @@ function _git_fzf_commit_actions
     if test -n "$selected"
         # Extract commit hash and insert into command line
         set -l hash (echo $selected | grep -o '[a-f0-9]\{7,\}' | head -n1)
-        commandline -i $hash
+        commandline -i "$hash "
     end
 end
 
@@ -119,6 +119,6 @@ function _git_fzf_branch_actions
     if test -n "$selected"
         # Extract branch name and insert into command line
         set -l branch (echo $selected | awk '{print $1}' | sed 's/^[* ]*//')
-        commandline -i $branch
+        commandline -i "$branch "
     end
 end

@@ -63,9 +63,9 @@ function carapace_fzf_complete --description "Use FZF to select from Carapace co
             
             # Replace the current token with the selection
             if test -n "$token"
-                commandline -t $completion_text
+                commandline -t "$completion_text "
             else
-                commandline -i $completion_text
+                commandline -i "$completion_text "
             end
         end
     else

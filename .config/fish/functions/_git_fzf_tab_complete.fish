@@ -145,7 +145,7 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                             if test -n "$repo"
                                 # Suggest default path pattern and return
                                 # Next TAB will trigger branch selection
-                                commandline --current-token --replace "../$repo-$branch_flag_value"
+                                commandline --current-token --replace "../$repo-$branch_flag_value "
                                 return
                             end
                             # Fallback if repo detection fails

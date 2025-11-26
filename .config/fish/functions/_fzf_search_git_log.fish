@@ -28,7 +28,7 @@ function _fzf_search_git_log --description "Search the output of git log and pre
                 set -f full_commit_hash (git rev-parse $abbreviated_commit_hash)
                 set -f --append commit_hashes $full_commit_hash
             end
-            commandline --current-token --replace (string join ' ' $commit_hashes)
+            commandline --current-token --replace (string join ' ' $commit_hashes)" "
         end
     end
 
