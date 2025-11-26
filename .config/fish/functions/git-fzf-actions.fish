@@ -51,7 +51,7 @@ function _git_fzf_file_actions
     end
 end
 
-# Git Commits Interface - Operations on Commits
+# Git Commits Interface - Operations on Commits (multi-select enabled)
 function _git_fzf_commit_actions
     # Check if in git repo
     if not git rev-parse --git-dir >/dev/null 2>&1
@@ -63,8 +63,10 @@ function _git_fzf_commit_actions
         git log --oneline --graph --date=short --color=always \
             --pretty='format:%C(auto)%cd %h%d %s (%an)' | \
         fzf --ansi \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🍡 Git Commits" \
-            --header="ENTER (show) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick)" \
+            --header="TAB: select multiple | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick)" \
             --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always" \
             --preview-window="right:60%" \
             --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always | less -R < /dev/tty > /dev/tty)" \
@@ -80,13 +82,17 @@ function _git_fzf_commit_actions
     )
 
     if test -n "$selected"
-        # Extract commit hash and insert into command line
-        set -l hash (echo $selected | grep -o '[a-f0-9]\{7,\}' | head -n1)
-        commandline -i "$hash "
+        # Extract commit hashes from all selected items and insert into command line
+        set -l hashes
+        for line in $selected
+            set -l hash (echo $line | grep -o '[a-f0-9]\{7,\}' | head -n1)
+            set -a hashes $hash
+        end
+        commandline -i (string join ' ' $hashes)" "
     end
 end
 
-# Git Branches Interface - Operations on Branches
+# Git Branches Interface - Operations on Branches (multi-select enabled)
 function _git_fzf_branch_actions
     # Check if in git repo
     if not git rev-parse --git-dir >/dev/null 2>&1
@@ -100,8 +106,10 @@ function _git_fzf_branch_actions
         git branch --all --sort=-committerdate --color=always \
             --format='%(if)%(HEAD)%(then)* %(else)  %(end)%(color:yellow)%(refname:short)%(color:reset) %(color:green)(%(committerdate:relative))%(color:reset) %(color:blue)%(subject)%(color:reset)' | \
         fzf --ansi \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🌳 Git Branches (Current: $current_branch)" \
-            --header="ALT-C (checkout) | ALT-M (merge) | ALT-R (rebase) | ALT-D (diff) | ALT-L (log)" \
+            --header="TAB: select multiple | ALT-C (checkout) | ALT-M (merge) | ALT-R (rebase) | ALT-D (diff)" \
             --preview="echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs -I{} git log --oneline --graph --date=short --color=always --pretty='format:%C(auto)%cd %h%d %s' {} --" \
             --preview-window="right:60%" \
             --bind="alt-c:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git checkout < /dev/tty > /dev/tty)+abort" \
@@ -117,8 +125,12 @@ function _git_fzf_branch_actions
     )
 
     if test -n "$selected"
-        # Extract branch name and insert into command line
-        set -l branch (echo $selected | awk '{print $1}' | sed 's/^[* ]*//')
-        commandline -i "$branch "
+        # Extract branch names from all selected items and insert into command line
+        set -l branches
+        for line in $selected
+            set -l branch (echo $line | awk '{print $1}' | sed 's/^[* ]*//')
+            set -a branches $branch
+        end
+        commandline -i (string join ' ' $branches)" "
     end
 end

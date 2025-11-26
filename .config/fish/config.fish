@@ -2211,7 +2211,7 @@ fish_add_path ~/.claude/local/node_modules/.bin
         end
     end
 
-    # Pod selector with fzf
+    # Pod selector with fzf (multi-select enabled)
     function kpod --description "Select Kubernetes pod with fzf"
         if not command -v kubectl >/dev/null
             echo "kubectl not installed"
@@ -2225,18 +2225,24 @@ fish_add_path ~/.claude/local/node_modules/.bin
         end
 
         set -l selected (printf '%s\n' $pods | fzf \
-            --prompt="Select pod (ENTER=describe, CTRL-L=logs, CTRL-E=exec, CTRL-D=delete): " \
+            --prompt="Pod: " \
             --height=80% \
             --border \
-            --header="NAME READY STATUS RESTARTS AGE" \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --header="TAB: select multiple | NAME READY STATUS RESTARTS AGE" \
             --bind='ctrl-l:execute(kubectl logs {1})' \
             --bind='ctrl-e:execute(kubectl exec -it {1} -- /bin/sh)' \
             --bind='ctrl-d:execute(kubectl delete pod {1})' \
             --preview='kubectl describe pod {1}')
 
         if test -n "$selected"
-            set -l pod_name (echo $selected | awk '{print $1}')
-            kubectl describe pod $pod_name
+            for line in $selected
+                set -l pod_name (echo $line | awk '{print $1}')
+                echo "=== Pod: $pod_name ==="
+                kubectl describe pod $pod_name
+                echo ""
+            end
         end
     end
 
@@ -2334,7 +2340,7 @@ fish_add_path ~/.claude/local/node_modules/.bin
         kubectl top pods 2>/dev/null || echo "Metrics server not installed"
     end
 
-    # Docker container selector with fzf (DEPRECATED - use CTRL-D CTRL-C)
+    # Docker container selector with fzf (multi-select enabled, DEPRECATED - use CTRL-D CTRL-C)
     function dcon --description "[DEPRECATED] Select Docker container with fzf"
         if not command -v docker >/dev/null
             echo "Docker not installed"
@@ -2348,17 +2354,24 @@ fish_add_path ~/.claude/local/node_modules/.bin
         end
 
         set -l selected (printf '%s\n' $containers | fzf \
-            --prompt="Select container (ENTER=logs, CTRL-E=exec, CTRL-S=stop, CTRL-R=restart): " \
+            --prompt="Container: " \
             --height=80% \
             --border \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --header="TAB: select multiple | CTRL-E=exec, CTRL-S=stop, CTRL-R=restart" \
             --bind='ctrl-e:execute(docker exec -it {1} /bin/sh)' \
             --bind='ctrl-s:execute(docker stop {1})' \
             --bind='ctrl-r:execute(docker restart {1})' \
             --preview='docker logs --tail 50 {1}')
 
         if test -n "$selected"
-            set -l container_id (echo $selected | awk '{print $1}')
-            docker logs --tail 100 -f $container_id
+            for line in $selected
+                set -l container_id (echo $line | awk '{print $1}')
+                echo "=== Container: $container_id ==="
+                docker logs --tail 100 $container_id
+                echo ""
+            end
         end
     end
 
@@ -2391,7 +2404,7 @@ fish_add_path ~/.claude/local/node_modules/.bin
         end
     end
 
-    # Helm release selector
+    # Helm release selector (multi-select enabled)
     function helmr --description "Select Helm release with fzf"
         if not command -v helm >/dev/null
             echo "Helm not installed"
@@ -2405,18 +2418,24 @@ fish_add_path ~/.claude/local/node_modules/.bin
         end
 
         set -l selected (printf '%s\n' $releases | fzf \
-            --prompt="Select Helm release (ENTER=status, CTRL-V=values, CTRL-D=delete): " \
+            --prompt="Helm release: " \
             --height=80% \
             --border \
-            --header="NAMESPACE NAME STATUS CHART" \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --header="TAB: select multiple | CTRL-V=values, CTRL-D=delete | NAMESPACE NAME STATUS CHART" \
             --bind='ctrl-v:execute(helm get values {2} -n {1})' \
             --bind='ctrl-d:execute(helm delete {2} -n {1})' \
             --preview='helm status {2} -n {1}')
 
         if test -n "$selected"
-            set -l namespace (echo $selected | awk '{print $1}')
-            set -l release (echo $selected | awk '{print $2}')
-            helm status $release -n $namespace
+            for line in $selected
+                set -l namespace (echo $line | awk '{print $1}')
+                set -l release (echo $line | awk '{print $2}')
+                echo "=== Release: $release (namespace: $namespace) ==="
+                helm status $release -n $namespace
+                echo ""
+            end
         end
     end
 

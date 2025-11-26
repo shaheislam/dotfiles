@@ -8,11 +8,12 @@ function _kubectl_fzf_tab_complete -d "FZF tab completion for kubectl"
     end
 
     # Call kubectl_fzf_native which handles FZF selection internally
-    # It returns the selected item
+    # It returns space-separated items if multiple were selected
     set -l result (kubectl_fzf_native)
 
     if test -n "$result"
-        # Replace current token with selection
+        # Replace current token with selection(s)
+        # Result is already space-separated for multiple selections
         commandline -t -- "$result "
     end
 

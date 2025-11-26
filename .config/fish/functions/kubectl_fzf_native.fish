@@ -135,9 +135,16 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             return
         end
 
-        # Multiple matches - use FZF, strip description from selected result
+        # Multiple matches - use FZF with multi-select, strip description from selected result
         if test "$kubectl_use_fzf" = "true"
-            printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current" | string split '\\t' | head -1
+            set -l selected (printf '%s\n' $completions | fzf --height=40% --multi \
+                --bind 'tab:toggle+down,shift-tab:toggle+up' \
+                --header 'TAB: select multiple, ENTER: confirm' \
+                --prompt="$fzf_prompt" --query="$current")
+            # Return space-separated results for multiple selections
+            for item in $selected
+                echo $item | string split '\\t' | head -1
+            end | string join ' '
         else
             printf '%s\n' $completions
         end
@@ -315,14 +322,27 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         return
     end
 
-    # FZF selection with current token as initial query - strip description from selected result
+    # FZF selection with current token as initial query and multi-select - strip description from selected result
     if test "$show_preview" = "true"; and test -n "$preview_cmd"
-        printf '%s\n' $completions | fzf --height=50% --prompt="$fzf_prompt" --query="$current" \
+        set -l selected (printf '%s\n' $completions | fzf --height=50% --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
+            --header 'TAB: select multiple, ENTER: confirm' \
+            --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
-            --preview-window=right:50%:wrap \
-            --bind=ctrl-/:toggle-preview | string split '\\t' | head -1
+            --preview-window=right:50%:wrap)
+        # Return space-separated results for multiple selections
+        for item in $selected
+            echo $item | string split '\\t' | head -1
+        end | string join ' '
     else
-        printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current" | string split '\\t' | head -1
+        set -l selected (printf '%s\n' $completions | fzf --height=40% --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --header 'TAB: select multiple, ENTER: confirm' \
+            --prompt="$fzf_prompt" --query="$current")
+        # Return space-separated results for multiple selections
+        for item in $selected
+            echo $item | string split '\\t' | head -1
+        end | string join ' '
     end
 end
 
