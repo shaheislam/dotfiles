@@ -77,7 +77,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     # If we handled a flag above, show FZF and return
     if test (count $completions) -gt 0
         if test "$kubectl_use_fzf" = "true"
-            printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt"
+            printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current"
         else
             printf '%s\n' $completions
         end
@@ -232,14 +232,14 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         return
     end
 
-    # FZF selection
+    # FZF selection with current token as initial query
     if test "$show_preview" = "true"; and test -n "$preview_cmd"
-        printf '%s\n' $completions | fzf --height=50% --prompt="$fzf_prompt" \
+        printf '%s\n' $completions | fzf --height=50% --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
             --preview-window=right:50%:wrap \
             --bind=ctrl-/:toggle-preview
     else
-        printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt"
+        printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current"
     end
 end
 
