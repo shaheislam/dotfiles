@@ -111,7 +111,8 @@ else
       --border-label-pos 2 \
       --color 'label:blue' \
       --preview-window 'right,50%' --preview-border line \
-      --bind 'ctrl-/:change-preview-window(down,50%|hidden|)' "$@"
+      --bind 'ctrl-/:change-preview-window(down,50%|hidden|)' \
+      --query "${FZF_DOCKER_QUERY:-}" "$@"
   }
 fi
 
