@@ -8,7 +8,7 @@ function __fzf_git_sh
     set --function current_token (commandline --current-token)
 
     # Run the FZF git script and capture the result, passing the current token as query
-    set --function result (FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --query='$current_token'" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run $argv | string join ' ')
+    set --function result (FZF_GIT_QUERY="$current_token" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run $argv | string join ' ')
 
     # Only insert the result if something was selected (not cancelled with ESC)
     if test -n "$result"

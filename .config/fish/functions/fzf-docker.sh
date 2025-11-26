@@ -116,6 +116,11 @@ else
   }
 fi
 
+# Strip ANSI escape codes from text
+_fzf_docker_strip_ansi() {
+  sed 's/\x1b\[[0-9;]*m//g'
+}
+
 # Wrapper that auto-completes on single match, otherwise invokes FZF
 # Filters input by FZF_DOCKER_QUERY prefix, returns directly if only 1 match
 _fzf_docker_select() {
@@ -137,9 +142,9 @@ _fzf_docker_select() {
     local count
     count=$(echo "$filtered" | grep -c . 2>/dev/null || echo 0)
 
-    # Single match - return directly without FZF
+    # Single match - return directly without FZF (strip ANSI, extract first field)
     if [[ $count -eq 1 ]]; then
-      echo "$filtered" | awk '{print $1}'
+      echo "$filtered" | _fzf_docker_strip_ansi | awk '{print $1}'
       return
     fi
 

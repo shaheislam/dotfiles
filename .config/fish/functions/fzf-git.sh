@@ -177,9 +177,88 @@ else
       --border-label-pos 2 \
       --color 'label:blue' \
       --preview-window 'right,50%' --preview-border line \
-      --bind 'ctrl-/:change-preview-window(down,50%|hidden|)' "$@"
+      --bind 'ctrl-/:change-preview-window(down,50%|hidden|)' \
+      --query "${FZF_GIT_QUERY:-}" "$@"
   }
 fi
+
+# Strip ANSI escape codes from text
+_fzf_git_strip_ansi() {
+  sed 's/\x1b\[[0-9;]*m//g'
+}
+
+# Wrapper that auto-completes on single match, otherwise invokes FZF
+# Filters input by FZF_GIT_QUERY prefix, returns directly if only 1 match
+_fzf_git_select() {
+  local input header_lines
+  input=$(cat)
+
+  # Check if --header-lines is specified (extract the number)
+  header_lines=0
+  for arg in "$@"; do
+    if [[ $arg =~ ^--header-lines[[:space:]]*([0-9]+)$ ]] || [[ $arg == --header-lines ]]; then
+      # Handle --header-lines N format
+      continue
+    fi
+    if [[ $prev_arg == "--header-lines" ]]; then
+      header_lines=$arg
+    fi
+    prev_arg=$arg
+  done
+  # Also check for --header-lines=N format
+  for arg in "$@"; do
+    if [[ $arg =~ ^--header-lines[=[:space:]]?([0-9]+)$ ]]; then
+      header_lines="${BASH_REMATCH[1]}"
+    fi
+  done
+
+  # Extract header and data lines
+  local header_content data_lines
+  if [[ $header_lines -gt 0 ]]; then
+    header_content=$(echo "$input" | head -n "$header_lines")
+    data_lines=$(echo "$input" | tail -n +"$((header_lines + 1))")
+  else
+    header_content=""
+    data_lines="$input"
+  fi
+
+  # Filter by query if provided (strip ANSI for matching, keep original for display)
+  if [[ -n "${FZF_GIT_QUERY:-}" ]]; then
+    local filtered
+    # Case-insensitive match anywhere in line (git output has varied formats)
+    filtered=$(echo "$data_lines" | grep -i "${FZF_GIT_QUERY}")
+
+    # Count non-empty lines
+    local count
+    count=$(echo "$filtered" | grep -c . 2>/dev/null || echo 0)
+
+    # Single match - return directly without FZF (strip ANSI codes)
+    if [[ $count -eq 1 ]]; then
+      echo "$filtered" | _fzf_git_strip_ansi
+      return
+    fi
+
+    # No matches - return empty
+    if [[ $count -eq 0 ]]; then
+      return
+    fi
+
+    # Multiple matches - reassemble with header for FZF
+    if [[ -n "$header_content" ]]; then
+      input=$(printf '%s\n%s' "$header_content" "$filtered")
+    else
+      input="$filtered"
+    fi
+  fi
+
+  # Multiple matches or no query - use FZF
+  # Use --tiebreak=index to preserve original order (modified files first) when query is pre-filled
+  if [[ -n "${FZF_GIT_QUERY:-}" ]]; then
+    echo "$input" | _fzf_git_fzf --tiebreak=index "$@"
+  else
+    echo "$input" | _fzf_git_fzf "$@"
+  fi
+}
 
 _fzf_git_check() {
   git rev-parse > /dev/null 2>&1 && return
@@ -193,9 +272,12 @@ __fzf_git=$(readlink -f "$__fzf_git" 2> /dev/null || /usr/bin/ruby --disable-gem
 
 _fzf_git_files() {
   _fzf_git_check || return
-  local root query extract_file_name
+  local root query extract_file_name combined_query
   root=$(git rev-parse --show-toplevel)
   [[ -n "$(git rev-parse --show-prefix)" ]] && query='!../ '
+
+  # Combine local query prefix with user's partial input
+  combined_query="${query}${FZF_GIT_QUERY:-}"
 
   read -r -d "" extract_file_name <<'EOF'
 "$(cut -c4- <<< {} | sed 's/.* -> //;s/^"//;s/"$//;s/\\"/"/g')"
@@ -209,12 +291,11 @@ EOF
       echo :
     ) | sed 's/^/   /'
   ) |
-    _fzf_git_fzf -m --ansi --nth 2..,.. \
+    FZF_GIT_QUERY="$combined_query" _fzf_git_select -m --ansi --nth 2..,.. \
       --border-label '📁 Files ' \
       --header 'CTRL-O (open in browser) ╱ ALT-E (open in editor)' \
       --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list file $extract_file_name" \
       --bind "alt-e:execute:${EDITOR:-vim} $extract_file_name < /dev/tty > /dev/tty" \
-      --query "$query" \
       --preview "git -c core.quotePath=false diff --no-ext-diff --color=$(__fzf_git_color .) -- $extract_file_name | $(__fzf_git_pager); $(__fzf_git_cat) $extract_file_name" "$@" |
     cut -c4- | sed 's/.* -> //'
 }
@@ -226,7 +307,7 @@ _fzf_git_branches() {
   [[ -n ${BASH_VERSION:-} ]] && shell=bash || shell=zsh
 
   bash "$__fzf_git" --list branches |
-  __fzf_git_fzf=$(declare -f _fzf_git_fzf) _fzf_git_fzf --ansi \
+  __fzf_git_fzf=$(declare -f _fzf_git_fzf) _fzf_git_select --ansi \
     --border-label '🌲 Branches ' \
     --header-lines 2 \
     --tiebreak begin \
@@ -245,7 +326,7 @@ _fzf_git_branches() {
 _fzf_git_tags() {
   _fzf_git_check || return
   git tag --sort -version:refname |
-  _fzf_git_fzf --preview-window right,70% \
+  _fzf_git_select --preview-window right,70% \
     --border-label '📛 Tags ' \
     --header 'CTRL-O (open in browser)' \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list tag {}" \
@@ -255,7 +336,7 @@ _fzf_git_tags() {
 _fzf_git_hashes() {
   _fzf_git_check || return
   bash "$__fzf_git" --list hashes |
-  _fzf_git_fzf --ansi --no-sort --bind 'ctrl-s:toggle-sort' \
+  _fzf_git_select --ansi --no-sort --bind 'ctrl-s:toggle-sort' \
     --border-label '🍡 Hashes ' \
     --header-lines 2 \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list commit {}" \
@@ -269,7 +350,7 @@ _fzf_git_hashes() {
 _fzf_git_remotes() {
   _fzf_git_check || return
   git remote -v | awk '{print $1 "\t" $2}' | uniq |
-  _fzf_git_fzf --tac \
+  _fzf_git_select --tac \
     --border-label '📡 Remotes ' \
     --header 'CTRL-O (open in browser)' \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list remote {1}" \
@@ -280,7 +361,7 @@ _fzf_git_remotes() {
 
 _fzf_git_stashes() {
   _fzf_git_check || return
-  git stash list | _fzf_git_fzf \
+  git stash list | _fzf_git_select \
     --border-label '🥡 Stashes ' \
     --header 'CTRL-X (drop stash)' \
     --bind 'ctrl-x:reload(git stash drop -q {1}; git stash list)' \
@@ -290,7 +371,7 @@ _fzf_git_stashes() {
 
 _fzf_git_lreflogs() {
   _fzf_git_check || return
-  git reflog --color=$(__fzf_git_color) --format="%C(blue)%gD %C(yellow)%h%C(auto)%d %gs" | _fzf_git_fzf --ansi \
+  git reflog --color=$(__fzf_git_color) --format="%C(blue)%gD %C(yellow)%h%C(auto)%d %gs" | _fzf_git_select --ansi \
     --border-label '📒 Reflogs ' \
     --preview "git show --color=$(__fzf_git_color .) {1} | $(__fzf_git_pager)" "$@" |
   awk '{print $1}'
@@ -298,7 +379,7 @@ _fzf_git_lreflogs() {
 
 _fzf_git_each_ref() {
   _fzf_git_check || return
-  bash "$__fzf_git" --list refs | _fzf_git_fzf --ansi \
+  bash "$__fzf_git" --list refs | _fzf_git_select --ansi \
     --nth 2,2.. \
     --tiebreak begin \
     --border-label '☘️  Each ref ' \
@@ -316,7 +397,7 @@ _fzf_git_each_ref() {
 
 _fzf_git_worktrees() {
   _fzf_git_check || return
-  git worktree list | _fzf_git_fzf \
+  git worktree list | _fzf_git_select \
     --border-label '🌴 Worktrees ' \
     --header 'CTRL-X (remove worktree)' \
     --bind 'ctrl-x:reload(git worktree remove {1} > /dev/null; git worktree list)' \
