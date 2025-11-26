@@ -401,12 +401,16 @@ function __fish_kubectl_print_resource -d 'Print a list of resources' -a resourc
   __fish_kubectl $args --no-headers 2>/dev/null | awk '{print $1}' | string replace -r '(.*)/' ''
 end
 
+# Dynamic container name completion for kubectl commands
+# Parses the current command line to extract pod name and namespace,
+# then queries kubectl for the container names in that pod.
+# Used by: kubectl logs, exec, attach, cp, debug with -c/--container flag
 function __fish_kubectl_print_pod_containers -d 'Print container names for the pod in the current command'
     set -l cmd (commandline -opc)
     set -l pod_name ""
     set -l namespace ""
 
-    # Parse the command line more carefully
+    # Parse the command line to find pod name and namespace
     set -l i 1
     while test $i -le (count $cmd)
         set -l token $cmd[$i]
@@ -417,16 +421,15 @@ function __fish_kubectl_print_pod_containers -d 'Print container names for the p
             continue
         end
 
-        # Look for the subcommand
+        # Look for supported subcommands
         if contains -- $token logs exec attach cp debug
-            # Found subcommand, now look for pod and namespace
+            # Found subcommand, now parse remaining arguments
             set i (math $i + 1)
 
-            # Parse remaining args
             while test $i -le (count $cmd)
                 set -l arg $cmd[$i]
 
-                # Check for namespace flag
+                # Check for namespace flag (use "x" prefix to avoid Fish test flag conflicts)
                 if test "x$arg" = "x-n" -o "x$arg" = "x--namespace"
                     if test (math $i + 1) -le (count $cmd)
                         set namespace $cmd[(math $i + 1)]
@@ -435,10 +438,10 @@ function __fish_kubectl_print_pod_containers -d 'Print container names for the p
                     end
                 end
 
-                # Check for container flag (skip its argument)
+                # Skip container flag and its argument (we're completing this)
                 if test "x$arg" = "x-c" -o "x$arg" = "x--container"
-                    # Skip the -c flag and its argument (if any)
                     set i (math $i + 1)
+                    # Skip the container name if provided
                     if test $i -le (count $cmd); and not string match -q -- '-*' $cmd[$i]
                         set i (math $i + 1)
                     end
@@ -451,7 +454,7 @@ function __fish_kubectl_print_pod_containers -d 'Print container names for the p
                     continue
                 end
 
-                # First non-flag argument is the pod name
+                # First non-flag argument after subcommand is the pod name
                 if test -z "$pod_name"
                     set pod_name $arg
                 end
@@ -464,7 +467,7 @@ function __fish_kubectl_print_pod_containers -d 'Print container names for the p
         set i (math $i + 1)
     end
 
-    # Query container names if we have a pod
+    # Query container names if we found a pod
     if test -n "$pod_name"
         if test -n "$namespace"
             kubectl get pod "$pod_name" -n "$namespace" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null | string split ' '
