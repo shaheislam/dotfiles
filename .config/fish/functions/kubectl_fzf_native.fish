@@ -17,7 +17,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     # Handle --flag completion: when current token starts with -
     if string match -q -- '-*' $current
         # Build the command line for completion lookup
-        set -l cmdline (string join ' ' $cmd)
+        set -l cmdline (string join -- ' ' $cmd)
         set -l flag_completions (complete -C"$cmdline $current" 2>/dev/null)
 
         if test (count $flag_completions) -gt 0
@@ -145,7 +145,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # Return space-separated results for multiple selections
             for item in $selected
                 echo $item | string split \t | head -1
-            end | string join ' '
+            end | string join -- ' '
         else
             printf '%s\n' $completions
         end
@@ -334,7 +334,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         # Return space-separated results for multiple selections
         for item in $selected
             echo $item | string split \t | head -1
-        end | string join ' '
+        end | string join -- ' '
     else
         set -l selected (printf '%s\n' $completions | fzf --height=40% --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
@@ -343,7 +343,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         # Return space-separated results for multiple selections
         for item in $selected
             echo $item | string split \t | head -1
-        end | string join ' '
+        end | string join -- ' '
     end
 end
 
