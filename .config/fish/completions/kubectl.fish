@@ -477,6 +477,128 @@ function __fish_kubectl_print_pod_containers -d 'Print container names for the p
     end
 end
 
+# Dynamic port completion for kubectl port-forward
+# Parses the current command line to extract resource name, type, and namespace,
+# then queries kubectl for the available ports on that resource.
+function __fish_kubectl_print_resource_ports -d 'Print available ports for the resource in port-forward command'
+    set -l cmd (commandline -opc)
+    set -l resource_name ""
+    set -l resource_type ""
+    set -l namespace ""
+
+    # Parse the command line to find resource name and namespace
+    set -l i 1
+    set -l found_port_forward 0
+    while test $i -le (count $cmd)
+        set -l token $cmd[$i]
+
+        # Look for port-forward subcommand
+        if test $token = "port-forward"
+            set found_port_forward 1
+            set i (math $i + 1)
+            continue
+        end
+
+        if test $found_port_forward -eq 1
+            # Check for namespace flag
+            if test "x$token" = "x-n" -o "x$token" = "x--namespace"
+                if test (math $i + 1) -le (count $cmd)
+                    set namespace $cmd[(math $i + 1)]
+                    set i (math $i + 2)
+                    continue
+                end
+            end
+
+            # Skip other flags
+            if string match -q -- '-*' $token
+                set i (math $i + 1)
+                continue
+            end
+
+            # First non-flag argument after port-forward is the resource (type/name or just name)
+            if test -z "$resource_name"
+                # Check if it contains a slash (e.g., service/alertmanager or svc/alertmanager)
+                if string match -q '*/*' $token
+                    set -l parts (string split '/' $token)
+                    set resource_type $parts[1]
+                    set resource_name $parts[2]
+                else
+                    # Assume it's a pod if no type specified
+                    set resource_type "pod"
+                    set resource_name $token
+                end
+                break
+            end
+        end
+
+        set i (math $i + 1)
+    end
+
+    # Query ports if we found a resource
+    if test -n "$resource_name"
+        set -l ns_flag
+        if test -n "$namespace"
+            set ns_flag "-n" "$namespace"
+        end
+
+        # Get ports based on resource type
+        switch $resource_type
+            case service svc services
+                # For services: get service ports (port:targetPort/protocol)
+                set -l ports (kubectl get service "$resource_name" $ns_flag -o jsonpath='{range .spec.ports[*]}{.port}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}' 2>/dev/null)
+                for port_info in $ports
+                    set -l port_parts (string split \t $port_info)
+                    set -l port $port_parts[1]
+                    set -l name $port_parts[2]
+                    if test -n "$name"
+                        echo "$port\t$name"
+                    else
+                        echo "$port"
+                    end
+                end
+            case pod po pods
+                # For pods: get container ports
+                set -l ports (kubectl get pod "$resource_name" $ns_flag -o jsonpath='{range .spec.containers[*]}{range .ports[*]}{.containerPort}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
+                for port_info in $ports
+                    set -l port_parts (string split \t $port_info)
+                    set -l port $port_parts[1]
+                    set -l name $port_parts[2]
+                    if test -n "$name"
+                        echo "$port\t$name"
+                    else
+                        echo "$port"
+                    end
+                end
+            case deployment deploy deployments
+                # For deployments: get pod template ports
+                set -l ports (kubectl get deployment "$resource_name" $ns_flag -o jsonpath='{range .spec.template.spec.containers[*]}{range .ports[*]}{.containerPort}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
+                for port_info in $ports
+                    set -l port_parts (string split \t $port_info)
+                    set -l port $port_parts[1]
+                    set -l name $port_parts[2]
+                    if test -n "$name"
+                        echo "$port\t$name"
+                    else
+                        echo "$port"
+                    end
+                end
+            case replicaset rs replicasets
+                # For replicasets: get pod template ports
+                set -l ports (kubectl get replicaset "$resource_name" $ns_flag -o jsonpath='{range .spec.template.spec.containers[*]}{range .ports[*]}{.containerPort}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
+                for port_info in $ports
+                    set -l port_parts (string split \t $port_info)
+                    set -l port $port_parts[1]
+                    set -l name $port_parts[2]
+                    if test -n "$name"
+                        echo "$port\t$name"
+                    else
+                        echo "$port"
+                    end
+                end
+        end
+    end
+end
+
 function __fish_kubectl_get_config -a type
   set -l template "{{ range .$type }}"'{{ .name }}{{"\n"}}{{ end }}'
   __fish_kubectl config view -o template --template="$template"
@@ -532,11 +654,59 @@ end
 # Completions for log, logs, exec (pods only)
 complete -c kubectl -f -n "__fish_seen_subcommand_from log logs exec" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
 
+# Helper function to check if port-forward has a resource specified
+function __fish_kubectl_port_forward_needs_resource
+    set -l cmd (commandline -opc)
+    set -l found_port_forward 0
+    set -l resource_count 0
+
+    for token in $cmd
+        if test $token = "port-forward"
+            set found_port_forward 1
+            continue
+        end
+
+        if test $found_port_forward -eq 1
+            # Skip flags and their arguments
+            if string match -q -- '-*' $token
+                continue
+            end
+            # Count non-flag arguments after port-forward
+            set resource_count (math $resource_count + 1)
+        end
+    end
+
+    # Return 0 (true) if we need a resource (less than 1 non-flag arg)
+    test $resource_count -lt 1
+end
+
+# Helper functions to print resources with type prefix for port-forward
+function __fish_kubectl_print_services_with_prefix
+    for svc in (__fish_kubectl_print_resource services)
+        echo "svc/$svc"
+    end
+end
+
+function __fish_kubectl_print_deployments_with_prefix
+    for deploy in (__fish_kubectl_print_resource deployments)
+        echo "deployment/$deploy"
+    end
+end
+
+function __fish_kubectl_print_replicasets_with_prefix
+    for rs in (__fish_kubectl_print_resource replicasets)
+        echo "rs/$rs"
+    end
+end
+
 # Completions for port-forward (supports pods, services, deployments, replicasets)
 complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
-complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource services)' -d 'Service'
-complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource deployments)' -d 'Deployment'
-complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource replicasets)' -d 'ReplicaSet'
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_services_with_prefix)' -d 'Service'
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_deployments_with_prefix)' -d 'Deployment'
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_replicasets_with_prefix)' -d 'ReplicaSet'
+
+# Port completion for port-forward (shows available ports from the resource in the command line)
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource_ports)' -d 'Port'
 
 complete -c kubectl -f -n "__fish_seen_subcommand_from top; and __fish_seen_subcommand_from po pod pods" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
 complete -c kubectl -f -n "__fish_seen_subcommand_from top; and __fish_seen_subcommand_from no node nodes" -a '(__fish_kubectl_print_resource nodes)' -d 'Node'
