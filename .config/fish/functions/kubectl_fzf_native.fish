@@ -74,8 +74,31 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             return
     end
 
-    # If we handled a flag above, show FZF and return
+    # If we handled a flag above, filter and show FZF
     if test (count $completions) -gt 0
+        # Filter completions by current token if provided
+        if test -n "$current"
+            set -l filtered
+            for c in $completions
+                if string match -q -- "$current*" $c
+                    set -a filtered $c
+                end
+            end
+            set completions $filtered
+        end
+
+        # No matches after filtering
+        if test (count $completions) -eq 0
+            return
+        end
+
+        # Auto-complete if only one match
+        if test (count $completions) -eq 1
+            echo $completions[1]
+            return
+        end
+
+        # Multiple matches - use FZF
         if test "$kubectl_use_fzf" = "true"
             printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current"
         else
@@ -227,6 +250,29 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         return
     end
 
+    # Filter completions by current token if provided
+    if test -n "$current"
+        set -l filtered
+        for c in $completions
+            if string match -q -- "$current*" $c
+                set -a filtered $c
+            end
+        end
+        set completions $filtered
+    end
+
+    # No matches after filtering
+    if test (count $completions) -eq 0
+        return
+    end
+
+    # Auto-complete if only one match
+    if test (count $completions) -eq 1
+        echo $completions[1]
+        return
+    end
+
+    # Multiple matches - use FZF or plain output
     if test "$kubectl_use_fzf" != "true"
         printf '%s\n' $completions
         return

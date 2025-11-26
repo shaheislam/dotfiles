@@ -116,6 +116,46 @@ else
   }
 fi
 
+# Wrapper that auto-completes on single match, otherwise invokes FZF
+# Filters input by FZF_DOCKER_QUERY prefix, returns directly if only 1 match
+_fzf_docker_select() {
+  local input header_line
+  input=$(cat)
+
+  # Extract header line (first line) and data lines
+  header_line=$(echo "$input" | head -n 1)
+  local data_lines
+  data_lines=$(echo "$input" | tail -n +2)
+
+  # Filter by query if provided
+  if [[ -n "${FZF_DOCKER_QUERY:-}" ]]; then
+    local filtered
+    # Case-insensitive prefix match on data lines only
+    filtered=$(echo "$data_lines" | grep -i "^[^ ]*${FZF_DOCKER_QUERY}")
+
+    # Count non-empty lines
+    local count
+    count=$(echo "$filtered" | grep -c . 2>/dev/null || echo 0)
+
+    # Single match - return directly without FZF
+    if [[ $count -eq 1 ]]; then
+      echo "$filtered" | awk '{print $1}'
+      return
+    fi
+
+    # No matches - return empty
+    if [[ $count -eq 0 ]]; then
+      return
+    fi
+
+    # Multiple matches - reassemble with header for FZF
+    input=$(printf '%s\n%s' "$header_line" "$filtered")
+  fi
+
+  # Multiple matches or no query - use FZF
+  echo "$input" | _fzf_docker_fzf "$@"
+}
+
 _fzf_docker_check() {
   if ! command -v docker > /dev/null 2>&1; then
     [[ -n $TMUX ]] && tmux display-message "Docker not installed"
@@ -137,7 +177,7 @@ _fzf_docker_containers() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list containers |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '🐳 Containers (Running) ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -157,7 +197,7 @@ _fzf_docker_all_containers() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list all-containers |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '🐳 Containers (All) ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -177,7 +217,7 @@ _fzf_docker_running_containers() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list running-containers |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '🐳 Containers (Running) ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -196,7 +236,7 @@ _fzf_docker_stopped_containers() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list stopped-containers |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '🐳 Containers (Stopped) ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -215,7 +255,7 @@ _fzf_docker_frozen_containers() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list frozen-containers |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '🐳 Containers (Frozen/Paused) ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -234,7 +274,7 @@ _fzf_docker_images() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list images |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '📦 Images ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -252,7 +292,7 @@ _fzf_docker_volumes() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list volumes |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '💾 Volumes ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -270,7 +310,7 @@ _fzf_docker_networks() {
   _fzf_docker_check || return
 
   bash "$__fzf_docker" --list networks |
-  _fzf_docker_fzf --ansi \
+  _fzf_docker_select --ansi \
     --border-label '🌐 Networks ' \
     --header-lines 1 \
     --tiebreak begin \
@@ -307,7 +347,7 @@ _fzf_docker_compose_services() {
   fi
 
   $compose_cmd -f "$compose_file" config --services |
-  _fzf_docker_fzf \
+  _fzf_docker_select \
     --border-label '🎼 Compose Services ' \
     --preview-window right,70% \
     --no-hscroll \
