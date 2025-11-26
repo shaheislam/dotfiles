@@ -64,12 +64,11 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             set fzf_prompt "Namespace: "
         case -c --container
             # Use native function - it parses commandline to find pod name
-            # Output directly without FZF since container lists are usually short
-            __fish_kubectl_print_pod_containers
-            return
+            set completions (__fish_kubectl_print_pod_containers)
+            set fzf_prompt "Container: "
         case -o --output
-            printf '%s\n' yaml json wide name "custom-columns=" "jsonpath=" "go-template="
-            return
+            set completions yaml json wide name "custom-columns=" "jsonpath=" "go-template="
+            set fzf_prompt "Output format: "
         case -f --filename
             # File completion - let fish handle it
             return
