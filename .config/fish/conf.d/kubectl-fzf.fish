@@ -14,8 +14,7 @@ if test -f ~/.config/fish/completions/kubectl.fish
     source ~/.config/fish/completions/kubectl.fish
 end
 
-# Erase default completions to prevent conflicts with FZF completions
+# Note: We no longer erase completions here.
+# kubectl_fzf_native.fish handles FZF routing for resources while
+# preserving native flag completions (--namespace, --output, etc.)
 # Tab completion is routed via _fifc_or_fzf → _kubectl_fzf_tab_complete
-for cmd in kubectl k kubecolor kctl
-    complete -e -c $cmd
-end

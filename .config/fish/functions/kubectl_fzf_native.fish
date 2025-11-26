@@ -14,6 +14,43 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         return
     end
 
+    # Handle --flag completion: when current token starts with -
+    if string match -q -- '-*' $current
+        # Build the command line for completion lookup
+        set -l cmdline (string join ' ' $cmd)
+        set -l flag_completions (complete -C"$cmdline $current" 2>/dev/null)
+
+        if test (count $flag_completions) -gt 0
+            # Filter to only show flags (starts with -)
+            set -l filtered_flags
+            for fc in $flag_completions
+                set -l flag_part (string split -- '\t' $fc)[1]
+                if string match -q -- '-*' $flag_part
+                    set -a filtered_flags $fc
+                end
+            end
+
+            if test (count $filtered_flags) -eq 0
+                return
+            end
+
+            # Auto-complete if only one match
+            if test (count $filtered_flags) -eq 1
+                string split -- '\t' $filtered_flags[1] | head -1
+                return
+            end
+
+            # Multiple matches - use FZF with descriptions
+            if test "$kubectl_use_fzf" = "true"
+                printf '%s\n' $filtered_flags | fzf --height=40% --prompt="Flag: " --query="$current" \
+                    --delimiter='\t' --with-nth=1,2 --tabstop=4 | string split -- '\t' | head -1
+            else
+                printf '%s\n' $filtered_flags
+            end
+            return
+        end
+    end
+
     # Parse command to understand context
     set -l subcommand ""
     set -l resource_type ""
