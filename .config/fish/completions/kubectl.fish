@@ -401,6 +401,79 @@ function __fish_kubectl_print_resource -d 'Print a list of resources' -a resourc
   __fish_kubectl $args --no-headers 2>/dev/null | awk '{print $1}' | string replace -r '(.*)/' ''
 end
 
+function __fish_kubectl_print_pod_containers -d 'Print container names for the pod in the current command'
+    set -l cmd (commandline -opc)
+    set -l pod_name ""
+    set -l namespace ""
+
+    # Parse the command line more carefully
+    set -l i 1
+    while test $i -le (count $cmd)
+        set -l token $cmd[$i]
+
+        # Skip kubectl itself
+        if test $token = "kubectl"
+            set i (math $i + 1)
+            continue
+        end
+
+        # Look for the subcommand
+        if contains -- $token logs exec attach cp debug
+            # Found subcommand, now look for pod and namespace
+            set i (math $i + 1)
+
+            # Parse remaining args
+            while test $i -le (count $cmd)
+                set -l arg $cmd[$i]
+
+                # Check for namespace flag
+                if test "x$arg" = "x-n" -o "x$arg" = "x--namespace"
+                    if test (math $i + 1) -le (count $cmd)
+                        set namespace $cmd[(math $i + 1)]
+                        set i (math $i + 2)
+                        continue
+                    end
+                end
+
+                # Check for container flag (skip its argument)
+                if test "x$arg" = "x-c" -o "x$arg" = "x--container"
+                    # Skip the -c flag and its argument (if any)
+                    set i (math $i + 1)
+                    if test $i -le (count $cmd); and not string match -q -- '-*' $cmd[$i]
+                        set i (math $i + 1)
+                    end
+                    continue
+                end
+
+                # Skip other flags
+                if string match -q -- '-*' $arg
+                    set i (math $i + 1)
+                    continue
+                end
+
+                # First non-flag argument is the pod name
+                if test -z "$pod_name"
+                    set pod_name $arg
+                end
+
+                set i (math $i + 1)
+            end
+            break
+        end
+
+        set i (math $i + 1)
+    end
+
+    # Query container names if we have a pod
+    if test -n "$pod_name"
+        if test -n "$namespace"
+            kubectl get pod "$pod_name" -n "$namespace" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null | string split ' '
+        else
+            kubectl get pod "$pod_name" -o jsonpath='{.spec.containers[*].name}' 2>/dev/null | string split ' '
+        end
+    end
+end
+
 function __fish_kubectl_get_config -a type
   set -l template "{{ range .$type }}"'{{ .name }}{{"\n"}}{{ end }}'
   __fish_kubectl config view -o template --template="$template"
@@ -513,7 +586,7 @@ complete -c kubectl -f -n "__fish_kubectl_using_command alpha; and not __fish_se
 # Completions for the "kubectl alpha debug" command
 complete -c kubectl -f -n '__fish_seen_subcommand_from alpha debug' -l arguments-only -d 'If specified, everything after -- will be passed to the new container as Args instead of Command.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from alpha debug' -l attach -d 'If true, wait for the container to start running, and then attach as if \'kubectl attach ...\' were called.  Default false, unless \'-i/--stdin\' is set, in which case the default is true.'
-complete -c kubectl -f -n '__fish_seen_subcommand_from alpha debug' -r -s c -l container -d 'Container name to use for debug container.'
+complete -c kubectl -f -n '__fish_seen_subcommand_from alpha debug' -r -s c -l container -a '(__fish_kubectl_print_pod_containers)' -d 'Container name to use for debug container.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from alpha debug' -r -l copy-to -d 'Create a copy of the target Pod with this name.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from alpha debug' -r -l env -d 'Environment variables to set in the container.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from alpha debug' -r -l image -d 'Container image to use for debug container.'
@@ -618,7 +691,7 @@ complete -c kubectl -f -n '__fish_seen_subcommand_from apply view-last-applied' 
 complete -c kubectl -f -n '__fish_seen_subcommand_from apply view-last-applied' -r -s l -l selector -d 'Selector (label query) to filter on, supports \'=\', \'==\', and \'!=\'.(e.g. -l key1=value1,key2=value2)'
 
 # Completions for the "kubectl attach" command
-complete -c kubectl -f -n '__fish_seen_subcommand_from attach' -r -s c -l container -d 'Container name. If omitted, the first container in the pod will be chosen'
+complete -c kubectl -f -n '__fish_seen_subcommand_from attach' -r -s c -l container -a '(__fish_kubectl_print_pod_containers)' -d 'Container name. If omitted, the first container in the pod will be chosen'
 complete -c kubectl -f -n '__fish_seen_subcommand_from attach' -r -l pod-running-timeout -d 'The length of time (like 5s, 2m, or 3h, higher than zero) to wait until at least one pod is running'
 complete -c kubectl -f -n '__fish_seen_subcommand_from attach' -s i -l stdin -d 'Pass stdin to the container'
 complete -c kubectl -f -n '__fish_seen_subcommand_from attach' -s t -l tty -d 'Stdin is a TTY'
@@ -781,7 +854,7 @@ complete -c kubectl -f -n '__fish_seen_subcommand_from cordon' -r -l dry-run -d 
 complete -c kubectl -f -n '__fish_seen_subcommand_from cordon' -r -s l -l selector -d 'Selector (label query) to filter on'
 
 # Completions for the "kubectl cp" command
-complete -c kubectl -f -n '__fish_seen_subcommand_from cp' -r -s c -l container -d 'Container name. If omitted, the first container in the pod will be chosen'
+complete -c kubectl -f -n '__fish_seen_subcommand_from cp' -r -s c -l container -a '(__fish_kubectl_print_pod_containers)' -d 'Container name. If omitted, the first container in the pod will be chosen'
 complete -c kubectl -f -n '__fish_seen_subcommand_from cp' -l no-preserve -d 'The copied file/directory\'s ownership and permissions will not be preserved in the container'
 
 # Completions for the "kubectl create" command
@@ -1202,7 +1275,7 @@ complete -c kubectl -f -n '__fish_seen_subcommand_from create sa' -l validate -d
 # Completions for the "kubectl debug" command
 complete -c kubectl -f -n '__fish_seen_subcommand_from debug' -l arguments-only -d 'If specified, everything after -- will be passed to the new container as Args instead of Command.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from debug' -l attach -d 'If true, wait for the container to start running, and then attach as if \'kubectl attach ...\' were called.  Default false, unless \'-i/--stdin\' is set, in which case the default is true.'
-complete -c kubectl -f -n '__fish_seen_subcommand_from debug' -r -s c -l container -d 'Container name to use for debug container.'
+complete -c kubectl -f -n '__fish_seen_subcommand_from debug' -r -s c -l container -a '(__fish_kubectl_print_pod_containers)' -d 'Container name to use for debug container.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from debug' -r -l copy-to -d 'Create a copy of the target Pod with this name.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from debug' -r -l env -d 'Environment variables to set in the container.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from debug' -r -l image -d 'Container image to use for debug container.'
@@ -1279,7 +1352,7 @@ complete -c kubectl -f -n '__fish_seen_subcommand_from edit' -l validate -d 'If 
 complete -c kubectl -f -n '__fish_seen_subcommand_from edit' -l windows-line-endings -d 'Defaults to the line ending native to your platform.'
 
 # Completions for the "kubectl exec" command
-complete -c kubectl -f -n '__fish_seen_subcommand_from exec' -r -s c -l container -d 'Container name. If omitted, the first container in the pod will be chosen'
+complete -c kubectl -f -n '__fish_seen_subcommand_from exec' -r -s c -l container -a '(__fish_kubectl_print_pod_containers)' -d 'Container name. If omitted, the first container in the pod will be chosen'
 complete -c kubectl -n '__fish_seen_subcommand_from exec' -r -s f -l filename -d 'to use to exec into the resource'
 complete -c kubectl -f -n '__fish_seen_subcommand_from exec' -r -l pod-running-timeout -d 'The length of time (like 5s, 2m, or 3h, higher than zero) to wait until at least one pod is running'
 complete -c kubectl -f -n '__fish_seen_subcommand_from exec' -s i -l stdin -d 'Pass stdin to the container'
@@ -1357,7 +1430,7 @@ complete -c kubectl -n '__fish_seen_subcommand_from label' -r -l template -d 'Te
 
 # Completions for the "kubectl logs" command
 complete -c kubectl -f -n '__fish_seen_subcommand_from logs' -l all-containers -d 'Get all containers\' logs in the pod(s).'
-complete -c kubectl -f -n '__fish_seen_subcommand_from logs' -r -s c -l container -d 'Print the logs of this container'
+complete -c kubectl -f -n '__fish_seen_subcommand_from logs' -r -s c -l container -a '(__fish_kubectl_print_pod_containers)' -d 'Print the logs of this container'
 complete -c kubectl -f -n '__fish_seen_subcommand_from logs' -s f -l follow -d 'Specify if the logs should be streamed.'
 complete -c kubectl -f -n '__fish_seen_subcommand_from logs' -l ignore-errors -d 'If watching / following pod logs, allow for any errors that occur to be non-fatal'
 complete -c kubectl -f -n '__fish_seen_subcommand_from logs' -l insecure-skip-tls-verify-backend -d 'Skip verifying the identity of the kubelet that logs are requested from.  In theory, an attacker could provide invalid log content back. You might want to use this if your kubelet serving certificates have expired.'
