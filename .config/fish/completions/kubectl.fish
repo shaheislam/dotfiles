@@ -544,8 +544,8 @@ function __fish_kubectl_print_resource_ports -d 'Print available ports for the r
         # Get ports based on resource type
         switch $resource_type
             case service svc services
-                # For services: get service ports (port:targetPort/protocol)
-                set -l ports (kubectl get service "$resource_name" $ns_flag -o jsonpath='{range .spec.ports[*]}{.port}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}' 2>/dev/null)
+                # For services: get service ports
+                set -l ports (kubectl get service "$resource_name" $ns_flag -o jsonpath='{range .spec.ports[*]}{.port}{"\t"}{.name}{"\n"}{end}' 2>/dev/null)
                 for port_info in $ports
                     set -l port_parts (string split \t $port_info)
                     set -l port $port_parts[1]
@@ -558,7 +558,7 @@ function __fish_kubectl_print_resource_ports -d 'Print available ports for the r
                 end
             case pod po pods
                 # For pods: get container ports
-                set -l ports (kubectl get pod "$resource_name" $ns_flag -o jsonpath='{range .spec.containers[*]}{range .ports[*]}{.containerPort}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
+                set -l ports (kubectl get pod "$resource_name" $ns_flag -o jsonpath='{range .spec.containers[*]}{range .ports[*]}{.containerPort}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
                 for port_info in $ports
                     set -l port_parts (string split \t $port_info)
                     set -l port $port_parts[1]
@@ -571,7 +571,7 @@ function __fish_kubectl_print_resource_ports -d 'Print available ports for the r
                 end
             case deployment deploy deployments
                 # For deployments: get pod template ports
-                set -l ports (kubectl get deployment "$resource_name" $ns_flag -o jsonpath='{range .spec.template.spec.containers[*]}{range .ports[*]}{.containerPort}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
+                set -l ports (kubectl get deployment "$resource_name" $ns_flag -o jsonpath='{range .spec.template.spec.containers[*]}{range .ports[*]}{.containerPort}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
                 for port_info in $ports
                     set -l port_parts (string split \t $port_info)
                     set -l port $port_parts[1]
@@ -584,7 +584,7 @@ function __fish_kubectl_print_resource_ports -d 'Print available ports for the r
                 end
             case replicaset rs replicasets
                 # For replicasets: get pod template ports
-                set -l ports (kubectl get replicaset "$resource_name" $ns_flag -o jsonpath='{range .spec.template.spec.containers[*]}{range .ports[*]}{.containerPort}{"/"}{.protocol}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
+                set -l ports (kubectl get replicaset "$resource_name" $ns_flag -o jsonpath='{range .spec.template.spec.containers[*]}{range .ports[*]}{.containerPort}{"\t"}{.name}{"\n"}{end}{end}' 2>/dev/null)
                 for port_info in $ports
                     set -l port_parts (string split \t $port_info)
                     set -l port $port_parts[1]
