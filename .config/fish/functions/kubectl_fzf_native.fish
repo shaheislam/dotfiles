@@ -24,7 +24,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # Filter to only show flags (starts with -)
             set -l filtered_flags
             for fc in $flag_completions
-                set -l flag_part (string split -- '\t' $fc)[1]
+                set -l flag_part (string split -- \t $fc)[1]
                 if string match -q -- '-*' $flag_part
                     set -a filtered_flags $fc
                 end
@@ -36,14 +36,15 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
 
             # Auto-complete if only one match
             if test (count $filtered_flags) -eq 1
-                string split -- '\t' $filtered_flags[1] | head -1
+                string split -- \t $filtered_flags[1] | head -1
                 return
             end
 
             # Multiple matches - use FZF with descriptions
             if test "$kubectl_use_fzf" = "true"
-                printf '%s\n' $filtered_flags | fzf --height=40% --prompt="Flag: " --query="$current" \
-                    --delimiter='\t' --with-nth=1,2 --tabstop=4 | string split -- '\t' | head -1
+                set -l selected (printf '%s\n' $filtered_flags | fzf --ansi --height=40% --prompt="Flag: " --query="$current" \
+                    --delimiter='\t' --with-nth=1,2 --tabstop=4)
+                echo $selected | string split \t | head -1
             else
                 printf '%s\n' $filtered_flags
             end
@@ -131,7 +132,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
 
         # Auto-complete if only one match - strip description (tab and text after)
         if test (count $completions) -eq 1
-            echo $completions[1] | string split '\\t' | head -1
+            echo $completions[1] | string split \t | head -1
             return
         end
 
@@ -143,7 +144,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                 --prompt="$fzf_prompt" --query="$current")
             # Return space-separated results for multiple selections
             for item in $selected
-                echo $item | string split '\\t' | head -1
+                echo $item | string split \t | head -1
             end | string join ' '
         else
             printf '%s\n' $completions
@@ -312,7 +313,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
 
     # Auto-complete if only one match - strip description (tab and text after)
     if test (count $completions) -eq 1
-        echo $completions[1] | string split '\\t' | head -1
+        echo $completions[1] | string split \t | head -1
         return
     end
 
@@ -332,7 +333,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --preview-window=right:50%:wrap)
         # Return space-separated results for multiple selections
         for item in $selected
-            echo $item | string split '\\t' | head -1
+            echo $item | string split \t | head -1
         end | string join ' '
     else
         set -l selected (printf '%s\n' $completions | fzf --height=40% --multi \
@@ -341,7 +342,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --prompt="$fzf_prompt" --query="$current")
         # Return space-separated results for multiple selections
         for item in $selected
-            echo $item | string split '\\t' | head -1
+            echo $item | string split \t | head -1
         end | string join ' '
     end
 end
