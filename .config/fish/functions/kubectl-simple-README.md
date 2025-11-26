@@ -7,10 +7,13 @@ FZF-powered kubectl completions that leverage native `__fish_kubectl_*` function
 ## Architecture
 
 ```
-kubectl-simple.fish (entry point)
-  ↓ __kubectl_smart_complete()
+conf.d/kubectl-fzf.fish (startup loader)
+  ↓ Sources kubectl.fish for native functions
+  ↓ Sources kubectl_fzf_native.fish for FZF wrapper
+  ↓ Registers __kubectl_smart_complete() with -f flag (no files)
   ↓
 kubectl_fzf_native.fish (FZF wrapper)
+  ↓ Uses native __fish_kubectl_* functions
   ↓
 kubectl.fish (native 226K comprehensive completions)
   ├── __fish_kubectl_print_resource
@@ -20,6 +23,9 @@ kubectl.fish (native 226K comprehensive completions)
   ├── __fish_kubectl_get_config
   └── ... (many more native functions)
 ```
+
+**Important**: The `plugins.fish` in `conf.d/` has `kubectl completion fish | source` **disabled**
+to prevent kubectl's native Go-based completions from overriding the FZF completions.
 
 ## Features
 
@@ -47,9 +53,9 @@ kubectl.fish (native 226K comprehensive completions)
 
 ## Files
 
-- `~/.config/fish/completions/kubectl-simple.fish` - Entry point
+- `~/.config/fish/conf.d/kubectl-fzf.fish` - Startup loader and completion registration
 - `~/.config/fish/functions/kubectl_fzf_native.fish` - FZF wrapper
-- `~/.config/fish/completions/kubectl.fish` - Native completions (226K)
+- `~/.config/fish/completions/kubectl.fish` - Native completions (226K) with __fish_kubectl_* functions
 
 ## Usage
 

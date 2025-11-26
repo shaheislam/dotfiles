@@ -27,8 +27,11 @@ end
 
 # Docker completions (Fish has built-in docker completions)
 # Kubectl completions (replaces zsh-kubectl-prompt)
+# NOTE: Using custom FZF completions from kubectl-simple.fish + kubectl_fzf_native.fish
+# which leverage native __fish_kubectl_* functions. DO NOT source kubectl's Go-based
+# completions here as they conflict with the FZF integration.
 if command -v kubectl >/dev/null
-    kubectl completion fish | source
+    # kubectl completion fish | source  # Disabled - conflicts with FZF completions
 
     # Kubectl abbreviations
     abbr -a kgp 'kubectl get pods'

@@ -148,8 +148,8 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # Rollout commands
             case rollout
                 if test -z "$resource_type"
-                    printf '%s\n' status history undo restart pause resume
-                    return
+                    set completions status history undo restart pause resume
+                    set fzf_prompt "Rollout action: "
                 else if contains -- $resource_type status history undo restart pause resume
                     if test -z "$resource_name"
                         set completions (__fish_kubectl_get_rollout_resources)
@@ -160,8 +160,8 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # Scale commands
             case scale
                 if test -z "$resource_type"
-                    printf '%s\n' deployment statefulset replicaset
-                    return
+                    set completions deployment statefulset replicaset
+                    set fzf_prompt "Resource type: "
                 else if test -z "$resource_name"
                     set completions (__fish_kubectl_print_resource $resource_type)
                     set fzf_prompt "$resource_type: "
@@ -170,8 +170,8 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # Top command
             case top
                 if test -z "$resource_type"
-                    printf '%s\n' pods nodes
-                    return
+                    set completions pods nodes
+                    set fzf_prompt "Resource type: "
                 else if test -z "$resource_name"
                     set completions (__fish_kubectl_print_resource $resource_type)
                     set fzf_prompt "$resource_type: "
@@ -180,15 +180,15 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # Create command
             case create
                 if test -z "$resource_type"
-                    printf '%s\n' deployment service configmap secret namespace job cronjob serviceaccount role rolebinding clusterrole clusterrolebinding quota
-                    return
+                    set completions deployment service configmap secret namespace job cronjob serviceaccount role rolebinding clusterrole clusterrolebinding quota
+                    set fzf_prompt "Resource type: "
                 end
 
             # Expose command
             case expose
                 if test -z "$resource_type"
-                    printf '%s\n' pod service deployment replicaset
-                    return
+                    set completions pod service deployment replicaset
+                    set fzf_prompt "Resource type: "
                 else if test -z "$resource_name"
                     set completions (__fish_kubectl_print_resource $resource_type)
                     set fzf_prompt "$resource_type: "
@@ -197,8 +197,8 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # Config commands
             case config
                 if test -z "$resource_type"
-                    printf '%s\n' view use-context get-contexts get-clusters current-context set-context set-cluster
-                    return
+                    set completions view use-context get-contexts get-clusters current-context set-context set-cluster
+                    set fzf_prompt "Config action: "
                 else if contains -- $resource_type use-context get-contexts set-context
                     set completions (__fish_kubectl_get_config contexts)
                     set fzf_prompt "Context: "

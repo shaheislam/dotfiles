@@ -1,4 +1,4 @@
-function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker fzf and fifc"
+function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kubectl fzf and fifc"
     # Get the current command line tokens
     set -l cmd (commandline -opc)
 
@@ -10,6 +10,9 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker fzf
         else if test "$cmd[1]" = "docker"
             # Use docker-specific fzf completion
             _docker_fzf_tab_complete
+        else if contains -- "$cmd[1]" kubectl k kubecolor kctl
+            # Use kubectl-specific fzf completion
+            _kubectl_fzf_tab_complete
         else
             # Use standard fifc completion for all other commands
             _fifc
