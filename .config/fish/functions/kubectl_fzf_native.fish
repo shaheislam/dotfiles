@@ -92,15 +92,15 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             return
         end
 
-        # Auto-complete if only one match
+        # Auto-complete if only one match - strip description (tab and text after)
         if test (count $completions) -eq 1
-            echo $completions[1]
+            echo $completions[1] | string split '\\t' | head -1
             return
         end
 
-        # Multiple matches - use FZF
+        # Multiple matches - use FZF, strip description from selected result
         if test "$kubectl_use_fzf" = "true"
-            printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current"
+            printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current" | string split '\\t' | head -1
         else
             printf '%s\n' $completions
         end
@@ -266,9 +266,9 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         return
     end
 
-    # Auto-complete if only one match
+    # Auto-complete if only one match - strip description (tab and text after)
     if test (count $completions) -eq 1
-        echo $completions[1]
+        echo $completions[1] | string split '\\t' | head -1
         return
     end
 
@@ -278,14 +278,14 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         return
     end
 
-    # FZF selection with current token as initial query
+    # FZF selection with current token as initial query - strip description from selected result
     if test "$show_preview" = "true"; and test -n "$preview_cmd"
         printf '%s\n' $completions | fzf --height=50% --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
             --preview-window=right:50%:wrap \
-            --bind=ctrl-/:toggle-preview
+            --bind=ctrl-/:toggle-preview | string split '\\t' | head -1
     else
-        printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current"
+        printf '%s\n' $completions | fzf --height=40% --prompt="$fzf_prompt" --query="$current" | string split '\\t' | head -1
     end
 end
 
