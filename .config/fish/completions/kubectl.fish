@@ -529,7 +529,15 @@ for subcmd in $__fish_kubectl_subresource_commands
 	end
 end
 
-complete -c kubectl -f -n "__fish_seen_subcommand_from log logs exec port-forward" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
+# Completions for log, logs, exec (pods only)
+complete -c kubectl -f -n "__fish_seen_subcommand_from log logs exec" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
+
+# Completions for port-forward (supports pods, services, deployments, replicasets)
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource services)' -d 'Service'
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource deployments)' -d 'Deployment'
+complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource replicasets)' -d 'ReplicaSet'
+
 complete -c kubectl -f -n "__fish_seen_subcommand_from top; and __fish_seen_subcommand_from po pod pods" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
 complete -c kubectl -f -n "__fish_seen_subcommand_from top; and __fish_seen_subcommand_from no node nodes" -a '(__fish_kubectl_print_resource nodes)' -d 'Node'
 
