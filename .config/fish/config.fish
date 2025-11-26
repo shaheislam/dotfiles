@@ -187,28 +187,43 @@ if status is-interactive
         --preview-window=right:60%:wrap:rounded \
         --padding=1 \
         --margin=1 \
+        --info=inline \
+        --multi \
         --prompt='▶ ' \
         --pointer='→' \
         --marker='✓' \
+        --color='header:italic' \
+        --bind='tab:toggle+down,shift-tab:toggle+up' \
         --bind='ctrl-/:toggle-preview' \
-        --bind='ctrl-u:preview-page-up' \
-        --bind='ctrl-d:preview-page-down' \
+        --bind='ctrl-u:preview-half-page-up' \
+        --bind='ctrl-d:preview-half-page-down' \
         --bind='ctrl-y:preview-up' \
         --bind='ctrl-e:preview-down' \
         --bind='ctrl-a:select-all' \
-        --bind='ctrl-x:deselect-all'"
+        --bind='ctrl-x:deselect-all' \
+        --bind='alt-enter:print-query' \
+        --bind='ctrl-l:clear-screen'"
     
     # File preview with bat using Catppuccin theme and minimal style
-    set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {}' \
+    set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {} 2>/dev/null || cat {}' \
         --border-label=' 📄 Files ' \
         --preview-label=' Preview ' \
-        --preview-label-pos=3"
-    
+        --preview-label-pos=3 \
+        --header 'CTRL-/: toggle preview | TAB: multi-select'"
+
+    # History search with preview and copy-to-clipboard
+    set -gx FZF_CTRL_R_OPTS "--preview 'echo {}' \
+        --preview-window='up:3:wrap' \
+        --border-label=' 📜 History ' \
+        --header 'CTRL-Y: copy command | ENTER: execute' \
+        --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'"
+
     # Directory preview with eza tree view and enhanced aesthetics
     set -gx FZF_ALT_C_OPTS "--preview 'eza --tree --icons --level=2 --color=always {}' \
         --border-label=' 📁 Directories ' \
         --preview-label=' Tree View ' \
-        --preview-label-pos=3"
+        --preview-label-pos=3 \
+        --header 'CTRL-/: toggle preview'"
 
     # Disable fish greeting
     set -g fish_greeting ""
