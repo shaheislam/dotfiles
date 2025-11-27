@@ -82,7 +82,7 @@ alias kc="kubectx"
 alias kn="kubens"
 
 # bat theme
-export BAT_THEME=tokyonight_night
+export BAT_THEME="Catppuccin Mocha"
 
 # thefuck
 if command -v thefuck > /dev/null 2>&1; then

@@ -572,14 +572,14 @@ else
   log_info "You can manually install bun with: curl -fsSL https://bun.sh/install | bash"
 fi
 
-# Configure bat with Tokyo Night theme
-echo "=== Configuring bat with Tokyo Night theme ==="
+# Configure bat with Catppuccin Mocha theme
+echo "=== Configuring bat with Catppuccin Mocha theme ==="
 mkdir -p "$(bat --config-dir)/themes"
 cd "$(bat --config-dir)/themes" || exit
-curl -O https://raw.githubusercontent.com/folke/tokyonight.nvim/main/extras/sublime/tokyonight_night.tmTheme
+curl -sO "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme"
 bat cache --build
-echo '--theme="tokyonight_night"' > "$(bat --config-dir)/config"
-echo "Bat configured with Tokyo Night theme"
+echo '--theme="Catppuccin Mocha"' > "$(bat --config-dir)/config"
+echo "Bat configured with Catppuccin Mocha theme"
 
 # Install Python packages via Homebrew (safer)
 echo "=== Installing Python packages via Homebrew ==="
@@ -936,7 +936,7 @@ alias kc="kubectx"
 alias kn="kubens"
 
 # bat theme
-export BAT_THEME=tokyonight_night
+export BAT_THEME="Catppuccin Mocha"
 
 # thefuck
 if command -v thefuck > /dev/null 2>&1; then

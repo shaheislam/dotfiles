@@ -296,17 +296,17 @@ phase_2_cli_tools() {
         return 0
     fi
 
-    # Configure bat with Tokyo Night theme
+    # Configure bat with Catppuccin Mocha theme
     if command_exists bat; then
-        print_step "Configuring bat with Tokyo Night theme..."
+        print_step "Configuring bat with Catppuccin Mocha theme..."
         mkdir -p "$(bat --config-dir)/themes"
-        if curl -sL https://raw.githubusercontent.com/folke/tokyonight.nvim/main/extras/sublime/tokyonight_night.tmTheme \
-            -o "$(bat --config-dir)/themes/tokyonight_night.tmTheme"; then
+        if curl -sL "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme" \
+            -o "$(bat --config-dir)/themes/Catppuccin Mocha.tmTheme"; then
             bat cache --build >/dev/null 2>&1
-            echo '--theme="tokyonight_night"' > "$(bat --config-dir)/config"
-            print_success "Bat configured with Tokyo Night theme"
+            echo '--theme="Catppuccin Mocha"' > "$(bat --config-dir)/config"
+            print_success "Bat configured with Catppuccin Mocha theme"
         else
-            print_warning "Failed to download Tokyo Night theme for bat"
+            print_warning "Failed to download Catppuccin Mocha theme for bat"
         fi
     fi
 
