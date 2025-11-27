@@ -13,6 +13,9 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
         else if contains -- "$cmd[1]" kubectl k kubecolor kctl
             # Use kubectl-specific fzf completion
             _kubectl_fzf_tab_complete
+        else if test "$cmd[1]" = "stern"
+            # Use stern-specific fzf completion (no trailing space)
+            _stern_fzf_tab_complete
         else
             # Use standard fifc completion for all other commands
             _fifc
