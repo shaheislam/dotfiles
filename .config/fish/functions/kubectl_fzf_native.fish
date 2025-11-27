@@ -326,7 +326,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     # FZF selection with current token as initial query and multi-select - strip description from selected result
     if test "$show_preview" = "true"; and test -n "$preview_cmd"
         # Build alt-e command based on resource type context
-        set -l alt_e_cmd "kubectl get $resource_type {} -o yaml 2>/dev/null | nvim -c 'set ft=yaml' - < /dev/tty > /dev/tty"
+        set -l alt_e_cmd "bash -c 'tmpfile=/tmp/kubectl-edit-{}-\$(date +%s).yaml; kubectl get $resource_type {} -o yaml > \"\$tmpfile\" 2>/dev/null && nvim \"\$tmpfile\" < /dev/tty > /dev/tty && kubectl apply -f \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
         set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
             --bind "alt-e:execute($alt_e_cmd)" \
