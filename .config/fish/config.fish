@@ -184,7 +184,7 @@ if status is-interactive
         --border=rounded \
         --border-label=' 🔍 Search ' \
         --border-label-pos=3 \
-        --preview-window=right:60%:wrap:rounded \
+        --preview-window='right:70%:wrap:rounded,<120(right,50%,wrap,border-left)' \
         --padding=1 \
         --margin=1 \
         --info=inline \
@@ -2542,7 +2542,7 @@ fish_add_path ~/.claude/local/node_modules/.bin
             --height=60% \
             --border \
             --preview='tail -50 {}' \
-            --preview-window=right:60%:wrap)
+            --preview-window=right:80%:wrap)
 
         if test -n "$selected"
             if command -v lnav >/dev/null

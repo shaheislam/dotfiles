@@ -325,12 +325,12 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
 
     # FZF selection with current token as initial query and multi-select - strip description from selected result
     if test "$show_preview" = "true"; and test -n "$preview_cmd"
-        set -l selected (printf '%s\n' $completions | fzf --height=50% --multi \
+        set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
             --header 'TAB: select multiple, ENTER: confirm' \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
-            --preview-window=right:50%:wrap)
+            --preview-window='right:70%:wrap,<120(right,50%,wrap)')
         # Return space-separated results for multiple selections
         for item in $selected
             echo $item | string split \t | head -1
