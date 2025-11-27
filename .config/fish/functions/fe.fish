@@ -23,7 +23,7 @@ function fe --description "Interactive file explorer with fzf - toggle files/dir
                     --border=rounded \
                     --border-label=' 📁 Directories (ctrl-t: files, ctrl-o: open, enter: cd) ' \
                     --preview='eza --tree --icons --level=2 --color=always {}' \
-                    --preview-window='right:60%:wrap:rounded' \
+                    --preview-window='right:70%:wrap:rounded,<120(right,50%,wrap)' \
                     --query="$initial_query" \
                     --bind='ctrl-t:reload(fd --type=f --hidden --exclude .git)+change-border-label( 📄 Files (ctrl-t: dirs, enter: edit) )' \
                     --bind='ctrl-o:execute(open {} &> /dev/tty)' \
@@ -47,13 +47,14 @@ function fe --description "Interactive file explorer with fzf - toggle files/dir
                 fzf --multi \
                     --height=80% \
                     --border=rounded \
-                    --border-label=' 📄 Files (ctrl-t: dirs, enter: edit) ' \
+                    --border-label=' 📄 Files (ctrl-t: dirs, alt-e: edit preview, enter: edit) ' \
                     --preview='bat --color=always --style=numbers,changes --line-range=:500 {}' \
-                    --preview-window='right:60%:wrap:rounded' \
+                    --preview-window='right:70%:wrap:rounded,<120(right,50%,wrap)' \
                     --query="$initial_query" \
                     --bind='ctrl-t:reload(fd --type=d --hidden --exclude .git)+change-border-label( 📁 Directories (ctrl-t: files, ctrl-o: open, enter: cd) )' \
+                    --bind='alt-e:execute(nvim {} < /dev/tty > /dev/tty)' \
                     --bind='enter:become(echo {+})' \
-                    --header='ctrl-t: toggle files/dirs | ctrl-a: select all | tab: select | enter: edit')
+                    --header='ctrl-t: toggle files/dirs | alt-e: edit in nvim | ctrl-a: select all | tab: select | enter: edit')
 
             if test -n "$selected"
                 # Open files in editor

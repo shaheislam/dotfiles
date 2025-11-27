@@ -32,7 +32,7 @@ function _git_fzf_file_actions
             --border-label="📁 Git Files" \
             --header="ALT-P (patch add) | ALT-D (discard) | ALT-C (commit) | ALT-A (amend) | ALT-E (edit)" \
             --preview="echo {} | awk '{print \$2}' | xargs git diff --color=always -- 2>/dev/null || echo {} | awk '{print \$2}' | xargs bat --color=always" \
-            --preview-window="right:60%" \
+            --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="alt-p:execute(echo {} | awk '{print \$2}' | xargs git add --patch < /dev/tty > /dev/tty)+reload(git status --short)" \
             --bind="alt-d:execute(echo {} | awk '{print \$2}' | xargs git checkout -- < /dev/tty > /dev/tty)+reload(git status --short)" \
             --bind="alt-c:execute(git commit < /dev/tty > /dev/tty)+reload(git status --short)" \
@@ -66,10 +66,11 @@ function _git_fzf_commit_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🍡 Git Commits" \
-            --header="TAB: select multiple | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick)" \
+            --header="TAB: select multiple | ALT-E (edit in nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick)" \
             --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always" \
-            --preview-window="right:60%" \
+            --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always | less -R < /dev/tty > /dev/tty)" \
+            --bind="alt-e:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show | nvim -c 'set ft=git' - < /dev/tty > /dev/tty)" \
             --bind="alt-c:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git checkout < /dev/tty > /dev/tty)+abort" \
             --bind="alt-r:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git reset --hard < /dev/tty > /dev/tty)+abort" \
             --bind="alt-i:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git rebase -i {}^' < /dev/tty > /dev/tty)+abort" \
@@ -109,9 +110,10 @@ function _git_fzf_branch_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🌳 Git Branches (Current: $current_branch)" \
-            --header="TAB: select multiple | ALT-C (checkout) | ALT-M (merge) | ALT-R (rebase) | ALT-D (diff)" \
+            --header="TAB: select multiple | ALT-E (view diff in nvim) | ALT-C (checkout) | ALT-M (merge) | ALT-R (rebase) | ALT-D (toggle diff)" \
             --preview="echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs -I{} git log --oneline --graph --date=short --color=always --pretty='format:%C(auto)%cd %h%d %s' {} --" \
-            --preview-window="right:60%" \
+            --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
+            --bind="alt-e:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs -I{} git diff $current_branch...{} | nvim -c 'set ft=diff' - < /dev/tty > /dev/tty)" \
             --bind="alt-c:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git checkout < /dev/tty > /dev/tty)+abort" \
             --bind="alt-m:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git merge < /dev/tty > /dev/tty)+abort" \
             --bind="alt-r:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git rebase < /dev/tty > /dev/tty)+abort" \

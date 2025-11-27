@@ -202,14 +202,15 @@ if status is-interactive
         --bind='ctrl-a:select-all' \
         --bind='ctrl-x:deselect-all' \
         --bind='alt-enter:print-query' \
-        --bind='ctrl-l:clear-screen'"
+        --bind='ctrl-l:clear-screen' \
+        --bind='alt-e:execute(nvim {} < /dev/tty > /dev/tty)'"
     
     # File preview with bat using Catppuccin theme and minimal style
     set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {} 2>/dev/null || cat {}' \
         --border-label=' 📄 Files ' \
         --preview-label=' Preview ' \
         --preview-label-pos=3 \
-        --header 'CTRL-/: toggle preview | TAB: multi-select'"
+        --header 'CTRL-/: toggle preview | TAB: multi-select | ALT-E: edit in nvim'"
 
     # History search with preview and copy-to-clipboard
     set -gx FZF_CTRL_R_OPTS "--preview 'echo {}' \
