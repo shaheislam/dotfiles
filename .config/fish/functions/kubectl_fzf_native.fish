@@ -346,11 +346,29 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         # Reload command for Ctrl+R
         set -l reload_cmd "kubectl get $resource_type -o name 2>/dev/null | sed 's|.*/||'"
 
-        # Header text varies for events (adds sorting options)
-        set -l header_text 'Alt+1:explain 2:shell 3:yaml 4:desc 5:logs 6:fwd 7:debug C:clone | Ctrl+R:reload E:edit'
+        # Alt+8: Scale replicas (deployments, statefulsets, replicasets)
+        set -l scale_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Replicas (0-20): \" n; kubectl scale $resource_type {} --replicas=\$n && echo Scaled to \$n replicas'"
+        # Alt+9: Rollout restart (deployments, statefulsets, daemonsets)
+        set -l rollout_cmd "kubectl rollout restart $resource_type {} && echo Rollout restart initiated && sleep 1"
+        # Alt+O: Cordon node
+        set -l cordon_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Cordon {}? [y/N] \" c; [ \"\$c\" = y ] && kubectl cordon {} && echo Node {} cordoned'"
+        # Alt+U: Uncordon node
+        set -l uncordon_cmd "kubectl uncordon {} && echo Node {} uncordoned && sleep 1"
+        # Alt+D: Drain node
+        set -l drain_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Drain {}? [y/N] \" c; [ \"\$c\" = y ] && kubectl drain {} --ignore-daemonsets --delete-emptydir-data && echo Node {} drained'"
+        # Alt+K: Kubent deprecation check
+        set -l kubent_cmd "kubent 2>/dev/null || echo 'kubent not installed - install with: brew install kubent'"
+        # Alt+T: Trivy image scan
+        set -l trivy_cmd "bash -c 'img=\$(kubectl get $resource_type {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null || kubectl get $resource_type {} -o jsonpath=\"{.spec.template.spec.containers[0].image}\" 2>/dev/null); echo \"Scanning: \$img\"; trivy image \$img 2>/dev/null || echo \"trivy not installed - install with: brew install trivy\"' | less"
 
-        # Events-specific FZF with timestamp sorting bindings
-        if contains -- $resource_type events event
+        # Header text varies by resource type
+        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | C:clone K:kubent T:trivy'
+
+        # Node-specific header with cordon/uncordon/drain
+        if contains -- $resource_type node nodes
+            set header_text 'Alt+3:yaml 4:desc O:cordon U:uncordon D:drain | K:kubent Ctrl+R:reload E:edit'
+        # Events-specific header with timestamp sorting
+        else if contains -- $resource_type events event
             set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+C:clone E:edit 3:yaml 4:desc'
             set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
                 --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
@@ -383,6 +401,13 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --bind "alt-5:execute($f5_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-6:execute($f6_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-7:execute($f7_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-8:execute($scale_cmd)" \
+            --bind "alt-9:execute($rollout_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-o:execute($cordon_cmd)" \
+            --bind "alt-u:execute($uncordon_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-d:execute($drain_cmd)" \
+            --bind "alt-k:execute($kubent_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-t:execute($trivy_cmd < /dev/tty > /dev/tty)" \
             --header "$header_text" \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
