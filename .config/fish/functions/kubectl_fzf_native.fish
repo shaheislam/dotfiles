@@ -338,20 +338,19 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l f3_cmd "kubectl get $resource_type {} -o yaml | bat --color=always -l yaml --paging=always"
         set -l f4_cmd "kubectl describe $resource_type {} | less"
         set -l f5_cmd "kubecolor logs -f --tail=100 {}"
-        set -l f6_cmd "bash -c 'read -p \"Local port: \" lport; read -p \"Remote port: \" rport; kubectl port-forward {} \$lport:\$rport'"
+        set -l f6_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Local port: \" lport; read -p \"Remote port: \" rport; kubectl port-forward {} \$lport:\$rport'"
         set -l f7_cmd "kubectl debug {} -it --image=ubuntu --share-processes -- bash"
-        set -l f8_cmd "bash -c 'read -p \"Delete {}? [y/N] \" confirm; [ \"\$confirm\" = y ] && kubectl delete $resource_type {}'"
         # Clone resource command (Alt+C) - creates copy with timestamp suffix
         set -l clone_cmd "bash -c 'suffix=\$(date +%s | tail -c 5); kubectl get $resource_type {} -o yaml | sed \"s/name: {}/name: {}-\$suffix/\" | sed \"/uid:/d\" | sed \"/resourceVersion:/d\" | sed \"/creationTimestamp:/d\" | sed \"/selfLink:/d\" | kubectl apply -f - && echo \"Created {}-\$suffix\" && sleep 2'"
         # Reload command for Ctrl+R
         set -l reload_cmd "kubectl get $resource_type -o name 2>/dev/null | sed 's|.*/||'"
 
         # Header text varies for events (adds sorting options)
-        set -l header_text 'Alt+1:explain 2:shell 3:yaml 4:desc 5:logs 6:fwd 7:debug 8:del C:clone | Ctrl+R:reload E:edit'
+        set -l header_text 'Alt+1:explain 2:shell 3:yaml 4:desc 5:logs 6:fwd 7:debug C:clone | Ctrl+R:reload E:edit'
 
         # Events-specific FZF with timestamp sorting bindings
         if contains -- $resource_type events event
-            set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+C:clone E:edit 3:yaml 4:desc 8:del'
+            set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+C:clone E:edit 3:yaml 4:desc'
             set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
                 --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
                 --bind "ctrl-r:reload($reload_cmd)" \
@@ -361,7 +360,6 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                 --bind "alt-e:execute($alt_e_cmd)" \
                 --bind "alt-3:execute($f3_cmd)" \
                 --bind "alt-4:execute($f4_cmd)" \
-                --bind "alt-8:execute($f8_cmd < /dev/tty > /dev/tty)" \
                 --header "$header_text" \
                 --prompt="$fzf_prompt" --query="$current" \
                 --preview="$preview_cmd" \
@@ -384,7 +382,6 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --bind "alt-5:execute($f5_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-6:execute($f6_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-7:execute($f7_cmd < /dev/tty > /dev/tty)" \
-            --bind "alt-8:execute($f8_cmd < /dev/tty > /dev/tty)" \
             --header "$header_text" \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
