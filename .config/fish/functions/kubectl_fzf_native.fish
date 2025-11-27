@@ -327,13 +327,31 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     if test "$show_preview" = "true"; and test -n "$preview_cmd"
         # Build alt-e command based on resource type context
         set -l alt_e_cmd "bash -c 'tmpfile=/tmp/kubectl-edit-{}-\$(date +%s).yaml; kubectl get $resource_type {} -o yaml > \"\$tmpfile\" 2>/dev/null && nvim \"\$tmpfile\" < /dev/tty > /dev/tty && kubectl apply -f \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
+        # Build kubectl action commands for Alt+F keybindings
+        set -l f1_cmd "kubectl explain $resource_type | less"
+        set -l f2_cmd "kubectl exec -it {} -- sh"
+        set -l f3_cmd "kubectl get $resource_type {} -o yaml | bat --color=always -l yaml --paging=always"
+        set -l f4_cmd "kubectl describe $resource_type {} | less"
+        set -l f5_cmd "kubectl logs -f {}"
+        set -l f6_cmd "bash -c 'read -p \"Local port: \" lport; read -p \"Remote port: \" rport; kubectl port-forward {} \$lport:\$rport'"
+        set -l f7_cmd "kubectl debug {} -it --image=ubuntu --share-processes -- bash"
+        set -l f8_cmd "bash -c 'read -p \"Delete {}? [y/N] \" confirm; [ \"\$confirm\" = y ] && kubectl delete $resource_type {}'"
+
         set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
             --bind "alt-e:execute($alt_e_cmd)" \
-            --header 'TAB: select multiple, ALT-E: edit in nvim, ENTER: confirm' \
+            --bind "alt-1:execute($f1_cmd)" \
+            --bind "alt-2:execute($f2_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-3:execute($f3_cmd)" \
+            --bind "alt-4:execute($f4_cmd)" \
+            --bind "alt-5:execute($f5_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-6:execute($f6_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-7:execute($f7_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-8:execute($f8_cmd < /dev/tty > /dev/tty)" \
+            --header 'Alt+1:explain 2:shell 3:yaml 4:desc 5:logs 6:fwd 7:debug 8:del | TAB:sel Alt+E:edit' \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
-            --preview-window='right:70%:wrap,<120(right,50%,wrap)')
+            --preview-window='right:50%:wrap,<120(right,40%,wrap)')
         # Return space-separated results for multiple selections
         for item in $selected
             echo $item | string split \t | head -1
