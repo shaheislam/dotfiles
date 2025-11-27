@@ -203,7 +203,7 @@ if status is-interactive
         --bind='ctrl-x:deselect-all' \
         --bind='alt-enter:print-query' \
         --bind='ctrl-l:clear-screen' \
-        --bind='alt-e:become(nvim {})'"
+        --bind='alt-e:execute(nvim {} < /dev/tty > /dev/tty)+abort'"
     
     # File preview with bat using Catppuccin theme and minimal style
     set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {} 2>/dev/null || cat {}' \
