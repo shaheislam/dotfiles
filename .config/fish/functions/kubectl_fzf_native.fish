@@ -165,7 +165,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set completions (__fish_kubectl_print_resource pods)
                     set fzf_prompt "Pod: "
                     set show_preview true
-                    set preview_cmd "kubectl describe pod {} 2>/dev/null | head -30"
+                    set preview_cmd "kubectl get pod {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
                 end
 
             case exec attach
@@ -173,7 +173,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set completions (__fish_kubectl_print_resource pods)
                     set fzf_prompt "Pod: "
                     set show_preview true
-                    set preview_cmd "kubectl get pod {} -o wide 2>/dev/null"
+                    set preview_cmd "kubectl get pod {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
                 end
 
             case cp
@@ -193,7 +193,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     )
                     set fzf_prompt "Resource: "
                     set show_preview true
-                    set preview_cmd "kubectl describe {} 2>/dev/null | head -30"
+                    set preview_cmd "kubectl get {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
                 else if test -z "$resource_name"
                     # Show available ports
                     set completions (__fish_kubectl_print_resource_ports)
@@ -209,7 +209,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set completions (__fish_kubectl_print_resource $resource_type)
                     set fzf_prompt "$resource_type: "
                     set show_preview true
-                    set preview_cmd "kubectl describe $resource_type {} 2>/dev/null | head -30"
+                    set preview_cmd "kubectl get $resource_type {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
                 end
 
             # Rollout commands
