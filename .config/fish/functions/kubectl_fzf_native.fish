@@ -340,8 +340,9 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l f5_cmd "kubecolor logs -f --tail=100 {}"
         set -l f6_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Local port: \" lport; read -p \"Remote port: \" rport; kubectl port-forward {} \$lport:\$rport'"
         set -l f7_cmd "kubectl debug {} -it --image=ubuntu --share-processes -- bash"
-        # Clone resource command (Alt+C) - creates copy with timestamp suffix
-        set -l clone_cmd "bash -c 'suffix=\$(date +%s | tail -c 5); kubectl get $resource_type {} -o yaml | sed \"s/name: {}/name: {}-\$suffix/\" | sed \"/uid:/d\" | sed \"/resourceVersion:/d\" | sed \"/creationTimestamp:/d\" | sed \"/selfLink:/d\" | kubectl apply -f - && echo \"Created {}-\$suffix\" && sleep 2'"
+        # Clone resource command (Alt+C) - creates copy with timestamp suffix using yq
+        # Removes ownerReferences so cloned pods aren't garbage collected by controllers
+        set -l clone_cmd "bash -c 'suf=\$(date +%s | tail -c 5); kubectl get $resource_type {} -o yaml | yq eval \".metadata.name = \\\"{}-\$suf\\\"\" | yq eval \"del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.selfLink,.metadata.ownerReferences,.status)\" | kubectl apply -f - && echo Cloned: {}-\$suf && sleep 1'"
         # Reload command for Ctrl+R
         set -l reload_cmd "kubectl get $resource_type -o name 2>/dev/null | sed 's|.*/||'"
 
