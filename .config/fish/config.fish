@@ -601,6 +601,10 @@ if status is-interactive
     alias dockerlint="hadolint"  # Dockerfile linter
 
     # Kubernetes & Container Tools
+    # Use kubecolor for colorized kubectl output if available
+    if command -q kubecolor
+        alias kubectl="kubecolor"
+    end
     alias k="kubectl"  # Kubernetes CLI shorthand
     alias kc="kubectx"  # Quick context switching
     alias kn="kubens"  # Quick namespace switching

@@ -71,6 +71,7 @@ brew "awscli"
 brew "granted"
 brew "keidarcy/tap/e1s"  # Easy AWS ECS CLI (like k9s for ECS)
 brew "kubectl"
+brew "kubecolor"  # Colorized kubectl output (logs, get, describe)
 brew "azure-cli"
 brew "imagemagick"
 brew "Azure/kubelogin/kubelogin"
