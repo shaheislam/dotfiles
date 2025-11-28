@@ -42,6 +42,8 @@
     terraform-ls = pkgs.terraform-ls;
     # Linter
     tflint = pkgs.tflint;
+    # Security scanner
+    tfsec = pkgs.tfsec;
   };
 
   # Python Language Servers
@@ -108,6 +110,16 @@
   # Helm
   helm = {
     stable = pkgs.helm-ls;
+  };
+
+  # GitHub Actions
+  github = {
+    actionlint = pkgs.actionlint;
+  };
+
+  # Kubernetes linting
+  kubernetes = {
+    kube-linter = pkgs.kube-linter;
   };
 
   # Lua (for Neovim config)

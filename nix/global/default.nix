@@ -86,6 +86,11 @@ let
     # Helm
     lspVersions.helm.stable
 
+    # Additional linters (for nvim-lint)
+    lspVersions.github.actionlint
+    lspVersions.kubernetes.kube-linter
+    lspVersions.terraform.tfsec
+
     # Lua
     lspVersions.lua.lua-language-server
     # lspVersions.lua.stylua  # Formatter - enable per project
