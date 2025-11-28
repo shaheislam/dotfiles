@@ -144,10 +144,5 @@ docker-machine.log
 containerd.log
 
 # Kubernetes Tools Configuration
-# k9s cluster-specific configurations (device-specific)
-.config/k9s/clusters/
-# Legacy k9s location (if exists)
-.k9s/
-.k9s_config.yml
 # kubectl plugins cache
 .kubectl-plugins/

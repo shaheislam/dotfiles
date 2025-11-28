@@ -166,7 +166,7 @@ Shows what would be installed without making changes
 
 ### AWS & Kubernetes Tools (Standard Mode)
 - **AWS:** AWS CLI v2, session-manager-plugin
-- **Kubernetes:** kubectl, helm, k9s
+- **Kubernetes:** kubectl, helm
 
 ### Shells & Configuration
 - **Fish:** Modern shell with Fisher plugin manager + 7 plugins

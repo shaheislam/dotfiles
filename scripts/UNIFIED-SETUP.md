@@ -75,7 +75,7 @@ Balanced installation for daily use
 Full installation with all available tools
 - Everything in standard
 - Languages: go, rust (via rustup)
-- Cloud: awscli, kubectl, k9s, helm, terraform, docker
+- Cloud: awscli, kubectl, helm, terraform, docker
 - Editors: neovim
 - **Use case**: Complete workstation setup
 

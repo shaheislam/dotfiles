@@ -198,7 +198,6 @@ in {
       azure-cli
       google-cloud-sdk
       kubectl
-      k9s
       kubernetes-helm
       kustomize
     ];

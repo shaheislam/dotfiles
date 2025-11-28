@@ -79,7 +79,6 @@
               # Add project-specific packages
               (with pkgs; [
                 kubernetes-helm
-                k9s
               ]);
 
             shellHook = ''

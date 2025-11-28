@@ -137,7 +137,6 @@ pm_map_package_name() {
         # Cloud tools
         awscli) echo "awscli" ;;
         kubectl) echo "kubectl" ;;
-        k9s) echo "k9s" ;;
         helm) echo "helm" ;;
         terraform) echo "terraform" ;;
 

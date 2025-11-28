@@ -251,7 +251,7 @@ pm_map_package_name() {
                     echo "BINARY_INSTALL:$generic" ;;
                 uv|tealdeer|glow|gemini-cli|splash|onefetch)
                     echo "BINARY_INSTALL:$generic" ;;
-                granted|k9s|kustomize|velero|argocd|flux)
+                granted|kustomize|velero|argocd|flux)
                     echo "BINARY_INSTALL:$generic" ;;
                 tflint|infracost|minikube|k3d|kind|kubectx|kubens)
                     echo "BINARY_INSTALL:$generic" ;;
@@ -333,7 +333,7 @@ pm_map_package_name() {
                     echo "BINARY_INSTALL:$generic" ;;
                 uv|tealdeer|glow|gemini-cli|splash|onefetch)
                     echo "BINARY_INSTALL:$generic" ;;
-                granted|k9s|kubectl|kustomize|velero|argocd|flux)
+                granted|kubectl|kustomize|velero|argocd|flux)
                     echo "BINARY_INSTALL:$generic" ;;
                 tflint|infracost|minikube|k3d|kind|kubectx|kubens)
                     echo "BINARY_INSTALL:$generic" ;;
@@ -383,7 +383,7 @@ pm_map_package_name() {
                 bottom|btop|procs|dust|duf|sd|tokei) echo "$generic" ;;
                 git|curl|wget|stow|tmux|neovim|tree-sitter) echo "$generic" ;;
                 jq|yq|htop|tree|direnv|fish|terraform) echo "$generic" ;;
-                kubectl|helm|k9s|kubectx|stern) echo "$generic" ;;
+                kubectl|helm|kubectx|stern) echo "$generic" ;;
                 docker|podman|nmap|tcpdump|httpie|mtr) echo "$generic" ;;
                 nodejs|npm|python|python-pip|go|rust) echo "$generic" ;;
                 redis|graphviz|shellcheck|shfmt|github-cli) echo "$generic" ;;

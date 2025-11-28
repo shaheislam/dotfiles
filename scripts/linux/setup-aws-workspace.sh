@@ -445,9 +445,6 @@ install_aws_k8s_tools() {
     # Install kubectl
     install_kubectl
 
-    # Install k9s
-    install_k9s
-
     # Install helm
     install_helm
 
@@ -491,23 +488,6 @@ install_kubectl() {
     fi
 
     print_success "kubectl installed"
-}
-
-install_k9s() {
-    if command -v k9s &> /dev/null; then
-        log_verbose "k9s already installed"
-        return
-    fi
-
-    print_step "Installing k9s..."
-
-    local k9s_version=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest | grep '"tag_name"' | sed -E 's/.*"v([^"]+)".*/\1/')
-    local k9s_url="https://github.com/derailed/k9s/releases/download/v${k9s_version}/k9s_Linux_amd64.tar.gz"
-
-    curl -L "$k9s_url" | tar xz -C /tmp
-    mv /tmp/k9s "$HOME/.local/bin/"
-
-    print_success "k9s installed"
 }
 
 install_helm() {

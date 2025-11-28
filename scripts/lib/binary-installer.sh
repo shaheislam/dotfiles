@@ -104,11 +104,6 @@ get_binary_download_url() {
             [[ -z "$latest_tag" ]] && return 1
             echo "https://get.helm.sh/helm-${latest_tag}-${os}-$(uname -m).tar.gz"
             ;;
-        k9s)
-            local latest_tag=$(get_latest_release_tag "derailed/k9s")
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/derailed/k9s/releases/download/${latest_tag}/k9s_${os}_$(uname -m).tar.gz"
-            ;;
         kubectx|kubens)
             local latest_tag=$(get_latest_release_tag "ahmetb/kubectx")
             [[ -z "$latest_tag" ]] && return 1
@@ -284,7 +279,7 @@ install_binaries_from_profile() {
         "bottom" "btop" "procs" "dust" "duf"
 
         # Kubernetes tools
-        "kubectl" "helm" "k9s" "kubectx" "kubens"
+        "kubectl" "helm" "kubectx" "kubens"
 
         # AWS tools
         "granted"

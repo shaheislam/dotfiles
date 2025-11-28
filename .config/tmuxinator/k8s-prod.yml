@@ -56,10 +56,6 @@ windows:
         - watch -n 30 'az aks show -n prod-cluster -g prod-rg --query "powerState"'  # Cluster state
         - az monitor metrics list --resource <cluster-id> --metric "node.cpu.usage" --interval PT1M  # Metrics
 
-  - k9s-prod:
-      panes:
-        - k9s --context prod-cluster --namespace production  # K9s focused on production
-
   - services:
       layout: even-horizontal
       panes:

@@ -66,9 +66,6 @@ if status is-interactive
     # Colima Docker configuration
     set -x DOCKER_HOST "unix://$HOME/.colima/default/docker.sock"
 
-    # K9s configuration - use ~/.config/k9s directly
-    set -x K9S_CONFIG_DIR "$HOME/.config/k9s"
-
     # Load centralized PATH configuration
     source $HOME/.config/fish/paths.fish
 

@@ -1,6 +1,6 @@
 # Debug Container Tools Reference
 
-Comprehensive list of tools available in `nicolaka/netshoot` debug container for k9s debugging.
+Comprehensive list of tools available in `nicolaka/netshoot` debug container for Kubernetes debugging.
 
 ## Network Connectivity Tools
 

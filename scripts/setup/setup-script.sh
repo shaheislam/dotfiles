@@ -1604,16 +1604,6 @@ if command -v stow &> /dev/null; then
 
   # Clean up log file
   rm -f /tmp/stow-output.log
-
-  # Fix k9s plugin paths for current user
-  if [[ -f "$HOME/dotfiles/scripts/fix-k9s-paths.sh" ]]; then
-    log_info "Fixing k9s plugin paths for current user..."
-    if "$HOME/dotfiles/scripts/fix-k9s-paths.sh" > /dev/null 2>&1; then
-      log_success "k9s plugin paths updated"
-    else
-      log_warning "Failed to update k9s plugin paths - run manually: ~/dotfiles/scripts/fix-k9s-paths.sh"
-    fi
-  fi
 else
   log_error "stow not installed. Install with: brew install stow"
   log_info "After installing stow, run: cd ~/dotfiles && stow . --adopt"

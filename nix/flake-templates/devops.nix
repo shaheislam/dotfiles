@@ -49,7 +49,6 @@
           kustomize
           helm
           helmfile
-          k9s
           kubectx
           stern
           kubernetes-helm

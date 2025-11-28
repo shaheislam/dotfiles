@@ -18,7 +18,7 @@ This directory contains various Kubernetes manifest files for testing and develo
 kubectl apply -f test-bash-deployment.yaml
 ```
 
-**Use Case**: Testing k9s plugins, shell access, and container debugging capabilities with different base images.
+**Use Case**: Testing kubectl shell access and container debugging capabilities with different base images.
 
 ### test-simple-deployment.yaml
 **Purpose**: Lightweight single-container deployment for basic testing
@@ -31,7 +31,7 @@ kubectl apply -f test-bash-deployment.yaml
 kubectl apply -f test-simple-deployment.yaml
 ```
 
-**Use Case**: Quick testing of k9s exec functionality, minimal resource usage for testing in constrained environments.
+**Use Case**: Quick testing of kubectl exec functionality, minimal resource usage for testing in constrained environments.
 
 ### test-logging-deployment.yaml
 **Purpose**: Multi-replica deployment for testing logging and stern functionality
@@ -53,10 +53,10 @@ kubectl apply -f test-simple-deployment.yaml
 kubectl apply -f test-logging-deployment.yaml
 ```
 
-**Testing with k9s**:
-- `Ctrl-L` on deployment - View aggregated logs from all pods with stern
-- `j` on a pod - Parse JSON logs from json-logger container
-- Standard logs view - See plain text logs from logger container
+**Testing**:
+- `stern <deployment>` - View aggregated logs from all pods
+- `kubectl logs -f <pod> -c json-logger` - Parse JSON logs from json-logger container
+- `kubectl logs -f <pod> -c logger` - See plain text logs from logger container
 
 **Use Case**: Testing stern multi-pod log aggregation, JSON log parsing, log level highlighting, and container log differentiation.
 

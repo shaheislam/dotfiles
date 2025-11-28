@@ -82,7 +82,7 @@ A collection of useful development tools, libraries, and resources used in this 
 ### AWS Tools
 - **[AWS CLI](https://aws.amazon.com/cli/)** - AWS command-line interface
 - **[Granted](https://github.com/common-fate/granted)** - CLI for managing AWS profiles
-- **[e1s](https://github.com/keidarcy/e1s)** - Easy AWS ECS CLI (k9s for ECS)
+- **[e1s](https://github.com/keidarcy/e1s)** - Terminal UI for AWS ECS
 - **[Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)** - AWS Systems Manager Session Manager plugin
 
 ### Azure Tools
@@ -91,7 +91,6 @@ A collection of useful development tools, libraries, and resources used in this 
 
 ### Kubernetes
 - **[kubectl](https://kubernetes.io/docs/tasks/tools/)** - Kubernetes command-line tool
-- **[k9s](https://k9scli.io/)** - Terminal UI for Kubernetes
 - **[Minikube](https://minikube.sigs.k8s.io/)** - Local Kubernetes development
 - **[k3d](https://k3d.io/)** - k3s in Docker (lightweight Kubernetes)
 - **[Kind](https://kind.sigs.k8s.io/)** - Kubernetes in Docker

@@ -34,10 +34,6 @@ windows:
         - # Azure CLI commands
         - watch az aks list --output table  # Monitor AKS clusters
 
-  - k9s:
-      panes:
-        - k9s  # Interactive K8s dashboard
-
   - helm:
       layout: even-horizontal
       panes:

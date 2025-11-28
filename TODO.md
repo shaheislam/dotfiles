@@ -15,7 +15,6 @@ Study the following to maximise efficiency with them...
 
   📊 Observability & Monitoring
 
-  - k9s - Kubernetes TUI (you have kubectl but not k9s)
   - stern - Multi-pod log tailing
   - dive - Docker image layer explorer
   - ctop - Container metrics viewer

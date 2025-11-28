@@ -103,7 +103,6 @@
               docker
               docker-compose
               kubectl
-              k9s
             ]);
             inherit shellHook;
           };

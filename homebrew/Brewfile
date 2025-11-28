@@ -69,7 +69,7 @@ brew "rust"
 brew "crystal"
 brew "awscli"
 brew "granted"
-brew "keidarcy/tap/e1s"  # Easy AWS ECS CLI (like k9s for ECS)
+brew "keidarcy/tap/e1s"  # Terminal UI for AWS ECS
 brew "kubectl"
 brew "kubecolor"  # Colorized kubectl output (logs, get, describe)
 brew "kubent"     # Kubernetes deprecation checker (Alt+K in FZF)
@@ -136,7 +136,6 @@ brew "age"
 brew "hadolint"
 
 # Observability & Monitoring Tools
-brew "k9s"
 brew "stern"
 brew "dive"
 brew "ctop"
