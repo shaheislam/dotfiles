@@ -120,6 +120,25 @@
   # Kubernetes linting
   kubernetes = {
     kube-linter = pkgs.kube-linter;
+    popeye = pkgs.popeye;  # Live cluster scanning
+  };
+
+  # Container Security
+  container-security = {
+    trivy = pkgs.trivy;      # Container + IaC vulnerability scanning
+    syft = pkgs.syft;        # SBOM generation
+    cosign = pkgs.cosign;    # Container image signing
+  };
+
+  # Secrets Detection
+  secrets = {
+    gitleaks = pkgs.gitleaks;  # Git secrets detection
+    semgrep = pkgs.semgrep;    # Static security analysis
+  };
+
+  # Policy Testing
+  policy = {
+    conftest = pkgs.conftest;  # Policy testing with OPA/Rego
   };
 
   # Lua (for Neovim config)

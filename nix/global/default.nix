@@ -91,6 +91,21 @@ let
     lspVersions.kubernetes.kube-linter
     lspVersions.terraform.tfsec
 
+    # Kubernetes (additional)
+    lspVersions.kubernetes.popeye
+
+    # Container Security
+    lspVersions.container-security.trivy
+    lspVersions.container-security.syft
+    lspVersions.container-security.cosign
+
+    # Secrets Detection
+    lspVersions.secrets.gitleaks
+    lspVersions.secrets.semgrep
+
+    # Policy Testing
+    lspVersions.policy.conftest
+
     # Lua
     lspVersions.lua.lua-language-server
     # lspVersions.lua.stylua  # Formatter - enable per project
