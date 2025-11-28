@@ -134,6 +134,8 @@ brew "nuclei"
 brew "sops"
 brew "age"
 brew "hadolint"
+brew "popeye"    # Kubernetes cluster scanner
+brew "conftest"  # Policy testing with OPA/Rego
 
 # Observability & Monitoring Tools
 brew "stern"
