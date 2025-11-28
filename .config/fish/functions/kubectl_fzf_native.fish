@@ -360,9 +360,13 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l kubent_cmd "kubent 2>/dev/null || echo 'kubent not installed - install with: brew install kubent'"
         # Alt+T: Trivy image scan
         set -l trivy_cmd "bash -c 'img=\$(kubectl get $resource_type {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null || kubectl get $resource_type {} -o jsonpath=\"{.spec.template.spec.containers[0].image}\" 2>/dev/null); echo \"Scanning: \$img\"; trivy image \$img 2>/dev/null || echo \"trivy not installed - install with: brew install trivy\"' | less"
+        # Alt+A: Reload with all namespaces
+        set -l reload_all_ns "kubectl get $resource_type -A -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null"
+        # Alt+N: Switch namespace via kubie (persistent) then reload
+        set -l ns_switch_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl get ns -o name | sed \"s|namespace/||\" | fzf --height=40% --prompt=\"Switch namespace: \"); [ -n \"\$ns\" ] && kubie ns \$ns && echo \"Switched to: \$ns\" && sleep 0.5'"
 
         # Header text varies by resource type
-        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | C:clone K:kubent T:trivy'
+        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | A:all-ns N:ns C:clone'
 
         # Node-specific header with cordon/uncordon/drain
         if contains -- $resource_type node nodes
@@ -408,6 +412,8 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --bind "alt-d:execute($drain_cmd)" \
             --bind "alt-k:execute($kubent_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-t:execute($trivy_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-a:reload($reload_all_ns)+change-prompt(All NS> )" \
+            --bind "alt-n:execute($ns_switch_cmd)+reload($reload_cmd)" \
             --header "$header_text" \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
