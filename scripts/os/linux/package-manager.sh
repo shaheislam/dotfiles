@@ -253,7 +253,7 @@ pm_map_package_name() {
                     echo "BINARY_INSTALL:$generic" ;;
                 granted|kustomize|velero|argocd|flux)
                     echo "BINARY_INSTALL:$generic" ;;
-                tflint|infracost|minikube|k3d|kind|kubectx|kubens)
+                tflint|infracost|minikube|k3d|kind|kubectx)
                     echo "BINARY_INSTALL:$generic" ;;
                 grpcurl|pulumi|act|task|jj)
                     echo "BINARY_INSTALL:$generic" ;;
@@ -335,7 +335,7 @@ pm_map_package_name() {
                     echo "BINARY_INSTALL:$generic" ;;
                 granted|kubectl|kustomize|velero|argocd|flux)
                     echo "BINARY_INSTALL:$generic" ;;
-                tflint|infracost|minikube|k3d|kind|kubectx|kubens)
+                tflint|infracost|minikube|k3d|kind|kubectx)
                     echo "BINARY_INSTALL:$generic" ;;
                 grpcurl|pulumi|act|task|jj)
                     echo "BINARY_INSTALL:$generic" ;;

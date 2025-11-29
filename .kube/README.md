@@ -52,7 +52,7 @@ The Fish config includes these helper functions:
 Common kubectl shortcuts are configured in Fish:
 - `k` - kubectl
 - `kc` - kubectx (context switching)
-- `kn` - kubens (namespace switching)
+- `kn` - kubens (namespace switching, included with kubectx)
 - `kgp` - kubectl get pods
 - `kaf` - kubectl apply -f
 - `kl` - kubectl logs

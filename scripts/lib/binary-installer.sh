@@ -104,9 +104,10 @@ get_binary_download_url() {
             [[ -z "$latest_tag" ]] && return 1
             echo "https://get.helm.sh/helm-${latest_tag}-${os}-$(uname -m).tar.gz"
             ;;
-        kubectx|kubens)
+        kubectx)
             local latest_tag=$(get_latest_release_tag "ahmetb/kubectx")
             [[ -z "$latest_tag" ]] && return 1
+            # kubectx package includes both kubectx and kubens commands
             echo "https://github.com/ahmetb/kubectx/releases/download/${latest_tag}/${tool}_${latest_tag}_${os}_$(uname -m).tar.gz"
             ;;
 
@@ -279,7 +280,7 @@ install_binaries_from_profile() {
         "bottom" "btop" "procs" "dust" "duf"
 
         # Kubernetes tools
-        "kubectl" "helm" "kubectx" "kubens"
+        "kubectl" "helm" "kubectx"
 
         # AWS tools
         "granted"

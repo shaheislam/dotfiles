@@ -198,8 +198,7 @@ brew "pulumi"
 brew "minikube"  # Full Kubernetes in VM/Docker
 brew "k3d"       # k3s in Docker (lightweight)
 brew "kind"      # Kubernetes in Docker
-brew "kubectx"   # Quick context switching
-brew "kubens"    # Quick namespace switching
+brew "kubectx"   # Quick context/namespace switching (includes kubens)
 
 # Container Tools
 brew "colima"    # Container runtime for macOS
