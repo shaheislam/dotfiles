@@ -23,7 +23,14 @@
 	conflictstyle = diff3
 
 [diff]
+	tool = nvimdiff
 	colorMoved = default
+
+[difftool]
+	prompt = false
+
+[difftool "nvimdiff"]
+	cmd = nvim -d "$LOCAL" "$REMOTE"
 
 [pager]
 	blame = delta

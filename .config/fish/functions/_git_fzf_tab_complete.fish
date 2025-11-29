@@ -18,7 +18,7 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
         case branch checkout switch merge rebase
             # Branch operations
             __fzf_git_sh branches 2>/dev/null || _fifc 2>/dev/null
-        case log diff cherry-pick revert
+        case log diff difftool cherry-pick revert
             # Commit operations
             __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null
         case show
