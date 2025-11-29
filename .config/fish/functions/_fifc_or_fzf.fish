@@ -25,6 +25,9 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
         else if test "$cmd[1]" = "terraform"; or test "$cmd[1]" = "tf"
             # Use terraform-specific fzf completion
             _terraform_fzf_tab_complete
+        else if test "$cmd[1]" = "fdiff"
+            # Use fzf-git files picker for fdiff
+            __fzf_git_sh files 2>/dev/null || _fifc
         else
             # Use standard fifc completion for all other commands
             _fifc
