@@ -12,6 +12,7 @@ QUICK REFERENCE - Most Used Commands:
   Git:       gco (checkout)  gstash (stashes)  CTRL-G CTRL-B (branches)
   Docker:    CTRL-D CTRL-C (containers)  CTRL-D CTRL-I (images)  CTRL-D CTRL-V (volumes)
   K8s:       kctx (context)  kns (namespace)  kpod (pods)
+  Terraform: ALT-T P (plan)  ALT-T A (apply)  ALT-T D (destroy)  tfw (workspace)
   Process:   killp  psf  mem  cpu  procmon
   Ports:     port  ports  portmon
 
@@ -221,6 +222,35 @@ CHART SELECTION (Alt keys - when selecting charts):
 
 FUNCTIONS:
   helm_toggle_fzf   Toggle FZF completion mode for helm
+
+═══════════════════════════════════════════════════════════════════════════
+ TERRAFORM OPERATIONS
+═══════════════════════════════════════════════════════════════════════════
+
+KEYBINDINGS (Alt-t prefix) - Works from anywhere in a git repo:
+  alt-t p         Terraform plan with FZF directory/env selection
+  alt-t a         Terraform apply with FZF directory/env selection
+  alt-t d         Terraform destroy with FZF directory/env selection
+  alt-t i         Terraform init with FZF directory selection
+  alt-t v         Terraform validate with FZF directory selection
+
+WORKFLOW:
+  1. Press Alt-t p (or a/d/i/v) from anywhere in a service repo
+  2. FZF shows all directories containing .tf files
+  3. Select terraform directory (e.g., terraform/application)
+  4. FZF shows environment configs (e.g., dev, prod, review)
+  5. Command line is populated with full paths:
+     terraform -chdir=/full/path/terraform/application plan -var-file=config/prod.tfvars.json
+
+FEATURES:
+  • Auto-detects git root (works from any subdirectory)
+  • Finds .tf files anywhere in repo (not just terraform/)
+  • Excludes .terraform/ directories (downloaded modules)
+  • Supports config/, environments/, vars/ directories
+  • Handles both .tfvars and .tfvars.json files
+
+OTHER FUNCTIONS:
+  tfw             Switch Terraform workspace with fzf
 
 ═══════════════════════════════════════════════════════════════════════════
  PROCESS MONITORING
