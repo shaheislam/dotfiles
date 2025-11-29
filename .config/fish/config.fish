@@ -2187,9 +2187,6 @@ fish_add_path ~/.claude/local/node_modules/.bin
     bind \e\[A _atuin_search_directory
     bind -M insert \e\[A _atuin_search_directory
 
-    # Terraform FZF keybindings (Alt-t prefix)
-    terraform_fzf_keybindings
-
     # ==================== DevOps/SRE FZF Integrations ====================
 
     # Kubernetes context and namespace switcher with fzf

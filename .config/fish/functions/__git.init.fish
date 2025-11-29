@@ -61,7 +61,7 @@ function __git.init
   __git.create_abbr gdca       git diff --cached
   __git.create_abbr gds        git diff --stat
   __git.create_abbr gdsc       git diff --stat --cached
-  __git.create_abbr gdt        git diff-tree --no-commit-id --name-only -r
+  __git.create_abbr gdt        git difftool
   __git.create_abbr gdw        git diff --word-diff
   __git.create_abbr gdwc       git diff --word-diff --cached
   __git.create_abbr gdto       git difftool
