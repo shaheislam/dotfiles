@@ -2421,40 +2421,9 @@ fish_add_path ~/.claude/local/node_modules/.bin
         end
     end
 
-    # Helm release selector (multi-select enabled)
-    function helmr --description "Select Helm release with fzf"
-        if not command -v helm >/dev/null
-            echo "Helm not installed"
-            return 1
-        end
-
-        set -l releases (helm list --all-namespaces --output json 2>/dev/null | jq -r '.[] | "\(.namespace)\t\(.name)\t\(.status)\t\(.chart)"')
-        if test -z "$releases"
-            echo "No Helm releases found"
-            return 1
-        end
-
-        set -l selected (printf '%s\n' $releases | fzf \
-            --prompt="Helm release: " \
-            --height=80% \
-            --border \
-            --multi \
-            --bind 'tab:toggle+down,shift-tab:toggle+up' \
-            --header="TAB: select multiple | CTRL-V=values, CTRL-D=delete | NAMESPACE NAME STATUS CHART" \
-            --bind='ctrl-v:execute(helm get values {2} -n {1})' \
-            --bind='ctrl-d:execute(helm delete {2} -n {1})' \
-            --preview='helm status {2} -n {1}')
-
-        if test -n "$selected"
-            for line in $selected
-                set -l namespace (echo $line | awk '{print $1}')
-                set -l release (echo $line | awk '{print $2}')
-                echo "=== Release: $release (namespace: $namespace) ==="
-                helm status $release -n $namespace
-                echo ""
-            end
-        end
-    end
+    # Helm FZF integration moved to helm_fzf_native.fish
+    # Use: helm list <TAB> for release browser with Alt key actions
+    # See: fzf-help for full documentation
 
     # AWS profile switcher with fzf
     function awsp --description "Switch AWS profile with fzf"

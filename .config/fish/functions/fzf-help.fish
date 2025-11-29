@@ -169,6 +169,60 @@ kubectl get     Enhanced with fzf selection (via wrapper)
   • ctrl-f/b    Scroll preview line down/up
 
 ═══════════════════════════════════════════════════════════════════════════
+ HELM OPERATIONS
+═══════════════════════════════════════════════════════════════════════════
+
+TAB COMPLETION - Trigger FZF with Alt key actions:
+  helm list <TAB>           Browse releases with actions
+  helm upgrade <TAB>        Select release, then chart
+  helm uninstall <TAB>      Select release to delete
+  helm rollback <TAB>       Select release, then revision
+  helm history <TAB>        Select release for history
+  helm repo <TAB>           Manage repositories
+  helm search <TAB>         Search charts
+
+RELEASE MODE (Alt keys within FZF - helm list/upgrade/etc.):
+  Alt-1   Status            Show helm status for release
+  Alt-2   Values            View values in nvim (read-only)
+  Alt-3   Manifest          View manifest in nvim (read-only)
+  Alt-4   Notes             Show release notes
+  Alt-5   History           Show release revision history
+  Alt-6   Test              Run helm test hooks
+  Alt-7   Hooks             View hooks in nvim
+  Alt-8   Rollback          Interactive rollback (select revision)
+  Alt-9   Upgrade           Upgrade with current values
+  Alt-D   Diff              Diff revisions (requires helm-diff plugin)
+  Alt-T   Trivy             Scan all images in release
+  Alt-X   Delete            Uninstall release (with confirmation)
+  Alt-S   Search            Search chart versions in repos
+
+CHART MODE (Alt keys - when in chart directory):
+  Alt-L   Lint              Run helm lint on chart
+  Alt-T   Template          View template output in nvim
+  Alt-P   Package           Create chart package (.tgz)
+  Alt-D   Dependencies      Update chart dependencies
+  Alt-I   Install           Dry-run install for preview
+  Alt-S   Scan              Run Trivy config scan
+  Alt-V   Values            Edit values.yaml in nvim
+  Alt-B   Bump              Increment chart version
+
+REPO MODE (Alt keys - helm repo/search):
+  Alt-U   Update            Update repository index
+  Alt-S   Search            Search charts in repo
+  Alt-X   Remove            Remove repository
+  Alt-A   Add               Add new repository
+  Alt-V   Versions          Show all versions of chart
+  Alt-P   Pull              Download chart locally
+
+CHART SELECTION (Alt keys - when selecting charts):
+  Alt-L   Lint              Lint chart before selecting
+  Alt-T   Template          Preview template output
+  Alt-V   Versions          Show available versions
+
+FUNCTIONS:
+  helm_toggle_fzf   Toggle FZF completion mode for helm
+
+═══════════════════════════════════════════════════════════════════════════
  PROCESS MONITORING
 ═══════════════════════════════════════════════════════════════════════════
 
