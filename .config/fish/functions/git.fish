@@ -32,7 +32,7 @@ function git --description "Git wrapper that opens DiffviewOpen for difftool wit
             set -a refs $arg
         end
 
-        # If we have ref(s), open DiffviewOpen
+        # If we have ref(s), show file filter then open DiffviewOpen
         if test (count $refs) -ge 1
             set -l range_str
             if test (count $refs) -eq 1
@@ -41,13 +41,62 @@ function git --description "Git wrapper that opens DiffviewOpen for difftool wit
                 set range_str "$refs[1]..$refs[2]"
             end
 
-            # Build full command with paths if present
-            set -l diffview_cmd "DiffviewOpen $range_str"
+            # If paths already specified via --, use them directly
             if test (count $paths) -ge 1
-                set diffview_cmd "$diffview_cmd -- $paths"
+                set -l diffview_cmd "DiffviewOpen $range_str -- $paths"
+                echo "Opening diff: $diffview_cmd"
+                nvim -c "$diffview_cmd"
+                return $status
             end
 
-            echo "Opening diff: $diffview_cmd"
+            # Get list of changed files for the selection
+            set -l files
+            if test (count $refs) -eq 1
+                set files (command git diff-tree --no-commit-id --name-only -r $refs[1] 2>/dev/null)
+            else
+                set files (command git diff --name-only $refs[1] $refs[2] 2>/dev/null)
+            end
+
+            # Show file filter picker
+            set -l filtered_result
+            if test (count $files) -gt 0
+                set filtered_result (printf '%s\n' $files | \
+                    fzf --multi \
+                        --header="Filter files (Tab=multi, Enter=open, Ctrl-A=all)" \
+                        --prompt="Filter files> " \
+                        --expect=ctrl-a,enter)
+            else
+                set filtered_result (echo "-- No files found, Enter to open diff --" | \
+                    fzf --header="No files changed" \
+                        --prompt="Press Enter to open diff> " \
+                        --expect=ctrl-a,enter)
+            end
+
+            # Check if fzf was cancelled
+            if test $status -ne 0
+                return 0
+            end
+
+            # Parse file filter output
+            set -l file_lines (string split \n -- $filtered_result)
+            set -l file_key $file_lines[1]
+            set -l file_selection
+            if test (count $file_lines) -gt 1
+                set file_selection (printf '%s\n' $file_lines[2..-1] | string match -v -- '-- *')
+            end
+
+            # Build DiffviewOpen command
+            set -l diffview_cmd "DiffviewOpen $range_str"
+            if test "$file_key" != ctrl-a -a (count $file_selection) -gt 0
+                # User selected specific files
+                set -l escaped_paths
+                for path in $file_selection
+                    set -a escaped_paths (printf '%s' $path | string escape)
+                end
+                set diffview_cmd "$diffview_cmd -- "(string join ' ' $escaped_paths)
+            end
+
+            echo "Opening: $diffview_cmd"
             nvim -c "$diffview_cmd"
             return $status
         end
