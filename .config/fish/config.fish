@@ -114,12 +114,12 @@ if status is-interactive
         mise settings add idiomatic_version_file_enable_tools ruby
     end
 
-    # Yazi file manager wrapper - cd to directory on exit
-    function yy
+    # Yazi file manager wrapper - q to stay, Q to cd to navigated directory
+    function yazi
         set tmp (mktemp -t "yazi-cwd.XXXXXX")
-        yazi $argv --cwd-file=$tmp
-        if set cwd (cat -- $tmp); and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
-            cd -- "$cwd"
+        command yazi $argv --cwd-file="$tmp"
+        if read -z cwd < "$tmp"; and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
+            builtin cd -- "$cwd"
         end
         rm -f -- "$tmp"
     end
