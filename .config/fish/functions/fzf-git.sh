@@ -345,11 +345,12 @@ _fzf_git_hashes() {
   _fzf_git_select --ansi --no-sort --bind 'ctrl-s:toggle-sort' \
     --border-label '🍡 Hashes ' \
     --header-lines 2 \
-    --header 'CTRL-B (branches) ╱ ALT-A (all hashes)' \
+    --header 'CTRL-B (branches) ╱ CTRL-W (worktrees) ╱ ALT-A (all hashes)' \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list commit {}" \
     --bind "ctrl-d:execute:grep -o '[a-f0-9]\{7,\}' <<< {} | head -n 1 | xargs git diff --color=$(__fzf_git_color) > /dev/tty" \
     --bind "alt-a:change-border-label(🍇 All hashes)+reload:bash \"$__fzf_git\" --list all-hashes" \
     --bind "ctrl-b:become:$shell \"$__fzf_git\" --run branches" \
+    --bind "ctrl-w:become:$shell \"$__fzf_git\" --run worktrees-branch" \
     --color hl:underline,hl+:underline \
     --preview "grep -o '[a-f0-9]\{7,\}' <<< {} | head -n 1 | xargs git show --color=$(__fzf_git_color .) | $(__fzf_git_pager)" "$@" |
   awk 'match($0, /[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]*/) { print substr($0, RSTART, RLENGTH); next } { print }' # Pass through non-hash output (e.g., branch names from become)
@@ -415,6 +416,20 @@ _fzf_git_worktrees() {
       git log --oneline --graph --date=short --color=$(__fzf_git_color .) --pretty='format:%C(auto)%cd %h%d %s' {2} --
     " "$@" |
   awk '{print $1}'
+}
+
+# Variant that returns branch name instead of path (for git difftool, etc.)
+_fzf_git_worktrees-branch() {
+  _fzf_git_check || return
+  git worktree list | _fzf_git_select \
+    --border-label '🌴 Worktrees (branch mode) ' \
+    --header 'Select worktree → returns branch name' \
+    --preview "
+      git -c color.status=$(__fzf_git_color .) -C {1} status --short --branch
+      echo
+      git log --oneline --graph --date=short --color=$(__fzf_git_color .) --pretty='format:%C(auto)%cd %h%d %s' {2} --
+    " "$@" |
+  awk '{print $3}' | tr -d '[]'
 }
 
 _fzf_git_list_bindings() {
