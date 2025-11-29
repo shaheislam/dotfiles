@@ -507,6 +507,21 @@ else
   log_info "Tmuxinator configuration directory already exists"
 fi
 
+# Configure Yazi file manager
+echo "=== Configuring Yazi file manager ==="
+if command -v yazi &> /dev/null; then
+  # Install Rosé Pine theme via ya pack
+  if command -v ya &> /dev/null; then
+    echo "Installing Yazi Rosé Pine theme..."
+    ya pack -a Msouza91/rose-pine 2>/dev/null || log_info "Rosé Pine theme may already be installed"
+    log_success "Yazi Rosé Pine theme configured"
+  else
+    log_warning "ya command not found. Yazi themes can be installed after brew install yazi"
+  fi
+else
+  log_info "Yazi not installed yet. Will be configured after brew bundle install"
+fi
+
 # Configure tmux-which-key plugin
 echo "=== Configuring tmux-which-key plugin ==="
 # The plugin will be in ~/.tmux/plugins after stow creates the symlink

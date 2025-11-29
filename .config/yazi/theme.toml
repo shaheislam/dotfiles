@@ -1,0 +1,7 @@
+# Yazi Theme Configuration
+# https://yazi-rs.github.io/docs/configuration/theme
+
+# Use Rosé Pine flavor (install with: ya pack -a Msouza91/rose-pine)
+[flavor]
+dark = "rose-pine"
+light = "rose-pine"

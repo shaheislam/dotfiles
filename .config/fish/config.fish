@@ -114,6 +114,16 @@ if status is-interactive
         mise settings add idiomatic_version_file_enable_tools ruby
     end
 
+    # Yazi file manager wrapper - cd to directory on exit
+    function yy
+        set tmp (mktemp -t "yazi-cwd.XXXXXX")
+        yazi $argv --cwd-file=$tmp
+        if set cwd (cat -- $tmp); and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
+            cd -- "$cwd"
+        end
+        rm -f -- "$tmp"
+    end
+
     # ==================== FZF Configuration ====================
     #
     # FZF Search Syntax:

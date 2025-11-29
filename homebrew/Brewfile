@@ -176,6 +176,12 @@ brew "choose-rust"
 brew "tokei"
 brew "ncdu"
 
+# Terminal File Manager
+brew "yazi"              # Blazing fast terminal file manager (Rust)
+brew "ffmpegthumbnailer" # Video thumbnails for yazi
+brew "unar"              # Archive preview for yazi
+brew "poppler"           # PDF preview for yazi
+
 # Keyboard & Display Tools
 cask "karabiner-elements"  # macOS keyboard remapping tool (Caps Lock ↔ Escape swap)
 cask "keycastr"  # Keystroke visualizer for screencasts and presentations
