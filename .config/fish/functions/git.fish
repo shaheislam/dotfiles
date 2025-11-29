@@ -1,8 +1,9 @@
 function git --description "Git wrapper that opens DiffviewOpen for difftool with refs"
     # Only intercept difftool subcommand
     if test (count $argv) -ge 1 -a "$argv[1]" = "difftool"
-        # Parse arguments to extract refs (skip options)
+        # Parse arguments to extract refs and paths (skip options)
         set -l refs
+        set -l paths
         set -l skip_next false
         set -l after_separator false
 
@@ -12,6 +13,8 @@ function git --description "Git wrapper that opens DiffviewOpen for difftool wit
                 continue
             end
             if test $after_separator = true
+                # Collect paths after --
+                set -a paths $arg
                 continue
             end
             if test $skip_next = true
@@ -37,8 +40,15 @@ function git --description "Git wrapper that opens DiffviewOpen for difftool wit
             else
                 set range_str "$refs[1]..$refs[2]"
             end
-            echo "Opening diff: $range_str"
-            nvim -c "DiffviewOpen $range_str"
+
+            # Build full command with paths if present
+            set -l diffview_cmd "DiffviewOpen $range_str"
+            if test (count $paths) -ge 1
+                set diffview_cmd "$diffview_cmd -- $paths"
+            end
+
+            echo "Opening diff: $diffview_cmd"
+            nvim -c "$diffview_cmd"
             return $status
         end
     end
