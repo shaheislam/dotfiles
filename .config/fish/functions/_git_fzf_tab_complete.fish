@@ -18,9 +18,66 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
         case branch checkout switch merge rebase
             # Branch operations
             __fzf_git_sh branches 2>/dev/null || _fifc 2>/dev/null
-        case log diff difftool cherry-pick revert
+        case log diff cherry-pick revert
             # Commit operations
             __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null
+        case difftool
+            # Two-phase picker: BASE then COMPARE, with C-H/C-B switching
+            set -l fzf_git_sh_path (realpath (status dirname))
+            set -l current_token (commandline --current-token)
+
+            # Data-only commands - use --list flag to output data (not --run which opens full picker)
+            set -l hashes_cmd "bash \"$fzf_git_sh_path/fzf-git.sh\" --list hashes"
+            set -l branches_cmd "bash \"$fzf_git_sh_path/fzf-git.sh\" --list branches"
+
+            # Phase 1: Select BASE
+            set -l base (
+                bash "$fzf_git_sh_path/fzf-git.sh" --list hashes 2>/dev/null | \
+                fzf --ansi --no-sort \
+                    --prompt="BASE (commits)> " \
+                    --header "C-h=commits, C-b=branches" \
+                    --header-lines 2 \
+                    --preview 'git log --oneline --graph --color=always (echo {} | grep -o "[a-f0-9]\{7,\}" | head -1) -- | head -100' \
+                    --bind "ctrl-h:reload($hashes_cmd)+change-prompt(BASE (commits)> )" \
+                    --bind "ctrl-b:reload($branches_cmd)+change-prompt(BASE (branches)> )"
+            )
+
+            if test -z "$base"
+                return
+            end
+
+            # Extract hash/branch name from selection
+            set -l base_ref (echo $base | grep -o '[a-f0-9]\{7,\}' | head -1)
+            if test -z "$base_ref"
+                # It's a branch name, extract first word
+                set base_ref (echo $base | sed 's/^[* ]*//' | cut -d' ' -f1)
+            end
+
+            # Phase 2: Select COMPARE
+            set -l compare (
+                bash "$fzf_git_sh_path/fzf-git.sh" --list hashes 2>/dev/null | \
+                fzf --ansi --no-sort \
+                    --prompt="COMPARE (commits)> " \
+                    --header "base: $base_ref | C-h=commits, C-b=branches" \
+                    --header-lines 2 \
+                    --preview "git log --oneline --graph --color=always $base_ref..(echo {} | grep -o '[a-f0-9]\{7,\}' | head -1) -- | head -100" \
+                    --bind "ctrl-h:reload($hashes_cmd)+change-prompt(COMPARE (commits)> )" \
+                    --bind "ctrl-b:reload($branches_cmd)+change-prompt(COMPARE (branches)> )"
+            )
+
+            if test -z "$compare"
+                return
+            end
+
+            # Extract hash/branch name from selection
+            set -l compare_ref (echo $compare | grep -o '[a-f0-9]\{7,\}' | head -1)
+            if test -z "$compare_ref"
+                set compare_ref (echo $compare | sed 's/^[* ]*//' | cut -d' ' -f1)
+            end
+
+            # Replace command line and execute
+            commandline --replace "git difftool $base_ref..$compare_ref"
+            commandline --function execute
         case show
             # Context-aware show: files with --stat/--name-only, commits otherwise
             if string match -qr -- '--stat|--name-only' (commandline -opc)
