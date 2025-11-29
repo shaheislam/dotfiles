@@ -310,6 +310,7 @@ _fzf_git_branches() {
   __fzf_git_fzf=$(declare -f _fzf_git_fzf) _fzf_git_select --ansi \
     --border-label '🌲 Branches ' \
     --header-lines 2 \
+    --header 'CTRL-H (hashes) ╱ ALT-A (all branches)' \
     --tiebreak begin \
     --preview-window down,border-top,40% \
     --color hl:underline,hl+:underline \
@@ -317,6 +318,7 @@ _fzf_git_branches() {
     --bind 'ctrl-/:change-preview-window(down,70%|hidden|)' \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list branch {}" \
     --bind "alt-a:change-border-label(🌳 All branches)+reload:bash \"$__fzf_git\" --list all-branches" \
+    --bind "ctrl-h:become:$shell \"$__fzf_git\" --run hashes" \
     --bind "alt-h:become:LIST_OPTS=\$(cut -c3- <<< {} | cut -d' ' -f1) $shell \"$__fzf_git\" --run hashes" \
     --bind "alt-enter:become:printf '%s\n' {+} | cut -c3- | sed 's@[^/]*/@@'" \
     --preview "git log --oneline --graph --date=short --color=$(__fzf_git_color .) --pretty='format:%C(auto)%cd %h%d %s' \$(cut -c3- <<< {} | cut -d' ' -f1) --" "$@" |
@@ -335,13 +337,19 @@ _fzf_git_tags() {
 
 _fzf_git_hashes() {
   _fzf_git_check || return
+
+  local shell
+  [[ -n ${BASH_VERSION:-} ]] && shell=bash || shell=zsh
+
   bash "$__fzf_git" --list hashes |
   _fzf_git_select --ansi --no-sort --bind 'ctrl-s:toggle-sort' \
     --border-label '🍡 Hashes ' \
     --header-lines 2 \
+    --header 'CTRL-B (branches) ╱ ALT-A (all hashes)' \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list commit {}" \
     --bind "ctrl-d:execute:grep -o '[a-f0-9]\{7,\}' <<< {} | head -n 1 | xargs git diff --color=$(__fzf_git_color) > /dev/tty" \
     --bind "alt-a:change-border-label(🍇 All hashes)+reload:bash \"$__fzf_git\" --list all-hashes" \
+    --bind "ctrl-b:become:$shell \"$__fzf_git\" --run branches" \
     --color hl:underline,hl+:underline \
     --preview "grep -o '[a-f0-9]\{7,\}' <<< {} | head -n 1 | xargs git show --color=$(__fzf_git_color .) | $(__fzf_git_pager)" "$@" |
   awk 'match($0, /[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]*/) { print substr($0, RSTART, RLENGTH) }'
