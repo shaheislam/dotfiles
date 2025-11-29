@@ -323,6 +323,33 @@ else
   echo "Warning: Fish shell not found. Skipping Fisher plugin installation."
 fi
 
+# Install kubectl/helm plugins for FZF integration
+echo "=== Installing kubectl and helm plugins ==="
+
+# Install helm-diff plugin (for Alt+Shift+D in FZF kubectl)
+if command -v helm &> /dev/null; then
+  # Remove any corrupted installation first (fixes version compatibility issues)
+  rm -rf ~/Library/helm/plugins/helm-diff 2>/dev/null
+  echo "Installing helm-diff plugin..."
+  # Use v3.8.1 for compatibility with Helm 3.15.x (latest versions require Helm 3.16+)
+  helm plugin install https://github.com/databus23/helm-diff --version v3.8.1 2>/dev/null && echo "helm-diff plugin installed" || echo "Warning: Failed to install helm-diff plugin"
+else
+  echo "Warning: helm not installed. Skipping helm-diff plugin."
+fi
+
+# Install krew kubectl plugins (for Alt+G in FZF kubectl)
+if command -v kubectl-krew &> /dev/null || command -v kubectl &> /dev/null && kubectl krew version &> /dev/null; then
+  # Install get-all plugin for listing all namespace resources
+  if kubectl krew list 2>/dev/null | grep -q "get-all"; then
+    echo "kubectl get-all plugin already installed"
+  else
+    echo "Installing kubectl get-all plugin..."
+    kubectl krew install get-all 2>/dev/null || echo "Warning: Failed to install kubectl get-all plugin"
+  fi
+else
+  echo "Note: krew not installed. Install with 'brew install krew' for kubectl plugins."
+fi
+
 # fzf installation removed - managed by Homebrew (macOS) or package managers (Linux)
 # Manual git installation caused version conflicts and outdated versions
 # See Brewfile for macOS or linux-packages.sh for Linux

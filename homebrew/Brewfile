@@ -71,6 +71,7 @@ brew "granted"
 brew "kubectl"
 brew "kubecolor"  # Colorized kubectl output (logs, get, describe)
 brew "kubent"     # Kubernetes deprecation checker (Alt+K in FZF)
+brew "krew"       # kubectl plugin manager (Alt+G requires get-all plugin)
 brew "trivy"      # Container image vulnerability scanner (Alt+T in FZF)
 brew "azure-cli"
 brew "imagemagick"

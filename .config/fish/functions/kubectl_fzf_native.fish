@@ -365,15 +365,37 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         # Alt+N: Switch namespace via kubie (persistent) then reload
         set -l ns_switch_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl get ns -o name | sed \"s|namespace/||\" | fzf --height=40% --prompt=\"Switch namespace: \"); [ -n \"\$ns\" ] && kubie ns \$ns && echo \"Switched to: \$ns\" && sleep 0.5'"
 
+        # === K9s-inspired plugins ===
+        # Alt+F: Remove finalizers (force delete stuck resources)
+        set -l finalizers_cmd "bash -c 'echo \"Removing finalizers from $resource_type/{}...\"; kubectl patch --context \$(kubectl config current-context) -n \$(kubectl config view --minify -o jsonpath=\"{..namespace}\") $resource_type {} --type merge -p \"{\\\"metadata\\\":{\\\"finalizers\\\":null}}\"; echo \"Done. Press any key...\"; read -n 1'"
+        # Alt+W: Watch events for selected resource
+        set -l watch_events_cmd "kubectl events --for $resource_type/{} --watch"
+        # Alt+S: Toggle cronjob suspend/resume
+        set -l suspend_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; curr=\$(kubectl get cronjob {} -o jsonpath=\"{.spec.suspend}\" 2>/dev/null); if [ \"\$curr\" = \"true\" ]; then kubectl patch cronjob {} -p \"{\\\"spec\\\":{\\\"suspend\\\":false}}\"; echo \"CronJob {} RESUMED\"; else kubectl patch cronjob {} -p \"{\\\"spec\\\":{\\\"suspend\\\":true}}\"; echo \"CronJob {} SUSPENDED\"; fi; read -n 1'"
+        # Alt+X: OpenSSL cert inspection for secrets
+        set -l openssl_cmd "bash -c 'echo \"=== TLS Certificate Details ===\"; kubectl get secret {} -o jsonpath=\"{.data.tls\\.crt}\" 2>/dev/null | base64 -d | openssl x509 -text -noout 2>/dev/null || kubectl get secret {} -o jsonpath=\"{.data.ca\\.crt}\" 2>/dev/null | base64 -d | openssl x509 -text -noout 2>/dev/null || echo \"No tls.crt or ca.crt found in secret\"; echo \"\"; echo \"Press any key...\"; read -n 1'"
+        # Alt+V: Helm values in Neovim (for navigation, search, folding)
+        set -l helm_values_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then helm get values \$rel | nvim -R - -c \"set ft=yaml\"; else echo \"No Helm release label found\"; read -n 1; fi'"
+        # Alt+M: Helm manifest in Neovim (uses temp file for LSP diagnostics)
+        set -l helm_manifest_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then tmpfile=/tmp/helm-manifest-\$rel-\$(date +%s).yaml; helm get manifest \$rel > \"\$tmpfile\"; nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"; else echo \"No Helm release label found\"; read -n 1; fi'"
+        # Alt+Shift+E: Helm values edit & apply (edit values in nvim, then helm upgrade)
+        set -l helm_edit_apply_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then tmpfile=/tmp/helm-values-\$rel-\$(date +%s).yaml; helm get values \$rel > \"\$tmpfile\"; nvim \"\$tmpfile\"; echo \"\"; echo \"=== Changes to apply ===\"; diff <(helm get values \$rel) \"\$tmpfile\" || true; echo \"\"; read -p \"Apply these changes to \$rel? [y/N] \" confirm; if [ \"\$confirm\" = \"y\" ] || [ \"\$confirm\" = \"Y\" ]; then chart=\$(helm list -f \"^\$rel\\\$\" -o json | jq -r \".[0].chart\"); helm upgrade \$rel \$chart -f \"\$tmpfile\"; echo \"Upgrade complete!\"; else echo \"Cancelled.\"; fi; rm -f \"\$tmpfile\"; else echo \"No Helm release label found\"; fi; read -n 1'"
+        # Alt+Shift+D: Helm diff in nvim diff mode (compare current with previous revision manifests)
+        set -l helm_diff_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then curr=\$(helm history \$rel -o json | jq -r \"map(select(.status==\\\"deployed\\\")) | .[0].revision\"); prev=\$((curr - 1)); if [ \$prev -gt 0 ]; then old=/tmp/helm-diff-\$rel-r\$prev.yaml; new=/tmp/helm-diff-\$rel-r\$curr.yaml; helm get manifest \$rel --revision \$prev > \$old; helm get manifest \$rel --revision \$curr > \$new; nvim -d \$old \$new; rm -f \$old \$new; else echo \"No previous revision to diff\"; read -n 1; fi; else echo \"No Helm release label found\"; read -n 1; fi'"
+        # Alt+I: Dive image layer inspection
+        set -l dive_cmd "bash -c 'img=\$(kubectl get pod {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null); if [ -n \"\$img\" ]; then echo \"Analyzing image: \$img\"; dive \$img; else echo \"Could not extract image from pod\"; fi'"
+        # Alt+G: Get all resources in namespace (requires kubectl-get-all krew plugin)
+        set -l get_all_cmd "bash -c 'ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); kubectl get-all -n \$ns 2>/dev/null | bat --style=plain --paging=always || echo \"kubectl get-all not installed. Install with: kubectl krew install get-all\"; read -n 1'"
+
         # Header text varies by resource type
-        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | A:all-ns N:ns C:clone'
+        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | F:finalizers W:events V:vals M:manifest Shift+D:diff Shift+E:edit I:dive G:get-all'
 
         # Node-specific header with cordon/uncordon/drain
         if contains -- $resource_type node nodes
-            set header_text 'Alt+3:yaml 4:desc O:cordon U:uncordon D:drain | K:kubent Ctrl+R:reload E:edit'
+            set header_text 'Alt+3:yaml 4:desc O:cordon U:uncordon D:drain | F:finalizers W:events K:kubent Ctrl+R:reload'
         # Events-specific header with timestamp sorting
         else if contains -- $resource_type events event
-            set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+C:clone E:edit 3:yaml 4:desc'
+            set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+3:yaml 4:desc G:get-all'
             set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
                 --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
                 --bind "ctrl-r:reload($reload_cmd)" \
@@ -414,6 +436,16 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --bind "alt-t:execute($trivy_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-a:reload($reload_all_ns)+change-prompt(All NS> )" \
             --bind "alt-n:execute($ns_switch_cmd)+reload($reload_cmd)" \
+            --bind "alt-f:execute($finalizers_cmd)+reload($reload_cmd)" \
+            --bind "alt-w:execute($watch_events_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-s:execute($suspend_cmd)+reload($reload_cmd)" \
+            --bind "alt-x:execute($openssl_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-v:execute($helm_values_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-m:execute($helm_manifest_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-E:execute($helm_edit_apply_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-D:execute($helm_diff_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-i:execute($dive_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-g:execute($get_all_cmd < /dev/tty > /dev/tty)" \
             --header "$header_text" \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \

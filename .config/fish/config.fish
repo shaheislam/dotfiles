@@ -2632,6 +2632,9 @@ fish_add_path $HOME/.local/share/mise/shims
 # K9s kubectl-node-shell plugin
 fish_add_path $HOME/dotfiles/scripts
 
+# Krew kubectl plugin manager (with KREW_ROOT support)
+set -q KREW_ROOT; and set -gx PATH $PATH $KREW_ROOT/.krew/bin; or set -gx PATH $PATH $HOME/.krew/bin
+
 # Nix profile for LSPs
 fish_add_path $HOME/.nix-profile/bin
 
