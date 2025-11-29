@@ -510,13 +510,26 @@ fi
 # Configure Yazi file manager
 echo "=== Configuring Yazi file manager ==="
 if command -v yazi &> /dev/null; then
-  # Install Rosé Pine theme via ya pack
-  if command -v ya &> /dev/null; then
-    echo "Installing Yazi Rosé Pine theme..."
-    ya pack -a Msouza91/rose-pine 2>/dev/null || log_info "Rosé Pine theme may already be installed"
-    log_success "Yazi Rosé Pine theme configured"
+  # Install Rosé Pine flavor via git clone (ya pack/pkg has issues with this flavor)
+  YAZI_FLAVORS_DIR="$HOME/.config/yazi/flavors"
+  ROSE_PINE_DIR="$YAZI_FLAVORS_DIR/rose-pine.yazi"
+
+  if [ ! -d "$ROSE_PINE_DIR" ]; then
+    echo "Installing Yazi Rosé Pine flavor..."
+    mkdir -p "$YAZI_FLAVORS_DIR"
+    git clone https://github.com/Msouza91/rose-pine.yazi "$ROSE_PINE_DIR" 2>/dev/null
+    # Rename theme.toml to flavor.toml (flavor uses old naming convention)
+    if [ -f "$ROSE_PINE_DIR/theme.toml" ] && [ ! -f "$ROSE_PINE_DIR/flavor.toml" ]; then
+      mv "$ROSE_PINE_DIR/theme.toml" "$ROSE_PINE_DIR/flavor.toml"
+    fi
+    log_success "Yazi Rosé Pine flavor installed"
   else
-    log_warning "ya command not found. Yazi themes can be installed after brew install yazi"
+    log_info "Yazi Rosé Pine flavor already installed"
+    # Ensure flavor.toml exists (fix for existing installs)
+    if [ -f "$ROSE_PINE_DIR/theme.toml" ] && [ ! -f "$ROSE_PINE_DIR/flavor.toml" ]; then
+      mv "$ROSE_PINE_DIR/theme.toml" "$ROSE_PINE_DIR/flavor.toml"
+      log_info "Renamed theme.toml to flavor.toml"
+    fi
   fi
 else
   log_info "Yazi not installed yet. Will be configured after brew bundle install"
