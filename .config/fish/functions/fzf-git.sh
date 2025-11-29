@@ -322,7 +322,7 @@ _fzf_git_branches() {
     --bind "alt-h:become:LIST_OPTS=\$(cut -c3- <<< {} | cut -d' ' -f1) $shell \"$__fzf_git\" --run hashes" \
     --bind "alt-enter:become:printf '%s\n' {+} | cut -c3- | sed 's@[^/]*/@@'" \
     --preview "git log --oneline --graph --date=short --color=$(__fzf_git_color .) --pretty='format:%C(auto)%cd %h%d %s' \$(cut -c3- <<< {} | cut -d' ' -f1) --" "$@" |
-  sed 's/^\* //' | awk '{print $1}' # Slightly modified to work with hashes as well
+  sed 's/^\* //' | sed 's/\x1b\[[0-9;]*m//g' | awk '{print $1}' # Strip ANSI codes before extraction
 }
 
 _fzf_git_tags() {
@@ -352,7 +352,7 @@ _fzf_git_hashes() {
     --bind "ctrl-b:become:$shell \"$__fzf_git\" --run branches" \
     --color hl:underline,hl+:underline \
     --preview "grep -o '[a-f0-9]\{7,\}' <<< {} | head -n 1 | xargs git show --color=$(__fzf_git_color .) | $(__fzf_git_pager)" "$@" |
-  awk 'match($0, /[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]*/) { print substr($0, RSTART, RLENGTH) }'
+  awk 'match($0, /[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9]*/) { print substr($0, RSTART, RLENGTH); next } { print }' # Pass through non-hash output (e.g., branch names from become)
 }
 
 _fzf_git_remotes() {
