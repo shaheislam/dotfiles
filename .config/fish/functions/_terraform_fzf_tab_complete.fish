@@ -7,6 +7,13 @@ function _terraform_fzf_tab_complete -d "FZF tab completion for terraform"
         return
     end
 
+    # If current token starts with -, show flag completion
+    set -l current_token (commandline -ct)
+    if string match -q -- '-*' "$current_token"
+        _terraform_flag_complete
+        return
+    end
+
     # Check if -chdir is already specified
     set -l chdir_path ""
     if string match -q '*-chdir=*' "$cmdline"
@@ -86,6 +93,43 @@ function _terraform_env_select -d "Select environment for existing -chdir path"
         else
             commandline -i -- "-var-file=$config_rel_path/$selected_env.tfvars "
         end
+    end
+    commandline -f repaint
+end
+
+function _terraform_flag_complete -d "Show terraform flags via FZF"
+    # Common flags for plan/apply/destroy
+    set -l flags \
+        "-var=\"name=value\"	Set a variable value" \
+        "-var-file=	Set variables from a file" \
+        "-target=	Target specific resource" \
+        "-input=false	Disable interactive prompts" \
+        "-lock=false	Disable state locking" \
+        "-lock-timeout=0s	State lock timeout" \
+        "-parallelism=10	Limit concurrent operations" \
+        "-refresh=false	Skip state refresh" \
+        "-compact-warnings	Show compact warnings" \
+        "-auto-approve	Skip interactive approval" \
+        "-out=	Write plan to file (plan only)" \
+        "-destroy	Create destroy plan (plan only)" \
+        "-replace=	Force replace resource" \
+        "-refresh-only	Only refresh state"
+
+    set -l current_token (commandline -ct)
+    set -l selected (printf '%s\n' $flags | fzf \
+        --prompt="Select flag: " \
+        --header="Terraform flags" \
+        --height=40% --border \
+        --query=(string replace -- '-' '' "$current_token") \
+        --delimiter='\t' \
+        --with-nth=1 \
+        --preview='echo {2}' \
+        --preview-window=down:1:wrap)
+
+    if test -n "$selected"
+        set -l flag (echo "$selected" | cut -f1)
+        # Replace current token with selected flag
+        commandline -t -- "$flag"
     end
     commandline -f repaint
 end
