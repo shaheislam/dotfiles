@@ -339,6 +339,15 @@ end
 function __helm_releases_fzf --description "Browse all releases with Alt key actions"
     set -l header_text 'Alt: 1=status 2=values 3=manifest 4=notes 5=history 6=test 7=hooks 8=rollback 9=upgrade | D=diff T=trivy X=delete S=search'
 
+    # Get releases with error handling
+    set -l releases_json (helm list --all-namespaces --output json 2>/dev/null)
+
+    # Check if we got valid data
+    if test -z "$releases_json"; or test "$releases_json" = "[]"
+        echo "No releases found or cluster unreachable" >&2
+        return 1
+    end
+
     # Build alt key commands
     set -l status_cmd "helm status {2} -n {1} | less"
     set -l values_cmd "helm get values {2} -n {1} | nvim -R - -c 'set ft=yaml'"
@@ -369,7 +378,7 @@ function __helm_releases_fzf --description "Browse all releases with Alt key act
     # Reload command
     set -l reload_cmd "helm list --all-namespaces --output json 2>/dev/null | jq -r '.[] | \"\\(.namespace)\\t\\(.name)\\t\\(.status)\\t\\(.chart)\\t\\(.revision)\"'"
 
-    helm list --all-namespaces --output json 2>/dev/null | \
+    echo $releases_json | \
         jq -r '.[] | "\(.namespace)\t\(.name)\t\(.status)\t\(.chart)\t\(.revision)"' | \
     fzf --ansi --height=70% \
         --border-label '⎈ Helm Releases' \
@@ -397,9 +406,18 @@ end
 
 function __helm_releases_fzf_select --description "Select release for a specific action"
     set -l action $argv[1]
-    set -l header_text "Select release for: $action"
+    set -l header_text "Select release for: $action | Press ESC to cancel"
 
-    helm list --all-namespaces --output json 2>/dev/null | \
+    # Get releases with error handling
+    set -l releases_json (helm list --all-namespaces --output json 2>/dev/null)
+
+    # Check if we got valid data
+    if test -z "$releases_json"; or test "$releases_json" = "[]"
+        echo "No releases found or cluster unreachable" >&2
+        return 1
+    end
+
+    echo $releases_json | \
         jq -r '.[] | "\(.namespace)\t\(.name)\t\(.status)\t\(.chart)"' | \
     fzf --ansi --height=50% \
         --header "$header_text" \
@@ -525,6 +543,15 @@ function __helm_repo_fzf --description "Repository operations with Alt key actio
     set -l action $argv[1]
     set -l header_text 'Repos: Alt+U=update S=search X=remove A=add V=versions P=pull'
 
+    # Get repos with error handling
+    set -l repos_json (helm repo list -o json 2>/dev/null)
+
+    # Check if we got valid data
+    if test -z "$repos_json"; or test "$repos_json" = "[]"
+        echo "No repositories configured. Use: helm repo add <name> <url>" >&2
+        return 1
+    end
+
     # Alt key commands
     set -l update_cmd "helm repo update {1} && echo 'Repository {1} updated!'; read -n 1"
     set -l search_cmd "bash -c 'read -p \"Search term: \" term; helm search repo {1}/\$term 2>/dev/null | less'"
@@ -535,7 +562,7 @@ function __helm_repo_fzf --description "Repository operations with Alt key actio
 
     set -l reload_cmd "helm repo list -o json 2>/dev/null | jq -r '.[] | \"\\(.name)\\t\\(.url)\"'"
 
-    helm repo list -o json 2>/dev/null | \
+    echo $repos_json | \
         jq -r '.[] | "\(.name)\t\(.url)"' | \
     fzf --ansi --height=50% \
         --border-label '⎈ Helm Repositories' \
@@ -556,13 +583,22 @@ end
 function __helm_search_charts --description "Search charts across all repos"
     set -l header_text 'Search Charts: Alt+V=versions P=pull I=info S=show values'
 
+    # Get charts with error handling
+    set -l charts_json (helm search repo "" -o json 2>/dev/null)
+
+    # Check if we got valid data
+    if test -z "$charts_json"; or test "$charts_json" = "[]"
+        echo "No charts found. Configure repos with: helm repo add <name> <url>" >&2
+        return 1
+    end
+
     # Alt key commands
     set -l versions_cmd "helm search repo {1} --versions | less"
     set -l pull_cmd "helm pull {1} --untar && echo 'Pulled {1}'; read -n 1"
     set -l info_cmd "helm show chart {1} | less"
     set -l values_cmd "helm show values {1} | nvim -R - -c 'set ft=yaml'"
 
-    helm search repo "" -o json 2>/dev/null | \
+    echo $charts_json | \
         jq -r '.[] | "\(.name)\t\(.version)\t\(.description)"' | \
     fzf --ansi --height=60% \
         --border-label '⎈ Search Helm Charts' \
