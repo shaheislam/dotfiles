@@ -349,13 +349,13 @@ function __helm_releases_fzf --description "Browse all releases with Alt key act
     end
 
     # Build alt key commands
-    set -l status_cmd "helm status {2} -n {1} | less"
-    set -l values_cmd "helm get values {2} -n {1} | nvim -R - -c 'set ft=yaml'"
-    set -l manifest_cmd "helm get manifest {2} -n {1} | nvim -R - -c 'set ft=yaml'"
+    set -l status_cmd "helm status {2} -n {1} | bat --color=always --language=yaml --paging=always"
+    set -l values_cmd "bash -c 'tmpfile=/tmp/helm-values-{2}-\$(date +%s).yaml; helm get values {2} -n {1} > \"\$tmpfile\" 2>/dev/null && nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
+    set -l manifest_cmd "bash -c 'tmpfile=/tmp/helm-manifest-{2}-\$(date +%s).yaml; helm get manifest {2} -n {1} > \"\$tmpfile\" 2>/dev/null && nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
     set -l notes_cmd "helm get notes {2} -n {1} | less"
     set -l history_cmd "helm history {2} -n {1} | less"
     set -l test_cmd "helm test {2} -n {1}"
-    set -l hooks_cmd "helm get hooks {2} -n {1} | nvim -R - -c 'set ft=yaml'"
+    set -l hooks_cmd "bash -c 'tmpfile=/tmp/helm-hooks-{2}-\$(date +%s).yaml; helm get hooks {2} -n {1} > \"\$tmpfile\" 2>/dev/null && nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
 
     # Alt+8: Interactive rollback
     set -l rollback_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; echo \"=== Release History ===\"; helm history {2} -n {1}; echo \"\"; read -p \"Rollback to revision: \" rev; if [ -n \"\$rev\" ]; then helm rollback {2} \$rev -n {1}; fi'"
@@ -364,7 +364,7 @@ function __helm_releases_fzf --description "Browse all releases with Alt key act
     set -l upgrade_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; chart=\$(helm list -n {1} -f \"^{2}\$\" -o json | jq -r \".[0].chart\" | sed \"s/-[0-9.]*\$//\"); echo \"Upgrading {2} with chart: \$chart\"; read -p \"Proceed? [y/N] \" c; if [ \"\$c\" = \"y\" ]; then helm upgrade {2} \$chart -n {1} --reuse-values; fi'"
 
     # Alt+D: Diff between revisions (requires helm-diff plugin)
-    set -l diff_cmd "bash -c 'curr=\$(helm history {2} -n {1} -o json | jq -r \".[0].revision\"); prev=\$((curr - 1)); if [ \$prev -gt 0 ]; then helm diff revision {2} \$prev \$curr -n {1} 2>/dev/null | nvim -R - -c \"set ft=diff\" || echo \"helm-diff plugin not installed. Install with: helm plugin install https://github.com/databus23/helm-diff\"; else echo \"No previous revision to diff\"; fi; read -n 1'"
+    set -l diff_cmd "bash -c 'curr=\$(helm history {2} -n {1} -o json | jq -r \".[0].revision\"); prev=\$((curr - 1)); if [ \$prev -gt 0 ]; then tmpfile=/tmp/helm-diff-{2}-\$(date +%s).diff; helm diff revision {2} \$prev \$curr -n {1} > \"\$tmpfile\" 2>/dev/null && nvim -R \"\$tmpfile\" || echo \"helm-diff plugin not installed. Install with: helm plugin install https://github.com/databus23/helm-diff\"; rm -f \"\$tmpfile\"; else echo \"No previous revision to diff\"; fi; read -n 1'"
 
     # Alt+T: Trivy scan all images
     set -l trivy_cmd "bash -c 'echo \"=== Scanning images in {2} ===\"; images=\$(helm get manifest {2} -n {1} | grep -E \"image:\" | sed \"s/.*image: *//\" | tr -d \"\\\"'\\''\" | sort -u); for img in \$images; do echo \"\"; echo \">>> Scanning: \$img\"; trivy image --severity HIGH,CRITICAL \$img 2>/dev/null || echo \"trivy not installed\"; done' | less"
@@ -384,7 +384,7 @@ function __helm_releases_fzf --description "Browse all releases with Alt key act
         --border-label '⎈ Helm Releases' \
         --header "$header_text" \
         --header-lines 0 \
-        --preview 'helm status {2} -n {1} 2>/dev/null' \
+        --preview 'helm status {2} -n {1} 2>/dev/null | bat --color=always --language=yaml --style=plain' \
         --preview-window='right:50%:wrap,<120(right,40%,wrap)' \
         --bind "ctrl-r:reload($reload_cmd)" \
         --bind "alt-1:execute($status_cmd < /dev/tty > /dev/tty)" \
@@ -421,7 +421,7 @@ function __helm_releases_fzf_select --description "Select release for a specific
         jq -r '.[] | "\(.namespace)\t\(.name)\t\(.status)\t\(.chart)"' | \
     fzf --ansi --height=50% \
         --header "$header_text" \
-        --preview 'helm status {2} -n {1} 2>/dev/null' \
+        --preview 'helm status {2} -n {1} 2>/dev/null | bat --color=always --language=yaml --style=plain' \
         --preview-window='right:50%:wrap' | awk -F'\t' '{print $2}'
 end
 
@@ -441,7 +441,7 @@ function __helm_revision_select --description "Select revision for rollback"
         jq -r '.[] | "\(.revision)\t\(.status)\t\(.description)"' | \
     fzf --ansi --height=50% \
         --header "$header_text | Alt+D: diff with current" \
-        --preview "helm diff revision $release {} -n $ns 2>/dev/null || helm get manifest $release --revision {} -n $ns 2>/dev/null | head -50" \
+        --preview "helm diff revision $release {} -n $ns 2>/dev/null | bat --color=always --language=diff --style=plain || helm get manifest $release --revision {} -n $ns 2>/dev/null | bat --color=always --language=yaml --style=plain | head -50" \
         --preview-window='right:50%:wrap' \
         --bind "alt-d:execute($diff_cmd < /dev/tty > /dev/tty)" | awk -F'\t' '{print $1}'
 end
@@ -478,8 +478,8 @@ function __helm_chart_select --description "Select a chart (local or from repo)"
 
     # Alt+L: Lint chart
     set -l lint_cmd "helm lint {1} 2>&1 | less"
-    # Alt+T: Template chart
-    set -l template_cmd "helm template test-release {1} 2>&1 | nvim -R - -c 'set ft=yaml'"
+    # Alt+T: Template chart (uses temp file for LSP support)
+    set -l template_cmd "bash -c 'tmpfile=/tmp/helm-template-\$(echo {1} | tr \"/\" \"-\")-\$(date +%s).yaml; helm template test-release {1} > \"\$tmpfile\" 2>&1 && nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
     # Alt+V: Show versions
     set -l versions_cmd "helm search repo {1} --versions 2>/dev/null | less || echo 'Local chart - no versions'"
 
@@ -488,7 +488,7 @@ function __helm_chart_select --description "Select a chart (local or from repo)"
         --header "$header_text" \
         --delimiter='\t' \
         --with-nth=1,2 \
-        --preview 'helm show chart {1} 2>/dev/null || cat {1}/Chart.yaml 2>/dev/null' \
+        --preview 'helm show chart {1} 2>/dev/null | bat --color=always --language=yaml --style=plain || cat {1}/Chart.yaml 2>/dev/null | bat --color=always --language=yaml --style=plain' \
         --preview-window='right:50%:wrap' \
         --bind "alt-l:execute($lint_cmd < /dev/tty > /dev/tty)" \
         --bind "alt-t:execute($template_cmd < /dev/tty > /dev/tty)" \
@@ -505,10 +505,10 @@ function __helm_chart_dev_fzf --description "Chart development actions"
 
     # Alt key commands
     set -l lint_cmd "helm lint . 2>&1; echo ''; echo 'Press any key...'; read -n 1"
-    set -l template_cmd "helm template test-release . 2>&1 | nvim -R - -c 'set ft=yaml'"
+    set -l template_cmd "bash -c 'tmpfile=/tmp/helm-template-local-\$(date +%s).yaml; helm template test-release . > \"\$tmpfile\" 2>&1 && nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
     set -l package_cmd "helm package . && echo 'Packaged successfully!' && ls -la *.tgz; read -n 1"
     set -l deps_cmd "helm dependency update . && echo 'Dependencies updated!'; read -n 1"
-    set -l install_cmd "helm install test-$chart_name . --dry-run --debug 2>&1 | nvim -R - -c 'set ft=yaml'"
+    set -l install_cmd "bash -c 'tmpfile=/tmp/helm-install-dry-\$(date +%s).yaml; helm install test-$chart_name . --dry-run --debug > \"\$tmpfile\" 2>&1 && nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
     set -l scan_cmd "trivy config . 2>/dev/null || echo 'trivy not installed'; read -n 1"
     set -l values_cmd "nvim values.yaml"
     set -l bump_cmd "bash -c 'curr=\$(yq -r \".version\" Chart.yaml); echo \"Current: \$curr\"; read -p \"New version: \" nv; if [ -n \"\$nv\" ]; then yq -i \".version = \\\"\$nv\\\"\" Chart.yaml; echo \"Updated to: \$nv\"; fi; read -n 1'"
@@ -522,7 +522,7 @@ function __helm_chart_dev_fzf --description "Chart development actions"
         --header "$header_text" \
         --delimiter='\t' \
         --with-nth=1 \
-        --preview 'cat Chart.yaml 2>/dev/null' \
+        --preview 'cat Chart.yaml 2>/dev/null | bat --color=always --language=yaml --style=plain' \
         --preview-window='right:40%:wrap' \
         --bind "alt-l:execute($lint_cmd < /dev/tty > /dev/tty)" \
         --bind "alt-t:execute($template_cmd < /dev/tty > /dev/tty)" \
@@ -595,8 +595,8 @@ function __helm_search_charts --description "Search charts across all repos"
     # Alt key commands
     set -l versions_cmd "helm search repo {1} --versions | less"
     set -l pull_cmd "helm pull {1} --untar && echo 'Pulled {1}'; read -n 1"
-    set -l info_cmd "helm show chart {1} | less"
-    set -l values_cmd "helm show values {1} | nvim -R - -c 'set ft=yaml'"
+    set -l info_cmd "helm show chart {1} | bat --color=always --language=yaml --paging=always"
+    set -l values_cmd "bash -c 'tmpfile=/tmp/helm-show-values-\$(echo {1} | tr \"/\" \"-\")-\$(date +%s).yaml; helm show values {1} > \"\$tmpfile\" 2>/dev/null && nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
 
     echo $charts_json | \
         jq -r '.[] | "\(.name)\t\(.version)\t\(.description)"' | \
@@ -605,7 +605,7 @@ function __helm_search_charts --description "Search charts across all repos"
         --header "$header_text" \
         --delimiter='\t' \
         --with-nth=1,2,3 \
-        --preview 'helm show chart {1} 2>/dev/null' \
+        --preview 'helm show chart {1} 2>/dev/null | bat --color=always --language=yaml --style=plain' \
         --preview-window='right:50%:wrap' \
         --bind "alt-v:execute($versions_cmd < /dev/tty > /dev/tty)" \
         --bind "alt-p:execute($pull_cmd < /dev/tty > /dev/tty)" \
