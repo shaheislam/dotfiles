@@ -35,3 +35,6 @@
 
 [pager]
 	blame = delta
+
+[alias]
+	mergetool = "!nvim -c DiffviewOpen"
