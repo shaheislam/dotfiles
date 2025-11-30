@@ -2620,6 +2620,9 @@ fish_add_path $HOME/.nix-profile/bin
 # Terraform provisioning tool
 fish_add_path /Users/mohammedislam/work/terraform-provision
 
+# iximiuz labctl CLI
+fish_add_path $HOME/.iximiuz/labctl/bin
+
 # Opencode LSP integration with Nix
 # Prevent Opencode from downloading its own LSP servers
 # Uses Nix-managed LSP servers instead (from PATH)
