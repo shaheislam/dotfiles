@@ -50,6 +50,38 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
         case cherry
             # Cherry operations - show branches for comparison
             __fzf_git_sh branches 2>/dev/null
+        case merge-base
+            # If currently typing a flag, use standard completion for flags
+            set -l current_token (commandline --current-token)
+            if string match -qr -- '^-' "$current_token"
+                _fifc 2>/dev/null
+                return
+            end
+
+            # Context-aware merge-base: commits first, then branches for --is-ancestor
+            if string match -qr -- '--is-ancestor' (commandline -opc)
+                # Count non-flag arguments after the subcommand
+                set -l mb_args
+                for arg in $cmd[3..-1]
+                    if not string match -qr -- '^-' $arg
+                        set -a mb_args $arg
+                    end
+                end
+
+                if test (count $mb_args) -eq 0
+                    # First arg: show commits (hashes)
+                    __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null
+                else if test (count $mb_args) -eq 1
+                    # Second arg: show branches
+                    __fzf_git_sh branches 2>/dev/null || _fifc 2>/dev/null
+                else
+                    # Both provided: fall back to normal completion
+                    _fifc 2>/dev/null
+                end
+            else
+                # Without --is-ancestor: show commits and branches
+                __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null
+            end
         case reset
             # Reset can be files or hashes depending on flags
             # Check if --hard, --soft, or --mixed is present

@@ -225,6 +225,40 @@ complete -c git -n '__fish_git_using_command merge' -l squash -d 'Squash commits
 complete -c git -n '__fish_git_using_command merge' -l abort -d 'Abort merge'
 
 # =============================================================================
+# git merge-base - Find common ancestor
+# =============================================================================
+complete -c git -n '__fish_git_using_command merge-base' -f
+
+# Flags
+complete -c git -n '__fish_git_using_command merge-base' -l is-ancestor -d 'Check if first commit is ancestor of second'
+complete -c git -n '__fish_git_using_command merge-base' -l fork-point -d 'Find fork point'
+complete -c git -n '__fish_git_using_command merge-base' -l octopus -d 'Compute merge bases for octopus merge'
+complete -c git -n '__fish_git_using_command merge-base' -l all -d 'Show all common ancestors'
+
+# After --is-ancestor: first arg = commit (hashes)
+complete -c git -n '__fish_git_using_command merge-base; and __fish_seen_argument --is-ancestor; and test (count (commandline -opc)) -eq 4' -a '
+    (
+        git log --oneline --max-count=30 --format="%h" 2>/dev/null
+    )
+' -d 'Commit'
+
+# After --is-ancestor: second arg = branch
+complete -c git -n '__fish_git_using_command merge-base; and __fish_seen_argument --is-ancestor; and test (count (commandline -opc)) -eq 5' -a '
+    (
+        git branch --format="%(refname:short)" 2>/dev/null
+        git branch -r --format="%(refname:short)" 2>/dev/null | sed "s/^origin\\///"
+    )
+' -d 'Branch'
+
+# Without --is-ancestor: show commits and branches for both args
+complete -c git -n '__fish_git_using_command merge-base; and not __fish_seen_argument --is-ancestor' -a '
+    (
+        git log --oneline --max-count=20 --format="%h" 2>/dev/null
+        git branch --format="%(refname:short)" 2>/dev/null
+    )
+' -d 'Commit/Branch'
+
+# =============================================================================
 # git rebase - Show branches to rebase onto
 # =============================================================================
 complete -c git -n '__fish_git_using_command rebase' -f
@@ -446,4 +480,4 @@ complete -c git -n '__fish_git_using_command submodule; and __fish_seen_argument
 # =============================================================================
 # Common git subcommands
 # =============================================================================
-complete -c git -n 'test (count (commandline -opc)) -eq 1' -a 'add bisect blame branch checkout cherry cherry-pick clone commit diff fetch init log merge pull push rebase reflog reset restore revert rm show stash status submodule switch tag worktree' -d 'Command'
+complete -c git -n 'test (count (commandline -opc)) -eq 1' -a 'add bisect blame branch checkout cherry cherry-pick clone commit diff fetch init log merge merge-base pull push rebase reflog reset restore revert rm show stash status submodule switch tag worktree' -d 'Command'
