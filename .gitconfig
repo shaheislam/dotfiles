@@ -23,6 +23,7 @@
 	conflictstyle = zdiff3
 
 [diff]
+	algorithm = histogram
 	tool = nvimdiff
 	colorMoved = default
 
