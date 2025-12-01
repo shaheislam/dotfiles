@@ -337,9 +337,9 @@ end
 # === RELEASE MODE FUNCTIONS ===
 
 function __helm_releases_fzf --description "Browse all releases with Alt key actions"
-    set -l header_text 'Alt: 1=status 2=values 3=manifest 4=notes 5=history 6=test 7=hooks 8=rollback 9=upgrade | D=diff T=trivy X=delete S=search'
+    set -l header_text 'Alt: 1=status 2=values 3=manifest 4=notes 5=history 6=test 7=hooks 8=rollback 9=upgrade | N=ns A=all D=diff T=trivy X=delete S=search'
 
-    # Get releases with error handling
+    # Get releases with error handling (start with all namespaces)
     set -l releases_json (helm list --all-namespaces --output json 2>/dev/null)
 
     # Check if we got valid data
@@ -376,8 +376,12 @@ function __helm_releases_fzf --description "Browse all releases with Alt key act
     # Alt+S: Search chart versions
     set -l search_cmd "bash -c 'chart=\$(helm list -n {1} -f \"^{2}\$\" -o json | jq -r \".[0].chart\" | sed \"s/-[0-9.]*\$//\"); helm search repo \$chart --versions | less'"
 
-    # Reload command
+    # Alt+N: Switch namespace via kubie (persistent) then reload with current namespace only
+    set -l ns_switch_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl get ns -o name | sed \"s|namespace/||\" | fzf --height=40% --prompt=\"Switch namespace: \"); [ -n \"\$ns\" ] && kubie ns \$ns && echo \"Switched to: \$ns\" && sleep 0.5'"
+
+    # Reload commands
     set -l reload_cmd "helm list --all-namespaces --output json 2>/dev/null | jq -r '.[] | \"\\(.namespace)\\t\\(.name)\\t\\(.status)\\t\\(.chart)\\t\\(.revision)\"'"
+    set -l reload_ns_cmd "helm list --output json 2>/dev/null | jq -r '.[] | \"\\(.namespace)\\t\\(.name)\\t\\(.status)\\t\\(.chart)\\t\\(.revision)\"'"
 
     echo $releases_json | \
         jq -r '.[] | "\(.namespace)\t\(.name)\t\(.status)\t\(.chart)\t\(.revision)"' | \
@@ -401,15 +405,17 @@ function __helm_releases_fzf --description "Browse all releases with Alt key act
         --bind "alt-t:execute($trivy_cmd < /dev/tty > /dev/tty)" \
         --bind "alt-x:execute($delete_cmd < /dev/tty > /dev/tty)+reload($reload_cmd)" \
         --bind "alt-s:execute($search_cmd < /dev/tty > /dev/tty)" \
+        --bind "alt-n:execute($ns_switch_cmd)+reload($reload_ns_cmd)+change-prompt(NS> )" \
+        --bind "alt-a:reload($reload_cmd)+change-prompt(All NS> )" \
         --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
         --multi | awk -F'\t' '{print $2}'
 end
 
 function __helm_releases_fzf_select --description "Select release for a specific action"
     set -l action $argv[1]
-    set -l header_text "Select release for: $action | Press ESC to cancel"
+    set -l header_text "Select release for: $action | Alt+N: switch ns | Alt+A: all ns | ESC: cancel"
 
-    # Get releases with error handling
+    # Get releases with error handling (start with all namespaces)
     set -l releases_json (helm list --all-namespaces --output json 2>/dev/null)
 
     # Check if we got valid data
@@ -418,12 +424,20 @@ function __helm_releases_fzf_select --description "Select release for a specific
         return 1
     end
 
+    # Namespace switch and reload commands
+    set -l ns_switch_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl get ns -o name | sed \"s|namespace/||\" | fzf --height=40% --prompt=\"Switch namespace: \"); [ -n \"\$ns\" ] && kubie ns \$ns && echo \"Switched to: \$ns\" && sleep 0.5'"
+    set -l reload_cmd "helm list --all-namespaces --output json 2>/dev/null | jq -r '.[] | \"\\(.namespace)\\t\\(.name)\\t\\(.status)\\t\\(.chart)\"'"
+    set -l reload_ns_cmd "helm list --output json 2>/dev/null | jq -r '.[] | \"\\(.namespace)\\t\\(.name)\\t\\(.status)\\t\\(.chart)\"'"
+
     echo $releases_json | \
         jq -r '.[] | "\(.namespace)\t\(.name)\t\(.status)\t\(.chart)"' | \
     fzf --ansi --height=50% \
         --header "$header_text" \
         --preview 'helm status {2} -n {1} 2>/dev/null | bat --color=always --language=yaml --style=plain' \
-        --preview-window='right:50%:wrap' | awk -F'\t' '{print $2}'
+        --preview-window='right:50%:wrap' \
+        --bind "alt-n:execute($ns_switch_cmd)+reload($reload_ns_cmd)+change-prompt(NS> )" \
+        --bind "alt-a:reload($reload_cmd)+change-prompt(All NS> )" \
+        --bind "ctrl-r:reload($reload_cmd)" | awk -F'\t' '{print $2}'
 end
 
 function __helm_revision_select --description "Select revision for rollback"
