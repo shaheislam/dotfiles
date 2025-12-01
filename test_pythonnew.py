@@ -3,11 +3,6 @@ def greet(name):
     return f"Hi, {name}!"
 
 
-def add(a, b):
-    """Add two numbers together."""
-    return a + b
-
-
 class Counter:
     """A simple counter class."""
 
