@@ -2220,6 +2220,14 @@ fish_add_path ~/.claude/local/node_modules/.bin
             return 1
         end
 
+        # If argument provided, switch directly
+        if test (count $argv) -gt 0
+            kubectl config set-context --current --namespace=$argv[1]
+            echo "Switched to namespace: $argv[1]"
+            return 0
+        end
+
+        # No argument - use fzf picker
         set -l namespaces (kubectl get namespaces -o name 2>/dev/null | command cut -d/ -f2)
         if test -z "$namespaces"
             echo "No namespaces found"
