@@ -388,14 +388,14 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l get_all_cmd "bash -c 'ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); kubectl get-all -n \$ns 2>/dev/null | bat --style=plain --paging=always || echo \"kubectl get-all not installed. Install with: kubectl krew install get-all\"; read -n 1'"
 
         # Header text varies by resource type
-        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | F:finalizers W:events V:vals M:manifest Shift+D:diff Shift+E:edit I:dive G:get-all'
+        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns A:all-ns F:finalizers W:events V:vals M:manifest I:dive G:get-all'
 
         # Node-specific header with cordon/uncordon/drain
         if contains -- $resource_type node nodes
-            set header_text 'Alt+3:yaml 4:desc O:cordon U:uncordon D:drain | F:finalizers W:events K:kubent Ctrl+R:reload'
+            set header_text 'Alt+3:yaml 4:desc O:cordon U:uncordon D:drain | N:ns A:all-ns F:finalizers W:events K:kubent Ctrl+R:reload'
         # Events-specific header with timestamp sorting
         else if contains -- $resource_type events event
-            set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+3:yaml 4:desc G:get-all'
+            set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+N:ns A:all-ns 3:yaml 4:desc G:get-all'
             set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
                 --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
                 --bind "ctrl-r:reload($reload_cmd)" \
