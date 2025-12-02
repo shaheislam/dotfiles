@@ -16,7 +16,7 @@ Simple actionable rules for Claude Code framework operation.
 - Always use Read tool before Write or Edit operations
 - Use absolute paths only, prevent path traversal attacks
 - Prefer batch operations and transaction-like behavior
-- Never commit automatically unless explicitly requested
+- Never commit automatically unless explicitly requested OR auto-commit mode is enabled via /commit-mode on
 
 ### Framework Compliance
 - Check package.json/pyproject.toml before using libraries

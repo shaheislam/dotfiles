@@ -151,6 +151,15 @@ Flag system for Claude Code framework with auto-activation and conflict resoluti
 - accessibility: UI/UX accessibility compliance
 - testing: Test coverage and quality
 
+## Git Workflow Flags
+
+**`--auto-commit`**
+- Enable automatic commits at natural breakpoints
+- Equivalent to `/commit-mode on`
+- Commits after: completing features/fixes, finishing todo items, before switching areas
+- Auto-deactivates at session end (default is OFF)
+- Follows git standards: no emojis, conventional format, no AI references
+
 ## Iterative Improvement Flags
 
 **`--loop`**
