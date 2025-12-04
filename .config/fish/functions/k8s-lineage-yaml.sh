@@ -82,6 +82,154 @@ fi
 
 echo ""
 
+# Find dependencies (what this resource depends on) - only for Pods
+if [ "$kind" = "Pod" ]; then
+    echo "dependencies:"
+
+    # ServiceAccount
+    sa_name=$(echo "$resource_json" | jq -r '.spec.serviceAccountName // "default"')
+    echo "  service_account:"
+    echo "    name: $sa_name"
+    echo "    namespace: $ns"
+
+    # Secrets - from volumes, env vars, and envFrom
+    echo "  secrets:"
+    secrets_found=false
+
+    # Secrets from volumes
+    while IFS= read -r secret_line; do
+        if [ -n "$secret_line" ]; then
+            secrets_found=true
+            echo "$secret_line"
+        fi
+    done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+        .spec.volumes[]? | select(.secret != null) |
+        "    - name: \(.secret.secretName)\n      namespace: \($ns)\n      usage: volume_mount"
+    ' 2>/dev/null)
+
+    # Secrets from env valueFrom
+    while IFS= read -r secret_line; do
+        if [ -n "$secret_line" ]; then
+            secrets_found=true
+            echo "$secret_line"
+        fi
+    done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+        [.spec.containers[]?.env[]? | select(.valueFrom.secretKeyRef != null) | .valueFrom.secretKeyRef.name] |
+        unique | .[] |
+        "    - name: \(.)\n      namespace: \($ns)\n      usage: env_var"
+    ' 2>/dev/null)
+
+    # Secrets from envFrom
+    while IFS= read -r secret_line; do
+        if [ -n "$secret_line" ]; then
+            secrets_found=true
+            echo "$secret_line"
+        fi
+    done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+        [.spec.containers[]?.envFrom[]? | select(.secretRef != null) | .secretRef.name] |
+        unique | .[] |
+        "    - name: \(.)\n      namespace: \($ns)\n      usage: env_from"
+    ' 2>/dev/null)
+
+    if [ "$secrets_found" = false ]; then
+        echo "    []  # No secrets referenced"
+    fi
+
+    # ConfigMaps - from volumes, env vars, and envFrom
+    echo "  config_maps:"
+    cms_found=false
+
+    # ConfigMaps from volumes
+    while IFS= read -r cm_line; do
+        if [ -n "$cm_line" ]; then
+            cms_found=true
+            echo "$cm_line"
+        fi
+    done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+        .spec.volumes[]? | select(.configMap != null) |
+        "    - name: \(.configMap.name)\n      namespace: \($ns)\n      usage: volume_mount"
+    ' 2>/dev/null)
+
+    # ConfigMaps from env valueFrom
+    while IFS= read -r cm_line; do
+        if [ -n "$cm_line" ]; then
+            cms_found=true
+            echo "$cm_line"
+        fi
+    done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+        [.spec.containers[]?.env[]? | select(.valueFrom.configMapKeyRef != null) | .valueFrom.configMapKeyRef.name] |
+        unique | .[] |
+        "    - name: \(.)\n      namespace: \($ns)\n      usage: env_var"
+    ' 2>/dev/null)
+
+    # ConfigMaps from envFrom
+    while IFS= read -r cm_line; do
+        if [ -n "$cm_line" ]; then
+            cms_found=true
+            echo "$cm_line"
+        fi
+    done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+        [.spec.containers[]?.envFrom[]? | select(.configMapRef != null) | .configMapRef.name] |
+        unique | .[] |
+        "    - name: \(.)\n      namespace: \($ns)\n      usage: env_from"
+    ' 2>/dev/null)
+
+    if [ "$cms_found" = false ]; then
+        echo "    []  # No configmaps referenced"
+    fi
+
+    # PersistentVolumeClaims
+    echo "  persistent_volume_claims:"
+    pvcs_found=false
+    while IFS= read -r pvc_line; do
+        if [ -n "$pvc_line" ]; then
+            pvcs_found=true
+            echo "$pvc_line"
+        fi
+    done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+        .spec.volumes[]? | select(.persistentVolumeClaim != null) |
+        "    - name: \(.persistentVolumeClaim.claimName)\n      namespace: \($ns)"
+    ' 2>/dev/null)
+
+    if [ "$pvcs_found" = false ]; then
+        echo "    []  # No PVCs referenced"
+    fi
+
+    # RBAC - find RoleBindings and ClusterRoleBindings referencing this ServiceAccount
+    echo "  rbac:"
+    rbac_found=false
+
+    # RoleBindings in namespace
+    while IFS= read -r rb_line; do
+        if [ -n "$rb_line" ]; then
+            rbac_found=true
+            echo "$rb_line"
+        fi
+    done < <(kubectl get rolebindings -n "$ns" -o json 2>/dev/null | jq -r --arg sa "$sa_name" --arg ns "$ns" '
+        .items[] |
+        select(.subjects[]? | (.kind == "ServiceAccount" and .name == $sa and (.namespace == $ns or .namespace == null))) |
+        "    - kind: RoleBinding\n      name: \(.metadata.name)\n      namespace: \(.metadata.namespace)\n      role: \(.roleRef.name)"
+    ' 2>/dev/null)
+
+    # ClusterRoleBindings
+    while IFS= read -r crb_line; do
+        if [ -n "$crb_line" ]; then
+            rbac_found=true
+            echo "$crb_line"
+        fi
+    done < <(kubectl get clusterrolebindings -o json 2>/dev/null | jq -r --arg sa "$sa_name" --arg ns "$ns" '
+        .items[] |
+        select(.subjects[]? | (.kind == "ServiceAccount" and .name == $sa and .namespace == $ns)) |
+        "    - kind: ClusterRoleBinding\n      name: \(.metadata.name)\n      namespace: cluster-scoped\n      role: \(.roleRef.name)"
+    ' 2>/dev/null)
+
+    if [ "$rbac_found" = false ]; then
+        echo "    []  # No RBAC bindings found"
+    fi
+
+    echo ""
+fi
+
 # Find dependents based on resource type
 echo "dependents:"
 
