@@ -17,7 +17,7 @@ function! ToggleLineageView()
     exe 'edit ' . s:simple
     let s:view = 'simple'
   endif
-  set ft=yaml nomodifiable readonly
+  setlocal ft=yaml readonly nomodified
   call setpos('.', l:pos)
   nnoremap <buffer> <A-d> :call ToggleLineageView()<CR>
 endfunction
