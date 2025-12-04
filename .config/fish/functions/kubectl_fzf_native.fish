@@ -514,8 +514,9 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l dive_cmd "bash -c 'img=\$(kubectl get pod {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null); if [ -n \"\$img\" ]; then echo \"Analyzing image: \$img\"; dive \$img; else echo \"Could not extract image from pod\"; fi'"
         # Alt+G: Get all resources in namespace (requires kubectl-get-all krew plugin)
         set -l get_all_cmd "bash -c 'ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); kubectl get-all -n \$ns 2>/dev/null | bat --style=plain --paging=always || echo \"kubectl get-all not installed. Install with: kubectl krew install get-all\"; read -n 1'"
-        # Alt+L: Resource lineage/ownership tree (requires kube-lineage krew plugin)
-        set -l lineage_cmd "bash -c 'tmpfile=/tmp/lineage-{}-\$(date +%s).txt; { echo \"=== DEPENDENTS (what depends on this resource) ===\"; kubectl lineage $resource_type/{} --output=wide --show-labels 2>/dev/null; echo \"\"; echo \"=== DEPENDENCIES (what this resource depends on) ===\"; kubectl lineage $resource_type/{} --output=wide --show-labels -D 2>/dev/null; } > \"\$tmpfile\"; nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"' || echo \"kube-lineage not installed. Install with: kubectl krew install lineage\"; read -n 1"
+        # Alt+L: Resource lineage/ownership YAML graph (custom script for proper syntax highlighting)
+        set -l script_dir (realpath (status dirname))
+        set -l lineage_cmd "bash -c 'tmpfile=/tmp/lineage-{}-\$(date +%s).yaml; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" > \"\$tmpfile\" 2>&1; nvim -R -c \"set ft=yaml\" \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
 
         # Header text varies by resource type
         set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns A:all-ns F:finalizers W:events L:lineage V:vals I:dive G:get-all'
