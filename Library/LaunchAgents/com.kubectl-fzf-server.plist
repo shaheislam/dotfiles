@@ -6,9 +6,9 @@
     <string>com.kubectl-fzf-server</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>-c</string>
-        <string>export PATH="$HOME/go/bin:$PATH"; kubectl-fzf-server</string>
+        <string>/Users/shaheislam/go/bin/kubectl-fzf-server</string>
+        <string>--cache-dir</string>
+        <string>/tmp/kubectl_fzf_cache</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -27,6 +27,8 @@
     <dict>
         <key>HOME</key>
         <string>/Users/shaheislam</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/Users/shaheislam/go/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>KUBECONFIG</key>
         <string>/Users/shaheislam/.kube/config</string>
         <key>KUBECTL_FZF_CACHE</key>
