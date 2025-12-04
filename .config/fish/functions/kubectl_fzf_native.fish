@@ -514,9 +514,9 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l dive_cmd "bash -c 'img=\$(kubectl get pod {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null); if [ -n \"\$img\" ]; then echo \"Analyzing image: \$img\"; dive \$img; else echo \"Could not extract image from pod\"; fi'"
         # Alt+G: Get all resources in namespace (requires kubectl-get-all krew plugin)
         set -l get_all_cmd "bash -c 'ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); kubectl get-all -n \$ns 2>/dev/null | bat --style=plain --paging=always || echo \"kubectl get-all not installed. Install with: kubectl krew install get-all\"; read -n 1'"
-        # Alt+L: Resource lineage/ownership YAML graph (custom script for proper syntax highlighting)
+        # Alt+L: Resource lineage/ownership YAML graph with toggle (Alt+D) between simple/detailed views
         set -l script_dir (realpath (status dirname))
-        set -l lineage_cmd "bash -c 'tmpfile=/tmp/lineage-{}-\$(date +%s).yaml; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" > \"\$tmpfile\" 2>&1; nvim -R -c \"set ft=yaml\" \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
+        set -l lineage_cmd "bash -c 'ts=\$(date +%s); simple=/tmp/lineage-{}-\$ts-simple.yaml; detailed=/tmp/lineage-{}-\$ts-detailed.yaml; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" > \"\$simple\" 2>&1; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" --detailed > \"\$detailed\" 2>&1; nvim -R -c \"source $script_dir/k8s-lineage-toggle.vim\" -c \"call SetLineageFiles(\\\"\$simple\\\", \\\"\$detailed\\\")\" -c \"set ft=yaml\" -c \"nnoremap <buffer> <A-d> :call ToggleLineageView()<CR>\" \"\$simple\"; rm -f \"\$simple\" \"\$detailed\"'"
 
         # Header text varies by resource type
         set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns A:all-ns F:finalizers W:events L:lineage V:vals I:dive G:get-all'

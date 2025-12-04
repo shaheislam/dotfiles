@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 # k8s-lineage-yaml.sh - Generate YAML dependency graph for Kubernetes resources
-# Usage: k8s-lineage-yaml.sh <resource_type> <resource_name> [namespace]
+# Usage: k8s-lineage-yaml.sh <resource_type> <resource_name> [namespace] [--detailed]
 
 set -euo pipefail
 
 resource_type="$1"
 resource_name="$2"
 namespace="${3:-default}"
+detailed=false
+
+# Check for --detailed flag
+for arg in "$@"; do
+    if [ "$arg" = "--detailed" ]; then
+        detailed=true
+        break
+    fi
+done
 
 # Get resource JSON
 resource_json=$(kubectl get "$resource_type" "$resource_name" -n "$namespace" -o json 2>/dev/null)
@@ -45,8 +54,30 @@ resource:
   created: $creation
   labels:
 $labels_yaml
-
 EOF
+
+# Add detailed pod runtime info
+if [ "$detailed" = true ] && [ "$kind" = "Pod" ]; then
+    node_name=$(echo "$resource_json" | jq -r '.spec.nodeName // "N/A"')
+    restart_count=$(echo "$resource_json" | jq -r '[.status.containerStatuses[]?.restartCount // 0] | add // 0')
+    images_yaml=$(echo "$resource_json" | jq -r '
+        [.spec.containers[].image] | unique |
+        if length > 0 then
+            map("    - \(.)") | join("\n")
+        else
+            "    []"
+        end
+    ')
+
+    cat <<EOF
+  node: $node_name
+  restart_count: $restart_count
+  images:
+$images_yaml
+EOF
+fi
+
+echo ""
 
 # Walk ownership chain (parents)
 echo "ownership_chain:"
@@ -227,6 +258,25 @@ if [ "$kind" = "Pod" ]; then
         echo "    []  # No RBAC bindings found"
     fi
 
+    # ImagePullSecrets (detailed view only)
+    if [ "$detailed" = true ]; then
+        echo "  image_pull_secrets:"
+        ips_found=false
+        while IFS= read -r ips_line; do
+            if [ -n "$ips_line" ]; then
+                ips_found=true
+                echo "$ips_line"
+            fi
+        done < <(echo "$resource_json" | jq -r --arg ns "$ns" '
+            .spec.imagePullSecrets[]? |
+            "    - name: \(.name)\n      namespace: \($ns)"
+        ' 2>/dev/null)
+
+        if [ "$ips_found" = false ]; then
+            echo "    []  # No imagePullSecrets"
+        fi
+    fi
+
     echo ""
 fi
 
@@ -274,6 +324,53 @@ if [ "$kind" = "Pod" ]; then
 
     if [ "$eps_found" = false ]; then
         echo "    []  # No endpoint slices"
+    fi
+
+    # NetworkPolicies and PDBs (detailed view only)
+    if [ "$detailed" = true ]; then
+        # NetworkPolicies that match this pod's labels
+        echo "  network_policies:"
+        np_found=false
+        while IFS= read -r np_line; do
+            if [ -n "$np_line" ]; then
+                np_found=true
+                echo "$np_line"
+            fi
+        done < <(kubectl get networkpolicies -n "$ns" -o json 2>/dev/null | jq -r --argjson podlabels "$pod_labels" '
+            .items[] |
+            select(
+                .spec.podSelector.matchLabels // {} | to_entries |
+                if length == 0 then true
+                else all(. as $sel | $podlabels[$sel.key] == $sel.value)
+                end
+            ) |
+            "    - name: \(.metadata.name)\n      namespace: \(.metadata.namespace)"
+        ' 2>/dev/null)
+
+        if [ "$np_found" = false ]; then
+            echo "    []  # No network policies"
+        fi
+
+        # PodDisruptionBudgets that match this pod's labels
+        echo "  pod_disruption_budgets:"
+        pdb_found=false
+        while IFS= read -r pdb_line; do
+            if [ -n "$pdb_line" ]; then
+                pdb_found=true
+                echo "$pdb_line"
+            fi
+        done < <(kubectl get pdb -n "$ns" -o json 2>/dev/null | jq -r --argjson podlabels "$pod_labels" '
+            .items[] |
+            select(
+                .spec.selector.matchLabels // {} | to_entries |
+                all(. as $sel | $podlabels[$sel.key] == $sel.value)
+            ) |
+            "    - name: \(.metadata.name)\n      namespace: \(.metadata.namespace)\n      min_available: \(.spec.minAvailable // \"N/A\")\n      max_unavailable: \(.spec.maxUnavailable // \"N/A\")"
+        ' 2>/dev/null)
+
+        if [ "$pdb_found" = false ]; then
+            echo "    []  # No PDBs"
+        fi
     fi
 fi
 
