@@ -5,6 +5,47 @@
 # Toggle for FZF mode
 set -g kubectl_use_fzf true
 
+# Cache configuration for kubectl-fzf-server integration
+set -g KUBECTL_FZF_CACHE "/tmp/kubectl_fzf_cache"
+set -g KUBECTL_FZF_CACHE_MAX_AGE 60  # seconds
+
+# Cache-aware resource fetching function
+# Checks kubectl-fzf-server cache first, falls back to API
+function __fish_kubectl_print_resource_cached --description "Get resources with cache support"
+    set -l resource_type $argv[1]
+
+    # Get current context for cache path
+    set -l context (kubectl config current-context 2>/dev/null)
+    if test -z "$context"
+        # No context, fall back to direct API call
+        __fish_kubectl_print_resource $resource_type
+        return
+    end
+
+    set -l cache_file "$KUBECTL_FZF_CACHE/$context/$resource_type"
+
+    # Check if cache exists and is fresh
+    if test -f "$cache_file"
+        # Get file age in seconds (macOS stat)
+        set -l file_mtime (stat -f %m "$cache_file" 2>/dev/null)
+        set -l current_time (date +%s)
+        set -l age (math $current_time - $file_mtime)
+
+        if test $age -lt $KUBECTL_FZF_CACHE_MAX_AGE
+            # Cache is fresh, use it
+            # Format: name\tnamespace (tab-separated)
+            cat "$cache_file" | while read -l line
+                # Extract just the name from the cache line
+                echo $line | awk '{print $1}'
+            end
+            return
+        end
+    end
+
+    # Cache miss or stale - fall back to API
+    __fish_kubectl_print_resource $resource_type
+end
+
 function kubectl_fzf_native --description "FZF-powered kubectl completion using native functions"
     set -l cmd (commandline -opc)
     set -l current (commandline -ct)
@@ -95,8 +136,20 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     set -l preview_cmd ""
     set -l show_preview false
 
-    # Handle flag value completions
-    switch $last_arg
+    # Check if current token looks like a label selector (e.g., "app=" or "app=nginx")
+    # This handles the case when user types `kubectl get pods -l app=<TAB>`
+    # where last_arg is "app=" not "-l"
+    if string match -qr '^[a-zA-Z0-9_./-]+=' "$current"
+        # Current token is a label key with = - complete values
+        set -l label_resource_type "pods"
+        if test -n "$resource_type"
+            set label_resource_type $resource_type
+        end
+        set completions (__fish_kubectl_get_labels $label_resource_type "$current")
+        set fzf_prompt "Label value: "
+    else
+        # Handle flag value completions
+        switch $last_arg
         case -n --namespace
             set completions (__fish_kubectl_print_resource namespace)
             set fzf_prompt "Namespace: "
@@ -110,6 +163,86 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         case -f --filename
             # File completion - let fish handle it
             return
+        case -l --selector
+            # Label selector completion
+            # First, determine the resource type from the command
+            set -l label_resource_type "pods"
+            if test -n "$resource_type"
+                set label_resource_type $resource_type
+            end
+
+            # Determine completion mode based on current token
+            # - "app=nginx" (has = with value after) → already complete, no suggestions
+            # - "app=" (ends with =) → complete values for this key
+            # - "app" or "" → complete keys
+            if string match -qr '^[^=]+=[^=]+' "$current"
+                # Has key=value with non-empty value - likely already complete
+                # But allow filtering if user is still typing
+                set completions (__fish_kubectl_get_labels $label_resource_type "$current")
+            else if string match -q '*=' "$current"
+                # Key provided with =, get values for that key
+                set completions (__fish_kubectl_get_labels $label_resource_type "$current")
+            else
+                # No = or partial key - show common labels first, then dynamic labels
+                set completions (__fish_kubectl_get_common_labels)
+                set -a completions (__fish_kubectl_get_labels $label_resource_type "$current")
+            end
+            set fzf_prompt "Label selector: "
+        case --field-selector
+            # Field selector completion
+            set -l field_resource_type "pods"
+            if test -n "$resource_type"
+                set field_resource_type $resource_type
+            end
+
+            # If current has =, complete values; otherwise complete field paths
+            if string match -q '*=*' "$current"
+                # Extract field path and provide dynamic values
+                set -l field_path (string split '=' "$current")[1]
+                switch $field_path
+                    case 'spec.nodeName'
+                        # Get node names
+                        set completions (kubectl get nodes -o name 2>/dev/null | sed 's|node/||' | while read n; echo "spec.nodeName=$n"; end)
+                    case 'status.phase'
+                        # Pod phases
+                        set completions "status.phase=Running" "status.phase=Pending" "status.phase=Succeeded" "status.phase=Failed" "status.phase=Unknown"
+                    case 'metadata.namespace'
+                        set completions (kubectl get namespaces -o name 2>/dev/null | sed 's|namespace/||' | while read n; echo "metadata.namespace=$n"; end)
+                    case 'metadata.name'
+                        set completions (kubectl get $field_resource_type -o name 2>/dev/null | sed 's|.*/||' | while read n; echo "metadata.name=$n"; end)
+                    case '*'
+                        # Generic: show = variants
+                        set completions "$field_path=" "$field_path!="
+                end
+            else
+                # Show common field selectors based on resource type
+                switch $field_resource_type
+                    case pod pods
+                        set completions \
+                            "status.phase=" \
+                            "spec.nodeName=" \
+                            "spec.restartPolicy=" \
+                            "spec.schedulerName=" \
+                            "spec.serviceAccountName=" \
+                            "metadata.name=" \
+                            "metadata.namespace="
+                    case node nodes
+                        set completions \
+                            "spec.unschedulable=true" \
+                            "spec.unschedulable=false" \
+                            "metadata.name="
+                    case service services svc
+                        set completions \
+                            "metadata.name=" \
+                            "metadata.namespace="
+                    case '*'
+                        set completions \
+                            "metadata.name=" \
+                            "metadata.namespace="
+                end
+            end
+            set fzf_prompt "Field selector: "
+        end
     end
 
     # If we handled a flag above, filter and show FZF
@@ -130,22 +263,49 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             return
         end
 
-        # Auto-complete if only one match - strip description (tab and text after)
+        # Auto-complete if only one match - directly modify commandline
         if test (count $completions) -eq 1
-            echo $completions[1] | string split \t | head -1
+            set -l result (echo $completions[1] | string split \t | head -1)
+            commandline -t -- "$result"
+            commandline -f repaint
             return
         end
 
-        # Multiple matches - use FZF with multi-select, strip description from selected result
+        # Multiple matches - use FZF and directly modify commandline
         if test "$kubectl_use_fzf" = "true"
-            set -l selected (printf '%s\n' $completions | fzf --height=40% --multi \
-                --bind 'tab:toggle+down,shift-tab:toggle+up' \
-                --header 'TAB: select multiple, ENTER: confirm' \
-                --prompt="$fzf_prompt" --query="$current")
-            # Return space-separated results for multiple selections
-            for item in $selected
-                echo $item | string split \t | head -1
-            end | string join -- ' '
+            # Write completions to temp file
+            set -l tmp_input (mktemp)
+            printf '%s\n' $completions > $tmp_input
+
+            # Run fzf via bash - this provides proper TTY context
+            # Use --tmux if available for popup (avoids TTY issues entirely)
+            set -l tmux_opt ""
+            if test -n "$TMUX"
+                set tmux_opt "--tmux 80%,60%"
+            end
+
+            # Escape single quotes in prompt for bash
+            set -l escaped_prompt (string replace -a "'" "'\\''" "$fzf_prompt")
+            set -l escaped_query (string replace -a "'" "'\\''" "$current")
+
+            set -l selected (bash -c "
+                cat '$tmp_input' | fzf $tmux_opt --height=40% --multi \\
+                    --bind 'tab:toggle+down,shift-tab:toggle+up' \\
+                    --header 'TAB: select multiple, ENTER: confirm' \\
+                    --prompt='$escaped_prompt' --query='$escaped_query'
+            ")
+
+            rm -f $tmp_input
+
+            if test -n "$selected"
+                set -l result
+                for item in (string split \n $selected)
+                    # Strip description (tab and text after)
+                    set -a result (echo $item | string split \t | head -1)
+                end
+                commandline -t -- (string join ' ' $result)
+                commandline -f repaint
+            end
         else
             printf '%s\n' $completions
         end
@@ -386,9 +546,11 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l dive_cmd "bash -c 'img=\$(kubectl get pod {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null); if [ -n \"\$img\" ]; then echo \"Analyzing image: \$img\"; dive \$img; else echo \"Could not extract image from pod\"; fi'"
         # Alt+G: Get all resources in namespace (requires kubectl-get-all krew plugin)
         set -l get_all_cmd "bash -c 'ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); kubectl get-all -n \$ns 2>/dev/null | bat --style=plain --paging=always || echo \"kubectl get-all not installed. Install with: kubectl krew install get-all\"; read -n 1'"
+        # Alt+L: Resource lineage/ownership tree (requires kube-lineage krew plugin)
+        set -l lineage_cmd "bash -c 'kubectl lineage $resource_type/{} --output=wide 2>/dev/null | less || echo \"kube-lineage not installed. Install with: kubectl krew install lineage\"; read -n 1'"
 
         # Header text varies by resource type
-        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns A:all-ns F:finalizers W:events V:vals M:manifest I:dive G:get-all'
+        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns A:all-ns F:finalizers W:events L:lineage V:vals I:dive G:get-all'
 
         # Node-specific header with cordon/uncordon/drain
         if contains -- $resource_type node nodes
@@ -446,6 +608,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --bind "alt-D:execute($helm_diff_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-i:execute($dive_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-g:execute($get_all_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-l:execute($lineage_cmd < /dev/tty > /dev/tty)" \
             --header "$header_text" \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \

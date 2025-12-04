@@ -337,17 +337,53 @@ else
   echo "Warning: helm not installed. Skipping helm-diff plugin."
 fi
 
-# Install krew kubectl plugins (for Alt+G in FZF kubectl)
+# Install krew kubectl plugins (for Alt+G, Alt+L in FZF kubectl)
 if command -v kubectl-krew &> /dev/null || command -v kubectl &> /dev/null && kubectl krew version &> /dev/null; then
-  # Install get-all plugin for listing all namespace resources
+  # Install get-all plugin for listing all namespace resources (Alt+G)
   if kubectl krew list 2>/dev/null | grep -q "get-all"; then
     echo "kubectl get-all plugin already installed"
   else
     echo "Installing kubectl get-all plugin..."
     kubectl krew install get-all 2>/dev/null || echo "Warning: Failed to install kubectl get-all plugin"
   fi
+
+  # Install lineage plugin for resource ownership tree (Alt+L)
+  if kubectl krew list 2>/dev/null | grep -q "lineage"; then
+    echo "kubectl lineage plugin already installed"
+  else
+    echo "Installing kubectl lineage plugin..."
+    kubectl krew install lineage 2>/dev/null || echo "Warning: Failed to install kubectl lineage plugin"
+  fi
 else
   echo "Note: krew not installed. Install with 'brew install krew' for kubectl plugins."
+fi
+
+# Install kubectl-fzf-server for fast completions (background cache server)
+if command -v go &> /dev/null; then
+  if ! command -v kubectl-fzf-server &> /dev/null; then
+    echo "Installing kubectl-fzf-server for cached completions..."
+    go install github.com/bonnefoa/kubectl-fzf/v3/cmd/kubectl-fzf-server@main 2>/dev/null || {
+      echo "Warning: Failed to install kubectl-fzf-server"
+    }
+  else
+    echo "kubectl-fzf-server already installed"
+  fi
+
+  # Load launchd plist for kubectl-fzf-server (macOS only)
+  if [[ "$(uname)" == "Darwin" ]]; then
+    KUBECTL_FZF_PLIST="$HOME/Library/LaunchAgents/com.kubectl-fzf-server.plist"
+    if [ -f "$KUBECTL_FZF_PLIST" ]; then
+      # Check if already loaded
+      if ! launchctl list 2>/dev/null | grep -q "com.kubectl-fzf-server"; then
+        echo "Loading kubectl-fzf-server launchd service..."
+        launchctl load "$KUBECTL_FZF_PLIST" 2>/dev/null || echo "Warning: Failed to load kubectl-fzf-server service"
+      else
+        echo "kubectl-fzf-server service already running"
+      fi
+    fi
+  fi
+else
+  echo "Note: go not installed. kubectl-fzf-server requires Go for installation."
 fi
 
 # fzf installation removed - managed by Homebrew (macOS) or package managers (Linux)
