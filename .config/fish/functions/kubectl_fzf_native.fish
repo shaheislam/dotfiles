@@ -136,20 +136,10 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     set -l preview_cmd ""
     set -l show_preview false
 
-    # Check if current token looks like a label selector (e.g., "app=" or "app=nginx")
-    # This handles the case when user types `kubectl get pods -l app=<TAB>`
-    # where last_arg is "app=" not "-l"
-    if string match -qr '^[a-zA-Z0-9_./-]+=' "$current"
-        # Current token is a label key with = - complete values
-        set -l label_resource_type "pods"
-        if test -n "$resource_type"
-            set label_resource_type $resource_type
-        end
-        set completions (__fish_kubectl_get_labels $label_resource_type "$current")
-        set fzf_prompt "Label value: "
-    else
-        # Handle flag value completions
-        switch $last_arg
+    # Handle flag value completions
+    # Note: -l/--selector label completion is handled by kubectl-fzf.sh bash helper
+    # via _kubectl_fzf_tab_complete.fish for proper TTY access
+    switch $last_arg
         case -n --namespace
             set completions (__fish_kubectl_print_resource namespace)
             set fzf_prompt "Namespace: "
@@ -164,30 +154,9 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             # File completion - let fish handle it
             return
         case -l --selector
-            # Label selector completion
-            # First, determine the resource type from the command
-            set -l label_resource_type "pods"
-            if test -n "$resource_type"
-                set label_resource_type $resource_type
-            end
-
-            # Determine completion mode based on current token
-            # - "app=nginx" (has = with value after) → already complete, no suggestions
-            # - "app=" (ends with =) → complete values for this key
-            # - "app" or "" → complete keys
-            if string match -qr '^[^=]+=[^=]+' "$current"
-                # Has key=value with non-empty value - likely already complete
-                # But allow filtering if user is still typing
-                set completions (__fish_kubectl_get_labels $label_resource_type "$current")
-            else if string match -q '*=' "$current"
-                # Key provided with =, get values for that key
-                set completions (__fish_kubectl_get_labels $label_resource_type "$current")
-            else
-                # No = or partial key - show common labels first, then dynamic labels
-                set completions (__fish_kubectl_get_common_labels)
-                set -a completions (__fish_kubectl_get_labels $label_resource_type "$current")
-            end
-            set fzf_prompt "Label selector: "
+            # Label completion is handled by kubectl-fzf.sh bash helper
+            # via _kubectl_fzf_tab_complete.fish - just return here
+            return
         case --field-selector
             # Field selector completion
             set -l field_resource_type "pods"
@@ -242,7 +211,6 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                 end
             end
             set fzf_prompt "Field selector: "
-        end
     end
 
     # If we handled a flag above, filter and show FZF
