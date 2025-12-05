@@ -13,7 +13,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 # Core utilities + netshoot networking tools
-RUN apt update -y && apt install -y \
+RUN apt update -y && DEBIAN_FRONTEND=noninteractive apt install -y \
     # Basic utilities
     curl wget git unzip sudo coreutils file locales ca-certificates \
     # Build tools for Treesitter and plugins
@@ -23,7 +23,15 @@ RUN apt update -y && apt install -y \
     nmap netcat-openbsd socat iperf3 mtr-tiny \
     iproute2 iptables conntrack ethtool bridge-utils \
     # Additional networking tools
-    httpie jq openssh-client \
+    httpie jq openssh-client openssl \
+    # Packet analysis & monitoring
+    tshark ngrep iftop iptraf-ng \
+    # System tracing
+    strace ltrace \
+    # Network utilities
+    fping ipset nftables tcptraceroute \
+    # Python for scapy
+    python3 python3-scapy \
     # Shell
     zsh bash-completion \
     # Neovim dependencies
@@ -43,6 +51,37 @@ RUN ARCH=$(dpkg --print-architecture) && \
     curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.8/zoxide-0.9.8-${ZOXIDE_ARCH}-unknown-linux-musl.tar.gz" -o /tmp/zoxide.tar.gz && \
     tar -xzf /tmp/zoxide.tar.gz -C /usr/local/bin zoxide && \
     rm /tmp/zoxide.tar.gz
+
+# Install grpcurl (gRPC testing)
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.9.1/grpcurl_1.9.1_linux_${ARCH}.tar.gz" -o /tmp/grpcurl.tar.gz && \
+    tar -xzf /tmp/grpcurl.tar.gz -C /usr/local/bin grpcurl && \
+    rm /tmp/grpcurl.tar.gz
+
+# Install fortio (load testing)
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/fortio/fortio/releases/download/v1.68.0/fortio-linux_${ARCH}-1.68.0.tgz" -o /tmp/fortio.tar.gz && \
+    tar -xzf /tmp/fortio.tar.gz -C /usr/local/bin --strip-components=2 usr/bin/fortio && \
+    rm /tmp/fortio.tar.gz
+
+# Install ctop (container top)
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then CTOP_ARCH="amd64"; else CTOP_ARCH="arm64"; fi && \
+    curl -fsSL "https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-${CTOP_ARCH}" -o /usr/local/bin/ctop && \
+    chmod +x /usr/local/bin/ctop
+
+# Install calicoctl (Calico CNI)
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then CALICO_ARCH="amd64"; else CALICO_ARCH="arm64"; fi && \
+    curl -fsSL "https://github.com/projectcalico/calico/releases/download/v3.29.1/calicoctl-linux-${CALICO_ARCH}" -o /usr/local/bin/calicoctl && \
+    chmod +x /usr/local/bin/calicoctl
+
+# Install termshark (TUI for wireshark)
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then TS_ARCH="x64"; else TS_ARCH="arm64"; fi && \
+    curl -fsSL "https://github.com/gcla/termshark/releases/download/v2.4.0/termshark_2.4.0_linux_${TS_ARCH}.tar.gz" -o /tmp/termshark.tar.gz && \
+    tar -xzf /tmp/termshark.tar.gz --strip-components=1 -C /usr/local/bin termshark_2.4.0_linux_${TS_ARCH}/termshark && \
+    rm /tmp/termshark.tar.gz
 
 # Install fd-find and create symlink
 RUN apt update -y && apt install -y fd-find \
