@@ -467,7 +467,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l f4_cmd "kubecolor --force-colors describe $resource_type {} | less -R"
         set -l f5_cmd "kubecolor logs -f --tail=100 {}"
         set -l f6_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Local port: \" lport; read -p \"Remote port: \" rport; kubectl port-forward {} \$lport:\$rport'"
-        set -l f7_cmd "kubectl debug {} -it --image=ubuntu --share-processes -- bash"
+        set -l f7_cmd "kubectl debug {} -it --image=ghcr.io/shaheislam/netshoot-nvim:latest --share-processes -- bash"
         # Clone resource command (Alt+C) - creates copy with timestamp suffix using yq
         # Removes ownerReferences so cloned pods aren't garbage collected by controllers
         set -l clone_cmd "bash -c 'suf=\$(date +%s | tail -c 5); kubectl get $resource_type {} -o yaml | yq eval \".metadata.name = \\\"{}-\$suf\\\"\" | yq eval \"del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.selfLink,.metadata.ownerReferences,.status)\" | kubectl apply -f - && echo Cloned: {}-\$suf && sleep 1'"
