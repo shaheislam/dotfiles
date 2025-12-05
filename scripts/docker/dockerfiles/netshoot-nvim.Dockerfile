@@ -37,6 +37,13 @@ RUN ARCH=$(dpkg --print-architecture) && \
     tar -xzf /tmp/fzf.tar.gz -C /usr/local/bin && \
     rm /tmp/fzf.tar.gz
 
+# Install zoxide from GitHub releases (not in Ubuntu repos, required for fzf-lua zoxide picker)
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then ZOXIDE_ARCH="x86_64"; else ZOXIDE_ARCH="aarch64"; fi && \
+    curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.8/zoxide-0.9.8-${ZOXIDE_ARCH}-unknown-linux-musl.tar.gz" -o /tmp/zoxide.tar.gz && \
+    tar -xzf /tmp/zoxide.tar.gz -C /usr/local/bin zoxide && \
+    rm /tmp/zoxide.tar.gz
+
 # Install fd-find and create symlink
 RUN apt update -y && apt install -y fd-find \
     && ln -s $(which fdfind) /usr/local/bin/fd \
