@@ -60,6 +60,35 @@ kubectl apply -f test-logging-deployment.yaml
 
 **Use Case**: Testing stern multi-pod log aggregation, JSON log parsing, log level highlighting, and container log differentiation.
 
+## Custom Debug Images
+
+### netshoot-nvim
+
+A custom Docker image with Ubuntu 22.04, networking tools, and Neovim with full plugin support.
+
+**Build**: See `scripts/docker/README.md` for build instructions
+**Image**: `netshoot-nvim:latest`
+**Base**: Ubuntu 22.04 (glibc - full plugin compatibility)
+
+**Included Tools**:
+- Networking: tcpdump, nmap, netcat, socat, iperf3, mtr, dig, traceroute
+- Neovim (latest stable) with 68 pre-installed plugins
+- LSPs via Mason: yaml-ls, json-ls, dockerfile-ls, bash-ls, lua-ls
+- Utilities: ripgrep, fzf, fd, jq, yq, httpie
+
+**Usage in Kubernetes**:
+```bash
+# Build the image first
+./scripts/docker/build-netshoot-nvim.sh
+
+# Use as ephemeral debug container
+kubectl run debug --rm -it --image=netshoot-nvim:latest -- /bin/bash
+
+# Or add to test-bash-deployment.yaml as an additional container
+```
+
+**Use Case**: Network debugging with Neovim for editing Kubernetes manifests, configs, and notes directly in the cluster with full LSP support.
+
 ## Cleanup
 
 To remove all test resources:

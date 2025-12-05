@@ -43,6 +43,7 @@ docker run -it --rm dotfiles-test:ubuntu
 scripts/docker/
 ├── README.md                    # This file
 ├── colima-setup.sh             # Colima management helper
+├── build-netshoot-nvim.sh      # Build script for Neovim debug container
 ├── test-runner.sh              # Multi-distribution test orchestrator
 ├── .dockerignore               # Build optimization
 │
@@ -51,7 +52,8 @@ scripts/docker/
 │   ├── debian.Dockerfile       # Debian 12 Bookworm (stable)
 │   ├── fedora.Dockerfile       # Fedora 40 (modern packages)
 │   ├── arch.Dockerfile         # Arch Linux (bleeding edge)
-│   └── alpine.Dockerfile       # Alpine Linux (minimal/musl)
+│   ├── alpine.Dockerfile       # Alpine Linux (minimal/musl)
+│   └── netshoot-nvim.Dockerfile # Kubernetes debug container with Neovim
 │
 ├── scripts/                    # Test scripts
 │   ├── run-all-tests.sh       # Main test orchestrator
@@ -64,6 +66,52 @@ scripts/docker/
 ├── docker-compose.test.yml     # Multi-distro parallel testing
 └── docker-compose.dev.yml      # Interactive development environments
 ```
+
+## Neovim + Netshoot Debug Container
+
+A specialized Kubernetes debug container with Ubuntu 22.04 base, networking tools, Neovim with full plugin support, and DevOps-focused LSPs.
+
+### Quick Start
+
+```bash
+# Build the image
+./scripts/docker/build-netshoot-nvim.sh
+
+# Run locally
+docker run -it --rm netshoot-nvim:latest
+
+# Use in Kubernetes
+kubectl run debug --rm -it --image=netshoot-nvim:latest -- /bin/bash
+```
+
+### What's Included
+
+| Category | Tools |
+|----------|-------|
+| **Base** | Ubuntu 22.04 (glibc - full plugin compatibility) |
+| **Networking** | tcpdump, nmap, netcat, socat, iperf3, mtr, dig, traceroute, etc. |
+| **Editor** | Neovim (latest stable) with 68 plugins via lazy.nvim |
+| **LSPs** | yaml-ls, json-ls, dockerfile-ls, bash-ls, lua-ls (via Mason) |
+| **Utilities** | ripgrep, fzf, fd, git, jq, yq, httpie |
+
+### Why Ubuntu Instead of Alpine/Netshoot?
+
+- **Full plugin compatibility** - blink.cmp, blink.pairs work out of the box
+- **Treesitter** - C compiler available for parser compilation
+- **Mason.nvim** - Pre-built LSP binaries work on glibc
+- **No musl issues** - All Rust/Go binaries work correctly
+
+### Use Cases
+
+- Edit Kubernetes manifests directly in a debug pod with full LSP support
+- Network debugging with professional tooling
+- Troubleshoot container networking issues with Neovim for notes/configs
+
+### Image Size
+
+~1.0-1.2GB (Ubuntu + build tools + Neovim + plugins + LSPs)
+
+---
 
 ## Colima Management
 
