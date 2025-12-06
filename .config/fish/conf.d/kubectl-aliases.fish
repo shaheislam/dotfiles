@@ -778,3 +778,8 @@ abbr --add kgsvcwsln "kubectl get service --watch --show-labels --namespace"
 abbr --add kgingwsln "kubectl get ingress --watch --show-labels --namespace"
 abbr --add kgcmwsln "kubectl get configmap --watch --show-labels --namespace"
 abbr --add kgsecwsln "kubectl get secret --watch --show-labels --namespace"
+
+
+# kubectl cp aliases (custom)
+abbr --add kcp "kubectl cp"
+abbr --add ksyscp "kubectl --namespace=kube-system cp"

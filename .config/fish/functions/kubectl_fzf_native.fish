@@ -526,12 +526,16 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         set -l dive_cmd "bash -c 'img=\$(kubectl get pod {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null); if [ -n \"\$img\" ]; then echo \"Analyzing image: \$img\"; dive \$img; else echo \"Could not extract image from pod\"; fi'"
         # Alt+G: Get all resources in namespace (requires kubectl-get-all krew plugin)
         set -l get_all_cmd "bash -c 'ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); kubectl get-all -n \$ns 2>/dev/null | bat --style=plain --paging=always || echo \"kubectl get-all not installed. Install with: kubectl krew install get-all\"; read -n 1'"
+        # Alt+P: Copy file FROM pod (pull)
+        set -l kcp_from_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; echo \"Browse {} filesystem...\"; path=\$(kubectl exec {} -n \$ns -- find / -type f 2>/dev/null | head -500 | fzf --prompt=\"Select file: \" --preview=\"kubectl exec {} -n \$ns -- head -100 {} 2>/dev/null\" --height=80%); if [ -n \"\$path\" ]; then local=./\$(basename \$path); kubectl cp \$ns/{}:\$path \$local && echo \"Copied to: \$local\"; else echo \"Cancelled\"; fi; read -n 1'"
+        # Alt+Y: Copy file TO pod (yank/push)
+        set -l kcp_to_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; echo \"Select local file...\"; local=\$(fd --type f | fzf --prompt=\"Select file: \" --preview=\"bat --color=always --style=numbers {}\" --height=80%); if [ -n \"\$local\" ]; then remote=/tmp/\$(basename \$local); kubectl cp \$local \$ns/{}:\$remote && echo \"Copied to: {}:\$remote\"; else echo \"Cancelled\"; fi; read -n 1'"
         # Alt+L: Resource lineage/ownership YAML graph with toggle (Alt+D) between simple/detailed views
         set -l script_dir (realpath (status dirname))
         set -l lineage_cmd "bash -c 'ts=\$(date +%s); simple=/tmp/lineage-{}-\$ts-simple.yaml; detailed=/tmp/lineage-{}-\$ts-detailed.yaml; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" > \"\$simple\" 2>&1; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" --detailed > \"\$detailed\" 2>&1; nvim -R -c \"source $script_dir/k8s-lineage-toggle.vim\" -c \"call SetLineageFiles(\\\"\$simple\\\", \\\"\$detailed\\\")\" -c \"set ft=yaml\" -c \"nnoremap <buffer> <A-d> :call ToggleLineageView()<CR>\" \"\$simple\"; rm -f \"\$simple\" \"\$detailed\"'"
 
         # Header text varies by resource type
-        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns A:all-ns F:finalizers W:events L:lineage V:vals I:dive G:get-all'
+        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns P:cp-from Y:cp-to L:lineage V:vals I:dive G:get-all'
 
         # Node-specific header with cordon/uncordon/drain
         if contains -- $resource_type node nodes
@@ -590,6 +594,8 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             --bind "alt-i:execute($dive_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-g:execute($get_all_cmd < /dev/tty > /dev/tty)" \
             --bind "alt-l:execute($lineage_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-p:execute($kcp_from_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-y:execute($kcp_to_cmd < /dev/tty > /dev/tty)" \
             --header "$header_text" \
             --prompt="$fzf_prompt" --query="$current" \
             --preview="$preview_cmd" \
