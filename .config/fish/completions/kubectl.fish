@@ -699,6 +699,12 @@ function __fish_kubectl_print_replicasets_with_prefix
     end
 end
 
+function __fish_kubectl_print_nodes_with_prefix
+    for node in (__fish_kubectl_print_resource nodes)
+        echo "node/$node"
+    end
+end
+
 # Completions for port-forward (supports pods, services, deployments, replicasets)
 complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_resource pods)' -d 'Pod'
 complete -c kubectl -f -n "__fish_seen_subcommand_from port-forward" -a '(__fish_kubectl_print_services_with_prefix)' -d 'Service'

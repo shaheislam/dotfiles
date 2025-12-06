@@ -310,6 +310,18 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set fzf_prompt "Pod: "
                 end
 
+            # Debug supports pods and nodes
+            case debug
+                if test -z "$resource_type"
+                    set completions (
+                        __fish_kubectl_print_resource pods
+                        __fish_kubectl_print_nodes_with_prefix
+                    )
+                    set fzf_prompt "Pod/Node: "
+                    set show_preview true
+                    set preview_cmd "kubectl get {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
+                end
+
             # Port-forward supports pods, services, deployments
             case port-forward
                 if test -z "$resource_type"

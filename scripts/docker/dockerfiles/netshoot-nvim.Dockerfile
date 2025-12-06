@@ -13,28 +13,20 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 # Core utilities + netshoot networking tools
-RUN apt update -y && DEBIAN_FRONTEND=noninteractive apt install -y \
-    # Basic utilities
+# Retry logic for apt update to handle transient mirror sync issues
+RUN for i in 1 2 3; do apt-get update && break || { echo "apt-get update failed, retry $i/3..."; sleep 15; }; done && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     curl wget git unzip sudo coreutils file locales ca-certificates \
-    # Build tools for Treesitter and plugins
     build-essential \
-    # Netshoot networking tools
     tcpdump net-tools dnsutils iputils-ping traceroute \
     nmap netcat-openbsd socat iperf3 mtr-tiny \
     iproute2 iptables conntrack ethtool bridge-utils \
-    # Additional networking tools
     httpie jq openssh-client openssl \
-    # Packet analysis & monitoring
     tshark ngrep iftop iptraf-ng \
-    # System tracing
     strace ltrace \
-    # Network utilities
     fping ipset nftables tcptraceroute \
-    # Python for scapy
     python3 python3-scapy \
-    # Shell
     zsh bash-completion \
-    # Neovim dependencies
     ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
@@ -54,7 +46,8 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 # Install grpcurl (gRPC testing)
 RUN ARCH=$(dpkg --print-architecture) && \
-    curl -fsSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.9.1/grpcurl_1.9.1_linux_${ARCH}.tar.gz" -o /tmp/grpcurl.tar.gz && \
+    if [ "$ARCH" = "amd64" ]; then GRPC_ARCH="x86_64"; else GRPC_ARCH="arm64"; fi && \
+    curl -fsSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.9.1/grpcurl_1.9.1_linux_${GRPC_ARCH}.tar.gz" -o /tmp/grpcurl.tar.gz && \
     tar -xzf /tmp/grpcurl.tar.gz -C /usr/local/bin grpcurl && \
     rm /tmp/grpcurl.tar.gz
 
@@ -84,13 +77,14 @@ RUN ARCH=$(dpkg --print-architecture) && \
     rm /tmp/termshark.tar.gz
 
 # Install fd-find and create symlink
-RUN apt update -y && apt install -y fd-find \
+RUN for i in 1 2 3; do apt-get update && break || { echo "apt-get update failed, retry $i/3..."; sleep 15; }; done && \
+    apt-get install -y --no-install-recommends fd-find \
     && ln -s $(which fdfind) /usr/local/bin/fd \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (LTS) for LSPs and plugins
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt install -y nodejs \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install yq (not in Ubuntu repos, install from binary)
