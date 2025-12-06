@@ -1,41 +1,45 @@
 #!/usr/bin/env bash
-# Build the netshoot-nvim Docker image (multi-arch: amd64 + arm64)
+# Build the netshoot-nvim Docker image locally
 #
-# This script handles copying the Neovim config from ~/neovim
-# to a build context since it lives outside the dotfiles repo.
+# NOTE: For multi-arch builds, use GitHub Actions workflow instead:
+#   https://github.com/shaheislam/neovim/actions/workflows/docker-build.yml
+#
+# This script is for local development/testing only.
+# The Dockerfile now lives in ~/neovim/Dockerfile
 #
 # Usage:
 #   ./scripts/docker/build-netshoot-nvim.sh [OPTIONS] [tag]
 #
 # Options:
-#   --local     Build for local architecture only (faster, no push)
-#   --push      Push to registry after build (default for multi-arch)
+#   --local     Build for local architecture only (default, faster)
+#   --push      Push to registry after build (single arch only)
 #
 # Examples:
-#   ./scripts/docker/build-netshoot-nvim.sh              # multi-arch build + push to ghcr.io
-#   ./scripts/docker/build-netshoot-nvim.sh --local      # local arch only, no push
-#   ./scripts/docker/build-netshoot-nvim.sh v1.0.0       # multi-arch with custom tag
+#   ./scripts/docker/build-netshoot-nvim.sh              # local arch build
+#   ./scripts/docker/build-netshoot-nvim.sh --push       # local arch + push
+#   ./scripts/docker/build-netshoot-nvim.sh v1.0.0       # with custom tag
 
 set -euo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="${SCRIPT_DIR}/../.."
-DOCKERFILE="${SCRIPT_DIR}/dockerfiles/netshoot-nvim.Dockerfile"
 NEOVIM_CONFIG="${HOME}/neovim"
+DOCKERFILE="${NEOVIM_CONFIG}/Dockerfile"
 IMAGE_NAME="netshoot-nvim"
 GHCR_IMAGE="ghcr.io/shaheislam/netshoot-nvim"
 
 # Parse arguments
-LOCAL_BUILD=false
+LOCAL_BUILD=true  # Default to local build
+PUSH=false
 TAG="latest"
 for arg in "$@"; do
     case $arg in
         --local)
             LOCAL_BUILD=true
+            PUSH=false
             ;;
         --push)
-            LOCAL_BUILD=false
+            PUSH=true
             ;;
         *)
             TAG="$arg"
@@ -88,82 +92,56 @@ build_image() {
     log_info "Using Neovim config from: ${NEOVIM_CONFIG}"
     log_info "Using Dockerfile: ${DOCKERFILE}"
 
-    if [[ "${LOCAL_BUILD}" == "true" ]]; then
-        # Local build - single architecture, loads to local Docker
-        log_info "Building ${IMAGE_NAME}:${TAG} (local architecture only)..."
+    # Local build - single architecture, loads to local Docker
+    log_info "Building ${IMAGE_NAME}:${TAG} (local architecture only)..."
 
-        docker build \
-            --file "${DOCKERFILE}" \
-            --tag "${IMAGE_NAME}:${TAG}" \
-            --progress=plain \
-            "${NEOVIM_CONFIG}"
+    docker build \
+        --file "${DOCKERFILE}" \
+        --tag "${IMAGE_NAME}:${TAG}" \
+        --progress=plain \
+        "${NEOVIM_CONFIG}"
 
-        if [[ $? -eq 0 ]]; then
-            log_info "Build successful!"
-            log_info "Image: ${IMAGE_NAME}:${TAG}"
-            echo ""
-            log_info "To run the container:"
-            echo "  docker run -it --rm ${IMAGE_NAME}:${TAG}"
-        else
-            log_error "Build failed!"
-            exit 1
+    if [[ $? -eq 0 ]]; then
+        log_info "Build successful!"
+        log_info "Image: ${IMAGE_NAME}:${TAG}"
+
+        if [[ "${PUSH}" == "true" ]]; then
+            log_info "Tagging and pushing to ${GHCR_IMAGE}:${TAG}..."
+            docker tag "${IMAGE_NAME}:${TAG}" "${GHCR_IMAGE}:${TAG}"
+            docker push "${GHCR_IMAGE}:${TAG}"
+            log_info "Push successful!"
+            log_warn "Note: This is a single-arch image. For multi-arch, use GitHub Actions."
         fi
-    else
-        # Multi-arch build - requires push to registry (can't load multi-arch locally)
-        log_info "Building ${GHCR_IMAGE}:${TAG} (multi-arch: amd64 + arm64)..."
-        log_warn "Multi-arch build requires pushing to registry (can't load locally)"
-        log_info "This will take longer due to cross-platform compilation..."
+
         echo ""
-
-        # Ensure buildx builder exists
-        if ! docker buildx inspect multiarch &> /dev/null; then
-            log_info "Creating buildx builder 'multiarch'..."
-            docker buildx create --name multiarch --use
-        else
-            docker buildx use multiarch
-        fi
-
-        docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --file "${DOCKERFILE}" \
-            --tag "${GHCR_IMAGE}:${TAG}" \
-            --progress=plain \
-            --push \
-            "${NEOVIM_CONFIG}"
-
-        if [[ $? -eq 0 ]]; then
-            log_info "Build and push successful!"
-            log_info "Image: ${GHCR_IMAGE}:${TAG}"
-            echo ""
-            log_info "To use in Kubernetes:"
-            echo "  kubectl debug <pod> -it --image=${GHCR_IMAGE}:${TAG} --share-processes -- bash"
-        else
-            log_error "Build failed!"
-            exit 1
-        fi
+        log_info "To run the container:"
+        echo "  docker run -it --rm ${IMAGE_NAME}:${TAG}"
+    else
+        log_error "Build failed!"
+        exit 1
     fi
 }
 
 # Show image size
 show_image_info() {
     echo ""
-    if [[ "${LOCAL_BUILD}" == "true" ]]; then
-        log_info "Image details:"
-        docker images "${IMAGE_NAME}:${TAG}" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
-    else
+    log_info "Image details:"
+    docker images "${IMAGE_NAME}:${TAG}" --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}"
+
+    if [[ "${PUSH}" == "true" ]]; then
+        echo ""
         log_info "Image pushed to: ${GHCR_IMAGE}:${TAG}"
         log_info "View at: https://github.com/users/shaheislam/packages/container/package/netshoot-nvim"
+        echo ""
+        log_info "For multi-arch builds, use GitHub Actions:"
+        echo "  https://github.com/shaheislam/neovim/actions/workflows/docker-build.yml"
     fi
 }
 
 # Main
 main() {
     echo "========================================"
-    if [[ "${LOCAL_BUILD}" == "true" ]]; then
-        echo "  Netshoot + Neovim Docker Build (Local)"
-    else
-        echo "  Netshoot + Neovim Docker Build (Multi-Arch)"
-    fi
+    echo "  Netshoot + Neovim Docker Build (Local)"
     echo "========================================"
     echo ""
 
