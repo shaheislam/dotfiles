@@ -311,7 +311,7 @@ _fzf_git_branches() {
   __fzf_git_fzf=$(declare -f _fzf_git_fzf) _fzf_git_select --ansi \
     --border-label '🌲 Branches ' \
     --header-lines 2 \
-    --header 'CTRL-H (hashes) ╱ ALT-A (all branches)' \
+    --header 'CTRL-H (hashes) ╱ CTRL-T (tags) ╱ ALT-A (all branches)' \
     --tiebreak begin \
     --preview-window down,border-top,40% \
     --color hl:underline,hl+:underline \
@@ -322,16 +322,23 @@ _fzf_git_branches() {
     --bind "ctrl-h:become:$shell \"$__fzf_git\" --run hashes" \
     --bind "alt-h:become:LIST_OPTS=\$(cut -c3- <<< {} | cut -d' ' -f1) $shell \"$__fzf_git\" --run hashes" \
     --bind "alt-enter:become:printf '%s\n' {+} | cut -c3- | sed 's@[^/]*/@@'" \
+    --bind "ctrl-t:become:$shell \"$__fzf_git\" --run tags" \
     --preview "git log --oneline --graph --date=short --color=$(__fzf_git_color .) --pretty='format:%C(auto)%cd %h%d %s' \$(cut -c3- <<< {} | cut -d' ' -f1) --" "$@" |
   sed 's/^\* //' | sed 's/\x1b\[[0-9;]*m//g' | awk '{print $1}' # Strip ANSI codes before extraction
 }
 
 _fzf_git_tags() {
   _fzf_git_check || return
+
+  local shell
+  [[ -n ${BASH_VERSION:-} ]] && shell=bash || shell=zsh
+
   git tag --sort -version:refname |
   _fzf_git_select --preview-window right,70% \
     --border-label '📛 Tags ' \
-    --header 'CTRL-O (open in browser)' \
+    --header 'CTRL-B (branches) ╱ CTRL-H (hashes) ╱ CTRL-O (open in browser)' \
+    --bind "ctrl-b:become:$shell \"$__fzf_git\" --run branches" \
+    --bind "ctrl-h:become:$shell \"$__fzf_git\" --run hashes" \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list tag {}" \
     --preview "git show --color=$(__fzf_git_color .) {} | $(__fzf_git_pager)" "$@"
 }
@@ -346,11 +353,12 @@ _fzf_git_hashes() {
   _fzf_git_select --ansi --no-sort --bind 'ctrl-s:toggle-sort' \
     --border-label '🍡 Hashes ' \
     --header-lines 2 \
-    --header 'CTRL-B (branches) ╱ CTRL-W (worktrees) ╱ ALT-A (all hashes)' \
+    --header 'CTRL-B (branches) ╱ CTRL-T (tags) ╱ CTRL-W (worktrees) ╱ ALT-A (all hashes)' \
     --bind "ctrl-o:execute-silent:bash \"$__fzf_git\" --list commit {}" \
     --bind "ctrl-d:execute:grep -o '[a-f0-9]\{7,\}' <<< {} | head -n 1 | xargs git diff --color=$(__fzf_git_color) > /dev/tty" \
     --bind "alt-a:change-border-label(🍇 All hashes)+reload:bash \"$__fzf_git\" --list all-hashes" \
     --bind "ctrl-b:become:$shell \"$__fzf_git\" --run branches" \
+    --bind "ctrl-t:become:$shell \"$__fzf_git\" --run tags" \
     --bind "ctrl-w:become:$shell \"$__fzf_git\" --run worktrees-branch" \
     --color hl:underline,hl+:underline \
     --preview "grep -o '[a-f0-9]\{7,\}' <<< {} | head -n 1 | xargs git show --color=$(__fzf_git_color .) | $(__fzf_git_pager)" "$@" |

@@ -30,6 +30,10 @@ if status is-interactive
     bind -M default \egi '_git_fzf_gitignore'
     bind -M insert \egi '_git_fzf_gitignore'
 
+    # ALT-G A - Gitattributes generator
+    bind -M default \ega '_git_fzf_gitattributes'
+    bind -M insert \ega '_git_fzf_gitattributes'
+
     # ALT-G ? - Show help for git fzf actions
     bind -M default \eg\? '_git_fzf_actions_help'
     bind -M insert \eg\? '_git_fzf_actions_help'
@@ -59,6 +63,7 @@ function _git_fzf_actions_help
 │    ALT-G B         Branch actions (checkout/merge/rebase/delete)       │
 │    ALT-G U         Untracked/clean actions (delete untracked files)    │
 │    ALT-G I         Gitignore generator (fetch from gitignore.io)       │
+│    ALT-G A         Gitattributes generator (from github templates)     │
 │    ALT-G ?         Show this help                                      │
 │                                                                         │
 ├────────────────────────────────────────────────────────────────────────┤
@@ -106,6 +111,10 @@ function _git_fzf_actions_help
 │  Gitignore Generator (ALT-G I):                                        │
 │    TAB             Multi-select templates                              │
 │    ENTER           Generate .gitignore with selected templates         │
+│                                                                         │
+│  Gitattributes Generator (ALT-G A):                                    │
+│    TAB             Multi-select templates                              │
+│    ENTER           Generate .gitattributes with selected templates     │
 │                                                                         │
 ├────────────────────────────────────────────────────────────────────────┤
 │                  FZF Picker Toggle (inside any picker)                 │
