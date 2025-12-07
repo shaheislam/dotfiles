@@ -34,6 +34,14 @@ if status is-interactive
     bind -M default \ega '_git_fzf_gitattributes'
     bind -M insert \ega '_git_fzf_gitattributes'
 
+    # ALT-G S - Git stash push (select files to stash)
+    bind -M default \egs '_git_fzf_stash_push'
+    bind -M insert \egs '_git_fzf_stash_push'
+
+    # ALT-G L - Git blame viewer
+    bind -M default \egl '_git_fzf_blame'
+    bind -M insert \egl '_git_fzf_blame'
+
     # ALT-G ? - Show help for git fzf actions
     bind -M default \eg\? '_git_fzf_actions_help'
     bind -M insert \eg\? '_git_fzf_actions_help'
@@ -61,6 +69,8 @@ function _git_fzf_actions_help
 │    ALT-G F         File actions (add/reset + operations)               │
 │    ALT-G C         Commit actions (checkout/reset/rebase/fixup/squash) │
 │    ALT-G B         Branch actions (checkout/merge/rebase/delete)       │
+│    ALT-G S         Stash push (select specific files to stash)         │
+│    ALT-G L         Blame viewer (interactive git blame)                │
 │    ALT-G U         Untracked/clean actions (delete untracked files)    │
 │    ALT-G I         Gitignore generator (fetch from gitignore.io)       │
 │    ALT-G A         Gitattributes generator (from github templates)     │
@@ -107,6 +117,22 @@ function _git_fzf_actions_help
 │    ALT-D           Dry-run (show what would be deleted)                │
 │    ALT-A           Delete all untracked files                          │
 │    CTRL-/          Toggle preview                                      │
+│                                                                         │
+│  Stash Push Actions (ALT-G S):                                         │
+│    TAB             Multi-select files to stash                         │
+│    ENTER           Stash selected files                                │
+│    ALT-A           Stash all changes                                   │
+│    ALT-M           Stash with custom message                           │
+│    CTRL-/          Toggle preview                                      │
+│                                                                         │
+│  Blame Viewer (ALT-G L):                                               │
+│    ENTER           Show commit details                                 │
+│    ALT-E           Open commit in nvim                                 │
+│    ALT-C           Checkout commit                                     │
+│    ALT-P           Blame parent commit (time travel)                   │
+│    CTRL-/          Toggle preview                                      │
+│    CTRL-Y/E        Scroll preview up/down                              │
+│    CTRL-U/D        Half-page preview scroll                            │
 │                                                                         │
 │  Gitignore Generator (ALT-G I):                                        │
 │    TAB             Multi-select templates                              │

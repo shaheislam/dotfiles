@@ -177,3 +177,99 @@ function _git_fzf_clean_actions
         end
     end
 end
+
+# Git Stash Push Interface - Select specific files to stash (forgit: gsp)
+function _git_fzf_stash_push
+    # Check if in git repo
+    if not git rev-parse --git-dir >/dev/null 2>&1
+        echo "Not in a git repository"
+        return 1
+    end
+
+    # Check for changes to stash
+    if test -z (git status --short 2>/dev/null)
+        echo "No changes to stash"
+        return 0
+    end
+
+    set -l selected (
+        git status --short | \
+        fzf --ansi \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --border-label="📦 Git Stash Push (select files)" \
+            --header="TAB (multi-select) | ENTER (stash selected) | ALT-A (stash all) | ALT-M (stash with message) | CTRL-/ (preview)" \
+            --preview="echo {} | awk '{print \$2}' | xargs git diff --color=always -- 2>/dev/null || echo {} | awk '{print \$2}' | xargs bat --color=always" \
+            --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
+            --bind="alt-a:execute(git stash push < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-m:execute(echo -n 'Stash message: ' && read msg && git stash push -m \"\$msg\" < /dev/tty > /dev/tty)+abort" \
+            --bind="ctrl-/:toggle-preview"
+    )
+
+    if test -n "$selected"
+        # Extract filenames and stash them
+        set -l files
+        for line in $selected
+            set -l file (echo $line | awk '{print $2}')
+            set -a files $file
+        end
+        git stash push -- $files
+        echo "📦 Stashed:" (string join ', ' $files)
+    end
+end
+
+# Git Blame Interface - Interactive blame viewer (forgit: gbl)
+function _git_fzf_blame
+    # Check if in git repo
+    if not git rev-parse --git-dir >/dev/null 2>&1
+        echo "Not in a git repository"
+        return 1
+    end
+
+    # If a file is provided, blame it directly
+    if test (count $argv) -gt 0
+        set -l file $argv[1]
+        if not test -f $file
+            echo "File not found: $file"
+            return 1
+        end
+        _git_fzf_blame_file $file
+        return
+    end
+
+    # Otherwise, select a file first
+    set -l selected (
+        git ls-files | \
+        fzf --ansi \
+            --border-label="🔍 Git Blame (select file)" \
+            --header="ENTER (blame file) | CTRL-/ (preview)" \
+            --preview="bat --color=always {} 2>/dev/null || cat {}" \
+            --preview-window="right:60%:wrap" \
+            --bind="ctrl-/:toggle-preview"
+    )
+
+    if test -n "$selected"
+        _git_fzf_blame_file $selected
+    end
+end
+
+# Helper: Interactive blame for a specific file
+function _git_fzf_blame_file
+    set -l file $argv[1]
+
+    git blame --color-by-age --color-lines $file 2>/dev/null | \
+    fzf --ansi \
+        --border-label="🔍 Git Blame: $file" \
+        --header="ENTER (show commit) | ALT-E (nvim) | ALT-C (checkout) | ALT-P (parent blame) | CTRL-/ (preview)" \
+        --preview="echo {} | awk '{print \$1}' | sed 's/\\^//' | xargs git show --color=always 2>/dev/null" \
+        --preview-window="right:60%:wrap" \
+        --bind="enter:execute(echo {} | awk '{print \$1}' | sed 's/\\^//' | xargs git show --color=always | less -R < /dev/tty > /dev/tty)" \
+        --bind="alt-e:execute(echo {} | awk '{print \$1}' | sed 's/\\^//' | xargs git show | nvim -c 'set ft=git' - < /dev/tty > /dev/tty)" \
+        --bind="alt-c:execute(echo {} | awk '{print \$1}' | sed 's/\\^//' | xargs git checkout < /dev/tty > /dev/tty)+abort" \
+        --bind="alt-p:reload(echo {} | awk '{print \$1}' | sed 's/\\^//' | xargs -I{} git blame --color-by-age --color-lines {}^ -- $file 2>/dev/null)" \
+        --bind="ctrl-/:toggle-preview" \
+        --bind="ctrl-y:preview-up" \
+        --bind="ctrl-e:preview-down" \
+        --bind="ctrl-u:preview-half-page-up" \
+        --bind="ctrl-d:preview-half-page-down"
+end
