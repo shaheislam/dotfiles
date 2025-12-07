@@ -22,6 +22,14 @@ if status is-interactive
     bind -M default \eg\cb '_git_fzf_branch_actions'
     bind -M insert \eg\cb '_git_fzf_branch_actions'
 
+    # ALT-G U - Git clean/untracked file actions
+    bind -M default \egu '_git_fzf_clean_actions'
+    bind -M insert \egu '_git_fzf_clean_actions'
+
+    # ALT-G I - Gitignore generator
+    bind -M default \egi '_git_fzf_gitignore'
+    bind -M insert \egi '_git_fzf_gitignore'
+
     # ALT-G ? - Show help for git fzf actions
     bind -M default \eg\? '_git_fzf_actions_help'
     bind -M insert \eg\? '_git_fzf_actions_help'
@@ -47,8 +55,10 @@ function _git_fzf_actions_help
 │                                                                         │
 │  ACTION MODE (ALT-G) - Custom action workflows:                        │
 │    ALT-G F         File actions (add/reset + operations)               │
-│    ALT-G C         Commit actions (checkout/reset/rebase/cherry-pick)  │
-│    ALT-G B         Branch actions (checkout/merge/rebase)              │
+│    ALT-G C         Commit actions (checkout/reset/rebase/fixup/squash) │
+│    ALT-G B         Branch actions (checkout/merge/rebase/delete)       │
+│    ALT-G U         Untracked/clean actions (delete untracked files)    │
+│    ALT-G I         Gitignore generator (fetch from gitignore.io)       │
 │    ALT-G ?         Show this help                                      │
 │                                                                         │
 ├────────────────────────────────────────────────────────────────────────┤
@@ -70,7 +80,9 @@ function _git_fzf_actions_help
 │    ALT-R           Hard reset to commit                                │
 │    ALT-I           Interactive rebase                                  │
 │    ALT-P           Cherry-pick commit                                  │
-│    CTRL-S          Toggle current/all commits                          │
+│    ALT-F           Fixup + autosquash (auto-rebase)                    │
+│    ALT-S           Squash + autosquash (auto-rebase)                   │
+│    ALT-W           Reword + autosquash (auto-rebase)                   │
 │    CTRL-/          Toggle preview                                      │
 │    CTRL-Y/E        Scroll preview up/down                              │
 │    CTRL-U/D        Half-page preview scroll                            │
@@ -79,11 +91,20 @@ function _git_fzf_actions_help
 │    ALT-C           Checkout branch                                     │
 │    ALT-M           Merge branch into current                           │
 │    ALT-R           Rebase current onto selected                        │
+│    ALT-X           Delete branch                                       │
 │    ALT-D           Preview diff with current branch                    │
 │    ALT-L           Preview branch commits                              │
 │    CTRL-/          Toggle preview                                      │
-│    CTRL-Y/E        Scroll preview up/down                              │
-│    CTRL-U/D        Half-page preview scroll                            │
+│                                                                         │
+│  Untracked/Clean Actions (ALT-G U):                                    │
+│    ENTER           Delete selected untracked files                     │
+│    ALT-D           Dry-run (show what would be deleted)                │
+│    ALT-A           Delete all untracked files                          │
+│    CTRL-/          Toggle preview                                      │
+│                                                                         │
+│  Gitignore Generator (ALT-G I):                                        │
+│    TAB             Multi-select templates                              │
+│    ENTER           Generate .gitignore with selected templates         │
 │                                                                         │
 ╰────────────────────────────────────────────────────────────────────────╯
 " | less -R

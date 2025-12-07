@@ -82,6 +82,17 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                 # Without --is-ancestor: show commits and branches
                 __fzf_git_sh hashes 2>/dev/null || _fifc 2>/dev/null
             end
+        case clean
+            # Show untracked files for git clean
+            set -l untracked (git clean -n -d 2>/dev/null | sed 's/^Would remove //')
+            if test -n "$untracked"
+                set -l selected (printf '%s\n' $untracked | fzf --multi --preview="test -d {} && tree -C {} 2>/dev/null || bat --color=always {} 2>/dev/null || cat {}")
+                if test -n "$selected"
+                    commandline -i (string join ' ' $selected)
+                end
+            else
+                _fifc 2>/dev/null
+            end
         case reset
             # Reset can be files or hashes depending on flags
             # Check if --hard, --soft, or --mixed is present
@@ -123,8 +134,18 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
             # Remote management operations
             __fzf_git_sh remotes 2>/dev/null || _fifc 2>/dev/null
         case stash
-            # Stash operations
-            __fzf_git_sh stashes 2>/dev/null || _fifc 2>/dev/null
+            # Context-aware stash: show files for push, stashes for other operations
+            set -l stash_subcmd
+            if test (count $cmd) -ge 3
+                set stash_subcmd $cmd[3]
+            end
+            if test "$stash_subcmd" = "push"
+                # Show modified files to select for stashing
+                __fzf_git_sh files 2>/dev/null || _fifc 2>/dev/null
+            else
+                # Default: show stashes
+                __fzf_git_sh stashes 2>/dev/null || _fifc 2>/dev/null
+            end
         case tag
             # Tag operations
             __fzf_git_sh tags 2>/dev/null || _fifc 2>/dev/null

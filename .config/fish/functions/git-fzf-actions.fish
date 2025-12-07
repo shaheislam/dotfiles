@@ -1,5 +1,5 @@
 # Git FZF Action-Based Workflows
-# Inspired by https://thevaluable.dev/fzf-git-integration/
+# Inspired by https://thevaluable.dev/fzf-git-integration/ and forgit
 # Provides interactive git operations directly from fzf interface
 
 # Helper function to get git status files
@@ -66,7 +66,7 @@ function _git_fzf_commit_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🍡 Git Commits" \
-            --header="TAB: select multiple | ALT-E (edit in nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick)" \
+            --header="TAB: multi-select | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick) | ALT-F/S/W (fixup/squash/reword)" \
             --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always" \
             --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always | less -R < /dev/tty > /dev/tty)" \
@@ -75,6 +75,9 @@ function _git_fzf_commit_actions
             --bind="alt-r:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git reset --hard < /dev/tty > /dev/tty)+abort" \
             --bind="alt-i:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git rebase -i {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-p:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git cherry-pick < /dev/tty > /dev/tty)+reload(git log --oneline --graph --date=short --color=always --pretty='format:%C(auto)%cd %h%d %s (%an)')" \
+            --bind="alt-f:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --fixup={} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-s:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --squash={} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-w:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --fixup=reword:{} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="ctrl-/:toggle-preview" \
             --bind="ctrl-y:preview-up" \
             --bind="ctrl-e:preview-down" \
@@ -110,13 +113,14 @@ function _git_fzf_branch_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🌳 Git Branches (Current: $current_branch)" \
-            --header="TAB: select multiple | ALT-E (view diff in nvim) | ALT-C (checkout) | ALT-M (merge) | ALT-R (rebase) | ALT-D (toggle diff)" \
+            --header="TAB: select multiple | ALT-E (nvim) | ALT-C (checkout) | ALT-M (merge) | ALT-R (rebase) | ALT-X (delete) | ALT-D/L (diff/log)" \
             --preview="echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs -I{} git log --oneline --graph --date=short --color=always --pretty='format:%C(auto)%cd %h%d %s' {} --" \
             --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="alt-e:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs -I{} git diff $current_branch...{} | nvim -c 'set ft=diff' - < /dev/tty > /dev/tty)" \
             --bind="alt-c:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git checkout < /dev/tty > /dev/tty)+abort" \
             --bind="alt-m:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git merge < /dev/tty > /dev/tty)+abort" \
             --bind="alt-r:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git rebase < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-x:execute(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs git branch -d < /dev/tty > /dev/tty)+reload(git branch --all --sort=-committerdate --color=always --format='%(if)%(HEAD)%(then)* %(else)  %(end)%(color:yellow)%(refname:short)%(color:reset) %(color:green)(%(committerdate:relative))%(color:reset) %(color:blue)%(subject)%(color:reset)')" \
             --bind="alt-d:change-preview(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs -I{} git diff --color=always $current_branch...{})" \
             --bind="alt-l:change-preview(echo {} | awk '{print \$1}' | sed 's/^[* ]*//' | xargs -I{} git log --oneline --graph --date=short --color=always --pretty='format:%C(auto)%cd %h%d %s' {} --)" \
             --bind="ctrl-/:toggle-preview" \
@@ -134,5 +138,41 @@ function _git_fzf_branch_actions
             set -a branches $branch
         end
         commandline -i (string join ' ' $branches)" "
+    end
+end
+
+# Git Clean Interface - Untracked File Actions
+function _git_fzf_clean_actions
+    # Check if in git repo
+    if not git rev-parse --git-dir >/dev/null 2>&1
+        echo "Not in a git repository"
+        return 1
+    end
+
+    set -l untracked (git clean -n -d 2>/dev/null | sed 's/^Would remove //')
+    if test -z "$untracked"
+        echo "No untracked files to clean"
+        return 0
+    end
+
+    set -l selected (
+        printf '%s\n' $untracked | \
+        fzf --ansi \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --border-label="🧹 Git Clean (Untracked Files)" \
+            --header="TAB: multi-select | ENTER: delete selected | ALT-D: dry-run | ALT-A: delete all" \
+            --preview="test -d {} && tree -C {} 2>/dev/null || bat --color=always {} 2>/dev/null || cat {}" \
+            --preview-window="right:60%:wrap" \
+            --bind="alt-d:execute(git clean -n -d < /dev/tty > /dev/tty)" \
+            --bind="alt-a:execute(git clean -fd < /dev/tty > /dev/tty)+abort" \
+            --bind="ctrl-/:toggle-preview"
+    )
+
+    if test -n "$selected"
+        for item in $selected
+            git clean -f -- "$item"
+            echo "Removed: $item"
+        end
     end
 end
