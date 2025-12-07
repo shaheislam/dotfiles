@@ -238,7 +238,12 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
                         # No args yet: show branch picker, then auto-fill path
                         set -l fzf_git_sh_path (realpath (status dirname))
                         set -l current_token (commandline --current-token)
-                        set -l selected_branch (FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --query='$current_token'" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run branches 2>/dev/null | string trim)
+                        # Don't use -- as query (it breaks grep in fzf-git.sh)
+                        set -l query "$current_token"
+                        if test "$current_token" = "--"
+                            set query ""
+                        end
+                        set -l selected_branch (FZF_DEFAULT_OPTS="$FZF_DEFAULT_OPTS --query='$query'" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run branches 2>/dev/null | string trim)
 
                         if test -n "$selected_branch"
                             # Branch selected: auto-fill path pattern

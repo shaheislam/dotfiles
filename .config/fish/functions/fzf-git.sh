@@ -226,7 +226,8 @@ _fzf_git_select() {
   if [[ -n "${FZF_GIT_QUERY:-}" ]]; then
     local filtered
     # Case-insensitive match anywhere in line (git output has varied formats)
-    filtered=$(echo "$data_lines" | grep -i "${FZF_GIT_QUERY}")
+    # Use -- to prevent query from being interpreted as grep options
+    filtered=$(echo "$data_lines" | grep -i -- "${FZF_GIT_QUERY}")
 
     # Count non-empty lines
     local count
