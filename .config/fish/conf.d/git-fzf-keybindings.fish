@@ -83,6 +83,7 @@ function _git_fzf_actions_help
 │    ALT-F           Fixup + autosquash (auto-rebase)                    │
 │    ALT-S           Squash + autosquash (auto-rebase)                   │
 │    ALT-W           Reword + autosquash (auto-rebase)                   │
+│    ALT-V           Revert commit (create undo commit)                  │
 │    CTRL-/          Toggle preview                                      │
 │    CTRL-Y/E        Scroll preview up/down                              │
 │    CTRL-U/D        Half-page preview scroll                            │
@@ -105,6 +106,18 @@ function _git_fzf_actions_help
 │  Gitignore Generator (ALT-G I):                                        │
 │    TAB             Multi-select templates                              │
 │    ENTER           Generate .gitignore with selected templates         │
+│                                                                         │
+├────────────────────────────────────────────────────────────────────────┤
+│                  FZF Picker Toggle (inside any picker)                 │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  Switch picker type while inside FZF (from fzf-git.sh):                │
+│    CTRL-G CTRL-B   Switch to branches                                  │
+│    CTRL-G CTRL-F   Switch to files                                     │
+│    CTRL-G CTRL-H   Switch to hashes (commits)                          │
+│    CTRL-G CTRL-T   Switch to tags                                      │
+│    CTRL-G CTRL-R   Switch to remotes                                   │
+│    CTRL-G CTRL-S   Switch to stashes                                   │
 │                                                                         │
 ╰────────────────────────────────────────────────────────────────────────╯
 " | less -R

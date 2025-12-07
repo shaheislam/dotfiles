@@ -66,7 +66,7 @@ function _git_fzf_commit_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🍡 Git Commits" \
-            --header="TAB: multi-select | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick) | ALT-F/S/W (fixup/squash/reword)" \
+            --header="TAB: multi-select | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (cherry-pick) | ALT-F/S/W (fixup/squash/reword) | ALT-V (revert)" \
             --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always" \
             --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always | less -R < /dev/tty > /dev/tty)" \
@@ -78,6 +78,7 @@ function _git_fzf_commit_actions
             --bind="alt-f:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --fixup={} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-s:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --squash={} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-w:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --fixup=reword:{} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-v:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git revert < /dev/tty > /dev/tty)+abort" \
             --bind="ctrl-/:toggle-preview" \
             --bind="ctrl-y:preview-up" \
             --bind="ctrl-e:preview-down" \

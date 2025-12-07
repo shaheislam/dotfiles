@@ -7,8 +7,14 @@ function __fzf_git_sh
     # Get the current token to use as query and to replace
     set --function current_token (commandline --current-token)
 
+    # Don't use -- as query (it breaks grep in fzf-git.sh)
+    set --function query "$current_token"
+    if test "$current_token" = "--"
+        set query ""
+    end
+
     # Run the FZF git script and capture the result, passing the current token as query
-    set --function result (FZF_GIT_QUERY="$current_token" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run $argv | string join ' ')
+    set --function result (FZF_GIT_QUERY="$query" SHELL=bash bash "$fzf_git_sh_path/fzf-git.sh" --run $argv | string join ' ')
 
     # Only insert the result if something was selected (not cancelled with ESC)
     if test -n "$result"
