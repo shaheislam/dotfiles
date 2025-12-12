@@ -811,73 +811,33 @@ else
 fi
 
 # Configure Claude Code MCP servers (user scope)
+# Note: Many MCPs removed as they duplicate native Claude Code features:
+# - filesystem: Claude Code has native Read/Write/Edit/Glob/Grep tools
+# - git/github: Claude Code has native git via Bash and gh CLI
+# - fetch: Claude Code has native WebFetch tool
+# - duckduckgo: Claude Code has native WebSearch tool
+# - memory/sequential-thinking: Not regularly used
+# - AWS MCPs: Broken/not connecting
 echo "=== Configuring Claude Code MCP servers ==="
 if command -v claude &> /dev/null; then
-  echo "Adding MCP servers to Claude Code user scope..."
+  echo "Adding essential MCP servers to Claude Code user scope..."
 
-  # Core development tools
-  claude mcp add --scope user filesystem npx @modelcontextprotocol/server-filesystem "$HOME/Desktop" "$HOME/Downloads" || echo "Warning: Failed to add filesystem MCP"
-  claude mcp add --scope user git pipx run mcp-server-git "$HOME/dotfiles" || echo "Warning: Failed to add git MCP"
-  claude mcp add --scope user github npx @modelcontextprotocol/server-github || echo "Warning: Failed to add github MCP"
-  claude mcp add --scope user memory npx @modelcontextprotocol/server-memory || echo "Warning: Failed to add memory MCP"
-  claude mcp add --scope user sequential-thinking npx @modelcontextprotocol/server-sequential-thinking || echo "Warning: Failed to add sequential-thinking MCP"
-
-  # Web and automation tools
-  claude mcp add --scope user browser-tools npx @agentdeskai/browser-tools-mcp@1.2.0 || echo "Warning: Failed to add browser-tools MCP"
-  claude mcp add --scope user fetch pipx run mcp-server-fetch || echo "Warning: Failed to add fetch MCP"
-  claude mcp add --scope user duckduckgo npx duckduckgo-mcp-server || echo "Warning: Failed to add duckduckgo MCP"
-
-  # Database tools - removed (not needed)
-  # Enterprise integration - removed (not needed)
-
-  # Additional MCP servers
-  claude mcp add --scope user context7 bunx @upstash/context7-mcp || echo "Warning: Failed to add context7 MCP"
-  claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe || echo "Warning: Failed to add steampipe MCP"
-
-  # Airbnb MCP (uses npx per hook exception)
-  # Note: claude mcp add doesn't support passing args like --ignore-robots-txt, so we add it via jq
-  echo "Configuring Airbnb MCP..."
-  jq '.mcpServers.airbnb = {"type": "stdio", "command": "npx", "args": ["-y", "@openbnb/mcp-server-airbnb", "--ignore-robots-txt"], "env": {}}' ~/.claude.json > /tmp/claude_temp.json && mv /tmp/claude_temp.json ~/.claude.json || echo "Warning: Failed to add airbnb MCP"
-
-  # Browser automation (Microsoft Playwright)
+  # Browser automation (Microsoft Playwright) - for browser testing/automation
   claude mcp add --scope user playwright bunx @playwright/mcp@latest || echo "Warning: Failed to add playwright MCP"
 
-  # Diagramming tools
-  claude mcp add --scope user drawio npx -y drawio-mcp-server || echo "Warning: Failed to add drawio MCP"
+  # Library documentation (Context7) - up-to-date docs for any library
+  claude mcp add --scope user context7 bunx @upstash/context7-mcp || echo "Warning: Failed to add context7 MCP"
 
-  # Database tools (Google GenAI Toolbox)
-  # Note: Requires DATABASE_URL env var to be set for database access
-  claude mcp add --scope user genai-toolbox bunx @googlegenai/genai-toolbox || echo "Warning: Failed to add genai-toolbox MCP"
-
-  # Documentation tools
-  claude mcp add --scope user deepwiki https://mcp.deepwiki.com/sse -t sse || echo "Warning: Failed to add deepwiki MCP"
-
-  # AWS MCP servers (require uv to be installed)
-  echo "Adding AWS MCP servers to Claude Code..."
-
-  # Core AWS tools (no credentials required)
-  claude mcp add --scope user aws-documentation uvx awslabs.aws-documentation-mcp-server@latest || echo "Warning: Failed to add aws-documentation MCP"
-  claude mcp add --scope user aws-diagram uvx awslabs.aws-diagram-mcp-server || echo "Warning: Failed to add aws-diagram MCP"
-  claude mcp add --scope user aws-cdk uvx awslabs.cdk-mcp-server@latest || echo "Warning: Failed to add aws-cdk MCP"
-  claude mcp add --scope user aws-terraform uvx awslabs.terraform-mcp-server@latest || echo "Warning: Failed to add aws-terraform MCP"
-
-  # AWS services (require AWS credentials)
-  claude mcp add --scope user aws-iam uvx awslabs.iam-mcp-server@latest || echo "Warning: Failed to add aws-iam MCP"
-  claude mcp add --scope user aws-cloudformation uvx awslabs.cfn-mcp-server@latest || echo "Warning: Failed to add aws-cloudformation MCP"
-  claude mcp add --scope user aws-dynamodb uvx awslabs.dynamodb-mcp-server@latest || echo "Warning: Failed to add aws-dynamodb MCP"
-  claude mcp add --scope user aws-lambda uvx awslabs.lambda-tool-mcp-server@latest || echo "Warning: Failed to add aws-lambda MCP"
-
-  echo "AWS MCP servers added to Claude Code"
+  # Cloud API queries (Steampipe) - SQL against cloud infrastructure
+  claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe || echo "Warning: Failed to add steampipe MCP"
 
   echo "Claude Code MCP configuration complete"
   echo "You can verify with: claude mcp list"
-
   echo ""
-  echo "Note: AWS MCP servers are also configured in Claude Desktop config."
-  echo "Both Claude Desktop and Claude Code can now use AWS MCP servers."
-  echo ""
-  echo "Note: browser-tools MCP is enabled with error suppression to hide JSON parsing warnings."
-  echo "Both browser-tools and playwright MCP are available for browser automation."
+  echo "Active MCPs (3 total):"
+  echo "  - playwright: Browser automation and testing"
+  echo "  - context7: Library documentation lookups"
+  echo "  - steampipe: SQL queries against cloud APIs"
 else
   echo "Warning: Claude Code CLI not found. MCP servers not configured for Claude Code."
   echo "Install Claude Code CLI first, then run this script again or configure manually."

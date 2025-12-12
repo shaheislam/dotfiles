@@ -1,51 +1,5 @@
 {
   "mcpServers": {
-    "browser-tools": {
-      "command": "bunx",
-      "args": [
-        "@agentdeskai/browser-tools-mcp@1.2.0"
-      ]
-    },
-    "sequential-thinking": {
-      "command": "bunx",
-      "args": [
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
-    },
-    "github": {
-      "command": "bunx",
-      "args": [
-        "@modelcontextprotocol/server-github"
-      ]
-    },
-    "memory": {
-      "command": "bunx",
-      "args": [
-        "@modelcontextprotocol/server-memory"
-      ]
-    },
-    "git": {
-      "command": "pipx",
-      "args": [
-        "run",
-        "mcp-server-git",
-        "--repository",
-        "${HOME}/dotfiles"
-      ]
-    },
-    "fetch": {
-      "command": "pipx",
-      "args": [
-        "run",
-        "mcp-server-fetch"
-      ]
-    },
-    "duckduckgo": {
-      "command": "bunx",
-      "args": [
-        "duckduckgo-mcp-server"
-      ]
-    },
     "playwright": {
       "command": "bunx",
       "args": [

@@ -1,162 +1,11 @@
 {
   "mcpServers": {
-    "browser-tools": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@agentdeskai/browser-tools-mcp@1.1.0"
-      ],
-      "env": {
-        "NODE_OPTIONS": "--no-warnings"
-      }
-    },
-    "sequential-thinking": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
-    },
-    "github": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ]
-    },
-    "memory": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
-    },
-    "git": {
-      "command": "pipx",
-      "args": [
-        "run",
-        "mcp-server-git",
-        "--repository",
-        "${HOME}/dotfiles"
-      ]
-    },
-    "fetch": {
-      "command": "pipx",
-      "args": [
-        "run",
-        "mcp-server-fetch"
-      ]
-    },
-    "duckduckgo": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "duckduckgo-mcp-server"
-      ]
-    },
     "playwright": {
       "command": "bunx",
       "args": [
         "-y",
         "@playwright/mcp@latest"
       ]
-    },
-    "aws-diagram": {
-      "command": "uvx",
-      "args": [
-        "awslabs.aws-diagram-mcp-server"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "aws-documentation": {
-      "command": "uvx",
-      "args": [
-        "awslabs.aws-documentation-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR",
-        "AWS_DOCUMENTATION_PARTITION": "aws"
-      }
-    },
-    "drawio": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "drawio-mcp-server"
-      ]
-    },
-    "airbnb": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@openbnb/mcp-server-airbnb",
-        "--ignore-robots-txt"
-      ]
-    },
-    "filesystem": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "${HOME}/Desktop",
-        "${HOME}/Downloads"
-      ]
-    },
-    "aws-cdk": {
-      "command": "uvx",
-      "args": [
-        "awslabs.cdk-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "aws-terraform": {
-      "command": "uvx",
-      "args": [
-        "awslabs.terraform-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "aws-iam": {
-      "command": "uvx",
-      "args": [
-        "awslabs.iam-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "aws-cloudformation": {
-      "command": "uvx",
-      "args": [
-        "awslabs.cfn-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "aws-dynamodb": {
-      "command": "uvx",
-      "args": [
-        "awslabs.dynamodb-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
-    },
-    "aws-lambda": {
-      "command": "uvx",
-      "args": [
-        "awslabs.lambda-tool-mcp-server@latest"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      }
     },
     "context7": {
       "command": "bunx",
@@ -172,16 +21,6 @@
         "@turbot/steampipe-mcp",
         "postgresql://steampipe@localhost:9193/steampipe"
       ]
-    },
-    "genai-toolbox": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@googlegenai/genai-toolbox"
-      ],
-      "env": {
-        "DATABASE_URL": "sqlite:///Users/shahe/dotfiles/test-data/test.db"
-      }
     },
     "deepwiki": {
       "url": "https://mcp.deepwiki.com/sse",
