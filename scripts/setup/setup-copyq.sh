@@ -191,6 +191,10 @@ echo -e "${BLUE}Configuring CopyQ settings...${NC}"
 "$COPYQ_BIN" config check_clipboard true 2>/dev/null || true
 "$COPYQ_BIN" config confirm_exit false 2>/dev/null || true
 "$COPYQ_BIN" config autostart true 2>/dev/null || true
+"$COPYQ_BIN" config hide_toolbar_labels false 2>/dev/null || true  # Show text labels on toolbar
+
+# Create Queue tab for paste queue feature
+"$COPYQ_BIN" tab Queue 2>/dev/null || true
 
 echo -e "${GREEN}CopyQ setup complete!${NC}"
 echo ""
