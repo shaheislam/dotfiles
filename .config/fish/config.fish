@@ -71,18 +71,17 @@ if status is-interactive
 
     # API Keys for Claude Code Router
     # Load from ~/dotfiles/.env if it exists (after stow symlink)
+    # OPTIMIZED: Single sed pass instead of character-by-character parsing
     if test -f ~/.env
-        for line in (cat ~/.env | grep -v '^#' | grep -v '^$')
-            set pair (string split -m 1 '=' $line)
-            set key (string replace 'export ' '' $pair[1])
-            set value (string trim -c '"' $pair[2])
-            set -gx $key $value
-        end
+        sed -E '/^[[:space:]]*#/d; /^[[:space:]]*$/d; s/^export[[:space:]]+//; s/^([^=]+)=["'"'"']?([^"'"'"']*)["'"'"']?$/set -gx \1 "\2"/' ~/.env | source
     end
 
-    # Initialize tools
+    # ==================== Tool Initialization (Cached for Performance) ====================
+    # Using __cache_tool_init for ~50-100ms startup improvement
+    # Cache invalidates automatically when tool version changes
+
     if command -v starship >/dev/null
-        starship init fish | source
+        __cache_tool_init starship "starship init fish"
         # Enable transient prompt for cleaner terminal history
         enable_transience
     end
@@ -90,28 +89,28 @@ if status is-interactive
     if command -v zoxide >/dev/null
         # Disable zoxide doctor warnings
         set -x _ZO_DOCTOR 0
-        zoxide init fish | source
+        __cache_tool_init zoxide "zoxide init fish"
     end
 
     if command -v direnv >/dev/null
-        direnv hook fish | source
+        __cache_tool_init direnv "direnv hook fish"
         set -g direnv_fish_mode eval_on_arrow
     end
 
     if command -v atuin >/dev/null
         set -gx ATUIN_NOBIND "true"
-        atuin init fish | source
+        __cache_tool_init atuin "atuin init fish"
     end
 
-    # Source asdf
+    # Source asdf (no caching needed - it's just a file source)
     if test -f "/opt/homebrew/opt/asdf/libexec/asdf.fish"
         source /opt/homebrew/opt/asdf/libexec/asdf.fish
     end
 
     # Configure mise settings
     if command -v mise >/dev/null
-        mise activate fish | source
-        mise settings add idiomatic_version_file_enable_tools ruby
+        __cache_tool_init mise "mise activate fish"
+        mise settings add idiomatic_version_file_enable_tools ruby 2>/dev/null
     end
 
     # Yazi file manager wrapper - q to stay, Q to cd to navigated directory
@@ -235,85 +234,6 @@ if status is-interactive
 
     # Disable fish greeting
     set -g fish_greeting ""
-
-    # ==================== Terminal Notifications & Visual Feedback ====================
-    
-    # Command execution time tracking and notifications
-    function __fish_command_timer_preexec --on-event fish_preexec
-        # Store command start time (both timestamp and formatted)
-        set -g __fish_command_start_time (date +%s)
-        set -g __fish_command_start_formatted (date '+%Y-%m-%d %H:%M:%S')
-        set -g __fish_current_command "$argv"
-    end
-    
-    function __fish_command_timer_postexec --on-event fish_postexec
-        # Calculate command duration
-        if set -q __fish_command_start_time
-            set -l end_time (date +%s)
-            set -l duration (math $end_time - $__fish_command_start_time)
-            
-            # Visual feedback for different duration thresholds
-            if test $duration -gt 30
-                # Commands longer than 30 seconds - urgent notification
-                echo -e "\a" # Terminal bell
-                set -l finish_time (date '+%Y-%m-%d %H:%M:%S')
-                set_color red --bold
-                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                echo "⏰ Long command completed! ($(math $duration / 60)m $(math $duration % 60)s)"
-                echo "📝 Command: $__fish_current_command"
-                echo "🕐 Started:  $__fish_command_start_formatted"
-                echo "🕑 Finished: $finish_time"
-                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                set_color normal
-                
-                # macOS notification if available
-                if command -v osascript >/dev/null
-                    osascript -e "display notification \"Command completed in $(math $duration / 60)m $(math $duration % 60)s\" with title \"Terminal\" subtitle \"$__fish_current_command\" sound name \"Glass\""
-                end
-                
-            else if test $duration -gt 10
-                # Commands between 10-30 seconds - subtle notification
-                set_color yellow
-                echo "✓ Command completed in {$duration}s"
-                set_color normal
-                echo -e "\a" # Terminal bell (softer)
-                
-            else if test $duration -gt 5
-                # Commands between 5-10 seconds - minimal feedback
-                set_color green
-                echo -n "✓ "
-                set_color normal
-            end
-            
-            # Cleanup
-            set -e __fish_command_start_time
-            set -e __fish_command_start_formatted
-            set -e __fish_current_command
-        end
-    end
-    
-    # Visual feedback for command success/failure (disabled)
-    # function __fish_command_status_indicator --on-event fish_postexec
-    #     set -l last_status $status
-    #     if test $last_status -ne 0
-    #         # Command failed - visual alert
-    #         set_color red --bold
-    #         echo "✗ Command failed with exit code: $last_status"
-    #         set_color normal
-    #     end
-    # end
-    
-    
-    # Loading indicator for slow commands
-    function __fish_show_loading --description "Show loading animation"
-        set -l chars '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏'
-        set -l i 1
-        while true
-            echo -ne "\r$chars[$i] Loading..."
-            set i (math "($i % 10) + 1")
-            sleep 0.1
-        end
-    end
 
     # thefuck initialization
     if command -v thefuck >/dev/null

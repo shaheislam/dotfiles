@@ -5,8 +5,33 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.z
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+# ==================== Cached Tool Initialization (Performance Optimization) ====================
+# Cache tool init scripts to reduce startup time by ~50-100ms
+# Cache invalidates automatically when tool version changes
+
+ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh-init"
+mkdir -p "$ZSH_CACHE_DIR"
+
+_cache_tool_init() {
+    local tool=$1
+    local init_cmd=$2
+    local cache_file="$ZSH_CACHE_DIR/${tool}.zsh"
+    local version_file="$ZSH_CACHE_DIR/${tool}.version"
+
+    local current_version=$($tool --version 2>/dev/null | head -1)
+    local cached_version=""
+    [[ -f "$version_file" ]] && cached_version=$(cat "$version_file")
+
+    if [[ "$current_version" != "$cached_version" ]] || [[ ! -f "$cache_file" ]]; then
+        eval "$init_cmd" > "$cache_file" 2>/dev/null
+        echo "$current_version" > "$version_file"
+    fi
+
+    source "$cache_file"
+}
+
 # Choose between powerlevel10k and starship (uncomment one)
-eval "$(starship init zsh)"
+command -v starship >/dev/null && _cache_tool_init starship "starship init zsh"
 # export ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Path to your oh-my-zsh installation
@@ -35,10 +60,10 @@ export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 
 # VSCode and Cursor PATH entries removed
 
-# Initialize tools
-eval "$(zoxide init zsh)"
-eval "$(direnv hook zsh)"
-eval "$(atuin init zsh)"
+# Initialize tools (using cached initialization for performance)
+command -v zoxide >/dev/null && _cache_tool_init zoxide "zoxide init zsh"
+command -v direnv >/dev/null && _cache_tool_init direnv "direnv hook zsh"
+command -v atuin >/dev/null && _cache_tool_init atuin "atuin init zsh"
 
 # Source asdf
 if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then

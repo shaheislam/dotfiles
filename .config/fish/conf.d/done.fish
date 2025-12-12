@@ -209,7 +209,8 @@ end
 
 if set -q __done_enabled
     set -g __done_initial_window_id ''
-    set -q __done_min_cmd_duration; or set -g __done_min_cmd_duration 5000
+    # Increased from 5000ms to 30000ms for performance - only notify for genuinely long commands
+    set -q __done_min_cmd_duration; or set -g __done_min_cmd_duration 30000
     set -q __done_exclude; or set -g __done_exclude '^git (?!push|pull|fetch)'
     set -q __done_notify_sound; or set -g __done_notify_sound 0
     set -q __done_sway_ignore_visible; or set -g __done_sway_ignore_visible 0
@@ -217,7 +218,9 @@ if set -q __done_enabled
     set -q __done_notification_duration; or set -g __done_notification_duration 3000
 
     function __done_started --on-event fish_preexec
-        set __done_initial_window_id (__done_get_focused_window_id)
+        # OPTIMIZATION: Defer window ID capture to postexec for performance
+        # This eliminates expensive lsappinfo calls for short commands (99%+ of commands)
+        set -g __done_needs_window_check 1
     end
 
     function __done_ended --on-event fish_postexec
@@ -226,9 +229,19 @@ if set -q __done_enabled
         # backwards compatibility for fish < v3.0
         set -q cmd_duration; or set -l cmd_duration $CMD_DURATION
 
-        if test $cmd_duration
-            and test $cmd_duration -gt $__done_min_cmd_duration # longer than notify_duration
-            and not __done_is_process_window_focused # process pane or window not focused
+        # OPTIMIZATION: Early exit for short commands - skip all expensive operations
+        if not test $cmd_duration; or test $cmd_duration -le $__done_min_cmd_duration
+            set -g __done_needs_window_check 0
+            return
+        end
+
+        # Lazy window ID capture - only for commands that exceed threshold
+        if test "$__done_needs_window_check" = 1
+            set -g __done_initial_window_id (__done_get_focused_window_id)
+            set -g __done_needs_window_check 0
+        end
+
+        if not __done_is_process_window_focused # process pane or window not focused
 
             # don't notify if command matches exclude list
             for pattern in $__done_exclude

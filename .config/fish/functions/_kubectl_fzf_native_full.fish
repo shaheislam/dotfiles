@@ -1,0 +1,628 @@
+# FZF-powered kubectl completions using native __fish_kubectl_* functions
+# This replaces kubectl_enhanced_complete.fish and kubectl_fzf_complete.fish
+# with a leaner implementation that leverages the comprehensive native completions
+
+# Toggle for FZF mode
+set -g kubectl_use_fzf true
+
+# Cache configuration for kubectl-fzf-server integration
+set -g KUBECTL_FZF_CACHE "/tmp/kubectl_fzf_cache"
+set -g KUBECTL_FZF_CACHE_MAX_AGE 60  # seconds
+
+# Cache-aware resource fetching function
+# Checks kubectl-fzf-server cache first, falls back to API
+function __fish_kubectl_print_resource_cached --description "Get resources with cache support"
+    set -l resource_type $argv[1]
+
+    # Get current context for cache path
+    set -l context (kubectl config current-context 2>/dev/null)
+    if test -z "$context"
+        # No context, fall back to direct API call
+        __fish_kubectl_print_resource $resource_type
+        return
+    end
+
+    set -l cache_file "$KUBECTL_FZF_CACHE/$context/$resource_type"
+
+    # Check if cache exists and is fresh
+    if test -f "$cache_file"
+        # Get file age in seconds (macOS stat)
+        set -l file_mtime (stat -f %m "$cache_file" 2>/dev/null)
+        set -l current_time (date +%s)
+        set -l age (math $current_time - $file_mtime)
+
+        if test $age -lt $KUBECTL_FZF_CACHE_MAX_AGE
+            # Cache is fresh, use it
+            # Format: name\tnamespace (tab-separated)
+            cat "$cache_file" | while read -l line
+                # Extract just the name from the cache line
+                echo $line | awk '{print $1}'
+            end
+            return
+        end
+    end
+
+    # Cache miss or stale - fall back to API
+    __fish_kubectl_print_resource $resource_type
+end
+
+function kubectl_fzf_native --description "FZF-powered kubectl completion using native functions"
+    set -l cmd (commandline -opc)
+    set -l current (commandline -ct)
+
+    # Skip if not kubectl command
+    if not contains -- $cmd[1] kubectl k kubecolor kctl
+        return
+    end
+
+    # Handle --flag completion: when current token starts with -
+    if string match -q -- '-*' $current
+        # Build the command line for completion lookup
+        set -l cmdline (string join -- ' ' $cmd)
+        set -l flag_completions (complete -C"$cmdline $current" 2>/dev/null)
+
+        if test (count $flag_completions) -gt 0
+            # Filter to only show flags (starts with -)
+            set -l filtered_flags
+            for fc in $flag_completions
+                set -l flag_part (string split -- \t $fc)[1]
+                if string match -q -- '-*' $flag_part
+                    set -a filtered_flags $fc
+                end
+            end
+
+            if test (count $filtered_flags) -eq 0
+                return
+            end
+
+            # Auto-complete if only one match
+            if test (count $filtered_flags) -eq 1
+                string split -- \t $filtered_flags[1] | head -1
+                return
+            end
+
+            # Multiple matches - use FZF with descriptions
+            if test "$kubectl_use_fzf" = "true"
+                set -l selected (printf '%s\n' $filtered_flags | fzf --ansi --height=40% --prompt="Flag: " --query="$current" \
+                    --delimiter='\t' --with-nth=1,2 --tabstop=4)
+                echo $selected | string split \t | head -1
+            else
+                printf '%s\n' $filtered_flags
+            end
+            return
+        end
+    end
+
+    # Parse command to understand context
+    set -l subcommand ""
+    set -l resource_type ""
+    set -l resource_name ""
+    set -l last_arg ""
+    set -l position 0  # 0=need subcmd, 1=need resource_type, 2=need resource_name, 3+=flags
+
+    for i in (seq 2 (count $cmd))
+        set -l arg $cmd[$i]
+
+        # Track last arg
+        set last_arg $arg
+
+        # Skip flags and their values
+        if string match -q -- '-*' $arg
+            continue
+        end
+
+        # Skip values after namespace flag
+        if test $i -gt 2
+            set -l prev $cmd[(math $i - 1)]
+            if test "$prev" = "-n"; or test "$prev" = "--namespace"
+                continue
+            end
+        end
+
+        # Track position
+        set position (math $position + 1)
+        if test $position -eq 1
+            set subcommand $arg
+        else if test $position -eq 2
+            set resource_type $arg
+        else if test $position -eq 3
+            set resource_name $arg
+        end
+    end
+
+    # Determine what completions to show
+    set -l completions
+    set -l fzf_prompt "Select: "
+    set -l preview_cmd ""
+    set -l show_preview false
+
+    # Handle flag value completions
+    # Note: -l/--selector label completion is handled by kubectl-fzf.sh bash helper
+    # via _kubectl_fzf_tab_complete.fish for proper TTY access
+    switch $last_arg
+        case -n --namespace
+            set completions (__fish_kubectl_print_resource namespace)
+            set fzf_prompt "Namespace: "
+        case -c --container
+            # Use native function - it parses commandline to find pod name
+            set completions (__fish_kubectl_print_pod_containers)
+            set fzf_prompt "Container: "
+        case -o --output
+            set completions yaml json wide name "custom-columns=" "jsonpath=" "go-template="
+            set fzf_prompt "Output format: "
+        case -f --filename
+            # File completion - let fish handle it
+            return
+        case -l --selector
+            # Label completion is handled by kubectl-fzf.sh bash helper
+            # via _kubectl_fzf_tab_complete.fish - just return here
+            return
+        case --field-selector
+            # Field selector completion
+            set -l field_resource_type "pods"
+            if test -n "$resource_type"
+                set field_resource_type $resource_type
+            end
+
+            # If current has =, complete values; otherwise complete field paths
+            if string match -q '*=*' "$current"
+                # Extract field path and provide dynamic values
+                set -l field_path (string split '=' "$current")[1]
+                switch $field_path
+                    case 'spec.nodeName'
+                        # Get node names
+                        set completions (kubectl get nodes -o name 2>/dev/null | sed 's|node/||' | while read n; echo "spec.nodeName=$n"; end)
+                    case 'status.phase'
+                        # Pod phases
+                        set completions "status.phase=Running" "status.phase=Pending" "status.phase=Succeeded" "status.phase=Failed" "status.phase=Unknown"
+                    case 'metadata.namespace'
+                        set completions (kubectl get namespaces -o name 2>/dev/null | sed 's|namespace/||' | while read n; echo "metadata.namespace=$n"; end)
+                    case 'metadata.name'
+                        set completions (kubectl get $field_resource_type -o name 2>/dev/null | sed 's|.*/||' | while read n; echo "metadata.name=$n"; end)
+                    case '*'
+                        # Generic: show = variants
+                        set completions "$field_path=" "$field_path!="
+                end
+            else
+                # Show common field selectors based on resource type
+                switch $field_resource_type
+                    case pod pods
+                        set completions \
+                            "status.phase=" \
+                            "spec.nodeName=" \
+                            "spec.restartPolicy=" \
+                            "spec.schedulerName=" \
+                            "spec.serviceAccountName=" \
+                            "metadata.name=" \
+                            "metadata.namespace="
+                    case node nodes
+                        set completions \
+                            "spec.unschedulable=true" \
+                            "spec.unschedulable=false" \
+                            "metadata.name="
+                    case service services svc
+                        set completions \
+                            "metadata.name=" \
+                            "metadata.namespace="
+                    case '*'
+                        set completions \
+                            "metadata.name=" \
+                            "metadata.namespace="
+                end
+            end
+            set fzf_prompt "Field selector: "
+    end
+
+    # If we handled a flag above, filter and show FZF
+    if test (count $completions) -gt 0
+        # Filter completions by current token if provided
+        if test -n "$current"
+            set -l filtered
+            for c in $completions
+                if string match -q -- "$current*" $c
+                    set -a filtered $c
+                end
+            end
+            set completions $filtered
+        end
+
+        # No matches after filtering
+        if test (count $completions) -eq 0
+            return
+        end
+
+        # Auto-complete if only one match - directly modify commandline
+        if test (count $completions) -eq 1
+            set -l result (echo $completions[1] | string split \t | head -1)
+            commandline -t -- "$result"
+            commandline -f repaint
+            return
+        end
+
+        # Multiple matches - use FZF and directly modify commandline
+        if test "$kubectl_use_fzf" = "true"
+            # Write completions to temp file
+            set -l tmp_input (mktemp)
+            printf '%s\n' $completions > $tmp_input
+
+            # Run fzf via bash - this provides proper TTY context
+            # Use --tmux if available for popup (avoids TTY issues entirely)
+            set -l tmux_opt ""
+            if test -n "$TMUX"
+                set tmux_opt "--tmux 80%,60%"
+            end
+
+            # Escape single quotes in prompt for bash
+            set -l escaped_prompt (string replace -a "'" "'\\''" "$fzf_prompt")
+            set -l escaped_query (string replace -a "'" "'\\''" "$current")
+
+            set -l selected (bash -c "
+                cat '$tmp_input' | fzf $tmux_opt --height=40% --multi \\
+                    --bind 'tab:toggle+down,shift-tab:toggle+up' \\
+                    --header 'TAB: select multiple, ENTER: confirm' \\
+                    --prompt='$escaped_prompt' --query='$escaped_query'
+            ")
+
+            rm -f $tmp_input
+
+            if test -n "$selected"
+                set -l result
+                for item in (string split \n $selected)
+                    # Strip description (tab and text after)
+                    set -a result (echo $item | string split \t | head -1)
+                end
+                commandline -t -- (string join ' ' $result)
+                commandline -f repaint
+            end
+        else
+            printf '%s\n' $completions
+        end
+        return
+    end
+
+    # Handle subcommand-specific completions
+    if test -z "$subcommand"
+        # Show subcommands
+        set completions (__fish_kubectl_get_commands | string replace -r '\t.*' '')
+        set fzf_prompt "Command: "
+    else
+        switch $subcommand
+            # Commands that work on pods directly
+            case logs
+                if test -z "$resource_type"
+                    set completions (__fish_kubectl_print_resource pods)
+                    set fzf_prompt "Pod: "
+                    set show_preview true
+                    set preview_cmd "kubectl get pod {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
+                end
+
+            case exec attach
+                if test -z "$resource_type"
+                    set completions (__fish_kubectl_print_resource pods)
+                    set fzf_prompt "Pod: "
+                    set show_preview true
+                    set preview_cmd "kubectl get pod {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
+                end
+
+            case cp
+                if test -z "$resource_type"
+                    set completions (__fish_kubectl_print_resource pods)
+                    set fzf_prompt "Pod: "
+                end
+
+            # Debug supports pods and nodes
+            case debug
+                if test -z "$resource_type"
+                    set completions (
+                        __fish_kubectl_print_resource pods
+                        __fish_kubectl_print_nodes_with_prefix
+                    )
+                    set fzf_prompt "Pod/Node: "
+                    set show_preview true
+                    set preview_cmd "kubectl get {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
+                end
+
+            # Port-forward supports pods, services, deployments
+            case port-forward
+                if test -z "$resource_type"
+                    # Show pods and services with prefixes
+                    set completions (
+                        __fish_kubectl_print_resource pods
+                        __fish_kubectl_print_services_with_prefix
+                        __fish_kubectl_print_deployments_with_prefix
+                    )
+                    set fzf_prompt "Resource: "
+                    set show_preview true
+                    set preview_cmd "kubectl get {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
+                else if test -z "$resource_name"
+                    # Show available ports
+                    set completions (__fish_kubectl_print_resource_ports)
+                    set fzf_prompt "Port: "
+                end
+
+            # Commands that need resource type first
+            case get describe delete edit patch label annotate
+                if test -z "$resource_type"
+                    set completions (__fish_kubectl_print_resource_types)
+                    set fzf_prompt "Resource type: "
+                else if test -z "$resource_name"
+                    set completions (__fish_kubectl_print_resource $resource_type)
+                    set fzf_prompt "$resource_type: "
+                    set show_preview true
+                    # Secret base64 decode: auto-decode secrets in preview
+                    if contains -- $resource_type secret secrets
+                        set preview_cmd "kubectl get secret {} -o json 2>/dev/null | jq -r '.data | to_entries | map(\"\(.key): \(.value | @base64d)\") | .[]' 2>/dev/null; echo '---'; kubectl get secret {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
+                    else
+                        set preview_cmd "kubectl get $resource_type {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
+                    end
+                end
+
+            # Rollout commands
+            case rollout
+                if test -z "$resource_type"
+                    set completions status history undo restart pause resume
+                    set fzf_prompt "Rollout action: "
+                else if contains -- $resource_type status history undo restart pause resume
+                    if test -z "$resource_name"
+                        set completions (__fish_kubectl_get_rollout_resources)
+                        set fzf_prompt "Deployment: "
+                    end
+                end
+
+            # Scale commands
+            case scale
+                if test -z "$resource_type"
+                    set completions deployment statefulset replicaset
+                    set fzf_prompt "Resource type: "
+                else if test -z "$resource_name"
+                    set completions (__fish_kubectl_print_resource $resource_type)
+                    set fzf_prompt "$resource_type: "
+                end
+
+            # Top command
+            case top
+                if test -z "$resource_type"
+                    set completions pods nodes
+                    set fzf_prompt "Resource type: "
+                else if test -z "$resource_name"
+                    set completions (__fish_kubectl_print_resource $resource_type)
+                    set fzf_prompt "$resource_type: "
+                end
+
+            # Create command
+            case create
+                if test -z "$resource_type"
+                    set completions deployment service configmap secret namespace job cronjob serviceaccount role rolebinding clusterrole clusterrolebinding quota
+                    set fzf_prompt "Resource type: "
+                end
+
+            # Expose command
+            case expose
+                if test -z "$resource_type"
+                    set completions pod service deployment replicaset
+                    set fzf_prompt "Resource type: "
+                else if test -z "$resource_name"
+                    set completions (__fish_kubectl_print_resource $resource_type)
+                    set fzf_prompt "$resource_type: "
+                end
+
+            # Config commands
+            case config
+                if test -z "$resource_type"
+                    set completions view use-context get-contexts get-clusters current-context set-context set-cluster
+                    set fzf_prompt "Config action: "
+                else if contains -- $resource_type use-context get-contexts set-context
+                    set completions (__fish_kubectl_get_config contexts)
+                    set fzf_prompt "Context: "
+                else if contains -- $resource_type get-clusters set-cluster
+                    set completions (__fish_kubectl_get_config clusters)
+                    set fzf_prompt "Cluster: "
+                end
+
+            # Node operations
+            case cordon uncordon drain taint
+                if test -z "$resource_type"
+                    set completions (__fish_kubectl_print_resource nodes)
+                    set fzf_prompt "Node: "
+                end
+
+            # Default: show resource types
+            case '*'
+                if test -z "$resource_type"
+                    set completions (__fish_kubectl_print_resource_types)
+                    set fzf_prompt "Resource type: "
+                end
+        end
+    end
+
+    # Output completions
+    if test (count $completions) -eq 0
+        return
+    end
+
+    # Filter completions by current token if provided
+    if test -n "$current"
+        set -l filtered
+        for c in $completions
+            if string match -q -- "$current*" $c
+                set -a filtered $c
+            end
+        end
+        set completions $filtered
+    end
+
+    # No matches after filtering
+    if test (count $completions) -eq 0
+        return
+    end
+
+    # Auto-complete if only one match - strip description (tab and text after)
+    if test (count $completions) -eq 1
+        echo $completions[1] | string split \t | head -1
+        return
+    end
+
+    # Multiple matches - use FZF or plain output
+    if test "$kubectl_use_fzf" != "true"
+        printf '%s\n' $completions
+        return
+    end
+
+    # FZF selection with current token as initial query and multi-select - strip description from selected result
+    if test "$show_preview" = "true"; and test -n "$preview_cmd"
+        # Build alt-e command based on resource type context
+        set -l alt_e_cmd "bash -c 'tmpfile=/tmp/kubectl-edit-{}-\$(date +%s).yaml; kubectl get $resource_type {} -o yaml > \"\$tmpfile\" 2>/dev/null && nvim \"\$tmpfile\" < /dev/tty > /dev/tty && kubectl apply -f \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
+        # Build kubectl action commands for Alt+F keybindings
+        set -l f1_cmd "kubectl explain $resource_type | less"
+        set -l f2_cmd "kubectl exec -it {} -- sh"
+        set -l f3_cmd "kubectl get $resource_type {} -o yaml | bat --color=always -l yaml --paging=always"
+        set -l f4_cmd "kubecolor --force-colors describe $resource_type {} | less -R"
+        set -l f5_cmd "kubecolor logs -f --tail=100 {}"
+        set -l f6_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Local port: \" lport; read -p \"Remote port: \" rport; kubectl port-forward {} \$lport:\$rport'"
+        set -l f7_cmd "kubectl debug {} -it --image=ghcr.io/shaheislam/netshoot-nvim:latest --share-processes -- bash"
+        # Clone resource command (Alt+C) - creates copy with timestamp suffix using yq
+        # Removes ownerReferences so cloned pods aren't garbage collected by controllers
+        set -l clone_cmd "bash -c 'suf=\$(date +%s | tail -c 5); kubectl get $resource_type {} -o yaml | yq eval \".metadata.name = \\\"{}-\$suf\\\"\" | yq eval \"del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.selfLink,.metadata.ownerReferences,.status)\" | kubectl apply -f - && echo Cloned: {}-\$suf && sleep 1'"
+        # Reload command for Ctrl+R
+        set -l reload_cmd "kubectl get $resource_type -o name 2>/dev/null | sed 's|.*/||'"
+
+        # Alt+8: Scale replicas (deployments, statefulsets, replicasets)
+        set -l scale_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Replicas (0-20): \" n; kubectl scale $resource_type {} --replicas=\$n && echo Scaled to \$n replicas'"
+        # Alt+9: Rollout restart (deployments, statefulsets, daemonsets)
+        set -l rollout_cmd "kubectl rollout restart $resource_type {} && echo Rollout restart initiated && sleep 1"
+        # Alt+O: Cordon node
+        set -l cordon_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Cordon {}? [y/N] \" c; [ \"\$c\" = y ] && kubectl cordon {} && echo Node {} cordoned'"
+        # Alt+U: Uncordon node
+        set -l uncordon_cmd "kubectl uncordon {} && echo Node {} uncordoned && sleep 1"
+        # Alt+D: Drain node
+        set -l drain_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; read -p \"Drain {}? [y/N] \" c; [ \"\$c\" = y ] && kubectl drain {} --ignore-daemonsets --delete-emptydir-data && echo Node {} drained'"
+        # Alt+K: Kubent deprecation check
+        set -l kubent_cmd "kubent 2>/dev/null || echo 'kubent not installed - install with: brew install kubent'"
+        # Alt+T: Trivy image scan
+        set -l trivy_cmd "bash -c 'img=\$(kubectl get $resource_type {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null || kubectl get $resource_type {} -o jsonpath=\"{.spec.template.spec.containers[0].image}\" 2>/dev/null); echo \"Scanning: \$img\"; trivy image \$img 2>/dev/null || echo \"trivy not installed - install with: brew install trivy\"' | less"
+        # Alt+A: Reload with all namespaces
+        set -l reload_all_ns "kubectl get $resource_type -A -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null"
+        # Alt+N: Switch namespace via kubie (persistent) then reload
+        set -l ns_switch_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl get ns -o name | sed \"s|namespace/||\" | fzf --height=40% --prompt=\"Switch namespace: \"); [ -n \"\$ns\" ] && kubie ns \$ns && echo \"Switched to: \$ns\" && sleep 0.5'"
+
+        # === K9s-inspired plugins ===
+        # Alt+F: Remove finalizers (force delete stuck resources)
+        set -l finalizers_cmd "bash -c 'echo \"Removing finalizers from $resource_type/{}...\"; kubectl patch --context \$(kubectl config current-context) -n \$(kubectl config view --minify -o jsonpath=\"{..namespace}\") $resource_type {} --type merge -p \"{\\\"metadata\\\":{\\\"finalizers\\\":null}}\"; echo \"Done. Press any key...\"; read -n 1'"
+        # Alt+W: Watch events for selected resource
+        set -l watch_events_cmd "kubectl events --for $resource_type/{} --watch"
+        # Alt+S: Toggle cronjob suspend/resume
+        set -l suspend_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; curr=\$(kubectl get cronjob {} -o jsonpath=\"{.spec.suspend}\" 2>/dev/null); if [ \"\$curr\" = \"true\" ]; then kubectl patch cronjob {} -p \"{\\\"spec\\\":{\\\"suspend\\\":false}}\"; echo \"CronJob {} RESUMED\"; else kubectl patch cronjob {} -p \"{\\\"spec\\\":{\\\"suspend\\\":true}}\"; echo \"CronJob {} SUSPENDED\"; fi; read -n 1'"
+        # Alt+X: OpenSSL cert inspection for secrets
+        set -l openssl_cmd "bash -c 'echo \"=== TLS Certificate Details ===\"; kubectl get secret {} -o jsonpath=\"{.data.tls\\.crt}\" 2>/dev/null | base64 -d | openssl x509 -text -noout 2>/dev/null || kubectl get secret {} -o jsonpath=\"{.data.ca\\.crt}\" 2>/dev/null | base64 -d | openssl x509 -text -noout 2>/dev/null || echo \"No tls.crt or ca.crt found in secret\"; echo \"\"; echo \"Press any key...\"; read -n 1'"
+        # Alt+V: Helm values in Neovim (for navigation, search, folding)
+        set -l helm_values_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then helm get values \$rel | nvim -R - -c \"set ft=yaml\"; else echo \"No Helm release label found\"; read -n 1; fi'"
+        # Alt+M: Helm manifest in Neovim (uses temp file for LSP diagnostics)
+        set -l helm_manifest_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then tmpfile=/tmp/helm-manifest-\$rel-\$(date +%s).yaml; helm get manifest \$rel > \"\$tmpfile\"; nvim -R \"\$tmpfile\"; rm -f \"\$tmpfile\"; else echo \"No Helm release label found\"; read -n 1; fi'"
+        # Alt+Shift+E: Helm values edit & apply (edit values in nvim, then helm upgrade)
+        set -l helm_edit_apply_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then tmpfile=/tmp/helm-values-\$rel-\$(date +%s).yaml; helm get values \$rel > \"\$tmpfile\"; nvim \"\$tmpfile\"; echo \"\"; echo \"=== Changes to apply ===\"; diff <(helm get values \$rel) \"\$tmpfile\" || true; echo \"\"; read -p \"Apply these changes to \$rel? [y/N] \" confirm; if [ \"\$confirm\" = \"y\" ] || [ \"\$confirm\" = \"Y\" ]; then chart=\$(helm list -f \"^\$rel\\\$\" -o json | jq -r \".[0].chart\"); helm upgrade \$rel \$chart -f \"\$tmpfile\"; echo \"Upgrade complete!\"; else echo \"Cancelled.\"; fi; rm -f \"\$tmpfile\"; else echo \"No Helm release label found\"; fi; read -n 1'"
+        # Alt+Shift+D: Helm diff in nvim diff mode (compare current with previous revision manifests)
+        set -l helm_diff_cmd "bash -c 'rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.helm\\.sh/release-name}\" 2>/dev/null); [ -z \"\$rel\" ] && rel=\$(kubectl get $resource_type {} -o jsonpath=\"{.metadata.labels.app\\.kubernetes\\.io/instance}\" 2>/dev/null); if [ -n \"\$rel\" ]; then curr=\$(helm history \$rel -o json | jq -r \"map(select(.status==\\\"deployed\\\")) | .[0].revision\"); prev=\$((curr - 1)); if [ \$prev -gt 0 ]; then old=/tmp/helm-diff-\$rel-r\$prev.yaml; new=/tmp/helm-diff-\$rel-r\$curr.yaml; helm get manifest \$rel --revision \$prev > \$old; helm get manifest \$rel --revision \$curr > \$new; nvim -d \$old \$new; rm -f \$old \$new; else echo \"No previous revision to diff\"; read -n 1; fi; else echo \"No Helm release label found\"; read -n 1; fi'"
+        # Alt+I: Dive image layer inspection
+        set -l dive_cmd "bash -c 'img=\$(kubectl get pod {} -o jsonpath=\"{.spec.containers[0].image}\" 2>/dev/null); if [ -n \"\$img\" ]; then echo \"Analyzing image: \$img\"; dive \$img; else echo \"Could not extract image from pod\"; fi'"
+        # Alt+G: Get all resources in namespace (requires kubectl-get-all krew plugin)
+        set -l get_all_cmd "bash -c 'ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); kubectl get-all -n \$ns 2>/dev/null | bat --style=plain --paging=always || echo \"kubectl get-all not installed. Install with: kubectl krew install get-all\"; read -n 1'"
+        # Alt+P: Copy file FROM pod (pull)
+        set -l kcp_from_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; echo \"Browse {} filesystem...\"; path=\$(kubectl exec {} -n \$ns -- find / -type f 2>/dev/null | head -500 | fzf --prompt=\"Select file: \" --preview=\"kubectl exec {} -n \$ns -- head -100 {} 2>/dev/null\" --height=80%); if [ -n \"\$path\" ]; then local=./\$(basename \$path); kubectl cp \$ns/{}:\$path \$local && echo \"Copied to: \$local\"; else echo \"Cancelled\"; fi; read -n 1'"
+        # Alt+Y: Copy file TO pod (yank/push)
+        set -l kcp_to_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; echo \"Select local file...\"; local=\$(fd --type f | fzf --prompt=\"Select file: \" --preview=\"bat --color=always --style=numbers {}\" --height=80%); if [ -n \"\$local\" ]; then remote=/tmp/\$(basename \$local); kubectl cp \$local \$ns/{}:\$remote && echo \"Copied to: {}:\$remote\"; else echo \"Cancelled\"; fi; read -n 1'"
+        # Alt+L: Resource lineage/ownership YAML graph with toggle (Alt+D) between simple/detailed views
+        set -l script_dir (realpath (status dirname))
+        set -l lineage_cmd "bash -c 'ts=\$(date +%s); simple=/tmp/lineage-{}-\$ts-simple.yaml; detailed=/tmp/lineage-{}-\$ts-detailed.yaml; ns=\$(kubectl config view --minify -o jsonpath=\"{..namespace}\"); ns=\${ns:-default}; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" > \"\$simple\" 2>&1; $script_dir/k8s-lineage-yaml.sh $resource_type {} \"\$ns\" --detailed > \"\$detailed\" 2>&1; nvim -R -c \"source $script_dir/k8s-lineage-toggle.vim\" -c \"call SetLineageFiles(\\\"\$simple\\\", \\\"\$detailed\\\")\" -c \"set ft=yaml\" -c \"nnoremap <buffer> <A-d> :call ToggleLineageView()<CR>\" \"\$simple\"; rm -f \"\$simple\" \"\$detailed\"'"
+
+        # Header text varies by resource type
+        set -l header_text 'Alt+1:explain 2:sh 3:yaml 4:desc 5:logs 6:fwd 7:dbg 8:scale 9:restart | N:ns P:cp-from Y:cp-to L:lineage V:vals I:dive G:get-all'
+
+        # Node-specific header with cordon/uncordon/drain
+        if contains -- $resource_type node nodes
+            set header_text 'Alt+3:yaml 4:desc O:cordon U:uncordon D:drain | N:ns A:all-ns F:finalizers W:events K:kubent Ctrl+R:reload'
+        # Events-specific header with timestamp sorting
+        else if contains -- $resource_type events event
+            set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+N:ns A:all-ns 3:yaml 4:desc G:get-all'
+            set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
+                --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
+                --bind "ctrl-r:reload($reload_cmd)" \
+                --bind "ctrl-k:reload(kubectl get events --sort-by=.firstTimestamp -A -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null)" \
+                --bind "ctrl-l:reload(kubectl get events --sort-by=.lastTimestamp -A -o custom-columns=NAME:.metadata.name --no-headers 2>/dev/null)" \
+                --bind "alt-c:execute($clone_cmd < /dev/tty > /dev/tty)" \
+                --bind "alt-e:execute($alt_e_cmd)" \
+                --bind "alt-3:execute($f3_cmd)" \
+                --bind "alt-4:execute($f4_cmd)" \
+                --header "$header_text" \
+                --prompt="$fzf_prompt" --query="$current" \
+                --preview="$preview_cmd" \
+                --preview-window='right:50%:wrap,<120(right,40%,wrap)')
+            for item in $selected
+                echo $item | string split \t | head -1
+            end | string join -- ' '
+            return
+        end
+
+        set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up,ctrl-/:toggle-preview' \
+            --bind "ctrl-r:reload($reload_cmd)" \
+            --bind "alt-c:execute($clone_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-e:execute($alt_e_cmd)" \
+            --bind "alt-1:execute($f1_cmd)" \
+            --bind "alt-2:execute($f2_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-3:execute($f3_cmd)" \
+            --bind "alt-4:execute($f4_cmd)" \
+            --bind "alt-5:execute($f5_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-6:execute($f6_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-7:execute($f7_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-8:execute($scale_cmd)" \
+            --bind "alt-9:execute($rollout_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-o:execute($cordon_cmd)" \
+            --bind "alt-u:execute($uncordon_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-d:execute($drain_cmd)" \
+            --bind "alt-k:execute($kubent_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-t:execute($trivy_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-a:reload($reload_all_ns)+change-prompt(All NS> )" \
+            --bind "alt-n:execute($ns_switch_cmd)+reload($reload_cmd)" \
+            --bind "alt-f:execute($finalizers_cmd)+reload($reload_cmd)" \
+            --bind "alt-w:execute($watch_events_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-s:execute($suspend_cmd)+reload($reload_cmd)" \
+            --bind "alt-x:execute($openssl_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-v:execute($helm_values_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-m:execute($helm_manifest_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-E:execute($helm_edit_apply_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-D:execute($helm_diff_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-i:execute($dive_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-g:execute($get_all_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-l:execute($lineage_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-p:execute($kcp_from_cmd < /dev/tty > /dev/tty)" \
+            --bind "alt-y:execute($kcp_to_cmd < /dev/tty > /dev/tty)" \
+            --header "$header_text" \
+            --prompt="$fzf_prompt" --query="$current" \
+            --preview="$preview_cmd" \
+            --preview-window='right:50%:wrap,<120(right,40%,wrap)')
+        # Return space-separated results for multiple selections
+        for item in $selected
+            echo $item | string split \t | head -1
+        end | string join -- ' '
+    else
+        set -l selected (printf '%s\n' $completions | fzf --height=40% --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --header 'TAB: select multiple, ENTER: confirm' \
+            --prompt="$fzf_prompt" --query="$current")
+        # Return space-separated results for multiple selections
+        for item in $selected
+            echo $item | string split \t | head -1
+        end | string join -- ' '
+    end
+end
+
+# Toggle function
+function kubectl_toggle_fzf --description "Toggle FZF mode for kubectl completions"
+    if test "$kubectl_use_fzf" = "true"
+        set -g kubectl_use_fzf false
+        echo "kubectl FZF completions disabled"
+    else
+        set -g kubectl_use_fzf true
+        echo "kubectl FZF completions enabled"
+    end
+end
