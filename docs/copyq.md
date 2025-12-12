@@ -70,11 +70,29 @@ The setup script performs these security checks before installation:
 | Shortcut | Action |
 |----------|--------|
 | `Cmd+Shift+V` | Open clipboard history (via Karabiner-Elements) |
-| `Ctrl+1` | Copy item at position 1 |
-| `Ctrl+2` | Copy item at position 2 |
-| `Ctrl+3` | Copy item at position 3 |
-| `Ctrl+4` | Copy item at position 4 |
-| `Ctrl+5` | Copy item at position 5 |
+| `Ctrl+1` | Paste item at position 1 |
+| `Ctrl+2` | Paste item at position 2 |
+| `Ctrl+3` | Paste item at position 3 |
+| `Ctrl+4` | Paste item at position 4 |
+| `Ctrl+5` | Paste item at position 5 |
+| `Ctrl+Shift+C` | Queue item for sequential paste |
+| `Ctrl+Shift+V` | Unqueue, paste, and Tab to next field |
+
+### Paste Queue (Form Filling)
+
+The paste queue lets you copy multiple items, then paste them sequentially into form fields:
+
+1. **Queue items**: Copy each piece of data, then press `Ctrl+Shift+C` to add to queue
+2. **Fill form**: Click the first field, then press `Ctrl+Shift+V` repeatedly
+3. Each press pastes the next item and auto-Tabs to the next field
+
+**Use cases:**
+- Filling AWS console forms (region, account ID, resource name)
+- Entering address fields (name, street, city, zip)
+- Populating spreadsheet cells
+- Any multi-field data entry
+
+**View queue**: Open CopyQ (`Cmd+Shift+V`) → Click "Queue" tab
 
 ### DevOps Commands (In CopyQ Window)
 | Shortcut | Action | Description |

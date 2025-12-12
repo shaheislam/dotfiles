@@ -53,6 +53,26 @@
                                 "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'select(4); paste()'" }]
                             }
                         ]
+                    },
+                    {
+                        "description": "CopyQ: Ctrl+Shift+C to queue item",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "c", "modifiers": { "mandatory": ["control", "shift"] } },
+                                "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'var text = str(clipboard()); if (!text) { popup(\"Queue\", \"Nothing to queue\"); } else { tab(\"Queue\"); add(text); var count = size(); popup(\"Queued\", count + \" item(s) in queue\"); }'" }]
+                            }
+                        ]
+                    },
+                    {
+                        "description": "CopyQ: Ctrl+Shift+V to unqueue, paste, and Tab",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "v", "modifiers": { "mandatory": ["control", "shift"] } },
+                                "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'tab(\"Queue\"); var count = size(); if (count == 0) { popup(\"Queue Empty\", \"No items in queue\"); } else { var item = str(read(0)); remove(0); copy(item); paste(); }' && sleep 0.1 && osascript -e 'tell application \"System Events\" to keystroke tab'" }]
+                            }
+                        ]
                     }
                 ]
             },
