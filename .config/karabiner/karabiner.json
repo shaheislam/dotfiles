@@ -1,37 +1,8 @@
 {
     "profiles": [
         {
-            "devices": [
-                {
-                    "identifiers": {
-                        "is_keyboard": true,
-                        "product_id": 834,
-                        "vendor_id": 1452
-                    },
-                    "simple_modifications": [
-                        {
-                            "from": { "key_code": "caps_lock" },
-                            "to": [{ "key_code": "escape" }]
-                        },
-                        {
-                            "from": { "key_code": "escape" },
-                            "to": [{ "key_code": "caps_lock" }]
-                        }
-                    ]
-                }
-            ],
             "name": "Default profile",
             "selected": true,
-            "simple_modifications": [
-                {
-                    "from": { "key_code": "caps_lock" },
-                    "to": [{ "key_code": "escape" }]
-                },
-                {
-                    "from": { "key_code": "escape" },
-                    "to": [{ "key_code": "caps_lock" }]
-                }
-            ],
             "complex_modifications": {
                 "rules": [
                     {
@@ -50,6 +21,36 @@
                                         "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq toggle"
                                     }
                                 ]
+                            }
+                        ]
+                    },
+                    {
+                        "description": "CopyQ: Ctrl+1-5 for quick paste slots",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "1", "modifiers": { "mandatory": ["control"] } },
+                                "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'select(0); paste()'" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "2", "modifiers": { "mandatory": ["control"] } },
+                                "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'select(1); paste()'" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "3", "modifiers": { "mandatory": ["control"] } },
+                                "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'select(2); paste()'" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "4", "modifiers": { "mandatory": ["control"] } },
+                                "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'select(3); paste()'" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "5", "modifiers": { "mandatory": ["control"] } },
+                                "to": [{ "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq 'select(4); paste()'" }]
                             }
                         ]
                     }
