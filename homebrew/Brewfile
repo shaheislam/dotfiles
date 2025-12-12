@@ -186,6 +186,10 @@ brew "poppler"           # PDF preview for yazi
 cask "karabiner-elements"  # macOS keyboard remapping tool (Caps Lock ↔ Escape swap)
 cask "keycastr"  # Keystroke visualizer for screencasts and presentations
 
+# Clipboard Manager
+# CopyQ is installed via GitHub releases (not Homebrew) due to Gatekeeper deprecation
+# See: scripts/setup/setup-copyq.sh
+
 # Infrastructure Tools
 brew "pulumi"
 # brew "packer" # License changed to BUSL - install manually if needed

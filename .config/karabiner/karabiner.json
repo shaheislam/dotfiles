@@ -32,6 +32,29 @@
                     "to": [{ "key_code": "caps_lock" }]
                 }
             ],
+            "complex_modifications": {
+                "rules": [
+                    {
+                        "description": "CopyQ: Cmd+Shift+V to toggle clipboard history",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "v",
+                                    "modifiers": {
+                                        "mandatory": ["command", "shift"]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "/Applications/CopyQ.app/Contents/MacOS/copyq toggle"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
             "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
         }
     ]

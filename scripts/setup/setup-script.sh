@@ -1262,6 +1262,22 @@ if [ "$(uname)" == "Darwin" ]; then
   fi
 fi
 
+# Setup CopyQ clipboard manager
+echo "=== Setting up CopyQ clipboard manager ==="
+
+if [ "$(uname)" == "Darwin" ]; then
+  COPYQ_SETUP_SCRIPT="$HOME/dotfiles/scripts/setup/setup-copyq.sh"
+  if [ -f "$COPYQ_SETUP_SCRIPT" ]; then
+    if bash "$COPYQ_SETUP_SCRIPT"; then
+      log_success "CopyQ setup completed"
+    else
+      log_warning "CopyQ setup completed with warnings"
+    fi
+  else
+    log_warning "CopyQ setup script not found at $COPYQ_SETUP_SCRIPT"
+  fi
+fi
+
 # Setup Bash configuration
 echo "=== Setting up Bash configuration ==="
 log_info "Bash config files (.bashrc, .bash_profile) are managed by stow"
