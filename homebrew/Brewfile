@@ -183,7 +183,7 @@ brew "unar"              # Archive preview for yazi
 brew "poppler"           # PDF preview for yazi
 
 # Keyboard & Display Tools
-cask "karabiner-elements"  # macOS keyboard remapping tool (Caps Lock ↔ Escape swap)
+cask "karabiner-elements"  # macOS keyboard remapping tool (CopyQ shortcuts: Cmd+Shift+V, Ctrl+1-5)
 cask "keycastr"  # Keystroke visualizer for screencasts and presentations
 
 # Clipboard Manager
