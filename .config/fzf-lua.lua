@@ -52,6 +52,15 @@ local function create_scope_action(scope_name)
   end
 end
 
+-- Zoxide scope action - simpler marker since we just need the scope name
+-- Fish will rebuild the zoxide command with grep filtering
+local function create_zoxide_scope_action(scope_name)
+  return function(_, _)
+    io.stdout:write("__zoxide_scope__:" .. scope_name .. "\n")
+    quit()
+  end
+end
+
 -- File picker actions (Alt-l/s/g for scope - Neovim parity)
 local file_actions = {
   ["enter"] = output_files,
@@ -66,7 +75,7 @@ local file_actions = {
 -- Header hints (M = Alt/Meta)
 local file_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
 local grep_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
-local zoxide_header = "Enter:cd | Esc:cancel | C-/:preview"
+local zoxide_header = "Enter:cd | M-l:local M-s:git M-g:global | C-/:preview"
 local git_header = "Enter:select | C-y:copy SHA | C-/:preview"
 
 -- Setup fzf-lua - MUST inherit "cli" profile!
@@ -125,8 +134,9 @@ require("fzf-lua").setup({
   },
 
   -- Zoxide: Output path to stdout for CLI mode
+  -- Note: Scope filtering happens in Fish via cmd parameter with grep
   zoxide = {
-    prompt = "Zoxide❯ ",
+    prompt = "Zoxide (Local)❯ ",
     header = zoxide_header,
     actions = {
       ["enter"] = function(s, _)
@@ -136,6 +146,9 @@ require("fzf-lua").setup({
         io.stdout:write(dir .. "\n")
         quit()
       end,
+      ["alt-l"] = create_zoxide_scope_action("local"),
+      ["alt-s"] = create_zoxide_scope_action("git"),
+      ["alt-g"] = create_zoxide_scope_action("global"),
       ["esc"] = quit,
       ["ctrl-c"] = quit,
     },
