@@ -1046,6 +1046,38 @@ else
   echo "Warning: Neovim not found. Skipping plugin installation."
 fi
 
+# Setup ImageMagick library symlinks for magick.nvim (image.nvim dependency)
+# magick.nvim uses FFI which doesn't search Homebrew paths by default
+echo "=== Setting up ImageMagick library symlinks for Neovim ==="
+if command -v magick &> /dev/null; then
+  MAGICK_LIB_DIR="$HOME/.local/share/nvim/magick/lib"
+  mkdir -p "$MAGICK_LIB_DIR"
+
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS with Homebrew (Apple Silicon or Intel)
+    if [ -d "/opt/homebrew/lib" ]; then
+      BREW_LIB="/opt/homebrew/lib"
+    elif [ -d "/usr/local/lib" ]; then
+      BREW_LIB="/usr/local/lib"
+    fi
+
+    if [ -n "$BREW_LIB" ] && [ -f "$BREW_LIB/libMagickWand-7.Q16HDRI.dylib" ]; then
+      ln -sf "$BREW_LIB/libMagickWand-7.Q16HDRI.dylib" "$MAGICK_LIB_DIR/"
+      ln -sf "$BREW_LIB/libMagickWand-7.Q16HDRI.10.dylib" "$MAGICK_LIB_DIR/"
+      ln -sf "$BREW_LIB/libMagickCore-7.Q16HDRI.dylib" "$MAGICK_LIB_DIR/"
+      ln -sf "$BREW_LIB/libMagickCore-7.Q16HDRI.10.dylib" "$MAGICK_LIB_DIR/"
+      echo "ImageMagick library symlinks created for magick.nvim"
+    else
+      echo "Warning: ImageMagick libraries not found in Homebrew paths"
+    fi
+  else
+    # Linux - libraries are typically in standard paths, FFI should find them
+    echo "Linux detected - ImageMagick libraries should be in standard paths"
+  fi
+else
+  echo "Warning: ImageMagick not installed. Skipping library symlinks."
+fi
+
 # Install pynvim for Neovim Python support
 echo "=== Installing pynvim for Neovim Python support ==="
 if command -v python3.11 &> /dev/null; then
