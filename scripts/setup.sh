@@ -490,69 +490,10 @@ phase_4_cloud_tools() {
     if command_exists claude; then
         print_step "Configuring Claude Code MCP servers..."
 
-        # Core development tools
-        claude mcp add --scope user filesystem npx @modelcontextprotocol/server-filesystem "$HOME/Desktop" "$HOME/Downloads" >/dev/null 2>&1 || true
-        claude mcp add --scope user git pipx run mcp-server-git "$HOME/dotfiles" >/dev/null 2>&1 || true
-        claude mcp add --scope user github npx @modelcontextprotocol/server-github >/dev/null 2>&1 || true
-        claude mcp add --scope user memory npx @modelcontextprotocol/server-memory >/dev/null 2>&1 || true
-        claude mcp add --scope user sequential-thinking npx @modelcontextprotocol/server-sequential-thinking >/dev/null 2>&1 || true
-
-        # Web and automation tools
-        claude mcp add --scope user browser-tools npx @agentdeskai/browser-tools-mcp@1.2.0 >/dev/null 2>&1 || true
-
-        # Download and install Browser Tools Chrome extension
-        local browser_tools_dir="$HOME/.config/browser-tools"
-        mkdir -p "$browser_tools_dir"
-        if [[ ! -d "$browser_tools_dir/chrome-extension" ]]; then
-            print_step "Downloading Browser Tools extension..."
-            local latest_release=$(curl -s https://api.github.com/repos/agentdeskai/browser-tools/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
-            if [[ -n "$latest_release" ]]; then
-                local download_url="https://github.com/agentdeskai/browser-tools/releases/download/${latest_release}/BrowserTools-extension.zip"
-                if curl -sL "$download_url" -o "$browser_tools_dir/BrowserTools-extension.zip" 2>/dev/null; then
-                    unzip -q "$browser_tools_dir/BrowserTools-extension.zip" -d "$browser_tools_dir" 2>/dev/null
-                    rm "$browser_tools_dir/BrowserTools-extension.zip"
-                    print_success "Browser Tools extension downloaded"
-
-                    # OS-specific installation instructions
-                    log_verbose "Extension directory: $browser_tools_dir/chrome-extension"
-                    if [[ "$(uname -s)" == "Darwin" ]]; then
-                        log_verbose "Chrome: chrome://extensions → Load unpacked → $browser_tools_dir/chrome-extension"
-                        log_verbose "Or copy to: ~/Library/Application Support/Google/Chrome/Default/Extensions/"
-                    else
-                        log_verbose "Chrome/Chromium: chrome://extensions → Load unpacked → $browser_tools_dir/chrome-extension"
-                        log_verbose "Or copy to: ~/.config/google-chrome/Default/Extensions/"
-                        log_verbose "Firefox: about:debugging#/runtime/this-firefox → Load Temporary Add-on"
-                    fi
-                fi
-            fi
-        fi
-
-        # Install Browser Tools MCP server package
-        if command_exists bun; then
-            bun add -g @agentdeskai/browser-tools-server@1.2.0 >/dev/null 2>&1 || true
-        elif command_exists npm; then
-            npm install -g @agentdeskai/browser-tools-server@1.2.0 >/dev/null 2>&1 || true
-        fi
-
-        claude mcp add --scope user fetch pipx run mcp-server-fetch >/dev/null 2>&1 || true
-        claude mcp add --scope user duckduckgo npx duckduckgo-mcp-server >/dev/null 2>&1 || true
-
-        # Additional MCP servers
+        # Core MCP servers
         claude mcp add --scope user context7 bunx @upstash/context7-mcp >/dev/null 2>&1 || true
         claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
         claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user drawio npx -y drawio-mcp-server >/dev/null 2>&1 || true
-        claude mcp add --scope user genai-toolbox bunx @googlegenai/genai-toolbox >/dev/null 2>&1 || true
-
-        # AWS MCP servers
-        claude mcp add --scope user aws-documentation uvx awslabs.aws-documentation-mcp-server@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user aws-diagram uvx awslabs.aws-diagram-mcp-server >/dev/null 2>&1 || true
-        claude mcp add --scope user aws-cdk uvx awslabs.cdk-mcp-server@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user aws-terraform uvx awslabs.terraform-mcp-server@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user aws-iam uvx awslabs.iam-mcp-server@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user aws-cloudformation uvx awslabs.cfn-mcp-server@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user aws-dynamodb uvx awslabs.dynamodb-mcp-server@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user aws-lambda uvx awslabs.lambda-tool-mcp-server@latest >/dev/null 2>&1 || true
 
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"
