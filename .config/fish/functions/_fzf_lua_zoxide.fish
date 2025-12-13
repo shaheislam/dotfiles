@@ -19,8 +19,8 @@ function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory
             set zoxide_cmd "$zoxide_cmd | sed 's|$HOME|~|'"
         else
             # Local/Git: filter to scope, then strip the prefix for cleaner display
-            # sed pattern: replace tab+prefix+/ with just tab (keeps score, strips prefix)
-            set zoxide_cmd "$zoxide_cmd | grep -F '$filter_path' | sed 's|\t$filter_path/|\t|'"
+            # NOTE: zoxide uses spaces (not tabs) between score and path
+            set zoxide_cmd "$zoxide_cmd | grep -F '$filter_path' | sed \"s|$filter_path/||\""
         end
 
         set -l result (_fzf_lua_cli zoxide cmd="$zoxide_cmd" prompt="Zoxide ($scope)❯ ")
