@@ -90,6 +90,7 @@ brew "tealdeer"
 brew "jq"
 brew "yq"
 brew "jwt-cli"   # JWT encoder/decoder CLI
+brew "fx"        # Interactive JSON explorer
 brew "redis"  # Required for Pulse coding activity tracking
 brew "graphviz"  # Required for aws-diagram-mcp-server
 brew "w3m"       # For tmpmail HTML email rendering
