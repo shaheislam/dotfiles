@@ -61,17 +61,33 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         printf "%s  %s  %s  %-45s  %s\n", $1, status, dur_c, $4, $5
     }'
 
+    # AWK for full path mode (no truncation/padding on path)
+    set -l awk_fullpath 'BEGIN {FS="\t"} {
+        # Exit status with color
+        status = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
+
+        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
+        dur = $3
+        dur_padded = sprintf("%-8s", dur)
+        num = dur; gsub(/[^0-9.]/, "", num)
+        secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
+        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
+        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
+        else dur_c = "\033[31m" dur_padded "\033[0m"
+
+        # Full path, no fixed width
+        printf "%s  %s  %s  %s  %s\n", $1, status, dur_c, $4, $5
+    }'
+
     # Create a temporary file to store the fzf result
     set -l tmpfile (mktemp)
 
     # Header with all keybindings
-    set -l header_dir "Mode: directory | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
-    set -l header_global "Mode: global | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
-    set -l header_session "Mode: session | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
-    set -l header_failed "Mode: FAILED ONLY | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:all C-o:edit | Enter:run →:fill"
-
-    # Preview command - extract and syntax highlight the command
-    set -l preview_cmd "echo {} | awk -F'  ' '{print \$NF}' | fish_indent --ansi 2>/dev/null || echo {} | awk -F'  ' '{print \$NF}'"
+    set -l header_dir "Mode: directory | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
+    set -l header_global "Mode: global | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
+    set -l header_session "Mode: session | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
+    set -l header_failed "Mode: FAILED ONLY | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:all C-o:edit | Enter:run →:fill"
+    set -l header_fullpath "Mode: FULL PATH | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
 
     # Run fzf with all enhancements
     atuin search --format "$atuin_format" --cwd "$current_dir" 2>/dev/null | string replace -a "$HOME" "~" | awk "$awk_dir" | \
@@ -82,8 +98,6 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --query="$cmd_buffer" \
         --header="$header_dir" \
         --expect="right" \
-        --preview="$preview_cmd" \
-        --preview-window="bottom:3:wrap" \
         --bind="ctrl-x:execute-silent(echo {} | awk -F'  ' '{print \$NF}' | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_dir')" \
         --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_dir')+change-header($header_dir)" \
         --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_global')+change-header($header_global)" \
@@ -91,6 +105,7 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --bind="ctrl-y:execute-silent(echo {} | awk -F'  ' '{print \$NF}' | pbcopy)" \
         --bind="ctrl-e:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_failed')+change-header($header_failed)" \
         --bind="ctrl-o:execute(echo {} | awk -F'  ' '{print \$NF}' > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" \
+        --bind="ctrl-/:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_fullpath')+change-header($header_fullpath)" \
         > $tmpfile
 
     set -l fzf_exit_status $status
