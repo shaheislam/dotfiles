@@ -141,8 +141,8 @@ require("fzf-lua").setup({
     actions = {
       ["enter"] = function(s, _)
         if not s[1] then return quit() end
-        -- Extract directory path from zoxide output (format: "score\tpath")
-        local dir = s[1]:match("[^\t]+$") or s[1]
+        -- Extract directory path from zoxide output (format: "score    path")
+        local dir = s[1]:match("%S+$") or s[1]
         io.stdout:write(dir .. "\n")
         quit()
       end,
