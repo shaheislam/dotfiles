@@ -7,7 +7,7 @@ Claude Code Router enables using Claude Code's interface with alternative AI pro
 The router is automatically installed via the setup script:
 ```bash
 cd ~/dotfiles
-./scripts/setup-script.sh
+./scripts/setup.sh
 ```
 
 Or install manually:

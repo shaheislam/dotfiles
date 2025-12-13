@@ -135,7 +135,7 @@ jobs:
             echo ""
 
             # Extract required commands from setup script
-            grep -E '(command -v|which|type)' scripts/setup-script.sh | \
+            grep -E '(command -v|which|type)' scripts/setup.sh | \
               sed -E 's/.*(command -v|which|type) ([a-zA-Z0-9_-]+).*/- \2/' | \
               sort -u
 
@@ -186,7 +186,7 @@ jobs:
             if grep -r -i "$pattern" . \
                --exclude-dir=.git \
                --exclude="*.md" \
-               --exclude="setup-script.sh"; then
+               --exclude="setup.sh"; then
               echo "⚠️ Potential secret found matching pattern: $pattern"
               exit 1
             fi

@@ -34,7 +34,7 @@ This guide explains the three-tier Nix configuration system that provides:
 
 ```bash
 # 1. Install Nix and Home Manager (done by setup script)
-~/dotfiles/scripts/setup/setup-script.sh
+~/dotfiles/scripts/setup.sh
 
 # 2. Activate Home Manager (global packages)
 hm-switch  # or: cd ~/.config/home-manager && nix run . -- switch --flake .

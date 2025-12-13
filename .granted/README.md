@@ -29,7 +29,7 @@ Profiles appear in "frequently-used" order (most recent first)
 ### Automatic Setup (Recommended)
 The dotfiles setup script handles everything:
 ```bash
-./scripts/setup-script.sh
+./scripts/setup.sh
 ```
 
 ### Manual Setup

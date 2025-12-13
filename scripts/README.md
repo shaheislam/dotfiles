@@ -68,9 +68,21 @@ tmpmail --help
 - Stores account credentials temporarily in `/tmp/tmpmail-tm/` directory
 - Credentials are cleared on system restart
 
-## setup-script.sh
+## setup.sh
 
-The main setup script for configuring a new macOS development environment with all dotfiles and tools.
+The main setup script for configuring a new macOS/Linux development environment with all dotfiles and tools.
+
+**Usage:**
+```bash
+# Full setup with all features
+./scripts/setup.sh
+
+# With optional features
+ENABLE_NIX=true ENABLE_PULSE=true ./scripts/setup.sh --profile comprehensive
+
+# Dry run (show what would be done)
+./scripts/setup.sh --dry-run
+```
 
 ## tools/
 

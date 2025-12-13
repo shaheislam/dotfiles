@@ -43,7 +43,7 @@ setup_fish() {
 
     print_step "Installing Fish plugins..."
     for plugin in "${plugins[@]}"; do
-        print_info "Installing $plugin..."
+        log_verbose "Installing $plugin..."
         fish -c "fisher install $plugin" 2>/dev/null || true
     done
 
@@ -73,8 +73,15 @@ setup_zsh() {
         RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     fi
 
-    # Install plugins
     local zsh_custom="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+
+    # Install Powerlevel10k theme
+    if [[ ! -d "$zsh_custom/themes/powerlevel10k" ]]; then
+        print_step "Installing Powerlevel10k theme..."
+        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$zsh_custom/themes/powerlevel10k" 2>/dev/null || true
+    else
+        log_verbose "Powerlevel10k already installed"
+    fi
 
     print_step "Installing Zsh plugins..."
 
@@ -88,6 +95,7 @@ setup_zsh() {
         "docker-zsh-completion:greymd/docker-zsh-completion"
         "zsh-history-substring-search:zsh-users/zsh-history-substring-search"
         "zsh-vi-mode:jeffreytse/zsh-vi-mode"
+        "zsh-syntax-highlighting:zsh-users/zsh-syntax-highlighting"
     )
 
     for plugin_def in "${plugins[@]}"; do
@@ -95,14 +103,14 @@ setup_zsh() {
         local plugin_repo="${plugin_def##*:}"
 
         if [[ ! -d "$zsh_custom/plugins/$plugin_name" ]]; then
-            print_info "Installing $plugin_name..."
+            log_verbose "Installing $plugin_name..."
             git clone "https://github.com/$plugin_repo.git" "$zsh_custom/plugins/$plugin_name" 2>/dev/null || true
         else
             log_verbose "$plugin_name already installed"
         fi
     done
 
-    print_success "Zsh shell configured with ${#plugins[@]} plugins"
+    print_success "Zsh shell configured with Powerlevel10k and ${#plugins[@]} plugins"
 }
 
 # ============================================================================

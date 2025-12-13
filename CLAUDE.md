@@ -5,7 +5,7 @@
 ## Core Development Principles
 
 ### 1. Setup Script Compatibility
-- **ALWAYS** check if `scripts/setup-script.sh` requires modification when adding new tools, packages, or configurations
+- **ALWAYS** check if `scripts/setup.sh` requires modification when adding new tools, packages, or configurations
 - **ALWAYS** verify new dependencies are included in the Brewfile and setup script
 - **ALWAYS** test setup script changes for compatibility with fresh macOS installations
 - **ALWAYS** ensure PATH configurations are added to both Fish and Zsh configs in setup script
@@ -130,7 +130,7 @@ The setup script will automatically:
 
 ### Configuration Management
 - **ALWAYS** add new packages to `homebrew/Brewfile`
-- **ALWAYS** update `scripts/setup-script.sh` when adding new tools
+- **ALWAYS** update `scripts/setup.sh` when adding new tools
 - **ALWAYS** maintain consistent theming (Tokyo Night) across applications
 - **ALWAYS** use Fish shell syntax for primary shell configurations
 - **ALWAYS** include Zsh compatibility for broader system support
@@ -174,13 +174,13 @@ The setup script will automatically:
 ### Adding New CLI Tools
 1. Add to `homebrew/Brewfile`
 2. Add PATH configuration to Fish config if needed
-3. Update `scripts/setup-script.sh` to include in automated setup
+3. Update `scripts/setup.sh` to include in automated setup
 4. Add aliases/functions to Fish config if appropriate
 5. Ensure Zsh compatibility in setup script
 
 ### Adding New GUI Applications
 1. Add cask to `homebrew/Brewfile`
-2. Add installation check to `scripts/setup-script.sh`
+2. Add installation check to `scripts/setup.sh`
 3. Create configuration files in appropriate `.config/` subdirectory
 4. Apply Tokyo Night theme if supported
 
@@ -247,7 +247,7 @@ The setup script will automatically:
    - Use `pipx` for other Python MCPs
 
 2. **Claude Code CLI**: Managed via `claude mcp add` commands in setup script
-   - Located in `scripts/setup/setup-script.sh` (line 676+)
+   - Located in `scripts/setup.sh` (Phase 4: Cloud & Infrastructure Tools)
    - Use `bunx` instead of `npx` (per hook requirements)
    - Use `uvx` for Python-based AWS MCPs
    - Use `pipx run` for other Python MCPs

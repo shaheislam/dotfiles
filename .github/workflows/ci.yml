@@ -48,7 +48,7 @@ jobs:
           # Create a test mode for the setup script
           export CI_TEST_MODE=true
           export DOTFILES_DIR=$GITHUB_WORKSPACE
-          bash -n scripts/setup-script.sh  # Syntax check
+          bash -n scripts/setup.sh  # Syntax check
 
       - name: Test Homebrew installation
         run: |
@@ -111,7 +111,7 @@ jobs:
           if grep -r -E "(api[_-]?key|password|secret|token)" . \
              --exclude-dir=.git \
              --exclude="*.md" \
-             --exclude="setup-script.sh" | \
+             --exclude="setup.sh" | \
              grep -v -E "(example|template|dummy|placeholder)"; then
             echo "⚠️ Potential sensitive information found"
             exit 1

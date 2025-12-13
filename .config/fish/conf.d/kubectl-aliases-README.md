@@ -52,7 +52,7 @@ kgpooyaml
 
 ## Regenerating Aliases
 
-The aliases are automatically generated during setup via `scripts/setup/setup-script.sh`. To manually regenerate:
+The aliases are automatically generated during setup via `scripts/setup.sh`. To manually regenerate:
 
 ```bash
 cd ~/dotfiles

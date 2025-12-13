@@ -562,6 +562,79 @@ phase_4_cloud_tools() {
             print_success "Claude Code notification channel set to terminal_bell" || true
     fi
 
+    # Install Kubernetes/Helm plugins
+    if command_exists helm; then
+        print_step "Installing helm-diff plugin..."
+        # Remove any corrupted installation first
+        rm -rf "$HOME/Library/helm/plugins/helm-diff" 2>/dev/null || true
+        rm -rf "$HOME/.local/share/helm/plugins/helm-diff" 2>/dev/null || true
+        # Use v3.8.1 for compatibility with Helm 3.15.x
+        helm plugin install https://github.com/databus23/helm-diff --version v3.8.1 >/dev/null 2>&1 && \
+            print_success "helm-diff plugin installed" || \
+            log_verbose "helm-diff plugin installation skipped"
+    fi
+
+    # Install krew kubectl plugins
+    if command_exists kubectl && kubectl krew version >/dev/null 2>&1; then
+        print_step "Installing kubectl krew plugins..."
+        # get-all plugin for listing all namespace resources
+        if ! kubectl krew list 2>/dev/null | grep -q "get-all"; then
+            kubectl krew install get-all >/dev/null 2>&1 && \
+                print_success "kubectl get-all plugin installed" || \
+                log_verbose "get-all plugin installation skipped"
+        fi
+        # lineage plugin for resource ownership tree
+        if ! kubectl krew list 2>/dev/null | grep -q "lineage"; then
+            kubectl krew install lineage >/dev/null 2>&1 && \
+                print_success "kubectl lineage plugin installed" || \
+                log_verbose "lineage plugin installation skipped"
+        fi
+    fi
+
+    # Install kubectl-fzf-server for fast completions (macOS only)
+    if [[ "$DETECTED_OS" == "macos" ]] && command_exists go; then
+        if ! command_exists kubectl-fzf-server; then
+            print_step "Installing kubectl-fzf-server..."
+            go install github.com/bonnefoa/kubectl-fzf/v3/cmd/kubectl-fzf-server@main >/dev/null 2>&1 && \
+                print_success "kubectl-fzf-server installed" || \
+                log_verbose "kubectl-fzf-server installation skipped"
+        fi
+        # Load launchd plist for kubectl-fzf-server
+        local kubectl_fzf_plist="$HOME/Library/LaunchAgents/com.kubectl-fzf-server.plist"
+        if [[ -f "$kubectl_fzf_plist" ]] && ! launchctl list 2>/dev/null | grep -q "com.kubectl-fzf-server"; then
+            launchctl load "$kubectl_fzf_plist" 2>/dev/null && \
+                print_success "kubectl-fzf-server service started" || \
+                log_verbose "kubectl-fzf-server service start skipped"
+        fi
+    fi
+
+    # Install consul-template (HashiCorp templating tool)
+    if ! command_exists consul-template; then
+        print_step "Installing consul-template..."
+        local consul_template_version="0.41.3"
+        local consul_template_arch
+        if [[ "$DETECTED_OS" == "macos" ]]; then
+            consul_template_arch="darwin_arm64"
+        else
+            consul_template_arch="linux_amd64"
+        fi
+        local consul_template_url="https://releases.hashicorp.com/consul-template/${consul_template_version}/consul-template_${consul_template_version}_${consul_template_arch}.zip"
+        local consul_template_tmp="/tmp/consul-template.zip"
+
+        if curl -sL "$consul_template_url" -o "$consul_template_tmp"; then
+            mkdir -p "$HOME/bin"
+            unzip -q -o "$consul_template_tmp" -d /tmp
+            mv /tmp/consul-template "$HOME/bin/"
+            chmod +x "$HOME/bin/consul-template"
+            rm -f "$consul_template_tmp"
+            print_success "consul-template installed to ~/bin/"
+        else
+            print_warning "Failed to download consul-template"
+        fi
+    else
+        log_verbose "consul-template already installed"
+    fi
+
     mark_step_complete "cloud_tools"
 }
 
@@ -700,6 +773,27 @@ phase_7_shells() {
 
     setup_shells_from_profile "$PROFILE"
 
+    # Setup Atuin shell history (import existing history)
+    if command_exists atuin && [[ ! -f "$HOME/.local/share/atuin/key" ]]; then
+        print_step "Setting up Atuin shell history..."
+        atuin import auto 2>/dev/null && \
+            print_success "Atuin history imported" || \
+            log_verbose "Atuin import skipped (may need manual setup)"
+    fi
+
+    # Configure Jujutsu (jj) version control
+    if command_exists jj; then
+        print_step "Configuring Jujutsu (jj)..."
+        if [[ -f "$DOTFILES_ROOT/.config/jj/config.toml" ]]; then
+            mkdir -p "$HOME/.config/jj"
+            ln -sf "$DOTFILES_ROOT/.config/jj/config.toml" "$HOME/.config/jj/config.toml" 2>/dev/null && \
+                print_success "Jujutsu configuration linked" || \
+                log_verbose "Jujutsu config will be created by stow"
+        else
+            log_verbose "Jujutsu config will be created by stow"
+        fi
+    fi
+
     mark_step_complete "shells"
 }
 
@@ -790,9 +884,47 @@ phase_9_fonts_and_apps() {
                 print_success "macOS defaults configured (Finder, Dock, developer settings)" || \
                 log_verbose "macOS defaults completed with warnings"
         fi
+
+        # Setup SSH Key Auto-loading LaunchAgent
+        print_step "Setting up SSH key auto-loading..."
+        local ssh_plist="$HOME/Library/LaunchAgents/com.user.ssh-add.plist"
+        local ssh_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.user.ssh-add.plist"
+        mkdir -p "$HOME/Library/LaunchAgents"
+        if [[ ! -f "$ssh_plist" ]] && [[ -f "$ssh_plist_source" ]]; then
+            cp "$ssh_plist_source" "$ssh_plist"
+            print_success "SSH LaunchAgent installed"
+        fi
+        if [[ -f "$ssh_plist" ]]; then
+            if ! launchctl list 2>/dev/null | grep -q "com.user.ssh-add"; then
+                launchctl load "$ssh_plist" 2>/dev/null && \
+                    print_success "SSH key auto-loading enabled" || \
+                    log_verbose "SSH LaunchAgent load skipped"
+            fi
+        fi
+
+        # Setup Karabiner-Elements (keyboard remapping)
+        print_step "Setting up Karabiner-Elements..."
+        if [[ -d "$DOTFILES_ROOT/.config/karabiner" ]]; then
+            mkdir -p "$HOME/.config/karabiner"
+            if [[ ! -f "$HOME/.config/karabiner/karabiner.json" ]]; then
+                ln -sf "$DOTFILES_ROOT/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json" 2>/dev/null && \
+                    print_success "Karabiner-Elements configuration linked" || \
+                    log_verbose "Karabiner config link skipped"
+            fi
+        fi
+
+        # Setup CopyQ clipboard manager
+        if command_exists copyq || [[ -d "/Applications/CopyQ.app" ]]; then
+            print_step "Setting up CopyQ..."
+            if [[ -f "$DOTFILES_ROOT/scripts/setup/setup-copyq.sh" ]]; then
+                bash "$DOTFILES_ROOT/scripts/setup/setup-copyq.sh" >/dev/null 2>&1 && \
+                    print_success "CopyQ configured" || \
+                    log_verbose "CopyQ setup completed with warnings"
+            fi
+        fi
     else
         # Linux/other OS
-        print_info "Font and GUI application installation is macOS-specific"
+        echo "Font and GUI application installation is macOS-specific"
         log_verbose "Phase 9 operations skipped on $DETECTED_OS (safe to skip)"
     fi
 
@@ -890,22 +1022,81 @@ phase_11_optional_features() {
         print_header "Phase 11: Optional Features - Nix Package Manager"
 
         if ! command_exists nix; then
-            print_step "Installing Nix package manager..."
-            sh <(curl -L https://nixos.org/nix/install) --daemon >/dev/null 2>&1 && \
-                print_success "Nix package manager installed" || \
-                print_warning "Nix installation failed"
-
-            # Install Home Manager
-            if command_exists nix; then
-                print_step "Installing Home Manager..."
-                nix-channel --add https://github.com/nix-community/home-manager/archive/master.tar.gz home-manager >/dev/null 2>&1
-                nix-channel --update >/dev/null 2>&1
-                print_success "Home Manager configured"
+            print_step "Installing Nix package manager (Determinate Systems installer)..."
+            # Use Determinate Systems installer for better macOS support
+            if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm; then
+                print_success "Nix package manager installed"
+                # Source Nix for current session
+                [[ -f '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]] && \
+                    source '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+            else
+                print_warning "Nix installation failed - install manually from https://nixos.org/download"
             fi
         fi
 
-        # Setup Nix LSP hybrid mode
+        # Configure Nix
         if command_exists nix; then
+            print_step "Configuring Nix..."
+            mkdir -p "$HOME/.config/nix"
+
+            # Create nix.conf with flakes and experimental features
+            if [[ ! -f "$HOME/.config/nix/nix.conf" ]]; then
+                cat > "$HOME/.config/nix/nix.conf" << 'EOF'
+# Enable experimental features
+experimental-features = nix-command flakes
+
+# Build settings
+max-jobs = auto
+cores = 0
+sandbox = true
+
+# Substituters (binary caches)
+substituters = https://cache.nixos.org https://nix-community.cachix.org
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+
+# Garbage collection
+keep-outputs = true
+keep-derivations = true
+EOF
+                print_success "Nix configuration created"
+            fi
+
+            # Configure trusted users for Determinate Systems installer (macOS)
+            if [[ "$DETECTED_OS" == "macos" ]] && [[ -f "/etc/nix/nix.custom.conf" ]]; then
+                if ! sudo grep -q "^trusted-users.*@admin" /etc/nix/nix.custom.conf 2>/dev/null; then
+                    print_step "Adding @admin to Nix trusted users..."
+                    echo "trusted-users = root @admin" | sudo tee -a /etc/nix/nix.custom.conf > /dev/null
+                    # Restart Nix daemon
+                    if sudo launchctl list | grep -q "systems.determinate.nix-daemon"; then
+                        sudo launchctl kickstart -k system/systems.determinate.nix-daemon
+                    fi
+                fi
+            fi
+
+            # Setup Home Manager
+            print_step "Setting up Home Manager..."
+            if [[ ! -f "$HOME/.config/home-manager/flake.nix" ]]; then
+                # Symlink Home Manager configuration from dotfiles if it exists
+                if [[ -d "$DOTFILES_ROOT/.config/home-manager" ]]; then
+                    rm -rf "$HOME/.config/home-manager" 2>/dev/null || true
+                    ln -sf "$DOTFILES_ROOT/.config/home-manager" "$HOME/.config/home-manager"
+                    print_success "Home Manager configuration symlinked from dotfiles"
+                else
+                    print_warning "Home Manager configuration not found in dotfiles"
+                fi
+            fi
+
+            # Activate Home Manager if config exists
+            if [[ -f "$HOME/.config/home-manager/flake.nix" ]]; then
+                print_step "Activating Home Manager configuration..."
+                if (cd "$HOME/.config/home-manager" && nix run . -- switch --flake .#default --impure 2>/dev/null); then
+                    print_success "Home Manager activated for user: $USER"
+                else
+                    print_warning "Home Manager activation failed - run 'hm-switch' manually after restarting shell"
+                fi
+            fi
+
+            # Setup Nix LSP hybrid mode
             print_step "Configuring Nix LSP hybrid setup..."
 
             # Install global LSPs
@@ -931,28 +1122,64 @@ phase_11_optional_features() {
     if [[ "${ENABLE_PULSE:-false}" == "true" ]]; then
         print_header "Phase 11: Optional Features - Pulse Coding Tracker"
 
-        if ! command_exists pulse; then
-            print_step "Building Pulse from source..."
-            # Clone correct repo and build Pulse
-            local pulse_dir="/tmp/pulse-build"
-            git clone https://github.com/viccon/pulse.git "$pulse_dir" 2>/dev/null
+        # Start Redis service (required for Pulse)
+        print_step "Starting Redis service..."
+        if command_exists brew; then
+            brew services start redis 2>/dev/null || log_verbose "Redis service may already be running"
+            print_success "Redis service started"
+        elif command_exists systemctl; then
+            sudo systemctl enable redis 2>/dev/null || true
+            sudo systemctl start redis 2>/dev/null || true
+            print_success "Redis service started (systemd)"
+        else
+            print_warning "Cannot start Redis service automatically"
+        fi
 
-            if [[ -d "$pulse_dir" ]]; then
-                (cd "$pulse_dir" && make install) >/dev/null 2>&1 && \
-                    print_success "Pulse coding tracker installed" || \
-                    print_warning "Pulse installation failed"
+        # Build and install Pulse binaries
+        if ! command_exists pulse-server || ! command_exists pulse-client; then
+            print_step "Building Pulse from source..."
+
+            if ! command_exists go; then
+                print_warning "Go not installed - cannot build Pulse. Install with: brew install go"
+            else
+                local pulse_dir="/tmp/pulse-build"
                 rm -rf "$pulse_dir"
+                mkdir -p "$HOME/bin"
+
+                if git clone https://github.com/viccon/pulse.git "$pulse_dir" 2>/dev/null; then
+                    cd "$pulse_dir" || true
+                    if go build -o pulse-server ./cmd/server 2>/dev/null && \
+                       go build -o pulse-client ./cmd/client 2>/dev/null; then
+                        cp pulse-server "$HOME/bin/"
+                        cp pulse-client "$HOME/bin/"
+                        chmod +x "$HOME/bin/pulse-server" "$HOME/bin/pulse-client"
+                        print_success "Pulse binaries installed to ~/bin/"
+                    else
+                        print_warning "Failed to build Pulse binaries"
+                    fi
+                    cd - >/dev/null || true
+                    rm -rf "$pulse_dir"
+                else
+                    print_warning "Failed to clone Pulse repository"
+                fi
             fi
+        else
+            log_verbose "Pulse binaries already installed"
         fi
 
         # Create Pulse configuration
-        if command_exists pulse; then
+        if command_exists pulse-server || [[ -f "$HOME/bin/pulse-server" ]]; then
             print_step "Configuring Pulse..."
-            mkdir -p "$HOME/.pulse"
+            mkdir -p "$HOME/.pulse/logs" "$HOME/.pulse/data"
 
-            # Create config.yaml
-            cat > "$HOME/.pulse/config.yaml" <<'EOF'
-# Pulse Coding Tracker Configuration
+            # Create config.yaml if not exists
+            if [[ ! -f "$HOME/.pulse/config.yaml" ]]; then
+                cat > "$HOME/.pulse/config.yaml" <<'EOF'
+server:
+  name: "pulse-server"
+  host: "127.0.0.1"
+  port: 8080
+
 redis:
   host: localhost
   port: 6379
@@ -966,72 +1193,92 @@ tracking:
 projects:
   default_root: ~/code
 EOF
-            chmod 600 "$HOME/.pulse/config.yaml"
+                chmod 600 "$HOME/.pulse/config.yaml"
+                print_success "Pulse configuration created"
+            else
+                log_verbose "Pulse configuration already exists"
+            fi
 
             # Setup daemon (OS-specific)
-            if [[ "$(uname -s)" == "Darwin" ]]; then
-                print_step "Setting up Pulse daemon (launchd)..."
-                local pulse_plist="$HOME/Library/LaunchAgents/com.pulse.tracker.plist"
-                mkdir -p "$HOME/Library/LaunchAgents"
+            local pulse_binary
+            if [[ -f "$HOME/bin/pulse-server" ]]; then
+                pulse_binary="$HOME/bin/pulse-server"
+            else
+                pulse_binary="$(which pulse-server 2>/dev/null || echo "")"
+            fi
 
-                cat > "$pulse_plist" <<EOF
+            if [[ -n "$pulse_binary" ]]; then
+                if [[ "$(uname -s)" == "Darwin" ]]; then
+                    print_step "Setting up Pulse daemon (launchd)..."
+                    local pulse_plist="$HOME/Library/LaunchAgents/dev.shaheislam.pulse.plist"
+                    mkdir -p "$HOME/Library/LaunchAgents"
+
+                    if [[ ! -f "$pulse_plist" ]]; then
+                        cat > "$pulse_plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.pulse.tracker</string>
+    <string>dev.shaheislam.pulse</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/.pulse/logs/stderr.log</string>
+    <key>StandardOutPath</key>
+    <string>$HOME/.pulse/logs/stdout.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/bin</string>
+    </dict>
     <key>ProgramArguments</key>
     <array>
-        <string>$(which pulse)</string>
-        <string>daemon</string>
+        <string>$pulse_binary</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
     <true/>
-    <key>StandardErrorPath</key>
-    <string>$HOME/.pulse/error.log</string>
-    <key>StandardOutPath</key>
-    <string>$HOME/.pulse/output.log</string>
 </dict>
 </plist>
 EOF
+                        launchctl load "$pulse_plist" 2>/dev/null || true
+                        print_success "Pulse daemon configured and started"
+                    else
+                        log_verbose "Pulse daemon already configured"
+                    fi
+                else
+                    # Linux systemd user service
+                    print_step "Setting up Pulse daemon (systemd)..."
+                    mkdir -p "$HOME/.config/systemd/user"
+                    local pulse_service="$HOME/.config/systemd/user/pulse-tracker.service"
 
-                # Load daemon
-                launchctl load "$pulse_plist" 2>/dev/null || true
-                print_success "Pulse daemon configured and started"
-            else
-                # Linux systemd user service
-                print_step "Setting up Pulse daemon (systemd)..."
-                mkdir -p "$HOME/.config/systemd/user"
-                local pulse_service="$HOME/.config/systemd/user/pulse-tracker.service"
-
-                cat > "$pulse_service" <<EOF
+                    cat > "$pulse_service" <<EOF
 [Unit]
 Description=Pulse Coding Tracker
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=$(which pulse) daemon
+ExecStart=$pulse_binary
 Restart=on-failure
 RestartSec=5
-StandardOutput=append:$HOME/.pulse/output.log
-StandardError=append:$HOME/.pulse/error.log
+StandardOutput=append:$HOME/.pulse/logs/stdout.log
+StandardError=append:$HOME/.pulse/logs/stderr.log
 
 [Install]
 WantedBy=default.target
 EOF
 
-                # Reload and enable service
-                systemctl --user daemon-reload 2>/dev/null || true
-                systemctl --user enable pulse-tracker.service 2>/dev/null || true
-                systemctl --user start pulse-tracker.service 2>/dev/null || true
-                print_success "Pulse daemon configured and started"
+                    systemctl --user daemon-reload 2>/dev/null || true
+                    systemctl --user enable pulse-tracker.service 2>/dev/null || true
+                    systemctl --user start pulse-tracker.service 2>/dev/null || true
+                    print_success "Pulse daemon configured and started"
+                fi
             fi
 
             print_success "Pulse tracker configured"
+            echo "View logs: tail -f ~/.pulse/logs/stdout.log"
+            echo "Query data: redis-cli KEYS \"*\""
         fi
     fi
 

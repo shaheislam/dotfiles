@@ -79,7 +79,7 @@ jobs:
         run: |
           # Check if critical files were modified
           critical_files=(
-            "scripts/setup-script.sh"
+            "scripts/setup.sh"
             "homebrew/Brewfile"
             ".config/fish/config.fish"
             ".tmux.conf"
@@ -121,7 +121,7 @@ jobs:
             echo '```bash'
             echo 'cd ~/dotfiles'
             echo 'git pull'
-            echo 'bash scripts/setup-script.sh --update'
+            echo 'bash scripts/setup.sh'
             echo '```'
             echo ""
             echo "Commit: ${{ github.sha }}"

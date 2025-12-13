@@ -381,7 +381,7 @@ nix-store --optimise
 ├── .config/
 │   ├── fish/conf.d/nix.fish  # Fish integration
 │   └── nvim/lua/plugins/nix-lsp.lua  # Neovim integration
-└── scripts/setup/setup-script.sh  # Auto-installation
+└── scripts/setup.sh  # Auto-installation
 ```
 
 ### Useful Nix Commands

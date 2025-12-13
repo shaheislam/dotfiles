@@ -320,13 +320,10 @@ If you were using the old setup scripts:
 
 ### macOS Users
 ```bash
-# Old way
-./scripts/setup/setup-script.sh
-
-# New way
+# New unified way
 ./scripts/setup.sh --os macos
-# or simply
-./scripts/setup.sh  # auto-detects macOS
+# or simply (auto-detects OS)
+./scripts/setup.sh
 ```
 
 ### Linux Users

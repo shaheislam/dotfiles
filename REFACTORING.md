@@ -83,29 +83,26 @@ scripts/
 - Reduced clutter
 - Prevents accidental commits of backup files
 
-### 4. Setup Script Modularization (Medium Priority)
+### 4. Setup Script Modularization (COMPLETED)
+
+**Status**: DONE - The setup system has been consolidated and modularized.
 
 **Current State**:
 
-- `setup-script.sh` is 1,291 lines
-- Monolithic structure makes it hard to maintain
-- Difficult to run partial setups
+- `scripts/setup.sh` is the main orchestrator (~1,300 lines)
+- Modular library files in `scripts/lib/`:
+  - `common.sh` - Shared utilities and helpers
+  - `package-manager.sh` - Cross-platform package management
+  - `shell-setup.sh` - Shell configurations (Fish, Zsh, Oh My Zsh, Powerlevel10k)
+- Phase-based execution for clean separation
+- Cross-platform support (macOS and Linux)
 
-**Proposed Solution**:
+**Benefits Achieved**:
 
-```bash
-setup-script.sh           # Main orchestrator
-├── setup-homebrew.sh    # Homebrew and packages
-├── setup-shell.sh       # Shell configurations
-├── setup-development.sh # Dev tools and languages
-└── setup-macos.sh       # macOS defaults
-```
-
-**Benefits**:
-
-- Modular execution
-- Easier testing of individual components
+- Modular execution via phases
+- Library code reuse
 - Better error isolation
+- Profile-based installation (minimal, developer, comprehensive)
 
 ### 5. Config Duplication Cleanup (Low Priority)
 

@@ -3,7 +3,8 @@ name: Setup Script Test
 on:
   pull_request:
     paths:
-      - 'scripts/setup-script.sh'
+      - 'scripts/setup.sh'
+      - 'scripts/lib/**'
       - 'homebrew/Brewfile'
       - '.github/workflows/setup-test.yml'
 
@@ -32,7 +33,7 @@ jobs:
           export CI_TEST_MODE=1
 
           # Run setup script
-          bash scripts/setup-script.sh
+          bash scripts/setup.sh --dry-run
         timeout-minutes: 30
 
       - name: Verify installations
