@@ -90,6 +90,9 @@ config.term = "xterm-256color"
 config.enable_scroll_bar = false
 config.scrollback_lines = 10000
 
+-- Enable kitty graphics protocol for image.nvim
+config.enable_kitty_graphics = true
+
 -- Additional omerxx-inspired settings
 config.window_padding = {
   left = 2,
