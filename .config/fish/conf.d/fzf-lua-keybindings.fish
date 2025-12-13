@@ -20,7 +20,7 @@
 #   <Space>gl  - Git commits (log)
 #   <Space>gb  - Git branches
 #
-# Inside picker: Ctrl-D=Local, Ctrl-S=Git Root, Ctrl-G=Global
+# Inside picker: Alt-L=Local, Alt-S=Git Root, Alt-G=Global, Ctrl-Y=Copy, Ctrl-/=Preview
 
 if status is-interactive
     # Check if nvim is available
@@ -71,8 +71,8 @@ if status is-interactive
             # <Space>gl - Git commits/log
             bind -M default ' gl' '_fzf_lua_picker_edit git_commits'
 
-            # <Space>gb - Git branches
-            bind -M default ' gb' '_fzf_lua_picker_edit git_branches'
+            # <Space>gb - Git branches → checkout
+            bind -M default ' gb' '_fzf_lua_git_branches'
 
             # ═══════════════════════════════════════════════════════════════════
             # Help binding

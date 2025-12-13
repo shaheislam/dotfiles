@@ -1,88 +1,133 @@
 -- fzf-lua CLI configuration
--- Provides scope toggle (Ctrl-D/S/G) matching Neovim behavior
+-- Full parity with Neovim fzf-lua setup
 --
--- IMPORTANT: Must inherit "cli" profile since cli.lua loads this AFTER
--- calling setup({ "cli" }). Without inheriting, we overwrite the CLI profile.
---
--- Scope keybindings (inside fzf picker):
---   Ctrl-D = Local (current directory)
---   Ctrl-S = Git root
---   Ctrl-G = Global (home directory)
+-- Features:
+--   - Preview with bat (syntax highlighting, 60% width)
+--   - Multi-select with Tab/Shift-Tab
+--   - Toggle preview with Ctrl-/
+--   - Copy path with Ctrl-y
+--   - Scope switching with Alt-L/S/G (Neovim parity)
+--   - Header hints showing available keybindings
 
-local current_scope = "Local"
 local function quit() vim.cmd.quit() end
 
--- Helper: Find git root from current directory
-local function get_git_root()
-  local git_dir = vim.fs.find(".git", { path = vim.fn.getcwd(), upward = true })[1]
-  if git_dir then
-    return vim.fn.fnamemodify(git_dir, ":h")
+-- Helper: Output selected files to stdout
+local function output_files(selected, opts)
+  if not selected or #selected == 0 then return quit() end
+  local path = require("fzf-lua.path")
+  for _, sel in ipairs(selected) do
+    local entry = path.entry_to_file(sel, opts)
+    local p = path.relative_to(assert(entry.path), vim.uv.cwd())
+    io.stdout:write(p .. "\n")
   end
-  return vim.fn.getcwd()
+  quit()
+end
+
+-- Helper: Copy to clipboard and quit
+local function copy_path(selected, opts)
+  if not selected or #selected == 0 then return end
+  local path = require("fzf-lua.path")
+  local paths = {}
+  for _, sel in ipairs(selected) do
+    local entry = path.entry_to_file(sel, opts)
+    table.insert(paths, path.relative_to(assert(entry.path), vim.uv.cwd()))
+  end
+  local result = table.concat(paths, "\n")
+  vim.fn.setreg("+", result)
+  io.stderr:write("Copied: " .. result .. "\n")
+  quit()
 end
 
 -- Scope change action factory
-local function create_scope_action(get_cwd_fn, scope_name)
+-- CLI mode runs as subprocess, so we can't use vim.schedule() to re-launch
+-- Instead, output a marker for Fish to handle the re-launch loop
+local function create_scope_action(scope_name)
   return function(_, opts)
-    local new_cwd = get_cwd_fn()
-    current_scope = scope_name
-
     local query = opts.__call_opts and opts.__call_opts.query or ""
     local prompt = opts.prompt or ""
-
-    vim.schedule(function()
-      if prompt:match("Grep") then
-        require("fzf-lua").live_grep({
-          cwd = new_cwd,
-          query = query,
-          prompt = "Live Grep (" .. scope_name .. ")> ",
-        })
-      else
-        require("fzf-lua").files({
-          cwd = new_cwd,
-          query = query,
-          prompt = "Find Files (" .. scope_name .. ")> ",
-        })
-      end
-    end)
+    local picker_type = prompt:match("Grep") and "grep" or "files"
+    -- Output: __scope__:SCOPE:PICKER:QUERY (Fish handles re-launch)
+    io.stdout:write("__scope__:" .. scope_name .. ":" .. picker_type .. ":" .. query .. "\n")
+    quit()
   end
 end
 
--- Scope actions table (reusable across pickers)
-local scope_actions = {
-  ["ctrl-d"] = create_scope_action(function()
-    return vim.fn.getcwd()
-  end, "Local"),
-  ["ctrl-s"] = create_scope_action(get_git_root, "Git Root"),
-  ["ctrl-g"] = create_scope_action(function()
-    return vim.env.HOME
-  end, "Global"),
+-- File picker actions (Alt-l/s/g for scope - Neovim parity)
+local file_actions = {
+  ["enter"] = output_files,
+  ["esc"] = quit,
+  ["ctrl-c"] = quit,
+  ["ctrl-y"] = copy_path,
+  ["alt-l"] = create_scope_action("local"),
+  ["alt-s"] = create_scope_action("git"),
+  ["alt-g"] = create_scope_action("global"),
 }
+
+-- Header hints (M = Alt/Meta)
+local file_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
+local grep_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
+local zoxide_header = "Enter:cd | Esc:cancel | C-/:preview"
+local git_header = "Enter:select | C-y:copy SHA | C-/:preview"
 
 -- Setup fzf-lua - MUST inherit "cli" profile!
 require("fzf-lua").setup({
   { "cli" }, -- Inherit CLI profile (CRITICAL!)
-  keymap = {
-    fzf = {
-      -- Prevent fzf from handling these keys (let actions handle them)
-      ["ctrl-d"] = "ignore",
-      ["ctrl-s"] = "ignore",
-      ["ctrl-g"] = "ignore",
+
+  -- Global fzf options
+  fzf_opts = {
+    ["--multi"] = true,
+    ["--layout"] = "reverse",
+    ["--info"] = "inline-right",
+    ["--preview-window"] = "right:60%:wrap",
+    ["--bind"] = "ctrl-/:toggle-preview",
+  },
+
+  -- Note: Don't use keymap.fzf["key"] = "ignore" - it blocks actions from firing!
+  -- Actions are registered via --expect and work correctly without explicit fzf bindings
+
+  -- Preview with bat
+  previewers = {
+    bat = {
+      cmd = "bat",
+      args = "--color=always --style=numbers,changes --line-range :500",
     },
   },
-  actions = {
-    files = scope_actions,
-  },
+
+  -- Files picker
   files = {
-    prompt = "Find Files (Local)> ",
+    prompt = "Files (Local)❯ ",
+    header = file_header,
+    previewer = "bat",
+    actions = file_actions,
   },
+
+  -- Grep picker
   grep = {
-    prompt = "Live Grep (Local)> ",
-    actions = scope_actions,
+    prompt = "Grep (Local)❯ ",
+    header = grep_header,
+    previewer = "bat",
+    actions = file_actions,
   },
-  -- Zoxide: Override default action to output path to stdout (for CLI mode)
-  -- Default actions.zoxide_cd only changes cwd inside nvim, doesn't output anything
+
+  live_grep = {
+    prompt = "Grep (Local)❯ ",
+    header = grep_header,
+    previewer = "bat",
+    actions = file_actions,
+  },
+
+  -- Oldfiles/recent
+  oldfiles = {
+    prompt = "Recent❯ ",
+    header = file_header,
+    previewer = "bat",
+    actions = file_actions,
+  },
+
+  -- Zoxide: Output path to stdout for CLI mode
   zoxide = {
+    prompt = "Zoxide❯ ",
+    header = zoxide_header,
     actions = {
       ["enter"] = function(s, _)
         if not s[1] then return quit() end
@@ -94,5 +139,75 @@ require("fzf-lua").setup({
       ["esc"] = quit,
       ["ctrl-c"] = quit,
     },
+  },
+
+  -- Git pickers
+  git = {
+    files = {
+      prompt = "Git Files❯ ",
+      header = file_header,
+      previewer = "bat",
+      actions = file_actions,
+    },
+    status = {
+      prompt = "Git Status❯ ",
+      header = file_header,
+      previewer = "bat",
+      actions = file_actions,
+    },
+    commits = {
+      prompt = "Git Log❯ ",
+      header = git_header,
+      actions = {
+        ["enter"] = function(s, _)
+          if not s[1] then return quit() end
+          local sha = s[1]:match("^(%x+)")
+          if sha then io.stdout:write(sha .. "\n") end
+          quit()
+        end,
+        ["ctrl-y"] = function(s, _)
+          if not s[1] then return end
+          local sha = s[1]:match("^(%x+)")
+          if sha then
+            vim.fn.setreg("+", sha)
+            io.stderr:write("Copied SHA: " .. sha .. "\n")
+          end
+          quit()
+        end,
+        ["esc"] = quit,
+        ["ctrl-c"] = quit,
+      },
+    },
+    branches = {
+      prompt = "Branches❯ ",
+      header = "Enter:checkout | C-y:copy | C-/:preview",
+      actions = {
+        ["enter"] = function(s, _)
+          if not s[1] then return quit() end
+          local branch = s[1]:match("^%*?%s*(%S+)")
+          if branch then
+            -- Output special command for Fish to execute git checkout
+            io.stdout:write("__checkout__:" .. branch .. "\n")
+          end
+          quit()
+        end,
+        ["ctrl-y"] = function(s, _)
+          if not s[1] then return end
+          local branch = s[1]:match("^%*?%s*(%S+)")
+          if branch then
+            vim.fn.setreg("+", branch)
+            io.stderr:write("Copied: " .. branch .. "\n")
+          end
+          quit()
+        end,
+        ["esc"] = quit,
+        ["ctrl-c"] = quit,
+      },
+    },
+  },
+
+  -- Builtin picker
+  builtin = {
+    prompt = "Pickers❯ ",
   },
 })
