@@ -15,46 +15,50 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         # Exit status with color
         status = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
 
-        # Duration color coding
-        dur = $3; num = dur; gsub(/[^0-9.]/, "", num)
+        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
+        dur = $3
+        dur_padded = sprintf("%-8s", dur)
+        num = dur; gsub(/[^0-9.]/, "", num)
         secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
-        if (secs < 1) dur_c = "\033[32m" dur "\033[0m"
-        else if (secs < 5) dur_c = "\033[33m" dur "\033[0m"
-        else dur_c = "\033[31m" dur "\033[0m"
+        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
+        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
+        else dur_c = "\033[31m" dur_padded "\033[0m"
 
-        printf "%s  %s  %-8s  %s\n", $1, status, dur_c, $5
+        printf "%s  %s  %s  %s\n", $1, status, dur_c, $5
     }'
 
-    # Global/Session mode: includes path column (truncated)
+    # Global/Session mode: includes path column (45-char fixed width for alignment)
     set -l awk_global 'BEGIN {FS="\t"} {
         # Exit status with color
         status = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
 
-        # Duration color coding
-        dur = $3; num = dur; gsub(/[^0-9.]/, "", num)
+        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
+        dur = $3
+        dur_padded = sprintf("%-8s", dur)
+        num = dur; gsub(/[^0-9.]/, "", num)
         secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
-        if (secs < 1) dur_c = "\033[32m" dur "\033[0m"
-        else if (secs < 5) dur_c = "\033[33m" dur "\033[0m"
-        else dur_c = "\033[31m" dur "\033[0m"
+        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
+        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
+        else dur_c = "\033[31m" dur_padded "\033[0m"
 
-        # Path truncation (keep first 8 and last 8 chars if > 20)
-        path = $4
-        if (length(path) > 20) path = substr(path,1,8) "..." substr(path,length(path)-7)
-
-        printf "%s  %s  %-8s  %-20s  %s\n", $1, status, dur_c, path, $5
+        # Fixed 45-char path column for alignment (full path, no truncation)
+        printf "%s  %s  %s  %-45s  %s\n", $1, status, dur_c, $4, $5
     }'
 
-    # AWK for failed-only filter
+    # AWK for failed-only filter (45-char fixed width for alignment)
     set -l awk_failed 'BEGIN {FS="\t"} $2 != "0" {
         status = "\033[31m✗\033[0m"
-        dur = $3; num = dur; gsub(/[^0-9.]/, "", num)
+
+        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
+        dur = $3
+        dur_padded = sprintf("%-8s", dur)
+        num = dur; gsub(/[^0-9.]/, "", num)
         secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
-        if (secs < 1) dur_c = "\033[32m" dur "\033[0m"
-        else if (secs < 5) dur_c = "\033[33m" dur "\033[0m"
-        else dur_c = "\033[31m" dur "\033[0m"
-        path = $4
-        if (length(path) > 20) path = substr(path,1,8) "..." substr(path,length(path)-7)
-        printf "%s  %s  %-8s  %-20s  %s\n", $1, status, dur_c, path, $5
+        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
+        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
+        else dur_c = "\033[31m" dur_padded "\033[0m"
+
+        printf "%s  %s  %s  %-45s  %s\n", $1, status, dur_c, $4, $5
     }'
 
     # Create a temporary file to store the fzf result
