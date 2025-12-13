@@ -2,20 +2,25 @@
 # Supports scope switching (Alt-L/S/G) with path filtering
 #
 # Scopes:
-#   Local  - directories under current working directory
-#   Git    - directories under git repository root
-#   Global - all directories in zoxide database
+#   Local  - directories under current working directory (prefix stripped)
+#   Git    - directories under git repository root (prefix stripped)
+#   Global - all directories in zoxide database (shows ~/... notation)
 
 function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory"
     set -l scope "Local"
     set -l filter_path (pwd)
 
     while true
-        # Build zoxide command with path filtering
+        # Build zoxide command with path filtering AND prefix stripping
         set -l zoxide_cmd "zoxide query --list --score"
-        if test "$scope" != "Global"
-            # Filter to only show dirs under filter_path using grep
-            set zoxide_cmd "$zoxide_cmd | grep -F '$filter_path'"
+
+        if test "$scope" = "Global"
+            # Global: show all dirs, replace $HOME with ~ for cleaner display
+            set zoxide_cmd "$zoxide_cmd | sed 's|$HOME|~|'"
+        else
+            # Local/Git: filter to scope, then strip the prefix for cleaner display
+            # sed pattern: replace tab+prefix+/ with just tab (keeps score, strips prefix)
+            set zoxide_cmd "$zoxide_cmd | grep -F '$filter_path' | sed 's|\t$filter_path/|\t|'"
         end
 
         set -l result (_fzf_lua_cli zoxide cmd="$zoxide_cmd" prompt="Zoxide ($scope)❯ ")
@@ -42,7 +47,18 @@ function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory
             continue
         end
 
-        # Normal selection - cd to directory
+        # CRITICAL: Restore full path before cd
+        # The displayed path was stripped, so we need to restore it
+        switch $scope
+            case "Local"
+                set result (pwd)"/"$result
+            case "Git"
+                set result $filter_path"/"$result
+            case "Global"
+                # Replace ~ back to $HOME for the actual cd
+                set result (string replace "~" $HOME -- $result)
+        end
+
         __zoxide_cd "$result"
         break
     end
