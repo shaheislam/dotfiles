@@ -18,8 +18,9 @@ function _fzf_lua_git_bcommits_picker --description "Select file then show its c
     set -l file ""
 
     while true
-        # Build cwd based on scope
+        # Build cwd and picker based on scope
         set -l cwd
+        set -l picker "git_files"
         switch $scope
             case "local"
                 set cwd (pwd)
@@ -27,9 +28,10 @@ function _fzf_lua_git_bcommits_picker --description "Select file then show its c
                 set cwd (git rev-parse --show-toplevel 2>/dev/null)
             case "global"
                 set cwd $HOME
+                set picker "files"  # Use files picker for global (not git-specific)
         end
 
-        set -l result (_fzf_lua_cli git_files cwd="$cwd" prompt="Select file ($scope)❯ ")
+        set -l result (_fzf_lua_cli $picker cwd="$cwd" prompt="Select file ($scope)❯ ")
 
         if test -z "$result"
             commandline -f repaint
