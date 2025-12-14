@@ -171,12 +171,15 @@ require("fzf-lua").setup({
     },
     commits = {
       prompt = "Git Log❯ ",
-      header = git_header,
+      header = "Tab:select | Enter:done | C-y:copy | C-/:preview",
       actions = {
         ["enter"] = function(s, _)
-          if not s[1] then return quit() end
-          local sha = s[1]:match("^(%x+)")
-          if sha then io.stdout:write(sha .. "\n") end
+          if not s or #s == 0 then return quit() end
+          -- Output all selected SHAs (multi-select support for Diffview)
+          for _, item in ipairs(s) do
+            local sha = item:match("^(%x+)")
+            if sha then io.stdout:write(sha .. "\n") end
+          end
           quit()
         end,
         ["ctrl-y"] = function(s, _)

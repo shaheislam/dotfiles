@@ -20,6 +20,8 @@
 #   <Space>gl  - Git commits (log) → output SHA
 #   <Space>gb  - Git branches → checkout
 #   <Space>gs  - Git stash → apply/drop
+#   <Space>gd  - Git diffview → show working dir changes
+#   <Space>gD  - Git diffview picker → compare branches/commits
 #   <Space>gP  - PR preview → compare to base in Diffview
 #
 # Inside picker: Alt-L=Local, Alt-S=Git Root, Alt-G=Global, Ctrl-Y=Copy, Ctrl-/=Preview
@@ -78,6 +80,12 @@ if status is-interactive
 
             # <Space>gs - Git stash → apply/drop
             bind -M default ' gs' '_fzf_lua_git_stash'
+
+            # <Space>gd - Git diffview → show working dir changes
+            bind -M default ' gd' '_fzf_lua_git_diffview'
+
+            # <Space>gD - Git diffview picker → compare branches/commits
+            bind -M default ' gD' '_fzf_lua_git_diffview_picker'
 
             # <Space>gP - PR preview → compare to base in Diffview
             bind -M default ' gP' '_fzf_lua_git_pr_preview'
