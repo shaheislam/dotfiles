@@ -9,6 +9,7 @@
 function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory"
     set -l scope "Local"
     set -l filter_path (pwd)
+    set -l query ""
 
     while true
         # Build zoxide command with path filtering AND prefix stripping
@@ -23,15 +24,17 @@ function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory
             set zoxide_cmd "$zoxide_cmd | grep -F '$filter_path' | sed \"s|$filter_path/||\""
         end
 
-        set -l result (_fzf_lua_cli zoxide cmd="$zoxide_cmd" prompt="Zoxide ($scope)❯ ")
+        set -l result (_fzf_lua_cli zoxide cmd="$zoxide_cmd" prompt="Zoxide ($scope)❯ " query="$query")
 
         if test -z "$result"
             break
         end
 
-        # Check for scope change command: __zoxide_scope__:SCOPE
+        # Check for scope change command: __zoxide_scope__:SCOPE:QUERY
         if string match -q "__zoxide_scope__:*" -- $result
-            set -l new_scope (string replace "__zoxide_scope__:" "" -- $result)
+            set -l parts (string split ":" -- $result)
+            set -l new_scope $parts[2]
+            set query $parts[3]
 
             switch $new_scope
                 case "local"

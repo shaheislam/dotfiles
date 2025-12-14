@@ -52,11 +52,12 @@ local function create_scope_action(scope_name)
   end
 end
 
--- Zoxide scope action - simpler marker since we just need the scope name
+-- Zoxide scope action - includes query for preservation across scope switches
 -- Fish will rebuild the zoxide command with grep filtering
 local function create_zoxide_scope_action(scope_name)
-  return function(_, _)
-    io.stdout:write("__zoxide_scope__:" .. scope_name .. "\n")
+  return function(_, opts)
+    local query = opts.__call_opts and opts.__call_opts.query or ""
+    io.stdout:write("__zoxide_scope__:" .. scope_name .. ":" .. query .. "\n")
     quit()
   end
 end
