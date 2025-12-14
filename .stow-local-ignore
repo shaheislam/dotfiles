@@ -29,6 +29,9 @@ CLAUDE\.md
 # Tmux Session State (dynamically generated)
 \.tmux/resurrect/last$
 
+# Tmux Plugins (managed by TPM, not stow)
+\.tmux/plugins
+
 # Test and Debug Files
 ^/test.*
 ^/debug.*
