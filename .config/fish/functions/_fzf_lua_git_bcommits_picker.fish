@@ -1,5 +1,5 @@
 # fzf-lua git buffer commits picker - select file then show its commit history
-# Step 1: Select a file from git files (using fzf-lua)
+# Step 1: Select a file from git files (with scope switching support)
 # Step 2: Show commits that modified that file (using native git + fzf)
 # Output: Commit SHA
 #
@@ -13,11 +13,39 @@ function _fzf_lua_git_bcommits_picker --description "Select file then show its c
         return 1
     end
 
-    # Step 1: Select a file from git files (using fzf-lua)
-    set -l file (_fzf_lua_cli git_files prompt="Select file for history❯ ")
-    if test -z "$file"
-        commandline -f repaint
-        return 0
+    # Step 1: Select a file from git files (with scope switching support)
+    set -l scope "git"  # Default to git root
+    set -l file ""
+
+    while true
+        # Build cwd based on scope
+        set -l cwd
+        switch $scope
+            case "local"
+                set cwd (pwd)
+            case "git"
+                set cwd (git rev-parse --show-toplevel 2>/dev/null)
+            case "global"
+                set cwd $HOME
+        end
+
+        set -l result (_fzf_lua_cli git_files cwd="$cwd" prompt="Select file ($scope)❯ ")
+
+        if test -z "$result"
+            commandline -f repaint
+            return 0
+        end
+
+        # Handle scope switching
+        if string match -q "__scope__:*" -- $result
+            set -l parts (string split ":" -- $result)
+            set scope $parts[2]
+            continue
+        end
+
+        # Got a file, break out
+        set file $result
+        break
     end
 
     # Step 2: Show commits for that file using native git + fzf
