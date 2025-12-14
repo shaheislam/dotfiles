@@ -218,6 +218,58 @@ require("fzf-lua").setup({
         ["ctrl-c"] = quit,
       },
     },
+    stash = {
+      prompt = "Git Stash❯ ",
+      header = "Enter:apply | C-x:drop | C-y:copy | C-/:preview",
+      actions = {
+        ["enter"] = function(s, _)
+          if not s[1] then return quit() end
+          local ref = s[1]:match("^(%S+)")
+          if ref then io.stdout:write("__stash_apply__:" .. ref .. "\n") end
+          quit()
+        end,
+        ["ctrl-x"] = function(s, _)
+          if not s[1] then return quit() end
+          local ref = s[1]:match("^(%S+)")
+          if ref then io.stdout:write("__stash_drop__:" .. ref .. "\n") end
+          quit()
+        end,
+        ["ctrl-y"] = function(s, _)
+          if not s[1] then return end
+          local ref = s[1]:match("^(%S+)")
+          if ref then
+            vim.fn.setreg("+", ref)
+            io.stderr:write("Copied: " .. ref .. "\n")
+          end
+          quit()
+        end,
+        ["esc"] = quit,
+        ["ctrl-c"] = quit,
+      },
+    },
+    bcommits = {
+      prompt = "Git Buffer Commits❯ ",
+      header = git_header,
+      actions = {
+        ["enter"] = function(s, _)
+          if not s[1] then return quit() end
+          local sha = s[1]:match("^(%x+)")
+          if sha then io.stdout:write(sha .. "\n") end
+          quit()
+        end,
+        ["ctrl-y"] = function(s, _)
+          if not s[1] then return end
+          local sha = s[1]:match("^(%x+)")
+          if sha then
+            vim.fn.setreg("+", sha)
+            io.stderr:write("Copied SHA: " .. sha .. "\n")
+          end
+          quit()
+        end,
+        ["esc"] = quit,
+        ["ctrl-c"] = quit,
+      },
+    },
   },
 
   -- Builtin picker

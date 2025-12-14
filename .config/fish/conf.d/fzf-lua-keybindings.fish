@@ -17,8 +17,10 @@
 # Git (<Space>g prefix):
 #   <Space>gs  - Git status → open in nvim
 #   <Space>gf  - Git files → open in nvim
-#   <Space>gl  - Git commits (log)
-#   <Space>gb  - Git branches
+#   <Space>gl  - Git commits (log) → output SHA
+#   <Space>gb  - Git branches → checkout
+#   <Space>gS  - Git stash → apply/drop
+#   <Space>gP  - PR preview → compare to base in Diffview
 #
 # Inside picker: Alt-L=Local, Alt-S=Git Root, Alt-G=Global, Ctrl-Y=Copy, Ctrl-/=Preview
 
@@ -63,16 +65,22 @@ if status is-interactive
             # ═══════════════════════════════════════════════════════════════════
 
             # <Space>gs - Git status → open in nvim
-            bind -M default ' gs' '_fzf_lua_picker_edit git_status'
+            bind -M default ' gs' '_fzf_lua_git_status_edit'
 
             # <Space>gf - Git files → open in nvim
             bind -M default ' gf' '_fzf_lua_git_files_edit'
 
-            # <Space>gl - Git commits/log
-            bind -M default ' gl' '_fzf_lua_picker_edit git_commits'
+            # <Space>gl - Git commits/log → output SHA
+            bind -M default ' gl' '_fzf_lua_git_commits'
 
             # <Space>gb - Git branches → checkout
             bind -M default ' gb' '_fzf_lua_git_branches'
+
+            # <Space>gS - Git stash → apply/drop
+            bind -M default ' gS' '_fzf_lua_git_stash'
+
+            # <Space>gP - PR preview → compare to base in Diffview
+            bind -M default ' gP' '_fzf_lua_git_pr_preview'
 
             # ═══════════════════════════════════════════════════════════════════
             # Help binding
