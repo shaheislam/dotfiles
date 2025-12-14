@@ -18,6 +18,7 @@
 #   <Space>gg  - Git status → open in nvim
 #   <Space>gf  - Git files → open in nvim
 #   <Space>gl  - Git commits (log) → output SHA
+#   <Space>gC  - Git file commits → select file, show history
 #   <Space>gb  - Git branches → checkout
 #   <Space>gs  - Git stash → apply/drop
 #   <Space>gd  - Git diffview → show working dir changes
@@ -74,6 +75,9 @@ if status is-interactive
 
             # <Space>gl - Git commits/log → output SHA
             bind -M default ' gl' '_fzf_lua_git_commits'
+
+            # <Space>gC - Git file commits → select file, show history
+            bind -M default ' gC' '_fzf_lua_git_bcommits_picker'
 
             # <Space>gb - Git branches → checkout
             bind -M default ' gb' '_fzf_lua_git_branches'
