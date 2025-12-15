@@ -150,7 +150,7 @@ let
     docker-compose
 
     # === Cloud CLIs (commonly needed) ===
-    # awscli2  # Using Homebrew version - Nix version has urllib3 2.x compatibility issues
+    pkgs-unstable.awscli2  # Using unstable to fix urllib3 2.x compatibility
     kubectl
     kubernetes-helm
 
@@ -213,13 +213,13 @@ in {
       docker
       ansible;
 
-    cloudTools = with pkgs; [
-      # awscli2  # Using Homebrew version - Nix version has urllib3 2.x compatibility issues
-      azure-cli
-      google-cloud-sdk
-      kubectl
-      kubernetes-helm
-      kustomize
+    cloudTools = [
+      pkgs-unstable.awscli2  # Using unstable to fix urllib3 2.x compatibility
+      pkgs.azure-cli
+      pkgs.google-cloud-sdk
+      pkgs.kubectl
+      pkgs.kubernetes-helm
+      pkgs.kustomize
     ];
 
     databases = with pkgs; [

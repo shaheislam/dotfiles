@@ -59,7 +59,6 @@ function __git.init
   __git.create_abbr gcpc       git cherry-pick --continue
   __git.create_abbr gd         git diff
   __git.create_abbr gdca       git diff --cached
-  __git.create_abbr gds        git diff --stat
   __git.create_abbr gdsc       git diff --stat --cached
   __git.create_abbr gdt        git difftool
   __git.create_abbr gdw        git diff --word-diff

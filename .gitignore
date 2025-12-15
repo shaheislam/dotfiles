@@ -29,6 +29,8 @@
 .claude/bun_enforcement.json
 .claude/.superclaude-metadata.json
 .claude/settings.local.json
+.claude/plugins/known_marketplaces.json
+.claude/plugins/marketplaces/
 
 # Keep these directories and files (they're tracked):
 # .claude/agents/        - Agent configurations
@@ -146,3 +148,7 @@ containerd.log
 # Kubernetes Tools Configuration
 # kubectl plugins cache
 .kubectl-plugins/
+
+# Downloaded archives (temporary)
+awscli-bundle.zip
+awscli-bundle/
