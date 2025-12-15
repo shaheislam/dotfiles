@@ -2,6 +2,9 @@
 	excludesfile = /Users/mohammedislam/.gitignore_global
 	pager = delta
 
+[init]
+	templateDir = ~/.config/git/templates
+
 [user]
 	name = Shahe Islam
 	email = shaheislam@users.noreply.github.com

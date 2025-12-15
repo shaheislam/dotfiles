@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Auto-setup .gitignore_local on clone
+# This hook runs after git clone (and git checkout)
+
+PREV_HEAD="$1"
+NEW_HEAD="$2"
+BRANCH_CHECKOUT="$3"
+
+# Detect initial clone: previous HEAD is the null SHA
+if [[ "$PREV_HEAD" == "0000000000000000000000000000000000000000" ]]; then
+    REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+    EXCLUDE_FILE="$REPO_ROOT/.git/info/exclude"
+    GITIGNORE_LOCAL="$REPO_ROOT/.gitignore_local"
+
+    # Skip if .gitignore_local already exists (e.g., from template or previous setup)
+    [[ -e "$GITIGNORE_LOCAL" ]] && exit 0
+
+    # Ensure .git/info directory exists
+    mkdir -p "$REPO_ROOT/.git/info"
+
+    # Create exclude file with defaults if it doesn't exist or is empty
+    if [[ ! -s "$EXCLUDE_FILE" ]]; then
+        cat > "$EXCLUDE_FILE" << 'EOF'
+# Local git excludes - patterns that won't be committed
+# This file is symlinked to .gitignore_local for easy editing
+
+.gitignore_local
+*.local
+.env.local
+.vscode/
+.idea/
+.claude/
+.codex/
+.DS_Store
+*.swp
+*.swo
+*~
+.pyrightconfig.json
+.eslintrc.local.json
+tsconfig.local.json
+EOF
+    fi
+
+    # Create symlink
+    ln -s .git/info/exclude "$GITIGNORE_LOCAL"
+
+    echo "✓ Created .gitignore_local (symlink to .git/info/exclude)"
+fi

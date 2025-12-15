@@ -746,6 +746,12 @@ phase_8_dotfiles() {
 
     stow_dotfiles
 
+    # Configure git template directory for auto-setup hooks (e.g., .gitignore_local)
+    if command_exists git; then
+        git config --global init.templateDir ~/.config/git/templates
+        log_verbose "Git template directory configured"
+    fi
+
     # Setup kubectl abbreviations for Fish (universal variables, one-time setup)
     if command_exists fish && [[ -f "$HOME/.config/fish/setup/kubectl-abbr-setup.fish" ]]; then
         print_step "Setting up kubectl abbreviations for Fish..."
