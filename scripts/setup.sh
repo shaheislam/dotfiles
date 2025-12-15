@@ -746,6 +746,14 @@ phase_8_dotfiles() {
 
     stow_dotfiles
 
+    # Setup kubectl abbreviations for Fish (universal variables, one-time setup)
+    if command_exists fish && [[ -f "$HOME/.config/fish/setup/kubectl-abbr-setup.fish" ]]; then
+        print_step "Setting up kubectl abbreviations for Fish..."
+        fish -c 'source ~/.config/fish/setup/kubectl-abbr-setup.fish' 2>/dev/null && \
+            print_success "kubectl abbreviations installed" || \
+            log_verbose "kubectl abbreviations setup skipped"
+    fi
+
     mark_step_complete "dotfiles"
 }
 
