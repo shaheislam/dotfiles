@@ -1,96 +1,41 @@
-function atuin_fzf_search --description "Search shell history using atuin with fzf - enhanced with colors and metadata"
+function atuin_fzf_search --description "Search shell history using atuin with fzf - rich preview mode"
     # Get the current buffer content
     set -l cmd_buffer (commandline -b)
-
-    # Start with directory-specific history
-    set -l current_mode "directory"
     set -l current_dir (pwd)
 
-    # Atuin format: time, exit, duration, directory, command (tab-separated)
+    # Raw format: tab-separated fields
     set -l atuin_format "{time}\t{exit}\t{duration}\t{directory}\t{command}"
 
-    # AWK script for formatting with colors
-    # Directory mode: no path column
-    set -l awk_dir 'BEGIN {FS="\t"} {
-        # Exit status with color
-        status = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
-
-        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
-        dur = $3
-        dur_padded = sprintf("%-8s", dur)
-        num = dur; gsub(/[^0-9.]/, "", num)
-        secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
-        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
-        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
-        else dur_c = "\033[31m" dur_padded "\033[0m"
-
-        printf "%s  %s  %s  %s\n", $1, status, dur_c, $5
+    # Unified AWK: prepend exit indicator to command field
+    set -l awk_format 'BEGIN {FS="\t"; OFS="\t"} {
+        exit_icon = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
+        print $1, $2, $3, $4, exit_icon " " $5
     }'
 
-    # Global/Session mode: includes path column (45-char fixed width for alignment)
-    set -l awk_global 'BEGIN {FS="\t"} {
-        # Exit status with color
-        status = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
-
-        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
-        dur = $3
-        dur_padded = sprintf("%-8s", dur)
-        num = dur; gsub(/[^0-9.]/, "", num)
-        secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
-        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
-        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
-        else dur_c = "\033[31m" dur_padded "\033[0m"
-
-        # Fixed 45-char path column for alignment (full path, no truncation)
-        printf "%s  %s  %s  %-45s  %s\n", $1, status, dur_c, $4, $5
+    # AWK for failed-only mode
+    set -l awk_failed 'BEGIN {FS="\t"; OFS="\t"} $2 != "0" {
+        exit_icon = "\033[31m✗\033[0m"
+        print $1, $2, $3, $4, exit_icon " " $5
     }'
 
-    # AWK for failed-only filter (45-char fixed width for alignment)
-    set -l awk_failed 'BEGIN {FS="\t"} $2 != "0" {
-        status = "\033[31m✗\033[0m"
+    # Preview script path
+    set -l preview_script "$HOME/dotfiles/.config/fish/functions/_atuin_preview.sh"
 
-        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
-        dur = $3
-        dur_padded = sprintf("%-8s", dur)
-        num = dur; gsub(/[^0-9.]/, "", num)
-        secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
-        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
-        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
-        else dur_c = "\033[31m" dur_padded "\033[0m"
+    # Tokyo Night FZF colors
+    set -l fzf_colors "--color=fg:#c0caf5,bg:#1a1b26,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8,preview-fg:#c0caf5,preview-bg:#1a1b26"
 
-        printf "%s  %s  %s  %-45s  %s\n", $1, status, dur_c, $4, $5
-    }'
+    # Compact headers
+    set -l header_dir "DIR | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
+    set -l header_global "GLOBAL | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
+    set -l header_session "SESSION | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
+    set -l header_failed "FAILED | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:all C-o:edit | C-/:preview"
 
-    # AWK for full path mode (no truncation/padding on path)
-    set -l awk_fullpath 'BEGIN {FS="\t"} {
-        # Exit status with color
-        status = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
-
-        # Duration: pad FIRST, then colorize (ANSI codes break printf width)
-        dur = $3
-        dur_padded = sprintf("%-8s", dur)
-        num = dur; gsub(/[^0-9.]/, "", num)
-        secs = (index(dur,"ms") > 0) ? num/1000 : (index(dur,"s") > 0) ? num+0 : 0
-        if (secs < 1) dur_c = "\033[32m" dur_padded "\033[0m"
-        else if (secs < 5) dur_c = "\033[33m" dur_padded "\033[0m"
-        else dur_c = "\033[31m" dur_padded "\033[0m"
-
-        # Full path, no fixed width
-        printf "%s  %s  %s  %s  %s\n", $1, status, dur_c, $4, $5
-    }'
-
-    # Create a temporary file to store the fzf result
     set -l tmpfile (mktemp)
 
-    # Header with all keybindings
-    set -l header_dir "Mode: directory | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
-    set -l header_global "Mode: global | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
-    set -l header_session "Mode: session | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
-    set -l header_failed "Mode: FAILED ONLY | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:all C-o:edit | Enter:run →:fill"
-    set -l header_fullpath "Mode: FULL PATH | C-d:dir C-g:global C-s:session C-/:fullpath | C-x:del C-y:copy C-e:failed C-o:edit | Enter:run →:fill"
-
-    # Run fzf with all enhancements
-    atuin search --format "$atuin_format" --cwd "$current_dir" 2>/dev/null | string replace -a "$HOME" "~" | awk "$awk_dir" | \
+    # Run fzf with rich preview
+    atuin search --format "$atuin_format" --cwd "$current_dir" 2>/dev/null | \
+        string replace -a "$HOME" "~" | \
+        awk "$awk_format" | \
     fzf --ansi \
         --tac \
         --no-sort \
@@ -98,14 +43,20 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --query="$cmd_buffer" \
         --header="$header_dir" \
         --expect="right" \
-        --bind="ctrl-x:execute-silent(echo {} | awk -F'  ' '{print \$NF}' | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_dir')" \
-        --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_dir')+change-header($header_dir)" \
-        --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_global')+change-header($header_global)" \
-        --bind="ctrl-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_global')+change-header($header_session)" \
-        --bind="ctrl-y:execute-silent(echo {} | awk -F'  ' '{print \$NF}' | pbcopy)" \
+        --delimiter='\t' \
+        --with-nth=5 \
+        --preview="bash '$preview_script' {}" \
+        --preview-window='right:50%:wrap' \
+        --preview-label=' Details ' \
+        $fzf_colors \
+        --bind="ctrl-/:change-preview-window(down:40%|hidden|right:50%)" \
+        --bind="ctrl-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')" \
+        --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_dir)" \
+        --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_global)" \
+        --bind="ctrl-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_session)" \
+        --bind="ctrl-y:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | pbcopy)" \
         --bind="ctrl-e:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_failed')+change-header($header_failed)" \
-        --bind="ctrl-o:execute(echo {} | awk -F'  ' '{print \$NF}' > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" \
-        --bind="ctrl-/:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_fullpath')+change-header($header_fullpath)" \
+        --bind="ctrl-o:execute(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" \
         > $tmpfile
 
     set -l fzf_exit_status $status
@@ -136,8 +87,8 @@ function atuin_fzf_search --description "Search shell history using atuin with f
                 return
             end
 
-            # Extract command from formatted line (last field after double-space)
-            set -l selected_cmd (echo "$selected_line" | awk -F'  ' '{print $NF}')
+            # Extract command from field 5 (strip ANSI and icon)
+            set -l selected_cmd (echo "$selected_line" | cut -f5 | sed 's/\x1b\[[0-9;]*m//g' | cut -c3-)
 
             if test -n "$selected_cmd"
                 commandline -r -- $selected_cmd
@@ -151,7 +102,7 @@ function atuin_fzf_search --description "Search shell history using atuin with f
             end
         else if test (count $lines) -eq 1 -a -n "$lines[1]"
             # Fallback: single line output
-            set -l selected_cmd (echo "$lines[1]" | awk -F'  ' '{print $NF}')
+            set -l selected_cmd (echo "$lines[1]" | cut -f5 | sed 's/\x1b\[[0-9;]*m//g' | cut -c3-)
             commandline -r -- $selected_cmd
             commandline -f repaint
             commandline -f execute
