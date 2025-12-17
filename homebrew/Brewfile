@@ -4,7 +4,7 @@ tap "FelixKratz/formulae"
 tap "jstkdng/programs"
 tap "nikitabobko/tap"
 tap "oven-sh/bun"
-tap "morantron/tmux-fingers"
+# tap "morantron/tmux-fingers"  # Removed - using tmux-thumbs via TPM instead
 
 # Taps for AWS tools
 tap "common-fate/granted"
@@ -41,7 +41,7 @@ brew "neovim"
 brew "tree-sitter-cli"  # Required for nvim-treesitter
 brew "luarocks"  # For installing Lua dependencies (e.g., sqlite.lua for telescope-smart-history)
 brew "tmux"
-brew "morantron/tmux-fingers/tmux-fingers"
+# brew "morantron/tmux-fingers/tmux-fingers"  # Removed - using tmux-thumbs via TPM instead
 brew "thefuck"
 brew "atuin"
 brew "asciinema"  # Terminal session recorder
@@ -106,6 +106,7 @@ brew "mas"  # Mac App Store CLI
 
 # AI Tools
 cask "claude-code"  # Claude Code CLI - terminal-based AI coding assistant
+cask "1password-cli"  # 1Password CLI for tmux-1password plugin
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
 cask "amazon-q"  # Amazon Q Developer CLI
