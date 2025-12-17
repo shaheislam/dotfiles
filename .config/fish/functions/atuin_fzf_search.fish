@@ -49,7 +49,7 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --preview-window='right,50%,wrap' \
         --preview-label=' Details ' \
         $fzf_colors \
-        --bind='ctrl-/:change-preview-window(down,40%|hidden|right,50%)' \
+        --bind='ctrl-/:toggle-preview' \
         --bind="ctrl-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')" \
         --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_dir)" \
         --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_global)" \
