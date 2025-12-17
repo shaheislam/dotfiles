@@ -142,9 +142,15 @@
   };
 
   # Lua (for Neovim config)
+  # Using emmylua-ls (Rust) - 10x faster than lua-language-server with caching
+  # https://github.com/EmmyLuaLs/emmylua-analyzer-rust
+  # Note: emmylua-ls is only in nixpkgs-unstable, not 24.05 stable
   lua = {
-    stable = pkgs.lua-language-server;
-    lua-language-server = pkgs.lua-language-server;
+    stable = pkgs-unstable.emmylua-ls;
+    emmylua-ls = pkgs-unstable.emmylua-ls;
+    emmylua-check = pkgs-unstable.emmylua-check;  # Static analysis CLI tool
+    # Legacy lua-language-server (if needed for compatibility)
+    # lua-language-server = pkgs.lua-language-server;
     # Formatter - enable per project
     # stylua = pkgs.stylua;
   };

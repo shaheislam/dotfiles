@@ -106,8 +106,9 @@ let
     # Policy Testing
     lspVersions.policy.conftest
 
-    # Lua
-    lspVersions.lua.lua-language-server
+    # Lua (emmylua-ls - Rust, 10x faster than lua-language-server)
+    lspVersions.lua.emmylua-ls
+    lspVersions.lua.emmylua-check  # Static analysis CLI
     # lspVersions.lua.stylua  # Formatter - enable per project
 
     # Markdown
