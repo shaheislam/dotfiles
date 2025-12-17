@@ -24,11 +24,11 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     # Tokyo Night FZF colors (no bg/preview-bg to preserve terminal transparency)
     set -l fzf_colors "--color=fg:#c0caf5,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8,preview-fg:#c0caf5"
 
-    # Compact headers
-    set -l header_dir "DIR | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
-    set -l header_global "GLOBAL | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
-    set -l header_session "SESSION | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
-    set -l header_failed "FAILED | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:all C-o:edit | C-/:preview"
+    # Compact headers (M- = Alt key)
+    set -l header_dir "DIR | C-d:dir C-g:global M-s:session | M-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
+    set -l header_global "GLOBAL | C-d:dir C-g:global M-s:session | M-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
+    set -l header_session "SESSION | C-d:dir C-g:global M-s:session | M-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
+    set -l header_failed "FAILED | C-d:dir C-g:global M-s:session | M-x:del C-y:copy C-e:all C-o:edit | C-/:preview"
 
     set -l tmpfile (mktemp)
 
@@ -50,10 +50,10 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --preview-label=' Details ' \
         $fzf_colors \
         --bind='ctrl-/:toggle-preview' \
-        --bind="ctrl-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')" \
+        --bind="alt-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')" \
         --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_dir)" \
         --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_global)" \
-        --bind="ctrl-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_session)" \
+        --bind="alt-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_session)" \
         --bind="ctrl-y:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | pbcopy)" \
         --bind="ctrl-e:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_failed')+change-header($header_failed)" \
         --bind="ctrl-o:execute(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" \
