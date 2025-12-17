@@ -105,7 +105,7 @@ brew "gemini-cli"
 brew "mas"  # Mac App Store CLI
 
 # AI Tools
-# Claude Code - requires manual installation via official installer (https://claude.ai/download)
+cask "claude-code"  # Claude Code CLI - terminal-based AI coding assistant
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
 cask "amazon-q"  # Amazon Q Developer CLI

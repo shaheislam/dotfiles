@@ -381,7 +381,47 @@ docker run -it --rm -v ~/dotfiles:/home/testuser/dotfiles dotfiles-test:ubuntu
 - Automated Brewfile translation to Linux package managers
 - CI/CD integration for continuous testing
 
+### Claude Code Plugins
+
+Plugins are installed from the `anthropics/claude-code` marketplace (alias: `claude-code-plugins`).
+
+**Installation**: Plugins are stored in `~/.claude/settings.json` and available in all sessions on the device. For cross-device consistency, installation commands are in `scripts/setup.sh`.
+
+**Installed Plugins (11 total)**:
+
+| Plugin | Command | Purpose |
+|--------|---------|---------|
+| **code-review** | `/code-review` | Automated PR review with 4 parallel agents, 80+ confidence filtering |
+| **pr-review-toolkit** | Auto-triggered | 6 specialized reviewers (comments, tests, errors, types, quality, simplicity) |
+| **hookify** | `/hookify` | Create hooks via markdown (also `/hookify:list`, `/hookify:configure`) |
+| **feature-dev** | `/feature-dev` | 7-phase feature development workflow |
+| **frontend-design** | Auto-activated | Production-grade UI generation, anti-AI aesthetics |
+| **plugin-dev** | `/plugin-dev:create-plugin` | 7 skills + 8-phase plugin creation workflow |
+| **ralph-wiggum** | `/ralph-loop` | Autonomous iteration loops (also `/cancel-ralph`) |
+| **agent-sdk-dev** | `/new-sdk-app` | Claude Agent SDK project scaffolding |
+| **claude-opus-4-5-migration** | Natural language | Model migration helper ("Migrate to Opus 4.5") |
+| **explanatory-output-style** | SessionStart hook | Educational insights on implementation choices |
+| **learning-output-style** | SessionStart hook | Interactive learning mode with code contribution prompts |
+
+**Managing Plugins**:
+```bash
+# Install a plugin
+claude plugin install plugin-name@claude-code-plugins
+
+# Disable a plugin (saves tokens for session hooks)
+claude plugin disable explanatory-output-style@claude-code-plugins
+
+# Enable a disabled plugin
+claude plugin enable explanatory-output-style@claude-code-plugins
+
+# Uninstall a plugin
+claude plugin uninstall plugin-name@claude-code-plugins
+```
+
+**Token Cost Note**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks that increase token usage. Disable when not needed.
+
 ### Recent Updates
+- **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
 - **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
 - **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
 - **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)

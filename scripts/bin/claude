@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # Wrapper to run Claude CLI under Node 20, regardless of the global Node
+# Uses ONLY Homebrew-installed Claude Code to avoid conflicts with npm/local installs
 set -euo pipefail
 
 # Resolve Node 20 location (Homebrew prefixes)
@@ -18,45 +19,17 @@ if [[ -z "$NODE20_DIR" ]]; then
   exit 1
 fi
 
-# Locate the real Claude binary
+# Locate the Homebrew Claude binary (only source - no fallbacks to npm/local)
 REAL_CLAUDE=""
-
-# 1) Preferred local installs
-if [[ -x "$HOME/.claude/local/bin/claude" ]]; then
-  REAL_CLAUDE="$HOME/.claude/local/bin/claude"
-elif [[ -x "$HOME/.claude/local/node_modules/.bin/claude" ]]; then
-  REAL_CLAUDE="$HOME/.claude/local/node_modules/.bin/claude"
-fi
-
-# 2) Common user-local location
-if [[ -z "$REAL_CLAUDE" && -x "$HOME/.local/bin/claude" && "$HOME/.local/bin/claude" != "$0" ]]; then
-  REAL_CLAUDE="$HOME/.local/bin/claude"
-fi
-
-# 3) Homebrew locations
-if [[ -z "$REAL_CLAUDE" ]]; then
-  for CAND in \
-    "/opt/homebrew/bin/claude" \
-    "/usr/local/bin/claude"; do
-    if [[ -x "$CAND" && "$CAND" != "$0" ]]; then
-      REAL_CLAUDE="$CAND"
-      break
-    fi
-  done
-fi
-
-# 4) Any other PATH occurrence (skip this wrapper)
-if [[ -z "$REAL_CLAUDE" ]]; then
-  while IFS= read -r CAND; do
-    if [[ "$CAND" != "$0" && -x "$CAND" ]]; then
-      REAL_CLAUDE="$CAND"
-      break
-    fi
-  done < <(command -v -a claude 2>/dev/null | awk 'notseen[$0]++')
-fi
+for CAND in "/opt/homebrew/bin/claude" "/usr/local/bin/claude"; do
+  if [[ -x "$CAND" && "$CAND" != "$0" ]]; then
+    REAL_CLAUDE="$CAND"
+    break
+  fi
+done
 
 if [[ -z "$REAL_CLAUDE" || ! -x "$REAL_CLAUDE" ]]; then
-  echo "Claude CLI not found. Install from https://claude.ai/download or ensure ~/.claude/local/node_modules/.bin/claude exists." >&2
+  echo "Claude CLI not found. Install with: brew install --cask claude-code" >&2
   exit 1
 fi
 

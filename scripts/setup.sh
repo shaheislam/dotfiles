@@ -409,17 +409,33 @@ phase_4_cloud_tools() {
         return 0
     fi
 
-    # Claude Code CLI check
+    # Claude Code CLI - install via Homebrew cask ONLY (clean up other installation methods)
     print_step "Checking Claude Code CLI..."
-    if ! command_exists claude; then
-        print_warning "Claude Code CLI not found"
-        echo "  Install Claude Code using the official installer:"
-        echo "  1. Download from: https://claude.ai/download"
-        echo "  2. Run: claude update"
-        echo "  3. Run: claude migrate-installer (if upgrading from npm/bun version)"
+
+    # Clean up old Claude Code installations (npm, local) to avoid conflicts with Homebrew
+    if [[ -d "$HOME/.claude/local" ]] || [[ -f "$HOME/.local/bin/claude" ]]; then
+        print_step "Cleaning up old Claude Code installations..."
+        rm -rf "$HOME/.claude/local" 2>/dev/null || true
+        rm -f "$HOME/.local/bin/claude" 2>/dev/null || true
+        # Remove npm/bun global installs if they exist
+        npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+        bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+        print_success "Old Claude Code installations cleaned up"
+    fi
+
+    # Install or upgrade via Homebrew (the only supported method)
+    if ! brew list --cask claude-code >/dev/null 2>&1; then
+        print_step "Installing Claude Code via Homebrew..."
+        brew install --cask claude-code >/dev/null 2>&1 && \
+            print_success "Claude Code installed" || \
+            print_warning "Failed to install Claude Code - install manually with: brew install --cask claude-code"
     else
         print_success "Claude Code CLI installed at: $(which claude)"
-        log_verbose "To update, run: claude update"
+        # Upgrade to latest version
+        print_step "Upgrading Claude Code to latest version..."
+        brew upgrade --cask claude-code >/dev/null 2>&1 && \
+            print_success "Claude Code upgraded to latest version" || \
+            print_success "Claude Code already at latest version"
     fi
 
     # Install Claude Code Router
@@ -501,6 +517,30 @@ phase_4_cloud_tools() {
         # Configure Claude Code global settings
         claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 && \
             print_success "Claude Code notification channel set to terminal_bell" || true
+
+        # Install Claude Code plugins from anthropics/claude-code marketplace
+        print_step "Installing Claude Code plugins..."
+
+        # Add marketplace (idempotent - will skip if already added)
+        claude plugin marketplace add anthropics/claude-code >/dev/null 2>&1 || true
+
+        # Tier 1 - High value plugins
+        claude plugin install code-review@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install pr-review-toolkit@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install hookify@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install feature-dev@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install frontend-design@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install plugin-dev@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install ralph-wiggum@claude-code-plugins >/dev/null 2>&1 || true
+
+        # Tier 2 - Situational plugins
+        claude plugin install agent-sdk-dev@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install claude-opus-4-5-migration@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install explanatory-output-style@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install learning-output-style@claude-code-plugins >/dev/null 2>&1 || true
+
+        print_success "Claude Code plugins installed (11 plugins)"
+        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style"
     fi
 
     # Install Kubernetes/Helm plugins
