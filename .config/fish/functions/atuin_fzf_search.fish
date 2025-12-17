@@ -21,8 +21,8 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     # Preview script path
     set -l preview_script "$HOME/dotfiles/.config/fish/functions/_atuin_preview.sh"
 
-    # Tokyo Night FZF colors
-    set -l fzf_colors "--color=fg:#c0caf5,bg:#1a1b26,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8,preview-fg:#c0caf5,preview-bg:#1a1b26"
+    # Tokyo Night FZF colors (no bg/preview-bg to preserve terminal transparency)
+    set -l fzf_colors "--color=fg:#c0caf5,hl:#7aa2f7,fg+:#c0caf5,bg+:#283457,hl+:#bb9af7,info:#e0af68,prompt:#7dcfff,pointer:#7aa2f7,marker:#9ece6a,spinner:#7dcfff,header:#9d7cd8,preview-fg:#c0caf5"
 
     # Compact headers
     set -l header_dir "DIR | C-d:dir C-g:global C-s:session | C-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
