@@ -679,7 +679,11 @@ phase_6_multiplexer() {
             "tmux-plugins/tmux-copycat"
             "tmux-plugins/tmux-pain-control"
             "tmux-plugins/tmux-sidebar"
-            "Morantron/tmux-fingers"
+            "fcsonline/tmux-thumbs"          # Rust-based text hints (replaced tmux-fingers)
+            "laktak/extrakto"                # Text extraction with FZF
+            "rickstaa/tmux-notify"           # macOS notification on command completion
+            "yardnsm/tmux-1password"         # 1Password integration
+            "roosta/tmux-fuzzback"           # FZF scrollback search
             "tmux-plugins/tmux-battery"
             "tmux-plugins/tmux-cpu"
             "omerxx/tmux-floax"
@@ -688,6 +692,8 @@ phase_6_multiplexer() {
             "alexwforsythe/tmux-which-key"
             "27medkamal/tmux-session-wizard"
             "omerxx/tmux-sessionx"
+            "sainnhe/tmux-fzf"               # FZF integration for tmux
+            "azorng/tmux-smooth-scroll"      # Smooth scrolling
         )
 
         for plugin in "${tmux_plugins[@]}"; do
@@ -699,6 +705,17 @@ phase_6_multiplexer() {
         done
 
         print_success "Tmux plugins installed"
+
+        # Build tmux-thumbs (requires Rust compilation with macOS SDK fix)
+        if [[ -d "$plugins_dir/tmux-thumbs" ]] && command_exists cargo; then
+            print_step "Building tmux-thumbs..."
+            (cd "$plugins_dir/tmux-thumbs" && \
+             SDKROOT=$(xcrun --sdk macosx --show-sdk-path) \
+             LIBRARY_PATH="$(xcrun --sdk macosx --show-sdk-path)/usr/lib" \
+             cargo build --release) >/dev/null 2>&1 && \
+                print_success "tmux-thumbs built" || \
+                log_verbose "tmux-thumbs build failed (run manually: cd ~/.tmux/plugins/tmux-thumbs && SDKROOT=\$(xcrun --sdk macosx --show-sdk-path) cargo build --release)"
+        fi
     fi
 
     # Apply Dracula theme customizations
