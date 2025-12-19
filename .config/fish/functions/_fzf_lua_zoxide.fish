@@ -7,7 +7,7 @@
 #   Global - all directories in zoxide database (shows ~/... notation)
 
 function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory"
-    set -l scope "Local"
+    set -l scope "Global"
     set -l filter_path (pwd)
     set -l query ""
 

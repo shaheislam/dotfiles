@@ -137,7 +137,7 @@ require("fzf-lua").setup({
   -- Zoxide: Output path to stdout for CLI mode
   -- Note: Scope filtering happens in Fish via cmd parameter with grep
   zoxide = {
-    prompt = "Zoxide (Local)❯ ",
+    prompt = "Zoxide (Global)❯ ",
     header = zoxide_header,
     actions = {
       ["enter"] = function(s, _)
