@@ -511,7 +511,7 @@ if status is-interactive
     # System monitoring aliases
     alias top="btop"  # Use btop as default process viewer
     alias htop="htop --tree"  # Show htop with tree view by default
-    alias ps="procs"  # Use procs as modern ps replacement
+    # alias ps="procs"  # Disabled - procs is not a drop-in ps replacement (-p means --pager, not PID filter)
     alias pst="procs --tree"  # Process tree view
     alias psg="procs | grep"  # Search processes
     alias net="sudo bandwhich"  # Network monitoring (requires sudo)
