@@ -86,7 +86,6 @@ brew "doggo"
 brew "fastfetch"
 brew "uv"
 brew "onefetch"
-brew "tealdeer"
 brew "jq"
 brew "yq"
 brew "jwt-cli"   # JWT encoder/decoder CLI

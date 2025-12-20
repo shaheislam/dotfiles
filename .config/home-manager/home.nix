@@ -62,7 +62,6 @@
     lazydocker
 
     # === Documentation ===
-    tldr     # Simplified man pages
     glow     # Terminal markdown viewer
 
     # === Development Utilities ===

@@ -249,7 +249,7 @@ pm_map_package_name() {
                     echo "BINARY_INSTALL:$generic" ;;
                 mise|kubie|lazydocker|terraform-docs|terragrunt)
                     echo "BINARY_INSTALL:$generic" ;;
-                uv|tealdeer|glow|gemini-cli|splash|onefetch)
+                uv|glow|gemini-cli|splash|onefetch)
                     echo "BINARY_INSTALL:$generic" ;;
                 granted|kustomize|velero|argocd|flux)
                     echo "BINARY_INSTALL:$generic" ;;
@@ -331,7 +331,7 @@ pm_map_package_name() {
                     echo "BINARY_INSTALL:$generic" ;;
                 mise|kubie|lazydocker|terraform-docs|terragrunt)
                     echo "BINARY_INSTALL:$generic" ;;
-                uv|tealdeer|glow|gemini-cli|splash|onefetch)
+                uv|glow|gemini-cli|splash|onefetch)
                     echo "BINARY_INSTALL:$generic" ;;
                 granted|kubectl|kustomize|velero|argocd|flux)
                     echo "BINARY_INSTALL:$generic" ;;
@@ -400,7 +400,7 @@ pm_map_package_name() {
                 # Still need binary/AUR for some tools
                 yazi|mise|kubie|terraform-docs|terragrunt)
                     echo "BINARY_INSTALL:$generic" ;;
-                uv|tealdeer|glow|gemini-cli|splash|onefetch)
+                uv|glow|gemini-cli|splash|onefetch)
                     echo "BINARY_INSTALL:$generic" ;;
                 granted|velero|argocd|flux|tflint|infracost)
                     echo "BINARY_INSTALL:$generic" ;;

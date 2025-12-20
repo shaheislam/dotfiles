@@ -220,7 +220,6 @@ A collection of useful development tools, libraries, and resources used in this 
 ## Documentation & Publishing
 
 - **[MacTeX](https://www.tug.org/mactex/)** - LaTeX distribution for macOS
-- **[tealdeer](https://github.com/dbrgn/tealdeer)** - Fast tldr client
 - **[Onefetch](https://github.com/o2sh/onefetch)** - Git repository summary
 - **[Fastfetch](https://github.com/fastfetch-cli/fastfetch)** - System information tool
 

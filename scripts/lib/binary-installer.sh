@@ -185,11 +185,6 @@ get_binary_download_url() {
             [[ -z "$latest_tag" ]] && return 1
             echo "https://github.com/atuinsh/atuin/releases/download/${latest_tag}/atuin-${latest_tag}-${arch_suffix}.tar.gz"
             ;;
-        tealdeer)
-            local latest_tag=$(get_latest_release_tag "dbrgn/tealdeer")
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/dbrgn/tealdeer/releases/download/${latest_tag}/tealdeer-${os}-$(uname -m)"
-            ;;
         glow)
             local latest_tag=$(get_latest_release_tag "charmbracelet/glow")
             [[ -z "$latest_tag" ]] && return 1
@@ -295,7 +290,7 @@ install_binaries_from_profile() {
         "trivy" "syft" "grype"
 
         # Other tools
-        "git-delta" "yazi" "atuin" "tealdeer" "glow"
+        "git-delta" "yazi" "atuin" "glow"
     )
 
     for binary in "${binaries[@]}"; do
