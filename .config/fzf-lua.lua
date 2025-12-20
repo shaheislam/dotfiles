@@ -76,7 +76,7 @@ local file_actions = {
 -- Header hints (M = Alt/Meta)
 local file_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
 local grep_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
-local zoxide_header = "Enter:cd | M-l:local M-s:git M-g:global | C-/:preview"
+local zoxide_header = "Enter:cd | M-l:local M-s:git M-g:global M-p:parents | C-/:preview"
 local git_header = "Enter:select | C-y:copy SHA | C-/:preview"
 
 -- Setup fzf-lua - MUST inherit "cli" profile!
@@ -150,6 +150,7 @@ require("fzf-lua").setup({
       ["alt-l"] = create_zoxide_scope_action("local"),
       ["alt-s"] = create_zoxide_scope_action("git"),
       ["alt-g"] = create_zoxide_scope_action("global"),
+      ["alt-p"] = create_zoxide_scope_action("parents"),
       ["esc"] = quit,
       ["ctrl-c"] = quit,
     },

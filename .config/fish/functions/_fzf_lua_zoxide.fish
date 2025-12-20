@@ -1,10 +1,11 @@
 # fzf-lua zoxide picker - cd to selected directory
-# Supports scope switching (Alt-L/S/G) with path filtering
+# Supports scope switching (Alt-L/S/G/P) with path filtering
 #
 # Scopes:
-#   Local  - directories under current working directory (prefix stripped)
-#   Git    - directories under git repository root (prefix stripped)
-#   Global - all directories in zoxide database (shows ~/... notation)
+#   Local   - directories under current working directory (prefix stripped)
+#   Git     - directories under git repository root (prefix stripped)
+#   Global  - all directories in zoxide database (shows ~/... notation)
+#   Parents - ancestor directories from cwd up to root
 
 function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory"
     set -l scope "Global"
@@ -15,7 +16,17 @@ function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory
         # Build zoxide command with path filtering AND prefix stripping
         set -l zoxide_cmd "zoxide query --list --score"
 
-        if test "$scope" = "Global"
+        if test "$scope" = "Parents"
+            # Parents: generate ancestor directories from cwd to root
+            set -l parent_list
+            set -l current (pwd)
+            while test "$current" != "/"
+                set -a parent_list $current
+                set current (dirname $current)
+            end
+            set -a parent_list "/"
+            set zoxide_cmd "printf '%s\\n' "(string join " " $parent_list)
+        else if test "$scope" = "Global"
             # Global: show all dirs, replace $HOME with ~ for cleaner display
             set zoxide_cmd "$zoxide_cmd | sed 's|$HOME|~|'"
         else
@@ -46,6 +57,8 @@ function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory
                 case "global"
                     set filter_path ""
                     set scope "Global"
+                case "parents"
+                    set scope "Parents"
             end
             continue
         end
@@ -60,6 +73,8 @@ function _fzf_lua_zoxide --description "Zoxide picker - cd to selected directory
             case "Global"
                 # Replace ~ back to $HOME for the actual cd
                 set result (string replace "~" $HOME -- $result)
+            case "Parents"
+                # Already full paths, no restoration needed
         end
 
         __zoxide_cd "$result"
