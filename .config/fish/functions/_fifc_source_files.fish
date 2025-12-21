@@ -12,13 +12,17 @@ function _fifc_source_files -d "Return a command to recursively find files"
         end
 
         if test "$path" = {$PWD}/
-            echo "fd . $fifc_fd_opts --color=always $fd_custom_opts"
+            # Current dir: output path\tpath format for --with-nth=2 compatibility
+            echo "fd . $fifc_fd_opts --color=always $fd_custom_opts | while read -l line; printf '%s\\t%s\\n' \"\$line\" \"\$line\"; end"
         else if test "$path" = "."
-            echo "fd . $fifc_fd_opts --color=always --hidden $fd_custom_opts"
+            # Hidden files in current dir: output path\tpath format
+            echo "fd . $fifc_fd_opts --color=always --hidden $fd_custom_opts | while read -l line; printf '%s\\t%s\\n' \"\$line\" \"\$line\"; end"
         else if test -n "$hidden"
-            echo "fd . $fifc_fd_opts --color=always --hidden -- $path"
+            # Output format: ~/path\trelative_path (fzf displays relative, extracts tilde path)
+            echo "fd . $fifc_fd_opts --color=always --hidden --base-directory $path $fd_custom_opts | while read -l line; printf '%s/%s\\t%s\\n' (string replace \$HOME '~' $path) \"\$line\" \"\$line\"; end"
         else
-            echo "fd . $fifc_fd_opts --color=always -- $path"
+            # Output format: ~/path\trelative_path (fzf displays relative, extracts tilde path)
+            echo "fd . $fifc_fd_opts --color=always --base-directory $path $fd_custom_opts | while read -l line; printf '%s/%s\\t%s\\n' (string replace \$HOME '~' $path) \"\$line\" \"\$line\"; end"
         end
     else if test -n "$hidden"
         # Use sed to strip cwd prefix
