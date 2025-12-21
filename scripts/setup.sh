@@ -510,6 +510,7 @@ phase_4_cloud_tools() {
         claude mcp add --scope user context7 bunx @upstash/context7-mcp >/dev/null 2>&1 || true
         claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
         claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
+        claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse >/dev/null 2>&1 || true
 
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"
