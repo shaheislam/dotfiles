@@ -502,6 +502,21 @@ phase_4_cloud_tools() {
         print_success "iximiuz labctl CLI already installed at: $(which labctl)"
     fi
 
+    # Install MCP Excalidraw for AI diagram generation
+    if [[ ! -d "$HOME/tools/mcp_excalidraw" ]]; then
+        print_step "Installing MCP Excalidraw for AI diagram generation..."
+        mkdir -p "$HOME/tools"
+        git clone https://github.com/yctimlin/mcp_excalidraw.git "$HOME/tools/mcp_excalidraw" >/dev/null 2>&1 && \
+            (cd "$HOME/tools/mcp_excalidraw" && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1) && \
+            print_success "MCP Excalidraw installed" || \
+            print_warning "Failed to install MCP Excalidraw"
+    else
+        print_success "MCP Excalidraw already installed at: $HOME/tools/mcp_excalidraw"
+    fi
+
+    # Create Obsidian Excalidraw directory
+    mkdir -p "$HOME/obsidian/Excalidraw" 2>/dev/null || true
+
     # Configure Claude Code MCP servers
     if command_exists claude; then
         print_step "Configuring Claude Code MCP servers..."
@@ -511,6 +526,10 @@ phase_4_cloud_tools() {
         claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
         claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
         claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse >/dev/null 2>&1 || true
+
+        # Excalidraw MCP (for AI diagram generation with live preview)
+        # Note: Environment vars are set in ~/.claude.json manually as 'claude mcp add' doesn't support env
+        claude mcp add --scope user excalidraw node "$HOME/tools/mcp_excalidraw/dist/index.js" >/dev/null 2>&1 || true
 
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"
