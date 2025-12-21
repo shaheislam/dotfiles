@@ -20,14 +20,10 @@ if status is-interactive
     # Display relative paths but extract absolute paths for insertion
     fifc \
         -n 'test "$fifc_group" = "directories"' \
-        -s _fifc_source_directories \
-        -f '--with-nth=2' \
-        -e '^([^\t]+)'
+        -s _fifc_source_directories
     fifc \
         -n 'test "$fifc_group" = "files"' \
-        -s _fifc_source_files \
-        -f '--with-nth=2' \
-        -e '^([^\t]+)'
+        -s _fifc_source_files
     fifc \
         -n 'test "$fifc_group" = processes' \
         -s 'ps -ax -o pid=,command='

@@ -12,17 +12,17 @@ function _fifc_source_files -d "Return a command to recursively find files"
         end
 
         if test "$path" = {$PWD}/
-            # Current dir: output path\tpath format for --with-nth=2 compatibility
-            echo "fd . $fifc_fd_opts --color=always $fd_custom_opts | while read -l line; printf '%s\\t%s\\n' \"\$line\" \"\$line\"; end"
+            # Current dir: output relative paths
+            echo "fd . $fifc_fd_opts --color=always $fd_custom_opts"
         else if test "$path" = "."
-            # Hidden files in current dir: output path\tpath format
-            echo "fd . $fifc_fd_opts --color=always --hidden $fd_custom_opts | while read -l line; printf '%s\\t%s\\n' \"\$line\" \"\$line\"; end"
+            # Hidden files in current dir: output relative paths
+            echo "fd . $fifc_fd_opts --color=always --hidden $fd_custom_opts"
         else if test -n "$hidden"
-            # Output format: ~/path\trelative_path (fzf displays relative, extracts tilde path)
-            echo "fd . $fifc_fd_opts --color=always --hidden --base-directory $path $fd_custom_opts | while read -l line; printf '%s/%s\\t%s\\n' (string replace \$HOME '~' $path) \"\$line\" \"\$line\"; end"
+            # External dir with hidden: output tilde paths (~/path/file)
+            echo "fd . $fifc_fd_opts --color=always --hidden --base-directory $path $fd_custom_opts | while read -l line; printf '%s/%s\\n' (string replace \$HOME '~' $path | string replace -r '/\$' '') \"\$line\"; end"
         else
-            # Output format: ~/path\trelative_path (fzf displays relative, extracts tilde path)
-            echo "fd . $fifc_fd_opts --color=always --base-directory $path $fd_custom_opts | while read -l line; printf '%s/%s\\t%s\\n' (string replace \$HOME '~' $path) \"\$line\" \"\$line\"; end"
+            # External dir: output tilde paths (~/path/file)
+            echo "fd . $fifc_fd_opts --color=always --base-directory $path $fd_custom_opts | while read -l line; printf '%s/%s\\n' (string replace \$HOME '~' $path | string replace -r '/\$' '') \"\$line\"; end"
         end
     else if test -n "$hidden"
         # Use sed to strip cwd prefix
