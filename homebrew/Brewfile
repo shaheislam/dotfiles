@@ -220,6 +220,7 @@ brew "entr"
 # Document Processing
 cask "mactex-no-gui"  # LaTeX compiler for CV generation
 brew "pandoc"  # Document format converter (required for OVIWrite)
+brew "typst"  # Modern typesetting system (LaTeX alternative) for invoices, docs, presentations
 
 # CI/CD & Automation Tools
 brew "act"

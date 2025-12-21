@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# new-invoice - Create a new invoice from template
+# Usage: new-invoice [invoice-number] [--week-start YYYY-MM-DD]
+#
+# Examples:
+#   new-invoice              # Auto-detect next invoice number, use current week
+#   new-invoice RW05         # Specific invoice number
+#   new-invoice --week-start 2025-11-10  # Specific week
+
+set -euo pipefail
+
+INVOICE_DIR="$HOME/obsidian/Finance/Invoices"
+TEMPLATE_FILE="$INVOICE_DIR/template.typ"
+
+# Default values
+INVOICE_PREFIX="RW"
+PO_NUMBER="PR-098941"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+# Parse arguments
+INVOICE_NUMBER=""
+WEEK_START=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --week-start)
+            WEEK_START="$2"
+            shift 2
+            ;;
+        --help|-h)
+            echo "Usage: new-invoice [invoice-number] [--week-start YYYY-MM-DD]"
+            echo ""
+            echo "Options:"
+            echo "  invoice-number    Invoice number (e.g., RW05). Auto-detected if not provided."
+            echo "  --week-start      Start date of the week (YYYY-MM-DD). Defaults to Monday of current week."
+            echo ""
+            echo "Examples:"
+            echo "  new-invoice                           # Auto-detect everything"
+            echo "  new-invoice RW05                      # Specific invoice number"
+            echo "  new-invoice --week-start 2025-11-10   # Specific week start"
+            exit 0
+            ;;
+        *)
+            INVOICE_NUMBER="$1"
+            shift
+            ;;
+    esac
+done
+
+# Ensure invoice directory exists
+mkdir -p "$INVOICE_DIR/$(date +%Y)"
+
+# Auto-detect invoice number if not provided
+if [[ -z "$INVOICE_NUMBER" ]]; then
+    # Find the highest existing invoice number
+    LAST_NUM=$(find "$INVOICE_DIR" -name "${INVOICE_PREFIX}*.typ" 2>/dev/null | \
+        sed -E "s/.*${INVOICE_PREFIX}([0-9]+)\.typ/\1/" | \
+        sort -n | tail -1)
+
+    if [[ -z "$LAST_NUM" ]]; then
+        NEXT_NUM=1
+    else
+        NEXT_NUM=$((LAST_NUM + 1))
+    fi
+
+    # Zero-pad to 2 digits
+    INVOICE_NUMBER=$(printf "${INVOICE_PREFIX}%02d" "$NEXT_NUM")
+    log_info "Auto-detected invoice number: $INVOICE_NUMBER"
+fi
+
+# Calculate week dates
+if [[ -z "$WEEK_START" ]]; then
+    # Get Monday of current week
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS date command
+        DOW=$(date +%u)  # 1=Monday, 7=Sunday
+        DAYS_SINCE_MONDAY=$((DOW - 1))
+        WEEK_START=$(date -v-${DAYS_SINCE_MONDAY}d +%Y-%m-%d)
+    else
+        # GNU date
+        WEEK_START=$(date -d "last monday" +%Y-%m-%d 2>/dev/null || date +%Y-%m-%d)
+    fi
+fi
+
+log_info "Week starting: $WEEK_START"
+
+# Generate dates for the week (Mon-Fri)
+generate_week_dates() {
+    local start_date="$1"
+    local dates=()
+
+    for i in 0 1 2 3 4; do
+        if [[ "$(uname)" == "Darwin" ]]; then
+            dates+=("$(date -j -v+${i}d -f "%Y-%m-%d" "$start_date" +%d/%m/%Y)")
+        else
+            dates+=("$(date -d "$start_date + $i days" +%d/%m/%Y)")
+        fi
+    done
+
+    echo "${dates[@]}"
+}
+
+# Get invoice date (Friday of the week)
+if [[ "$(uname)" == "Darwin" ]]; then
+    INVOICE_DATE=$(date -j -v+4d -f "%Y-%m-%d" "$WEEK_START" +%Y-%m-%d)
+    INVOICE_YEAR=$(date -j -f "%Y-%m-%d" "$INVOICE_DATE" +%Y)
+    INVOICE_MONTH=$(date -j -f "%Y-%m-%d" "$INVOICE_DATE" +%-m)
+    INVOICE_DAY=$(date -j -f "%Y-%m-%d" "$INVOICE_DATE" +%-d)
+else
+    INVOICE_DATE=$(date -d "$WEEK_START + 4 days" +%Y-%m-%d)
+    INVOICE_YEAR=$(date -d "$INVOICE_DATE" +%Y)
+    INVOICE_MONTH=$(date -d "$INVOICE_DATE" +%-m)
+    INVOICE_DAY=$(date -d "$INVOICE_DATE" +%-d)
+fi
+
+# Read week dates into array
+read -ra WEEK_DATES <<< "$(generate_week_dates "$WEEK_START")"
+
+# Output file path
+OUTPUT_FILE="$INVOICE_DIR/$INVOICE_YEAR/$INVOICE_NUMBER.typ"
+
+# Check if file already exists
+if [[ -f "$OUTPUT_FILE" ]]; then
+    log_warn "Invoice $OUTPUT_FILE already exists!"
+    read -p "Overwrite? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Aborting."
+        exit 0
+    fi
+fi
+
+# Create the invoice file
+cat > "$OUTPUT_FILE" << EOF
+// Invoice: $INVOICE_NUMBER
+// Week: $WEEK_START
+// Generated: $(date +%Y-%m-%d)
+
+#import "../template.typ": invoice
+
+#invoice(
+  number: "$INVOICE_NUMBER",
+  date: datetime(year: $INVOICE_YEAR, month: $INVOICE_MONTH, day: $INVOICE_DAY),
+  po-number: "$PO_NUMBER",
+
+  // Edit days worked below (0.0 for days off, 1.0 for full day, 0.5 for half day)
+  items: (
+    (date: "${WEEK_DATES[0]}", days: 1.0),  // Monday
+    (date: "${WEEK_DATES[1]}", days: 1.0),  // Tuesday
+    (date: "${WEEK_DATES[2]}", days: 1.0),  // Wednesday
+    (date: "${WEEK_DATES[3]}", days: 1.0),  // Thursday
+    (date: "${WEEK_DATES[4]}", days: 1.0),  // Friday
+  ),
+)
+EOF
+
+log_success "Created invoice: $OUTPUT_FILE"
+
+# Compile the invoice
+if command -v typst &> /dev/null; then
+    log_info "Compiling invoice..."
+    typst compile --root "$INVOICE_DIR" "$OUTPUT_FILE"
+    PDF_FILE="${OUTPUT_FILE%.typ}.pdf"
+    log_success "Generated PDF: $PDF_FILE"
+else
+    log_warn "Typst not installed. Run 'brew install typst' to enable PDF generation."
+fi
+
+# Open in editor
+if [[ -n "${EDITOR:-}" ]]; then
+    log_info "Opening in $EDITOR..."
+    $EDITOR "$OUTPUT_FILE"
+elif command -v nvim &> /dev/null; then
+    log_info "Opening in Neovim..."
+    nvim "$OUTPUT_FILE"
+else
+    log_info "Edit the invoice at: $OUTPUT_FILE"
+fi
