@@ -26,7 +26,15 @@ function _fzf_search_directory --description "Search the current directory. Repl
 
 
     if test $status -eq 0
-        commandline --current-token --replace -- (string escape -- $file_paths_selected | string join ' ')" "
+        # Use backslash escaping instead of quotes (preserves tilde expansion)
+        # string escape uses quotes which breaks paths like ~'/path with spaces/'
+        set -f escaped_paths
+        for path in $file_paths_selected
+            set -l esc (string replace --all '\\' '\\\\' -- $path)
+            set esc (string replace --all ' ' '\\ ' -- $esc)
+            set -a escaped_paths $esc
+        end
+        commandline --current-token --replace -- (string join ' ' -- $escaped_paths)" "
     end
 
     commandline --function repaint
