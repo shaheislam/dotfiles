@@ -163,9 +163,6 @@ let
 
   # Shell hook that runs for all environments
   commonShellHook = ''
-    echo "🚀 Global Development Environment Loaded"
-    echo "   Base: ~/dotfiles/nix/global"
-
     # Set common environment variables
     export GLOBAL_NIX_PROFILE="true"
 
@@ -196,7 +193,7 @@ in {
       direnv
     ];
     shellHook = ''
-      echo "Minimal global environment loaded"
+      # Minimal shell - silent by default
     '';
   };
 
