@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# compliance-check - Generate property compliance dashboard PDF
+# Usage: compliance-check [--fire-log]
+
+set -euo pipefail
+
+PROPERTIES_DIR="${HOME}/obsidian/Properties"
+TEMPLATES_DIR="${PROPERTIES_DIR}/templates"
+OUTPUT_DIR="${PROPERTIES_DIR}/output"
+
+# Ensure output directory exists
+mkdir -p "${OUTPUT_DIR}"
+
+generate_dashboard() {
+    local template="${TEMPLATES_DIR}/compliance-dashboard.typ"
+    local output="${OUTPUT_DIR}/compliance-dashboard.pdf"
+    local year
+    year=$(date +%Y)
+
+    if [[ ! -f "${template}" ]]; then
+        echo "Error: Template not found: ${template}" >&2
+        exit 1
+    fi
+
+    echo "Generating compliance dashboard..."
+    typst compile --root "${PROPERTIES_DIR}" --input "year=${year}" "${template}" "${output}"
+
+    if [[ $? -eq 0 ]]; then
+        echo "Dashboard generated: ${output}"
+        open "${output}"
+    else
+        echo "Error: Failed to compile dashboard" >&2
+        exit 1
+    fi
+}
+
+generate_fire_log() {
+    local template="${TEMPLATES_DIR}/fire-alarm-log.typ"
+    local output="${OUTPUT_DIR}/fire-alarm-log.pdf"
+    local year
+    year=$(date +%Y)
+
+    if [[ ! -f "${template}" ]]; then
+        echo "Error: Template not found: ${template}" >&2
+        exit 1
+    fi
+
+    echo "Generating fire alarm log..."
+    typst compile --root "${PROPERTIES_DIR}" --input "year=${year}" "${template}" "${output}"
+
+    if [[ $? -eq 0 ]]; then
+        echo "Fire alarm log generated: ${output}"
+        open "${output}"
+    else
+        echo "Error: Failed to compile fire alarm log" >&2
+        exit 1
+    fi
+}
+
+show_help() {
+    cat << EOF
+compliance-check - Generate property compliance documents
+
+Usage:
+    compliance-check              Generate compliance dashboard
+    compliance-check --fire-log   Generate fire alarm test log
+    compliance-check --all        Generate all documents
+    compliance-check --help       Show this help
+
+Output:
+    PDFs are saved to: ${OUTPUT_DIR}/
+EOF
+}
+
+# Parse arguments
+case "${1:-}" in
+    --fire-log)
+        generate_fire_log
+        ;;
+    --all)
+        generate_dashboard
+        generate_fire_log
+        ;;
+    --help|-h)
+        show_help
+        ;;
+    "")
+        generate_dashboard
+        ;;
+    *)
+        echo "Unknown option: $1" >&2
+        show_help
+        exit 1
+        ;;
+esac

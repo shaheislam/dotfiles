@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# fire-alarm-test - Log a fire alarm test to the YAML file
+# Usage: fire-alarm-test [--pass|--fail] [--notes "..."] [--tester "..."]
+
+set -euo pipefail
+
+PROPERTIES_DIR="${HOME}/obsidian/Properties"
+CURRENT_YEAR=$(date +%Y)
+TESTS_FILE="${PROPERTIES_DIR}/fire-alarm-tests/${CURRENT_YEAR}.yaml"
+
+# Defaults
+RESULT=""
+NOTES=""
+TESTER="Shahe Islam"
+TODAY=$(date +%Y-%m-%d)
+
+show_help() {
+    cat << EOF
+fire-alarm-test - Log a monthly fire alarm test
+
+Usage:
+    fire-alarm-test                     Interactive mode
+    fire-alarm-test --pass              Quick pass entry
+    fire-alarm-test --fail              Quick fail entry
+    fire-alarm-test --pass --notes "Zone 3 slow response"
+    fire-alarm-test --tester "Name"     Specify tester name
+
+Options:
+    --pass              Record test as PASS
+    --fail              Record test as FAIL
+    --notes "..."       Add notes to the entry
+    --tester "..."      Specify tester name (default: Shahe Islam)
+    --date YYYY-MM-DD   Override test date (default: today)
+    --help              Show this help
+
+Test log file: ${TESTS_FILE}
+EOF
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --pass)
+            RESULT="PASS"
+            shift
+            ;;
+        --fail)
+            RESULT="FAIL"
+            shift
+            ;;
+        --notes)
+            NOTES="$2"
+            shift 2
+            ;;
+        --tester)
+            TESTER="$2"
+            shift 2
+            ;;
+        --date)
+            TODAY="$2"
+            shift 2
+            ;;
+        --help|-h)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Create tests file if it doesn't exist
+if [[ ! -f "${TESTS_FILE}" ]]; then
+    mkdir -p "$(dirname "${TESTS_FILE}")"
+    cat > "${TESTS_FILE}" << EOF
+# Fire Alarm Test Log - ${CURRENT_YEAR}
+# Monthly tests are required for centralized fire alarm systems
+
+tests: []
+EOF
+    echo "Created new test log: ${TESTS_FILE}"
+fi
+
+# Interactive mode if no result specified
+if [[ -z "${RESULT}" ]]; then
+    echo "Fire Alarm Test Log - $(date +%d/%m/%Y)"
+    echo "================================"
+    echo ""
+    read -p "Test result (PASS/FAIL): " RESULT
+    RESULT=$(echo "${RESULT}" | tr '[:lower:]' '[:upper:]')
+
+    if [[ "${RESULT}" != "PASS" && "${RESULT}" != "FAIL" ]]; then
+        echo "Error: Result must be PASS or FAIL" >&2
+        exit 1
+    fi
+
+    read -p "Tester name [${TESTER}]: " input_tester
+    [[ -n "${input_tester}" ]] && TESTER="${input_tester}"
+
+    read -p "Notes (optional): " NOTES
+fi
+
+# Check if entry for this date already exists
+if grep -q "date: ${TODAY}" "${TESTS_FILE}" 2>/dev/null; then
+    echo "Warning: Test entry for ${TODAY} already exists!"
+    read -p "Overwrite? (y/N): " confirm
+    if [[ "${confirm}" != "y" && "${confirm}" != "Y" ]]; then
+        echo "Cancelled."
+        exit 0
+    fi
+    # Remove existing entry (this is a simple approach)
+    # For a proper solution, we'd use yq or similar
+    echo "Note: Overwrite not fully implemented. Please edit file manually or use a different date."
+    exit 1
+fi
+
+# Read current content and append new entry
+# Using a temporary file approach since we need to modify YAML structure
+TEMP_FILE=$(mktemp)
+
+# Check if tests array is empty
+if grep -q "tests: \[\]" "${TESTS_FILE}"; then
+    # Replace empty array with new entry
+    sed 's/tests: \[\]/tests:/' "${TESTS_FILE}" > "${TEMP_FILE}"
+    cat >> "${TEMP_FILE}" << EOF
+  - date: ${TODAY}
+    result: "${RESULT}"
+    tester: "${TESTER}"
+    notes: "${NOTES}"
+EOF
+else
+    # Append to existing entries
+    cp "${TESTS_FILE}" "${TEMP_FILE}"
+    cat >> "${TEMP_FILE}" << EOF
+  - date: ${TODAY}
+    result: "${RESULT}"
+    tester: "${TESTER}"
+    notes: "${NOTES}"
+EOF
+fi
+
+mv "${TEMP_FILE}" "${TESTS_FILE}"
+
+echo ""
+echo "Test logged successfully!"
+echo "  Date:   ${TODAY}"
+echo "  Result: ${RESULT}"
+echo "  Tester: ${TESTER}"
+[[ -n "${NOTES}" ]] && echo "  Notes:  ${NOTES}"
+echo ""
+echo "Run 'compliance-check --fire-log' to generate the PDF report."
