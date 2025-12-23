@@ -50,12 +50,12 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --preview-label=' Details ' \
         $fzf_colors \
         --bind='ctrl-/:toggle-preview' \
-        --bind="alt-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')" \
-        --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_dir)" \
-        --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_global)" \
-        --bind="alt-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_format')+change-header($header_session)" \
+        --bind="alt-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')" \
+        --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_dir)" \
+        --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_global)" \
+        --bind="alt-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_session)" \
         --bind="ctrl-y:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | pbcopy)" \
-        --bind="ctrl-e:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | string replace -a \$HOME '~' | awk '$awk_failed')+change-header($header_failed)" \
+        --bind="ctrl-e:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_failed')+change-header($header_failed)" \
         --bind="ctrl-o:execute(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" \
         > $tmpfile
 
