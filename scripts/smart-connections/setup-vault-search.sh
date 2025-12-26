@@ -12,7 +12,7 @@ set -e
 
 VAULT_PATH="${1:-$HOME/obsidian}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_DIR="$(dirname "$SCRIPT_DIR")"
+DOTFILES_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 VENV_DIR="$DOTFILES_DIR/.venv/vault-search"
 
 echo "=== Obsidian Vault Semantic Search Setup ==="
@@ -59,7 +59,7 @@ mkdir -p "$(dirname "$VENV_DIR")"
 # Install dependencies
 echo "Installing Python dependencies..."
 "$VENV_DIR/bin/pip" install --quiet --upgrade pip
-"$VENV_DIR/bin/pip" install --quiet sentence-transformers numpy
+"$VENV_DIR/bin/pip" install --quiet sentence-transformers numpy scikit-learn
 
 # Verify installation
 echo "Verifying installation..."
@@ -71,6 +71,9 @@ echo ""
 # Make scripts executable
 chmod +x "$SCRIPT_DIR/vault-index.py"
 chmod +x "$SCRIPT_DIR/vault-search.py"
+chmod +x "$SCRIPT_DIR/vault-suggest.py"
+chmod +x "$SCRIPT_DIR/vault-graph.py"
+chmod +x "$SCRIPT_DIR/vault-visualize.py"
 
 # Build initial index
 echo "Building initial index (this may take a minute)..."
@@ -80,12 +83,17 @@ echo ""
 echo ""
 echo "=== Setup Complete ==="
 echo ""
-echo "Commands available:"
-echo "  Index vault:    $SCRIPT_DIR/vault-index.py $VAULT_PATH"
-echo "  Search:         $SCRIPT_DIR/vault-search.py \"note.md\""
-echo "  Text query:     $SCRIPT_DIR/vault-search.py --query \"your search\""
+echo "Scripts available:"
+echo "  vault-index.py     Build/update embedding index"
+echo "  vault-search.py    Find related notes (semantic + hybrid)"
+echo "  vault-suggest.py   Suggest missing backlinks"
+echo "  vault-graph.py     Export similarity graph (JSON/DOT/Canvas)"
+echo "  vault-visualize.py Generate 2D visualization (t-SNE/UMAP)"
 echo ""
 echo "Neovim keybindings:"
 echo "  <leader>or    Related notes (semantic)"
 echo "  <leader>oR    Semantic search (text query)"
+echo "  <leader>oF    Related notes (same folder)"
+echo "  <leader>oS    Suggest backlinks"
+echo "  <leader>oH    Query history"
 echo ""
