@@ -1042,6 +1042,24 @@ phase_10_advanced_features() {
         log_verbose "No SSH keys found, skipping personal repository cloning"
     fi
 
+    # Vault Semantic Search Setup (smart embeddings)
+    # Runs independently of SSH keys - only requires ~/obsidian to exist
+    if [[ -d "$HOME/obsidian" ]]; then
+        local venv_dir="$DOTFILES_ROOT/.venv/vault-search"
+
+        # Check if already set up (venv exists and has sentence-transformers)
+        if [[ -d "$venv_dir" ]] && "$venv_dir/bin/python" -c "import sentence_transformers" 2>/dev/null; then
+            log_verbose "Vault semantic search already configured"
+        else
+            print_step "Setting up Obsidian vault semantic search..."
+            if "$DOTFILES_ROOT/scripts/smart-connections/setup-vault-search.sh" "$HOME/obsidian" >/dev/null 2>&1; then
+                print_success "Vault semantic search configured"
+            else
+                print_warning "Vault semantic search setup failed (non-critical)"
+            fi
+        fi
+    fi
+
     mark_step_complete "advanced_features"
 }
 
