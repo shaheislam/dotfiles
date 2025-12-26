@@ -65,6 +65,19 @@ command -v zoxide >/dev/null && _cache_tool_init zoxide "zoxide init zsh"
 command -v direnv >/dev/null && _cache_tool_init direnv "direnv hook zsh"
 command -v atuin >/dev/null && _cache_tool_init atuin "atuin init zsh"
 
+# Override Atuin preexec to handle invalid UTF-8 gracefully (prevents panics)
+_atuin_preexec() {
+    local id
+    # Sanitize command: strip invalid UTF-8 bytes
+    local sanitized_cmd
+    sanitized_cmd=$(printf '%s' "$1" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+    if [[ -n "$sanitized_cmd" ]]; then
+        id=$(atuin history start -- "$sanitized_cmd" 2>/dev/null)
+        export ATUIN_HISTORY_ID="$id"
+    fi
+    __atuin_preexec_time=${EPOCHREALTIME-}
+}
+
 # Source asdf
 if [ -f "/opt/homebrew/opt/asdf/libexec/asdf.sh" ]; then
   . /opt/homebrew/opt/asdf/libexec/asdf.sh

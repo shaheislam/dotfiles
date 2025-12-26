@@ -99,7 +99,33 @@ if status is-interactive
 
     if command -v atuin >/dev/null
         set -gx ATUIN_NOBIND "true"
-        __cache_tool_init atuin "atuin init fish"
+        # Skip the cached init - we'll define our own protected handlers
+        # The cached version panics on invalid UTF-8 in command args
+
+        # Set session ID (this rarely has UTF-8 issues)
+        set -gx ATUIN_SESSION (atuin uuid 2>/dev/null)
+        set --erase ATUIN_HISTORY_ID
+
+        # Protected preexec handler with UTF-8 sanitization
+        function _atuin_preexec --on-event fish_preexec
+            if not test -n "$fish_private_mode"
+                # Sanitize command: strip invalid UTF-8 bytes to prevent Rust panics
+                set -l sanitized_cmd (printf '%s' "$argv[1]" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                if test -n "$sanitized_cmd"
+                    set -g ATUIN_HISTORY_ID (atuin history start -- "$sanitized_cmd" 2>/dev/null)
+                end
+            end
+        end
+
+        # Protected postexec handler
+        function _atuin_postexec --on-event fish_postexec
+            set -l s $status
+            if test -n "$ATUIN_HISTORY_ID"
+                ATUIN_LOG=error atuin history end --exit $s -- $ATUIN_HISTORY_ID &>/dev/null &
+                disown
+            end
+            set --erase ATUIN_HISTORY_ID
+        end
     end
 
     # Source asdf (no caching needed - it's just a file source)
@@ -188,16 +214,16 @@ if status is-interactive
         --height 60% \
         --layout=reverse \
         --border=rounded \
-        --border-label=' 🔍 Search ' \
+        --border-label=' Search ' \
         --border-label-pos=3 \
         --preview-window='right:70%:wrap:rounded,<120(right,50%,wrap,border-left)' \
         --padding=1 \
         --margin=1 \
         --info=inline \
         --multi \
-        --prompt='▶ ' \
-        --pointer='→' \
-        --marker='✓' \
+        --prompt='> ' \
+        --pointer='>' \
+        --marker='*' \
         --color='header:italic' \
         --bind='tab:toggle+down,shift-tab:toggle+up' \
         --bind='ctrl-/:toggle-preview' \
@@ -210,10 +236,10 @@ if status is-interactive
         --bind='alt-enter:print-query' \
         --bind='ctrl-l:clear-screen' \
         --bind='alt-e:execute(nvim {} < /dev/tty > /dev/tty)+abort'"
-    
+
     # File preview with bat using Catppuccin theme and minimal style
     set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {} 2>/dev/null || cat {}' \
-        --border-label=' 📄 Files ' \
+        --border-label=' Files ' \
         --preview-label=' Preview ' \
         --preview-label-pos=3 \
         --header 'CTRL-/: toggle preview | TAB: multi-select | ALT-E: edit in nvim'"
@@ -221,13 +247,13 @@ if status is-interactive
     # History search with preview and copy-to-clipboard
     set -gx FZF_CTRL_R_OPTS "--preview 'echo {}' \
         --preview-window='up:3:wrap' \
-        --border-label=' 📜 History ' \
+        --border-label=' History ' \
         --header 'CTRL-Y: copy command | ENTER: execute' \
         --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'"
 
     # Directory preview with eza tree view and enhanced aesthetics
     set -gx FZF_ALT_C_OPTS "--preview 'eza --tree --icons --level=2 --color=always {}' \
-        --border-label=' 📁 Directories ' \
+        --border-label=' Directories ' \
         --preview-label=' Tree View ' \
         --preview-label-pos=3 \
         --header 'CTRL-/: toggle preview'"
@@ -2020,12 +2046,16 @@ fish_add_path ~/.claude/local/node_modules/.bin
         if test -n "$ATUIN_H"
             if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
                 set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
-                commandline -r "$ATUIN_HIST"
+                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                set -l sanitized_hist (printf '%s' "$ATUIN_HIST" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                commandline -r "$sanitized_hist"
                 commandline -f repaint
                 commandline -f execute
                 return
             else
-                commandline -r "$ATUIN_H"
+                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                set -l sanitized_h (printf '%s' "$ATUIN_H" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                commandline -r "$sanitized_h"
             end
         end
 
@@ -2051,12 +2081,16 @@ fish_add_path ~/.claude/local/node_modules/.bin
         if test -n "$ATUIN_H"
             if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
                 set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
-                commandline -r "$ATUIN_HIST"
+                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                set -l sanitized_hist (printf '%s' "$ATUIN_HIST" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                commandline -r "$sanitized_hist"
                 commandline -f repaint
                 commandline -f execute
                 return
             else
-                commandline -r "$ATUIN_H"
+                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                set -l sanitized_h (printf '%s' "$ATUIN_H" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                commandline -r "$sanitized_h"
             end
         end
 
@@ -2082,12 +2116,16 @@ fish_add_path ~/.claude/local/node_modules/.bin
         if test -n "$ATUIN_H"
             if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
                 set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
-                commandline -r "$ATUIN_HIST"
+                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                set -l sanitized_hist (printf '%s' "$ATUIN_HIST" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                commandline -r "$sanitized_hist"
                 commandline -f repaint
                 commandline -f execute
                 return
             else
-                commandline -r "$ATUIN_H"
+                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                set -l sanitized_h (printf '%s' "$ATUIN_H" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                commandline -r "$sanitized_h"
             end
         end
 

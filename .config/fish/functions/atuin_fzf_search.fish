@@ -80,18 +80,23 @@ function atuin_fzf_search --description "Search shell history using atuin with f
                 set -l edited_cmd (cat /tmp/atuin_edit_cmd)
                 rm -f /tmp/atuin_edit_cmd
                 if test -n "$edited_cmd"
-                    commandline -r -- $edited_cmd
+                    # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                    set -l sanitized_cmd (printf '%s' "$edited_cmd" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                    commandline -r -- $sanitized_cmd
                     commandline -f repaint
                     commandline -f execute
                 end
                 return
             end
 
-            # Extract command from field 5 (strip ANSI and icon)
-            set -l selected_cmd (echo "$selected_line" | cut -f5 | sed 's/\x1b\[[0-9;]*m//g' | cut -c3-)
+            # Extract command from field 5 (strip ANSI and icon prefix)
+            # Use sed 's/^..//' instead of cut -c3- to avoid corrupting multi-byte UTF-8
+            set -l selected_cmd (echo "$selected_line" | cut -f5 | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^..//')
+            # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+            set -l sanitized_cmd (printf '%s' "$selected_cmd" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
 
-            if test -n "$selected_cmd"
-                commandline -r -- $selected_cmd
+            if test -n "$sanitized_cmd"
+                commandline -r -- $sanitized_cmd
                 commandline -f repaint
 
                 # Execute if Enter was pressed (key_pressed is empty)
@@ -102,8 +107,11 @@ function atuin_fzf_search --description "Search shell history using atuin with f
             end
         else if test (count $lines) -eq 1 -a -n "$lines[1]"
             # Fallback: single line output
-            set -l selected_cmd (echo "$lines[1]" | cut -f5 | sed 's/\x1b\[[0-9;]*m//g' | cut -c3-)
-            commandline -r -- $selected_cmd
+            # Use sed 's/^..//' instead of cut -c3- to avoid corrupting multi-byte UTF-8
+            set -l selected_cmd (echo "$lines[1]" | cut -f5 | sed 's/\x1b\[[0-9;]*m//g' | sed 's/^..//')
+            # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+            set -l sanitized_cmd (printf '%s' "$selected_cmd" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+            commandline -r -- $sanitized_cmd
             commandline -f repaint
             commandline -f execute
         end
