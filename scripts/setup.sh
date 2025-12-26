@@ -505,6 +505,11 @@ phase_4_cloud_tools() {
     # Install MCP Excalidraw for AI diagram generation
     if [[ ! -d "$HOME/tools/mcp_excalidraw" ]]; then
         print_step "Installing MCP Excalidraw for AI diagram generation..."
+        # Remove ~/tools symlink if it exists (conflicts with mcp_excalidraw installation)
+        if [[ -L "$HOME/tools" ]]; then
+            log_verbose "Removing ~/tools symlink (was pointing to dotfiles/scripts/tools)"
+            rm "$HOME/tools"
+        fi
         mkdir -p "$HOME/tools"
         git clone https://github.com/yctimlin/mcp_excalidraw.git "$HOME/tools/mcp_excalidraw" >/dev/null 2>&1 && \
             (cd "$HOME/tools/mcp_excalidraw" && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1) && \
