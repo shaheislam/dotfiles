@@ -22,9 +22,9 @@
         "postgresql://steampipe@localhost:9193/steampipe"
       ]
     },
-    "deepwiki": {
-      "url": "https://mcp.deepwiki.com/sse",
-      "transport": "sse"
+    "drawio": {
+      "command": "bunx",
+      "args": ["drawio-mcp-server"]
     }
   }
 }
