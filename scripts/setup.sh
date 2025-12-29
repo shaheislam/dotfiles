@@ -382,6 +382,7 @@ phase_3_development() {
         pipx install mcp-server-fetch >/dev/null 2>&1 || print_warning "Failed to install mcp-server-fetch"
         pipx install mcp-server-sqlite >/dev/null 2>&1 || print_warning "Failed to install mcp-server-sqlite"
         pipx install diagrams >/dev/null 2>&1 || print_warning "Failed to install diagrams (for AWS diagram MCP)"
+        pipx install hookify >/dev/null 2>&1 || print_warning "Failed to install hookify"
         print_success "Python MCP servers installation complete"
     fi
 
