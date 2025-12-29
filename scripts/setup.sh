@@ -546,8 +546,12 @@ phase_4_cloud_tools() {
         # Install Claude Code plugins from anthropics/claude-code marketplace
         print_step "Installing Claude Code plugins..."
 
-        # Add marketplace (idempotent - will skip if already added)
+        # Add marketplaces (idempotent - will skip if already added)
         claude plugin marketplace add anthropics/claude-code >/dev/null 2>&1 || true
+        claude plugin marketplace add kenryu42/cc-marketplace >/dev/null 2>&1 || true
+
+        # Safety & Protection (from cc-marketplace)
+        claude plugin install safety-net@cc-marketplace >/dev/null 2>&1 || true
 
         # Tier 1 - High value plugins
         claude plugin install code-review@claude-code-plugins >/dev/null 2>&1 || true
@@ -564,8 +568,8 @@ phase_4_cloud_tools() {
         claude plugin install explanatory-output-style@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install learning-output-style@claude-code-plugins >/dev/null 2>&1 || true
 
-        print_success "Claude Code plugins installed (11 plugins)"
-        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style"
+        print_success "Claude Code plugins installed (12 plugins)"
+        log_verbose "Installed: safety-net, code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style"
     fi
 
     # Install Kubernetes/Helm plugins

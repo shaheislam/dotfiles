@@ -383,14 +383,17 @@ docker run -it --rm -v ~/dotfiles:/home/testuser/dotfiles dotfiles-test:ubuntu
 
 ### Claude Code Plugins
 
-Plugins are installed from the `anthropics/claude-code` marketplace (alias: `claude-code-plugins`).
+Plugins are installed from two marketplaces:
+- `anthropics/claude-code` (alias: `claude-code-plugins`) - Official Anthropic plugins
+- `kenryu42/cc-marketplace` (alias: `cc-marketplace`) - Community safety plugins
 
 **Installation**: Plugins are stored in `~/.claude/settings.json` and available in all sessions on the device. For cross-device consistency, installation commands are in `scripts/setup.sh`.
 
-**Installed Plugins (11 total)**:
+**Installed Plugins (12 total)**:
 
 | Plugin | Command | Purpose |
 |--------|---------|---------|
+| **safety-net** | PreToolUse hook | Blocks destructive commands (`rm -rf ~/`, `git reset --hard`, etc.) via semantic analysis |
 | **code-review** | `/code-review` | Automated PR review with 4 parallel agents, 80+ confidence filtering |
 | **pr-review-toolkit** | Auto-triggered | 6 specialized reviewers (comments, tests, errors, types, quality, simplicity) |
 | **hookify** | `/hookify` | Create hooks via markdown (also `/hookify:list`, `/hookify:configure`) |
@@ -421,6 +424,7 @@ claude plugin uninstall plugin-name@claude-code-plugins
 **Token Cost Note**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks that increase token usage. Disable when not needed.
 
 ### Recent Updates
+- **2025-12-29**: Added safety-net plugin from kenryu42/cc-marketplace for destructive command protection
 - **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
 - **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
 - **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
