@@ -571,6 +571,14 @@ phase_4_cloud_tools() {
 
         print_success "Claude Code plugins installed (12 plugins)"
         log_verbose "Installed: safety-net, code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style"
+
+        # Symlink Claude Code settings from dotfiles (preserves enabled plugins across devices)
+        if [[ -f "$DOTFILES_ROOT/.claude/settings.json" ]] && [[ ! -L "$HOME/.claude/settings.json" ]]; then
+            print_step "Linking Claude Code settings from dotfiles..."
+            rm -f "$HOME/.claude/settings.json" 2>/dev/null || true
+            ln -sf "$DOTFILES_ROOT/.claude/settings.json" "$HOME/.claude/settings.json"
+            print_success "Claude Code settings linked (plugin preferences preserved)"
+        fi
     fi
 
     # Install Kubernetes/Helm plugins
@@ -1045,6 +1053,50 @@ phase_10_advanced_features() {
         fi
     else
         log_verbose "No SSH keys found, skipping personal repository cloning"
+    fi
+
+    # Devcontainer Neovim Environment Setup
+    # Sets up persistent directory structure for Neovim in devcontainers
+    print_step "Setting up devcontainer Neovim environment..."
+    local devcontainer_env="$HOME/.devcontainer/env"
+
+    # Create directory structure
+    mkdir -p "$devcontainer_env/.config" "$devcontainer_env/.cache" "$devcontainer_env/.local"
+
+    # Symlink Neovim config if ~/neovim exists and not already linked
+    if [[ -d "$HOME/neovim" ]] && [[ ! -L "$devcontainer_env/.config/nvim" ]]; then
+        ln -sf "$HOME/neovim" "$devcontainer_env/.config/nvim"
+        print_success "Linked: ~/.devcontainer/env/.config/nvim -> ~/neovim"
+    elif [[ -L "$devcontainer_env/.config/nvim" ]]; then
+        log_verbose "Devcontainer Neovim config already linked"
+    else
+        log_verbose "~/neovim not found - devcontainer will use empty config"
+    fi
+
+    print_success "Devcontainer environment ready at ~/.devcontainer/env"
+
+    # Install devcontainer.vim (universal Neovim for any devcontainer)
+    if command_exists go && [[ ! -f "$HOME/go/bin/devcontainer.vim" ]]; then
+        print_step "Installing devcontainer.vim..."
+        go install github.com/mikoto2000/devcontainer.vim@latest >/dev/null 2>&1 && \
+            print_success "devcontainer.vim installed" || \
+            print_warning "devcontainer.vim installation failed (requires Go)"
+    elif [[ -f "$HOME/go/bin/devcontainer.vim" ]]; then
+        log_verbose "devcontainer.vim already installed"
+    fi
+
+    # Symlink claude-code-plugins devcontainer config from dotfiles
+    # This ensures Neovim-enabled devcontainer config persists across plugin updates
+    local claude_plugins_devcontainer="$HOME/.claude/plugins/marketplaces/claude-code-plugins/.devcontainer"
+    local dotfiles_devcontainer="$DOTFILES_ROOT/devcontainer/claude-code-plugins"
+    if [[ -d "$dotfiles_devcontainer" ]] && [[ ! -L "$claude_plugins_devcontainer" ]]; then
+        print_step "Linking claude-code-plugins devcontainer config..."
+        rm -rf "$claude_plugins_devcontainer" 2>/dev/null || true
+        mkdir -p "$(dirname "$claude_plugins_devcontainer")"
+        ln -sf "$dotfiles_devcontainer" "$claude_plugins_devcontainer"
+        print_success "claude-code-plugins devcontainer linked from dotfiles"
+    elif [[ -L "$claude_plugins_devcontainer" ]]; then
+        log_verbose "claude-code-plugins devcontainer already linked"
     fi
 
     # Vault Semantic Search Setup (smart embeddings)

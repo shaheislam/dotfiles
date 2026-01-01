@@ -31,6 +31,12 @@
 .claude/settings.local.json
 .claude/plugins/known_marketplaces.json
 .claude/plugins/marketplaces/
+.claude/plugins/cache/
+.claude/plugins/installed_plugins.json
+.claude/hooks/__pycache__/
+
+# Launch templates - machine-specific settings
+.config/launch-templates/.claude/
 
 # Keep these directories and files (they're tracked):
 # .claude/agents/        - Agent configurations
