@@ -1,1 +1,0 @@
-{"hour":"2025-07-27T10:00:00.000Z","models":{"claude-sonnet-4-20250514":{"input":2870,"output":3036,"cacheCreate":592063,"cacheRead":2436254,"cost":3.00526245},"<synthetic>":{"input":0,"output":0,"cacheCreate":0,"cacheRead":0,"cost":0},"claude-opus-4-20250514":{"input":31,"output":517,"cacheCreate":152042,"cacheRead":1341754,"cost":4.902658499999999}}}
