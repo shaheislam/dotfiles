@@ -45,7 +45,8 @@
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
     "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume",
     "source=${localEnv:HOME}/.devcontainer/env,target=/devcontainer/env,type=bind,consistency=cached",
-    "source=${localEnv:HOME}/neovim,target=/devcontainer/neovim,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/neovim,target=/devcontainer/neovim,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/work,target=/work,type=bind,consistency=cached"
   ],
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
