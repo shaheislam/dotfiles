@@ -572,6 +572,16 @@ phase_4_cloud_tools() {
         print_success "Claude Code plugins installed (12 plugins)"
         log_verbose "Installed: safety-net, code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style"
 
+        # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
+        if [[ ! -d "$HOME/ralph-claude-code" ]]; then
+            print_step "Installing frankbria Ralph (autonomous loop tool)..."
+            git clone https://github.com/frankbria/ralph-claude-code.git "$HOME/ralph-claude-code" >/dev/null 2>&1
+            (cd "$HOME/ralph-claude-code" && ./install.sh >/dev/null 2>&1)
+            print_success "frankbria Ralph installed (ralph, ralph-monitor, ralph-setup)"
+        else
+            log_verbose "frankbria Ralph already installed"
+        fi
+
         # Symlink Claude Code settings from dotfiles (preserves enabled plugins across devices)
         if [[ -f "$DOTFILES_ROOT/.claude/settings.json" ]] && [[ ! -L "$HOME/.claude/settings.json" ]]; then
             print_step "Linking Claude Code settings from dotfiles..."
