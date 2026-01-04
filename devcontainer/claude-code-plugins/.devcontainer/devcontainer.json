@@ -8,6 +8,24 @@
       "GIT_DELTA_VERSION": "0.18.2"
     }
   },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false,
+      "configureZshAsDefaultShell": false,
+      "username": "node",
+      "userUid": "1000",
+      "userGid": "1000"
+    },
+    "ghcr.io/meaningful-ooo/devcontainer-features/fish:2": {},
+    "ghcr.io/schlich/devcontainer-features/starship:0": {},
+    "ghcr.io/duduribeiro/devcontainer-features/neovim:1": {
+      "version": "stable"
+    },
+    "ghcr.io/devcontainers/features/rust:1": {
+      "profile": "minimal"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "runArgs": [
     "--cap-add=NET_ADMIN",
     "--cap-add=NET_RAW"
