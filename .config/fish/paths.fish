@@ -26,7 +26,10 @@ if test (uname -s) = "Darwin"
     fish_add_path $HOME/Library/Python/3.9/bin  # macOS Python user packages
     set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
 else
-    fish_add_path $HOME/.local/lib/python3.*/site-packages
+    # Linux Python path - use glob with fallback to avoid errors when no match
+    for pypath in $HOME/.local/lib/python3.*/site-packages
+        test -d "$pypath" && fish_add_path "$pypath"
+    end
     set -x PYTHONPATH /usr/lib/python3/dist-packages
 end
 

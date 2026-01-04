@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   git \
   procps \
   sudo \
-  fzf \
+  fish \
   zsh \
   man-db \
   unzip \
@@ -30,7 +30,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   fd-find \
   curl \
   rsync \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
+  # Locale support
+  locales \
+  && apt-get clean && rm -rf /var/lib/apt/lists/* \
+  # Generate locales
+  && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
+  && sed -i '/en_GB.UTF-8/s/^# //g' /etc/locale.gen \
+  && locale-gen
+
+# Install fzf (latest from GitHub for --tmux support, requires 0.53.0+)
+RUN FZF_VERSION=$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest | grep -Po '"tag_name": "v?\K[^"]*') \
+  && echo "Installing fzf ${FZF_VERSION}..." \
+  && ARCH=$(dpkg --print-architecture) \
+  && if [ "$ARCH" = "arm64" ]; then FZF_ARCH="arm64"; else FZF_ARCH="amd64"; fi \
+  && curl -fSL -o /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_${FZF_ARCH}.tar.gz" \
+  && tar -xzf /tmp/fzf.tar.gz -C /usr/local/bin \
+  && rm /tmp/fzf.tar.gz \
+  && fzf --version
 
 # Install Neovim (latest stable via tarball - AppImage requires FUSE which isn't available in Docker)
 # Detect architecture and download appropriate tarball
@@ -52,6 +68,10 @@ RUN NVIM_VERSION=$(curl -fsSL https://api.github.com/repos/neovim/neovim/release
 RUN curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash \
   && mv ~/.local/bin/zoxide /usr/local/bin/ \
   && zoxide --version
+
+# Install starship prompt
+RUN curl -fsSL https://starship.rs/install.sh | sh -s -- -y \
+  && starship --version
 
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
@@ -87,23 +107,12 @@ USER node
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
 
-# Set the default shell to zsh rather than sh
-ENV SHELL=/bin/zsh
+# Set the default shell to fish rather than sh
+ENV SHELL=/usr/bin/fish
 
 # Set the default editor and visual (prefer nvim if available)
 ENV EDITOR=nvim
 ENV VISUAL=nvim
-
-# Default powerline10k theme
-ARG ZSH_IN_DOCKER_VERSION=1.2.0
-RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v${ZSH_IN_DOCKER_VERSION}/zsh-in-docker.sh)" -- \
-  -p git \
-  -p fzf \
-  -a "source /usr/share/doc/fzf/examples/key-bindings.zsh" \
-  -a "source /usr/share/doc/fzf/examples/completion.zsh" \
-  -a 'eval "$(zoxide init zsh)"' \
-  -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
-  -x
 
 # Install Rust toolchain for Neovim plugins that need native compilation (blink.pairs, etc.)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

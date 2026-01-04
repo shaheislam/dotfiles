@@ -4,6 +4,24 @@
 # Uses ONLY Homebrew-installed Claude Code to avoid conflicts with npm/local installs
 set -euo pipefail
 
+# In devcontainers, use the npm-installed claude directly (Node 20 is already the base image)
+if [[ "${DEVCONTAINER:-}" == "true" ]]; then
+  # Find npm-installed claude (skip this wrapper script)
+  for cand in /usr/local/share/npm-global/bin/claude /usr/local/bin/claude; do
+    if [[ -x "$cand" && "$cand" != "$0" ]]; then
+      exec "$cand" "$@"
+    fi
+  done
+  # Fallback: find claude in PATH excluding this script
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  while IFS= read -r -d: dir; do
+    [[ "$dir" == "$SCRIPT_DIR" ]] && continue
+    [[ -x "$dir/claude" ]] && exec "$dir/claude" "$@"
+  done <<< "$PATH:"
+  echo "Claude CLI not found in devcontainer PATH" >&2
+  exit 1
+fi
+
 # Resolve Node 20 location (Homebrew prefixes)
 NODE20_DIR=""
 if [[ -x "/opt/homebrew/opt/node@20/bin/node" ]]; then

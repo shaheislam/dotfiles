@@ -174,7 +174,12 @@ if status is-interactive
 
     # FZF configuration - enhanced version combining both configs
     if command -v fzf >/dev/null
-        fzf --fish | source
+        # fzf --fish requires fzf 0.48+, fallback for older versions
+        if fzf --fish &>/dev/null
+            fzf --fish | source
+        else if test -f /usr/share/doc/fzf/examples/key-bindings.fish
+            source /usr/share/doc/fzf/examples/key-bindings.fish
+        end
     end
 
     if test -f ~/.fzf.fish
@@ -290,13 +295,19 @@ if status is-interactive
     alias python=python3
     alias mkdir="mkdir -p"
     
-    # Enhanced eza aliases with better visual organization
-    alias ls="eza --icons --group-directories-first"
-    alias ll="eza -la --icons --group-directories-first --git"
-    alias la="eza -a --icons --group-directories-first"
-    alias l="eza -lah --icons --group-directories-first --git"
-    alias tree="eza --tree --icons --level=2"
-    alias lt="eza --tree --icons --level=3"
+    # Enhanced eza aliases with better visual organization (if eza installed)
+    if command -v eza >/dev/null
+        alias ls="eza --icons --group-directories-first"
+        alias ll="eza -la --icons --group-directories-first --git"
+        alias la="eza -a --icons --group-directories-first"
+        alias l="eza -lah --icons --group-directories-first --git"
+        alias tree="eza --tree --icons --level=2"
+        alias lt="eza --tree --icons --level=3"
+    else
+        alias ll="ls -la"
+        alias la="ls -a"
+        alias l="ls -lah"
+    end
     
     alias k=kubectl
     alias vi=nvim

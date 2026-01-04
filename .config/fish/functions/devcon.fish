@@ -2,7 +2,7 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
     # Container type configurations
     # Format: "name:path"
     set -l containers
-    set -a containers "claude:$HOME/.claude/plugins/marketplaces/claude-code-plugins"
+    set -a containers "claude:$HOME/dotfiles/devcontainer/claude-code-plugins"
     # Add more container types here as needed:
     # set -a containers "node:$HOME/.devcontainers/node"
 
@@ -192,24 +192,36 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         end
     end
 
+    # Determine config file path (support both .devcontainer/ and root-level devcontainer.json)
+    set -l config_file ""
+    if test -f "$workspace/.devcontainer/devcontainer.json"
+        set config_file "$workspace/.devcontainer/devcontainer.json"
+    else if test -f "$workspace/devcontainer.json"
+        set config_file "$workspace/devcontainer.json"
+    else
+        echo "Error: No devcontainer.json found in $workspace"
+        return 1
+    end
+    set -l config_args --config "$config_file" --workspace-folder "$workspace"
+
     # Handle config command (no container start)
     if $do_config
         echo "Showing configuration for $container_type..."
-        devcontainer read-configuration --workspace-folder $workspace
+        devcontainer read-configuration $config_args
         return $status
     end
 
     # Handle build command (no container start)
     if $do_build
         echo "Building $container_type image..."
-        devcontainer build --workspace-folder $workspace
+        devcontainer build $config_args
         return $status
     end
 
     # Handle down command
     if $do_down
         echo "Stopping $container_type devcontainer..."
-        devcontainer down --workspace-folder $workspace
+        devcontainer down $config_args
         return $status
     end
 
@@ -283,10 +295,10 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         end
     end
 
-    devcontainer up $mount_args $env_args $extra_args $feature_args --workspace-folder $workspace
+    devcontainer up $mount_args $env_args $extra_args $feature_args $config_args
 
     # Exec into container if requested
     if $do_exec
-        and devcontainer exec --workspace-folder $workspace zsh
+        devcontainer exec $config_args fish
     end
 end
