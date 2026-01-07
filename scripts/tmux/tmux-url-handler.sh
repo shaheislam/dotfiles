@@ -69,9 +69,16 @@ if [ "$url_count" -gt 5 ]; then
         tmux display-message "#[fg=red]$name: fzf not found, install it for better URL selection"
         exit 1
     fi
-    
+
+    # Write URLs to a temp file for the new window to read
+    # This avoids shell escaping issues with special characters in URLs
+    url_file="/tmp/tmux-url-list-$$"
+    echo "$urls" > "$url_file"
+
     tmux new-window -n "url-select" "
-        selected=\$(printf '%s\n' '$urls' | fzf --prompt='Select URL: ' --height=40% --border --exit-0)
+        url_file='$url_file'
+        selected=\$(cat \"\$url_file\" | fzf --prompt='Select URL: ' --height=40% --border)
+        rm -f \"\$url_file\"
         if [ -n \"\$selected\" ]; then
             if [[ \"\$selected\" =~ ^https?:// ]]; then
                 normalized_url=\"\$selected\"
@@ -79,42 +86,43 @@ if [ "$url_count" -gt 5 ]; then
                 normalized_url=\"https://\$selected\"
             fi
             open -a Firefox \"\$normalized_url\" > /dev/null 2>&1 &
-            tmux display-message '#[fg=green,bold]$name: Opened \$normalized_url'
+            tmux display-message \"#[fg=green,bold]tmux-url-handler: Opened \$normalized_url\"
         else
-            tmux display-message '#[fg=yellow]$name: No URL selected'
+            tmux display-message '#[fg=yellow]tmux-url-handler: No URL selected'
         fi
     "
-else
-    # For 5 or fewer URLs, use tmux display-menu with simplified commands
-    menu_items=()
-    index=1
-    
-    while IFS= read -r url; do
-        # Normalize URL for opening
-        if [[ "$url" =~ ^https?:// ]]; then
-            normalized_url="$url"
-            clean_url=${url#*://}
-        else
-            normalized_url="https://$url"
-            clean_url="$url"
-        fi
-        
-        # Limit display length to prevent menu overflow
-        if [ ${#clean_url} -gt 50 ]; then
-            clean_url="${clean_url:0:47}..."
-        fi
-        
-        # Create a simple command that will work
-        menu_items+=("$clean_url" "$index" "run-shell 'open -a Firefox \"$normalized_url\" >/dev/null 2>&1 & tmux display-message \"#[fg=green,bold]$name: Opened $normalized_url\"'")
-        
-        ((index++))
-        if [ "$index" -gt 9 ]; then
-            break
-        fi
-    done <<< "$urls"
-    
-    # Add separator and cancel option
-    menu_items+=("" "" "Cancel" "q" "")
-    
-    tmux display-menu -t 1 -T "#[fg=cyan,bold]Select URL" "${menu_items[@]}"
+    exit 0
 fi
+
+# For 5 or fewer URLs, use tmux display-menu with simplified commands
+menu_items=()
+index=1
+
+while IFS= read -r url; do
+    # Normalize URL for opening
+    if [[ "$url" =~ ^https?:// ]]; then
+        normalized_url="$url"
+        clean_url=${url#*://}
+    else
+        normalized_url="https://$url"
+        clean_url="$url"
+    fi
+
+    # Limit display length to prevent menu overflow
+    if [ ${#clean_url} -gt 50 ]; then
+        clean_url="${clean_url:0:47}..."
+    fi
+
+    # Create a simple command that will work
+    menu_items+=("$clean_url" "$index" "run-shell 'open -a Firefox \"$normalized_url\" >/dev/null 2>&1 & tmux display-message \"#[fg=green,bold]$name: Opened $normalized_url\"'")
+
+    ((index++))
+    if [ "$index" -gt 9 ]; then
+        break
+    fi
+done <<< "$urls"
+
+# Add separator and cancel option
+menu_items+=("" "" "Cancel" "q" "")
+
+tmux display-menu -t 1 -T "#[fg=cyan,bold]Select URL" "${menu_items[@]}"

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mount:*)",
+      "Bash(cat:*)",
+      "Skill(ralph-wiggum:help)",
+      "Bash(find:*)",
+      "Bash(xargs:*)"
+    ],
+    "additionalDirectories": [
+      "/mounts/second-brain/",
+      "/mounts/obsidian/",
+      "/mounts/neovim/",
+      "/mounts/dotfiles/",
+      "/mounts/"
+    ]
+  }
+}

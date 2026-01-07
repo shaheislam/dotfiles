@@ -11,6 +11,7 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
     set -l dirs
     set -l env_vars
     set -l features
+    set -l instance_name "default"
     set -l do_exec false
     set -l do_down false
     set -l do_rebuild false
@@ -77,6 +78,16 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
                 set do_build true
             case --help -h
                 set show_help true
+            case --instance -i
+                # Next arg is the instance name
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set instance_name $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --instance requires a name (e.g., --instance workflows)"
+                    return 1
+                end
             case --env -E
                 # Next arg is the env var value
                 set -l next_i (math $i + 1)
@@ -142,6 +153,7 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         end
         echo ""
         echo "Options:"
+        echo "  --instance, -i  Instance name for isolated storage (default: 'default')"
         echo "  --exec, -e      Enter container shell after starting"
         echo "  --down, -d      Stop the container"
         echo "  --env, -E       Set environment variable (repeatable): -E KEY=value"
@@ -157,31 +169,52 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         echo "                   aws, azure, gcloud, terraform, kubectl, docker, git, github"
         echo ""
         echo "Examples:"
-        echo "  devcon claude                           # Start container"
+        echo "  devcon claude                           # Start default instance"
+        echo "  devcon claude -i workflows -e -r        # New 'workflows' instance (isolated)"
+        echo "  devcon claude -i plugins -e             # Separate 'plugins' instance"
         echo "  devcon claude ~/project-a -e            # Mount + exec"
         echo "  devcon claude -E API_KEY=xxx -e         # With env var"
         echo "  devcon claude -F python -F node         # Add Python + Node (rebuilds)"
         echo "  devcon claude --rebuild --fast          # Fresh, fast startup"
         echo "  devcon claude --gpu ~/ml-project        # GPU for ML work"
         echo "  devcon claude --config                  # Debug: show config"
+        echo ""
+        echo "Instance isolation:"
+        echo "  Each instance gets isolated storage at ~/.devcontainer/instances/<name>/"
+        echo "  Different instances run as separate containers with separate volumes."
         return 0
     end
 
-    # Find container workspace path
-    set -l workspace ""
+    # Find container config path
+    set -l config_path ""
     for c in $containers
         set -l name (string split ":" $c)[1]
         set -l path (string split ":" $c)[2]
         if test "$container_type" = "$name"
-            set workspace $path
+            set config_path $path
             break
         end
     end
 
-    if test -z "$workspace"
+    if test -z "$config_path"
         echo "Error: Unknown container type: $container_type"
         echo "Run 'devcon --help' for available types"
         return 1
+    end
+
+    # Set up instance-specific workspace and directories
+    set -l instance_base "$HOME/.devcontainer/instances/$instance_name"
+    set -l workspace "$HOME/.devcontainer/workspaces/$instance_name"
+
+    # Create instance directories if they don't exist
+    if not test -d "$instance_base/env"
+        echo "Creating instance storage: $instance_base/"
+        mkdir -p "$instance_base/env"
+        mkdir -p "$instance_base/work"
+    end
+    if not test -d "$workspace"
+        echo "Creating instance workspace: $workspace/"
+        mkdir -p "$workspace"
     end
 
     # Features require rebuild - auto-enable if features specified
@@ -194,15 +227,19 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
 
     # Determine config file path (support both .devcontainer/ and root-level devcontainer.json)
     set -l config_file ""
-    if test -f "$workspace/.devcontainer/devcontainer.json"
-        set config_file "$workspace/.devcontainer/devcontainer.json"
-    else if test -f "$workspace/devcontainer.json"
-        set config_file "$workspace/devcontainer.json"
+    if test -f "$config_path/.devcontainer/devcontainer.json"
+        set config_file "$config_path/.devcontainer/devcontainer.json"
+    else if test -f "$config_path/devcontainer.json"
+        set config_file "$config_path/devcontainer.json"
     else
-        echo "Error: No devcontainer.json found in $workspace"
+        echo "Error: No devcontainer.json found in $config_path"
         return 1
     end
+    # Use instance-specific workspace folder (drives devcontainerId for isolation)
     set -l config_args --config "$config_file" --workspace-folder "$workspace"
+
+    # Set DEVCON_INSTANCE for host-side resolution in devcontainer.json (${localEnv:DEVCON_INSTANCE})
+    set -lx DEVCON_INSTANCE $instance_name
 
     # Handle config command (no container start)
     if $do_config
@@ -233,8 +270,9 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         set -a mount_args "--mount" "$mount_spec"
     end
 
-    # Build env arguments
+    # Build env arguments (always include DEVCON_INSTANCE)
     set -l env_args
+    set -a env_args "--remote-env" "DEVCON_INSTANCE=$instance_name"
     for env_var in $env_vars
         set -a env_args "--remote-env" "$env_var"
     end
@@ -264,7 +302,9 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
     end
 
     # Start container
-    echo "Starting $container_type devcontainer..."
+    echo "Starting $container_type devcontainer (instance: $instance_name)..."
+    echo "Instance storage: $instance_base/"
+    echo "Workspace folder: $workspace/"
     if test (count $dirs) -gt 0
         echo "Additional mounts:"
         for dir in $dirs
