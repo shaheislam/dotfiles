@@ -75,9 +75,10 @@ if [ "$url_count" -gt 5 ]; then
     url_file="/tmp/tmux-url-list-$$"
     echo "$urls" > "$url_file"
 
-    tmux new-window -n "url-select" "
-        url_file='$url_file'
-        selected=\$(cat \"\$url_file\" | fzf --prompt='Select URL: ' --height=40% --border)
+    # Use bash explicitly since tmux default-shell may be Fish (which doesn't support [[ ]])
+    tmux new-window -n "url-select" "bash -c '
+        url_file=\"$url_file\"
+        selected=\$(cat \"\$url_file\" | fzf --prompt=\"Select URL: \" --height=40% --border)
         rm -f \"\$url_file\"
         if [ -n \"\$selected\" ]; then
             if [[ \"\$selected\" =~ ^https?:// ]]; then
@@ -88,9 +89,9 @@ if [ "$url_count" -gt 5 ]; then
             open -a Firefox \"\$normalized_url\" > /dev/null 2>&1 &
             tmux display-message \"#[fg=green,bold]tmux-url-handler: Opened \$normalized_url\"
         else
-            tmux display-message '#[fg=yellow]tmux-url-handler: No URL selected'
+            tmux display-message \"#[fg=yellow]tmux-url-handler: No URL selected\"
         fi
-    "
+    '"
     exit 0
 fi
 
