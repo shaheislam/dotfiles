@@ -10,6 +10,7 @@ import subprocess
 import sys
 import re
 import logging
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple, Set
@@ -486,6 +487,90 @@ class UnifiedCVGenerator:
         best_title = max(scores.items(), key=lambda x: x[1])[0]
         return best_title
 
+    def escape_typst(self, text: str) -> str:
+        """Escape Typst special characters in text"""
+        # Typst special chars that need escaping: # @ $ (in code contexts)
+        # Note: In content mode, most chars are safe, but # starts code
+        escaped = text.replace('#', '\\#')
+        escaped = escaped.replace('@', '\\@')
+        # $ only needs escaping if used for math mode
+        return escaped
+
+    def generate_cv_typst(self, template_path: str, bullets: List[str],
+                          skills: Dict, metadata: Dict) -> str:
+        """Generate Typst CV from template and selected bullets"""
+        with open(template_path, 'r') as f:
+            template = f.read()
+
+        # Distribute bullets across positions (same logic as LaTeX)
+        if len(bullets) <= 10:
+            distribution = {
+                'PMI': min(3, len(bullets)),
+                'HMRC': min(3, max(0, len(bullets) - 3)),
+                'ITV': min(2, max(0, len(bullets) - 6)),
+                'NATIONWIDE_EKS': min(2, max(0, len(bullets) - 8)),
+                'NATIONWIDE_OBS': 0,
+            }
+        else:
+            distribution = {
+                'PMI': min(3, len(bullets)),
+                'HMRC': min(3, max(0, len(bullets) - 3)),
+                'ITV': min(3, max(0, len(bullets) - 6)),
+                'NATIONWIDE_EKS': min(3, max(0, len(bullets) - 9)),
+                'NATIONWIDE_OBS': min(3, max(0, len(bullets) - 12)),
+            }
+
+        bullet_index = 0
+        job_titles = {}
+
+        for position, count in distribution.items():
+            if count > 0 and bullet_index < len(bullets):
+                position_bullets = bullets[bullet_index:bullet_index + count]
+                job_title = self.determine_job_title(position_bullets)
+
+                if position == 'PMI':
+                    job_title = 'Senior ' + job_title
+
+                job_titles[position] = job_title
+
+                # Escape Typst special characters and format as list items
+                escaped_bullets = []
+                for bullet in position_bullets:
+                    escaped = self.escape_typst(bullet)
+                    escaped_bullets.append(escaped)
+
+                # Typst list format: - item
+                bullet_text = '\n    '.join(f'- {b}' for b in escaped_bullets)
+
+                # Replace the position placeholders (Typst uses // for comments)
+                # Note: 4 leading spaces match the template indentation inside #job()[...]
+                template = template.replace(
+                    f'    // {position}_BULLETS_START\n    // {position}_BULLETS_END',
+                    f'    // {position}_BULLETS_START\n    {bullet_text}\n    // {position}_BULLETS_END'
+                )
+                bullet_index += count
+
+        # Replace job title placeholders (Typst uses <<PLACEHOLDER>> syntax)
+        template = template.replace('{{PMI_JOB_TITLE}}',
+                                  job_titles.get('PMI', 'Senior Platform Engineer'))
+        template = template.replace('{{HMRC_JOB_TITLE}}',
+                                  job_titles.get('HMRC', 'Site Reliability Engineer'))
+        template = template.replace('{{ITV_JOB_TITLE}}',
+                                  job_titles.get('ITV', 'Site Reliability Engineer'))
+        template = template.replace('{{NATIONWIDE_EKS_JOB_TITLE}}',
+                                  job_titles.get('NATIONWIDE_EKS', 'Platform Engineer'))
+        template = template.replace('{{NATIONWIDE_OBS_JOB_TITLE}}',
+                                  job_titles.get('NATIONWIDE_OBS', 'Platform Engineer - Observability'))
+
+        self.logger.info(f"Selected {len(bullets)} bullets based on job requirements (Typst)")
+        if bullets and len(bullets) >= 3:
+            self.logger.info("Top 3 bullets selected:")
+            for i, bullet in enumerate(bullets[:3], 1):
+                preview = bullet[:80] + "..." if len(bullet) > 80 else bullet
+                self.logger.info(f"  {i}. {preview}")
+
+        return template
+
     def generate_cv_latex(self, template_path: str, bullets: List[str],
                          skills: Dict, metadata: Dict) -> str:
         """Generate LaTeX CV from template and selected bullets"""
@@ -597,14 +682,24 @@ class UnifiedCVGenerator:
 
         return cv_content
 
-    def create_ats_optimized_version(self, latex_content: str) -> str:
-        """Create ATS-optimized version of CV"""
+    def create_ats_optimized_version(self, content: str, format_type: str = 'latex') -> str:
+        """Create ATS-optimized version of CV
+
+        Args:
+            content: LaTeX or Typst source content
+            format_type: 'latex' or 'typst'
+        """
         lines = []
-        for line in latex_content.split('\n'):
-            # Skip comment lines
-            if line.strip().startswith('%'):
-                lines.append(line)
-                continue
+        for line in content.split('\n'):
+            # Skip comment lines (different syntax for each format)
+            if format_type == 'typst':
+                if line.strip().startswith('//'):
+                    lines.append(line)
+                    continue
+            else:  # latex
+                if line.strip().startswith('%'):
+                    lines.append(line)
+                    continue
 
             # Replace special characters
             for old, new in self.ats_replacements.items():
@@ -614,8 +709,6 @@ class UnifiedCVGenerator:
 
         # Join the lines back together
         ats_content = '\n'.join(lines)
-
-        # Note: Removed hidden keywords section as it was showing visibly in PDFs
 
         return ats_content
 
@@ -641,10 +734,20 @@ class UnifiedCVGenerator:
         return min(max(score, 0), 100)  # Keep between 0 and 100
 
     def generate_both_versions(self, job_path: str, skills_path: str, template_path: str,
-                              metadata: Dict, max_bullets: int = 10) -> Tuple[str, str, Dict]:
-        """Generate both standard and ATS-optimized versions"""
+                              metadata: Dict, max_bullets: int = 10,
+                              format_type: str = 'latex') -> Tuple[str, str, Dict]:
+        """Generate both standard and ATS-optimized versions
+
+        Args:
+            job_path: Path to job description file
+            skills_path: Path to skills.md file
+            template_path: Path to CV template (.tex or .typ)
+            metadata: Dict with recruiter, type, salary, date
+            max_bullets: Maximum bullets to include
+            format_type: 'latex' or 'typst'
+        """
         self.logger.info("=" * 50)
-        self.logger.info("🚀 Unified CV Generation")
+        self.logger.info(f"🚀 Unified CV Generation ({format_type.upper()})")
         self.logger.info("=" * 50)
 
         # Parse job description
@@ -662,22 +765,32 @@ class UnifiedCVGenerator:
         scored = self.score_achievements(skills, requirements)
         bullets = self.select_bullets(scored, skills, max_bullets=max_bullets)
 
-        # Generate standard CV
-        self.logger.info("📄 Generating standard CV...")
-        standard_latex = self.generate_cv_latex(template_path, bullets, skills, metadata)
+        # Generate standard CV based on format
+        self.logger.info(f"📄 Generating standard CV ({format_type})...")
+        if format_type == 'typst':
+            standard_content = self.generate_cv_typst(template_path, bullets, skills, metadata)
+            file_ext = '.typ'
+            # Copy helper file to generated directory for Typst imports
+            helper_src = self.jobapps_dir / "cv-helpers.typ"
+            helper_dst = self.generated_dir / "cv-helpers.typ"
+            if helper_src.exists():
+                shutil.copy(helper_src, helper_dst)
+        else:
+            standard_content = self.generate_cv_latex(template_path, bullets, skills, metadata)
+            file_ext = '.tex'
 
         # Save standard version
-        standard_tex_path = self.generated_dir / "cv.tex"
-        with open(standard_tex_path, 'w') as f:
-            f.write(standard_latex)
+        standard_source_path = self.generated_dir / f"cv{file_ext}"
+        with open(standard_source_path, 'w') as f:
+            f.write(standard_content)
 
         # Generate ATS-optimized version
         self.logger.info("🤖 Creating ATS-optimized version...")
-        ats_latex = self.create_ats_optimized_version(standard_latex)
+        ats_content = self.create_ats_optimized_version(standard_content, format_type)
 
         # Calculate scores
-        original_score = self.calculate_ats_score(standard_latex, requirements['keywords'])
-        optimized_score = self.calculate_ats_score(ats_latex, requirements['keywords'])
+        original_score = self.calculate_ats_score(standard_content, requirements['keywords'])
+        optimized_score = self.calculate_ats_score(ats_content, requirements['keywords'])
 
         report = {
             'original_score': original_score,
@@ -686,9 +799,9 @@ class UnifiedCVGenerator:
         }
 
         # Save ATS version
-        ats_tex_path = self.generated_dir / "cv_ats.tex"
-        with open(ats_tex_path, 'w') as f:
-            f.write(ats_latex)
+        ats_source_path = self.generated_dir / f"cv_ats{file_ext}"
+        with open(ats_source_path, 'w') as f:
+            f.write(ats_content)
 
         self.logger.info(f"  Original ATS Score: {report['original_score']}/100")
         self.logger.info(f"  Optimized ATS Score: {report['optimized_score']}/100")
@@ -699,38 +812,67 @@ class UnifiedCVGenerator:
         output_name = f"{metadata['recruiter']}-{metadata['date']}-{metadata['type']}-{metadata['salary']}"
 
         # Compile standard
-        self.compile_pdf(str(standard_tex_path), output_name)
+        self.compile_pdf(str(standard_source_path), output_name, format_type)
 
         # Compile ATS
-        self.compile_pdf(str(ats_tex_path), f"{output_name}-ATS")
+        self.compile_pdf(str(ats_source_path), f"{output_name}-ATS", format_type)
 
         standard_pdf = self.output_dir / f"{output_name}.pdf"
         ats_pdf = self.output_dir / f"{output_name}-ATS.pdf"
 
         return str(standard_pdf), str(ats_pdf), report
 
-    def compile_pdf(self, tex_path: str, output_name: str) -> bool:
-        """Compile LaTeX to PDF"""
-        compile_script = self.scripts_dir.parent / "compile-cv.sh"
+    def compile_pdf(self, source_path: str, output_name: str, format_type: str = 'latex') -> bool:
+        """Compile LaTeX or Typst to PDF
 
-        if not compile_script.exists():
-            self.logger.error(f"Compile script not found at {compile_script}")
-            return False
+        Args:
+            source_path: Path to .tex or .typ file
+            output_name: Output PDF name (without extension)
+            format_type: 'latex' or 'typst'
+        """
+        if format_type == 'typst':
+            # Direct Typst compilation (single pass, no external script needed)
+            output_pdf = self.output_dir / f"{output_name}.pdf"
+            try:
+                result = subprocess.run(
+                    ['typst', 'compile', source_path, str(output_pdf)],
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    self.logger.info(f"Successfully compiled {output_name}.pdf (Typst)")
+                    return True
+                else:
+                    self.logger.error(f"Typst compilation failed: {result.stderr}")
+                    return False
+            except FileNotFoundError:
+                self.logger.error("Typst not installed. Run: brew install typst")
+                return False
+            except Exception as e:
+                self.logger.error(f"Typst compilation error: {e}", exc_info=True)
+                return False
+        else:
+            # LaTeX compilation via compile-cv.sh
+            compile_script = self.scripts_dir.parent / "compile-cv.sh"
 
-        try:
-            result = subprocess.run(
-                [str(compile_script), tex_path, output_name, 'pdflatex'],
-                capture_output=True,
-                text=True
-            )
-            if result.returncode == 0:
-                self.logger.info(f"Successfully compiled {output_name}.pdf")
-            else:
-                self.logger.error(f"Compilation failed for {output_name}: {result.stderr}")
-            return result.returncode == 0
-        except Exception as e:
-            self.logger.error(f"Compilation error: {e}", exc_info=True)
-            return False
+            if not compile_script.exists():
+                self.logger.error(f"Compile script not found at {compile_script}")
+                return False
+
+            try:
+                result = subprocess.run(
+                    [str(compile_script), source_path, output_name, 'pdflatex'],
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    self.logger.info(f"Successfully compiled {output_name}.pdf")
+                else:
+                    self.logger.error(f"Compilation failed for {output_name}: {result.stderr}")
+                return result.returncode == 0
+            except Exception as e:
+                self.logger.error(f"Compilation error: {e}", exc_info=True)
+                return False
 
     def generate_comparison_report(self, standard_pdf: str, ats_pdf: str,
                                   report: Dict, metadata: Dict) -> str:
@@ -835,6 +977,10 @@ def main():
     parser.add_argument('--skills', default=None, help='Skills database path')
     parser.add_argument('--template', default=None, help='CV template path')
 
+    # Format selection
+    parser.add_argument('--format', choices=['latex', 'typst'], default='latex',
+                       help='Output format: latex (default) or typst')
+
     # Options
     parser.add_argument('--ats-only', action='store_true', help='Generate ATS version only')
     parser.add_argument('--standard-only', action='store_true', help='Generate standard version only')
@@ -844,14 +990,18 @@ def main():
 
     args = parser.parse_args()
 
-    # Set default paths
+    # Set default paths based on format
     base_dir = Path.home() / "dotfiles" / "jobapps"
     if not args.job:
         args.job = str(base_dir / "jobdescription.md")
     if not args.skills:
         args.skills = str(base_dir / "skills.md")
     if not args.template:
-        args.template = str(base_dir / "CV.tex")
+        # Select template based on format
+        if args.format == 'typst':
+            args.template = str(base_dir / "CV.typ")
+        else:
+            args.template = str(base_dir / "CV.tex")
 
     # Create metadata
     metadata = {
@@ -864,7 +1014,8 @@ def main():
     # Generate CVs
     generator = UnifiedCVGenerator()
     standard_pdf, ats_pdf, report = generator.generate_both_versions(
-        args.job, args.skills, args.template, metadata, max_bullets=args.max_bullets
+        args.job, args.skills, args.template, metadata,
+        max_bullets=args.max_bullets, format_type=args.format
     )
 
     # Get logger for main function

@@ -11,6 +11,13 @@ paths:
   skills_db: "~/dotfiles/scripts/cv/skill-mapping.json"
   resume_cls: "~/dotfiles/jobapps/resume.cls"
 
+# Format selection (latex or typst)
+format:
+  default: "latex"  # Options: latex, typst
+  templates:
+    latex: "CV.tex"
+    typst: "CV.typ"
+
 # LaTeX compilation settings
 latex:
   default_compiler: "pdflatex"
@@ -29,6 +36,15 @@ latex:
     - ".fls"
     - ".fdb_latexmk"
     - ".synctex.gz"
+
+# Typst compilation settings
+typst:
+  enabled: true
+  compiler: "typst"
+  template: "CV.typ"
+  helpers: "cv-helpers.typ"
+  compilation_passes: 1  # Typst only needs single pass
+  font_paths: []  # Additional font directories if needed
 
 # Output settings
 output:
