@@ -1,61 +1,43 @@
-Security Engineer
-6 months
-Remote
-Inside IR35 - Umbrella only
+Role: SRE
+
+Skills: Deep Linux, Scripting - Python, DevOps, Kubernetes
+
+Salary: £500k Plus
+
+Location: London
+
+
+The ideal candidate comes from a top-tier tech environment (FAANG, elite trading, hyperscale infra). They have experience building technology 0→1, owning systems end-to-end, and working close to the metal. They will operate across everything from bare-metal Linux to modern build and observability stacks.
+
+
+Overview
+
+Join a core engineering group as Lead Site Reliability Engineer, designing and scaling Linux platforms that underpin ML/AI-driven trading. You will architect and own reliability for massive simulation, HPC, and production workloads—ensuring ultra-reliable, ultra-fast trading systems. This is a hands-on, leadership role focused equally on technical depth, strategic decision-making, and driving platform SRE excellence.
+
 
 Key Responsibilities
-Build and implement Technical Solutions:
 
-    Assist Solution Architects with initial testing and POC of Cyber Security solutions.
-    Implement infrastructure, networking and integration components as per the approved design.
-    Collaborate with the Solution Architects to ensure all build related work is complete, documented and ready for testing.
-    Plan the deployment phase along with the Architects and Project Managers as per defined timelines.
+    Lead SRE practices for Linux platforms powering low-latency, high-throughput trading workloads.
+    Architect, optimize, and tune Linux for performance, resilience, and minimal latency.
+    Drive incident response, root cause analysis, and continuous reliability improvement across production systems.
+    Oversee system automation and reproducibility—build, deploy, and fleet-manage bare-metal Linux and containerized stacks.
+    Manage and enhance Kubernetes clusters, network configuration, and large-scale orchestration.
+    Set observability standards; expand monitoring, alerting, and performance metrics across platforms.
+    Analyze networking, kernel-level performance, and distributed systems—solving core challenges in a multi-petabyte, multi-cluster environment.
+    Build Python tools for automation, reliability engineering, and performance analysis.
+    Design highly distributed systems
 
-Post Deployment Support:
 
-    Draft test plans along with Test managers and Architects for assigned projects.
-    Help with fixing any bugs identified during testing or pilot phase.
-    Review any incidents created in the projects service now queue and involve the appropriate teams to help fix them.
+What You Will Work On
 
-Stakeholder Engagement:
+    Ultra-reliable, high-performance trading infrastructure where every engineering optimization affects performance
+    Next-generation simulation and HPC compute pipelines, supporting ML/AI workflows at scale.
+    Integration and continuous improvement of internal and open-source tools for automation and reliability.
+    Strategic platform direction: shaping foundational systems for critical infrastructure in an elite trading environment.
 
-    Ability to forge strong relationship with change management, project management team members.
-    Work with end users to fix any bugs post deployment of solutions.
 
-Essential Experience
+Team and Culture
 
-    Proven experience working as security engineer on large scale programmes in the Cyber Security Portfolio largely on Identity based security, Data classification and Cyber Security Resilience.
-    Implementation knowledge of Microsoft Entra ID features like application integration, provisioning, MFA, SSPR and Conditional Access policies.
-    Prior experience deploying Data classification using Microsoft Purview for a large enterprise.
-    Experience collaborating with the Security Operations Centre (SOC) to optimise security monitoring, response planning and execution.
-    Understanding of vulnerability management and threat landscape detection and remediation.
-    Proven experience in being part of Disaster Recovery and Business continuity testing for critical applications.
-    Ability to perform basic Active Directory administration tasks for project work such as user, group and Group policy updates.
-
-Essential Technical Skills & Qualifications
-
-    Experience of the M365 security stack: Microsoft Purview, Microsoft Entra ID, Device management using Intune, Identity Governance.
-    Cloud Security (Tenable, CyberArk, MDR,VPN)
-    Knowledge of best practices and procedures related to Cyber Essentials, UK DPA/GDPR
-
-Desirable Experience
-
-    Proficiency in configuring, managing, and troubleshooting Checkpoint Firewalls and security policies
-    Ability to troubleshoot network related failures during deployments and identify root cause.
-
-If you are interested, please apply at first instance!
-Location
-City of London, UK
-Industry
-IT
-Duration
-6 months
-Employment Business
-Experis IT
-Contact
-Emmanuel Ntabejane
-Reference
-JS-BBBH422674
-Posted Date
-12/09/2025 11:13:27
-
+    Small, autonomous Linux SRE team with direct ownership and impact.
+    Collaborative engagement with quants, researchers, and trading experts to deliver robust platforms.
+    A culture built on deep technical ownership, learning, and high standards of performance engineering

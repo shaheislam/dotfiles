@@ -74,14 +74,6 @@ ROLE_BULLETS = {
     ],
     'NATIONWIDE_EKS': [
         {
-            'text': 'Created Gatekeeper policy constraints and tested using Python Behave to achieve pen-test requirements and limit root access for customers',
-            'tags': ['Gatekeeper', 'OPA', 'Python', 'Security', 'Testing', 'Kubernetes', 'Compliance'],
-        },
-        {
-            'text': 'Introduced Karpenter in combination with spot instances as an enhancement to cluster-autoscaler for node cost optimisation within non-production environments',
-            'tags': ['Karpenter', 'AWS', 'Spot Instances', 'Kubernetes', 'Cost Optimization', 'Autoscaling'],
-        },
-        {
             'text': 'Developed AWS Glue jobs to take Kubernetes cluster non-functional requirement testing and store them in a central database, allowing time series trends to measure component upgrade influence against performance over time',
             'tags': ['AWS Glue', 'Kubernetes', 'Performance Testing', 'Database', 'Time Series', 'NFR'],
         },
@@ -94,16 +86,8 @@ ROLE_BULLETS = {
             'tags': ['GitHub Actions', 'CI/CD', 'DevOps', 'Microservices', 'Linting'],
         },
         {
-            'text': 'Adjustment of pipelines to automatically shut down lab clusters over evenings and auto destroy after 2 weeks, saving costs by 85%',
-            'tags': ['Automation', 'Cost Optimization', 'Kubernetes', 'CI/CD', 'Infrastructure Management'],
-        },
-        {
             'text': 'Designed multi-stage Buildkite pipeline for cluster build & test stages using Make targets & 3-musketeers pattern',
             'tags': ['Buildkite', 'CI/CD', 'Make', '3-Musketeers', 'Pipeline', 'DevOps'],
-        },
-        {
-            'text': 'Built out automation of CoreDNS performance testing with the cluster post-creation to achieve an additional layer of performance validation for customers post-micro-service deployment',
-            'tags': ['CoreDNS', 'Kubernetes', 'DNS', 'Performance Testing', 'Automation', 'Validation'],
         },
     ],
     'NATIONWIDE_OBS': [

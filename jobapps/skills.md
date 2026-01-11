@@ -193,13 +193,10 @@
 
 - Engineered automated disaster recovery testing framework using Point-in-Time Recovery (PITR), reducing manual testing effort by 80% and ensuring 4-hour recovery objectives [Tags: Disaster Recovery, PITR, Automation, Testing, RTO, Backup]
 - Automated CoreDNS performance validation post-cluster deployment, ensuring 99.9% DNS resolution SLA compliance across customer microservice deployments [Tags: CoreDNS, Kubernetes, DNS, Performance, Automation, SLA, Monitoring]
-- Architected declarative infrastructure provisioning system using custom tooling and Terraform modules, enabling teams to define complete cloud environments in a single YAML configuration file [Tags: Terraform, IaC, YAML, Cloud Infrastructure, Automation, DevOps]
 - Implemented GitOps-based deployment pipeline with automated validation, rendering, and provisioning of infrastructure components including Kubernetes clusters, databases, storage accounts, and identity management [Tags: GitOps, ArgoCD, CI/CD, Kubernetes, Infrastructure, Automation, Azure]
 - Leveraged deployment patterns using a combination of Make targets and chained Github Actions workflows, passing data through artifact uploads [Tags: GitHub Actions, Make, CI/CD, DevOps, Automation, Artifacts]
 - Created restore container workflows for postgresql and file storage in backup subscriptions to main subscription, using service principals with strict RBAC in place via PIM [Tags: PostgreSQL, Azure, Backup, RBAC, PIM, Disaster Recovery, Security]
 - Built enterprise backup solution for Azure storage accounts, PostgreSQL databases, and key vaults with automated scheduling and monitoring, achieving 99.99% backup success rate [Tags: Azure, Backup, PostgreSQL, Key Vault, Automation, Monitoring, Disaster Recovery]
-- Created DR Testing workflows to use PITR recovery to restore corrupted Databases from Azure Storage Accounts [Tags: Disaster Recovery, PITR, Azure, Database, Testing, Storage]
-- Created OIDC Federated Credentials workflow for service repositories to integrate deployments with External Secrets Operator reducing overhead of secrets management [Tags: OIDC, External Secrets, Kubernetes, Security, GitOps, Secret Management]
 - Engineered reproducible developer environment using Nix flakes for LSP version isolation, GNU Stow for dotfiles management, reducing onboarding time for new development machines from days to hours [Tags: Developer Productivity, Nix, Automation, Tooling, DevOps, Neovim, Tmux]
 
 ## Certifications

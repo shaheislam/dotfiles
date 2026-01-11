@@ -25,6 +25,7 @@
 \usepackage[parfill]{parskip} % Remove paragraph indentation
 \usepackage{array} % Required for boldface (\bf and \bfseries) tabular columns
 \usepackage{ifthen} % Required for ifthenelse statements
+\usepackage{needspace} % Prevent widowed job titles
 
 \pagestyle{empty} % Suppress page numbers
 
@@ -111,6 +112,7 @@
 %----------------------------------------------------------------------------------------
 
 \newenvironment{rSubsection}[4]{ % 4 input arguments - company name, year(s) employed, job title and location
+ \needspace{4\baselineskip}% Require space for title + 2-3 bullet lines
  {\bf #1} \hfill {#2} % Bold company name and date on the right
  \ifthenelse{\equal{#3}{}}{}{ % If the third argument is not specified, don't print the job title and location line
   \\
