@@ -63,8 +63,43 @@ if status is-interactive
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
-    # Colima Docker configuration
-    set -x DOCKER_HOST "unix://$HOME/.colima/default/docker.sock"
+    # ==================== Platform-Specific Configuration ====================
+
+    # WSL-specific configuration
+    if test -n "$WSL_DISTRO_NAME"
+        # Windows interop - use wslview for opening URLs/files
+        set -x BROWSER wslview
+
+        # Docker Desktop integration (if available)
+        if test -S "/mnt/wsl/docker-desktop/docker.sock"
+            set -x DOCKER_HOST "unix:///mnt/wsl/docker-desktop/docker.sock"
+        else if test -S "$HOME/.docker/run/docker.sock"
+            set -x DOCKER_HOST "unix://$HOME/.docker/run/docker.sock"
+        end
+
+        # Windows home directory for easy access
+        set -x WIN_HOME (wslpath (cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r\n') 2>/dev/null)
+
+        # Add PioSolver to PATH if installed
+        if test -d "/mnt/c/Program Files/PioSOLVER"
+            set -x PATH $PATH "/mnt/c/Program Files/PioSOLVER"
+        end
+
+        # Clipboard integration aliases
+        alias clip "clip.exe"
+        alias paste "powershell.exe Get-Clipboard"
+
+        # Open Windows Explorer from WSL
+        alias explorer "explorer.exe"
+
+        # Windows app shortcuts
+        alias obsidian "'/mnt/c/Program Files/Obsidian/Obsidian.exe' &"
+        alias piosolver "PioSOLVER2-edge.exe"
+
+    else
+        # macOS/Linux: Colima Docker configuration
+        set -x DOCKER_HOST "unix://$HOME/.colima/default/docker.sock"
+    end
 
     # Load centralized PATH configuration
     source $HOME/.config/fish/paths.fish

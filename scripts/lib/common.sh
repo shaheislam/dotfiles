@@ -78,12 +78,61 @@ detect_os() {
             echo "macos"
             ;;
         Linux*)
-            echo "linux"
+            # Check for WSL (Windows Subsystem for Linux)
+            if grep -qi "microsoft" /proc/version 2>/dev/null; then
+                echo "wsl"
+            else
+                echo "linux"
+            fi
+            ;;
+        MINGW*|MSYS*|CYGWIN*)
+            echo "windows"
             ;;
         *)
             echo "unknown"
             ;;
     esac
+}
+
+# Detect WSL version (1 or 2)
+detect_wsl_version() {
+    if ! grep -qi "microsoft" /proc/version 2>/dev/null; then
+        echo "none"
+        return
+    fi
+
+    # WSL2 has /run/WSL directory
+    if [[ -d "/run/WSL" ]]; then
+        echo "wsl2"
+        return
+    fi
+
+    # WSL2 kernel versions are typically 5.x+
+    local kernel_major
+    kernel_major=$(uname -r | cut -d. -f1)
+    if [[ "$kernel_major" -ge 5 ]]; then
+        echo "wsl2"
+    else
+        echo "wsl1"
+    fi
+}
+
+# Get Windows home directory path (for WSL)
+get_windows_home() {
+    if [[ "$(detect_os)" != "wsl" ]]; then
+        echo ""
+        return
+    fi
+
+    # Try to get from cmd.exe
+    local win_user
+    win_user=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n')
+    if [[ -n "$win_user" ]]; then
+        echo "/mnt/c/Users/$win_user"
+    else
+        # Fallback: use current Linux username
+        echo "/mnt/c/Users/$USER"
+    fi
 }
 
 detect_linux_distro() {

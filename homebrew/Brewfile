@@ -246,6 +246,9 @@ cask "font-fira-code-nerd-font"
 cask "font-hack-nerd-font"
 cask "font-iosevka-nerd-font"
 
+# Virtualization
+cask "vmware-fusion"  # Windows VM support for PioSolver/PokerTracker (ENABLE_WINDOWS_VM=true)
+
 # GUI Applications
 cask "wezterm"
 cask "session-manager-plugin"

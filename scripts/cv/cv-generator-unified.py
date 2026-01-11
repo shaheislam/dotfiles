@@ -2,7 +2,7 @@
 """
 Unified CV Generator
 Combines metadata-based matching, standard CV generation, and ATS optimization
-Single source of truth: skills.md with metadata tags
+Single source of truth: skills.md with metadata tags + role_bullets.py for role-specific bullets
 """
 
 import argparse
@@ -15,6 +15,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple, Set
 import json
+
+# Import role bullets data
+sys.path.insert(0, str(Path(__file__).parent))
+from role_bullets import ROLE_BULLETS, ROLE_METADATA, get_all_role_bullets
 
 # Built-in ATS optimizer functionality (no external import needed)
 import webbrowser
@@ -148,6 +152,17 @@ class UnifiedCVGenerator:
             'domain_specific': 8,
             'cost_savings': 10,
         }
+
+        # Page estimation settings
+        # Rough heuristics: ~30-32 bullets = 3 pages
+        self.max_total_bullets = 32
+        self.min_bullets_per_role = 3
+
+        # Role order for CV (most recent first)
+        self.role_order = ['DFE', 'HMRC', 'ITV', 'NATIONWIDE_EKS', 'NATIONWIDE_OBS', 'NATIONWIDE_HUB', 'OVO']
+
+        # Score threshold for DFE consideration
+        self.dfe_score_threshold = 20
 
     def parse_job_description(self, job_path: str) -> Dict:
         """Parse job description to dynamically extract ALL requirements"""
@@ -312,26 +327,42 @@ class UnifiedCVGenerator:
 
         return skills
 
-    def parse_metadata_tags(self, achievement: str) -> Tuple[str, List[str]]:
-        """Extract metadata tags from achievement bullet"""
-        if '[Tags:' in achievement:
-            tag_start = achievement.find('[Tags:')
-            tag_end = achievement.find(']', tag_start)
-            if tag_end > tag_start:
-                tags_str = achievement[tag_start+6:tag_end]
-                tags = [tag.strip().lower() for tag in tags_str.split(',')]
-                clean_text = achievement[:tag_start].strip()
-                return clean_text, tags
-        return achievement, []
+    def parse_metadata_tags(self, achievement: str) -> Tuple[str, List[str], bool]:
+        """Extract metadata tags and ALWAYS_DFE flag from achievement bullet.
 
-    def score_achievements(self, skills: Dict, requirements: Dict) -> Dict:
-        """Score achievements based on dynamic job requirements"""
+        Returns: (clean_text, tags, always_dfe)
+        """
+        always_dfe = '[ALWAYS_DFE]' in achievement
+        # Remove ALWAYS_DFE marker from text
+        text = achievement.replace('[ALWAYS_DFE]', '').strip()
+
+        if '[Tags:' in text:
+            tag_start = text.find('[Tags:')
+            tag_end = text.find(']', tag_start)
+            if tag_end > tag_start:
+                tags_str = text[tag_start+6:tag_end]
+                tags = [tag.strip().lower() for tag in tags_str.split(',')]
+                clean_text = text[:tag_start].strip()
+                return clean_text, tags, always_dfe
+        return text, [], always_dfe
+
+    def score_achievements(self, skills: Dict, requirements: Dict) -> Tuple[Dict, List[str]]:
+        """Score achievements based on dynamic job requirements.
+
+        Returns: (scored_achievements dict, list of always_dfe bullet texts)
+        """
         scored_achievements = {}
+        always_dfe_bullets = []
 
         for achievement in skills['all_achievements']:
             score = 0
-            clean_text, tags = self.parse_metadata_tags(achievement)
+            clean_text, tags, always_dfe = self.parse_metadata_tags(achievement)
             achievement_lower = clean_text.lower()
+
+            # Track ALWAYS_DFE bullets
+            if always_dfe:
+                always_dfe_bullets.append(clean_text)
+                self.logger.info(f"Found ALWAYS_DFE bullet: {clean_text[:60]}...")
 
             # Priority 1: Must-have requirements (highest weight)
             for must_have in requirements.get('must_have', []):
@@ -381,10 +412,299 @@ class UnifiedCVGenerator:
             if 'cost' in achievement_lower and ('saving' in achievement_lower or 'reduction' in achievement_lower):
                 score += self.scoring_weights['cost_savings']
 
-            if score > 0:
+            # Always include ALWAYS_DFE bullets, even with 0 score
+            if score > 0 or always_dfe:
                 scored_achievements[achievement] = score
 
-        return dict(sorted(scored_achievements.items(), key=lambda x: x[1], reverse=True))
+        sorted_achievements = dict(sorted(scored_achievements.items(), key=lambda x: x[1], reverse=True))
+        return sorted_achievements, always_dfe_bullets
+
+    def score_role_bullets(self, requirements: Dict) -> List[Dict]:
+        """Score all role bullets from role_bullets.py against job requirements.
+
+        Returns list of dicts with: text, tags, role, score, static
+        """
+        scored_bullets = []
+
+        for bullet_info in get_all_role_bullets():
+            score = 0
+            text = bullet_info['text']
+            tags = bullet_info['tags']
+            text_lower = text.lower()
+
+            # Priority 1: Must-have requirements
+            for must_have in requirements.get('must_have', []):
+                if must_have in text_lower:
+                    score += 30
+                if any(must_have in tag.lower() for tag in tags):
+                    score += 35
+
+            # Priority 2: Technology matches
+            for tech in requirements.get('technologies', []):
+                if tech in text_lower:
+                    score += self.scoring_weights['text_tech_match']
+                if any(tech in tag.lower() for tag in tags):
+                    score += self.scoring_weights['metadata_tech_match']
+
+            # Priority 3: Keywords
+            for keyword in requirements.get('keywords', []):
+                if keyword in text_lower:
+                    score += self.scoring_weights['text_keyword_match']
+                if any(keyword in tag.lower() for tag in tags):
+                    score += self.scoring_weights['metadata_keyword_match']
+
+            # Priority 4: Nice-to-have
+            for nice in requirements.get('nice_to_have', []):
+                if nice in text_lower:
+                    score += 5
+                if any(nice in tag.lower() for tag in tags):
+                    score += 8
+
+            # All terms matching
+            if 'all_terms' in requirements:
+                term_matches = sum(1 for term in requirements['all_terms'] if term in text_lower)
+                score += term_matches * 2
+
+            # Quantifiable bonus
+            if any(char.isdigit() for char in text):
+                score += self.scoring_weights['quantifiable']
+            if '$' in text or '£' in text or '%' in text:
+                score += self.scoring_weights['cost_savings']
+
+            scored_bullets.append({
+                'text': text,
+                'tags': tags,
+                'role': bullet_info['role'],
+                'score': score,
+                'static': bullet_info['static'],
+            })
+
+        return scored_bullets
+
+    def distribute_bullets_dynamically(self, skills_bullets: List[Dict], role_bullets: List[Dict],
+                                       requirements: Dict) -> Dict[str, List[str]]:
+        """Distribute bullets across roles based on job requirements.
+
+        Algorithm:
+        1. Reserve minimum bullets for each role from their own pool
+        2. Allocate remaining skills.md bullets to DFE
+        3. If DFE needs more bullets, borrow high-scoring ones from other roles
+        4. If total exceeds max_total_bullets, remove lowest-scoring bullets
+
+        Returns: Dict mapping role -> list of bullet texts
+        """
+        # Initialize role allocations
+        role_allocations = {role: [] for role in self.role_order}
+        used_bullets = set()
+
+        # Phase 1: Reserve minimum bullets for each role (not DFE) from their own pool
+        self.logger.info("Phase 1: Reserving minimum bullets per role...")
+
+        # Sort role bullets by score within each role
+        role_bullets_by_role = {}
+        for bullet in role_bullets:
+            role = bullet['role']
+            if role not in role_bullets_by_role:
+                role_bullets_by_role[role] = []
+            role_bullets_by_role[role].append(bullet)
+
+        # Sort each role's bullets by score
+        for role in role_bullets_by_role:
+            role_bullets_by_role[role].sort(key=lambda x: x['score'], reverse=True)
+
+        # Allocate minimum to each role
+        for role in self.role_order:
+            if role == 'DFE':
+                continue  # DFE comes later
+
+            role_own_bullets = role_bullets_by_role.get(role, [])
+            metadata = ROLE_METADATA.get(role, {})
+
+            # Static roles get ALL their bullets
+            if metadata.get('static', False):
+                for bullet in role_own_bullets:
+                    role_allocations[role].append(bullet)
+                    used_bullets.add(bullet['text'])
+                self.logger.info(f"  {role}: {len(role_allocations[role])} bullets (static)")
+            else:
+                # Non-static roles get their minimum
+                min_required = metadata.get('min_bullets', self.min_bullets_per_role)
+                for bullet in role_own_bullets[:min_required]:
+                    role_allocations[role].append(bullet)
+                    used_bullets.add(bullet['text'])
+                self.logger.info(f"  {role}: {len(role_allocations[role])} bullets (min reserved)")
+
+        # Phase 2a: First add ALWAYS_DFE bullets (guaranteed inclusion)
+        self.logger.info("Phase 2a: Adding ALWAYS_DFE bullets to DFE...")
+        always_dfe_count = 0
+        for bullet in skills_bullets:
+            if bullet.get('always_dfe', False) and bullet['text'] not in used_bullets:
+                role_allocations['DFE'].append({
+                    **bullet,
+                    'role': 'DFE',
+                    'static': True,  # Mark as static so it won't be trimmed
+                    'source': 'skills.md (ALWAYS_DFE)',
+                })
+                used_bullets.add(bullet['text'])
+                always_dfe_count += 1
+                self.logger.info(f"  Added ALWAYS_DFE: {bullet['text'][:60]}...")
+
+        self.logger.info(f"  DFE: {always_dfe_count} ALWAYS_DFE bullets added")
+
+        # Phase 2b: Allocate remaining skills.md bullets to DFE by score
+        self.logger.info("Phase 2b: Allocating remaining skills.md bullets to DFE...")
+
+        # Sort skills bullets by score
+        sorted_skills = sorted(skills_bullets, key=lambda x: x['score'], reverse=True)
+
+        # Add high-scoring skills.md bullets to DFE
+        for bullet in sorted_skills:
+            if bullet['score'] >= self.dfe_score_threshold and bullet['text'] not in used_bullets:
+                role_allocations['DFE'].append({
+                    **bullet,
+                    'role': 'DFE',
+                    'static': False,
+                    'source': 'skills.md',
+                })
+                used_bullets.add(bullet['text'])
+
+        self.logger.info(f"  DFE: {len(role_allocations['DFE'])} total bullets from skills.md")
+
+        # Phase 3: If DFE needs more bullets, consider borrowing from other roles
+        # (Only if skills.md didn't provide enough high-scoring matches)
+        min_dfe_bullets = 5
+        if len(role_allocations['DFE']) < min_dfe_bullets:
+            # Lower threshold for borrowing if we're desperate
+            borrow_threshold = self.dfe_score_threshold // 2 if len(role_allocations['DFE']) == 0 else self.dfe_score_threshold
+            self.logger.info(f"Phase 3: DFE has only {len(role_allocations['DFE'])} bullets, looking for more...")
+
+            # Get remaining high-scoring bullets from other roles
+            remaining_role_bullets = []
+            for role, bullets in role_bullets_by_role.items():
+                metadata = ROLE_METADATA.get(role, {})
+                if metadata.get('static', False):
+                    continue  # Never borrow from static roles
+
+                min_required = metadata.get('min_bullets', self.min_bullets_per_role)
+                # Only consider bullets above the minimum
+                for bullet in bullets[min_required:]:
+                    if bullet['text'] not in used_bullets and not bullet['static']:
+                        remaining_role_bullets.append(bullet)
+
+            # Sort by score and borrow highest scoring
+            remaining_role_bullets.sort(key=lambda x: x['score'], reverse=True)
+
+            for bullet in remaining_role_bullets:
+                if len(role_allocations['DFE']) >= min_dfe_bullets:
+                    break
+                if bullet['score'] >= borrow_threshold:
+                    role_allocations['DFE'].append({
+                        **bullet,
+                        'borrowed_from': bullet['role'],
+                    })
+                    used_bullets.add(bullet['text'])
+                    self.logger.info(f"  Borrowed from {bullet['role']}: {bullet['text'][:50]}...")
+
+        # Phase 4: Fill remaining slots in each role (above minimum)
+        self.logger.info("Phase 4: Filling remaining slots in each role...")
+        for role in self.role_order:
+            if role == 'DFE':
+                continue
+
+            metadata = ROLE_METADATA.get(role, {})
+            if metadata.get('static', False):
+                continue  # Static roles already have all bullets
+
+            role_own_bullets = role_bullets_by_role.get(role, [])
+            current_count = len(role_allocations[role])
+            min_required = metadata.get('min_bullets', self.min_bullets_per_role)
+
+            # Add more bullets if available and under total limit
+            for bullet in role_own_bullets[current_count:]:
+                if bullet['text'] not in used_bullets:
+                    role_allocations[role].append(bullet)
+                    used_bullets.add(bullet['text'])
+
+        # Log allocations before trimming
+        for role in self.role_order:
+            self.logger.info(f"Before trimming - {role}: {len(role_allocations[role])} bullets")
+
+        # Phase 5: Check page limit and trim if needed
+        total_bullets = sum(len(bullets) for bullets in role_allocations.values())
+        self.logger.info(f"Total bullets before trimming: {total_bullets}")
+
+        if total_bullets > self.max_total_bullets:
+            self.logger.info(f"Over limit ({total_bullets} > {self.max_total_bullets}), trimming...")
+
+            # Collect all removable bullets with their role and score
+            removable = []
+            for role in self.role_order:
+                metadata = ROLE_METADATA.get(role, {})
+                if metadata.get('static', False):
+                    continue  # Never remove from static roles
+
+                min_required = metadata.get('min_bullets', self.min_bullets_per_role)
+                bullets = role_allocations[role]
+
+                # Only bullets above minimum are removable
+                for i, bullet in enumerate(bullets):
+                    if i >= min_required:
+                        removable.append({
+                            'role': role,
+                            'index': i,
+                            'score': bullet['score'],
+                            'text': bullet['text'],
+                        })
+
+            # Sort by score (lowest first) and remove
+            removable.sort(key=lambda x: x['score'])
+
+            while total_bullets > self.max_total_bullets and removable:
+                # Find the lowest scoring removable bullet
+                to_remove = removable.pop(0)
+                role = to_remove['role']
+
+                # Find and remove it
+                for i, bullet in enumerate(role_allocations[role]):
+                    if bullet['text'] == to_remove['text']:
+                        role_allocations[role].pop(i)
+                        self.logger.debug(f"Removed from {role}: {to_remove['text'][:50]}...")
+                        total_bullets -= 1
+                        break
+
+        # Edge case: If DFE still has no bullets, take top skills regardless of score
+        if len(role_allocations['DFE']) == 0:
+            self.logger.warning("DFE has no bullets! Taking top skills regardless of score...")
+            fallback_skills = sorted(skills_bullets, key=lambda x: x['score'], reverse=True)
+            for bullet in fallback_skills[:min_dfe_bullets]:
+                if bullet['text'] not in used_bullets:
+                    role_allocations['DFE'].append({
+                        **bullet,
+                        'role': 'DFE',
+                        'static': False,
+                        'source': 'skills.md (fallback)',
+                    })
+                    used_bullets.add(bullet['text'])
+
+        # Log final allocations
+        self.logger.info("Final bullet distribution:")
+        for role in self.role_order:
+            self.logger.info(f"  {role}: {len(role_allocations[role])} bullets")
+
+        # Validate minimums weren't violated
+        for role in self.role_order:
+            metadata = ROLE_METADATA.get(role, {})
+            if not metadata.get('static', False):
+                min_required = metadata.get('min_bullets', self.min_bullets_per_role)
+                if len(role_allocations[role]) < min_required and role != 'DFE':
+                    self.logger.warning(f"  WARNING: {role} has {len(role_allocations[role])} bullets, below minimum {min_required}")
+
+        # Convert to Dict[str, List[str]] (just the text)
+        result = {}
+        for role, bullets in role_allocations.items():
+            result[role] = [b['text'] for b in bullets]
+
+        return result
 
     def select_bullets(self, scored_achievements: Dict, skills: Dict, max_bullets: int = 12) -> List[str]:
         """Select top bullets with category diversity
@@ -416,7 +736,7 @@ class UnifiedCVGenerator:
         # This ensures the CV reflects what's most relevant to the job
         for achievement, score in sorted_achievements[:max_bullets]:
             # Clean the bullet (remove metadata tags)
-            clean_bullet, _ = self.parse_metadata_tags(achievement)
+            clean_bullet, _, _ = self.parse_metadata_tags(achievement)
             selected.append(clean_bullet)
 
         return selected
@@ -487,93 +807,16 @@ class UnifiedCVGenerator:
         best_title = max(scores.items(), key=lambda x: x[1])[0]
         return best_title
 
-    def escape_typst(self, text: str) -> str:
-        """Escape Typst special characters in text"""
-        # Typst special chars that need escaping: # @ $ (in code contexts)
-        # Note: In content mode, most chars are safe, but # starts code
-        escaped = text.replace('#', '\\#')
-        escaped = escaped.replace('@', '\\@')
-        # $ only needs escaping if used for math mode
-        return escaped
-
-    def generate_cv_typst(self, template_path: str, bullets: List[str],
-                          skills: Dict, metadata: Dict) -> str:
-        """Generate Typst CV from template and selected bullets"""
-        with open(template_path, 'r') as f:
-            template = f.read()
-
-        # Distribute bullets across positions (same logic as LaTeX)
-        if len(bullets) <= 10:
-            distribution = {
-                'PMI': min(3, len(bullets)),
-                'HMRC': min(3, max(0, len(bullets) - 3)),
-                'ITV': min(2, max(0, len(bullets) - 6)),
-                'NATIONWIDE_EKS': min(2, max(0, len(bullets) - 8)),
-                'NATIONWIDE_OBS': 0,
-            }
-        else:
-            distribution = {
-                'PMI': min(3, len(bullets)),
-                'HMRC': min(3, max(0, len(bullets) - 3)),
-                'ITV': min(3, max(0, len(bullets) - 6)),
-                'NATIONWIDE_EKS': min(3, max(0, len(bullets) - 9)),
-                'NATIONWIDE_OBS': min(3, max(0, len(bullets) - 12)),
-            }
-
-        bullet_index = 0
-        job_titles = {}
-
-        for position, count in distribution.items():
-            if count > 0 and bullet_index < len(bullets):
-                position_bullets = bullets[bullet_index:bullet_index + count]
-                job_title = self.determine_job_title(position_bullets)
-
-                if position == 'PMI':
-                    job_title = 'Senior ' + job_title
-
-                job_titles[position] = job_title
-
-                # Escape Typst special characters and format as list items
-                escaped_bullets = []
-                for bullet in position_bullets:
-                    escaped = self.escape_typst(bullet)
-                    escaped_bullets.append(escaped)
-
-                # Typst list format: - item
-                bullet_text = '\n    '.join(f'- {b}' for b in escaped_bullets)
-
-                # Replace the position placeholders (Typst uses // for comments)
-                # Note: 4 leading spaces match the template indentation inside #job()[...]
-                template = template.replace(
-                    f'    // {position}_BULLETS_START\n    // {position}_BULLETS_END',
-                    f'    // {position}_BULLETS_START\n    {bullet_text}\n    // {position}_BULLETS_END'
-                )
-                bullet_index += count
-
-        # Replace job title placeholders (Typst uses <<PLACEHOLDER>> syntax)
-        template = template.replace('{{PMI_JOB_TITLE}}',
-                                  job_titles.get('PMI', 'Senior Platform Engineer'))
-        template = template.replace('{{HMRC_JOB_TITLE}}',
-                                  job_titles.get('HMRC', 'Site Reliability Engineer'))
-        template = template.replace('{{ITV_JOB_TITLE}}',
-                                  job_titles.get('ITV', 'Site Reliability Engineer'))
-        template = template.replace('{{NATIONWIDE_EKS_JOB_TITLE}}',
-                                  job_titles.get('NATIONWIDE_EKS', 'Platform Engineer'))
-        template = template.replace('{{NATIONWIDE_OBS_JOB_TITLE}}',
-                                  job_titles.get('NATIONWIDE_OBS', 'Platform Engineer - Observability'))
-
-        self.logger.info(f"Selected {len(bullets)} bullets based on job requirements (Typst)")
-        if bullets and len(bullets) >= 3:
-            self.logger.info("Top 3 bullets selected:")
-            for i, bullet in enumerate(bullets[:3], 1):
-                preview = bullet[:80] + "..." if len(bullet) > 80 else bullet
-                self.logger.info(f"  {i}. {preview}")
-
-        return template
-
-    def generate_cv_latex(self, template_path: str, bullets: List[str],
+    def generate_cv_latex(self, template_path: str, role_distribution: Dict[str, List[str]],
                          skills: Dict, metadata: Dict) -> str:
-        """Generate LaTeX CV from template and selected bullets"""
+        """Generate LaTeX CV from template with dynamic bullet distribution.
+
+        Args:
+            template_path: Path to CV.tex template
+            role_distribution: Dict mapping role -> list of bullet texts
+            skills: Skills data from skills.md
+            metadata: Generation metadata (recruiter, date, etc.)
+        """
         with open(template_path, 'r') as f:
             template = f.read()
 
@@ -581,125 +824,95 @@ class UnifiedCVGenerator:
         salary_str = f"£{metadata['salary']}/day" if metadata['type'] == 'contract' else f"£{metadata['salary']}k"
         header = f"""% Platform Engineer CV - {metadata['recruiter'].title()} {metadata['type'].title()} Role ({salary_str})
 % Generated: {metadata['date']} | Optimized for {metadata['recruiter']} Position
-% Unified CV Generator with Metadata-Based Matching
+% Unified CV Generator with Dynamic Bullet Distribution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 """
 
-        # Distribute bullets across positions
-        # Define distribution based on total bullets
-        # Note: NATIONWIDE_HUB and OVO have hardcoded bullets in CV.tex
-        if len(bullets) <= 10:
-            # For 2-page CV: focus on recent roles
-            distribution = {
-                'PMI': min(3, len(bullets)),
-                'HMRC': min(3, max(0, len(bullets) - 3)),
-                'ITV': min(2, max(0, len(bullets) - 6)),
-                'NATIONWIDE_EKS': min(2, max(0, len(bullets) - 8)),
-                'NATIONWIDE_OBS': 0,
-                # Skip these - they have hardcoded bullets
-                # 'NATIONWIDE_HUB': 0,
-                # 'OVO': 0
-            }
-        else:
-            # For 3-page CV: spread across more roles
-            distribution = {
-                'PMI': min(3, len(bullets)),
-                'HMRC': min(3, max(0, len(bullets) - 3)),
-                'ITV': min(3, max(0, len(bullets) - 6)),
-                'NATIONWIDE_EKS': min(3, max(0, len(bullets) - 9)),
-                'NATIONWIDE_OBS': min(3, max(0, len(bullets) - 12)),
-                # Skip these - they have hardcoded bullets
-                # 'NATIONWIDE_HUB': 0,
-                # 'OVO': 0
-            }
+        # Inject bullets into each role section and determine job titles
+        job_titles = {}
 
-        # Assign bullets to positions and determine job titles
-        bullet_index = 0
-        job_titles = {}  # Store job titles for each position
+        for role in self.role_order:
+            bullets = role_distribution.get(role, [])
 
-        for position, count in distribution.items():
-            if count > 0 and bullet_index < len(bullets):
-                position_bullets = bullets[bullet_index:bullet_index + count]
+            if bullets:
+                # Determine the best job title for this role based on its bullets
+                job_title = self.determine_job_title(bullets)
 
-                # Determine the best job title for this position based on its bullets
-                job_title = self.determine_job_title(position_bullets)
-
-                # Add seniority prefix based on position
-                if position == 'PMI':
+                # Add seniority prefix based on role
+                if role in ['DFE', 'HMRC']:
                     job_title = 'Senior ' + job_title
-                elif position in ['HMRC', 'ITV']:
-                    job_title = job_title  # Keep as is
-                else:
-                    # For older positions, keep the default or adjust
-                    job_title = job_title
+                elif role.startswith('NATIONWIDE_'):
+                    # Use default job titles from metadata for Nationwide sub-roles
+                    role_meta = ROLE_METADATA.get(role, {})
+                    job_title = role_meta.get('default_job_title', job_title)
+                elif role == 'OVO':
+                    job_title = ROLE_METADATA.get(role, {}).get('default_job_title', 'Research Analyst')
 
-                job_titles[position] = job_title
-                self.logger.debug(f"{position}: {job_title} (based on {count} bullets)")
+                job_titles[role] = job_title
+                self.logger.debug(f"{role}: {job_title} (with {len(bullets)} bullets)")
 
                 # Escape LaTeX special characters in bullets
                 escaped_bullets = []
-                for bullet in position_bullets:
-                    # Escape % symbols and other LaTeX special chars
-                    escaped = bullet.replace('%', '\\%').replace('$', '\\$').replace('&', '\\&')
+                for bullet in bullets:
+                    # Order matters: escape backslash first, then other special chars
+                    escaped = bullet
+                    escaped = escaped.replace('&', '\\&')
+                    escaped = escaped.replace('%', '\\%')
+                    escaped = escaped.replace('$', '\\$')
+                    escaped = escaped.replace('#', '\\#')
+                    escaped = escaped.replace('_', '\\_')
+                    escaped = escaped.replace('{', '\\{')
+                    escaped = escaped.replace('}', '\\}')
+                    escaped = escaped.replace('~', '\\textasciitilde{}')
+                    escaped = escaped.replace('^', '\\textasciicircum{}')
                     escaped_bullets.append(escaped)
                 bullet_text = '\n'.join(f'\\item {b}' for b in escaped_bullets)
 
-                # Replace the position placeholders
+                # Replace the bullet placeholders
                 template = template.replace(
-                    f'% {position}_BULLETS_START\n% {position}_BULLETS_END',
-                    f'% {position}_BULLETS_START\n{bullet_text}\n% {position}_BULLETS_END'
+                    f'% {role}_BULLETS_START\n% {role}_BULLETS_END',
+                    f'% {role}_BULLETS_START\n{bullet_text}\n% {role}_BULLETS_END'
                 )
-                bullet_index += count
+            else:
+                # Use default job title if no bullets
+                role_meta = ROLE_METADATA.get(role, {})
+                job_titles[role] = role_meta.get('default_job_title', 'Platform Engineer')
 
-        # Replace job title placeholders
-        template = template.replace('%%PMI_JOB_TITLE%%',
-                                  job_titles.get('PMI', 'Senior Platform Engineer'))
-        template = template.replace('%%HMRC_JOB_TITLE%%',
-                                  job_titles.get('HMRC', 'Site Reliability Engineer'))
-        template = template.replace('%%ITV_JOB_TITLE%%',
-                                  job_titles.get('ITV', 'Site Reliability Engineer'))
-        template = template.replace('%%NATIONWIDE_EKS_JOB_TITLE%%',
-                                  job_titles.get('NATIONWIDE_EKS', 'Platform Engineer'))
-        template = template.replace('%%NATIONWIDE_OBS_JOB_TITLE%%',
-                                  job_titles.get('NATIONWIDE_OBS', 'Platform Engineer - Observability'))
+        # Replace all job title placeholders
+        for role in self.role_order:
+            placeholder = f'%%{role}_JOB_TITLE%%'
+            default_title = ROLE_METADATA.get(role, {}).get('default_job_title', 'Platform Engineer')
+            template = template.replace(placeholder, job_titles.get(role, default_title))
 
         cv_content = header + template
 
-        self.logger.info(f"Selected {len(bullets)} bullets based on job requirements")
-        if bullets and len(bullets) >= 3:
-            self.logger.info("Top 3 bullets selected:")
-            for i, bullet in enumerate(bullets[:3], 1):
+        # Log summary
+        total_bullets = sum(len(b) for b in role_distribution.values())
+        self.logger.info(f"Generated CV with {total_bullets} total bullets")
+
+        # Show DFE bullets for debugging
+        dfe_bullets = role_distribution.get('DFE', [])
+        if dfe_bullets:
+            self.logger.info(f"DFE has {len(dfe_bullets)} bullets:")
+            for i, bullet in enumerate(dfe_bullets[:3], 1):
                 preview = bullet[:80] + "..." if len(bullet) > 80 else bullet
                 self.logger.info(f"  {i}. {preview}")
 
-        # Debug: Show if security-related bullets are in the selection
-        security_bullets = [b for b in bullets if any(term in b.lower() for term in ['security', 'twingate', 'zero trust', 'identity', 'oidc', 'compliance', 'soc'])]
-        if security_bullets:
-            self.logger.info(f"Security-focused bullets included: {len(security_bullets)}")
-        else:
-            self.logger.warning("No security-focused bullets in selection!")
-
         return cv_content
 
-    def create_ats_optimized_version(self, content: str, format_type: str = 'latex') -> str:
+    def create_ats_optimized_version(self, content: str) -> str:
         """Create ATS-optimized version of CV
 
         Args:
-            content: LaTeX or Typst source content
-            format_type: 'latex' or 'typst'
+            content: LaTeX source content
         """
         lines = []
         for line in content.split('\n'):
-            # Skip comment lines (different syntax for each format)
-            if format_type == 'typst':
-                if line.strip().startswith('//'):
-                    lines.append(line)
-                    continue
-            else:  # latex
-                if line.strip().startswith('%'):
-                    lines.append(line)
-                    continue
+            # Skip LaTeX comment lines
+            if line.strip().startswith('%'):
+                lines.append(line)
+                continue
 
             # Replace special characters
             for old, new in self.ats_replacements.items():
@@ -734,20 +947,18 @@ class UnifiedCVGenerator:
         return min(max(score, 0), 100)  # Keep between 0 and 100
 
     def generate_both_versions(self, job_path: str, skills_path: str, template_path: str,
-                              metadata: Dict, max_bullets: int = 10,
-                              format_type: str = 'latex') -> Tuple[str, str, Dict]:
+                              metadata: Dict, max_bullets: int = 13) -> Tuple[str, str, Dict]:
         """Generate both standard and ATS-optimized versions
 
         Args:
             job_path: Path to job description file
             skills_path: Path to skills.md file
-            template_path: Path to CV template (.tex or .typ)
+            template_path: Path to CV template (.tex)
             metadata: Dict with recruiter, type, salary, date
-            max_bullets: Maximum bullets to include
-            format_type: 'latex' or 'typst'
+            max_bullets: Maximum bullets to include (now used as max per role for DFE)
         """
         self.logger.info("=" * 50)
-        self.logger.info(f"🚀 Unified CV Generation ({format_type.upper()})")
+        self.logger.info("🚀 Unified CV Generation with Dynamic Distribution")
         self.logger.info("=" * 50)
 
         # Parse job description
@@ -755,38 +966,47 @@ class UnifiedCVGenerator:
         requirements = self.parse_job_description(job_path)
         self.logger.info(f"  Found {len(requirements['technologies'])} technologies, {len(requirements['keywords'])} keywords")
 
-        # Load skills with metadata
-        self.logger.info("📚 Loading skills database...")
+        # Load skills with metadata (for DFE)
+        self.logger.info("📚 Loading skills database (skills.md)...")
         skills = self.load_skills(skills_path)
-        self.logger.info(f"  Loaded {len(skills['all_achievements'])} achievements with metadata")
+        self.logger.info(f"  Loaded {len(skills['all_achievements'])} achievements from skills.md")
 
-        # Score and select bullets
-        self.logger.info("🎯 Scoring achievements based on job match...")
-        scored = self.score_achievements(skills, requirements)
-        bullets = self.select_bullets(scored, skills, max_bullets=max_bullets)
+        # Score skills.md bullets (for DFE)
+        self.logger.info("🎯 Scoring skills.md achievements...")
+        scored_skills, always_dfe_bullets = self.score_achievements(skills, requirements)
 
-        # Generate standard CV based on format
-        self.logger.info(f"📄 Generating standard CV ({format_type})...")
-        if format_type == 'typst':
-            standard_content = self.generate_cv_typst(template_path, bullets, skills, metadata)
-            file_ext = '.typ'
-            # Copy helper file to generated directory for Typst imports
-            helper_src = self.jobapps_dir / "cv-helpers.typ"
-            helper_dst = self.generated_dir / "cv-helpers.typ"
-            if helper_src.exists():
-                shutil.copy(helper_src, helper_dst)
-        else:
-            standard_content = self.generate_cv_latex(template_path, bullets, skills, metadata)
-            file_ext = '.tex'
+        # Convert to list of dicts for distribution
+        skills_bullets = []
+        for achievement, score in scored_skills.items():
+            clean_text, tags, is_always_dfe = self.parse_metadata_tags(achievement)
+            skills_bullets.append({
+                'text': clean_text,
+                'tags': tags,
+                'score': score,
+                'always_dfe': is_always_dfe,
+            })
+
+        # Score role bullets (from role_bullets.py)
+        self.logger.info("🎯 Scoring role bullets (role_bullets.py)...")
+        role_bullets = self.score_role_bullets(requirements)
+        self.logger.info(f"  Scored {len(role_bullets)} role bullets")
+
+        # Distribute bullets dynamically
+        self.logger.info("📊 Distributing bullets across roles...")
+        role_distribution = self.distribute_bullets_dynamically(skills_bullets, role_bullets, requirements)
+
+        # Generate standard CV
+        self.logger.info("📄 Generating standard CV (latex)...")
+        standard_content = self.generate_cv_latex(template_path, role_distribution, skills, metadata)
 
         # Save standard version
-        standard_source_path = self.generated_dir / f"cv{file_ext}"
+        standard_source_path = self.generated_dir / "cv.tex"
         with open(standard_source_path, 'w') as f:
             f.write(standard_content)
 
         # Generate ATS-optimized version
         self.logger.info("🤖 Creating ATS-optimized version...")
-        ats_content = self.create_ats_optimized_version(standard_content, format_type)
+        ats_content = self.create_ats_optimized_version(standard_content)
 
         # Calculate scores
         original_score = self.calculate_ats_score(standard_content, requirements['keywords'])
@@ -799,7 +1019,7 @@ class UnifiedCVGenerator:
         }
 
         # Save ATS version
-        ats_source_path = self.generated_dir / f"cv_ats{file_ext}"
+        ats_source_path = self.generated_dir / "cv_ats.tex"
         with open(ats_source_path, 'w') as f:
             f.write(ats_content)
 
@@ -812,67 +1032,44 @@ class UnifiedCVGenerator:
         output_name = f"{metadata['recruiter']}-{metadata['date']}-{metadata['type']}-{metadata['salary']}"
 
         # Compile standard
-        self.compile_pdf(str(standard_source_path), output_name, format_type)
+        self.compile_pdf(str(standard_source_path), output_name)
 
         # Compile ATS
-        self.compile_pdf(str(ats_source_path), f"{output_name}-ATS", format_type)
+        self.compile_pdf(str(ats_source_path), f"{output_name}-ATS")
 
         standard_pdf = self.output_dir / f"{output_name}.pdf"
         ats_pdf = self.output_dir / f"{output_name}-ATS.pdf"
 
         return str(standard_pdf), str(ats_pdf), report
 
-    def compile_pdf(self, source_path: str, output_name: str, format_type: str = 'latex') -> bool:
-        """Compile LaTeX or Typst to PDF
+    def compile_pdf(self, source_path: str, output_name: str) -> bool:
+        """Compile LaTeX to PDF
 
         Args:
-            source_path: Path to .tex or .typ file
+            source_path: Path to .tex file
             output_name: Output PDF name (without extension)
-            format_type: 'latex' or 'typst'
         """
-        if format_type == 'typst':
-            # Direct Typst compilation (single pass, no external script needed)
-            output_pdf = self.output_dir / f"{output_name}.pdf"
-            try:
-                result = subprocess.run(
-                    ['typst', 'compile', source_path, str(output_pdf)],
-                    capture_output=True,
-                    text=True
-                )
-                if result.returncode == 0:
-                    self.logger.info(f"Successfully compiled {output_name}.pdf (Typst)")
-                    return True
-                else:
-                    self.logger.error(f"Typst compilation failed: {result.stderr}")
-                    return False
-            except FileNotFoundError:
-                self.logger.error("Typst not installed. Run: brew install typst")
-                return False
-            except Exception as e:
-                self.logger.error(f"Typst compilation error: {e}", exc_info=True)
-                return False
-        else:
-            # LaTeX compilation via compile-cv.sh
-            compile_script = self.scripts_dir.parent / "compile-cv.sh"
+        # LaTeX compilation via compile-cv.sh
+        compile_script = self.scripts_dir.parent / "compile-cv.sh"
 
-            if not compile_script.exists():
-                self.logger.error(f"Compile script not found at {compile_script}")
-                return False
+        if not compile_script.exists():
+            self.logger.error(f"Compile script not found at {compile_script}")
+            return False
 
-            try:
-                result = subprocess.run(
-                    [str(compile_script), source_path, output_name, 'pdflatex'],
-                    capture_output=True,
-                    text=True
-                )
-                if result.returncode == 0:
-                    self.logger.info(f"Successfully compiled {output_name}.pdf")
-                else:
-                    self.logger.error(f"Compilation failed for {output_name}: {result.stderr}")
-                return result.returncode == 0
-            except Exception as e:
-                self.logger.error(f"Compilation error: {e}", exc_info=True)
-                return False
+        try:
+            result = subprocess.run(
+                [str(compile_script), source_path, output_name, 'pdflatex'],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                self.logger.info(f"Successfully compiled {output_name}.pdf")
+            else:
+                self.logger.error(f"Compilation failed for {output_name}: {result.stderr}")
+            return result.returncode == 0
+        except Exception as e:
+            self.logger.error(f"Compilation error: {e}", exc_info=True)
+            return False
 
     def generate_comparison_report(self, standard_pdf: str, ats_pdf: str,
                                   report: Dict, metadata: Dict) -> str:
@@ -977,31 +1174,23 @@ def main():
     parser.add_argument('--skills', default=None, help='Skills database path')
     parser.add_argument('--template', default=None, help='CV template path')
 
-    # Format selection
-    parser.add_argument('--format', choices=['latex', 'typst'], default='latex',
-                       help='Output format: latex (default) or typst')
-
     # Options
     parser.add_argument('--ats-only', action='store_true', help='Generate ATS version only')
     parser.add_argument('--standard-only', action='store_true', help='Generate standard version only')
     parser.add_argument('--no-report', action='store_true', help='Skip HTML report generation')
     parser.add_argument('--open', action='store_true', help='Open files after generation')
-    parser.add_argument('--max-bullets', type=int, default=10, help='Maximum bullets to include (10 for 2 pages, 15 for 3 pages)')
+    parser.add_argument('--max-bullets', type=int, default=13, help='Maximum bullets to include (13 default, up to 15 for 3 pages)')
 
     args = parser.parse_args()
 
-    # Set default paths based on format
+    # Set default paths
     base_dir = Path.home() / "dotfiles" / "jobapps"
     if not args.job:
         args.job = str(base_dir / "jobdescription.md")
     if not args.skills:
         args.skills = str(base_dir / "skills.md")
     if not args.template:
-        # Select template based on format
-        if args.format == 'typst':
-            args.template = str(base_dir / "CV.typ")
-        else:
-            args.template = str(base_dir / "CV.tex")
+        args.template = str(base_dir / "CV.tex")
 
     # Create metadata
     metadata = {
@@ -1015,7 +1204,7 @@ def main():
     generator = UnifiedCVGenerator()
     standard_pdf, ats_pdf, report = generator.generate_both_versions(
         args.job, args.skills, args.template, metadata,
-        max_bullets=args.max_bullets, format_type=args.format
+        max_bullets=args.max_bullets
     )
 
     # Get logger for main function
