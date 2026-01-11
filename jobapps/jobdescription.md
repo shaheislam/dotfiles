@@ -41,3 +41,5 @@ Team and Culture
     Small, autonomous Linux SRE team with direct ownership and impact.
     Collaborative engagement with quants, researchers, and trading experts to deliver robust platforms.
     A culture built on deep technical ownership, learning, and high standards of performance engineering
+
+
