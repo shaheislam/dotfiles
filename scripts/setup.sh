@@ -544,6 +544,14 @@ phase_4_cloud_tools() {
         claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 && \
             print_success "Claude Code notification channel set to terminal_bell" || true
 
+        # Disable auto-compact (undocumented setting)
+        # Reference: https://github.com/anthropics/claude-code/issues/6689
+        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
+            jq '.autoCompactEnabled = false' "$HOME/.claude.json" > "$HOME/.claude.json.tmp" && \
+                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" && \
+                print_success "Claude Code auto-compact disabled" || true
+        fi
+
         # Install Claude Code plugins from anthropics/claude-code marketplace
         print_step "Installing Claude Code plugins..."
 
@@ -568,9 +576,11 @@ phase_4_cloud_tools() {
         claude plugin install claude-opus-4-5-migration@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install explanatory-output-style@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install learning-output-style@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install code-simplifier@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install security-guidance@claude-code-plugins >/dev/null 2>&1 || true
 
-        print_success "Claude Code plugins installed (12 plugins)"
-        log_verbose "Installed: safety-net, code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style"
+        print_success "Claude Code plugins installed (14 plugins)"
+        log_verbose "Installed: safety-net, code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style, code-simplifier, security-guidance"
 
         # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
         if [[ ! -d "$HOME/ralph-claude-code" ]]; then

@@ -381,6 +381,56 @@ docker run -it --rm -v ~/dotfiles:/home/testuser/dotfiles dotfiles-test:ubuntu
 - Automated Brewfile translation to Linux package managers
 - CI/CD integration for continuous testing
 
+### Mobile Coding Setup (Personal Devices Only)
+
+**Purpose**: Enable remote development from mobile devices (phone/tablet) via Mosh + Tailscale.
+
+**IMPORTANT**: This is a SEPARATE script from `setup.sh` to avoid installing remote access tools on work devices. Only run on personal machines.
+
+**Setup Script**: `scripts/setup-mobile-coding.sh`
+
+**What It Installs/Configures**:
+- **Mosh**: Mobile shell with connection persistence (survives WiFi/cellular switches)
+- **Tailscale**: Zero-config VPN (no port forwarding needed)
+- **SSH**: Key-only authentication (works with 1Password)
+- **Sleep**: Disabled for 24/7 accessibility
+- **Firewall**: Opens Mosh UDP ports (60000-61000)
+- **tmux**: Mobile-optimized session layout
+
+**Usage**:
+```bash
+# Install (personal devices only!)
+./scripts/setup-mobile-coding.sh
+
+# With verbose output
+./scripts/setup-mobile-coding.sh --verbose
+
+# Uninstall everything
+./scripts/setup-mobile-coding.sh --uninstall
+```
+
+**Phone Setup (after running script)**:
+1. Install Tailscale app, sign in with same account
+2. Install Termius app, create host with Tailscale hostname
+3. Enable Mosh in Termius host settings
+4. Import SSH key from 1Password into Termius
+5. Connect and run: `tmux-mobile-session.sh`
+
+**Mobile tmux Session**: `scripts/tmux/tmux-mobile-session.sh`
+```
+┌─────────────────────────────────┐
+│          claude (main)          │  ← 70% height
+├─────────────────────────────────┤
+│    editor    │      shell       │  ← 30% height
+└─────────────────────────────────┘
+```
+
+**Quick Access**: Add to `.tmux.conf`:
+```bash
+bind M run-shell '~/dotfiles/scripts/tmux/tmux-mobile-session.sh'
+```
+Then use: `prefix + M` to launch mobile session.
+
 ### Claude Code Plugins
 
 Plugins are installed from two marketplaces:
@@ -389,7 +439,7 @@ Plugins are installed from two marketplaces:
 
 **Installation**: Plugins are stored in `~/.claude/settings.json` and available in all sessions on the device. For cross-device consistency, installation commands are in `scripts/setup.sh`.
 
-**Installed Plugins (12 total)**:
+**Installed Plugins (14 total)**:
 
 | Plugin | Command | Purpose |
 |--------|---------|---------|
@@ -405,6 +455,8 @@ Plugins are installed from two marketplaces:
 | **claude-opus-4-5-migration** | Natural language | Model migration helper ("Migrate to Opus 4.5") |
 | **explanatory-output-style** | SessionStart hook | Educational insights on implementation choices |
 | **learning-output-style** | SessionStart hook | Interactive learning mode with code contribution prompts |
+| **code-simplifier** | Auto-triggered | Identifies over-engineering, suggests simpler implementations |
+| **security-guidance** | Auto-triggered | Security best practices, vulnerability detection, compliance guidance |
 
 **Managing Plugins**:
 ```bash
@@ -423,7 +475,16 @@ claude plugin uninstall plugin-name@claude-code-plugins
 
 **Token Cost Note**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks that increase token usage. Disable when not needed.
 
+**Undocumented Settings** (`~/.claude.json`):
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| `autoCompactEnabled` | `false` | Disables automatic context compaction ([#6689](https://github.com/anthropics/claude-code/issues/6689)) |
+
+These are set automatically by `scripts/setup.sh` using `jq`.
+
 ### Recent Updates
+- **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
+- **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
 - **2025-12-29**: Added safety-net plugin from kenryu42/cc-marketplace for destructive command protection
 - **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
 - **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)

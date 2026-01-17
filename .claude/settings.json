@@ -11,6 +11,8 @@
     "claude-opus-4-5-migration@claude-code-plugins": true,
     "explanatory-output-style@claude-code-plugins": true,
     "learning-output-style@claude-code-plugins": true,
-    "safety-net@cc-marketplace": true
+    "safety-net@cc-marketplace": true,
+    "code-simplifier@claude-plugins-official": true,
+    "security-guidance@claude-code-plugins": true
   }
 }
