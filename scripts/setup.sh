@@ -439,6 +439,16 @@ phase_4_cloud_tools() {
             print_success "Claude Code already at latest version"
     fi
 
+    # Install recall (Claude Code conversation search/resume tool)
+    if ! command_exists recall; then
+        print_step "Installing recall (Claude conversation search)..."
+        brew install zippoxer/tap/recall >/dev/null 2>&1 && \
+            print_success "recall installed" || \
+            print_warning "Failed to install recall - install manually with: brew install zippoxer/tap/recall"
+    else
+        print_success "recall already installed at: $(which recall)"
+    fi
+
     # Install Claude Code Router
     if ! command_exists ccr; then
         print_step "Installing Claude Code Router..."
