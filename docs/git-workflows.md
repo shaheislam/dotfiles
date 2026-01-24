@@ -538,6 +538,7 @@ lg  # Alias for lazygit
 | Wrong email on commit | Run `gci` to check, update `.gitconfig` |
 | Push blocked by git-smart | Check email matches repo owner |
 | Can't find branch | Use `CTRL-G CTRL-B` for fuzzy search |
-| Conflict resolution | `<leader>gm` opens Diffview merge view |
+| Conflict resolution | `<leader>gm` (Neovim) or `<Space>gm` (terminal) opens Diffview merge view |
+| Find conflict files | `<leader>gx` (Neovim) or `<Space>gx` (terminal) FZF picker |
 | Need to see file history | `<leader>gh` in Neovim |
 | Accidentally staged wrong file | `<leader>hu` to undo stage hunk |

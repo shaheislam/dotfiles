@@ -24,6 +24,8 @@
 #   <Space>gd  - Git diffview → show working dir changes
 #   <Space>gD  - Git diffview picker → compare branches/commits
 #   <Space>gP  - PR preview → compare to base in Diffview
+#   <Space>gm  - Merge conflicts → open Diffview merge resolution
+#   <Space>gx  - Find conflicts → FZF picker for conflict files
 #
 # Inside picker: Alt-L=Local, Alt-S=Git Root, Alt-G=Global, Ctrl-Y=Copy, Ctrl-/=Preview
 
@@ -93,6 +95,12 @@ if status is-interactive
 
             # <Space>gP - PR preview → compare to base in Diffview
             bind -M default ' gP' '_fzf_lua_git_pr_preview'
+
+            # <Space>gm - Merge conflicts view → open Diffview merge resolution
+            bind -M default ' gm' '_fzf_lua_git_merge'
+
+            # <Space>gx - Find conflicts → FZF picker for conflict files
+            bind -M default ' gx' '_fzf_lua_git_conflicts'
 
             # ═══════════════════════════════════════════════════════════════════
             # Help binding
