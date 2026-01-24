@@ -36,8 +36,12 @@ touch "$LOCK_FILE"
     if [[ $TIME_DIFF -ge $SILENCE_PERIOD ]]; then
       echo "complete" > "${STATE_FILE}.complete"
 
-      # Send system notification
-      tmux display-message "Activity completed in window ${WINDOW}"
+      # Send system notification ONLY if this is NOT the current window
+      # (Prevents notification spam when activity-action is set to 'any')
+      CURRENT_WINDOW=$(tmux display-message -p '#I')
+      if [[ "$WINDOW" != "$CURRENT_WINDOW" ]]; then
+        tmux display-message "Activity completed in window ${WINDOW}"
+      fi
     fi
   fi
 

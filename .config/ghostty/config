@@ -42,6 +42,9 @@ command = /opt/homebrew/bin/fish -l
 scrollback-limit = 10000
 shell-integration = detect
 
+# Disable audible bell (prevents sound on every keystroke with tmux activity monitoring)
+audible-bell = false
+
 # =============================================================================
 # KEYBINDINGS - WezTerm Parity
 # =============================================================================

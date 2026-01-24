@@ -90,6 +90,9 @@ config.term = "xterm-256color"
 config.enable_scroll_bar = false
 config.scrollback_lines = 10000
 
+-- Disable audible bell (prevents sound on every keystroke with tmux activity monitoring)
+config.audible_bell = "Disabled"
+
 -- Enable kitty graphics protocol for image.nvim
 config.enable_kitty_graphics = true
 
