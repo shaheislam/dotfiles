@@ -26,11 +26,11 @@ fi
 # Update activity timestamp
 echo "$(date +%s)" > "$STATE_FILE"
 
-# Apply highlight style - Tokyo Night Storm bright blue/purple
-# Active window: bright purple background (#bb9af7)
-# Inactive window: bright blue background (#7aa2f7)
-tmux set-window-option -t "${SESSION}:${WINDOW}" window-status-style "fg=#cdd6f4,bg=#7aa2f7,bold" 2>/dev/null
-tmux set-window-option -t "${SESSION}:${WINDOW}" window-status-current-style "fg=#1e1e2e,bg=#bb9af7,bold" 2>/dev/null
+# Highlight pane borders when Claude is active - Tokyo Night Storm bright blue/purple
+# Inactive pane borders: bright blue (#7aa2f7)
+# Active pane border: bright purple (#bb9af7)
+tmux set-window-option -t "${SESSION}:${WINDOW}" pane-border-style "fg=#7aa2f7,bold" 2>/dev/null
+tmux set-window-option -t "${SESSION}:${WINDOW}" pane-active-border-style "fg=#bb9af7,bold" 2>/dev/null
 
 # Debouncing: exit if monitor already running
 [[ -f "$LOCK_FILE" ]] && exit 0
@@ -49,9 +49,9 @@ tmux set-window-option -t "${SESSION}:${WINDOW}" window-status-current-style "fg
         TIME_DIFF=$((CURRENT_TIME - LAST_ACTIVITY))
 
         if [[ $TIME_DIFF -ge $SILENCE_PERIOD ]]; then
-            # Silence detected - clear highlight and restore default styling
-            tmux set-window-option -t "${SESSION}:${WINDOW}" -u window-status-style 2>/dev/null
-            tmux set-window-option -t "${SESSION}:${WINDOW}" -u window-status-current-style 2>/dev/null
+            # Silence detected - clear pane border highlights and restore default styling
+            tmux set-window-option -t "${SESSION}:${WINDOW}" -u pane-border-style 2>/dev/null
+            tmux set-window-option -t "${SESSION}:${WINDOW}" -u pane-active-border-style 2>/dev/null
             rm -f "$STATE_FILE"
         fi
     fi
