@@ -12,16 +12,25 @@
 # Usage:
 #   tmux-mobile-session.sh [session-name]
 #
-# Default session name: mobile
+# Behavior:
+#   1. If any tmux session exists → attach to it (detaching other clients)
+#   2. If no sessions exist → create new mobile-optimized layout
+#
+# Default session name (for new sessions): mobile
 
 SESSION_NAME="${1:-mobile}"
 
-# Check if session already exists
-if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-    echo "Session '$SESSION_NAME' already exists. Attaching..."
-    tmux attach-session -t "$SESSION_NAME"
+# Check if ANY tmux session exists (not just the named one)
+if tmux list-sessions 2>/dev/null | grep -q .; then
+    # Get the most recent session name
+    EXISTING_SESSION=$(tmux list-sessions -F "#{session_name}" | head -1)
+    echo "Attaching to existing session '$EXISTING_SESSION'..."
+    tmux attach-session -d -t "$EXISTING_SESSION"
     exit 0
 fi
+
+# No sessions exist - create new mobile-optimized layout
+echo "No existing sessions. Creating mobile session '$SESSION_NAME'..."
 
 # Create new session with main pane for Claude Code
 tmux new-session -d -s "$SESSION_NAME" -n main

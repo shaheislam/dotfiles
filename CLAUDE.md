@@ -431,6 +431,72 @@ bind M run-shell '~/dotfiles/scripts/tmux/tmux-mobile-session.sh'
 ```
 Then use: `prefix + M` to launch mobile session.
 
+### Clawdbot AI Assistant (Optional)
+
+**Purpose**: WhatsApp/Telegram interface to Claude on your Mac, complementing Termius + Claude Code workflow.
+
+**Value Proposition**:
+- Quick queries without opening Termius
+- Voice messages to Claude while walking
+- Photo → codebase-aware response
+- Scheduled automation with delivery notifications
+- Async tasks ("message me when done")
+
+**Comparison with Termius**:
+| Use Case | Best Tool |
+|----------|-----------|
+| Development work | Termius + Claude Code |
+| Quick questions | Clawdbot (WhatsApp/Telegram) |
+| Scheduled tasks | Clawdbot (cron jobs) |
+| Voice/photo input | Clawdbot |
+
+**Installation** (requires Node.js >= 22):
+```bash
+# Installed automatically by mobile coding setup script
+./scripts/setup-mobile-coding.sh
+
+# Or install manually
+npm install -g clawdbot@latest
+```
+
+**Post-Install Setup**:
+```bash
+# 1. Install daemon
+clawdbot onboard --install-daemon
+
+# 2. Connect messaging channel
+clawdbot channels login whatsapp  # Scan QR with phone
+
+# 3. Enable Tailscale (uses your existing setup)
+clawdbot tailscale serve
+```
+
+**Configuration**: `~/.clawdbot/clawdbot.json`
+```json
+{
+  "agent": { "model": "anthropic/claude-sonnet-4-20250514" },
+  "workspace": "~/clawd",
+  "tailscale": { "mode": "serve" }
+}
+```
+
+**Scheduled Tasks** (cron example):
+```yaml
+cron:
+  jobs:
+    - jobId: morning-brief
+      schedule: { cron: "0 8 * * *" }
+      payload:
+        message: "Summarize my git activity and calendar for today"
+      delivery:
+        channel: whatsapp
+        target: "+yourphone"
+```
+
+**Skills System**: Teach Claude about your dotfiles at `~/clawd/skills/dotfiles-manager/SKILL.md`
+
+**Note**: Clawdbot complements (doesn't replace) your Termius workflow. Use Termius for development, Clawdbot for quick interactions and automation.
+
 ### Claude Code Plugins
 
 Plugins are installed from two marketplaces:
@@ -483,6 +549,7 @@ claude plugin uninstall plugin-name@claude-code-plugins
 These are set automatically by `scripts/setup.sh` using `jq`.
 
 ### Recent Updates
+- **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
 - **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
 - **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
 - **2025-12-29**: Added safety-net plugin from kenryu42/cc-marketplace for destructive command protection

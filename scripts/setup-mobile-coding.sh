@@ -212,6 +212,18 @@ uninstall_all() {
         print_success "Mobile tmux script removed"
     fi
 
+    # Remove Clawdbot
+    print_step "Removing Clawdbot..."
+    if command_exists clawdbot; then
+        # Stop daemon if running
+        clawdbot daemon stop 2>/dev/null || true
+        # Uninstall npm package
+        npm uninstall -g clawdbot 2>/dev/null || true
+        print_success "Clawdbot removed"
+    else
+        print_warning "Clawdbot not installed, skipping"
+    fi
+
     # Clear state
     rm -f "$STATE_DIR/${MOBILE_STATE_PREFIX}"*.complete 2>/dev/null || true
 
@@ -700,6 +712,57 @@ TMUX_SCRIPT
 }
 
 # ============================================================================
+# Phase 7: Install Clawdbot (WhatsApp/Telegram to Claude)
+# ============================================================================
+
+install_clawdbot() {
+    print_header "Phase 7: Installing Clawdbot AI Assistant"
+
+    if is_step_complete "${MOBILE_STATE_PREFIX}-clawdbot"; then
+        print_success "Clawdbot already configured, skipping"
+        return 0
+    fi
+
+    # Check Node.js version (requires >= 22)
+    if ! command_exists node; then
+        print_warning "Node.js not installed. Skipping Clawdbot."
+        echo "    Install Node.js 22+ with: nvm install 22"
+        return 0
+    fi
+
+    local node_major
+    node_major=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+    if [[ "$node_major" -lt 22 ]]; then
+        print_warning "Clawdbot requires Node.js >= 22 (found v$node_major)"
+        echo "    Upgrade with: nvm install 22 && nvm use 22"
+        return 0
+    fi
+
+    # Install Clawdbot
+    print_step "Installing Clawdbot..."
+    if ! command_exists clawdbot; then
+        npm install -g clawdbot@latest && \
+            print_success "Clawdbot installed" || \
+            { print_warning "Failed to install Clawdbot"; return 0; }
+    else
+        print_success "Clawdbot already installed: $(clawdbot --version 2>&1 | head -1 || echo 'version unknown')"
+    fi
+
+    # Create config from template if not exists
+    if [[ ! -f "$HOME/.clawdbot/clawdbot.json" ]]; then
+        mkdir -p "$HOME/.clawdbot"
+        if [[ -f "$DOTFILES_ROOT/.clawdbot/clawdbot.json.template" ]]; then
+            cp "$DOTFILES_ROOT/.clawdbot/clawdbot.json.template" "$HOME/.clawdbot/clawdbot.json"
+            print_success "Clawdbot config created from template"
+        fi
+    else
+        print_success "Clawdbot config already exists"
+    fi
+
+    mark_step_complete "${MOBILE_STATE_PREFIX}-clawdbot"
+}
+
+# ============================================================================
 # Print Summary
 # ============================================================================
 
@@ -746,8 +809,18 @@ PHONE SETUP (S24 Ultra):
     4. Connect and run:
        tmux-mobile-session.sh
 
+CLAWDBOT SETUP (WhatsApp/Telegram to Claude):
+    After initial setup, run these commands:
+
+    1. clawdbot onboard --install-daemon
+    2. clawdbot channels login whatsapp  # Scan QR with phone
+    3. clawdbot tailscale serve          # Uses your Tailscale
+
+    Then message your WhatsApp-linked number to talk to Claude!
+
 QUICK START:
-    From phone: Connect via Termius → run 'tmux-mobile-session.sh'
+    Terminal: Connect via Termius → run 'tmux-mobile-session.sh'
+    Chat:     Message via WhatsApp → Claude responds
 
 EOF
 }
@@ -773,6 +846,7 @@ main() {
     disable_sleep
     configure_firewall
     create_mobile_tmux_session
+    install_clawdbot
     print_summary
 }
 
