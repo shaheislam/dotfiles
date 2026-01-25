@@ -78,6 +78,8 @@ check_claude_windows() {
                 if (( idle_time > viewed_time )); then
                     # Add indicator if not present
                     if [[ "$win_name" != "${INDICATOR}"* ]]; then
+                        # Store original name for restoration
+                        echo "$win_name" > "$STATE_DIR/original-name-$win_idx"
                         tmux rename-window -t ":${win_idx}" "${INDICATOR} ${win_name}" 2>/dev/null
                     fi
                 fi
