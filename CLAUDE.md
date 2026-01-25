@@ -231,6 +231,104 @@ The setup script will automatically:
 3. **Test Multi-Project Setup**: Follow procedures in `nix/TESTING.md`
 4. **Validate System**: Run `scripts/test-lsp-inheritance.sh`
 
+### Worktree + Devcontainer Integration
+
+**Purpose**: Enable isolated parallel development environments by integrating git worktrees with devcontainers. Each worktree gets its own devcontainer instance with isolated volumes.
+
+**Architecture**:
+```
+~/projects/
+├── myapp/                    # Main worktree
+│   └── .devcontainer/        # Devcontainer config
+├── myapp-feature-a/          # Linked worktree → devcontainer instance "myapp-feature-a"
+└── myapp-hotfix/             # Another worktree → devcontainer instance "myapp-hotfix"
+
+~/.devcontainer/instances/
+├── myapp-feature-a/          # Isolated storage for feature-a
+└── myapp-hotfix/             # Isolated storage for hotfix
+```
+
+**Key Insight**: Worktree name becomes devcontainer instance name → automatic volume isolation.
+
+**Core Functions** (`.config/fish/functions/`):
+| Function | Description |
+|----------|-------------|
+| `gwt-dev` | Create worktree with isolated devcontainer |
+| `gwt-claude` | Launch Claude Code in worktree's devcontainer |
+| `gwt-parallel` | Launch multiple worktrees in tmux windows |
+| `gwt-status` | Show worktree + devcontainer status table |
+| `gwt-cleanup` | Remove stale devcontainer instances |
+| `gwt-setup` | Run setup scripts (Cursor-compatible) |
+
+**Aliases** (in `config.fish`):
+| Alias | Expansion |
+|-------|-----------|
+| `gwtd` | `gwt-dev` |
+| `gwtde` | `gwt-dev --exec` |
+| `gwtc` | `gwt-claude` |
+| `gwts` | `gwt-status` |
+| `gwtclean` | `gwt-cleanup` |
+
+**Existing Functions Enhanced**:
+- `gwtaf` / `gwtabf`: Now prompt to launch devcontainer when detected
+- `gwtr`: Now offers to cleanup associated devcontainer instance
+
+**Common Workflows**:
+
+1. **Create Feature Worktree with Devcontainer**:
+   ```bash
+   gwt-dev feature/auth --exec     # Create + enter container
+   # or
+   gwtde feature/auth              # Using alias
+   ```
+
+2. **Parallel Development** (Cursor-style):
+   ```bash
+   gwt-parallel feature-a feature-b hotfix
+   # Creates tmux windows for each, launches devcontainers
+   # Navigate: prefix + n/p or prefix + <number>
+   ```
+
+3. **Launch Claude in Existing Worktree**:
+   ```bash
+   gwt-claude feature/auth         # By name
+   gwt-claude                      # FZF picker
+   ```
+
+4. **Check Status**:
+   ```bash
+   gwt-status
+   # Shows table: WORKTREE | BRANCH | CONTAINER | STATUS
+   # Status: 🟢 running | ⚪ stopped | 📦 ready | ➖ none
+   ```
+
+5. **Cleanup Stale Instances**:
+   ```bash
+   gwt-cleanup                     # List stale instances
+   gwt-cleanup --prune             # Remove them
+   ```
+
+6. **Isolated Development with Context Mounts**:
+   ```bash
+   # Mount another worktree for reference while working on feature
+   gwt-dev feature/auth -e -m ../myapp-main
+   # Inside container:
+   #   /mounts/myapp-feature-auth  (working copy)
+   #   /mounts/myapp-main          (reference context)
+
+   # Multiple mounts for comprehensive context
+   gwt-dev feature/auth -e -m ../myapp-develop -m ~/reference-impl
+   ```
+
+**Setup Scripts** (Cursor-compatible):
+Projects can include `.cursor/worktrees.json` for automatic setup:
+```json
+{
+  "setup-worktree-unix": ["npm ci", "cp .env.example .env.local"],
+  "setup-worktree": "scripts/setup-worktree.sh"
+}
+```
+
 ### MCP Server Integration
 
 **CRITICAL MCP Configuration Parity Rule**:

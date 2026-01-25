@@ -698,6 +698,13 @@ if status is-interactive
     alias gwtp="git worktree prune"
     alias gwtm="git worktree move"
 
+    # Worktree + Devcontainer integration aliases
+    alias gwtd="gwt-dev"              # Create worktree with devcontainer
+    alias gwtde="gwt-dev --exec"      # Create and exec into
+    alias gwtc="gwt-claude"           # Launch Claude in worktree
+    alias gwts="gwt-status"           # Show worktree + devcontainer status
+    alias gwtclean="gwt-cleanup"      # Cleanup stale devcontainer instances
+
     # Git local exclude management
     alias gls="gitlocal-setup"
     alias glsf="gitlocal-setup --force"
@@ -1547,7 +1554,24 @@ if status is-interactive
         end
         set branch $argv[1]
         set repo (basename (git rev-parse --show-toplevel))
-        git worktree add ../$repo-$branch $branch
+        set -l worktree_path (git rev-parse --show-toplevel)/../$repo-$branch
+
+        git worktree add $worktree_path $branch
+        if test $status -ne 0
+            return 1
+        end
+
+        # Check for devcontainer and prompt
+        set -l abs_worktree_path (realpath $worktree_path)
+        if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
+            read -P "📦 Devcontainer detected. Launch? [y/N] " response
+            if test "$response" = "y"; or test "$response" = "Y"
+                set -l instance_name (string replace -a "/" "-" "$repo-$branch")
+                devcon claude -i $instance_name $abs_worktree_path -e
+            else
+                echo "   cd $abs_worktree_path"
+            end
+        end
     end
 
     function gwtabf --description "Create new branch + worktree in ../repo-branch format"
@@ -1558,7 +1582,24 @@ if status is-interactive
         end
         set branch $argv[1]
         set repo (basename (git rev-parse --show-toplevel))
-        git worktree add -b $branch ../$repo-$branch
+        set -l worktree_path (git rev-parse --show-toplevel)/../$repo-$branch
+
+        git worktree add -b $branch $worktree_path
+        if test $status -ne 0
+            return 1
+        end
+
+        # Check for devcontainer and prompt
+        set -l abs_worktree_path (realpath $worktree_path)
+        if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
+            read -P "📦 Devcontainer detected. Launch? [y/N] " response
+            if test "$response" = "y"; or test "$response" = "Y"
+                set -l instance_name (string replace -a "/" "-" "$repo-$branch")
+                devcon claude -i $instance_name $abs_worktree_path -e
+            else
+                echo "   cd $abs_worktree_path"
+            end
+        end
     end
 
     # Git checkout with fzf
@@ -2049,12 +2090,11 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
         end
     end
 
-    function gwtr --description "Remove git worktree with fzf selection"
+    function gwtr --description "Remove git worktree with fzf selection (includes devcontainer cleanup)"
         # Check if we're in a git repository
         if not git rev-parse --git-dir >/dev/null 2>&1
             echo "Not in a git repository"
             return 1
-fish_add_path ~/.claude/local/node_modules/.bin
         end
 
         set -l worktrees (git worktree list 2>/dev/null | grep -v '(bare)')
@@ -2067,8 +2107,28 @@ fish_add_path ~/.claude/local/node_modules/.bin
         set -l selected (printf '%s\n' $worktrees | fzf --height=40% --reverse --prompt="Remove worktree: " | awk '{print $1}')
 
         if test -n "$selected"
+            set -l worktree_name (basename $selected)
+            set -l instance_name (string replace -a "/" "-" $worktree_name)
+
             echo "Removing worktree: $selected"
             git worktree remove "$selected"
+
+            # Check for associated devcontainer instance
+            set -l instance_base "$HOME/.devcontainer/instances"
+            set -l workspace_base "$HOME/.devcontainer/workspaces"
+
+            if test -d "$instance_base/$instance_name"; or test -d "$workspace_base/$instance_name"
+                read -P "🗑️  Remove devcontainer instance '$instance_name'? [y/N] " response
+                if test "$response" = "y"; or test "$response" = "Y"
+                    # Stop any running container
+                    if command -q docker
+                        docker stop (docker ps -q --filter "name=$instance_name") 2>/dev/null
+                    end
+                    rm -rf "$instance_base/$instance_name" 2>/dev/null
+                    rm -rf "$workspace_base/$instance_name" 2>/dev/null
+                    echo "   ✅ Devcontainer instance removed"
+                end
+            end
         end
     end
 
