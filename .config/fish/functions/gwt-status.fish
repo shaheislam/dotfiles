@@ -118,13 +118,13 @@ function gwt-status --description "Show worktree + devcontainer status"
 
         # Determine status display
         if $is_running
-            set container_status "🟢 running"
+            set container_status "running"
         else if $has_instance
-            set container_status "⚪ stopped"
+            set container_status "stopped"
         else if $has_devcontainer
-            set container_status "📦 ready"
+            set container_status "ready"
         else
-            set container_status "➖ none"
+            set container_status "none"
         end
 
         # Mark current worktree
@@ -147,7 +147,7 @@ function gwt-status --description "Show worktree + devcontainer status"
     echo ""
 
     # Summary
-    echo "Legend: 🟢 running | ⚪ stopped | 📦 devcontainer ready | ➖ no devcontainer"
+    echo "Legend: running | stopped | devcontainer ready | no devcontainer"
     echo ""
     echo "Commands:"
     echo "  gwt-dev <branch> -e     Create worktree + start devcontainer"

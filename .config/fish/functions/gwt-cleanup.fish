@@ -117,7 +117,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
 
     # Report findings
     if test (count $stale_instances) -eq 0
-        echo "✅ No stale devcontainer instances found"
+        echo "No stale devcontainer instances found"
         return 0
     end
 
@@ -129,7 +129,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         if command -q du
             set instance_size (du -sh "$instance_base/$instance" 2>/dev/null | cut -f1)
         end
-        echo "  📦 $instance ($instance_size)"
+        echo "  $instance ($instance_size)"
         echo "     Instance: $instance_base/$instance"
         if contains $instance $stale_workspaces
             echo "     Workspace: $workspace_base/$instance"
@@ -182,7 +182,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         end
 
         echo ""
-        echo "✅ Removed "(count $stale_instances)" stale instance(s)"
+        echo "Removed "(count $stale_instances)" stale instance(s)"
     else
         echo "Run with --prune to remove these instances"
     end

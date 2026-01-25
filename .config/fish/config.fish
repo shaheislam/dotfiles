@@ -838,9 +838,9 @@ if status is-interactive
             end
             
             # Check if instance has SSM connectivity
-            set -l ssm_status "❌ SSM Offline"
+            set -l ssm_status "SSM Offline"
             if string match -q "*$instance_id*" $ssm_instances
-                set ssm_status "✅ SSM Ready"
+                set ssm_status "SSM Ready"
             end
 
             set -a formatted_instances "$name ($instance_type) [$ip_address] - $instance_id $ssm_status"
@@ -856,7 +856,7 @@ if status is-interactive
             if test -n "$instance_id"
                 # Check if instance has SSM connectivity
                 if not string match -q "*$instance_id*" $ssm_instances
-                    echo "⚠️  Warning: Instance $instance_id does not have SSM connectivity"
+                    echo "Warning: Instance $instance_id does not have SSM connectivity"
                     echo "The SSM agent may not be installed or running on this instance"
                     read -P "Try to connect anyway? (y/N): " -n 1 confirm
                     if test "$confirm" != "y" -a "$confirm" != "Y"
@@ -939,10 +939,10 @@ if status is-interactive
         set -gx AWS_PROFILE "$profile"
 
         if aws sts get-caller-identity >/dev/null 2>&1
-            echo "✅ Successfully authenticated as:"
+            echo "Successfully authenticated as:"
             aws sts get-caller-identity --output table
         else
-            echo "❌ Failed to get credentials"
+            echo "Failed to get credentials"
             return 1
         end
     end
@@ -1156,7 +1156,7 @@ if status is-interactive
                 end
 
                 # Add options for navigation
-                set -l options "📁 Use current path: $current_path"
+                set -l options "Use current path: $current_path"
                 if test -n "$current_path"
                     set options $options "⬆️  Go up one level"
                 end
@@ -1167,7 +1167,7 @@ if status is-interactive
                 if test -z "$selected"
                     # User cancelled
                     return 0
-                else if string match -q "📁 Use current path:*" "$selected"
+                else if string match -q "Use current path:*" "$selected"
                     # Use current path
                     set prefix $current_path
                     break
@@ -1277,7 +1277,7 @@ if status is-interactive
                 end
 
                 # Add options for navigation
-                set -l options "📁 Use current path: $current_path"
+                set -l options "Use current path: $current_path"
                 if test -n "$current_path"
                     set options $options "⬆️  Go up one level"
                 end
@@ -1288,7 +1288,7 @@ if status is-interactive
                 if test -z "$selected"
                     # User cancelled
                     return 0
-                else if string match -q "📁 Use current path:*" "$selected"
+                else if string match -q "Use current path:*" "$selected"
                     # Use current path
                     set prefix $current_path
                     break
@@ -1564,7 +1564,7 @@ if status is-interactive
         # Check for devcontainer and prompt
         set -l abs_worktree_path (realpath $worktree_path)
         if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
-            read -P "📦 Devcontainer detected. Launch? [y/N] " response
+            read -P "Devcontainer detected. Launch? [y/N] " response
             if test "$response" = "y"; or test "$response" = "Y"
                 set -l instance_name (string replace -a "/" "-" "$repo-$branch")
                 devcon claude -i $instance_name $abs_worktree_path -e
@@ -1592,7 +1592,7 @@ if status is-interactive
         # Check for devcontainer and prompt
         set -l abs_worktree_path (realpath $worktree_path)
         if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
-            read -P "📦 Devcontainer detected. Launch? [y/N] " response
+            read -P "Devcontainer detected. Launch? [y/N] " response
             if test "$response" = "y"; or test "$response" = "Y"
                 set -l instance_name (string replace -a "/" "-" "$repo-$branch")
                 devcon claude -i $instance_name $abs_worktree_path -e
@@ -2118,7 +2118,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             set -l workspace_base "$HOME/.devcontainer/workspaces"
 
             if test -d "$instance_base/$instance_name"; or test -d "$workspace_base/$instance_name"
-                read -P "🗑️  Remove devcontainer instance '$instance_name'? [y/N] " response
+                read -P "Remove devcontainer instance '$instance_name'? [y/N] " response
                 if test "$response" = "y"; or test "$response" = "Y"
                     # Stop any running container
                     if command -q docker
@@ -2126,7 +2126,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
                     end
                     rm -rf "$instance_base/$instance_name" 2>/dev/null
                     rm -rf "$workspace_base/$instance_name" 2>/dev/null
-                    echo "   ✅ Devcontainer instance removed"
+                    echo "   Devcontainer instance removed"
                 end
             end
         end

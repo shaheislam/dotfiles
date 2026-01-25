@@ -27,7 +27,7 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
     # Check for .cursor/worktrees.json (Cursor-compatible)
     set -l cursor_config "$worktree_path/.cursor/worktrees.json"
     if test -f "$cursor_config"
-        echo "📋 Found .cursor/worktrees.json"
+        echo "Found .cursor/worktrees.json"
 
         # Determine which key to use based on OS
         set -l setup_key "setup-worktree-unix"
@@ -51,7 +51,7 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
                     echo "   → $cmd"
                     eval $cmd
                     if test $status -ne 0
-                        echo "   ⚠️  Command failed: $cmd"
+                        echo "   Command failed: $cmd"
                     end
                 end
                 popd
@@ -73,19 +73,19 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
                         popd
                         set setup_ran true
                     else
-                        echo "   ⚠️  Script not found: $script_path"
+                        echo "   Script not found: $script_path"
                     end
                 end
             end
         else
-            echo "   ⚠️  jq not installed - cannot parse .cursor/worktrees.json"
+            echo "   jq not installed - cannot parse .cursor/worktrees.json"
         end
     end
 
     # Check for .devcontainer/setup.sh
     set -l devcontainer_setup "$worktree_path/.devcontainer/setup.sh"
     if not $setup_ran; and test -f "$devcontainer_setup"
-        echo "📋 Found .devcontainer/setup.sh"
+        echo "Found .devcontainer/setup.sh"
         pushd $worktree_path
         if test -x "$devcontainer_setup"
             $devcontainer_setup
@@ -99,7 +99,7 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
     # Check for scripts/setup-worktree.sh
     set -l scripts_setup "$worktree_path/scripts/setup-worktree.sh"
     if not $setup_ran; and test -f "$scripts_setup"
-        echo "📋 Found scripts/setup-worktree.sh"
+        echo "Found scripts/setup-worktree.sh"
         pushd $worktree_path
         if test -x "$scripts_setup"
             $scripts_setup
@@ -111,7 +111,7 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
     end
 
     if $setup_ran
-        echo "✅ Setup completed"
+        echo "Setup completed"
     end
 
     return 0

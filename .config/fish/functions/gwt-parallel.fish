@@ -1,5 +1,5 @@
 function gwt-parallel --description "Launch multiple worktree devcontainers in tmux windows"
-    # Usage: gwt-parallel <branch1> <branch2> [branch3] ...
+    # Usage: gwt-parallel <branch1> <branch2> [branch3] ... [--mount <dir>]
     #
     # Creates tmux windows in the current session for each specified worktree,
     # launching their devcontainers for parallel development.
@@ -7,21 +7,24 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
     # Each window is named after the branch for easy navigation.
     #
     # Options:
-    #   --help, -h    Show this help
+    #   --mount, -m   Add directory mount to all containers (repeatable)
     #   --no-devcon   Create windows and cd to worktrees without devcontainer
+    #   --help, -h    Show this help
 
     if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
-        echo "Usage: gwt-parallel <branch1> <branch2> [branch3] ..."
+        echo "Usage: gwt-parallel <branch1> <branch2> ... [--mount <dir>]"
         echo ""
         echo "Launch multiple worktrees in parallel tmux windows."
         echo ""
         echo "Options:"
+        echo "  --mount, -m    Add directory mount to all containers (repeatable)"
         echo "  --no-devcon    Create windows without starting devcontainers"
         echo "  --help, -h     Show this help"
         echo ""
         echo "Examples:"
         echo "  gwt-parallel feature-a feature-b hotfix"
-        echo "  gwt-parallel main feature/auth bugfix/123"
+        echo "  gwt-parallel feature-a feature-b -m ~/dotfiles"
+        echo "  gwt-parallel feat-a feat-b -m ~/dotfiles -m ~/reference"
         echo ""
         echo "Navigation:"
         echo "  prefix + n/p       Next/previous window"
@@ -46,12 +49,38 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
 
     # Parse arguments
     set -l branches
+    set -l mounts
     set -l do_no_devcon false
+    set -l skip_next false
 
-    for arg in $argv
+    for i in (seq (count $argv))
+        if $skip_next
+            set skip_next false
+            continue
+        end
+
+        set -l arg $argv[$i]
+
         switch $arg
             case --no-devcon
                 set do_no_devcon true
+            case --mount -m
+                # Next arg is directory to mount
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set -l mount_path $argv[$next_i]
+                    set -l expanded_path (eval echo $mount_path)
+                    if test -d "$expanded_path"
+                        set -a mounts (realpath $expanded_path)
+                    else
+                        echo "Error: Mount directory not found: $mount_path"
+                        return 1
+                    end
+                    set skip_next true
+                else
+                    echo "Error: --mount requires a directory path"
+                    return 1
+                end
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -69,7 +98,13 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
     set -l repo (basename (git rev-parse --show-toplevel))
     set -l repo_root (git rev-parse --show-toplevel)
 
-    echo "🚀 Launching "(count $branches)" worktrees in parallel..."
+    echo "Launching "(count $branches)" worktrees in parallel..."
+    if test (count $mounts) -gt 0
+        echo "Additional mounts for all containers:"
+        for mount in $mounts
+            echo "   /mounts/"(basename $mount)
+        end
+    end
     echo ""
 
     set -l created_windows
@@ -83,11 +118,11 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
 
         # Check if worktree exists
         if not test -d "$worktree_path"
-            echo "⚠️  Worktree not found: $branch"
+            echo "Worktree not found: $branch"
             echo "    Creating with gwt-dev..."
             gwt-dev $branch --no-devcon
             if test $status -ne 0
-                echo "   ❌ Failed to create worktree for $branch"
+                echo "   Failed to create worktree for $branch"
                 set -a failed_branches $branch
                 continue
             end
@@ -96,7 +131,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
         set worktree_path (realpath $worktree_path)
 
         # Create new tmux window
-        echo "📦 Creating window: $window_name"
+        echo "Creating window: $window_name"
 
         if $do_no_devcon
             # Just cd to worktree
@@ -109,9 +144,15 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
             end
 
             if $has_devcontainer
+                # Build mount arguments for devcon
+                set -l mount_args ""
+                for mount in $mounts
+                    set mount_args "$mount_args $mount"
+                end
+
                 # Create window and run devcon in it
                 tmux new-window -n $window_name -c $worktree_path \
-                    "fish -c 'devcon claude -i $instance_name $worktree_path --exec; exec fish'"
+                    "fish -c 'devcon claude -i $instance_name $worktree_path$mount_args --exec; exec fish'"
             else
                 # No devcontainer, just cd
                 tmux new-window -n $window_name -c $worktree_path
@@ -122,10 +163,10 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
     end
 
     echo ""
-    echo "✅ Created "(count $created_windows)" window(s)"
+    echo "Created "(count $created_windows)" window(s)"
 
     if test (count $failed_branches) -gt 0
-        echo "⚠️  Failed: "(string join ", " $failed_branches)
+        echo "Failed: "(string join ", " $failed_branches)
     end
 
     echo ""

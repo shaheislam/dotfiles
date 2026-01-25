@@ -172,7 +172,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
 
     # Skip devcontainer if requested
     if $do_no_devcon
-        echo "✅ Worktree created: $worktree_path"
+        echo "Worktree created: $worktree_path"
         echo "   cd $worktree_path"
         return 0
     end
@@ -184,13 +184,13 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     end
 
     if not $has_devcontainer
-        echo "✅ Worktree created: $worktree_path"
+        echo "Worktree created: $worktree_path"
         echo "   No .devcontainer/ found - skipping container setup"
         echo "   cd $worktree_path"
         return 0
     end
 
-    echo "📦 Devcontainer detected, launching with instance: $instance_name"
+    echo "Devcontainer detected, launching with instance: $instance_name"
 
     # Run setup scripts if present
     gwt-setup $worktree_path
@@ -227,7 +227,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     devcon $devcon_args
 
     echo ""
-    echo "✅ Worktree + Devcontainer ready:"
+    echo "Worktree + Devcontainer ready:"
     echo "   Worktree: $worktree_path"
     echo "   Instance: $instance_name"
     echo "   Mount:    /mounts/$worktree_name"

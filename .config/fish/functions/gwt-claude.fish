@@ -70,8 +70,8 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
     end
 
     set worktree_path (realpath $worktree_path)
-    echo "📂 Worktree: $worktree_path"
-    echo "📦 Instance: $instance_name"
+    echo "Worktree: $worktree_path"
+    echo "Instance: $instance_name"
 
     # Check if devcontainer exists for this worktree
     set -l has_devcontainer false
@@ -98,11 +98,11 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
     end
 
     if $instance_running
-        echo "🟢 Container running, exec into claude..."
+        echo "Container running, exec into claude..."
         # Execute claude in the running container
         devcon claude -i $instance_name --exec
     else
-        echo "⚪ Starting devcontainer..."
+        echo "Starting devcontainer..."
         # Start the devcontainer with the worktree mounted
         devcon claude -i $instance_name $worktree_path --exec
     end
