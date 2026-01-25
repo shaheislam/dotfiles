@@ -107,6 +107,35 @@ defaults write NSGlobalDomain NSWindowResizeTime -float 0.001
 defaults write NSGlobalDomain NSScrollAnimationEnabled -bool false
 
 # =============================================================================
+# Network & DNS
+# =============================================================================
+
+# Configure DNS to use Cloudflare (bypasses UK ISP DNS blocking)
+# Note: ISPs like Sky/Virgin use DNS-level blocking for court-ordered sites
+# Cloudflare DNS (1.1.1.1) doesn't implement these blocks and is faster
+echo "🌐 Configuring DNS to Cloudflare..."
+
+# Get all hardware network services (Wi-Fi, Ethernet, etc.)
+while IFS= read -r service; do
+    # Skip empty lines and disabled services (marked with *)
+    [[ -z "$service" || "$service" == *"*"* ]] && continue
+
+    # Skip virtual interfaces
+    [[ "$service" == "Tailscale" || "$service" == "Thunderbolt Bridge" ]] && continue
+
+    # Set DNS for this service
+    if networksetup -setdnsservers "$service" 1.1.1.1 1.0.0.1 2>/dev/null; then
+        echo "  ✓ DNS configured for: $service"
+    fi
+done < <(networksetup -listallnetworkservices | tail -n +2)
+
+# Flush DNS cache to apply changes immediately
+sudo dscacheutil -flushcache 2>/dev/null || true
+sudo killall -HUP mDNSResponder 2>/dev/null || true
+
+echo "  ✓ DNS cache flushed"
+
+# =============================================================================
 # Apply Changes
 # =============================================================================
 

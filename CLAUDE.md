@@ -204,6 +204,37 @@ The setup script will automatically:
 - **Management**: Edit via Karabiner-Elements GUI app or directly in `~/.config/karabiner/karabiner.json`
 - **Note**: Karabiner-Elements runs as a background service, no LaunchAgent needed
 
+### DNS Configuration
+- **Location**: `scripts/setup/macos-defaults.sh` (Network & DNS section)
+- **DNS Servers**: Cloudflare (1.1.1.1, 1.0.0.1)
+- **Purpose**: Bypass UK ISP DNS-level website blocking, faster DNS resolution
+- **Applied To**: All hardware network services (Wi-Fi, Ethernet) automatically
+- **Excluded**: Virtual interfaces (Tailscale, Thunderbolt Bridge)
+
+**Why Cloudflare DNS?**
+- UK ISPs (Sky, Virgin, BT) implement court-ordered DNS blocking
+- Cloudflare DNS doesn't implement these blocks
+- Faster resolution times than ISP DNS
+- Privacy-focused (no logging)
+
+**Manual Override** (if needed):
+```bash
+# Set DNS for Wi-Fi
+sudo networksetup -setdnsservers "Wi-Fi" 1.1.1.1 1.0.0.1
+
+# Flush DNS cache
+sudo dscacheutil -flushcache && sudo killall -HUP mDNSResponder
+
+# Verify
+networksetup -getdnsservers "Wi-Fi"
+```
+
+**Alternative DNS Providers**:
+- Google: `8.8.8.8`, `8.8.4.4`
+- Quad9: `9.9.9.9`, `149.112.112.112`
+
+**Note**: Some ISPs also use SNI inspection (deep packet inspection). If DNS change alone doesn't work, enable ECH (Encrypted Client Hello) in Firefox or use a VPN.
+
 ### LSP (Language Server Protocol) Configuration
 
 **Nix-Based LSP Inheritance System**:
@@ -692,6 +723,7 @@ claude plugin uninstall plugin-name@claude-code-plugins
 These are set automatically by `scripts/setup.sh` using `jq`.
 
 ### Recent Updates
+- **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
 - **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
 - **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
 - **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
