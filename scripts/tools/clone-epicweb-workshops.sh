@@ -161,32 +161,32 @@ clone_repo() {
         if [[ "$FORCE_MODE" == true ]]; then
             if [[ "$DRY_RUN" == true ]]; then
                 print_info "Would remove and re-clone: $target_name"
-                ((REPOS_CLONED++))
+                ((++REPOS_CLONED))
             else
                 rm -rf "$target_path"
                 if gh repo clone "epicweb-dev/${repo}" "$target_path" 2>/dev/null; then
                     print_success "Re-cloned: $target_name"
-                    ((REPOS_CLONED++))
+                    ((++REPOS_CLONED))
                 else
                     print_error "Failed to clone: $repo"
-                    ((REPOS_FAILED++))
+                    ((++REPOS_FAILED))
                 fi
             fi
         else
             print_skip "Already exists: $target_name"
-            ((REPOS_SKIPPED++))
+            ((++REPOS_SKIPPED))
         fi
     else
         if [[ "$DRY_RUN" == true ]]; then
             print_info "Would clone: epicweb-dev/${repo} -> $target_name"
-            ((REPOS_CLONED++))
+            ((++REPOS_CLONED))
         else
             if gh repo clone "epicweb-dev/${repo}" "$target_path" 2>/dev/null; then
                 print_success "Cloned: $target_name"
-                ((REPOS_CLONED++))
+                ((++REPOS_CLONED))
             else
                 print_error "Failed to clone: $repo"
-                ((REPOS_FAILED++))
+                ((++REPOS_FAILED))
             fi
         fi
     fi
