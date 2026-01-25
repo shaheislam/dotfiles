@@ -287,6 +287,12 @@ The setup script will automatically:
    gwt-parallel feature-a feature-b hotfix
    # Creates tmux windows for each, launches devcontainers
    # Navigate: prefix + n/p or prefix + <number>
+
+   # With shared mounts (e.g., dotfiles for all containers)
+   gwt-parallel feature-a feature-b -m ~/dotfiles
+
+   # Multiple mounts for all containers
+   gwt-parallel feat-a feat-b -m ~/dotfiles -m ~/reference-project
    ```
 
 3. **Launch Claude in Existing Worktree**:
@@ -331,6 +337,39 @@ Worktree setup scripts run automatically if present (checked in order):
 # .devcontainer/setup.sh
 cp $ROOT_WORKTREE_PATH/.env .env.local
 npm ci
+```
+
+### Claude Activity Watcher
+
+**Purpose**: Background daemon that monitors tmux windows for idle Claude processes and shows a 🟢 indicator when Claude needs attention.
+
+**Script**: `scripts/tmux/tmux-claude-watcher.sh`
+
+**How It Works**:
+1. Daemon polls every 3 seconds for Claude processes in non-active tmux windows
+2. Detects when Claude transitions from busy → idle
+3. Shows 🟢 indicator only if idle happened AFTER you last viewed the window
+4. Clears indicator when you switch to the window
+5. Won't re-show until Claude does more work and becomes idle again
+
+**Devcontainer Support**: Automatically detects Claude running inside devcontainers by matching tmux window names to container names (e.g., window "feature-a" → container "myproject-feature-a").
+
+**Usage**:
+```bash
+# Start the daemon (usually in tmux.conf or fish config)
+~/dotfiles/scripts/tmux/tmux-claude-watcher.sh start
+
+# Stop the daemon
+~/dotfiles/scripts/tmux/tmux-claude-watcher.sh stop
+
+# Check status
+~/dotfiles/scripts/tmux/tmux-claude-watcher.sh status
+```
+
+**tmux Hook Setup** (add to `.tmux.conf`):
+```bash
+# Mark window as viewed when switching to it
+set-hook -g window-pane-changed 'run-shell "~/dotfiles/scripts/tmux/tmux-claude-watcher.sh mark-viewed #{window_index}"'
 ```
 
 ### MCP Server Integration
