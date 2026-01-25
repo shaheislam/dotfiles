@@ -102,9 +102,60 @@ check_claude_windows() {
     done
 }
 
+# Find devcontainer instance name for a tmux window
+# Uses window name to guess the instance pattern
+find_devcontainer_for_window() {
+    local win_idx="$1"
+    local win_name
+    win_name=$(tmux display-message -t ":${win_idx}" -p "#{window_name}" 2>/dev/null)
+
+    # Strip any indicator prefix
+    win_name="${win_name#${INDICATOR} }"
+
+    # Look for running container matching the window name
+    # devcontainer instances are named like "repo-branch"
+    # Window names are like "branch" or "feature-branch"
+    local container
+    container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E "[-_]${win_name}$" | head -1)
+
+    if [[ -n "$container" ]]; then
+        echo "$container"
+        return 0
+    fi
+
+    return 1
+}
+
+# Check if Claude is idle inside a container
+get_claude_status_in_container() {
+    local container="$1"
+
+    # Find Claude process in container
+    local claude_pid
+    claude_pid=$(docker exec "$container" pgrep -f '/claude( |$)' 2>/dev/null | head -1)
+
+    [[ -z "$claude_pid" ]] && { echo "none"; return 0; }
+
+    # Check for non-MCP children (indicates busy)
+    local children
+    children=$(docker exec "$container" sh -c "pgrep -P $claude_pid 2>/dev/null" 2>/dev/null)
+
+    for child_pid in $children; do
+        local cmd
+        cmd=$(docker exec "$container" ps -o args= -p "$child_pid" 2>/dev/null)
+        if ! echo "$cmd" | grep -qE 'mcp|bunx'; then
+            echo "busy"
+            return 0
+        fi
+    done
+
+    echo "idle"
+}
+
 get_claude_status() {
     local win_idx="$1"
 
+    # First: try local detection (existing logic)
     for pane_idx in $(tmux list-panes -t ":${win_idx}" -F "#{pane_index}" 2>/dev/null); do
         local tty
         tty=$(tmux display-message -t ":${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
@@ -128,6 +179,16 @@ get_claude_status() {
         echo "idle"
         return 0
     done
+
+    # Second: check for devcontainer
+    if command -v docker >/dev/null 2>&1; then
+        local container
+        container=$(find_devcontainer_for_window "$win_idx")
+        if [[ -n "$container" ]]; then
+            get_claude_status_in_container "$container"
+            return 0
+        fi
+    fi
 
     echo "none"  # No Claude in this window
 }

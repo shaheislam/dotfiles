@@ -155,15 +155,16 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
             end
 
             if $has_devcontainer
-                # Build mount arguments for devcon
-                set -l mount_args ""
+                # Build devcon command with proper argument ordering
+                # Order: devcon claude -i <instance> --exec <worktree> [mounts...]
+                set -l devcon_cmd "devcon claude -i $instance_name --exec $worktree_path"
                 for mount in $mounts
-                    set mount_args "$mount_args $mount"
+                    set devcon_cmd "$devcon_cmd $mount"
                 end
 
                 # Create window and run devcon in it
                 tmux new-window -n $window_name -c $worktree_path \
-                    "fish -c 'devcon claude -i $instance_name $worktree_path$mount_args --exec; exec fish'"
+                    "fish -c '$devcon_cmd; exec fish'"
             else
                 # No devcontainer, just cd
                 tmux new-window -n $window_name -c $worktree_path
