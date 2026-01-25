@@ -2097,39 +2097,86 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             return 1
         end
 
-        set -l worktrees (git worktree list 2>/dev/null | grep -v '(bare)')
+        set -l repo (basename (git rev-parse --show-toplevel))
+        set -l repo_root (git rev-parse --show-toplevel)
+        set -l selected_list
 
-        if test -z "$worktrees"
-            echo "No git worktrees to remove"
-            return 1
+        # If arguments provided, use them directly (branch names)
+        if test (count $argv) -gt 0
+            for branch in $argv
+                set -l worktree_name "$repo-$branch"
+                set -l worktree_path "$repo_root/../$worktree_name"
+                if test -d "$worktree_path"
+                    set -a selected_list (realpath "$worktree_path")
+                else
+                    echo "Worktree not found: $worktree_path"
+                end
+            end
+        else
+            # No argument - use fzf selection (multi-select enabled)
+            set -l worktrees (git worktree list 2>/dev/null | grep -v '(bare)')
+
+            if test (count $worktrees) -eq 0
+                echo "No git worktrees to remove"
+                return 1
+            end
+
+            # Use string join for fzf input, split output by newlines into array
+            set selected_list (string join \n $worktrees | fzf --height=40% --reverse --prompt="Remove worktree(s): " --header="TAB to multi-select, ENTER to confirm" | while read -l line; echo (echo $line | awk '{print $1}'); end)
         end
 
-        set -l selected (printf '%s\n' $worktrees | fzf --height=40% --reverse --prompt="Remove worktree: " | awk '{print $1}')
+        if test (count $selected_list) -eq 0
+            echo "No worktrees selected"
+            return 0
+        end
 
-        if test -n "$selected"
+        # Process each selected worktree
+        set -l instance_base "$HOME/.devcontainer/instances"
+        set -l workspace_base "$HOME/.devcontainer/workspaces"
+        set -l has_devcontainers false
+
+        # Check if any have devcontainer instances
+        for selected in $selected_list
+            set -l worktree_name (basename $selected)
+            set -l instance_name (string replace -a "/" "-" $worktree_name)
+            if test -d "$instance_base/$instance_name"; or test -d "$workspace_base/$instance_name"
+                set has_devcontainers true
+                break
+            end
+        end
+
+        # Prompt once for all devcontainer cleanup
+        set -l cleanup_devcontainers false
+        if $has_devcontainers
+            read -P "Also remove associated devcontainer instances? [y/N] " response
+            if test "$response" = "y"; or test "$response" = "Y"
+                set cleanup_devcontainers true
+            end
+        end
+
+        # Remove each worktree
+        for selected in $selected_list
             set -l worktree_name (basename $selected)
             set -l instance_name (string replace -a "/" "-" $worktree_name)
 
             echo "Removing worktree: $selected"
             git worktree remove "$selected"
 
-            # Check for associated devcontainer instance
-            set -l instance_base "$HOME/.devcontainer/instances"
-            set -l workspace_base "$HOME/.devcontainer/workspaces"
-
-            if test -d "$instance_base/$instance_name"; or test -d "$workspace_base/$instance_name"
-                read -P "Remove devcontainer instance '$instance_name'? [y/N] " response
-                if test "$response" = "y"; or test "$response" = "Y"
+            if $cleanup_devcontainers
+                if test -d "$instance_base/$instance_name"; or test -d "$workspace_base/$instance_name"
                     # Stop any running container
                     if command -q docker
                         docker stop (docker ps -q --filter "name=$instance_name") 2>/dev/null
                     end
                     rm -rf "$instance_base/$instance_name" 2>/dev/null
                     rm -rf "$workspace_base/$instance_name" 2>/dev/null
-                    echo "   Devcontainer instance removed"
+                    echo "   Devcontainer instance removed: $instance_name"
                 end
             end
         end
+
+        echo ""
+        echo "Removed "(count $selected_list)" worktree(s)"
     end
 
     # Custom Atuin wrapper functions for different filter modes
