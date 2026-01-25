@@ -321,21 +321,17 @@ The setup script will automatically:
    ```
 
 **Setup Scripts**:
-Projects can include `.worktree.json` for automatic setup:
-```json
-{
-  "setup-unix": [
-    "cp $ROOT_WORKTREE_PATH/.env .env.local",
-    "npm ci"
-  ],
-  "setup": "scripts/setup-worktree.sh"
-}
-```
-`$ROOT_WORKTREE_PATH` is automatically set to the main worktree path, enabling copying of untracked files like `.env`.
+Worktree setup scripts run automatically if present (checked in order):
+1. `.devcontainer/setup.sh`
+2. `scripts/setup-worktree.sh`
 
-Alternative setup script locations (checked if no `.worktree.json`):
-- `.devcontainer/setup.sh`
-- `scripts/setup-worktree.sh`
+`$ROOT_WORKTREE_PATH` is exported, pointing to the main worktree:
+```bash
+#!/bin/bash
+# .devcontainer/setup.sh
+cp $ROOT_WORKTREE_PATH/.env .env.local
+npm ci
+```
 
 ### MCP Server Integration
 
