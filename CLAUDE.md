@@ -324,10 +324,14 @@ The setup script will automatically:
 Projects can include `.cursor/worktrees.json` for automatic setup:
 ```json
 {
-  "setup-worktree-unix": ["npm ci", "cp .env.example .env.local"],
+  "setup-worktree-unix": [
+    "cp $ROOT_WORKTREE_PATH/.env .env.local",
+    "npm ci"
+  ],
   "setup-worktree": "scripts/setup-worktree.sh"
 }
 ```
+`$ROOT_WORKTREE_PATH` is automatically set to the main worktree path, enabling copying of untracked files like `.env`.
 
 ### MCP Server Integration
 

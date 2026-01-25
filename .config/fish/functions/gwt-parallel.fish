@@ -4,6 +4,9 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
     # Creates tmux windows in the current session for each specified worktree,
     # launching their devcontainers for parallel development.
     #
+    # Branches are auto-detected: existing branches are checked out,
+    # non-existent branches are created automatically.
+    #
     # Each window is named after the branch for easy navigation.
     #
     # Options:
@@ -15,6 +18,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
         echo "Usage: gwt-parallel <branch1> <branch2> ... [--mount <dir>]"
         echo ""
         echo "Launch multiple worktrees in parallel tmux windows."
+        echo "Branches are auto-detected: existing ones checked out, new ones created."
         echo ""
         echo "Options:"
         echo "  --mount, -m    Add directory mount to all containers (repeatable)"
@@ -118,9 +122,16 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
 
         # Check if worktree exists
         if not test -d "$worktree_path"
-            echo "Worktree not found: $branch"
-            echo "    Creating with gwt-dev..."
-            gwt-dev $branch --no-devcon
+            # Auto-detect: does the branch exist in git?
+            if git show-ref --verify --quiet refs/heads/$branch
+                # Branch exists, checkout existing
+                echo "Creating worktree for existing branch: $branch"
+                gwt-dev $branch --no-devcon
+            else
+                # Branch doesn't exist, create new
+                echo "Creating worktree with new branch: $branch"
+                gwt-dev $branch --new --no-devcon
+            end
             if test $status -ne 0
                 echo "   Failed to create worktree for $branch"
                 set -a failed_branches $branch

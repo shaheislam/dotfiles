@@ -4,6 +4,9 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
     # Executes setup scripts for a worktree. Supports Cursor-compatible
     # .cursor/worktrees.json format or .devcontainer/setup.sh scripts.
     #
+    # Environment variables available in scripts:
+    #   $ROOT_WORKTREE_PATH - Path to the main/root worktree
+    #
     # Configuration sources (checked in order):
     #   1. .cursor/worktrees.json - Cursor-compatible JSON config
     #   2. .devcontainer/setup.sh - Shell script
@@ -22,12 +25,34 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
         return 1
     end
 
+    # Detect the root/main worktree path
+    # The main worktree has .git as a directory, linked worktrees have .git as a file
+    set -l root_worktree_path ""
+    if test -d "$worktree_path/.git"
+        # This IS the main worktree
+        set root_worktree_path $worktree_path
+    else if test -f "$worktree_path/.git"
+        # This is a linked worktree - find the main one
+        # .git file contains: "gitdir: /path/to/main/.git/worktrees/branch-name"
+        set -l git_common_dir (git -C $worktree_path rev-parse --git-common-dir 2>/dev/null)
+        if test -n "$git_common_dir"
+            # git-common-dir is the main .git directory, parent is the main worktree
+            set root_worktree_path (realpath "$git_common_dir/..")
+        end
+    end
+
+    # Export for use in setup scripts
+    set -gx ROOT_WORKTREE_PATH $root_worktree_path
+
     set -l setup_ran false
 
     # Check for .cursor/worktrees.json (Cursor-compatible)
     set -l cursor_config "$worktree_path/.cursor/worktrees.json"
     if test -f "$cursor_config"
         echo "Found .cursor/worktrees.json"
+        if test -n "$root_worktree_path"
+            echo "   ROOT_WORKTREE_PATH=$root_worktree_path"
+        end
 
         # Determine which key to use based on OS
         set -l setup_key "setup-worktree-unix"
