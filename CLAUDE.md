@@ -640,13 +640,14 @@ cron:
 
 ### Claude Code Plugins
 
-Plugins are installed from two marketplaces:
+Plugins are installed from three marketplaces:
 - `anthropics/claude-code` (alias: `claude-code-plugins`) - Official Anthropic plugins
 - `kenryu42/cc-marketplace` (alias: `cc-marketplace`) - Community safety plugins
+- `antonbabenko/terraform-skill` (alias: `antonbabenko`) - Terraform/OpenTofu development skill
 
 **Installation**: Plugins are stored in `~/.claude/settings.json` and available in all sessions on the device. For cross-device consistency, installation commands are in `scripts/setup.sh`.
 
-**Installed Plugins (14 total)**:
+**Installed Plugins (15 total)**:
 
 | Plugin | Command | Purpose |
 |--------|---------|---------|
@@ -664,6 +665,7 @@ Plugins are installed from two marketplaces:
 | **learning-output-style** | SessionStart hook | Interactive learning mode with code contribution prompts |
 | **code-simplifier** | Auto-triggered | Identifies over-engineering, suggests simpler implementations |
 | **security-guidance** | Auto-triggered | Security best practices, vulnerability detection, compliance guidance |
+| **terraform-skill** | Auto-activated | Terraform/OpenTofu module development, testing frameworks, CI/CD workflows |
 
 **Managing Plugins**:
 ```bash
@@ -690,6 +692,7 @@ claude plugin uninstall plugin-name@claude-code-plugins
 These are set automatically by `scripts/setup.sh` using `jq`.
 
 ### Recent Updates
+- **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
 - **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
 - **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
 - **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control

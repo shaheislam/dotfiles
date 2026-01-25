@@ -568,6 +568,7 @@ phase_4_cloud_tools() {
         # Add marketplaces (idempotent - will skip if already added)
         claude plugin marketplace add anthropics/claude-code >/dev/null 2>&1 || true
         claude plugin marketplace add kenryu42/cc-marketplace >/dev/null 2>&1 || true
+        claude plugin marketplace add antonbabenko/terraform-skill >/dev/null 2>&1 || true
 
         # Safety & Protection (from cc-marketplace)
         claude plugin install safety-net@cc-marketplace >/dev/null 2>&1 || true
@@ -589,8 +590,11 @@ phase_4_cloud_tools() {
         claude plugin install code-simplifier@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install security-guidance@claude-code-plugins >/dev/null 2>&1 || true
 
-        print_success "Claude Code plugins installed (14 plugins)"
-        log_verbose "Installed: safety-net, code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style, code-simplifier, security-guidance"
+        # Infrastructure/Terraform skill
+        claude plugin install terraform-skill@antonbabenko >/dev/null 2>&1 || true
+
+        print_success "Claude Code plugins installed (15 plugins)"
+        log_verbose "Installed: safety-net, code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill"
 
         # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
         if [[ ! -d "$HOME/ralph-claude-code" ]]; then
