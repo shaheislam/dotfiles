@@ -1,14 +1,13 @@
-function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)"
+function gwt-setup --description "Run worktree setup scripts"
     # Usage: gwt-setup [worktree-path]
     #
-    # Executes setup scripts for a worktree. Supports Cursor-compatible
-    # .cursor/worktrees.json format or .devcontainer/setup.sh scripts.
+    # Executes setup scripts for a worktree.
     #
     # Environment variables available in scripts:
     #   $ROOT_WORKTREE_PATH - Path to the main/root worktree
     #
     # Configuration sources (checked in order):
-    #   1. .cursor/worktrees.json - Cursor-compatible JSON config
+    #   1. .worktree.json - JSON config with setup commands
     #   2. .devcontainer/setup.sh - Shell script
     #   3. scripts/setup-worktree.sh - Common location
 
@@ -46,34 +45,34 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
 
     set -l setup_ran false
 
-    # Check for .cursor/worktrees.json (Cursor-compatible)
-    set -l cursor_config "$worktree_path/.cursor/worktrees.json"
-    if test -f "$cursor_config"
-        echo "Found .cursor/worktrees.json"
+    # Check for .worktree.json
+    set -l worktree_config "$worktree_path/.worktree.json"
+    if test -f "$worktree_config"
+        echo "Found .worktree.json"
         if test -n "$root_worktree_path"
             echo "   ROOT_WORKTREE_PATH=$root_worktree_path"
         end
 
         # Determine which key to use based on OS
-        set -l setup_key "setup-worktree-unix"
+        set -l setup_key "setup-unix"
         if test (uname) = "Darwin"; or test (uname) = "Linux"
-            set setup_key "setup-worktree-unix"
+            set setup_key "setup-unix"
         else
-            set setup_key "setup-worktree"
+            set setup_key "setup"
         end
 
         # Try to extract setup commands using jq
         if command -q jq
             # Check if the key exists and what type it is
-            set -l value_type (jq -r ".[\"$setup_key\"] | type" $cursor_config 2>/dev/null)
+            set -l value_type (jq -r ".[\"$setup_key\"] | type" $worktree_config 2>/dev/null)
 
             if test "$value_type" = "array"
                 # Array of commands - execute each
                 echo "   Running setup commands..."
-                set -l commands (jq -r ".[\"$setup_key\"][]" $cursor_config 2>/dev/null)
+                set -l commands (jq -r ".[\"$setup_key\"][]" $worktree_config 2>/dev/null)
                 pushd $worktree_path
                 for cmd in $commands
-                    echo "   → $cmd"
+                    echo "   > $cmd"
                     eval $cmd
                     if test $status -ne 0
                         echo "   Command failed: $cmd"
@@ -84,7 +83,7 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
 
             else if test "$value_type" = "string"
                 # Single script path
-                set -l script_path (jq -r ".[\"$setup_key\"]" $cursor_config 2>/dev/null)
+                set -l script_path (jq -r ".[\"$setup_key\"]" $worktree_config 2>/dev/null)
                 if test -n "$script_path"; and test "$script_path" != "null"
                     set -l full_script_path "$worktree_path/$script_path"
                     if test -f "$full_script_path"
@@ -103,7 +102,7 @@ function gwt-setup --description "Run worktree setup scripts (Cursor-compatible)
                 end
             end
         else
-            echo "   jq not installed - cannot parse .cursor/worktrees.json"
+            echo "   jq not installed - cannot parse .worktree.json"
         end
     end
 

@@ -320,18 +320,22 @@ The setup script will automatically:
    gwt-dev feature/auth -e -m ../myapp-develop -m ~/reference-impl
    ```
 
-**Setup Scripts** (Cursor-compatible):
-Projects can include `.cursor/worktrees.json` for automatic setup:
+**Setup Scripts**:
+Projects can include `.worktree.json` for automatic setup:
 ```json
 {
-  "setup-worktree-unix": [
+  "setup-unix": [
     "cp $ROOT_WORKTREE_PATH/.env .env.local",
     "npm ci"
   ],
-  "setup-worktree": "scripts/setup-worktree.sh"
+  "setup": "scripts/setup-worktree.sh"
 }
 ```
 `$ROOT_WORKTREE_PATH` is automatically set to the main worktree path, enabling copying of untracked files like `.env`.
+
+Alternative setup script locations (checked if no `.worktree.json`):
+- `.devcontainer/setup.sh`
+- `scripts/setup-worktree.sh`
 
 ### MCP Server Integration
 
