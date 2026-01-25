@@ -23,6 +23,9 @@ tap "sst/tap"
 # Tap for Recall - Claude Code conversation search
 tap "zippoxer/tap"
 
+# System Maintenance
+brew "topgrade"  # Unified system updater - updates Homebrew, pip, cargo, npm, mas, etc. in one command
+
 # CLI Tools
 brew "zsh-vi-mode"
 # Bash enhancements
