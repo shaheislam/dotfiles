@@ -12,6 +12,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
     # Options:
     #   --mount, -m   Add directory mount to all containers (repeatable)
     #   --no-devcon   Create windows and cd to worktrees without devcontainer
+    #   --no-claude   Skip auto-launching Claude in split pane
     #   --help, -h    Show this help
 
     if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
@@ -23,6 +24,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
         echo "Options:"
         echo "  --mount, -m    Add directory mount to all containers (repeatable)"
         echo "  --no-devcon    Create windows without starting devcontainers"
+        echo "  --no-claude    Skip auto-launching Claude in split pane"
         echo "  --help, -h     Show this help"
         echo ""
         echo "Examples:"
@@ -55,6 +57,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
     set -l branches
     set -l mounts
     set -l do_no_devcon false
+    set -l do_no_claude false
     set -l skip_next false
 
     for i in (seq (count $argv))
@@ -68,6 +71,8 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
         switch $arg
             case --no-devcon
                 set do_no_devcon true
+            case --no-claude
+                set do_no_claude true
             case --mount -m
                 # Next arg is directory to mount
                 set -l next_i (math $i + 1)
@@ -148,26 +153,30 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
             # Just cd to worktree
             tmux new-window -n $window_name -c $worktree_path
         else
-            # Check for devcontainer
-            set -l has_devcontainer false
-            if test -d "$worktree_path/.devcontainer"; or test -f "$worktree_path/devcontainer.json"
-                set has_devcontainer true
+            # Use devcon claude (fixed devcontainer config, mounts worktree)
+            # Build devcon up command (without --exec, we'll exec separately)
+            set -l devcon_up_cmd "devcon claude -i $instance_name $worktree_path"
+            for mount in $mounts
+                set devcon_up_cmd "$devcon_up_cmd $mount"
             end
 
-            if $has_devcontainer
-                # Build devcon command with proper argument ordering
-                # Order: devcon claude -i <instance> --exec <worktree> [mounts...]
-                set -l devcon_cmd "devcon claude -i $instance_name --exec $worktree_path"
-                for mount in $mounts
-                    set devcon_cmd "$devcon_cmd $mount"
-                end
+            # Config paths for devcontainer exec (expand $HOME now for host paths)
+            set -l workspace "$HOME/.devcontainer/workspaces/$instance_name"
+            set -l config_file "$HOME/dotfiles/devcontainer/claude-code-plugins/.devcontainer/devcontainer.json"
+            set -l exec_cmd "devcontainer exec --config $config_file --workspace-folder $workspace"
 
-                # Create window and run devcon in it
-                tmux new-window -n $window_name -c $worktree_path \
-                    "fish -c '$devcon_cmd; exec fish'"
-            else
-                # No devcontainer, just cd
+            if $do_no_claude
+                # No Claude split - just start devcontainer and drop into shell
                 tmux new-window -n $window_name -c $worktree_path
+                tmux send-keys -t $window_name "$devcon_up_cmd --exec" Enter
+            else
+                # Auto-split with Claude on left, shell on right
+                # Using send-keys to avoid nested quoting issues
+                # 1. Create window
+                # 2. Send command chain: start devcon → split → Claude in left (active after split) → switch right → shell
+                # Note: split-window -hb makes new pane active, so send-keys without target goes to left pane
+                tmux new-window -n $window_name -c $worktree_path
+                tmux send-keys -t $window_name "$devcon_up_cmd && tmux split-window -hb -p 50 && tmux send-keys '$exec_cmd fish -c \"claude --dangerously-skip-permissions\"' Enter && tmux select-pane -R && $exec_cmd fish" Enter
             end
         end
 
