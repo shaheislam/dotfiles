@@ -61,16 +61,19 @@ check_claude_windows() {
         local claude_status
         claude_status=$(get_claude_status "$win_idx")
 
+        # Track if we've already notified for this idle period
+        local notified_file="$STATE_DIR/notified-$win_idx"
+
         if [[ "$claude_status" == "idle" ]]; then
-            # Claude is idle - record when it became idle (if not already recorded)
+            # Record when Claude became idle (only on transition from busy/none)
             if [[ ! -f "$idle_file" ]]; then
                 date +%s > "$idle_file"
             fi
 
-            # Only show indicator if:
-            # 1. Claude was busy at some point (we saw it working)
+            # Show indicator if:
+            # 1. Not already notified for this idle period
             # 2. Claude became idle AFTER user last viewed the window
-            if [[ -f "$was_busy_file" ]]; then
+            if [[ ! -f "$notified_file" ]]; then
                 local idle_time=$(cat "$idle_file")
                 local viewed_time=0
                 [[ -f "$viewed_file" ]] && viewed_time=$(cat "$viewed_file")
@@ -78,17 +81,17 @@ check_claude_windows() {
                 if (( idle_time > viewed_time )); then
                     # Add indicator if not present
                     if [[ "$win_name" != "${INDICATOR}"* ]]; then
-                        # Store original name for restoration
                         echo "$win_name" > "$STATE_DIR/original-name-$win_idx"
                         tmux rename-window -t ":${win_idx}" "${INDICATOR} ${win_name}" 2>/dev/null
                     fi
+                    touch "$notified_file"
                 fi
             fi
 
         elif [[ "$claude_status" == "busy" ]]; then
-            # Claude is busy - mark that we've seen it working
-            touch "$was_busy_file"
-            rm -f "$idle_file"  # Reset idle timestamp
+            # Claude is working - reset idle tracking for next idle period
+            rm -f "$idle_file"
+            rm -f "$notified_file"
 
             # Remove indicator if present (Claude is working now)
             if [[ "$win_name" == "${INDICATOR}"* ]]; then
@@ -134,9 +137,9 @@ mark_viewed() {
     local win_idx="$1"
     mkdir -p "$STATE_DIR"
     date +%s > "$STATE_DIR/viewed-$win_idx"
-    # Clear the was-busy flag so indicator won't show until Claude works again
-    rm -f "$STATE_DIR/was-busy-$win_idx"
-    rm -f "$STATE_DIR/idle-$win_idx"
+    # Clear notification flag - indicator won't re-show unless Claude works and becomes idle again
+    # Keep idle_file so timestamp comparison works correctly
+    rm -f "$STATE_DIR/notified-$win_idx"
 }
 
 case "${1:-}" in
