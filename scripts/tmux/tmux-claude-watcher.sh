@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Daemon that watches for Claude windows needing input
-# Shows indicator only when Claude becomes idle AFTER you last viewed the window
+# Shows indicator only when Claude has done work since you last viewed the window
+#
+# State machine (flag-based, not timestamp-based):
+# - When Claude is BUSY: Set "worked" flag, remove indicator
+# - When Claude is IDLE: Show indicator only if "worked" flag exists and not already notified
+# - When user VIEWS: Clear both flags, remove indicator immediately
 #
 # Run with: tmux-claude-watcher.sh start
 # Stop with: tmux-claude-watcher.sh stop
@@ -52,53 +57,35 @@ check_claude_windows() {
         # Skip active window
         [[ "$win_idx" == "$active_window" ]] && continue
 
-        # State files for this window
-        local idle_file="$STATE_DIR/idle-$win_idx"
-        local viewed_file="$STATE_DIR/viewed-$win_idx"
-        local was_busy_file="$STATE_DIR/was-busy-$win_idx"
+        # State files for this window (flag-based, not timestamp-based)
+        local worked_file="$STATE_DIR/worked-$win_idx"
+        local notified_file="$STATE_DIR/notified-$win_idx"
 
-        # Check if window has Claude and if it's idle
         local claude_status
         claude_status=$(get_claude_status "$win_idx")
 
-        # Track if we've already notified for this idle period
-        local notified_file="$STATE_DIR/notified-$win_idx"
-
-        if [[ "$claude_status" == "idle" ]]; then
-            # Record when Claude became idle (only on transition from busy/none)
-            if [[ ! -f "$idle_file" ]]; then
-                date +%s > "$idle_file"
-            fi
-
-            # Show indicator if:
-            # 1. Not already notified for this idle period
-            # 2. Claude became idle AFTER user last viewed the window
-            if [[ ! -f "$notified_file" ]]; then
-                local idle_time=$(cat "$idle_file")
-                local viewed_time=0
-                [[ -f "$viewed_file" ]] && viewed_time=$(cat "$viewed_file")
-
-                if (( idle_time > viewed_time )); then
-                    # Add indicator if not present
-                    if [[ "$win_name" != "${INDICATOR}"* ]]; then
-                        echo "$win_name" > "$STATE_DIR/original-name-$win_idx"
-                        tmux rename-window -t ":${win_idx}" "${INDICATOR} ${win_name}" 2>/dev/null
-                    fi
-                    touch "$notified_file"
-                fi
-            fi
-
-        elif [[ "$claude_status" == "busy" ]]; then
-            # Claude is working - reset idle tracking for next idle period
-            rm -f "$idle_file"
+        if [[ "$claude_status" == "busy" ]]; then
+            # Mark that Claude has done work since last view
+            touch "$worked_file"
+            # Remove indicator while Claude is actively working
             rm -f "$notified_file"
-
-            # Remove indicator if present (Claude is working now)
             if [[ "$win_name" == "${INDICATOR}"* ]]; then
                 local clean_name="${win_name#${INDICATOR} }"
                 tmux rename-window -t ":${win_idx}" "$clean_name" 2>/dev/null
             fi
+
+        elif [[ "$claude_status" == "idle" ]]; then
+            # Show indicator if:
+            # 1. Not already notified
+            # 2. Claude has worked since user last viewed
+            if [[ ! -f "$notified_file" ]] && [[ -f "$worked_file" ]]; then
+                if [[ "$win_name" != "${INDICATOR}"* ]]; then
+                    tmux rename-window -t ":${win_idx}" "${INDICATOR} ${win_name}" 2>/dev/null
+                fi
+                touch "$notified_file"
+            fi
         fi
+        # If status is "none", do nothing
     done
 }
 
@@ -197,10 +184,19 @@ get_claude_status() {
 mark_viewed() {
     local win_idx="$1"
     mkdir -p "$STATE_DIR"
-    date +%s > "$STATE_DIR/viewed-$win_idx"
-    # Clear notification flag - indicator won't re-show unless Claude works and becomes idle again
-    # Keep idle_file so timestamp comparison works correctly
+
+    # Clear work-since-viewed flag
+    rm -f "$STATE_DIR/worked-$win_idx"
+    # Clear notification flag
     rm -f "$STATE_DIR/notified-$win_idx"
+
+    # Remove indicator from window name if present
+    local win_name
+    win_name=$(tmux display-message -t ":${win_idx}" -p "#{window_name}" 2>/dev/null) || return
+    if [[ "$win_name" == "${INDICATOR}"* ]]; then
+        local clean_name="${win_name#${INDICATOR} }"
+        tmux rename-window -t ":${win_idx}" "$clean_name" 2>/dev/null
+    fi
 }
 
 case "${1:-}" in
