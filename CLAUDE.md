@@ -370,20 +370,26 @@ cp $ROOT_WORKTREE_PATH/.env .env.local
 npm ci
 ```
 
-### Claude Activity Watcher
+### Claude & Opencode Activity Watcher
 
-**Purpose**: Background daemon that monitors tmux windows for idle Claude processes and shows a 🟢 indicator when Claude needs attention.
+**Purpose**: Background daemon that monitors tmux windows for idle Claude and Opencode processes, showing indicators when they need attention.
 
 **Script**: `scripts/tmux/tmux-claude-watcher.sh`
 
-**How It Works**:
-1. Daemon polls every 3 seconds for Claude processes in non-active tmux windows
-2. Detects when Claude transitions from busy → idle
-3. Shows 🟢 indicator only if idle happened AFTER you last viewed the window
-4. Clears indicator when you switch to the window
-5. Won't re-show until Claude does more work and becomes idle again
+**Indicators**:
+- 🟢 = Claude is idle and has worked since last view
+- 🔵 = Opencode is idle and has worked since last view
+- 🟢🔵 = Both are idle in the same window
 
-**Devcontainer Support**: Automatically detects Claude running inside devcontainers by matching tmux window names to container names (e.g., window "feature-a" → container "myproject-feature-a").
+**How It Works**:
+1. Daemon polls every 3 seconds for Claude/Opencode processes in non-active tmux windows
+2. Detects when each tool transitions from busy → idle
+3. Shows indicator only if idle happened AFTER you last viewed the window
+4. Clears all indicators when you switch to the window
+5. Won't re-show until tools do more work and become idle again
+6. Tracks each tool independently (one going busy doesn't affect the other's indicator)
+
+**Devcontainer Support**: Automatically detects Claude/Opencode running inside devcontainers by matching tmux window names to container names (e.g., window "feature-a" → container "myproject-feature-a").
 
 **Usage**:
 ```bash
