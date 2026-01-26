@@ -14,6 +14,9 @@ tap "fluxcd/tap"
 tap "fairwindsops/tap"
 # tap "gruntwork-io/tap" # Not available via tap - removed
 
+# Tap for Atlassian CLI
+tap "atlassian/homebrew-acli"
+
 # Tap for Splash log colorizer
 tap "joshi4/splash"
 
@@ -156,6 +159,9 @@ brew "hyperfine"
 brew "oha"
 brew "glances"
 brew "lnav"
+
+# Atlassian Tools
+brew "acli"  # Official Atlassian CLI for Jira, Confluence, Admin
 
 # DevOps/SRE Essentials
 brew "helm"
