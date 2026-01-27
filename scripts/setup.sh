@@ -743,6 +743,7 @@ phase_6_multiplexer() {
         print_step "Installing tmux plugins..."
 
         local plugins_dir="$HOME/.tmux/plugins"
+        # Plugin list synced with .tmux.conf - TPM clean_plugins removes unlisted ones
         local tmux_plugins=(
             "tmux-plugins/tmux-sensible"
             "tmux-plugins/tmux-yank"
@@ -751,21 +752,16 @@ phase_6_multiplexer() {
             "tmux-plugins/tmux-copycat"
             "tmux-plugins/tmux-pain-control"
             "tmux-plugins/tmux-sidebar"
-            "fcsonline/tmux-thumbs"          # Rust-based text hints (replaced tmux-fingers)
+            "tmux-plugins/tmux-cpu"
+            "christoomey/vim-tmux-navigator" # Vim/tmux seamless navigation
+            "fcsonline/tmux-thumbs"          # Rust-based text hints
             "laktak/extrakto"                # Text extraction with FZF
             "rickstaa/tmux-notify"           # macOS notification on command completion
             "yardnsm/tmux-1password"         # 1Password integration
             "roosta/tmux-fuzzback"           # FZF scrollback search
-            "tmux-plugins/tmux-battery"
-            "tmux-plugins/tmux-cpu"
-            "omerxx/tmux-floax"
-            "tmux-plugins/tmux-resurrect"
-            "tmux-plugins/tmux-continuum"
-            "alexwforsythe/tmux-which-key"
-            "27medkamal/tmux-session-wizard"
-            "omerxx/tmux-sessionx"
             "sainnhe/tmux-fzf"               # FZF integration for tmux
             "azorng/tmux-smooth-scroll"      # Smooth scrolling
+            "fabioluciano/tmux-powerkit"     # Status bar powerline theme
         )
 
         for plugin in "${tmux_plugins[@]}"; do
@@ -788,6 +784,24 @@ phase_6_multiplexer() {
                 print_success "tmux-thumbs built" || \
                 log_verbose "tmux-thumbs build failed (run manually: cd ~/.tmux/plugins/tmux-thumbs && SDKROOT=\$(xcrun --sdk macosx --show-sdk-path) cargo build --release)"
         fi
+
+        # Update existing plugins and clean stale ones via TPM
+        print_step "Updating tmux plugins and cleaning stale ones..."
+        "$HOME/.tmux/plugins/tpm/bin/update_plugins" all >/dev/null 2>&1 && \
+            log_verbose "Tmux plugins updated" || \
+            log_verbose "Tmux plugin update completed with warnings"
+        "$HOME/.tmux/plugins/tpm/bin/clean_plugins" >/dev/null 2>&1 && \
+            log_verbose "Stale tmux plugins cleaned" || \
+            log_verbose "Tmux plugin cleanup completed with warnings"
+        print_success "Tmux plugins synchronized"
+
+        # Reload tmux config if tmux server is running
+        if tmux list-sessions >/dev/null 2>&1; then
+            print_step "Reloading tmux configuration..."
+            tmux source-file "$HOME/.tmux.conf" 2>/dev/null && \
+                print_success "Tmux configuration reloaded" || \
+                log_verbose "Tmux config reload completed with warnings"
+        fi
     fi
 
     # Apply Dracula theme customizations
@@ -796,38 +810,6 @@ phase_6_multiplexer() {
         bash "$DOTFILES_ROOT/scripts/setup-tmux-dracula.sh" >/dev/null 2>&1 && \
             print_success "Dracula theme customizations applied" || \
             log_verbose "Dracula theme setup completed with warnings"
-    fi
-
-    # Apply tmux-continuum fix
-    if [[ -f "$DOTFILES_ROOT/scripts/fix_tmux_continuum.sh" ]]; then
-        print_step "Applying tmux-continuum fix..."
-        bash "$DOTFILES_ROOT/scripts/fix_tmux_continuum.sh" >/dev/null 2>&1 && \
-            print_success "tmux-continuum fix applied" || \
-            log_verbose "tmux-continuum fix completed with warnings"
-    fi
-
-    # Apply Floax plugin fix
-    if [[ -f "$DOTFILES_ROOT/scripts/fix-floax-plugin.sh" ]]; then
-        print_step "Applying Floax plugin fix..."
-        bash "$DOTFILES_ROOT/scripts/fix-floax-plugin.sh" >/dev/null 2>&1 && \
-            print_success "Floax plugin fix applied" || \
-            log_verbose "Floax plugin fix completed with warnings"
-    fi
-
-    # Configure tmux-session-wizard dependencies
-    if [[ -d "$HOME/.tmux/plugins/tmux-session-wizard" ]]; then
-        chmod +x "$HOME/.tmux/plugins/tmux-session-wizard/bin/t" 2>/dev/null || true
-        print_success "tmux-session-wizard configured (use Prefix+T)"
-    fi
-
-    # Configure tmux-which-key plugin
-    if [[ -d "$HOME/.tmux/plugins/tmux-which-key" ]] && command_exists python3; then
-        print_step "Configuring tmux-which-key..."
-        (cd "$HOME/.tmux/plugins/tmux-which-key" && \
-         [[ ! -f "config.yaml" ]] && cp config.example.yaml config.yaml; \
-         python3 plugin/build.py config.yaml plugin/init.tmux) >/dev/null 2>&1 && \
-            print_success "tmux-which-key configured" || \
-            log_verbose "tmux-which-key configuration completed"
     fi
 
     # Reset Claude activity watcher daemon (clear stale state)
