@@ -830,6 +830,15 @@ phase_6_multiplexer() {
             log_verbose "tmux-which-key configuration completed"
     fi
 
+    # Reset Claude activity watcher daemon (clear stale state)
+    if [[ -f "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" ]]; then
+        print_step "Resetting Claude activity watcher..."
+        rm -rf /tmp/tmux-claude-state/* 2>/dev/null
+        "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" stop 2>/dev/null
+        # Daemon will auto-start when tmux sources config
+        print_success "Claude watcher reset (will start with tmux)"
+    fi
+
     mark_step_complete "multiplexer"
 }
 

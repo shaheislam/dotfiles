@@ -16,6 +16,9 @@ CLAUDE\.md
 # Nix home-manager (managed by Nix, not stow)
 \.config/home-manager
 
+# Nix profile (absolute symlink managed by Nix)
+\.nix-profile
+
 # Neovim (manual symlink to ~/neovim, not managed by stow)
 \.config/nvim
 

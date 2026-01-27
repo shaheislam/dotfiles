@@ -3,7 +3,7 @@
 	pager = delta
 
 [init]
-	templateDir = /Users/shaheislam/.config/git/templates
+	templateDir = /Users/shahe.islam/.config/git/templates
 
 [user]
 	name = Shahe Islam
