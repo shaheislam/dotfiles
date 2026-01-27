@@ -872,6 +872,60 @@ phase_8_dotfiles() {
         log_verbose "Git template directory configured"
     fi
 
+    # Setup local git excludes (.gitignore_local symlinks) for existing repos
+    if [[ -x "$DOTFILES_DIR/scripts/tools/setup-git-local-excludes.sh" ]]; then
+        print_step "Setting up local git excludes..."
+        local exclude_script="$DOTFILES_DIR/scripts/tools/setup-git-local-excludes.sh"
+
+        # Setup for ~/work if it exists
+        if [[ -d "$HOME/work" ]]; then
+            "$exclude_script" "$HOME/work" >/dev/null 2>&1 && \
+                log_verbose "Local git excludes configured for ~/work"
+        fi
+
+        # Setup for individual repos: ~/neovim and ~/dotfiles
+        for repo in "$HOME/neovim" "$DOTFILES_DIR"; do
+            if [[ -d "$repo/.git" ]]; then
+                # Run the script with the parent directory, but it only processes git repos
+                # So we create a temp approach: cd to repo and setup manually
+                local git_exclude="$repo/.git/info/exclude"
+                local gitignore_local="$repo/.gitignore_local"
+
+                # Create info dir if needed
+                [[ ! -d "$repo/.git/info" ]] && mkdir -p "$repo/.git/info"
+
+                # Create exclude file if it doesn't exist
+                if [[ ! -f "$git_exclude" ]]; then
+                    cat > "$git_exclude" << 'EXCLUDE_EOF'
+# Local git excludes - patterns that won't be committed
+# This file is symlinked to .gitignore_local for easy editing
+
+.gitignore_local
+*.local
+.env.local
+.vscode/
+.idea/
+.claude/
+.codex/
+.DS_Store
+*.swp
+*.swo
+*~
+.pyrightconfig.json
+EXCLUDE_EOF
+                fi
+
+                # Create symlink if it doesn't exist
+                if [[ ! -L "$gitignore_local" ]]; then
+                    (cd "$repo" && ln -sf .git/info/exclude .gitignore_local)
+                    log_verbose "Local git excludes configured for $repo"
+                fi
+            fi
+        done
+
+        print_success "Local git excludes configured"
+    fi
+
     # Setup kubectl abbreviations for Fish (universal variables, one-time setup)
     if command_exists fish && [[ -f "$HOME/.config/fish/setup/kubectl-abbr-setup.fish" ]]; then
         print_step "Setting up kubectl abbreviations for Fish..."
