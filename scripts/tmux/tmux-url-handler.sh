@@ -2,9 +2,7 @@
 
 # tmux URL handler script - opens URLs from tmux pane content
 # Based on: https://dev.to/tomoviktor/best-way-to-open-urls-in-your-terminal-via-tmux-595b
-# Usage: tmux-url-handler.sh [full]
-#   - no args: capture visible pane content only
-#   - full: capture full scrollback history
+# Smart capture: tries visible pane first, falls back to full scrollback if no URLs found
 
 set -e
 
@@ -19,22 +17,31 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Capture tmux pane content
-if [ "$1" = "full" ]; then
-    # Capture full scrollback history
-    tmux capture-pane -S - -p > "$temp_file"
-else
-    # Capture only visible content
-    tmux capture-pane -p > "$temp_file"
+# Function to capture URLs from pane content
+# Args: $1 = capture mode ("visible" or "full")
+capture_urls() {
+    local capture_mode="$1"
+
+    if [ "$capture_mode" = "full" ]; then
+        tmux capture-pane -S - -p > "$temp_file"
+    else
+        tmux capture-pane -p > "$temp_file"
+    fi
+
+    # Extract URLs and domain names
+    local http_urls=$(grep -Eoi "(http|https)://[a-zA-Z0-9+./?=_%:-]+" "$temp_file" || true)
+    local domain_names=$(grep -Eoi "\b[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.([a-zA-Z]{2,}\.)*[a-zA-Z]{2,}\b" "$temp_file" | grep -v "^[0-9.]*$" || true)
+
+    # Combine and deduplicate
+    printf "%s\n%s\n" "$http_urls" "$domain_names" | grep -v "^$" | sort | uniq
+}
+
+# Smart capture: try visible pane first, fall back to full scrollback if no URLs found
+urls=$(capture_urls "visible")
+
+if [ -z "$urls" ]; then
+    urls=$(capture_urls "full")
 fi
-
-# Extract URLs and domain names using regex and remove duplicates
-# Match both full URLs and standalone domain names
-http_urls=$(grep -Eoi "(http|https)://[a-zA-Z0-9+./?=_%:-]+" "$temp_file" || true)
-domain_names=$(grep -Eoi "\b[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.([a-zA-Z]{2,}\.)*[a-zA-Z]{2,}\b" "$temp_file" | grep -v "^[0-9.]*$" || true)
-
-# Combine and deduplicate
-urls=$(printf "%s\n%s\n" "$http_urls" "$domain_names" | grep -v "^$" | sort | uniq)
 
 # Function to normalize URL (add https:// if missing)
 normalize_url() {
