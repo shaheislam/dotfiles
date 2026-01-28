@@ -76,9 +76,9 @@ if [ "$url_count" -gt 5 ]; then
     echo "$urls" > "$url_file"
 
     # Use bash explicitly since tmux default-shell may be Fish (which doesn't support [[ ]])
-    tmux new-window -n "url-select" "bash -c '
+    tmux display-popup -E -h 80% -w 80% "bash -c '
         url_file=\"$url_file\"
-        selected=\$(cat \"\$url_file\" | fzf --prompt=\"Select URL: \" --height=40% --border)
+        selected=\$(cat \"\$url_file\" | fzf --prompt=\"Select URL: \" --height=100% --border)
         rm -f \"\$url_file\"
         if [ -n \"\$selected\" ]; then
             if [[ \"\$selected\" =~ ^https?:// ]]; then
