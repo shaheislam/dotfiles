@@ -4,7 +4,7 @@
 SESSION="$1"
 WINDOW="$2"
 
-INDICATOR="🟢"
+INDICATOR="*"
 
 # Remove indicator from window name if present
 current_name=$(tmux display-message -t "${SESSION}:${WINDOW}" -p "#{window_name}" 2>/dev/null)

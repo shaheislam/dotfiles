@@ -3,20 +3,30 @@
 # Shows indicators only when tools have done work since you last viewed the window
 #
 # Indicators:
-#   🟢 = Claude is idle and has worked since last view
-#   🔵 = Opencode is idle and has worked since last view
-#   🟢🔵 = Both are idle in the same window
+#   * = Claude is idle and has worked since last view
+#   + = Opencode is idle and has worked since last view
+#   *+ = Both are idle in the same window
 #
-# State machine (flag-based, not timestamp-based):
-# - When tool is BUSY: Set "worked" flag, remove its indicator
-# - When tool is IDLE: Show indicator only if "worked" flag exists and not already notified
-# - When user VIEWS: Clear all flags, remove all indicators immediately
+# Detection method:
+# - Uses stdout offset tracking to detect when tools produce output
+# - When user views a window: record current stdout offset as baseline
+# - When user is away: compare current offset to baseline
+# - If offset increased by >100 bytes: tool has done work, show indicator
+#
+# State files (in /tmp/tmux-claude-state/):
+# - *-baseline-N: stdout offset when user last viewed window N
+# - *-worked-N: flag indicating tool produced output since last view
+# - *-notified-N: flag indicating indicator is currently shown
 #
 # Run with: tmux-claude-watcher.sh start
 # Stop with: tmux-claude-watcher.sh stop
 
-CLAUDE_INDICATOR="🟢"
-OPENCODE_INDICATOR="🔵"
+# Text indicators (emojis have encoding issues in daemon context)
+CLAUDE_INDICATOR="*"
+OPENCODE_INDICATOR="+"
+
+# Get tmux socket for explicit connection (needed for daemon)
+TMUX_SOCKET="${TMUX%%,*}"
 PID_FILE="/tmp/tmux-claude-watcher.pid"
 STATE_DIR="/tmp/tmux-claude-state"
 POLL_INTERVAL=3
@@ -31,6 +41,11 @@ start_daemon() {
 
     (
         trap "rm -f '$PID_FILE'" EXIT
+
+        # Ensure variables are set correctly in daemon context
+        TMUX_SOCKET="${TMUX%%,*}"
+        CLAUDE_INDICATOR="*"
+        OPENCODE_INDICATOR="+"
 
         while true; do
             check_all_windows
@@ -91,17 +106,25 @@ update_window_indicators() {
 
     # Only rename if changed (avoid unnecessary tmux operations)
     if [[ "$current_name" != "$new_name" ]]; then
-        tmux rename-window -t ":${win_idx}" "$new_name" 2>/dev/null
+        # Use explicit session targeting to ensure it works from daemon
+        local session
+        session=$(tmux display-message -p "#{session_name}" 2>/dev/null)
+        # Execute rename with explicit socket
+        tmux -S "$TMUX_SOCKET" rename-window -t "${session}:${win_idx}" "$new_name"
     fi
 }
 
 check_all_windows() {
+    # Get active window using window_active flag (more reliable than display-message)
     local active_window
-    active_window=$(tmux display-message -p "#{window_index}" 2>/dev/null) || return
+    active_window=$(tmux list-windows -F "#{window_index}:#{window_active}" 2>/dev/null | grep ':1$' | cut -d: -f1)
+    [[ -z "$active_window" ]] && return
 
-    for win_info in $(tmux list-windows -F "#{window_index}:#{window_name}" 2>/dev/null); do
-        local win_idx="${win_info%%:*}"
+    # Use for loop with array to avoid pipe subshell issues
+    local windows
+    readarray -t windows < <(tmux list-windows -F "#{window_index}" 2>/dev/null)
 
+    for win_idx in "${windows[@]}"; do
         # Skip active window
         [[ "$win_idx" == "$active_window" ]] && continue
 
@@ -122,28 +145,18 @@ process_tool_state() {
     local worked_file="$STATE_DIR/${tool}-worked-$win_idx"
     local notified_file="$STATE_DIR/${tool}-notified-$win_idx"
 
+    # get_tool_status detects work via stdout offset and sets worked_file
     local status
     status=$(get_tool_status "$win_idx" "$tool" "$pattern")
 
-    if [[ "$status" == "busy" ]]; then
-        # Mark that tool has done work since last view
-        touch "$worked_file"
-        # Remove notification (tool is actively working)
-        if [[ -f "$notified_file" ]]; then
-            rm -f "$notified_file"
-            update_window_indicators "$win_idx"
-        fi
-
-    elif [[ "$status" == "idle" ]]; then
-        # Show indicator if:
-        # 1. Not already notified
-        # 2. Tool has worked since user last viewed
+    # Show indicator if tool is present and has worked since last view
+    if [[ "$status" == "idle" ]]; then
         if [[ ! -f "$notified_file" ]] && [[ -f "$worked_file" ]]; then
             touch "$notified_file"
             update_window_indicators "$win_idx"
         fi
     fi
-    # If status is "none", do nothing
+    # If status is "none", tool not found - do nothing
 }
 
 # Generic tool status detection
@@ -162,42 +175,29 @@ get_tool_status() {
         tool_pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E "$pattern" | head -1 | awk '{print $1}')
         [[ -z "$tool_pid" ]] && continue
 
-        # Found tool - check if busy using tool-specific detection
-        if [[ "$tool" == "opencode" ]]; then
-            # Opencode: compare stdout offset against baseline from when user last viewed
-            # If offset increased significantly since viewing, work was done
-            local stdout_offset
-            stdout_offset=$(lsof -p "$tool_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
-            local baseline_file="$STATE_DIR/opencode-baseline-$win_idx"
-            local worked_file="$STATE_DIR/opencode-worked-$win_idx"
+        # Found tool - detect work using stdout offset tracking
+        # This works for both Claude and Opencode - if terminal output increased
+        # since user last viewed, work was done
+        local stdout_offset
+        stdout_offset=$(lsof -p "$tool_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
+        local baseline_file="$STATE_DIR/${tool}-baseline-$win_idx"
+        local worked_file="$STATE_DIR/${tool}-worked-$win_idx"
 
-            if [[ -n "$stdout_offset" ]] && [[ -f "$baseline_file" ]]; then
-                local baseline
-                baseline=$(cat "$baseline_file")
-                # If offset increased by more than 100 bytes since user viewed, work happened
-                if [[ "$stdout_offset" -gt "$baseline" ]]; then
-                    local diff=$(( stdout_offset - baseline ))
-                    if [[ "$diff" -gt 100 ]]; then
-                        # Work detected! Set worked flag (only once)
-                        if [[ ! -f "$worked_file" ]]; then
-                            touch "$worked_file"
-                        fi
+        if [[ -n "$stdout_offset" ]] && [[ -f "$baseline_file" ]]; then
+            local baseline
+            baseline=$(cat "$baseline_file")
+            # If offset increased by more than 100 bytes since user viewed, work happened
+            if [[ "$stdout_offset" -gt "$baseline" ]]; then
+                local diff=$(( stdout_offset - baseline ))
+                if [[ "$diff" -gt 100 ]]; then
+                    # Work detected! Set worked flag (only once)
+                    if [[ ! -f "$worked_file" ]]; then
+                        touch "$worked_file"
                     fi
                 fi
             fi
-            # For Opencode, we don't return "busy" - we just set worked flag above
-            # Always return "idle" so the indicator logic can run
-        else
-            # Claude: busy = has non-MCP child processes
-            for child_pid in $(pgrep -P "$tool_pid" 2>/dev/null); do
-                local cmd
-                cmd=$(ps -o args= -p "$child_pid" 2>/dev/null)
-                if ! echo "$cmd" | grep -qE 'mcp|/private/tmp/bunx'; then
-                    echo "busy"
-                    return 0
-                fi
-            done
         fi
+        # Always return "idle" - the worked flag handles work detection
 
         # Tool exists but not busy = idle
         echo "idle"
@@ -266,7 +266,7 @@ get_tool_status_in_container() {
         for child_pid in $children; do
             local cmd
             cmd=$(docker exec "$container" ps -o args= -p "$child_pid" 2>/dev/null)
-            if ! echo "$cmd" | grep -qE 'mcp|bunx'; then
+            if ! echo "$cmd" | grep -qE 'mcp|bunx|caffeinate'; then
                 echo "busy"
                 return 0
             fi
@@ -284,25 +284,38 @@ mark_viewed() {
     # Clear all state files for both tools
     rm -f "$STATE_DIR/claude-worked-$win_idx"
     rm -f "$STATE_DIR/claude-notified-$win_idx"
+    rm -f "$STATE_DIR/claude-baseline-$win_idx"
     rm -f "$STATE_DIR/opencode-worked-$win_idx"
     rm -f "$STATE_DIR/opencode-notified-$win_idx"
+    rm -f "$STATE_DIR/opencode-baseline-$win_idx"
 
-    # For Opencode: record current stdout offset as baseline when viewing
+    # Record stdout offset baseline for both Claude and Opencode
     # This lets us detect work that happens AFTER user leaves
     for pane_idx in $(tmux list-panes -t ":${win_idx}" -F "#{pane_index}" 2>/dev/null); do
         local tty
         tty=$(tmux display-message -t ":${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
         [[ -z "$tty" ]] && continue
 
-        local tool_pid
-        tool_pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E '(^| |/)opencode( |$)' | head -1 | awk '{print $1}')
-        [[ -z "$tool_pid" ]] && continue
+        # Check for Claude
+        local claude_pid
+        claude_pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E '/claude( |$)' | head -1 | awk '{print $1}')
+        if [[ -n "$claude_pid" ]]; then
+            local stdout_offset
+            stdout_offset=$(lsof -p "$claude_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
+            if [[ -n "$stdout_offset" ]]; then
+                echo "$stdout_offset" > "$STATE_DIR/claude-baseline-$win_idx"
+            fi
+        fi
 
-        # Record stdout offset baseline
-        local stdout_offset
-        stdout_offset=$(lsof -p "$tool_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
-        if [[ -n "$stdout_offset" ]]; then
-            echo "$stdout_offset" > "$STATE_DIR/opencode-baseline-$win_idx"
+        # Check for Opencode
+        local opencode_pid
+        opencode_pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E '(^| |/)opencode( |$)' | head -1 | awk '{print $1}')
+        if [[ -n "$opencode_pid" ]]; then
+            local stdout_offset
+            stdout_offset=$(lsof -p "$opencode_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
+            if [[ -n "$stdout_offset" ]]; then
+                echo "$stdout_offset" > "$STATE_DIR/opencode-baseline-$win_idx"
+            fi
         fi
     done
 
