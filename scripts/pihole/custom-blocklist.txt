@@ -1,0 +1,18 @@
+# Custom Pi-hole Blocklist
+# Add domains to block here, one per line.
+# These are loaded on top of the default Pi-hole blocklists.
+#
+# To apply changes:
+#   docker exec pihole pihole -g
+#
+# Format: one domain per line
+# Lines starting with # are comments
+
+# Telemetry & tracking
+# analytics.google.com
+# telemetry.microsoft.com
+
+# Social media trackers (uncomment to block)
+# connect.facebook.net
+# pixel.facebook.com
+# graph.facebook.com
