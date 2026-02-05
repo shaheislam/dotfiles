@@ -9,13 +9,17 @@
 #   ticket-execute.sh <ISSUE_KEY> <TITLE> <DESCRIPTION> [OPTIONS]
 #
 # Options:
-#   --max N       Max ralph-loop iterations (default: 20)
-#   --session S   Tmux session name (default: repo name)
-#   --system S    Ticketing system: linear or jira
-#   --mount M     Additional mount (repeatable)
-#   --no-devcon   Skip devcontainer, use local environment
-#   --dry-run     Show what would be executed without running
-#   --help        Show this help
+#   --max N              Max iterations (default: 20)
+#   --command C          Slash command (default: /ralph-wiggum:ralph-loop)
+#   --prompt-template F  Custom prompt template file
+#   --prompt-prefix P    Text to prepend to prompt
+#   --prompt-suffix S    Text to append to prompt
+#   --session S          Tmux session name (default: repo name)
+#   --system S           Ticketing system: linear or jira
+#   --mount M            Additional mount (repeatable)
+#   --no-devcon          Skip devcontainer, use local environment
+#   --dry-run            Show what would be executed without running
+#   --help               Show this help
 
 set -euo pipefail
 
@@ -39,13 +43,17 @@ ARGUMENTS:
   DESCRIPTION   Full issue description
 
 OPTIONS:
-  --max N       Max ralph-loop iterations (default: 20)
-  --session S   Tmux session name (default: repo name)
-  --system S    Ticketing system: linear or jira
-  --mount M     Additional mount directory (repeatable)
-  --no-devcon   Skip devcontainer, use local environment
-  --dry-run     Show what would be executed without running
-  --help        Show this help
+  --max N              Max iterations (default: 20)
+  --command C          Slash command (default: /ralph-wiggum:ralph-loop)
+  --prompt-template F  Custom prompt template file
+  --prompt-prefix P    Text to prepend to prompt
+  --prompt-suffix S    Text to append to prompt
+  --session S          Tmux session name (default: repo name)
+  --system S           Ticketing system: linear or jira
+  --mount M            Additional mount directory (repeatable)
+  --no-devcon          Skip devcontainer, use local environment
+  --dry-run            Show what would be executed without running
+  --help               Show this help
 
 EXAMPLES:
   ticket-execute.sh ENG-123 "Fix auth bug" "Session tokens expire" --max 10
@@ -69,6 +77,10 @@ EOF
 MAX_ITERATIONS=20
 SESSION_NAME=""
 TICKETING_SYSTEM=""
+SLASH_COMMAND=""
+PROMPT_TEMPLATE=""
+PROMPT_PREFIX=""
+PROMPT_SUFFIX=""
 USE_DEVCON=true
 DRY_RUN=false
 MOUNTS=()
@@ -87,6 +99,22 @@ while [[ $# -gt 0 ]]; do
             ;;
         --system)
             TICKETING_SYSTEM="$2"
+            shift 2
+            ;;
+        --command)
+            SLASH_COMMAND="$2"
+            shift 2
+            ;;
+        --prompt-template)
+            PROMPT_TEMPLATE="$2"
+            shift 2
+            ;;
+        --prompt-prefix)
+            PROMPT_PREFIX="$2"
+            shift 2
+            ;;
+        --prompt-suffix)
+            PROMPT_SUFFIX="$2"
             shift 2
             ;;
         --mount|-m)
@@ -146,6 +174,22 @@ if [[ -n "$TICKETING_SYSTEM" ]]; then
     GWT_ARGS+=("--system" "$TICKETING_SYSTEM")
 fi
 
+if [[ -n "$SLASH_COMMAND" ]]; then
+    GWT_ARGS+=("--command" "$SLASH_COMMAND")
+fi
+
+if [[ -n "$PROMPT_TEMPLATE" ]]; then
+    GWT_ARGS+=("--prompt-template" "$PROMPT_TEMPLATE")
+fi
+
+if [[ -n "$PROMPT_PREFIX" ]]; then
+    GWT_ARGS+=("--prompt-prefix" "$PROMPT_PREFIX")
+fi
+
+if [[ -n "$PROMPT_SUFFIX" ]]; then
+    GWT_ARGS+=("--prompt-suffix" "$PROMPT_SUFFIX")
+fi
+
 if [[ "$USE_DEVCON" == "false" ]]; then
     GWT_ARGS+=("--no-devcon")
 fi
@@ -163,7 +207,7 @@ if $DRY_RUN; then
     echo "  1. Create worktree via gwt-dev"
     echo "  2. Start devcontainer (if available)"
     echo "  3. Create tmux window in repo-named session"
-    echo "  4. Launch Claude with ralph-loop ($MAX_ITERATIONS iterations max)"
+    echo "  4. Launch Claude with ${SLASH_COMMAND:-/ralph-wiggum:ralph-loop} ($MAX_ITERATIONS iterations max)"
     exit 0
 fi
 
@@ -182,6 +226,22 @@ fi
 
 if [[ -n "$TICKETING_SYSTEM" ]]; then
     GWT_CMD="$GWT_CMD --system $TICKETING_SYSTEM"
+fi
+
+if [[ -n "$SLASH_COMMAND" ]]; then
+    GWT_CMD="$GWT_CMD --command '$SLASH_COMMAND'"
+fi
+
+if [[ -n "$PROMPT_TEMPLATE" ]]; then
+    GWT_CMD="$GWT_CMD --prompt-template '$PROMPT_TEMPLATE'"
+fi
+
+if [[ -n "$PROMPT_PREFIX" ]]; then
+    GWT_CMD="$GWT_CMD --prompt-prefix '$PROMPT_PREFIX'"
+fi
+
+if [[ -n "$PROMPT_SUFFIX" ]]; then
+    GWT_CMD="$GWT_CMD --prompt-suffix '$PROMPT_SUFFIX'"
 fi
 
 if [[ "$USE_DEVCON" == "false" ]]; then

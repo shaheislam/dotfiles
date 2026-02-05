@@ -117,12 +117,25 @@ Post-completion:
 
 ## Options
 
-- `--max N`: Set max ralph-loop iterations (default: 20)
+- `--max N`: Set max iterations (default: 20)
+- `--command C`: Slash command to use (default: /ralph-wiggum:ralph-loop)
+- `--prompt-template F`: Custom prompt template file
+- `--prompt-prefix P`: Text to prepend to prompt
+- `--prompt-suffix S`: Text to append to prompt
 - `--session S`: Tmux session name (default: repo name)
 - `--system S`: Ticketing system: linear or jira
 - `--mount M`: Additional mount directory (repeatable)
 - `--no-devcon`: Skip devcontainer (use local environment)
 - `--dry-run`: Show what would be executed without running
+
+## Prompt Template Variables
+
+Custom templates support these variables:
+- `{{ISSUE_KEY}}`: Issue key (e.g., ENG-123)
+- `{{TITLE}}`: Issue title
+- `{{DESCRIPTION}}`: Issue description
+- `{{WORKTREE_PATH}}`: Path to worktree
+- `{{COMPLETION_PROMISE}}`: Completion string (e.g., TICKET_ENG-123_COMPLETE)
 
 ## Examples
 

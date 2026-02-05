@@ -8,7 +8,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
     # auto-generates TASK-YYYYMMDD-HHMMSS as the key.
     #
     # Options:
-    #   --max N         Max ralph-loop iterations (default: 20)
+    #   --max N         Max iterations (default: 20)
+    #   --command C     Slash command to use (default: /ralph-wiggum:ralph-loop)
+    #   --prompt-template F  File with custom prompt template
+    #   --prompt-prefix P    Text to prepend to prompt
+    #   --prompt-suffix S    Text to append to prompt
     #   --mount, -m     Additional mount (repeatable)
     #   --session S     Tmux session name (default: repo name)
     #   --no-devcon     Skip devcontainer, use local environment
@@ -34,6 +38,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
     set -l skip_next false
     set -l positional_index 0
     set -l is_auto_generated false  # Track if issue key was auto-generated
+    set -l slash_command "/ralph-wiggum:ralph-loop"
+    set -l prompt_template ""
+    set -l prompt_prefix ""
+    set -l prompt_suffix ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -73,6 +81,49 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
                     set skip_next true
                 else
                     echo "Error: --system requires a value (linear or jira)"
+                    return 1
+                end
+            case --command
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set slash_command $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --command requires a slash command (e.g., /feature-dev:feature-dev)"
+                    return 1
+                end
+            case --prompt-template
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set -l template_path $argv[$next_i]
+                    set -l expanded_path (eval echo $template_path)
+                    if test -f "$expanded_path"
+                        set prompt_template (realpath $expanded_path)
+                    else
+                        echo "Error: Prompt template file not found: $template_path"
+                        return 1
+                    end
+                    set skip_next true
+                else
+                    echo "Error: --prompt-template requires a file path"
+                    return 1
+                end
+            case --prompt-prefix
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set prompt_prefix $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --prompt-prefix requires text"
+                    return 1
+                end
+            case --prompt-suffix
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set prompt_suffix $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --prompt-suffix requires text"
                     return 1
                 end
             case --mount -m
@@ -125,28 +176,36 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
         echo "  description   Full issue description"
         echo ""
         echo "Options:"
-        echo "  --max N         Max ralph-loop iterations (default: 20)"
-        echo "  --mount, -m     Add directory mount (repeatable)"
-        echo "  --session S     Tmux session name (default: repo name)"
-        echo "  --no-devcon     Skip devcontainer, use local environment"
-        echo "  --system S      Ticketing system: linear or jira"
-        echo "  --help, -h      Show this help"
+        echo "  --max N              Max iterations (default: 20)"
+        echo "  --command C          Slash command (default: /ralph-wiggum:ralph-loop)"
+        echo "  --prompt-template F  Custom prompt template file"
+        echo "  --prompt-prefix P    Text to prepend to prompt"
+        echo "  --prompt-suffix S    Text to append to prompt"
+        echo "  --mount, -m          Add directory mount (repeatable)"
+        echo "  --session S          Tmux session name (default: repo name)"
+        echo "  --no-devcon          Skip devcontainer, use local environment"
+        echo "  --system S           Ticketing system: linear or jira"
+        echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
-        echo "  # With ticket key (standard)"
+        echo "  # Standard ticket execution"
         echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Session tokens expire incorrectly\""
-        echo "  # → Window: ENG-123, Branch: eng-123-fix-auth-bug"
         echo ""
-        echo "  # Without ticket key (autonomous task)"
-        echo "  gwt-ticket \"Fix auth bug\" \"Session tokens expire incorrectly\""
-        echo "  # → Window: fix-auth-bug, Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug"
+        echo "  # Use feature-dev instead of ralph-loop"
+        echo "  gwt-ticket ENG-123 \"Add feature\" \"Description\" --command /feature-dev:feature-dev"
         echo ""
-        echo "  # With mounts"
-        echo "  gwt-ticket ENG-456 \"Add caching\" \"Implement Redis cache\" -m ~/dotfiles"
+        echo "  # Custom prompt template with variables"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --prompt-template ~/.claude/prompts/careful.md"
         echo ""
-        echo "Architecture:"
-        echo "  This function uses gwt-dev for worktree + devcontainer setup,"
-        echo "  then creates a tmux window and launches Claude with ralph-loop."
+        echo "  # Add instructions before/after"
+        echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --prompt-prefix \"IMPORTANT: No test changes\""
+        echo ""
+        echo "Prompt Template Variables:"
+        echo "  {{ISSUE_KEY}}          Issue key (ENG-123)"
+        echo "  {{TITLE}}              Issue title"
+        echo "  {{DESCRIPTION}}        Issue description"
+        echo "  {{WORKTREE_PATH}}      Path to worktree"
+        echo "  {{COMPLETION_PROMISE}} Completion string (TICKET_ENG-123_COMPLETE)"
         return 0
     end
 
@@ -216,6 +275,16 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
     echo "Instance:  $instance_name"
     echo "Max iter:  $max_iterations"
     echo "Session:   $session_name"
+    echo "Command:   $slash_command"
+    if test -n "$prompt_template"
+        echo "Template:  $prompt_template"
+    end
+    if test -n "$prompt_prefix"
+        echo "Prefix:    (custom)"
+    end
+    if test -n "$prompt_suffix"
+        echo "Suffix:    (custom)"
+    end
     echo ""
 
     # Step 1: Create worktree via gwt-dev (reuses existing logic)
@@ -260,11 +329,24 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
         echo "Created window: $window_name"
     end
 
-    # Step 4: Build and launch Claude with ralph-loop
-    echo "[4/4] Launching Claude with ralph-loop..."
+    # Step 4: Build and launch Claude
+    echo "[4/4] Launching Claude with $slash_command..."
 
     # Build the prompt
-    set -l prompt "Fix ticket $issue_key: $title
+    set -l completion_promise "TICKET_"$issue_key"_COMPLETE"
+    set -l base_prompt ""
+
+    if test -n "$prompt_template"
+        # Use custom template with variable substitution
+        set base_prompt (cat $prompt_template \
+            | string replace -a '{{ISSUE_KEY}}' $issue_key \
+            | string replace -a '{{TITLE}}' $title \
+            | string replace -a '{{DESCRIPTION}}' $description \
+            | string replace -a '{{WORKTREE_PATH}}' $worktree_path \
+            | string replace -a '{{COMPLETION_PROMISE}}' $completion_promise)
+    else
+        # Default template
+        set base_prompt "Fix ticket $issue_key: $title
 
 $description
 
@@ -275,9 +357,24 @@ Instructions:
 4. Write tests if applicable
 5. Run tests to verify
 6. Create atomic commits with descriptive messages
-7. When complete, output TICKET_"$issue_key"_COMPLETE
+7. When complete, output $completion_promise
 
 Do not ask questions - make reasonable decisions and iterate."
+    end
+
+    # Apply prefix and suffix
+    set -l prompt ""
+    if test -n "$prompt_prefix"
+        set prompt "$prompt_prefix
+
+"
+    end
+    set prompt "$prompt$base_prompt"
+    if test -n "$prompt_suffix"
+        set prompt "$prompt
+
+$prompt_suffix"
+    end
 
     # Check if devcontainer exists and is requested
     set -l has_devcontainer false
@@ -291,13 +388,20 @@ Do not ask questions - make reasonable decisions and iterate."
 
     # Build launch script with proper escaping
     set -l escaped_prompt (string escape -- "$prompt")
-    set -l completion_promise "TICKET_"$issue_key"_COMPLETE"
 
     # Write script using echo to avoid printf escape issues
     echo '#!/usr/bin/env fish' > $launch_script
     echo "set -l prompt $escaped_prompt" >> $launch_script
     echo "" >> $launch_script
-    echo 'claude --dangerously-skip-permissions "/ralph-wiggum:ralph-loop \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >> $launch_script
+
+    # Build the claude command based on slash_command
+    # ralph-loop needs special args, others just get the prompt
+    if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
+        echo 'claude --dangerously-skip-permissions "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >> $launch_script
+    else
+        # For other commands, just pass the prompt as the argument
+        echo 'claude --dangerously-skip-permissions "'$slash_command' \\"$prompt\\""' >> $launch_script
+    end
     chmod +x $launch_script
 
     if $use_devcon; and $has_devcontainer
