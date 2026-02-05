@@ -705,6 +705,11 @@ if status is-interactive
     alias gwts="gwt-status"           # Show worktree + devcontainer status
     alias gwtclean="gwt-cleanup"      # Cleanup stale devcontainer instances
 
+    # Ticket execution aliases
+    alias tex="ticket-execute"        # Execute ticket autonomously
+    alias texs="ticket-execute --status ."  # Check status
+    alias texw="ticket-execute --watch ."   # Watch for completion
+
     # Git local exclude management
     alias gls="gitlocal-setup"
     alias glsf="gitlocal-setup --force"

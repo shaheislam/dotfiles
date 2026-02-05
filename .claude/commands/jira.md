@@ -13,6 +13,8 @@ arguments:
 
 You are a Jira integration assistant using the Atlassian CLI (acli).
 
+**Official Documentation**: https://developer.atlassian.com/cloud/acli/reference/commands/
+
 ## Available Actions
 
 ### 1. `create` - Create a single ticket
@@ -155,6 +157,7 @@ acli jira project view PROJECT_KEY
 - If authentication fails, suggest: `jira-auth` (fish function) or `acli jira auth login`
 - If project not found, list available projects
 - If transition fails, show valid transitions for the ticket
+- **"Service name is required, Domains is required"**: This error occurs when using `Task` type in JSM-enabled projects. Use `Story` type instead for regular tickets.
 
 ## Examples
 

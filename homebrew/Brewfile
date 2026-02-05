@@ -26,6 +26,9 @@ tap "sst/tap"
 # Tap for Recall - Claude Code conversation search
 tap "zippoxer/tap"
 
+# Tap for Linear CLI
+tap "schpet/tap"
+
 # System Maintenance
 brew "topgrade"  # Unified system updater - updates Homebrew, pip, cargo, npm, mas, etc. in one command
 
@@ -162,6 +165,9 @@ brew "lnav"
 
 # Atlassian Tools
 brew "acli"  # Official Atlassian CLI for Jira, Confluence, Admin
+
+# Issue Tracking CLIs
+brew "schpet/tap/linear"  # Linear CLI for personal projects (agent-friendly)
 
 # DevOps/SRE Essentials
 brew "helm"

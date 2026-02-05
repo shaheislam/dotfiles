@@ -695,7 +695,7 @@ Plugins are installed from three marketplaces:
 | **feature-dev** | `/feature-dev` | 7-phase feature development workflow |
 | **frontend-design** | Auto-activated | Production-grade UI generation, anti-AI aesthetics |
 | **plugin-dev** | `/plugin-dev:create-plugin` | 7 skills + 8-phase plugin creation workflow |
-| **ralph-wiggum** | `/ralph-loop` | Autonomous iteration loops (also `/cancel-ralph`) |
+| **ralph-wiggum** | `/ralph-wiggum:ralph-loop` | Autonomous iteration loops (also `/ralph-wiggum:cancel-ralph`) |
 | **agent-sdk-dev** | `/new-sdk-app` | Claude Agent SDK project scaffolding |
 | **claude-opus-4-5-migration** | Natural language | Model migration helper ("Migrate to Opus 4.5") |
 | **explanatory-output-style** | SessionStart hook | Educational insights on implementation choices |
@@ -728,7 +728,135 @@ claude plugin uninstall plugin-name@claude-code-plugins
 
 These are set automatically by `scripts/setup.sh` using `jq`.
 
+### Agentic Ticket Execution System
+
+**Purpose**: Autonomously execute tickets from Linear (personal) or Jira (work) using devcontainers + ralph-loop.
+
+**Architecture**:
+```
+gwt-dev           (worktree + devcontainer)
+    │
+    ├── gwt-parallel   (parallel dev: multiple branches, tmux windows, Claude)
+    │
+    └── gwt-ticket     (autonomous execution: single branch, ralph-loop, ticket context)
+            │
+            └── ticket-execute  (orchestrator: fetch Linear/Jira → call gwt-ticket)
+```
+
+**User Flow**:
+```
+/todo Fix auth bug in session.ts
+        │
+        ▼
+┌───────────────────┐
+│  Linear Backlog   │
+│  ENG-123: Fix...  │
+└───────────────────┘
+        │
+        ▼  /ticket-execute [ENG-123]
+┌───────────────────────────────────────────┐
+│  tmux: <repo-name>                        │
+│  ┌─────────────────────────────────────┐  │
+│  │ Worktree: ../repo-eng-123-fix-auth │  │
+│  │ Devcontainer running               │  │
+│  │ Ralph loop (20 iterations max)     │  │
+│  │ → Auto PR on completion            │  │
+│  └─────────────────────────────────────┘  │
+└───────────────────────────────────────────┘
+```
+
+**Commands**:
+| Command | Description |
+|---------|-------------|
+| `/todo <desc>` | Create ticket in Linear/Jira (auto-detected) |
+| `/ticket-execute [KEY]` | Execute ticket autonomously |
+
+**Fish Functions**:
+| Function | Alias | Description |
+|----------|-------|-------------|
+| `gwt-ticket` | - | Core autonomous execution (worktree + tmux + ralph-loop) |
+| `ticket-execute` | `tex` | High-level orchestrator (fetches ticket, calls gwt-ticket) |
+| `ticket-execute --status` | `texs` | Check execution status |
+| `ticket-execute --watch` | `texw` | Watch for completion |
+
+**Scripts**:
+- `scripts/ticket-execute.sh` - Thin bash wrapper that calls gwt-ticket
+- `scripts/ticket-complete.sh` - Post-completion hook (PR creation, ticket transition)
+
+**gwt-ticket Usage**:
+```bash
+# Core function - called by ticket-execute or directly
+gwt-ticket [issue-key] <title> <description> [options]
+
+# If issue-key is omitted (first arg doesn't match ABC-123 pattern),
+# auto-generates TASK-YYYYMMDD-HHMMSS as the key.
+
+# Options:
+#   --max N         Max ralph-loop iterations (default: 20)
+#   --mount, -m     Additional mount (repeatable)
+#   --session S     Tmux session name (default: repo name)
+#   --no-devcon     Skip devcontainer
+#   --system S      Ticketing system: linear or jira
+
+# Examples with ticket key (standard):
+gwt-ticket ENG-123 "Fix auth bug" "Session tokens expire incorrectly"
+# → Window: ENG-123, Branch: eng-123-fix-auth-bug
+
+# Examples without ticket key (autonomous task):
+gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
+# → Window: fix-auth-bug, Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug
+
+# With mounts:
+gwt-ticket ENG-456 "Add caching" "Implement Redis cache" -m ~/dotfiles
+```
+
+**Ticketing System Detection** (in order):
+1. `.claude/settings.local.json` with `{ "ticketing": { "system": "linear", "project": "ENG" } }`
+2. `.linear.toml` in repo root → Linear
+3. Git remote patterns (petlab, dfe-digital, home-office) → Jira
+4. Default → Linear (personal projects)
+
+**Workflow**:
+```bash
+# Quick ticket creation
+/todo Fix pagination bug in users API
+
+# Execute with picker (fzf)
+tex
+
+# Execute specific ticket
+tex ENG-123
+
+# Monitor execution
+tmux attach -t <repo-name>
+tex --status .
+
+# Manual completion if needed
+tex --complete .
+
+# Direct gwt-ticket usage (bypasses ticket fetching)
+gwt-ticket ENG-TEST "Test ticket" "Test description" --no-devcon
+
+# Ticket-free autonomous execution
+gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
+# → Window: fix-auth-bug (uses title slug)
+# → Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug
+# → No ticket tracking, PR created without ticket link
+```
+
+**Post-Completion**:
+1. Creates PR with ticket link in description
+2. Transitions ticket to "Review" or "Done"
+3. Sends macOS notification
+
+**Dependencies**:
+- `linear` CLI (`brew install schpet/tap/linear`) - for Linear tickets
+- `acli` - for Jira tickets
+- `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
+- `ralph-loop` - autonomous iteration
+
 ### Recent Updates
+- **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
 - **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
 - **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
 - **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
