@@ -29,6 +29,9 @@ tap "zippoxer/tap"
 # Tap for Linear CLI
 tap "schpet/tap"
 
+# Tap for Graphite CLI (stacked PRs and merge queue)
+tap "withgraphite/tap"
+
 # System Maintenance
 brew "topgrade"  # Unified system updater - updates Homebrew, pip, cargo, npm, mas, etc. in one command
 
@@ -168,6 +171,7 @@ brew "acli"  # Official Atlassian CLI for Jira, Confluence, Admin
 
 # Issue Tracking CLIs
 brew "schpet/tap/linear"  # Linear CLI for personal projects (agent-friendly)
+brew "withgraphite/tap/graphite"  # Graphite CLI for stacked PRs and merge queue
 
 # DevOps/SRE Essentials
 brew "helm"
