@@ -170,8 +170,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
         echo ""
         echo "Arguments:"
         echo "  issue-key     Issue key (e.g., ENG-123, DEVOPS-456)"
-        echo "              If omitted (first arg doesn't match ABC-123 pattern),"
-        echo "              auto-generates TASK-YYYYMMDD-HHMMSS"
+        echo "              If omitted, uses title slug for branch/worktree names"
         echo "  title         Issue title/summary"
         echo "  description   Full issue description"
         echo ""
@@ -218,8 +217,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
             set description "$title"
         end
         set title "$issue_key"
-        # Auto-generate issue key: TASK-YYYYMMDD-HHMMSS
-        set issue_key "TASK-"(date +%Y%m%d-%H%M%S)
+        # Auto-generate: use TASK as marker (slug used for branch/worktree names)
+        set issue_key "TASK"
         set is_auto_generated true
     end
 
@@ -239,10 +238,17 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
         set description "$title"  # Use title as description if not provided
     end
 
-    # Generate branch name: issue-key-slug (e.g., eng-123-fix-auth-bug)
-    set -l key_lower (string lower $issue_key)
+    # Generate branch name
     set -l slug (string lower $title | string replace -ra '[^a-z0-9 ]' '' | string replace -a ' ' '-' | string sub -l 30 | string replace -r -- '-+$' '')
-    set -l branch_name "$key_lower-$slug"
+    set -l branch_name
+    if $is_auto_generated
+        # Auto-generated: just use the slug (e.g., fix-auth-bug)
+        set branch_name $slug
+    else
+        # Ticket: use key-slug (e.g., eng-123-fix-auth-bug)
+        set -l key_lower (string lower $issue_key)
+        set branch_name "$key_lower-$slug"
+    end
 
     # Get repository info
     set -l repo (basename (git rev-parse --show-toplevel))

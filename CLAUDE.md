@@ -684,11 +684,10 @@ Plugins are installed from three marketplaces:
 
 **Installation**: Plugins are stored in `~/.claude/settings.json` and available in all sessions on the device. For cross-device consistency, installation commands are in `scripts/setup.sh`.
 
-**Installed Plugins (15 total)**:
+**Installed Plugins (14 total)**:
 
 | Plugin | Command | Purpose |
 |--------|---------|---------|
-| **safety-net** | PreToolUse hook | Blocks destructive commands (`rm -rf ~/`, `git reset --hard`, etc.) via semantic analysis |
 | **code-review** | `/code-review` | Automated PR review with 4 parallel agents, 80+ confidence filtering |
 | **pr-review-toolkit** | Auto-triggered | 6 specialized reviewers (comments, tests, errors, types, quality, simplicity) |
 | **hookify** | `/hookify` | Create hooks via markdown (also `/hookify:list`, `/hookify:configure`) |
@@ -788,8 +787,7 @@ gwt-dev           (worktree + devcontainer)
 # Core function - called by ticket-execute or directly
 gwt-ticket [issue-key] <title> <description> [options]
 
-# If issue-key is omitted (first arg doesn't match ABC-123 pattern),
-# auto-generates TASK-YYYYMMDD-HHMMSS as the key.
+# If issue-key is omitted, uses title slug for branch/worktree names
 
 # Options:
 #   --max N              Max iterations (default: 20)
@@ -878,7 +876,6 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 - **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
 - **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
 - **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
-- **2025-12-29**: Added safety-net plugin from kenryu42/cc-marketplace for destructive command protection
 - **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
 - **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
 - **2025-10-30**: Added Docker container testing framework for Linux compatibility validation

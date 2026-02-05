@@ -704,6 +704,7 @@ if status is-interactive
     alias gwtc="gwt-claude"           # Launch Claude in worktree
     alias gwts="gwt-status"           # Show worktree + devcontainer status
     alias gwtclean="gwt-cleanup"      # Cleanup stale devcontainer instances
+    alias gwtt="gwt-ticket"           # Autonomous ticket execution
 
     # Ticket execution aliases
     alias tex="ticket-execute"        # Execute ticket autonomously
