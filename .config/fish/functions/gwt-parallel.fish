@@ -170,13 +170,17 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
                 tmux new-window -n $window_name -c $worktree_path
                 tmux send-keys -t $window_name "$devcon_up_cmd --exec" Enter
             else
-                # Auto-split with Claude on left, shell on right
-                # Using send-keys to avoid nested quoting issues
-                # 1. Create window
-                # 2. Send command chain: start devcon → split → Claude in left (active after split) → switch right → shell
-                # Note: split-window -hb makes new pane active, so send-keys without target goes to left pane
+                # 3-pane layout: Claude left, nvim diffview top-right, terminal bottom-right
+                # ┌──────────────┬──────────────┐
+                # │              │ nvim diffview │ ← top-right (70%)
+                # │  Claude Code ├──────────────┤
+                # │              │   terminal   │ ← bottom-right (30%)
+                # └──────────────┴──────────────┘
                 tmux new-window -n $window_name -c $worktree_path
-                tmux send-keys -t $window_name "$devcon_up_cmd && tmux split-window -hb -p 50 && tmux send-keys '$exec_cmd fish -c \"claude --dangerously-skip-permissions\"' Enter && tmux select-pane -R && $exec_cmd fish" Enter
+                # Chain: start devcon → split horizontally (Claude left) → go back to right →
+                # split right vertically (terminal bottom) → go up to top-right → launch nvim diffview
+                # Bottom-right pane gets devcontainer shell from the split command
+                tmux send-keys -t $window_name "$devcon_up_cmd && tmux split-window -hb -p 50 && tmux send-keys '$exec_cmd fish -c \"claude --dangerously-skip-permissions\"' Enter && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim -c 'DiffviewOpen'" Enter
             end
         end
 

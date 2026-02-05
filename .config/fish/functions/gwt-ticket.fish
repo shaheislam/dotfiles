@@ -422,20 +422,44 @@ $prompt_suffix"
         set -l config_file "$HOME/dotfiles/devcontainer/claude-code-plugins/.devcontainer/devcontainer.json"
         set -l exec_cmd "devcontainer exec --config $config_file --workspace-folder $workspace"
 
-        # Split window: left pane for Claude, right pane for shell
+        # 3-pane layout: Claude left, nvim diffview top-right, terminal bottom-right
+        # ┌──────────────┬──────────────┐
+        # │              │ nvim diffview │ ← top-right (devcontainer)
+        # │  Claude Code ├──────────────┤
+        # │              │   terminal   │ ← bottom-right (devcontainer)
+        # └──────────────┴──────────────┘
         # Step 1: Start devcontainer
         tmux send-keys -t "$session_name:$window_name" "$devcon_up_cmd" Enter
-        # Step 2: Wait a moment for container, then split and launch
-        tmux send-keys -t "$session_name:$window_name" "sleep 2 && tmux split-window -hb -p 50 -c $worktree_path '$exec_cmd fish $launch_script' && $exec_cmd fish" Enter
+        # Step 2: Wait for container, then create 3-pane layout
+        # - split-window -hb creates Claude on left (becomes active)
+        # - last-pane returns focus to right pane
+        # - split-window -v splits right pane: top stays (diffview), bottom is new (terminal)
+        # - select-pane -U moves focus to top-right for nvim launch
+        # - nvim launches with DiffviewOpen in top-right, bottom-right gets shell via send-keys
+        tmux send-keys -t "$session_name:$window_name" "sleep 2 && tmux split-window -hb -p 50 -c $worktree_path '$exec_cmd fish $launch_script' && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim -c 'DiffviewOpen'" Enter
     else
         if $use_devcon; and not $has_devcontainer
             echo "No .devcontainer found, running locally..."
         end
-        # Run locally with split: Claude on left, shell on right
+        # Run locally with 3-pane layout:
+        # ┌──────────────┬──────────────┐
+        # │              │ nvim diffview │ ← top-right (70%)
+        # │  Claude Code ├──────────────┤
+        # │              │   terminal   │ ← bottom-right (30%)
+        # └──────────────┴──────────────┘
         # Step 1: cd to worktree
         tmux send-keys -t "$session_name:$window_name" "cd $worktree_path" Enter
-        # Step 2: Split with Claude script on left, current pane becomes right with shell
+        # Step 2: Split horizontally - Claude on left (50%), current pane stays right
+        # -hb = new pane before (left), -p 50 = 50% width
         tmux split-window -t "$session_name:$window_name" -hb -p 50 -c "$worktree_path" "fish $launch_script"
+        # After split: pane layout is [Claude(left,active)] [shell(right)]
+        # Step 3: Switch to right pane and split it vertically for diffview + terminal
+        tmux last-pane -t "$session_name:$window_name"
+        tmux split-window -t "$session_name:$window_name" -v -p 30 -c "$worktree_path"
+        # After split: right side has [original(top-right)] [new-terminal(bottom-right,active)]
+        # Step 4: Launch nvim with diffview in the top-right pane (go up from bottom-right)
+        tmux select-pane -t "$session_name:$window_name" -U
+        tmux send-keys -t "$session_name:$window_name" "nvim -c 'DiffviewOpen'" Enter
     end
 
     # Create state file for post-completion hook (directory already created for launch script)
