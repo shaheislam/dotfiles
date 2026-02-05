@@ -2160,13 +2160,51 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             end
         end
 
+        # Get the current branch to avoid deleting it
+        set -l current_branch (git branch --show-current 2>/dev/null)
+        set -l main_branches main master
+
+        # Build a map of worktree path → branch name before removing anything
+        set -l branch_map
+        for wt_line in (git worktree list 2>/dev/null)
+            set -l wt_path (echo $wt_line | awk '{print $1}')
+            set -l wt_branch (echo $wt_line | string match -r '\[(.+?)\]' | tail -1)
+            set -a branch_map "$wt_path|$wt_branch"
+        end
+
         # Remove each worktree
+        set -l deleted_branches
         for selected in $selected_list
             set -l worktree_name (basename $selected)
             set -l instance_name (string replace -a "/" "-" $worktree_name)
 
+            # Look up the branch for this worktree
+            set -l branch_name ""
+            for entry in $branch_map
+                set -l entry_path (echo $entry | string split "|")[1]
+                set -l entry_branch (echo $entry | string split "|")[2]
+                if test "$entry_path" = "$selected"
+                    set branch_name $entry_branch
+                    break
+                end
+            end
+
             echo "Removing worktree: $selected"
             git worktree remove "$selected"
+
+            # Delete the branch if it's not current or a main branch
+            if test -n "$branch_name"
+                if test "$branch_name" = "$current_branch"
+                    echo "   Skipped branch deletion: $branch_name (current branch)"
+                else if contains -- "$branch_name" $main_branches
+                    echo "   Skipped branch deletion: $branch_name (protected branch)"
+                else
+                    git branch -D "$branch_name" 2>/dev/null
+                    and set -a deleted_branches "$branch_name"
+                    and echo "   Deleted branch: $branch_name"
+                    or echo "   Failed to delete branch: $branch_name"
+                end
+            end
 
             if $cleanup_devcontainers
                 if test -d "$instance_base/$instance_name"; or test -d "$workspace_base/$instance_name"
@@ -2183,6 +2221,9 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
         echo ""
         echo "Removed "(count $selected_list)" worktree(s)"
+        if test (count $deleted_branches) -gt 0
+            echo "Deleted "(count $deleted_branches)" branch(es)"
+        end
     end
 
     # Custom Atuin wrapper functions for different filter modes
