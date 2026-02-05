@@ -303,6 +303,51 @@ complete -c git -n '__fish_git_using_command reset' -l soft -d 'Keep working tre
 complete -c git -n '__fish_git_using_command reset' -l mixed -d 'Reset index, keep working tree'
 
 # =============================================================================
+# git rm - Show tracked files for removal
+# =============================================================================
+complete -c git -n '__fish_git_using_command rm' -f
+
+# Show tracked files
+complete -c git -n '__fish_git_using_command rm' -a '
+    (
+        git ls-files 2>/dev/null
+    )
+' -d 'Tracked file'
+
+# Common rm flags
+complete -c git -n '__fish_git_using_command rm' -l cached -d 'Remove from index only'
+complete -c git -n '__fish_git_using_command rm' -s f -l force -d 'Force removal'
+complete -c git -n '__fish_git_using_command rm' -s r -d 'Allow recursive removal'
+complete -c git -n '__fish_git_using_command rm' -s n -l dry-run -d 'Show what would be removed'
+complete -c git -n '__fish_git_using_command rm' -l quiet -d 'Suppress output'
+
+# =============================================================================
+# git restore - Show files for restoring
+# =============================================================================
+complete -c git -n '__fish_git_using_command restore' -f
+
+# Show modified files for restore (unstaged changes)
+complete -c git -n '__fish_git_using_command restore; and not __fish_seen_argument --staged -S --source -s' -a '
+    (
+        git diff --name-only 2>/dev/null
+    )
+' -d 'Modified file'
+
+# Show staged files for restore --staged
+complete -c git -n '__fish_git_using_command restore; and __fish_seen_argument --staged -S' -a '
+    (
+        git diff --cached --name-only 2>/dev/null
+    )
+' -d 'Staged file'
+
+# Common restore flags
+complete -c git -n '__fish_git_using_command restore' -s S -l staged -d 'Restore staged changes'
+complete -c git -n '__fish_git_using_command restore' -s s -l source -d 'Restore from source' -x
+complete -c git -n '__fish_git_using_command restore' -s p -l patch -d 'Interactively select hunks'
+complete -c git -n '__fish_git_using_command restore' -l ours -d 'Restore ours version'
+complete -c git -n '__fish_git_using_command restore' -l theirs -d 'Restore theirs version'
+
+# =============================================================================
 # git push - Show remotes, then branches
 # =============================================================================
 complete -c git -n '__fish_git_using_command push' -f
