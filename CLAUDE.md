@@ -792,23 +792,39 @@ gwt-ticket [issue-key] <title> <description> [options]
 # auto-generates TASK-YYYYMMDD-HHMMSS as the key.
 
 # Options:
-#   --max N         Max ralph-loop iterations (default: 20)
-#   --mount, -m     Additional mount (repeatable)
-#   --session S     Tmux session name (default: repo name)
-#   --no-devcon     Skip devcontainer
-#   --system S      Ticketing system: linear or jira
+#   --max N              Max iterations (default: 20)
+#   --command C          Slash command (default: /ralph-wiggum:ralph-loop)
+#   --prompt-template F  Custom prompt template file
+#   --prompt-prefix P    Text to prepend to prompt
+#   --prompt-suffix S    Text to append to prompt
+#   --mount, -m          Additional mount (repeatable)
+#   --session S          Tmux session name (default: repo name)
+#   --no-devcon          Skip devcontainer
+#   --system S           Ticketing system: linear or jira
 
 # Examples with ticket key (standard):
 gwt-ticket ENG-123 "Fix auth bug" "Session tokens expire incorrectly"
 # → Window: ENG-123, Branch: eng-123-fix-auth-bug
 
-# Examples without ticket key (autonomous task):
-gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
-# → Window: fix-auth-bug, Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug
+# Use feature-dev instead of ralph-loop:
+gwt-ticket ENG-123 "Add feature" "Description" --command /feature-dev:feature-dev
+
+# Custom prompt template with variables:
+gwt-ticket ENG-123 "Fix bug" "Details" --prompt-template ~/.claude/prompts/careful.md
+
+# Add instructions before/after:
+gwt-ticket ENG-123 "Fix" "Desc" --prompt-prefix "IMPORTANT: No test changes"
 
 # With mounts:
 gwt-ticket ENG-456 "Add caching" "Implement Redis cache" -m ~/dotfiles
 ```
+
+**Prompt Template Variables**:
+- `{{ISSUE_KEY}}` - Issue key (ENG-123)
+- `{{TITLE}}` - Issue title
+- `{{DESCRIPTION}}` - Issue description
+- `{{WORKTREE_PATH}}` - Path to worktree
+- `{{COMPLETION_PROMISE}}` - Completion string (TICKET_ENG-123_COMPLETE)
 
 **Ticketing System Detection** (in order):
 1. `.claude/settings.local.json` with `{ "ticketing": { "system": "linear", "project": "ENG" } }`
