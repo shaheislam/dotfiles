@@ -711,6 +711,18 @@ if status is-interactive
     alias texs="ticket-execute --status ."  # Check status
     alias texw="ticket-execute --watch ."   # Watch for completion
 
+    # Graphite merge queue aliases
+    alias gtq="gt-queue"                  # Merge queue status
+    alias gtql="gt-queue list"            # List queued PRs
+    alias gtqe="gt-queue enqueue"         # Enqueue current PR
+    alias gtqd="gt-queue dequeue"         # Dequeue current PR
+    alias gtqm="gt-queue merge"           # Merge via Graphite
+    alias gtqs="gt-queue submit --stack"  # Submit + merge-when-ready
+    alias gtqo="gt-queue open"            # Open dashboard
+    alias gts="gt-stack"                  # Stack viewer
+    alias gtsi="gt-stack --interactive"   # Interactive stack viewer
+    alias gtss="gt submit --stack"        # Submit entire stack
+
     # Git local exclude management
     alias gls="gitlocal-setup"
     alias glsf="gitlocal-setup --force"
