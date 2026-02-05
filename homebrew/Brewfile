@@ -125,6 +125,10 @@ cask "amazon-q"  # Amazon Q Developer CLI
 brew "sst/tap/opencode"  # AI coding agent built for the terminal
 brew "zippoxer/tap/recall"  # Search and resume Claude Code conversations
 
+# Self-Hosted LLM Tools (resilience if cloud AI goes down)
+cask "ollama"  # Local LLM runtime - runs Llama, DeepSeek, Codestral, etc.
+# Open WebUI - installed via pip in scripts/setup-selfhost-llm.sh
+
 # File System Tools
 # FUSE-T - kext-less FUSE implementation for macOS (replacement for macFUSE)
 tap "macos-fuse-t/homebrew-cask"

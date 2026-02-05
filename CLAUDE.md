@@ -869,7 +869,68 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 - `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
 - `ralph-loop` - autonomous iteration
 
+### Self-Hosted LLM Infrastructure
+
+**Purpose**: Local LLM stack as a resilience layer when cloud AI services (Claude, Codex, etc.) go down.
+
+**Setup Script**: `scripts/setup-selfhost-llm.sh`
+
+**Components**:
+- **Ollama**: Local LLM runtime (runs models on your hardware)
+- **Open WebUI**: Browser-based chat interface (ChatGPT/Claude replacement)
+- **Fish functions**: CLI integration for quick model interaction
+
+**Usage**:
+```bash
+# Install the full stack
+./scripts/setup-selfhost-llm.sh
+
+# Just pull/update models
+./scripts/setup-selfhost-llm.sh --models-only
+
+# Include large models (32GB+ RAM required)
+./scripts/setup-selfhost-llm.sh --large-models
+
+# Uninstall everything
+./scripts/setup-selfhost-llm.sh --uninstall
+```
+
+**Fish Shell Commands**:
+| Command | Description |
+|---------|-------------|
+| `llm <prompt>` | Quick query (default: llama3.1:8b) |
+| `llm-code <prompt>` | Code-focused query (default: qwen2.5-coder:7b) |
+| `llm-chat [model]` | Interactive chat session |
+| `llm-status` | Check Ollama status and installed models |
+| `llm-pull <model>` | Pull a new model from Ollama registry |
+| `llm-web` | Launch Open WebUI in browser |
+
+**Default Models**:
+| Model | Size | Purpose |
+|-------|------|---------|
+| qwen2.5-coder:7b | ~4GB | Fast coding assistant |
+| deepseek-coder-v2:16b | ~9GB | Deep reasoning for complex code |
+| llama3.1:8b | ~4GB | Fast general-purpose |
+| mistral:7b | ~4GB | Balanced all-rounder |
+
+**Environment Variables**:
+- `LLM_DEFAULT_MODEL`: Override default general model (default: llama3.1:8b)
+- `LLM_CODE_MODEL`: Override default coding model (default: qwen2.5-coder:7b)
+- `OPEN_WEBUI_PORT`: Override Open WebUI port (default: 8080)
+
+**API Compatibility**: Ollama exposes an OpenAI-compatible API at `http://localhost:11434/v1`, allowing tools that support `OPENAI_API_BASE` to use local models.
+
+**Pipe Support**: Fish functions support piped input for context:
+```bash
+cat main.py | llm-code 'review this code for bugs'
+git diff | llm-code 'write a commit message'
+echo 'some text' | llm 'summarize this'
+```
+
+**Testing**: `scripts/test-selfhost-llm.sh` (22 config tests, `--live` for runtime tests)
+
 ### Recent Updates
+- **2026-02-05**: Added Self-Hosted LLM infrastructure (Ollama + Open WebUI + Fish functions)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
 - **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
 - **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
