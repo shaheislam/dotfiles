@@ -170,10 +170,20 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
         end
     end
 
+    # Trust mise config if present (inspired by DHH's worktree setup)
+    if command -q mise
+        set -l abs_wt (realpath $worktree_path)
+        if test -f "$abs_wt/mise.toml"; or test -f "$abs_wt/.mise.toml"
+            mise trust "$abs_wt" 2>/dev/null
+            echo "   mise trusted: $abs_wt"
+        end
+    end
+
     # Skip devcontainer if requested
     if $do_no_devcon
         echo "Worktree created: $worktree_path"
-        echo "   cd $worktree_path"
+        cd (realpath $worktree_path)
+        echo "   Switched to: "(pwd)
         return 0
     end
 
