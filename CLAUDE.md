@@ -951,7 +951,61 @@ pihole stop
 
 **Note**: This blocks ads only on the local machine. For network-wide blocking, run Pi-hole on an always-on server and configure router DHCP.
 
+### Agent Guidance (AGENTS.md)
+
+**Purpose**: Practical, Hashimoto-style agent guidance lives in the root `AGENTS.md` file. This file contains concrete rules based on observed bad agent behaviors - not abstract frameworks.
+
+**Key Principle**: Each line in AGENTS.md addresses a specific mistake agents make in this repository. When an agent makes a new recurring mistake, add a line to AGENTS.md to prevent it.
+
+**Reference**: Inspired by Mitchell Hashimoto's approach documented in [his AI adoption article](https://mitchellh.com/writing/my-ai-adoption-journey) and [Ghostty's AGENTS.md](https://github.com/ghostty-org/ghostty).
+
+### Background Agent Workflow Patterns
+
+**End-of-Day Kickoff**: Block the last 30 minutes of the workday to kick off background agents on well-defined tasks. Agents complete within 30 minutes, making progress during low-productivity hours.
+
+**Task Categories for Agent Delegation**:
+1. **Slam dunks**: Well-defined tasks with high confidence of correct completion (use `gwt-ticket` or `ralph-loop`)
+2. **Research sessions**: Surveying fields, finding libraries, producing comparison summaries
+3. **Parallel exploration**: Attempting vague ideas to illuminate unknown unknowns (use `gwt-parallel`)
+4. **Issue/PR triage**: Generate reports without responding directly (use `gh` CLI for read-only reports)
+
+**Notification Discipline**: Disable desktop notifications during focused work. Use `tmux-claude-watcher` indicators to check agent progress during natural work breaks instead of being interrupted.
+
+**Single Agent Rule**: Run one background agent at a time to avoid context switching. Multiple parallel agents are available via `gwt-parallel` but reserved for batch operations.
+
+### Filtered Test Runner (Harness Engineering)
+
+**Purpose**: Help agents get faster feedback by running targeted test groups instead of full test suites.
+
+**Script**: `scripts/test-filter.sh`
+
+**Usage**:
+```bash
+./scripts/test-filter.sh fish          # Fish shell config only
+./scripts/test-filter.sh stow          # Stow compatibility only
+./scripts/test-filter.sh claude        # Claude Code config only
+./scripts/test-filter.sh setup-syntax  # Validate setup.sh syntax
+./scripts/test-filter.sh hooks         # Validate hook Python files
+./scripts/test-filter.sh all           # Run all 52 tests
+./scripts/test-filter.sh --list        # Show available groups
+```
+
+**Philosophy**: This is a "harness engineering" tool - instead of telling agents not to make mistakes, give them tools to verify correctness quickly.
+
+### When NOT to Use Agents (Negative Space)
+
+Understanding when NOT to delegate to agents is as important as knowing when to delegate:
+
+- **Karabiner-Elements config**: Use the GUI app. The JSON is auto-generated and complex.
+- **Brewfile organization**: Maintain the existing grouping manually. Agents tend to alphabetize and lose semantic grouping.
+- **tmux plugin installation**: TPM handles this. Just add plugin lines to `.tmux.conf`.
+- **Theme consistency**: Verify Tokyo Night theme application manually across tools.
+- **1Password/SSH key setup**: Security-sensitive, requires manual verification.
+- **Stow conflict resolution**: Requires understanding the symlink state - check manually.
+- **LazyVim plugin config**: Lives in `~/neovim`, not this repo.
+
 ### Recent Updates
+- **2026-02-06**: Added Hashimoto-style AGENTS.md, filtered test runner, background agent workflow docs
 - **2026-02-06**: Added Claude Code devcontainer auto-login (Keychain → .credentials.json export/import)
 - **2026-02-05**: Added Pi-hole DNS ad blocking via Colima + Docker (local ad blocking setup)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
