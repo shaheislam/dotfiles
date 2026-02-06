@@ -12,12 +12,9 @@ function _git_fzf_tab_complete -d "Map git subcommands to fzf-git.sh commands on
 
     # Map git subcommands to fzf-git.sh commands
     switch $git_subcommand
-        case add restore
+        case add rm restore
             # File operations - show uncommitted/tracked files
             __fzf_git_sh files 2>/dev/null || _fifc 2>/dev/null
-        case rm
-            # git rm - use native fish completions (shows all tracked files)
-            _fifc 2>/dev/null
         case branch merge rebase
             # Branch operations
             __fzf_git_sh branches 2>/dev/null || _fifc 2>/dev/null
