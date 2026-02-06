@@ -408,6 +408,9 @@ $prompt_suffix"
         # For other commands, just pass the prompt as the argument
         echo 'claude --dangerously-skip-permissions "'$slash_command' \\"$prompt\\""' >> $launch_script
     end
+    echo "" >> $launch_script
+    echo "# Auto-trigger post-completion (PR creation, ticket transition, notification)" >> $launch_script
+    echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $launch_script
     chmod +x $launch_script
 
     if $use_devcon; and $has_devcontainer
