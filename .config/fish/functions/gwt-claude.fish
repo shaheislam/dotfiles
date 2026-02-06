@@ -73,19 +73,9 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
     echo "Worktree: $worktree_path"
     echo "Instance: $instance_name"
 
-    # Check if devcontainer exists for this worktree
-    set -l has_devcontainer false
-    if test -d "$worktree_path/.devcontainer"; or test -f "$worktree_path/devcontainer.json"
-        set has_devcontainer true
-    end
-
-    if not $has_devcontainer
-        echo "Error: No devcontainer configuration found in worktree"
-        echo ""
-        echo "The worktree at $worktree_path does not have a .devcontainer/"
-        echo "configuration. Create one or use Claude directly on the host."
-        return 1
-    end
+    # Always use the built-in devcon claude sandbox for isolation.
+    # The devcon function uses ~/dotfiles/devcontainer/claude-code-plugins/
+    # so the project does NOT need its own .devcontainer/ directory.
 
     # Check if devcontainer instance exists and is running
     set -l instance_base "$HOME/.devcontainer/instances"

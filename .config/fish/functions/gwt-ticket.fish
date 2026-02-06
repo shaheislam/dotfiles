@@ -382,12 +382,6 @@ Do not ask questions - make reasonable decisions and iterate."
 $prompt_suffix"
     end
 
-    # Check if devcontainer exists and is requested
-    set -l has_devcontainer false
-    if test -d "$worktree_path/.devcontainer"; or test -f "$worktree_path/devcontainer.json"
-        set has_devcontainer true
-    end
-
     # Write launch script to avoid quoting hell with nested tmux send-keys
     set -l launch_script "$worktree_path/.claude/launch-claude.fish"
     mkdir -p "$worktree_path/.claude"
@@ -413,8 +407,10 @@ $prompt_suffix"
     echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $launch_script
     chmod +x $launch_script
 
-    if $use_devcon; and $has_devcontainer
+    if $use_devcon
         # Build devcon up command (start container without exec)
+        # Uses the built-in devcon claude sandbox - does NOT require the project
+        # to have its own .devcontainer/ directory
         set -l devcon_up_cmd "devcon claude -i $instance_name $worktree_path"
         for mount in $mounts
             set devcon_up_cmd "$devcon_up_cmd $mount"
@@ -426,6 +422,9 @@ $prompt_suffix"
         set -l exec_cmd "devcontainer exec --config $config_file --workspace-folder $workspace"
 
         # 3-pane layout: Claude left, nvim diffview top-right, terminal bottom-right
+        # All panes run INSIDE the devcontainer via devcontainer exec.
+        # The original pane also enters the container after setup to prevent
+        # host file access when panes exit.
         # ┌──────────────┬──────────────┐
         # │              │ nvim diffview │ ← top-right (devcontainer)
         # │  Claude Code ├──────────────┤
@@ -438,12 +437,10 @@ $prompt_suffix"
         # - last-pane returns focus to right pane
         # - split-window -v splits right pane: top stays (diffview), bottom is new (terminal)
         # - select-pane -U moves focus to top-right for nvim launch
-        # - nvim launches with DiffviewOpen in top-right, bottom-right gets shell via send-keys
-        tmux send-keys -t "$session_name:$window_name" "sleep 2 && tmux split-window -hb -p 50 -c $worktree_path '$exec_cmd fish $launch_script' && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" Enter
+        # - nvim launches with DiffviewOpen in top-right
+        # - original pane enters container shell after nvim exits (prevents host access)
+        tmux send-keys -t "$session_name:$window_name" "sleep 2 && tmux split-window -hb -p 50 -c $worktree_path '$exec_cmd fish $launch_script' && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen' ; $exec_cmd fish" Enter
     else
-        if $use_devcon; and not $has_devcontainer
-            echo "No .devcontainer found, running locally..."
-        end
         # Run locally with 3-pane layout:
         # ┌──────────────┬──────────────┐
         # │              │ nvim diffview │ ← top-right (70%)

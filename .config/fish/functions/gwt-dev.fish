@@ -194,20 +194,10 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
         return 0
     end
 
-    # Check for devcontainer configuration
-    set -l has_devcontainer false
-    if test -d "$worktree_path/.devcontainer"; or test -f "$worktree_path/devcontainer.json"
-        set has_devcontainer true
-    end
-
-    if not $has_devcontainer
-        echo "Worktree created: $worktree_path"
-        echo "   No .devcontainer/ found - skipping container setup"
-        echo "   cd $worktree_path"
-        return 0
-    end
-
-    echo "Devcontainer detected, launching with instance: $instance_name"
+    # Always use the built-in devcon claude sandbox for isolation.
+    # The devcon function uses ~/dotfiles/devcontainer/claude-code-plugins/
+    # so the project does NOT need its own .devcontainer/ directory.
+    echo "Launching devcontainer sandbox with instance: $instance_name"
 
     # Run setup scripts if present
     gwt-setup $worktree_path

@@ -94,12 +94,6 @@ function gwt-status --description "Show worktree + devcontainer status"
 
         # Determine container status
         set -l container_status "-"
-        set -l has_devcontainer false
-
-        # Check if worktree has devcontainer config
-        if test -d "$wt_path/.devcontainer"; or test -f "$wt_path/devcontainer.json"
-            set has_devcontainer true
-        end
 
         # Check instance storage exists
         set -l has_instance false
@@ -117,14 +111,13 @@ function gwt-status --description "Show worktree + devcontainer status"
         end
 
         # Determine status display
+        # All worktrees can launch devcontainers via the built-in devcon claude sandbox
         if $is_running
             set container_status "running"
         else if $has_instance
             set container_status "stopped"
-        else if $has_devcontainer
-            set container_status "ready"
         else
-            set container_status "none"
+            set container_status "ready"
         end
 
         # Mark current worktree
