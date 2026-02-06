@@ -439,7 +439,7 @@ $prompt_suffix"
         # - split-window -v splits right pane: top stays (diffview), bottom is new (terminal)
         # - select-pane -U moves focus to top-right for nvim launch
         # - nvim launches with DiffviewOpen in top-right, bottom-right gets shell via send-keys
-        tmux send-keys -t "$session_name:$window_name" "sleep 2 && tmux split-window -hb -p 50 -c $worktree_path '$exec_cmd fish $launch_script' && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim -c 'DiffviewOpen'" Enter
+        tmux send-keys -t "$session_name:$window_name" "sleep 2 && tmux split-window -hb -p 50 -c $worktree_path '$exec_cmd fish $launch_script' && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" Enter
     else
         if $use_devcon; and not $has_devcontainer
             echo "No .devcontainer found, running locally..."
@@ -462,7 +462,7 @@ $prompt_suffix"
         # After split: right side has [original(top-right)] [new-terminal(bottom-right,active)]
         # Step 4: Launch nvim with diffview in the top-right pane (go up from bottom-right)
         tmux select-pane -t "$session_name:$window_name" -U
-        tmux send-keys -t "$session_name:$window_name" "nvim -c 'DiffviewOpen'" Enter
+        tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" Enter
     end
 
     # Create state file for post-completion hook (directory already created for launch script)
