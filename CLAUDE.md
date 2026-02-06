@@ -758,7 +758,67 @@ claude plugin uninstall plugin-name@claude-code-plugins
 |---------|-------|---------|
 | `autoCompactEnabled` | `false` | Disables automatic context compaction ([#6689](https://github.com/anthropics/claude-code/issues/6689)) |
 
-These are set automatically by `scripts/setup.sh` using `jq`.
+These are set automatically by `scripts/setup.sh` using `jq` and `claude config set`.
+
+### Claude Code Agent Teams (Experimental)
+
+**Purpose**: Coordinate multiple Claude Code instances working together as a team with shared tasks, inter-agent messaging, and centralized management.
+
+**Status**: Experimental (enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
+
+**How It Differs from Existing Workflows**:
+| Capability | Our gwt-parallel | Agent Teams |
+|-----------|-------------------|-------------|
+| **Coordination** | Manual (separate tmux windows) | Built-in lead + teammates |
+| **Communication** | None (independent sessions) | Peer-to-peer messaging + mailbox |
+| **Task Management** | Per-session (ralph-loop) | Shared task list with dependencies |
+| **Display** | Custom 3-pane layout | In-process or tmux split panes |
+| **File Ownership** | Per-worktree isolation | Same repo, file-level ownership |
+
+**Configuration** (set by `scripts/setup.sh` into `~/.claude/settings.json`):
+```json
+{
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },
+  "teammateMode": "tmux"
+}
+```
+
+**When to Use Agent Teams vs gwt-parallel**:
+- **Agent Teams**: Same-repo work where teammates need to communicate (code review, competing hypotheses debugging, cross-layer features)
+- **gwt-parallel**: Multi-branch isolated work where each agent works independently on separate features
+- **gwt-ticket + ralph-loop**: Autonomous single-ticket execution with iteration
+
+**Usage**:
+```bash
+# Tell Claude to create a team (natural language)
+"Create an agent team to refactor the auth module. Spawn three teammates:
+one for the backend API, one for the frontend hooks, one for tests."
+
+# Navigate teammates
+Shift+Up/Down    # Select teammate (in-process mode)
+Shift+Tab        # Toggle delegate mode (lead coordinates only)
+Ctrl+T           # Toggle task list
+
+# Direct interaction with any teammate
+Shift+Down → type message → Enter
+```
+
+**Best Practices**:
+- Assign different files to different teammates to avoid conflicts
+- Use delegate mode (`Shift+Tab`) to keep lead focused on coordination
+- Provide specific context in spawn prompts (teammates don't inherit conversation history)
+- Target 5-6 tasks per teammate for optimal productivity
+- Start with research/review tasks before parallel implementation
+- Always use lead for team cleanup
+
+**Limitations**:
+- No session resumption for in-process teammates
+- One team per session, no nested teams
+- Split panes require tmux (already configured) or iTerm2
+- Higher token cost than subagents (each teammate is a separate Claude instance)
+- Not supported in Ghostty's tmux integration
+
+**Relationship to Gastown**: Claude Code Agent Teams is Anthropic's native implementation of multi-agent orchestration patterns similar to [Gastown](https://github.com/steveyegge/gastown). Key Gastown features NOT yet in Agent Teams: persistent work ledger (Beads), merge queue processing (Refinery), health monitoring daemon (Deacon/Daemon), agent CVs/capability matching, cross-project coordination. Consider Gastown for enterprise-scale multi-agent workflows requiring audit trails and automated health monitoring.
 
 ### Agentic Ticket Execution System
 
@@ -952,6 +1012,7 @@ pihole stop
 **Note**: This blocks ads only on the local machine. For network-wide blocking, run Pi-hole on an always-on server and configure router DHCP.
 
 ### Recent Updates
+- **2026-02-06**: Enabled Claude Code Agent Teams with tmux split-pane mode (Gastown/Agent Teams integration analysis)
 - **2026-02-06**: Added Claude Code devcontainer auto-login (Keychain → .credentials.json export/import)
 - **2026-02-05**: Added Pi-hole DNS ad blocking via Colima + Docker (local ad blocking setup)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)

@@ -563,6 +563,19 @@ phase_4_cloud_tools() {
                 print_success "Claude Code auto-compact disabled" || true
         fi
 
+        # Enable Agent Teams (experimental) with tmux split-pane mode
+        # Reference: https://code.claude.com/docs/en/agent-teams
+        # Settings go into ~/.claude/settings.json (env var + teammateMode)
+        local global_settings="$HOME/.claude/settings.json"
+        if command_exists jq && [[ -f "$global_settings" ]]; then
+            jq '.env["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1" | .teammateMode = "tmux"' \
+                "$global_settings" > "$global_settings.tmp" && \
+                mv "$global_settings.tmp" "$global_settings" && \
+                print_success "Claude Code Agent Teams enabled (tmux split-pane mode)" || true
+        else
+            log_verbose "Skipping Agent Teams config: jq or settings.json not found"
+        fi
+
         # Install Claude Code plugins from anthropics/claude-code marketplace
         print_step "Installing Claude Code plugins..."
 
