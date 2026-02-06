@@ -228,6 +228,7 @@ brew "kubectx"   # Quick context/namespace switching (includes kubens)
 
 # Container Tools
 brew "colima"    # Container runtime for macOS
+brew "devcontainer"  # Dev Containers CLI for worktree/devcontainer integration
 # brew "buildah" # Not available on macOS
 brew "skopeo"
 
