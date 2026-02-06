@@ -1,0 +1,47 @@
+# Pi-hole Docker Compose Configuration
+# Runs Pi-hole as a local DNS sinkhole for ad blocking via Colima
+#
+# Usage:
+#   ./scripts/pihole/setup-pihole.sh start
+#   Or manually: docker compose -f scripts/pihole/docker-compose.yml up -d
+
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: unless-stopped
+    ports:
+      # DNS
+      - "53:53/tcp"
+      - "53:53/udp"
+      # Web admin interface
+      - "8053:80/tcp"
+    environment:
+      # Timezone - set to your local timezone
+      TZ: "Europe/London"
+      # Web admin password - change this or set via PIHOLE_PASSWORD env var
+      WEBPASSWORD: "${PIHOLE_PASSWORD:-changeme}"
+      # Upstream DNS servers (Cloudflare - fast and privacy-focused)
+      PIHOLE_DNS_: "1.1.1.1;1.0.0.1"
+      # Don't use the container's resolv.conf for upstream DNS
+      DNSMASQ_LISTENING: "all"
+      # Interface to listen on
+      INTERFACE: "eth0"
+      # Enable DNSSEC
+      DNSSEC: "true"
+    volumes:
+      # Persistent storage for Pi-hole configuration and data
+      - pihole_config:/etc/pihole
+      - pihole_dnsmasq:/etc/dnsmasq.d
+    # Required for DNS to work properly
+    dns:
+      - "127.0.0.1"
+      - "1.1.1.1"
+    cap_add:
+      - NET_ADMIN
+
+volumes:
+  pihole_config:
+    name: pihole_config
+  pihole_dnsmasq:
+    name: pihole_dnsmasq

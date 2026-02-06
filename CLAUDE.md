@@ -902,8 +902,58 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 - `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
 - `ralph-loop` - autonomous iteration
 
+### Pi-hole DNS Ad Blocking (Local via Colima + Docker)
+
+**Purpose**: DNS-level ad blocking running locally via Colima + Docker. No hardware required.
+
+**Location**: `scripts/pihole/`
+
+**Architecture**:
+```
+macOS DNS (127.0.0.1) → Colima VM (:53 forward) → Pi-hole Container → Cloudflare (1.1.1.1)
+```
+
+**Key Files**:
+- `scripts/pihole/docker-compose.yml` - Pi-hole container configuration
+- `scripts/pihole/setup-pihole.sh` - Setup and management script
+- `scripts/pihole/custom-blocklist.txt` - Custom domain blocklist
+- `scripts/pihole/test-pihole-setup.sh` - Smoke tests
+- `.config/fish/functions/pihole.fish` - Fish shell wrapper
+
+**Usage**:
+```bash
+# Start Pi-hole
+pihole start           # or: ./scripts/pihole/setup-pihole.sh start
+
+# Activate ad blocking (points macOS DNS to Pi-hole)
+pihole dns-on
+
+# Check status
+pihole status
+
+# Disable (restore Cloudflare DNS)
+pihole dns-off
+
+# Stop container
+pihole stop
+```
+
+**Web Admin**: http://localhost:8053/admin (password: `$PIHOLE_PASSWORD` or `changeme`)
+
+**Configuration**:
+- DNS port: 53 (TCP/UDP) via Colima port-forward
+- Web admin port: 8053
+- Upstream DNS: Cloudflare (1.1.1.1, 1.0.0.1)
+- DNSSEC: Enabled
+- Persistent volumes: `pihole_config`, `pihole_dnsmasq`
+
+**Dependencies**: `colima`, `docker` (both already in Brewfile)
+
+**Note**: This blocks ads only on the local machine. For network-wide blocking, run Pi-hole on an always-on server and configure router DHCP.
+
 ### Recent Updates
 - **2026-02-06**: Added Claude Code devcontainer auto-login (Keychain → .credentials.json export/import)
+- **2026-02-05**: Added Pi-hole DNS ad blocking via Colima + Docker (local ad blocking setup)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
 - **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
 - **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
