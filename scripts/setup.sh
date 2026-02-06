@@ -1151,6 +1151,18 @@ phase_10_advanced_features() {
 
     print_success "Devcontainer environment ready at ~/.devcontainer/env"
 
+    # Pre-export Claude Code credentials for devcontainer auto-login
+    # Extracts OAuth tokens from macOS Keychain so devcontainers can authenticate automatically
+    local export_script="$DOTFILES_ROOT/scripts/devcontainer/export-claude-credentials.sh"
+    if [[ -f "$export_script" ]] && [[ "$(uname)" == "Darwin" ]]; then
+        print_step "Exporting Claude Code credentials for devcontainer auto-login..."
+        if bash "$export_script" "default" 2>/dev/null; then
+            print_success "Claude Code credentials exported for default instance"
+        else
+            print_warning "No Claude Code credentials found - run 'claude login' first"
+        fi
+    fi
+
     # Install devcontainer.vim (universal Neovim for any devcontainer)
     if command_exists go && [[ ! -f "$HOME/go/bin/devcontainer.vim" ]]; then
         print_step "Installing devcontainer.vim..."

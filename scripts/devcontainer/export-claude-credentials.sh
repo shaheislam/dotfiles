@@ -31,7 +31,7 @@ CREDS=$(security find-generic-password -a "$USER" -w -s "${KEYCHAIN_SERVICE}" 2>
 if [[ -z "${CREDS}" ]]; then
     echo "No Claude Code credentials found in Keychain."
     echo "Run 'claude login' on the host first."
-    exit 0
+    exit 1
 fi
 
 # Validate it's valid JSON before writing
