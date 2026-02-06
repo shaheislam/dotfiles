@@ -429,6 +429,13 @@ npm ci
 ~/dotfiles/scripts/tmux/tmux-claude-watcher.sh status
 ```
 
+**Session Manager Integration**: The tmux session manager (`prefix + S`) shows per-session indicators:
+- 🟢 next to sessions that have Claude windows waiting for input
+- 🔵 next to sessions that have Opencode windows waiting for input
+- 🟢🔵 next to sessions with both
+
+This works by scanning window names in each session for the `*`/`+` prefixes added by the watcher daemon.
+
 **tmux Hook Setup** (add to `.tmux.conf`):
 ```bash
 # Mark window as viewed when switching to it
