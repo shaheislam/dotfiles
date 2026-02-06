@@ -295,13 +295,13 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
 
     # Step 1: Create worktree via gwt-dev (reuses existing logic)
     echo "[1/4] Creating worktree..."
-    set -l gwt_args $branch_name --no-devcon
+    set -l gwt_args $branch_name --no-devcon --no-cd
     if not test -d "$worktree_path"
         # Check if branch exists
         if git show-ref --verify --quiet refs/heads/$branch_name
             gwt-dev $gwt_args
         else
-            gwt-dev $branch_name --new --no-devcon
+            gwt-dev $branch_name --new --no-devcon --no-cd
         end
         if test $status -ne 0
             echo "Error: Failed to create worktree"
