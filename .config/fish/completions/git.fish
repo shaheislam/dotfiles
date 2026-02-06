@@ -97,13 +97,24 @@ complete -c git -n '__fish_git_using_command branch' -s m -l move -d 'Rename bra
 # =============================================================================
 complete -c git -n '__fish_git_using_command checkout' -f
 
-# Show branches for checkout
+# Show branches for checkout (current branch listed first)
 complete -c git -n '__fish_git_using_command checkout; and not __fish_seen_argument -- -b' -a '
     (
-        # Local branches
-        git branch --format="%(refname:short)" 2>/dev/null
+        set -l current (git branch --show-current 2>/dev/null)
+        # Current branch first for priority ordering
+        if test -n "$current"
+            echo $current
+        end
+        # Local branches (excluding current to avoid duplicate)
+        git branch --format="%(refname:short)" 2>/dev/null | grep -vxF "$current"
         # Remote branches (without origin prefix for easier checkout)
-        git branch -r --format="%(refname:short)" 2>/dev/null | sed "s/^origin\\///" | grep -v HEAD
+        git branch -r --format="%(refname:short)" 2>/dev/null | grep -v HEAD | grep -vxF origin | sed "s/^origin\\///" | grep -vxF "$current"
+        # Remote branches with full prefix (for "git checkout origin<TAB>")
+        # Current branch remote ref listed first
+        if test -n "$current"
+            echo "origin/$current"
+        end
+        git branch -r --format="%(refname:short)" 2>/dev/null | grep -v HEAD | grep -vxF origin | grep -vxF "origin/$current"
     )
 ' -d 'Branch'
 

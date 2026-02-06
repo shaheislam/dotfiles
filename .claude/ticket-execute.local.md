@@ -2,6 +2,7 @@
 active: true
 issue_key: "TASK"
 <<<<<<< HEAD
+<<<<<<< HEAD
 title: "diffview-split"
 ticketing_system: ""
 auto_generated: true
@@ -63,6 +64,38 @@ make rm commands have parity with git rm, so that when i press rm <TAB> it shows
 Instructions:
 1. Work in this worktree (/Users/shahe/dotfiles-rmgitrm)
 >>>>>>> rmgitrm
+||||||| c6b065e
+=======
+title: "gitcheckout"
+ticketing_system: ""
+auto_generated: true
+started_at: "2026-02-05T22:30:53Z"
+max_iterations: 20
+completion_promise: "TICKET_TASK_COMPLETE"
+worktree_path: "/Users/shahe/dotfiles-gitcheckout"
+tmux_session: "dotfiles"
+tmux_window: "gitcheckout"
+---
+
+# Ticket Execution State
+
+This file tracks the autonomous execution of ticket TASK.
+
+When the ralph-loop completes (outputs the completion promise),
+the post-completion hook will:
+1. Create a PR
+2. Transition the ticket (skipped if auto_generated)
+3. Send notification
+
+## Prompt Given
+
+Fix ticket TASK: gitcheckout
+
+When I do git checkout origin, and then I want the auto-complete to be the branch that I'm already on by default.
+
+Instructions:
+1. Work in this worktree (/Users/shahe/dotfiles-gitcheckout)
+>>>>>>> gitcheckout
 2. Understand the existing codebase first
 3. Implement the fix/feature
 4. Write tests if applicable
