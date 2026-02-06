@@ -412,39 +412,40 @@ $prompt_suffix"
     chmod +x $launch_script
 
     if $use_devcon
-        # Build devcon up command (start container without exec)
-        # Uses the built-in devcon claude sandbox - does NOT require the project
-        # to have its own .devcontainer/ directory
-        # Pass Claude Code env vars into container for plugin auto-update and CLAUDE.md loading
-        set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path"
+        # Build devcon args as a list (not a string for send-keys)
+        set -l devcon_args claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path
         for mount in $mounts
-            set devcon_up_cmd "$devcon_up_cmd $mount"
+            set -a devcon_args $mount
         end
 
         # Config paths for devcontainer exec
         set -l workspace "$HOME/.devcontainer/workspaces/$instance_name"
         set -l config_file "$HOME/dotfiles/devcontainer/claude-code-plugins/.devcontainer/devcontainer.json"
-        set -l exec_cmd "devcontainer exec --config $config_file --workspace-folder $workspace"
+        set -l exec_prefix "devcontainer exec --config $config_file --workspace-folder $workspace"
+
+        # Step 1: Start devcontainer directly (blocks until ready)
+        devcon $devcon_args
+        if test $status -ne 0
+            echo "Error: Failed to start devcontainer"
+            return 1
+        end
 
         # 3-pane layout: Claude left, nvim diffview top-right, terminal bottom-right
         # All panes run INSIDE the devcontainer via devcontainer exec.
-        # The original pane also enters the container after setup to prevent
-        # host file access when panes exit.
         # ┌──────────────┬──────────────┐
         # │              │ nvim diffview │ ← top-right (devcontainer)
         # │  Claude Code ├──────────────┤
         # │              │   terminal   │ ← bottom-right (devcontainer)
         # └──────────────┴──────────────┘
-        # Step 1: Start devcontainer
-        tmux send-keys -t "$session_name:$window_name" "$devcon_up_cmd" Enter
-        # Step 2: Wait for container, then create 3-pane layout
-        # - split-window -hb creates Claude on left (becomes active)
-        # - last-pane returns focus to right pane
-        # - split-window -v splits right pane: top stays (diffview), bottom is new (terminal)
-        # - select-pane -U moves focus to top-right for nvim launch
-        # - nvim launches with DiffviewOpen in top-right
-        # - original pane enters container shell after nvim exits (prevents host access)
-        tmux send-keys -t "$session_name:$window_name" "sleep 2 && tmux split-window -hb -p 50 -c $worktree_path '$exec_cmd fish $launch_script' && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen' ; $exec_cmd fish" Enter
+
+        # Step 2: Split horizontally - Claude on left (50%), current pane stays right
+        tmux split-window -t "$session_name:$window_name" -hb -p 50 "$exec_prefix fish $launch_script"
+        # Step 3: Switch to right pane and split it vertically for diffview + terminal
+        tmux last-pane -t "$session_name:$window_name"
+        tmux split-window -t "$session_name:$window_name" -v -p 30 "$exec_prefix fish"
+        # Step 4: Launch nvim with diffview in top-right pane (go up from bottom-right)
+        tmux select-pane -t "$session_name:$window_name" -U
+        tmux send-keys -t "$session_name:$window_name" "$exec_prefix nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen' ; $exec_prefix fish" Enter
     else
         # Run locally with 3-pane layout:
         # ┌──────────────┬──────────────┐
