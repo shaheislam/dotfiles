@@ -757,6 +757,7 @@ claude plugin uninstall plugin-name@claude-code-plugins
 | Setting | Value | Purpose |
 |---------|-------|---------|
 | `autoCompactEnabled` | `false` | Disables automatic context compaction ([#6689](https://github.com/anthropics/claude-code/issues/6689)) |
+| `teammateMode` | `"auto"` | Agent teams display mode: split panes in tmux, in-process otherwise |
 
 These are set automatically by `scripts/setup.sh` using `jq` and `claude config set`.
 
@@ -819,6 +820,62 @@ Shift+Down → type message → Enter
 - Not supported in Ghostty's tmux integration
 
 **Relationship to Gastown**: Claude Code Agent Teams is Anthropic's native implementation of multi-agent orchestration patterns similar to [Gastown](https://github.com/steveyegge/gastown). Key Gastown features NOT yet in Agent Teams: persistent work ledger (Beads), merge queue processing (Refinery), health monitoring daemon (Deacon/Daemon), agent CVs/capability matching, cross-project coordination. Consider Gastown for enterprise-scale multi-agent workflows requiring audit trails and automated health monitoring.
+
+### Agent Teams (Experimental)
+
+**Purpose**: Coordinate multiple Claude Code instances working as a team with shared tasks, inter-agent messaging, and centralized management.
+
+**Reference**: https://code.claude.com/docs/en/agent-teams
+
+**Status**: Experimental - enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` env var.
+
+**Configuration**:
+- **Env var**: Set in `.claude/settings.json` → `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"`
+- **Display mode**: Set in `~/.claude.json` → `teammateMode = "auto"` (auto-detects tmux for split panes)
+- **CLI override**: `claude --teammate-mode in-process` for single-terminal mode
+
+**Display Modes**:
+| Mode | Description | Requirement |
+|------|-------------|-------------|
+| `auto` (default) | Split panes if tmux detected, in-process otherwise | tmux (already installed) |
+| `in-process` | All teammates in main terminal, navigate with Shift+Up/Down | Any terminal |
+| `tmux` | Each teammate in own pane | tmux or iTerm2 |
+
+**Architecture**:
+- **Team lead**: Main session that creates the team and coordinates work
+- **Teammates**: Separate Claude Code instances working on assigned tasks
+- **Task list**: Shared at `~/.claude/tasks/{team-name}/`
+- **Team config**: Stored at `~/.claude/teams/{team-name}/config.json`
+
+**Usage**:
+```
+Create an agent team to review this codebase from different angles:
+- One teammate on security
+- One on performance
+- One on test coverage
+```
+
+**Key Controls**:
+- `Shift+Up/Down` - Navigate between teammates (in-process mode)
+- `Shift+Tab` - Toggle delegate mode (lead coordinates only, no coding)
+- `Ctrl+T` - Toggle task list view
+
+**Best Use Cases**:
+- Parallel code review with different focus areas
+- Debugging with competing hypotheses
+- Cross-layer coordination (frontend + backend + tests)
+- Research and investigation from multiple angles
+
+**Not Recommended For**:
+- Sequential tasks with many dependencies
+- Same-file edits (causes conflicts)
+- Simple tasks where coordination overhead exceeds benefit
+
+**Limitations**:
+- No session resumption with in-process teammates
+- One team per session
+- No nested teams (teammates can't spawn sub-teams)
+- Split panes not supported in VS Code terminal or Ghostty
 
 ### Agentic Ticket Execution System
 
@@ -1067,6 +1124,7 @@ Understanding when NOT to delegate to agents is as important as knowing when to 
 ### Recent Updates
 - **2026-02-06**: Added Hashimoto-style AGENTS.md, filtered test runner, background agent workflow docs
 - **2026-02-06**: Enabled Claude Code Agent Teams with tmux split-pane mode (Gastown/Agent Teams integration analysis)
+- **2026-02-06**: Added Agent Teams support (experimental multi-session coordination with shared tasks)
 - **2026-02-06**: Added Claude Code devcontainer auto-login (Keychain → .credentials.json export/import)
 - **2026-02-05**: Added Pi-hole DNS ad blocking via Colima + Docker (local ad blocking setup)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)

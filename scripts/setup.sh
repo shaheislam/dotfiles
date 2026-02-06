@@ -574,6 +574,13 @@ phase_4_cloud_tools() {
                 print_success "Claude Code Agent Teams enabled (tmux split-pane mode)" || true
         else
             log_verbose "Skipping Agent Teams config: jq or settings.json not found"
+        # Enable experimental agent teams (multi-session coordination)
+        # Reference: https://code.claude.com/docs/en/agent-teams
+        # Also configured in .claude/settings.json env block for per-project enablement
+        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
+            jq '.teammateMode = "auto"' "$HOME/.claude.json" > "$HOME/.claude.json.tmp" && \
+                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" && \
+                print_success "Claude Code agent teams teammate mode set to auto" || true
         fi
 
         # Install Claude Code plugins from anthropics/claude-code marketplace
