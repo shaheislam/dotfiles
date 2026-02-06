@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   curl \
   rsync \
   wget \
+  xclip \
   # Locale support
   locales \
   && apt-get clean && rm -rf /var/lib/apt/lists/* \
@@ -49,6 +50,54 @@ RUN FZF_VERSION=$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/
 RUN curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash \
   && mv ~/.local/bin/zoxide /usr/local/bin/ \
   && zoxide --version
+
+# Install atuin (shell history sync, required for Ctrl+R fzf integration)
+RUN ARCH=$(dpkg --print-architecture) \
+  && ATUIN_VERSION=$(curl -fsSL https://api.github.com/repos/atuinsh/atuin/releases/latest | grep -Po '"tag_name": "v?\K[^"]*') \
+  && echo "Installing atuin ${ATUIN_VERSION}..." \
+  && if [ "$ARCH" = "arm64" ]; then ATUIN_ARCH="aarch64"; else ATUIN_ARCH="x86_64"; fi \
+  && curl -fSL -o /tmp/atuin.tar.gz "https://github.com/atuinsh/atuin/releases/download/v${ATUIN_VERSION}/atuin-v${ATUIN_VERSION}-${ATUIN_ARCH}-unknown-linux-gnu.tar.gz" \
+  && tar -xzf /tmp/atuin.tar.gz -C /tmp \
+  && mv /tmp/atuin-v${ATUIN_VERSION}-${ATUIN_ARCH}-unknown-linux-gnu/atuin /usr/local/bin/ \
+  && rm -rf /tmp/atuin* \
+  && atuin --version
+
+# Install eza (modern ls replacement, used by fish aliases and FZF previews)
+RUN ARCH=$(dpkg --print-architecture) \
+  && EZA_VERSION=$(curl -fsSL https://api.github.com/repos/eza-community/eza/releases/latest | grep -Po '"tag_name": "v?\K[^"]*') \
+  && echo "Installing eza ${EZA_VERSION}..." \
+  && if [ "$ARCH" = "arm64" ]; then EZA_ARCH="aarch64"; else EZA_ARCH="x86_64"; fi \
+  && curl -fSL -o /tmp/eza.tar.gz "https://github.com/eza-community/eza/releases/download/v${EZA_VERSION}/eza_${EZA_ARCH}-unknown-linux-gnu.tar.gz" \
+  && tar -xzf /tmp/eza.tar.gz -C /usr/local/bin \
+  && rm /tmp/eza.tar.gz \
+  && eza --version
+
+# Install bat (cat replacement with syntax highlighting, used by FZF previews)
+RUN ARCH=$(dpkg --print-architecture) \
+  && BAT_VERSION=$(curl -fsSL https://api.github.com/repos/sharkdp/bat/releases/latest | grep -Po '"tag_name": "v?\K[^"]*') \
+  && echo "Installing bat ${BAT_VERSION}..." \
+  && curl -fSL -o /tmp/bat.deb "https://github.com/sharkdp/bat/releases/download/v${BAT_VERSION}/bat_${BAT_VERSION}_${ARCH}.deb" \
+  && dpkg -i /tmp/bat.deb \
+  && rm /tmp/bat.deb \
+  && bat --version
+
+# Install fd (find replacement, used by FZF default command)
+RUN ARCH=$(dpkg --print-architecture) \
+  && FD_VERSION=$(curl -fsSL https://api.github.com/repos/sharkdp/fd/releases/latest | grep -Po '"tag_name": "v?\K[^"]*') \
+  && echo "Installing fd ${FD_VERSION}..." \
+  && curl -fSL -o /tmp/fd.deb "https://github.com/sharkdp/fd/releases/download/v${FD_VERSION}/fd_${FD_VERSION}_${ARCH}.deb" \
+  && dpkg -i /tmp/fd.deb \
+  && rm /tmp/fd.deb \
+  && fd --version
+
+# Install ripgrep (grep replacement, used by FZF default command)
+RUN ARCH=$(dpkg --print-architecture) \
+  && RG_VERSION=$(curl -fsSL https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep -Po '"tag_name": "\K[^"]*') \
+  && echo "Installing ripgrep ${RG_VERSION}..." \
+  && curl -fSL -o /tmp/ripgrep.deb "https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}/ripgrep_${RG_VERSION}-1_${ARCH}.deb" \
+  && dpkg -i /tmp/ripgrep.deb \
+  && rm /tmp/ripgrep.deb \
+  && rg --version
 
 # Install git-delta
 ARG GIT_DELTA_VERSION=0.18.2
