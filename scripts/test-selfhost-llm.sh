@@ -78,6 +78,15 @@ else
     fail "Ollama missing from Brewfile"
 fi
 
+# Test: setup.sh has ENABLE_SELFHOST_LLM integration
+echo ""
+echo "--- setup.sh Integration ---"
+if grep -q 'ENABLE_SELFHOST_LLM' "$DOTFILES_ROOT/scripts/setup.sh"; then
+    pass "setup.sh has ENABLE_SELFHOST_LLM integration"
+else
+    fail "setup.sh missing ENABLE_SELFHOST_LLM integration"
+fi
+
 # ============================================================================
 # Fish Function Tests
 # ============================================================================

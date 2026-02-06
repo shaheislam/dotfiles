@@ -78,8 +78,8 @@ EXAMPLES:
     # Automated installation (CI/scripts)
     $0 --profile minimal --no-confirm
 
-    # Enable optional features (Nix, Pulse)
-    ENABLE_NIX=true ENABLE_PULSE=true $0 --profile comprehensive
+    # Enable optional features (Nix, Pulse, Self-Hosted LLM)
+    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_SELFHOST_LLM=true $0 --profile comprehensive
 
     # Clone personal repositories (set environment variables)
     OBSIDIAN_REPO=git@github.com:user/obsidian.git \\
@@ -89,6 +89,7 @@ EXAMPLES:
 ENVIRONMENT VARIABLES:
     ENABLE_NIX=true         Enable Nix package manager installation (Phase 11)
     ENABLE_PULSE=true       Enable Pulse coding tracker installation (Phase 11)
+    ENABLE_SELFHOST_LLM=true  Enable self-hosted LLM stack (Ollama + Open WebUI) (Phase 11)
     OBSIDIAN_REPO=<url>     Clone Obsidian vault from repository (Phase 10)
     NVIM_REPO=<url>         Clone personal Neovim config (Phase 10)
 
@@ -1467,6 +1468,21 @@ EOF
             print_success "Pulse tracker configured"
             echo "View logs: tail -f ~/.pulse/logs/stdout.log"
             echo "Query data: redis-cli KEYS \"*\""
+        fi
+    fi
+
+    if [[ "${ENABLE_SELFHOST_LLM:-false}" == "true" ]]; then
+        print_header "Phase 11: Optional Features - Self-Hosted LLM Stack"
+
+        if [[ -f "$DOTFILES_ROOT/scripts/setup-selfhost-llm.sh" ]]; then
+            print_step "Running self-hosted LLM setup (Ollama + Open WebUI)..."
+            if bash "$DOTFILES_ROOT/scripts/setup-selfhost-llm.sh"; then
+                print_success "Self-hosted LLM stack installed"
+            else
+                print_warning "Self-hosted LLM setup had issues (non-critical)"
+            fi
+        else
+            print_warning "Self-hosted LLM setup script not found"
         fi
     fi
 
