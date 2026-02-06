@@ -307,10 +307,11 @@ complete -c git -n '__fish_git_using_command reset' -l mixed -d 'Reset index, ke
 # =============================================================================
 complete -c git -n '__fish_git_using_command rm' -f
 
-# Show tracked files
+# Show tracked files (with relative paths that work from any subdirectory)
 complete -c git -n '__fish_git_using_command rm' -a '
     (
-        git ls-files 2>/dev/null
+        set -l cdup (git rev-parse --show-cdup 2>/dev/null)
+        git ls-files --full-name :/ 2>/dev/null | sed "s|^|$cdup|"
     )
 ' -d 'Tracked file'
 
