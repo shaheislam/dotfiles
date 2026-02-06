@@ -719,6 +719,8 @@ if status is-interactive
     alias gtqm="gt-queue merge"           # Merge via Graphite
     alias gtqs="gt-queue submit --stack"  # Submit + merge-when-ready
     alias gtqo="gt-queue open"            # Open dashboard
+    alias gtqw="gt-queue watch"           # Auto-refresh queue status
+    alias gtqr="gt-queue retry"           # Re-enqueue failed PR
     alias gts="gt-stack"                  # Stack viewer
     alias gtsi="gt-stack --interactive"   # Interactive stack viewer
     alias gtss="gt submit --stack"        # Submit entire stack
