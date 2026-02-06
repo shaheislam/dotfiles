@@ -554,12 +554,17 @@ phase_4_cloud_tools() {
         claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 && \
             print_success "Claude Code notification channel set to terminal_bell" || true
 
-        # Disable auto-compact (undocumented setting)
-        # Reference: https://github.com/anthropics/claude-code/issues/6689
+        # Auto-compact: left enabled (default) since 2.1.21 fixed early triggering.
+        # Long ralph-loop sessions benefit from mid-session compaction.
+        # Previously disabled via jq hack (issue #6689) - no longer needed.
+
+        # Re-enable auto-compact if previously disabled by older setup.sh
         if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.autoCompactEnabled = false' "$HOME/.claude.json" > "$HOME/.claude.json.tmp" && \
-                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" && \
-                print_success "Claude Code auto-compact disabled" || true
+            if jq -e '.autoCompactEnabled == false' "$HOME/.claude.json" >/dev/null 2>&1; then
+                jq 'del(.autoCompactEnabled)' "$HOME/.claude.json" > "$HOME/.claude.json.tmp" && \
+                    mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" && \
+                    print_success "Claude Code auto-compact re-enabled (removed legacy override)" || true
+            fi
         fi
 
         # Install Claude Code plugins from anthropics/claude-code marketplace
@@ -581,7 +586,7 @@ phase_4_cloud_tools() {
 
         # Tier 2 - Situational plugins
         claude plugin install agent-sdk-dev@claude-code-plugins >/dev/null 2>&1 || true
-        claude plugin install claude-opus-4-5-migration@claude-code-plugins >/dev/null 2>&1 || true
+        # claude-opus-4-5-migration removed: Opus 4.6 is current, plugin is stale
         claude plugin install explanatory-output-style@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install learning-output-style@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install code-simplifier@claude-code-plugins >/dev/null 2>&1 || true
@@ -590,8 +595,8 @@ phase_4_cloud_tools() {
         # Infrastructure/Terraform skill
         claude plugin install terraform-skill@antonbabenko >/dev/null 2>&1 || true
 
-        print_success "Claude Code plugins installed (14 plugins)"
-        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, claude-opus-4-5-migration, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill"
+        print_success "Claude Code plugins installed (13 plugins)"
+        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill"
 
         # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
         if [[ ! -d "$HOME/ralph-claude-code" ]]; then

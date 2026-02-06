@@ -684,7 +684,7 @@ Plugins are installed from three marketplaces:
 
 **Installation**: Plugins are stored in `~/.claude/settings.json` and available in all sessions on the device. For cross-device consistency, installation commands are in `scripts/setup.sh`.
 
-**Installed Plugins (14 total)**:
+**Installed Plugins (13 total)**:
 
 | Plugin | Command | Purpose |
 |--------|---------|---------|
@@ -696,7 +696,6 @@ Plugins are installed from three marketplaces:
 | **plugin-dev** | `/plugin-dev:create-plugin` | 7 skills + 8-phase plugin creation workflow |
 | **ralph-wiggum** | `/ralph-wiggum:ralph-loop` | Autonomous iteration loops (also `/ralph-wiggum:cancel-ralph`) |
 | **agent-sdk-dev** | `/new-sdk-app` | Claude Agent SDK project scaffolding |
-| **claude-opus-4-5-migration** | Natural language | Model migration helper ("Migrate to Opus 4.5") |
 | **explanatory-output-style** | SessionStart hook | Educational insights on implementation choices |
 | **learning-output-style** | SessionStart hook | Interactive learning mode with code contribution prompts |
 | **code-simplifier** | Auto-triggered | Identifies over-engineering, suggests simpler implementations |
@@ -720,12 +719,13 @@ claude plugin uninstall plugin-name@claude-code-plugins
 
 **Token Cost Note**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks that increase token usage. Disable when not needed.
 
-**Undocumented Settings** (`~/.claude.json`):
-| Setting | Value | Purpose |
-|---------|-------|---------|
-| `autoCompactEnabled` | `false` | Disables automatic context compaction ([#6689](https://github.com/anthropics/claude-code/issues/6689)) |
+**Environment Variables** (set in `config.fish`):
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `FORCE_AUTOUPDATE_PLUGINS` | `1` | Auto-update plugins on every session start |
+| `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD` | `1` | Load CLAUDE.md from `--add-dir` paths (used by gwt-ticket) |
 
-These are set automatically by `scripts/setup.sh` using `jq`.
+**Auto-Compact**: Enabled (default). Previously disabled via `autoCompactEnabled: false` workaround for [#6689](https://github.com/anthropics/claude-code/issues/6689), but 2.1.21 fixed early triggering. Long ralph-loop sessions benefit from mid-session compaction.
 
 ### Agentic Ticket Execution System
 

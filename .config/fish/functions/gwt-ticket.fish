@@ -395,18 +395,22 @@ $prompt_suffix"
     # Build launch script with proper escaping
     set -l escaped_prompt (string escape -- "$prompt")
 
+    # Resolve main repo root for --add-dir (inherits CLAUDE.md into worktree sessions)
+    set -l resolved_repo_root (realpath $repo_root)
+
     # Write script using echo to avoid printf escape issues
     echo '#!/usr/bin/env fish' > $launch_script
     echo "set -l prompt $escaped_prompt" >> $launch_script
     echo "" >> $launch_script
 
     # Build the claude command based on slash_command
+    # --add-dir passes the main repo root so worktree sessions inherit its CLAUDE.md
     # ralph-loop needs special args, others just get the prompt
     if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-        echo 'claude --dangerously-skip-permissions "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >> $launch_script
+        echo 'claude --dangerously-skip-permissions --add-dir '$resolved_repo_root' "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >> $launch_script
     else
         # For other commands, just pass the prompt as the argument
-        echo 'claude --dangerously-skip-permissions "'$slash_command' \\"$prompt\\""' >> $launch_script
+        echo 'claude --dangerously-skip-permissions --add-dir '$resolved_repo_root' "'$slash_command' \\"$prompt\\""' >> $launch_script
     end
     chmod +x $launch_script
 

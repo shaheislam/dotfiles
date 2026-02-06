@@ -63,6 +63,10 @@ if status is-interactive
     set -x STARSHIP_CONFIG $HOME/.config/starship.toml
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
+    # Claude Code environment
+    set -gx FORCE_AUTOUPDATE_PLUGINS 1  # Auto-update plugins on session start
+    set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1  # Load CLAUDE.md from --add-dir paths
+
     # ==================== Platform-Specific Configuration ====================
 
     # WSL-specific configuration
