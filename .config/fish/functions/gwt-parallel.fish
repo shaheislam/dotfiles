@@ -106,6 +106,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
 
     set -l repo (basename (git rev-parse --show-toplevel))
     set -l repo_root (git rev-parse --show-toplevel)
+    set -l resolved_repo_root (realpath $repo_root)
 
     echo "Launching "(count $branches)" worktrees in parallel..."
     if test (count $mounts) -gt 0
@@ -155,7 +156,8 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
         else
             # Use devcon claude (fixed devcontainer config, mounts worktree)
             # Build devcon up command (without --exec, we'll exec separately)
-            set -l devcon_up_cmd "devcon claude -i $instance_name $worktree_path"
+            # Pass Claude Code env vars into container for plugin auto-update and CLAUDE.md loading
+            set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path"
             for mount in $mounts
                 set devcon_up_cmd "$devcon_up_cmd $mount"
             end
@@ -171,6 +173,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
                 tmux send-keys -t $window_name "$devcon_up_cmd --exec" Enter
             else
                 # 3-pane layout: Claude left, nvim diffview top-right, terminal bottom-right
+                # --add-dir passes main repo root so worktree sessions inherit its CLAUDE.md
                 # ┌──────────────┬──────────────┐
                 # │              │ nvim diffview │ ← top-right (70%)
                 # │  Claude Code ├──────────────┤
@@ -181,7 +184,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
                 # split right vertically (terminal bottom) → go up to top-right → launch nvim diffview
                 # Bottom-right pane gets devcontainer shell from the split command
                 # After nvim exits, original pane enters container shell (prevents host access)
-                tmux send-keys -t $window_name "$devcon_up_cmd && tmux split-window -hb -p 50 && tmux send-keys '$exec_cmd fish -c \"claude --dangerously-skip-permissions\"' Enter && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim -c 'DiffviewOpen' ; $exec_cmd fish" Enter
+                tmux send-keys -t $window_name "$devcon_up_cmd && tmux split-window -hb -p 50 && tmux send-keys '$exec_cmd fish -c \"claude --dangerously-skip-permissions --add-dir $resolved_repo_root\"' Enter && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim -c 'DiffviewOpen' ; $exec_cmd fish" Enter
             end
         end
 
