@@ -1,6 +1,6 @@
-# Claude Code Changelog Analysis (2.1.0 - 2.1.32)
+# Claude Code Changelog Analysis (2.1.0 - 2.1.34)
 
-> Reviewed: 2026-02-05
+> Reviewed: 2026-02-06 (updated from 2026-02-05 review)
 > Source: https://code.claude.com/docs/en/changelog
 
 ## TL;DR - High-Impact Changes
@@ -8,14 +8,16 @@
 The most significant changes since this dotfiles repo was last updated:
 
 1. **Claude Opus 4.6** is now the default model (2.1.32)
-2. **Agent Teams** experimental multi-agent collaboration (2.1.32)
-3. **Auto-memory** - Claude automatically records/recalls memories (2.1.32)
-4. **Task management system** with dependency tracking (2.1.16)
-5. **Customizable keybindings** (2.1.18)
-6. **Merged slash commands and skills** into unified system (2.1.3)
-7. **MCP tool search auto mode** enabled by default (2.1.7)
-8. **npm deprecation** - installations moving away from npm (2.1.15)
-9. **Security fixes** - command injection (2.1.2), shell bypass (2.1.6)
+2. **Agent Teams** experimental multi-agent collaboration (2.1.32), with tmux fixes (2.1.33)
+3. **Auto-memory** - Claude automatically records/recalls memories (2.1.32), now with `memory` frontmatter for agents (2.1.33)
+4. **New hook events**: `TeammateIdle` and `TaskCompleted` for multi-agent workflows (2.1.33)
+5. **Agent tool restrictions**: `Task(agent_type)` syntax in agent frontmatter (2.1.33)
+6. **Task management system** with dependency tracking (2.1.16)
+7. **Customizable keybindings** (2.1.18)
+8. **Merged slash commands and skills** into unified system (2.1.3)
+9. **MCP tool search auto mode** enabled by default (2.1.7)
+10. **npm deprecation** - installations moving away from npm (2.1.15)
+11. **Security fixes** - command injection (2.1.2), shell bypass (2.1.6), sandbox bypass (2.1.34)
 
 ---
 
@@ -25,6 +27,7 @@ The most significant changes since this dotfiles repo was last updated:
 
 | Version | Change | Impact | Action Required |
 |---------|--------|--------|-----------------|
+| 2.1.34 | Sandbox bypass fix for `excludedCommands` | Security: excluded commands could bypass Bash ask permission | Verify sandbox config doesn't rely on `autoAllowBashIfSandboxed` with excluded commands |
 | 2.1.15 | npm installation deprecated | Setup script may need updating | Verify `setup.sh` install method uses recommended approach |
 | 2.1.3 | Slash commands and skills merged | `.claude/skills/` now unified | No action - backwards compatible, but simplifies future skill creation |
 | 2.1.7 | MCP tool search auto mode default | MCP `auto:N` syntax available | Consider adding `auto:` threshold config to setup |
@@ -34,7 +37,9 @@ The most significant changes since this dotfiles repo was last updated:
 
 | Version | Setting | Purpose | Recommendation |
 |---------|---------|---------|----------------|
-| 2.1.32 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | Multi-agent collaboration | Experimental - monitor, don't enable yet |
+| 2.1.33 | `memory` agent frontmatter | Persistent memory for agents (user/project/local scope) | **Add to custom agents** - enables agents to remember across sessions |
+| 2.1.33 | `Task(agent_type)` in agent tools | Restrict which sub-agents an agent can spawn | Useful for tightly-scoped agents in `.claude/agents/` |
+| 2.1.32 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | Multi-agent collaboration | **Already enabled** in setup.sh |
 | 2.1.23 | `spinnerVerbs` | Customizable spinner text | Low priority - cosmetic |
 | 2.1.9 | `plansDirectory` | Custom plan file location | Could set to `.claude/plans/` for consistency |
 | 2.1.9 | `showTurnDuration` (2.1.7) | Hide turn duration messages | Personal preference |
@@ -47,17 +52,22 @@ The most significant changes since this dotfiles repo was last updated:
 
 | Version | Change | Current State | Recommended Action |
 |---------|--------|---------------|-------------------|
+| 2.1.33 | `TeammateIdle` + `TaskCompleted` hook events | Not using | **Consider adding hooks** for tmux-claude-watcher integration with Agent Teams |
+| 2.1.33 | Agent Teams tmux fix | Already using Agent Teams | **No action** - fixes tmux send/receive which was broken |
 | 2.1.32 | Auto-memory feature | Not configured | Works automatically, no config needed |
 | 2.1.16 | Task management system | Not configured | Enable via `CLAUDE_CODE_ENABLE_TASKS` (default: true since 2.1.19) |
 | 2.1.10 | Setup hook via `--init` | Not using | Consider for dotfiles-specific initialization |
 | 2.1.30 | PDF `pages` parameter | N/A | Informational - Read tool now supports PDFs better |
-| 2.1.2 | `FORCE_AUTOUPDATE_PLUGINS` | Not set | Consider adding to ensure plugins stay current |
+| 2.1.2 | `FORCE_AUTOUPDATE_PLUGINS` | Already set | ✅ Applied in previous review |
 | 2.1.6 | Release channel toggle | Not configured | Can use `/config` to switch stable/latest |
 
 ### Plugin Ecosystem Updates
 
 | Version | Change | Impact |
 |---------|--------|--------|
+| 2.1.33 | Plugin name added to skill descriptions + `/skills` menu | Better discoverability of which plugin provides which skill |
+| 2.1.33 | `memory` frontmatter for agents | Agents can persist memory across sessions (user/project/local scope) |
+| 2.1.33 | `Task(agent_type)` restriction syntax | Agents can restrict which sub-agents they spawn |
 | 2.1.14 | Pin plugins to git commit SHAs | Can lock plugin versions for stability |
 | 2.1.16 | VSCode native plugin management | VSCode users get native UI |
 | 2.1.6 | Automatic skill discovery from nested `.claude/skills/` | Skills in subdirectories auto-discovered |
@@ -79,13 +89,51 @@ The most significant changes since this dotfiles repo was last updated:
 
 ## Feature Deep Dives
 
+### Agent Teams Stabilization (2.1.33-34)
+
+Agent Teams received critical fixes in 2.1.33-34:
+- **2.1.33**: Fixed tmux send/receive for agent teammate sessions - this was a **blocker** for the tmux-based workflow documented in CLAUDE.md
+- **2.1.34**: Fixed a crash when agent teams setting changed between renders
+- **2.1.34**: Security fix - commands excluded from sandboxing could bypass Bash ask permission when `autoAllowBashIfSandboxed` was enabled
+
+This setup already has Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json). The tmux fix in 2.1.33 is particularly significant since this dotfiles repo uses tmux as the primary display mode for Agent Teams.
+
+### New Hook Events (2.1.33)
+
+Two new hook events for multi-agent workflows:
+- **`TeammateIdle`**: Fires when an agent teammate goes idle
+- **`TaskCompleted`**: Fires when a task is marked completed
+
+These could integrate with the existing `tmux-claude-watcher.sh` daemon to provide native hook-based idle detection instead of the current polling approach (every 3 seconds).
+
+### Agent Memory Frontmatter (2.1.33)
+
+Agents defined in `.claude/agents/` can now use the `memory` frontmatter field with scopes:
+- `user` - persists per-user across all projects
+- `project` - persists per-project
+- `local` - persists locally (not committed)
+
+This is useful for custom agents that need to remember context across sessions.
+
+### Agent Tool Restrictions (2.1.33)
+
+Agents can now restrict which sub-agents they spawn using `Task(agent_type)` syntax in the `tools` frontmatter. Example:
+```yaml
+tools:
+  - Task(Explore)
+  - Task(Plan)
+  - Read
+  - Grep
+```
+This enables creating tightly-scoped agents that can only delegate to specific agent types.
+
 ### Agent Teams (2.1.32) - Research Preview
 
 Multi-agent collaboration where agents can work together on tasks. Requires:
 ```bash
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ```
-This is experimental and not yet stable. Monitor for GA release before adding to setup.
+Already enabled in this setup. The tmux fix in 2.1.33 makes this much more reliable.
 
 ### Auto-Memory (2.1.32)
 
@@ -121,6 +169,12 @@ Slash commands and skills are now the same system:
 
 | Version | Fix | Relevance |
 |---------|-----|-----------|
+| 2.1.34 | **Security: sandbox bypass via `excludedCommands`** | Critical - `autoAllowBashIfSandboxed` could be bypassed |
+| 2.1.33 | **Fixed agent teammate sessions in tmux** | Critical for Agent Teams + tmux workflow |
+| 2.1.33 | Fixed extended thinking interrupted by new messages | Reliability for long-running agents |
+| 2.1.33 | Fixed API proxy 404 fallback | Proxy users no longer get broken fallback |
+| 2.1.33 | Fixed proxy env vars not applied to WebFetch (Node.js build) | Network reliability |
+| 2.1.33 | Fixed `/resume` showing raw XML for slash command sessions | UX improvement |
 | 2.1.31 | Fixed bash "Read-only file system" with sandbox | Devcontainer workflows |
 | 2.1.30 | Fixed phantom "(no content)" text blocks (token waste) | Token efficiency |
 | 2.1.30 | 68% memory reduction for `--resume` | Long sessions |
@@ -146,14 +200,21 @@ Slash commands and skills are now the same system:
 ## Recommendations Summary
 
 ### Immediate Actions
-1. Ensure Claude Code is updated to >= 2.1.32 (setup script should handle this)
-2. Consider adding `FORCE_AUTOUPDATE_PLUGINS=1` to setup for auto-updating plugins
-3. The `claude-opus-4-5-migration` plugin name is now slightly outdated since Opus 4.6 exists - monitor for a newer migration plugin
+1. **Update Claude Code to >= 2.1.34** - critical security fix for sandbox bypass
+2. ✅ `FORCE_AUTOUPDATE_PLUGINS=1` already applied from previous review
+3. ✅ `claude-opus-4-5-migration` plugin already removed from previous review
 
-### Short-Term
+### Short-Term (New from 2.1.33-34)
+1. **Explore `TeammateIdle`/`TaskCompleted` hooks** - could replace polling in `tmux-claude-watcher.sh` with native event-driven detection
+2. **Add `memory` frontmatter** to custom agents in `.claude/agents/` for cross-session persistence
+3. **Consider `Task(agent_type)` restrictions** for agents that should only delegate to specific sub-agent types
+4. **Add plugin names** to skill descriptions for better discoverability (auto-enabled in 2.1.33)
+
+### Short-Term (Existing)
 1. Explore keybindings customization (`/keybindings`) and potentially add a `keybindings.json` to dotfiles
-2. Test Agent Teams feature when it reaches stable
+2. Agent Teams tmux support is now fixed (2.1.33) - can rely on tmux display mode
 3. Review if `plansDirectory` setting would benefit the workflow
+4. **VSCode remote sessions** for OAuth users now available (2.1.33) - useful if using VSCode
 
 ### No Action Needed
 - Auto-memory works automatically
@@ -161,6 +222,8 @@ Slash commands and skills are now the same system:
 - MCP auto-search enabled by default
 - Unified skills/commands backward compatible
 - PDF support improvements work automatically
+- Agent Teams tmux fix applied automatically on update
+- Improved API error messages (2.1.33) apply automatically
 
 ---
 
@@ -188,4 +251,6 @@ Slash commands and skills are now the same system:
 2.1.30 ──── PDF pages param, OAuth for MCP, /debug, 68% memory reduction
 2.1.31 ──── Session resume hint, sandbox fix, improved system prompts
 2.1.32 ──── Opus 4.6, Agent Teams, auto-memory, skill budget scales
+2.1.33 ──── Agent Teams tmux fix, TeammateIdle/TaskCompleted hooks, agent memory/tool restrictions
+2.1.34 ──── SECURITY: sandbox bypass fix, Agent Teams crash fix
 ```
