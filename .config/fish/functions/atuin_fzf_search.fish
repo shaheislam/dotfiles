@@ -3,6 +3,16 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     set -l cmd_buffer (commandline -b)
     set -l current_dir (pwd)
 
+    # Detect clipboard command (macOS pbcopy vs Linux xclip/xsel)
+    set -l clip_cmd "true" # no-op fallback
+    if command -v pbcopy >/dev/null
+        set clip_cmd "pbcopy"
+    else if command -v xclip >/dev/null
+        set clip_cmd "xclip -selection clipboard"
+    else if command -v xsel >/dev/null
+        set clip_cmd "xsel --clipboard --input"
+    end
+
     # Raw format: tab-separated fields
     set -l atuin_format "{time}\t{exit}\t{duration}\t{directory}\t{command}"
 
@@ -54,7 +64,7 @@ function atuin_fzf_search --description "Search shell history using atuin with f
         --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_dir)" \
         --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_global)" \
         --bind="alt-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_session)" \
-        --bind="ctrl-y:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | pbcopy)" \
+        --bind="ctrl-y:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | $clip_cmd)" \
         --bind="ctrl-e:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_failed')+change-header($header_failed)" \
         --bind="ctrl-o:execute(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" \
         > $tmpfile

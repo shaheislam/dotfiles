@@ -285,11 +285,20 @@ if status is-interactive
         --header 'CTRL-/: toggle preview | TAB: multi-select | ALT-E: edit in nvim'"
 
     # History search with preview and copy-to-clipboard
+    # Detect clipboard command (macOS pbcopy vs Linux xclip/xsel)
+    set -l _clip_cmd "true" # no-op fallback
+    if command -v pbcopy >/dev/null
+        set _clip_cmd "pbcopy"
+    else if command -v xclip >/dev/null
+        set _clip_cmd "xclip -selection clipboard"
+    else if command -v xsel >/dev/null
+        set _clip_cmd "xsel --clipboard --input"
+    end
     set -gx FZF_CTRL_R_OPTS "--preview 'echo {}' \
         --preview-window='up:3:wrap' \
         --border-label=' History ' \
         --header 'CTRL-Y: copy command | ENTER: execute' \
-        --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'"
+        --bind 'ctrl-y:execute-silent(echo -n {2..} | $_clip_cmd)+abort'"
 
     # Directory preview with eza tree view and enhanced aesthetics
     set -gx FZF_ALT_C_OPTS "--preview 'eza --tree --icons --level=2 --color=always {}' \
