@@ -370,6 +370,32 @@ cp $ROOT_WORKTREE_PATH/.env .env.local
 npm ci
 ```
 
+### Claude Code Devcontainer Auto-Login
+
+**Purpose**: Automatically authenticate Claude Code inside devcontainers by extracting OAuth credentials from macOS Keychain and importing them into the container.
+
+**How It Works**:
+1. `devcon.fish` calls `export-claude-credentials.sh` before container start (macOS Keychain → instance env dir)
+2. Credentials are written to `~/.devcontainer/instances/<name>/env/.claude-credentials.json`
+3. `postStartCommand` in devcontainer.json runs `import-claude-credentials.sh` inside the container
+4. Claude Code finds `.credentials.json` in `CLAUDE_CONFIG_DIR` and authenticates automatically
+
+**Key Files**:
+- `scripts/devcontainer/export-claude-credentials.sh` - Host-side: extracts from Keychain
+- `scripts/devcontainer/import-claude-credentials.sh` - Container-side: copies to Claude config dir
+- `scripts/devcontainer/test-claude-autologin.sh` - Smoke test for the auto-login flow
+
+**Security**:
+- Credentials stored with `chmod 600` permissions
+- Per-instance isolation (each devcontainer gets its own credential copy)
+- OAuth tokens include refresh capability for automatic renewal
+- No credentials committed to version control
+
+**Troubleshooting**:
+- **"No Claude Code credentials found"**: Run `claude login` on the host first
+- **Auth fails inside container**: Re-run `export-claude-credentials.sh <instance>` on host, then restart container
+- **Verify**: Run `scripts/devcontainer/test-claude-autologin.sh` to validate the full flow
+
 ### Claude & Opencode Activity Watcher
 
 **Purpose**: Background daemon that monitors tmux windows for idle Claude and Opencode processes, showing indicators when they need attention.
@@ -870,6 +896,7 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 - `ralph-loop` - autonomous iteration
 
 ### Recent Updates
+- **2026-02-06**: Added Claude Code devcontainer auto-login (Keychain → .credentials.json export/import)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
 - **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
 - **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development

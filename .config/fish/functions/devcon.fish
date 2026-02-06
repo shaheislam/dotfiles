@@ -301,6 +301,14 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         set -a feature_args "--additional-features" "$features_json"
     end
 
+    # Export Claude Code credentials from macOS Keychain for devcontainer auto-login
+    if test "$container_type" = "claude"
+        set -l export_script "$HOME/dotfiles/scripts/devcontainer/export-claude-credentials.sh"
+        if test -f "$export_script"
+            bash "$export_script" "$instance_name"
+        end
+    end
+
     # Start container
     echo "Starting $container_type devcontainer (instance: $instance_name)..."
     echo "Instance storage: $instance_base/"

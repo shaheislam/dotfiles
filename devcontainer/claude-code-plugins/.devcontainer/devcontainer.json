@@ -79,6 +79,6 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
   "postCreateCommand": "/usr/local/bin/setup-nvim-env.sh && /home/node/dotfiles/scripts/setup-devcontainer-shell.sh",
-  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
+  "postStartCommand": "sudo /usr/local/bin/init-firewall.sh && /home/node/dotfiles/scripts/devcontainer/import-claude-credentials.sh",
   "waitFor": "postStartCommand"
 }
