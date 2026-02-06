@@ -1,0 +1,1 @@
+/Users/shahe/dotfiles-rmgitrm/.config/fish/completions/git.fish

@@ -223,7 +223,9 @@ _fzf_git_select() {
   fi
 
   # Filter by query if provided (strip ANSI for matching, keep original for display)
-  if [[ -n "${FZF_GIT_QUERY:-}" ]]; then
+  # Skip grep pre-filter for fzf-specific syntax (! negation, ' exact, ^ prefix)
+  # since grep can't handle these operators - let fzf process them directly
+  if [[ -n "${FZF_GIT_QUERY:-}" ]] && [[ ! "${FZF_GIT_QUERY}" =~ ^[\!\'\^] ]]; then
     local filtered
     # Case-insensitive match anywhere in line (git output has varied formats)
     # Use -- to prevent query from being interpreted as grep options
@@ -231,7 +233,7 @@ _fzf_git_select() {
 
     # Count non-empty lines
     local count
-    count=$(printf '%s' "$filtered" | grep -c . 2>/dev/null || echo 0)
+    count=$(printf '%s' "$filtered" | grep -c . 2>/dev/null || true)
 
     # Single match - return directly without FZF (strip ANSI codes)
     if [[ $count -eq 1 ]]; then
