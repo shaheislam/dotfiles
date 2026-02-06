@@ -67,8 +67,16 @@ echo ""
 if [[ -n "$timestamp" ]]; then
     # Parse the timestamp and calculate time window
     # Atuin uses format like "2025-12-17 19:03:14"
-    before_time=$(date -j -v-5M -f "%Y-%m-%d %H:%M:%S" "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
-    after_time=$(date -j -v+5M -f "%Y-%m-%d %H:%M:%S" "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+    # Support both macOS (BSD date -j) and Linux (GNU date -d)
+    if date -j -f "%Y-%m-%d %H:%M:%S" "2000-01-01 00:00:00" "+%s" &>/dev/null; then
+        # macOS BSD date
+        before_time=$(date -j -v-5M -f "%Y-%m-%d %H:%M:%S" "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+        after_time=$(date -j -v+5M -f "%Y-%m-%d %H:%M:%S" "$timestamp" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+    else
+        # GNU date (Linux)
+        before_time=$(date -d "$timestamp - 5 minutes" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+        after_time=$(date -d "$timestamp + 5 minutes" "+%Y-%m-%d %H:%M:%S" 2>/dev/null)
+    fi
 
     if [[ -n "$before_time" && -n "$after_time" ]]; then
         found_current=false
