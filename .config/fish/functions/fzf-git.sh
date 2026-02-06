@@ -194,22 +194,23 @@ _fzf_git_select() {
   input=$(cat)
 
   # Check if --header-lines is specified (extract the number)
+  # Handles both "--header-lines N" (two args) and "--header-lines=N" (one arg)
   header_lines=0
+  local prev_arg=""
   for arg in "$@"; do
-    if [[ $arg =~ ^--header-lines[[:space:]]*([0-9]+)$ ]] || [[ $arg == --header-lines ]]; then
-      # Handle --header-lines N format
-      continue
-    fi
     if [[ $prev_arg == "--header-lines" ]]; then
       header_lines=$arg
+      prev_arg=$arg
+      continue
     fi
-    prev_arg=$arg
-  done
-  # Also check for --header-lines=N format
-  for arg in "$@"; do
-    if [[ $arg =~ ^--header-lines[=[:space:]]?([0-9]+)$ ]]; then
+    if [[ $arg == --header-lines ]]; then
+      prev_arg=$arg
+      continue
+    fi
+    if [[ $arg =~ ^--header-lines=([0-9]+)$ ]]; then
       header_lines="${BASH_REMATCH[1]}"
     fi
+    prev_arg=$arg
   done
 
   # Extract header and data lines
