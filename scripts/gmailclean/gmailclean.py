@@ -10,6 +10,8 @@ Usage:
     gmailclean unsubscribe   - Unsubscribe from detected newsletters
     gmailclean organize      - Create labels and filters to organize inbox
     gmailclean report        - Generate inbox health report
+    gmailclean cleanup       - Archive old emails from unsubscribed senders
+    gmailclean centralize    - Set up forwarding rules to consolidate accounts
     gmailclean nuke          - Full cleanup: scan + unsubscribe + organize
 """
 
@@ -22,11 +24,14 @@ import json
 import os
 import re
 import sys
+import time
 import webbrowser
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+import requests as http_requests
 
 # Google API imports
 from google.auth.transport.requests import Request
@@ -55,6 +60,7 @@ CONFIG_DIR = Path.home() / ".config" / "gmailclean"
 TOKEN_PATH = CONFIG_DIR / "token.json"
 CREDENTIALS_PATH = CONFIG_DIR / "credentials.json"
 SCAN_CACHE_PATH = CONFIG_DIR / "scan_cache.json"
+UNSUB_LOG_PATH = CONFIG_DIR / "unsubscribed.json"
 
 # Labels for organization
 ORGANIZATION_LABELS = {
@@ -110,9 +116,13 @@ def get_gmail_service() -> Any:
     return build("gmail", "v1", credentials=creds)
 
 
-def extract_unsubscribe_info(headers: list[dict]) -> dict[str, str | None]:
+def extract_unsubscribe_info(headers: list[dict]) -> dict[str, str | None | bool]:
     """Extract unsubscribe URL and mailto from email headers."""
-    info: dict[str, str | None] = {"url": None, "mailto": None}
+    info: dict[str, str | None | bool] = {
+        "url": None,
+        "mailto": None,
+        "one_click": False,
+    }
 
     for header in headers:
         name = header.get("name", "").lower()
@@ -129,7 +139,41 @@ def extract_unsubscribe_info(headers: list[dict]) -> dict[str, str | None]:
             if mailto_match:
                 info["mailto"] = mailto_match.group(1)
 
+        # RFC 8058: List-Unsubscribe-Post header means one-click HTTP unsubscribe
+        if name == "list-unsubscribe-post":
+            info["one_click"] = True
+
     return info
+
+
+def one_click_unsubscribe(url: str) -> bool:
+    """Perform RFC 8058 one-click unsubscribe via HTTP POST.
+
+    Returns True if the unsubscribe request was successful.
+    """
+    try:
+        resp = http_requests.post(
+            url,
+            data="List-Unsubscribe=One-Click",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=15,
+            allow_redirects=True,
+        )
+        return resp.status_code in (200, 202, 204, 301, 302)
+    except Exception:
+        return False
+
+
+def load_unsub_log() -> dict[str, Any]:
+    """Load the unsubscribe log (tracks which domains have been unsubscribed)."""
+    if UNSUB_LOG_PATH.exists():
+        return json.loads(UNSUB_LOG_PATH.read_text())
+    return {"unsubscribed": [], "blocked": []}
+
+
+def save_unsub_log(log: dict[str, Any]) -> None:
+    """Save the unsubscribe log."""
+    UNSUB_LOG_PATH.write_text(json.dumps(log, indent=2, default=str))
 
 
 def extract_sender_domain(from_header: str) -> str:
@@ -274,8 +318,13 @@ def scan_inbox(service: Any, max_results: int = 500) -> list[dict]:
                     domain = extract_sender_domain(from_header)
                     sender_name = extract_sender_name(from_header)
 
-                    # Deduplicate by domain
+                    # Track email count per domain
                     if domain in seen_senders:
+                        # Increment count for existing entry
+                        for sub in subscriptions:
+                            if sub["domain"] == domain:
+                                sub["email_count"] = sub.get("email_count", 1) + 1
+                                break
                         continue
                     seen_senders.add(domain)
 
@@ -291,7 +340,9 @@ def scan_inbox(service: Any, max_results: int = 500) -> list[dict]:
                             "date": date,
                             "unsubscribe_url": unsub_info["url"],
                             "unsubscribe_mailto": unsub_info["mailto"],
+                            "one_click": unsub_info.get("one_click", False),
                             "category": category,
+                            "email_count": 1,
                             "labels": [
                                 l["name"]
                                 for l in msg.get("labelIds", [])
@@ -327,26 +378,43 @@ def display_subscriptions(subscriptions: list[dict]) -> None:
     table.add_column("#", style="dim", width=4)
     table.add_column("Sender", style="cyan", max_width=30)
     table.add_column("Domain", style="blue", max_width=25)
-    table.add_column("Category", style="yellow", max_width=15)
-    table.add_column("Subject (latest)", style="white", max_width=40)
-    table.add_column("Unsub", style="green", width=6)
+    table.add_column("Category", style="yellow", max_width=12)
+    table.add_column("Emails", style="magenta", width=6, justify="right")
+    table.add_column("Subject (latest)", style="white", max_width=35)
+    table.add_column("Unsub", style="green", width=8)
 
     for i, sub in enumerate(subscriptions, 1):
-        has_unsub = "URL" if sub["unsubscribe_url"] else "Email" if sub["unsubscribe_mailto"] else "-"
+        if sub.get("one_click"):
+            unsub_type = "1-Click"
+        elif sub.get("unsubscribe_url"):
+            unsub_type = "URL"
+        elif sub.get("unsubscribe_mailto"):
+            unsub_type = "Email"
+        else:
+            unsub_type = "-"
+
         table.add_row(
             str(i),
             sub["sender_name"][:30],
             sub["domain"][:25],
             sub.get("category") or "-",
-            sub["subject"][:40],
-            has_unsub,
+            str(sub.get("email_count", 1)),
+            sub["subject"][:35],
+            unsub_type,
         )
 
     console.print(table)
 
     # Summary stats
     categories = Counter(sub.get("category") or "Uncategorized" for sub in subscriptions)
-    console.print("\n[bold]Category Breakdown:[/bold]")
+    one_click_count = sum(1 for s in subscriptions if s.get("one_click"))
+    total_emails = sum(s.get("email_count", 1) for s in subscriptions)
+
+    console.print(f"\n[bold]Summary:[/bold]")
+    console.print(f"  Total subscription emails found: {total_emails}")
+    console.print(f"  Unique senders: {len(subscriptions)}")
+    console.print(f"  One-click unsubscribe available: {one_click_count}")
+    console.print(f"\n[bold]Category Breakdown:[/bold]")
     for cat, count in categories.most_common():
         console.print(f"  {cat}: {count}")
 
@@ -372,37 +440,45 @@ def cmd_scan(args: argparse.Namespace) -> None:
 def cmd_unsubscribe(args: argparse.Namespace) -> None:
     """Unsubscribe command: batch unsubscribe from newsletters."""
     # Load cached scan or run new scan
-    if SCAN_CACHE_PATH.exists() and not args.rescan:
+    if SCAN_CACHE_PATH.exists() and not getattr(args, "rescan", False):
         console.print("[dim]Loading cached scan results...[/dim]")
         subscriptions = json.loads(SCAN_CACHE_PATH.read_text())
     else:
         console.print("[yellow]No cached scan found. Running scan first...[/yellow]")
         service = get_gmail_service()
-        subscriptions = scan_inbox(service, max_results=args.max_results)
+        subscriptions = scan_inbox(service, max_results=getattr(args, "max_results", 500))
 
     if not subscriptions:
         console.print("[green]No subscriptions to unsubscribe from.[/green]")
         return
 
+    auto_mode = getattr(args, "auto", False) or getattr(args, "yes", False)
+
     display_subscriptions(subscriptions)
 
-    console.print(
-        Panel(
-            "[bold]Unsubscribe Mode[/bold]\n\n"
-            "Options:\n"
-            "  [cyan]all[/cyan]     - Open unsubscribe links for ALL subscriptions\n"
-            "  [cyan]pick[/cyan]    - Select which ones to unsubscribe from\n"
-            "  [cyan]range[/cyan]   - Specify a range (e.g., 1-10,15,20-25)\n"
-            "  [cyan]cancel[/cyan]  - Exit without unsubscribing",
-            border_style="yellow",
+    if auto_mode:
+        choice = "all"
+        console.print("[bold yellow]Auto mode: unsubscribing from all subscriptions[/bold yellow]")
+    else:
+        console.print(
+            Panel(
+                "[bold]Unsubscribe Mode[/bold]\n\n"
+                "Options:\n"
+                "  [cyan]all[/cyan]     - Unsubscribe from ALL subscriptions\n"
+                "  [cyan]pick[/cyan]    - Select which ones to unsubscribe from\n"
+                "  [cyan]range[/cyan]   - Specify a range (e.g., 1-10,15,20-25)\n"
+                "  [cyan]cancel[/cyan]  - Exit without unsubscribing\n\n"
+                "[dim]Tip: One-click subscriptions are handled automatically via HTTP.[/dim]\n"
+                "[dim]URL subscriptions open in your browser for manual confirmation.[/dim]",
+                border_style="yellow",
+            )
         )
-    )
 
-    choice = Prompt.ask(
-        "How would you like to unsubscribe?",
-        choices=["all", "pick", "range", "cancel"],
-        default="pick",
-    )
+        choice = Prompt.ask(
+            "How would you like to unsubscribe?",
+            choices=["all", "pick", "range", "cancel"],
+            default="pick",
+        )
 
     if choice == "cancel":
         return
@@ -410,7 +486,7 @@ def cmd_unsubscribe(args: argparse.Namespace) -> None:
     indices_to_unsub: list[int] = []
 
     if choice == "all":
-        if not Confirm.ask(
+        if not auto_mode and not Confirm.ask(
             f"[bold red]Unsubscribe from ALL {len(subscriptions)} subscriptions?[/bold red]"
         ):
             return
@@ -427,15 +503,21 @@ def cmd_unsubscribe(args: argparse.Namespace) -> None:
                 indices_to_unsub.append(int(part) - 1)
 
     elif choice == "pick":
-        console.print("[dim]Enter numbers separated by commas, or 'done' to finish:[/dim]")
+        console.print("[dim]Confirm each subscription to unsubscribe:[/dim]")
         for i, sub in enumerate(subscriptions, 1):
-            if Confirm.ask(f"  [{i}] {sub['sender_name']} ({sub['domain']})?", default=False):
+            method = "1-click" if sub.get("one_click") else "browser"
+            if Confirm.ask(
+                f"  [{i}] {sub['sender_name']} ({sub['domain']}) [{method}]?",
+                default=False,
+            ):
                 indices_to_unsub.append(i - 1)
 
     # Process unsubscriptions
-    opened = 0
+    one_click_success = 0
+    browser_opened = 0
     mailto_list: list[str] = []
     failed: list[str] = []
+    unsub_log = load_unsub_log()
 
     with Progress(
         SpinnerColumn(),
@@ -451,10 +533,33 @@ def cmd_unsubscribe(args: argparse.Namespace) -> None:
             sub = subscriptions[idx]
             progress.update(task, description=f"Unsubscribing from {sub['domain']}...", advance=1)
 
+            # Try one-click HTTP unsubscribe first (RFC 8058)
+            if sub.get("one_click") and sub.get("unsubscribe_url"):
+                if one_click_unsubscribe(sub["unsubscribe_url"]):
+                    one_click_success += 1
+                    unsub_log["unsubscribed"].append({
+                        "domain": sub["domain"],
+                        "sender": sub["sender_name"],
+                        "method": "one_click",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
+                    # Small delay to avoid rate limiting
+                    time.sleep(0.3)
+                    continue
+                # Fall through to browser if one-click fails
+
             if sub.get("unsubscribe_url"):
                 try:
                     webbrowser.open(sub["unsubscribe_url"])
-                    opened += 1
+                    browser_opened += 1
+                    unsub_log["unsubscribed"].append({
+                        "domain": sub["domain"],
+                        "sender": sub["sender_name"],
+                        "method": "browser",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
+                    # Throttle browser opens to avoid overwhelming
+                    time.sleep(0.5)
                 except Exception:
                     failed.append(sub["domain"])
             elif sub.get("unsubscribe_mailto"):
@@ -462,13 +567,25 @@ def cmd_unsubscribe(args: argparse.Namespace) -> None:
             else:
                 failed.append(sub["domain"])
 
+    # Deduplicate unsubscribed log
+    seen = set()
+    deduped = []
+    for entry in unsub_log["unsubscribed"]:
+        if entry["domain"] not in seen:
+            seen.add(entry["domain"])
+            deduped.append(entry)
+    unsub_log["unsubscribed"] = deduped
+    save_unsub_log(unsub_log)
+
     # Report
     console.print(
         Panel(
             f"[bold green]Unsubscribe Summary[/bold green]\n\n"
-            f"  Opened in browser: {opened}\n"
+            f"  One-click (auto): {one_click_success}\n"
+            f"  Opened in browser: {browser_opened}\n"
             f"  Mailto (manual):   {len(mailto_list)}\n"
-            f"  Failed:            {len(failed)}\n",
+            f"  Failed:            {len(failed)}\n\n"
+            f"[dim]Log saved to {UNSUB_LOG_PATH}[/dim]",
             border_style="green",
         )
     )
@@ -736,46 +853,254 @@ def cmd_report(args: argparse.Namespace) -> None:
         )
 
 
+def cmd_cleanup(args: argparse.Namespace) -> None:
+    """Cleanup command: archive old emails from unsubscribed senders."""
+    console.print(Panel("[bold]Cleaning up old subscription emails...[/bold]", border_style="blue"))
+
+    unsub_log = load_unsub_log()
+    if not unsub_log.get("unsubscribed"):
+        console.print(
+            "[yellow]No unsubscribed senders found. Run 'gmailclean unsubscribe' first.[/yellow]"
+        )
+        return
+
+    service = get_gmail_service()
+    domains = [entry["domain"] for entry in unsub_log["unsubscribed"]]
+
+    console.print(f"[dim]Found {len(domains)} unsubscribed domains. Searching for old emails...[/dim]")
+
+    archived_count = 0
+    dry_run = getattr(args, "dry_run", False)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Archiving old emails...", total=len(domains))
+
+        for domain in domains:
+            progress.update(task, description=f"Processing {domain}...", advance=1)
+
+            try:
+                # Find all emails from this domain still in inbox
+                result = (
+                    service.users()
+                    .messages()
+                    .list(userId="me", q=f"from:{domain} label:inbox", maxResults=500)
+                    .execute()
+                )
+
+                messages = result.get("messages", [])
+                if not messages:
+                    continue
+
+                if dry_run:
+                    console.print(f"  [dim]Would archive {len(messages)} emails from {domain}[/dim]")
+                    archived_count += len(messages)
+                    continue
+
+                # Batch archive (remove INBOX label)
+                msg_ids = [m["id"] for m in messages]
+                # Gmail API supports batch modify up to 1000 messages
+                for batch_start in range(0, len(msg_ids), 1000):
+                    batch = msg_ids[batch_start : batch_start + 1000]
+                    service.users().messages().batchModify(
+                        userId="me",
+                        body={
+                            "ids": batch,
+                            "removeLabelIds": ["INBOX"],
+                        },
+                    ).execute()
+                    archived_count += len(batch)
+
+            except HttpError:
+                continue
+
+    action = "Would archive" if dry_run else "Archived"
+    console.print(
+        Panel(
+            f"[bold green]Cleanup Complete[/bold green]\n\n"
+            f"  {action}: {archived_count} emails from {len(domains)} unsubscribed senders\n"
+            + ("[dim]Run without --dry-run to actually archive[/dim]" if dry_run else ""),
+            border_style="green",
+        )
+    )
+
+
+def cmd_centralize(args: argparse.Namespace) -> None:
+    """Centralize command: set up forwarding filters and show account consolidation info."""
+    console.print(
+        Panel(
+            "[bold]Email Centralization Setup[/bold]\n\n"
+            "This helps you consolidate multiple email accounts into one Gmail inbox.",
+            border_style="blue",
+        )
+    )
+
+    service = get_gmail_service()
+
+    # Show current forwarding/send-as addresses
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Checking account configuration...", total=None)
+
+        # Get profile info
+        progress.update(task, description="Getting profile...")
+        profile = service.users().getProfile(userId="me").execute()
+        primary_email = profile.get("emailAddress", "unknown")
+
+        # List send-as addresses (shows linked accounts)
+        progress.update(task, description="Checking linked accounts...")
+        try:
+            send_as_result = (
+                service.users().settings().sendAs().list(userId="me").execute()
+            )
+            send_as_addresses = send_as_result.get("sendAs", [])
+        except HttpError:
+            send_as_addresses = []
+
+        # List forwarding addresses
+        progress.update(task, description="Checking forwarding rules...")
+        try:
+            fwd_result = (
+                service.users()
+                .settings()
+                .forwardingAddresses()
+                .list(userId="me")
+                .execute()
+            )
+            forwarding_addresses = fwd_result.get("forwardingAddresses", [])
+        except HttpError:
+            forwarding_addresses = []
+
+        # List existing filters
+        progress.update(task, description="Checking filters...")
+        try:
+            filters_result = (
+                service.users().settings().filters().list(userId="me").execute()
+            )
+            existing_filters = filters_result.get("filter", [])
+        except HttpError:
+            existing_filters = []
+
+    # Display current state
+    console.print(
+        Panel(
+            f"[bold]Primary Account:[/bold] {primary_email}",
+            border_style="cyan",
+        )
+    )
+
+    if send_as_addresses:
+        sa_table = Table(title="Send-As Addresses (linked accounts)")
+        sa_table.add_column("Email", style="cyan")
+        sa_table.add_column("Display Name", style="white")
+        sa_table.add_column("Default", style="yellow")
+
+        for sa in send_as_addresses:
+            sa_table.add_row(
+                sa.get("sendAsEmail", ""),
+                sa.get("displayName", ""),
+                "Yes" if sa.get("isDefault") else "",
+            )
+        console.print(sa_table)
+
+    if forwarding_addresses:
+        fwd_table = Table(title="Forwarding Addresses")
+        fwd_table.add_column("Email", style="cyan")
+        fwd_table.add_column("Verified", style="green")
+
+        for fwd in forwarding_addresses:
+            fwd_table.add_row(
+                fwd.get("forwardingEmail", ""),
+                fwd.get("verificationStatus", ""),
+            )
+        console.print(fwd_table)
+
+    console.print(f"\n[dim]Active filters: {len(existing_filters)}[/dim]")
+
+    # Provide setup instructions
+    console.print(
+        Panel(
+            "[bold]How to Consolidate Email Accounts[/bold]\n\n"
+            "[cyan]Option 1: Import mail from other accounts[/cyan]\n"
+            "  Settings > Accounts > Check mail from other accounts\n"
+            "  - Gmail will fetch mail from other POP3/IMAP accounts\n"
+            "  - Reply as the original account address\n\n"
+            "[cyan]Option 2: Forward other accounts to Gmail[/cyan]\n"
+            "  In each external account, set up forwarding to:\n"
+            f"  [bold]{primary_email}[/bold]\n\n"
+            "[cyan]Option 3: Add send-as addresses[/cyan]\n"
+            "  Settings > Accounts > Send mail as\n"
+            "  - Send from your other email addresses via Gmail\n"
+            "  - Keeps everything in one place\n\n"
+            "[dim]Gmail Settings URL: https://mail.google.com/mail/u/0/#settings/accounts[/dim]",
+            border_style="yellow",
+        )
+    )
+
+    if Confirm.ask("Open Gmail account settings in browser?", default=False):
+        webbrowser.open("https://mail.google.com/mail/u/0/#settings/accounts")
+
+
 def cmd_nuke(args: argparse.Namespace) -> None:
     """Nuke command: full cleanup pipeline."""
+    auto_mode = getattr(args, "auto", False) or getattr(args, "yes", False)
+
     console.print(
         Panel(
             "[bold red]FULL INBOX CLEANUP[/bold red]\n\n"
             "This will:\n"
             "  1. Scan your inbox for subscriptions\n"
             "  2. Help you unsubscribe from them\n"
-            "  3. Create labels and filters to organize remaining mail\n"
-            "  4. Generate a health report",
+            "  3. Archive old emails from unsubscribed senders\n"
+            "  4. Create labels and filters to organize remaining mail\n"
+            "  5. Generate a health report",
             border_style="red",
         )
     )
 
-    if not Confirm.ask("[bold]Proceed with full cleanup?[/bold]"):
+    if not auto_mode and not Confirm.ask("[bold]Proceed with full cleanup?[/bold]"):
         return
 
     # Step 1: Scan
-    console.print("\n[bold cyan]Step 1/4: Scanning inbox...[/bold cyan]")
+    console.print("\n[bold cyan]Step 1/5: Scanning inbox...[/bold cyan]")
     service = get_gmail_service()
-    subscriptions = scan_inbox(service, max_results=args.max_results)
+    subscriptions = scan_inbox(service, max_results=getattr(args, "max_results", 500))
 
     if subscriptions:
         display_subscriptions(subscriptions)
 
         # Step 2: Unsubscribe
-        console.print("\n[bold cyan]Step 2/4: Unsubscribe[/bold cyan]")
-        if Confirm.ask("Would you like to unsubscribe from detected subscriptions?"):
-            unsub_args = argparse.Namespace(rescan=False, max_results=args.max_results)
+        console.print("\n[bold cyan]Step 2/5: Unsubscribe[/bold cyan]")
+        if auto_mode or Confirm.ask("Would you like to unsubscribe from detected subscriptions?"):
+            unsub_args = argparse.Namespace(
+                rescan=False,
+                max_results=getattr(args, "max_results", 500),
+                auto=auto_mode,
+                yes=auto_mode,
+            )
             cmd_unsubscribe(unsub_args)
+
+        # Step 3: Cleanup
+        console.print("\n[bold cyan]Step 3/5: Archiving old subscription emails...[/bold cyan]")
+        if auto_mode or Confirm.ask("Archive old emails from unsubscribed senders?"):
+            cleanup_args = argparse.Namespace(dry_run=False)
+            cmd_cleanup(cleanup_args)
     else:
         console.print("[green]No subscriptions found to unsubscribe from.[/green]")
 
-    # Step 3: Organize
-    console.print("\n[bold cyan]Step 3/4: Organizing inbox...[/bold cyan]")
+    # Step 4: Organize
+    console.print("\n[bold cyan]Step 4/5: Organizing inbox...[/bold cyan]")
     organize_args = argparse.Namespace()
     cmd_organize(organize_args)
 
-    # Step 4: Report
-    console.print("\n[bold cyan]Step 4/4: Generating report...[/bold cyan]")
+    # Step 5: Report
+    console.print("\n[bold cyan]Step 5/5: Generating report...[/bold cyan]")
     report_args = argparse.Namespace()
     cmd_report(report_args)
 
@@ -803,6 +1128,10 @@ def main() -> None:
     unsub_parser = subparsers.add_parser("unsubscribe", help="Unsubscribe from newsletters")
     unsub_parser.add_argument("--rescan", action="store_true", help="Force rescan instead of using cache")
     unsub_parser.add_argument("--max-results", type=int, default=500, help="Max messages to scan")
+    unsub_parser.add_argument(
+        "--auto", "--yes", "-y", action="store_true", dest="auto",
+        help="Non-interactive: unsubscribe from all without prompting",
+    )
 
     # organize command
     subparsers.add_parser("organize", help="Create labels and filters")
@@ -810,9 +1139,26 @@ def main() -> None:
     # report command
     subparsers.add_parser("report", help="Generate inbox health report")
 
+    # cleanup command
+    cleanup_parser = subparsers.add_parser(
+        "cleanup", help="Archive old emails from unsubscribed senders"
+    )
+    cleanup_parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be archived without doing it"
+    )
+
+    # centralize command
+    subparsers.add_parser(
+        "centralize", help="Set up forwarding rules to consolidate email accounts"
+    )
+
     # nuke command
     nuke_parser = subparsers.add_parser("nuke", help="Full cleanup: scan + unsubscribe + organize")
     nuke_parser.add_argument("--max-results", type=int, default=500, help="Max messages to scan")
+    nuke_parser.add_argument(
+        "--auto", "--yes", "-y", action="store_true", dest="auto",
+        help="Non-interactive: run full cleanup without prompting",
+    )
 
     args = parser.parse_args()
 
@@ -825,6 +1171,8 @@ def main() -> None:
         "unsubscribe": cmd_unsubscribe,
         "organize": cmd_organize,
         "report": cmd_report,
+        "cleanup": cmd_cleanup,
+        "centralize": cmd_centralize,
         "nuke": cmd_nuke,
     }
 
