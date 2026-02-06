@@ -1567,16 +1567,29 @@ if status is-interactive
             return 1
         end
 
-        # Check for devcontainer and prompt
         set -l abs_worktree_path (realpath $worktree_path)
+
+        # Trust mise config if present
+        if command -q mise
+            if test -f "$abs_worktree_path/mise.toml"; or test -f "$abs_worktree_path/.mise.toml"
+                mise trust "$abs_worktree_path" 2>/dev/null
+                echo "   mise trusted"
+            end
+        end
+
+        # Check for devcontainer and prompt
         if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
             read -P "Devcontainer detected. Launch? [y/N] " response
             if test "$response" = "y"; or test "$response" = "Y"
                 set -l instance_name (string replace -a "/" "-" "$repo-$branch")
                 devcon claude -i $instance_name $abs_worktree_path -e
             else
-                echo "   cd $abs_worktree_path"
+                cd $abs_worktree_path
+                echo "   Switched to: $abs_worktree_path"
             end
+        else
+            cd $abs_worktree_path
+            echo "   Switched to: $abs_worktree_path"
         end
     end
 
@@ -1595,16 +1608,29 @@ if status is-interactive
             return 1
         end
 
-        # Check for devcontainer and prompt
         set -l abs_worktree_path (realpath $worktree_path)
+
+        # Trust mise config if present
+        if command -q mise
+            if test -f "$abs_worktree_path/mise.toml"; or test -f "$abs_worktree_path/.mise.toml"
+                mise trust "$abs_worktree_path" 2>/dev/null
+                echo "   mise trusted"
+            end
+        end
+
+        # Check for devcontainer and prompt
         if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
             read -P "Devcontainer detected. Launch? [y/N] " response
             if test "$response" = "y"; or test "$response" = "Y"
                 set -l instance_name (string replace -a "/" "-" "$repo-$branch")
                 devcon claude -i $instance_name $abs_worktree_path -e
             else
-                echo "   cd $abs_worktree_path"
+                cd $abs_worktree_path
+                echo "   Switched to: $abs_worktree_path"
             end
+        else
+            cd $abs_worktree_path
+            echo "   Switched to: $abs_worktree_path"
         end
     end
 
@@ -2160,6 +2186,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             end
         end
 
+<<<<<<< HEAD
         # Get the current branch to avoid deleting it
         set -l current_branch (git branch --show-current 2>/dev/null)
         set -l main_branches main master
@@ -2170,6 +2197,24 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             set -l wt_path (echo $wt_line | awk '{print $1}')
             set -l wt_branch (echo $wt_line | string match -r '\[(.+?)\]' | tail -1)
             set -a branch_map "$wt_path|$wt_branch"
+||||||| c6b065e
+=======
+        # Prompt for branch cleanup (inspired by DHH's gd)
+        read -P "Also delete associated local branches? [y/N] " branch_response
+        set -l cleanup_branches false
+        if test "$branch_response" = "y"; or test "$branch_response" = "Y"
+            set cleanup_branches true
+        end
+
+        # Collect branch names before removing worktrees
+        set -l branches_to_delete
+        for selected in $selected_list
+            # Get branch name from git worktree list
+            set -l wt_branch (git worktree list --porcelain 2>/dev/null | grep -A2 "worktree $selected" | grep "^branch " | sed 's|^branch refs/heads/||')
+            if test -n "$wt_branch"
+                set -a branches_to_delete $wt_branch
+            end
+>>>>>>> gitworktreedhh
         end
 
         # Remove each worktree
@@ -2215,6 +2260,24 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
                     rm -rf "$instance_base/$instance_name" 2>/dev/null
                     rm -rf "$workspace_base/$instance_name" 2>/dev/null
                     echo "   Devcontainer instance removed: $instance_name"
+                end
+            end
+        end
+
+        # Delete branches after worktrees are removed
+        if $cleanup_branches; and test (count $branches_to_delete) -gt 0
+            for branch_name in $branches_to_delete
+                # Don't delete main/master/develop
+                switch $branch_name
+                    case main master develop
+                        echo "   Skipping protected branch: $branch_name"
+                        continue
+                end
+                git branch -D $branch_name 2>/dev/null
+                if test $status -eq 0
+                    echo "   Branch deleted: $branch_name"
+                else
+                    echo "   Failed to delete branch: $branch_name"
                 end
             end
         end
