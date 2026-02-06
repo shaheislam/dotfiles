@@ -78,8 +78,8 @@ EXAMPLES:
     # Automated installation (CI/scripts)
     $0 --profile minimal --no-confirm
 
-    # Enable optional features (Nix, Pulse)
-    ENABLE_NIX=true ENABLE_PULSE=true $0 --profile comprehensive
+    # Enable optional features (Nix, Pulse, Pi-hole)
+    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true $0 --profile comprehensive
 
     # Clone personal repositories (set environment variables)
     OBSIDIAN_REPO=git@github.com:user/obsidian.git \\
@@ -89,6 +89,7 @@ EXAMPLES:
 ENVIRONMENT VARIABLES:
     ENABLE_NIX=true         Enable Nix package manager installation (Phase 11)
     ENABLE_PULSE=true       Enable Pulse coding tracker installation (Phase 11)
+    ENABLE_PIHOLE=true      Enable Pi-hole DNS ad blocker via Colima + Docker (Phase 11)
     OBSIDIAN_REPO=<url>     Clone Obsidian vault from repository (Phase 10)
     NVIM_REPO=<url>         Clone personal Neovim config (Phase 10)
 
@@ -1467,6 +1468,46 @@ EOF
             print_success "Pulse tracker configured"
             echo "View logs: tail -f ~/.pulse/logs/stdout.log"
             echo "Query data: redis-cli KEYS \"*\""
+        fi
+    fi
+
+    if [[ "${ENABLE_PIHOLE:-false}" == "true" ]]; then
+        print_header "Phase 11: Optional Features - Pi-hole DNS Ad Blocker"
+
+        if [[ "$DETECTED_OS" != "macos" ]]; then
+            print_warning "Pi-hole setup is macOS only (requires Colima). Skipping."
+        else
+            # Verify prerequisites
+            if ! command_exists colima || ! command_exists docker; then
+                print_warning "Pi-hole requires colima and docker CLI. Install via: brew bundle --file=$DOTFILES_ROOT/homebrew/Brewfile"
+            else
+                print_step "Setting up Pi-hole DNS ad blocker..."
+
+                # Start Colima if not running
+                if ! colima status &>/dev/null; then
+                    print_step "Starting Colima..."
+                    colima start --cpu 2 --memory 2 --disk 10 --runtime docker 2>/dev/null && \
+                        print_success "Colima started" || \
+                        print_warning "Colima start failed - start manually with: colima start"
+                fi
+
+                # Start Pi-hole container
+                if colima status &>/dev/null; then
+                    local pihole_compose="$DOTFILES_ROOT/scripts/pihole/docker-compose.yml"
+                    if [[ -f "$pihole_compose" ]]; then
+                        docker compose -f "$pihole_compose" up -d 2>/dev/null && \
+                            print_success "Pi-hole container started" || \
+                            print_warning "Pi-hole container start failed - run manually: ./scripts/pihole/setup-pihole.sh start"
+
+                        print_success "Pi-hole DNS ad blocker configured"
+                        echo "  Web Admin: http://localhost:8053/admin"
+                        echo "  Activate:  ./scripts/pihole/setup-pihole.sh dns-on"
+                        echo "  Status:    ./scripts/pihole/setup-pihole.sh status"
+                    else
+                        print_warning "Pi-hole docker-compose.yml not found at $pihole_compose"
+                    fi
+                fi
+            fi
         fi
     fi
 
