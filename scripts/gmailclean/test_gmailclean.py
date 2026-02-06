@@ -17,6 +17,9 @@ from gmailclean import (
     extract_sender_domain,
     extract_sender_name,
     extract_unsubscribe_info,
+    load_unsub_log,
+    one_click_unsubscribe,
+    save_unsub_log,
     ORGANIZATION_LABELS,
 )
 
@@ -229,6 +232,159 @@ class TestScanCacheFormat:
         assert loaded[1]["unsubscribe_mailto"] == "mailto:unsub@shop.com"
 
         Path(tmppath).unlink()
+
+
+class TestOneClickUnsubscribe:
+    """Tests for RFC 8058 one-click unsubscribe detection."""
+
+    def test_one_click_detected(self):
+        headers = [
+            {"name": "List-Unsubscribe", "value": "<https://example.com/unsub>"},
+            {"name": "List-Unsubscribe-Post", "value": "List-Unsubscribe=One-Click"},
+        ]
+        result = extract_unsubscribe_info(headers)
+        assert result["url"] == "https://example.com/unsub"
+        assert result["one_click"] is True
+
+    def test_no_one_click_without_post_header(self):
+        headers = [
+            {"name": "List-Unsubscribe", "value": "<https://example.com/unsub>"}
+        ]
+        result = extract_unsubscribe_info(headers)
+        assert result["url"] == "https://example.com/unsub"
+        assert result["one_click"] is False
+
+    def test_one_click_with_mailto_and_url(self):
+        headers = [
+            {
+                "name": "List-Unsubscribe",
+                "value": "<mailto:unsub@example.com>, <https://example.com/unsub>",
+            },
+            {"name": "List-Unsubscribe-Post", "value": "List-Unsubscribe=One-Click"},
+        ]
+        result = extract_unsubscribe_info(headers)
+        assert result["url"] == "https://example.com/unsub"
+        assert result["mailto"] == "mailto:unsub@example.com"
+        assert result["one_click"] is True
+
+
+class TestOneClickUnsubscribeHTTP:
+    """Tests for the HTTP one-click unsubscribe function."""
+
+    @patch("gmailclean.http_requests.post")
+    def test_successful_unsubscribe(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        assert one_click_unsubscribe("https://example.com/unsub") is True
+        mock_post.assert_called_once_with(
+            "https://example.com/unsub",
+            data="List-Unsubscribe=One-Click",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=15,
+            allow_redirects=True,
+        )
+
+    @patch("gmailclean.http_requests.post")
+    def test_accepted_response(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=202)
+        assert one_click_unsubscribe("https://example.com/unsub") is True
+
+    @patch("gmailclean.http_requests.post")
+    def test_redirect_response(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=302)
+        assert one_click_unsubscribe("https://example.com/unsub") is True
+
+    @patch("gmailclean.http_requests.post")
+    def test_server_error(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=500)
+        assert one_click_unsubscribe("https://example.com/unsub") is False
+
+    @patch("gmailclean.http_requests.post")
+    def test_network_error(self, mock_post):
+        mock_post.side_effect = Exception("Connection refused")
+        assert one_click_unsubscribe("https://example.com/unsub") is False
+
+
+class TestUnsubLog:
+    """Tests for unsubscribe log persistence."""
+
+    def test_save_and_load(self):
+        import gmailclean
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            tmppath = Path(f.name)
+
+        original_path = gmailclean.UNSUB_LOG_PATH
+        try:
+            gmailclean.UNSUB_LOG_PATH = tmppath
+
+            log = {
+                "unsubscribed": [
+                    {"domain": "example.com", "sender": "Test", "method": "one_click"}
+                ],
+                "blocked": [],
+            }
+            save_unsub_log(log)
+            loaded = load_unsub_log()
+            assert len(loaded["unsubscribed"]) == 1
+            assert loaded["unsubscribed"][0]["domain"] == "example.com"
+        finally:
+            gmailclean.UNSUB_LOG_PATH = original_path
+            tmppath.unlink(missing_ok=True)
+
+    def test_load_missing_file(self):
+        import gmailclean
+
+        original_path = gmailclean.UNSUB_LOG_PATH
+        try:
+            gmailclean.UNSUB_LOG_PATH = Path("/tmp/nonexistent_gmailclean_test.json")
+            result = load_unsub_log()
+            assert result == {"unsubscribed": [], "blocked": []}
+        finally:
+            gmailclean.UNSUB_LOG_PATH = original_path
+
+
+class TestSubscriptionData:
+    """Tests for subscription data format with new fields."""
+
+    def test_subscription_with_one_click(self):
+        sub = {
+            "message_id": "abc123",
+            "from": "Test <test@example.com>",
+            "sender_name": "Test",
+            "domain": "example.com",
+            "subject": "Test Subject",
+            "date": "Mon, 1 Jan 2024 00:00:00 +0000",
+            "unsubscribe_url": "https://example.com/unsub",
+            "unsubscribe_mailto": None,
+            "one_click": True,
+            "category": "Newsletters",
+            "email_count": 15,
+            "labels": ["INBOX"],
+        }
+        result = json.dumps(sub)
+        parsed = json.loads(result)
+        assert parsed["one_click"] is True
+        assert parsed["email_count"] == 15
+
+    def test_subscription_without_one_click(self):
+        sub = {
+            "message_id": "abc123",
+            "from": "Test <test@example.com>",
+            "sender_name": "Test",
+            "domain": "example.com",
+            "subject": "Test Subject",
+            "date": "",
+            "unsubscribe_url": "https://example.com/unsub",
+            "unsubscribe_mailto": None,
+            "one_click": False,
+            "category": None,
+            "email_count": 1,
+            "labels": [],
+        }
+        result = json.dumps(sub)
+        parsed = json.loads(result)
+        assert parsed["one_click"] is False
+        assert parsed["email_count"] == 1
 
 
 if __name__ == "__main__":
