@@ -46,8 +46,10 @@ This file documents specific behaviors and constraints for AI agents working on 
 
 - The `gwt-*` functions in `.config/fish/functions/` are the core worktree system.
 - `gwt-dev.fish` creates worktrees with devcontainer isolation.
-- `gwt-ticket.fish` (530 lines) is the autonomous ticket executor - read it before modifying.
+- `gwt-ticket.fish` is the autonomous ticket executor - read it before modifying.
 - `devcon.fish` handles all devcontainer lifecycle - do not create separate container management.
+- The devcon sandbox (`~/dotfiles/devcontainer/claude-code-plugins/`) is a built-in container config. Projects do NOT need their own `.devcontainer/` directory to use it. Never gate devcontainer usage on the project having `.devcontainer/`.
+- All tmux panes in devcontainer windows must run inside the container (via `devcontainer exec`). When a container process exits (nvim, fish), the pane should re-enter the container shell, not drop to the host.
 
 ## Common Mistakes to Avoid
 
