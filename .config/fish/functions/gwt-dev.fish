@@ -12,6 +12,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     #   --no-devcon     Create worktree only, skip devcontainer
     #   --rebuild, -r   Rebuild devcontainer (remove existing)
     #   --fast, -f      Skip lifecycle hooks in devcontainer
+    #   --no-cd         Don't cd into the worktree (useful when called from other functions)
     #   --help, -h      Show this help
 
     # Check if we're in a git repository
@@ -25,6 +26,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     set -l do_exec false
     set -l do_new false
     set -l do_no_devcon false
+    set -l do_no_cd false
     set -l do_rebuild false
     set -l do_fast false
     set -l show_help false
@@ -47,6 +49,8 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
                 set do_new true
             case --no-devcon
                 set do_no_devcon true
+            case --no-cd
+                set do_no_cd true
             case --rebuild -r
                 set do_rebuild true
             case --fast -f
@@ -109,6 +113,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
         echo "  --features, -F  Add devcontainer features (comma-separated)"
         echo "  --mount, -m     Add additional directory mount (repeatable)"
         echo "  --no-devcon     Create worktree only, skip devcontainer"
+        echo "  --no-cd         Don't cd into the worktree after creation"
         echo "  --rebuild, -r   Rebuild devcontainer (remove existing container)"
         echo "  --fast, -f      Skip devcontainer lifecycle hooks"
         echo "  --help, -h      Show this help"
@@ -182,8 +187,10 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     # Skip devcontainer if requested
     if $do_no_devcon
         echo "Worktree created: $worktree_path"
-        cd (realpath $worktree_path)
-        echo "   Switched to: "(pwd)
+        if not $do_no_cd
+            cd (realpath $worktree_path)
+            echo "   Switched to: "(pwd)
+        end
         return 0
     end
 
