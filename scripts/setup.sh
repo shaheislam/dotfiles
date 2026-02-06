@@ -574,6 +574,8 @@ phase_4_cloud_tools() {
                 print_success "Claude Code Agent Teams enabled (tmux split-pane mode)" || true
         else
             log_verbose "Skipping Agent Teams config: jq or settings.json not found"
+        fi
+
         # Enable experimental agent teams (multi-session coordination)
         # Reference: https://code.claude.com/docs/en/agent-teams
         # Also configured in .claude/settings.json env block for per-project enablement
