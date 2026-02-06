@@ -10,6 +10,8 @@ function gt-queue --description "Terminal-native Graphite merge queue viewer and
     #   submit    Submit and mark PRs as merge-when-ready
     #   log       Show recent merge activity
     #   open      Open Graphite merge queue dashboard in browser
+    #   watch     Auto-refresh queue status (Ctrl+C to stop)
+    #   retry     Re-enqueue a PR that failed in the merge queue
     #   help      Show this help
     #
     # Options:
@@ -17,6 +19,7 @@ function gt-queue --description "Terminal-native Graphite merge queue viewer and
     #   --stack, -s   Apply action to entire stack
     #   --dry-run     Show what would be done without doing it
     #   --confirm     Ask for confirmation before actions
+    #   --interval N  Refresh interval for watch (default: 30)
     #   --help, -h    Show help
 
     # Parse arguments
@@ -27,6 +30,7 @@ function gt-queue --description "Terminal-native Graphite merge queue viewer and
     set -l do_confirm false
     set -l show_help false
     set -l skip_next false
+    set -l watch_interval 30
 
     for i in (seq (count $argv))
         if $skip_next
@@ -48,13 +52,22 @@ function gt-queue --description "Terminal-native Graphite merge queue viewer and
                     echo "Error: --repo requires a value"
                     return 1
                 end
+            case --interval
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set watch_interval $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --interval requires a value"
+                    return 1
+                end
             case --stack -s
                 set do_stack true
             case --dry-run
                 set do_dry_run true
             case --confirm
                 set do_confirm true
-            case status list enqueue dequeue merge submit log open help
+            case status list enqueue dequeue merge submit log open watch retry help
                 set command $arg
             case '-*'
                 echo "Error: Unknown option: $arg"
@@ -104,6 +117,10 @@ function gt-queue --description "Terminal-native Graphite merge queue viewer and
             _gt_queue_log $repo
         case open
             _gt_queue_open $repo
+        case watch
+            _gt_queue_watch $repo $watch_interval
+        case retry
+            _gt_queue_retry $repo $do_stack $do_dry_run $do_confirm
         case '*'
             echo "Error: Unknown command: $command"
             echo "Run 'gt-queue help' for usage"
@@ -125,14 +142,17 @@ function _gt_queue_help
     echo "  merge     Merge current stack via Graphite (gt merge)"
     echo "  submit    Submit stack and enable merge-when-ready"
     echo "  log       Show recent merge activity"
+    echo "  watch     Auto-refresh queue status (Ctrl+C to stop)"
+    echo "  retry     Re-enqueue a PR that failed in the queue"
     echo "  open      Open Graphite merge queue dashboard in browser"
     echo "  help      Show this help"
     echo ""
     echo "Options:"
-    echo "  --repo, -r    Override repo (default: auto-detect)"
-    echo "  --stack, -s   Apply action to entire stack"
-    echo "  --dry-run     Show what would be done"
-    echo "  --confirm     Ask for confirmation"
+    echo "  --repo, -r      Override repo (default: auto-detect)"
+    echo "  --stack, -s     Apply action to entire stack"
+    echo "  --dry-run       Show what would be done"
+    echo "  --confirm       Ask for confirmation"
+    echo "  --interval N    Refresh interval for watch (default: 30s)"
     echo ""
     echo "Examples:"
     echo "  gt-queue                          # Show queue status"
@@ -142,9 +162,12 @@ function _gt_queue_help
     echo "  gt-queue submit --stack           # Submit and merge-when-ready"
     echo "  gt-queue merge                    # Merge via Graphite"
     echo "  gt-queue log                      # Recent merge activity"
+    echo "  gt-queue watch                    # Auto-refresh status"
+    echo "  gt-queue watch --interval 10      # Refresh every 10s"
+    echo "  gt-queue retry                    # Re-enqueue failed PR"
     echo "  gt-queue open                     # Open dashboard"
     echo ""
-    echo "Aliases: gtq (status), gtqs (submit --stack), gtqm (merge)"
+    echo "Aliases: gtq (status), gtqs (submit --stack), gtqm (merge), gtqw (watch)"
 end
 
 
@@ -180,34 +203,84 @@ function _gt_queue_status --argument-names repo
     set_color --bold white
     echo "Merge Queue Status: $repo"
     set_color normal
-    echo (string repeat -n 50 "─")
+    echo (string repeat -n 60 "─")
 
     # Get PRs that are in the merge queue (have auto-merge enabled or Graphite merge labels)
     set -l queued_prs (gh pr list --repo $repo --json number,title,headRefName,author,statusCheckRollup,labels,autoMergeRequest,mergeable,reviewDecision --search "is:open" 2>/dev/null)
 
     if test -z "$queued_prs"; or test "$queued_prs" = "[]"
-        echo "No open PRs found"
+        echo "  No open PRs found"
         echo ""
         return 0
     end
 
     # Parse and categorize PRs
-    set -l in_queue 0
-    set -l merge_ready 0
-    set -l pending_checks 0
-    set -l needs_review 0
     set -l total (echo $queued_prs | jq 'length')
 
     # Count queued PRs (auto-merge enabled or graphite merge label)
-    set in_queue (echo $queued_prs | jq '[.[] | select(.autoMergeRequest != null or (.labels[]?.name | test("merge|queue"; "i")))] | length')
-    set merge_ready (echo $queued_prs | jq '[.[] | select(.mergeable == "MERGEABLE" and .reviewDecision == "APPROVED")] | length')
-    set pending_checks (echo $queued_prs | jq '[.[] | select(.statusCheckRollup != null) | select([.statusCheckRollup[] | select(.conclusion == null or .conclusion == "PENDING")] | length > 0)] | length')
-    set needs_review (echo $queued_prs | jq '[.[] | select(.reviewDecision == null or .reviewDecision == "REVIEW_REQUIRED")] | length')
+    set -l in_queue (echo $queued_prs | jq '[.[] | select(.autoMergeRequest != null or (.labels[]?.name // "" | test("merge|queue|graphite"; "i")))] | length')
+    set -l merge_ready (echo $queued_prs | jq '[.[] | select(.mergeable == "MERGEABLE" and .reviewDecision == "APPROVED")] | length')
+    set -l pending_checks (echo $queued_prs | jq '[.[] | select(.statusCheckRollup != null) | select([.statusCheckRollup[] | select(.conclusion == null or .conclusion == "PENDING")] | length > 0)] | length')
+    set -l needs_review (echo $queued_prs | jq '[.[] | select(.reviewDecision == null or .reviewDecision == "REVIEW_REQUIRED")] | length')
 
-    # Summary
-    printf "  Open PRs: %s  |  Queued: %s  |  Ready: %s  |  Pending: %s  |  Needs Review: %s\n" \
-        $total $in_queue $merge_ready $pending_checks $needs_review
+    # Summary with color
+    printf "  Open: "
+    set_color --bold white
+    printf "%s" $total
+    set_color normal
+    printf "  |  Queued: "
+    set_color --bold green
+    printf "%s" $in_queue
+    set_color normal
+    printf "  |  Ready: "
+    set_color --bold cyan
+    printf "%s" $merge_ready
+    set_color normal
+    printf "  |  Pending CI: "
+    set_color --bold yellow
+    printf "%s" $pending_checks
+    set_color normal
+    printf "  |  Needs Review: "
+    set_color --bold red
+    printf "%s" $needs_review
+    set_color normal
     echo ""
+    echo ""
+
+    # Show stack PRs if gt is available
+    if command -q gt; and test -n "$branch"
+        set -l stack_branches (gt log --short 2>/dev/null | string trim)
+        if test (count $stack_branches) -gt 1
+            set_color --bold magenta
+            echo "Stack PRs:"
+            set_color normal
+            for sb in $stack_branches
+                set -l sb_pr (echo $queued_prs | jq --arg b "$sb" '[.[] | select(.headRefName == $b)] | first')
+                if test "$sb_pr" != "null"; and test -n "$sb_pr"
+                    set -l sb_num (echo $sb_pr | jq -r '.number')
+                    set -l sb_title (echo $sb_pr | jq -r '.title')
+                    set -l sb_mergeable (echo $sb_pr | jq -r '.mergeable // "UNKNOWN"')
+                    set -l sb_review (echo $sb_pr | jq -r '.reviewDecision // "NONE"')
+                    set -l sb_auto (echo $sb_pr | jq -r 'if .autoMergeRequest != null then "Q" else "-" end')
+
+                    set -l marker "  "
+                    if test "$sb" = "$branch"
+                        set marker "> "
+                        set_color cyan
+                    end
+
+                    printf "  %s#%-5s %-25s %s  %s  %s\n" \
+                        $marker $sb_num \
+                        (test (string length "$sb") -gt 23; and string sub -l 20 "$sb"; or echo "$sb") \
+                        (_gt_queue_colorize_status $sb_mergeable) \
+                        (_gt_queue_colorize_review $sb_review) \
+                        (_gt_queue_colorize_auto_merge $sb_auto)
+                    set_color normal
+                end
+            end
+            echo ""
+        end
+    end
 
     # Current branch PR status
     if test -n "$branch"
@@ -222,6 +295,12 @@ function _gt_queue_status --argument-names repo
             set -l mergeable (echo $current_pr | jq -r '.mergeable // "UNKNOWN"')
             set -l review (echo $current_pr | jq -r '.reviewDecision // "NONE"')
             set -l auto_merge (echo $current_pr | jq -r 'if .autoMergeRequest != null then "ENABLED" else "DISABLED" end')
+
+            # Detect Graphite merge queue labels
+            set -l graphite_label (echo $current_pr | jq -r '[.labels[]?.name // "" | select(test("merge|queue|graphite"; "i"))] | first // ""')
+            if test -n "$graphite_label"
+                set auto_merge "QUEUED ($graphite_label)"
+            end
 
             # Check status
             set -l check_status "UNKNOWN"
@@ -258,7 +337,7 @@ function _gt_queue_status --argument-names repo
     end
 
     # List queued PRs
-    set -l queue_entries (echo $queued_prs | jq -r '[.[] | select(.autoMergeRequest != null or (.labels[]?.name | test("merge|queue"; "i")))] | sort_by(.number) | .[] | "#\(.number)\t\(.headRefName)\t\(.title)\t\(.author.login)"')
+    set -l queue_entries (echo $queued_prs | jq -r '[.[] | select(.autoMergeRequest != null or (.labels[]?.name // "" | test("merge|queue|graphite"; "i")))] | sort_by(.number) | .[] | "#\(.number)\t\(.headRefName)\t\(.title)\t\(.author.login)"')
 
     if test (count $queue_entries) -gt 0
         set_color --bold green
@@ -267,7 +346,9 @@ function _gt_queue_status --argument-names repo
         printf "  %-8s %-30s %-40s %s\n" "PR" "BRANCH" "TITLE" "AUTHOR"
         printf "  %-8s %-30s %-40s %s\n" (string repeat -n 8 "─") (string repeat -n 30 "─") (string repeat -n 40 "─") (string repeat -n 12 "─")
 
+        set -l position 0
         for entry in $queue_entries
+            set position (math $position + 1)
             set -l parts (string split \t $entry)
             set -l pr_num $parts[1]
             set -l pr_branch $parts[2]
@@ -285,15 +366,19 @@ function _gt_queue_status --argument-names repo
             # Highlight current branch
             if test "$pr_branch" = "$branch"
                 set_color cyan
+                printf "  %-8s %-30s %-40s %s  [pos %s]\n" $pr_num $pr_branch $pr_title $pr_author $position
+                set_color normal
+            else
+                printf "  %-8s %-30s %-40s %s\n" $pr_num $pr_branch $pr_title $pr_author
             end
-            printf "  %-8s %-30s %-40s %s\n" $pr_num $pr_branch $pr_title $pr_author
-            set_color normal
         end
         echo ""
     end
 
-    echo (string repeat -n 50 "─")
-    echo "Commands: gt-queue enqueue | dequeue | merge | submit --stack | open"
+    echo (string repeat -n 60 "─")
+    set_color brblack
+    echo "Commands: enqueue | dequeue | merge | submit --stack | watch | open"
+    set_color normal
 end
 
 
@@ -531,9 +616,93 @@ end
 
 
 function _gt_queue_open --argument-names repo
-    set -l url "https://app.graphite.dev/$repo/merge-queue"
+    # Graphite dashboard lives at app.graphite.dev
+    set -l url "https://app.graphite.dev/github/pr/$repo"
     echo "Opening: $url"
     open $url 2>/dev/null; or xdg-open $url 2>/dev/null
+end
+
+
+function _gt_queue_watch --argument-names repo interval
+    if test -z "$interval"
+        set interval 30
+    end
+
+    echo ""
+    set_color --bold white
+    echo "Watching merge queue: $repo (every "$interval"s, Ctrl+C to stop)"
+    set_color normal
+    echo ""
+
+    while true
+        # Clear screen and show header
+        printf "\033[2J\033[H"
+        set_color brblack
+        echo (date "+%H:%M:%S")" - Refreshing every "$interval"s (Ctrl+C to stop)"
+        set_color normal
+
+        _gt_queue_status $repo
+
+        sleep $interval
+    end
+end
+
+
+function _gt_queue_retry --argument-names repo do_stack do_dry_run do_confirm
+    set -l branch (git branch --show-current 2>/dev/null)
+    if test -z "$branch"
+        echo "Error: Not on a branch"
+        return 1
+    end
+
+    set -l pr_num (gh pr view --repo $repo --json number -q '.number' 2>/dev/null)
+    if test -z "$pr_num"
+        echo "Error: No PR found for branch '$branch'"
+        return 1
+    end
+
+    echo "Retrying PR #$pr_num ($branch) - disabling then re-enabling auto-merge..."
+
+    if test "$do_dry_run" = true
+        echo "[DRY RUN] Would disable and re-enable auto-merge for PR #$pr_num"
+        return 0
+    end
+
+    if test "$do_confirm" = true
+        read -l -P "Retry auto-merge for PR #$pr_num? [y/N] " confirm
+        if test "$confirm" != "y"; and test "$confirm" != "Y"
+            echo "Cancelled"
+            return 0
+        end
+    end
+
+    # Disable auto-merge first
+    gh pr merge $pr_num --repo $repo --disable-auto 2>/dev/null
+
+    # Small delay to let GitHub process
+    sleep 2
+
+    # Re-enable via Graphite or GitHub
+    if command -q gt
+        if test "$do_stack" = true
+            gt submit --stack --merge-when-ready
+        else
+            gt submit --merge-when-ready
+        end
+    else
+        gh pr merge $pr_num --repo $repo --auto --squash
+    end
+
+    if test $status -eq 0
+        set_color green
+        echo "PR #$pr_num re-queued for merge"
+        set_color normal
+    else
+        set_color red
+        echo "Failed to re-queue PR #$pr_num"
+        set_color normal
+        return 1
+    end
 end
 
 
@@ -606,9 +775,19 @@ function _gt_queue_colorize_auto_merge --argument-names auto_state
             set_color green
             echo -n $auto_state
             set_color normal
-        case DISABLED
+        case 'QUEUED*'
+            set_color --bold green
+            echo -n $auto_state
+            set_color normal
+        case Q
+            set_color green
+            echo -n "QUEUED"
+            set_color normal
+        case DISABLED -
             set_color brblack
             echo -n $auto_state
             set_color normal
+        case '*'
+            echo -n $auto_state
     end
 end
