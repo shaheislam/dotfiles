@@ -14,5 +14,8 @@
     "code-simplifier@claude-plugins-official": true,
     "security-guidance@claude-code-plugins": true,
     "terraform-skill@antonbabenko": true
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }
