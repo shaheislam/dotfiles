@@ -231,7 +231,7 @@ _fzf_git_select() {
 
     # Count non-empty lines
     local count
-    count=$(printf '%s' "$filtered" | grep -c . 2>/dev/null || echo 0)
+    count=$(printf '%s' "$filtered" | grep -c . 2>/dev/null || true)
 
     # Single match - return directly without FZF (strip ANSI codes)
     if [[ $count -eq 1 ]]; then
