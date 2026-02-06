@@ -2,14 +2,58 @@
 
 # Tmux Session Manager with Tmuxinator Integration
 # Provides unified interface for sessions, tmuxinator templates, directories, and path completion
+# Includes Claude/Opencode idle indicators (🟢/🔵) per session
 
 # Setup PATH to include homebrew
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
+# Indicators matching tmux-claude-watcher.sh
+CLAUDE_INDICATOR="*"
+OPENCODE_INDICATOR="+"
+
+# Check a session's windows for Claude/Opencode idle indicators
+# Returns indicator string like "🟢", "🔵", or "🟢🔵"
+get_session_indicators() {
+  local session="$1"
+  local has_claude=false
+  local has_opencode=false
+
+  # Check each window name for indicator prefixes added by the watcher
+  # Indicators: "*" for Claude, "+" for Opencode, "*+" for both
+  while IFS= read -r win_name; do
+    # Check for combined "*+ " prefix
+    if [[ "$win_name" == \*+\ * ]]; then
+      has_claude=true
+      has_opencode=true
+    # Check for Claude "* " prefix
+    elif [[ "$win_name" == \*\ * ]]; then
+      has_claude=true
+    # Check for Opencode "+ " prefix
+    elif [[ "$win_name" == +\ * ]]; then
+      has_opencode=true
+    fi
+  done < <(tmux list-windows -t "$session" -F "#{window_name}" 2>/dev/null)
+
+  local indicators=""
+  $has_claude && indicators+="🟢"
+  $has_opencode && indicators+="🔵"
+  echo "$indicators"
+}
+
 # Initial list of sessions, tmuxinator templates, and zoxide directories
 initial_list() {
-  # Existing sessions
-  tmux list-sessions -F '[S] #{session_name}: #{session_windows}w#{?session_attached, *,}' 2>/dev/null || true
+  # Existing sessions with Claude/Opencode indicators
+  while IFS= read -r line; do
+    local session_name
+    session_name=$(echo "$line" | cut -d: -f1)
+    local indicators
+    indicators=$(get_session_indicators "$session_name")
+    if [[ -n "$indicators" ]]; then
+      echo "[S] ${line} ${indicators}"
+    else
+      echo "[S] ${line}"
+    fi
+  done < <(tmux list-sessions -F '#{session_name}: #{session_windows}w#{?session_attached, *,}' 2>/dev/null) || true
   
   # Tmuxinator projects
   if command -v tmuxinator &>/dev/null; then
@@ -26,8 +70,25 @@ initial_list() {
 reload_cmd='
 query="{q}"
 
-# Existing sessions
-tmux list-sessions -F "[S] #{session_name}: #{session_windows}w#{?session_attached, *,}" 2>/dev/null || true
+# Existing sessions with Claude/Opencode indicators
+while IFS= read -r line; do
+  sess=$(echo "$line" | cut -d: -f1)
+  indicators=""
+  while IFS= read -r wname; do
+    if [[ "$wname" == \*+\ * ]]; then
+      indicators="🟢🔵"; break
+    elif [[ "$wname" == \*\ * ]]; then
+      [[ "$indicators" != *🟢* ]] && indicators+="🟢"
+    elif [[ "$wname" == +\ * ]]; then
+      [[ "$indicators" != *🔵* ]] && indicators+="🔵"
+    fi
+  done < <(tmux list-windows -t "$sess" -F "#{window_name}" 2>/dev/null)
+  if [ -n "$indicators" ]; then
+    echo "[S] ${line} ${indicators}"
+  else
+    echo "[S] ${line}"
+  fi
+done < <(tmux list-sessions -F "#{session_name}: #{session_windows}w#{?session_attached, *,}" 2>/dev/null) || true
 
 # Tmuxinator projects
 if command -v tmuxinator &>/dev/null; then
@@ -74,7 +135,7 @@ RESULT=$(
   initial_list | fzf \
   --reverse \
   --ansi \
-  --header "Sessions [S] | Tmuxinator [T] | Zoxide [Z] | Type path to browse | Tab to complete" \
+  --header "Sessions [S] | Tmuxinator [T] | Zoxide [Z] | 🟢 Claude idle | 🔵 Opencode idle | Tab to complete" \
   --height=100% \
   --print-query \
   --bind "tab:reload(bash -c '$reload_cmd')" \
@@ -90,7 +151,7 @@ CONTENT=$(echo "$RESULT" | cut -d' ' -f2-)
 
 case "$PREFIX" in
   "[S]")
-    # Switch to existing session
+    # Switch to existing session (strip trailing indicator emojis)
     SESSION=$(echo "$CONTENT" | cut -d: -f1)
     tmux switch-client -t "$SESSION" || tmux attach -t "$SESSION"
     ;;
