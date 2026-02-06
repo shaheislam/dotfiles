@@ -2190,7 +2190,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             end
 
             echo "Removing worktree: $selected"
-            git worktree remove "$selected"
+            git worktree remove --force "$selected"
 
             # Delete the branch if it's not current or a main branch
             if test -n "$branch_name"
