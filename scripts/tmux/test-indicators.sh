@@ -215,12 +215,17 @@ if [[ "${1:-}" == "--live" ]]; then
     fi
 
     SESSION=$(tmux display-message -p "#{session_name}")
+    ORIG_WIN=$(tmux display-message -p "#{window_index}")
     echo "Session: $SESSION"
 
-    # Create a test window
+    # Create a test window, then switch back so it's non-active
+    # (indicators are only set on non-active windows, and the
+    # session-window-changed hook clears indicators on the active window)
     TEST_WIN="indicator-test"
     tmux new-window -n "$TEST_WIN"
     WIN_IDX=$(tmux display-message -p "#{window_index}")
+    tmux select-window -t "${SESSION}:${ORIG_WIN}"
+    sleep 0.5  # Let hook settle
     echo "Created test window: $TEST_WIN (index $WIN_IDX)"
 
     echo ""
