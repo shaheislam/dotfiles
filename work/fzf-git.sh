@@ -1,1 +1,0 @@
-/Users/shahe/dotfiles-rmgitrm/.config/fish/functions/fzf-git.sh

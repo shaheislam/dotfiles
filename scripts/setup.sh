@@ -908,9 +908,9 @@ phase_8_dotfiles() {
     fi
 
     # Setup local git excludes (.gitignore_local symlinks) for existing repos
-    if [[ -x "$DOTFILES_DIR/scripts/tools/setup-git-local-excludes.sh" ]]; then
+    if [[ -x "$DOTFILES_ROOT/scripts/tools/setup-git-local-excludes.sh" ]]; then
         print_step "Setting up local git excludes..."
-        local exclude_script="$DOTFILES_DIR/scripts/tools/setup-git-local-excludes.sh"
+        local exclude_script="$DOTFILES_ROOT/scripts/tools/setup-git-local-excludes.sh"
 
         # Setup for ~/work if it exists
         if [[ -d "$HOME/work" ]]; then
@@ -919,7 +919,7 @@ phase_8_dotfiles() {
         fi
 
         # Setup for individual repos: ~/neovim and ~/dotfiles
-        for repo in "$HOME/neovim" "$DOTFILES_DIR"; do
+        for repo in "$HOME/neovim" "$DOTFILES_ROOT"; do
             if [[ -d "$repo/.git" ]]; then
                 # Run the script with the parent directory, but it only processes git repos
                 # So we create a temp approach: cd to repo and setup manually

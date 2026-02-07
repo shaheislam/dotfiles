@@ -89,6 +89,9 @@ env/
 *.egg-info/
 .pytest_cache/
 
+# Playwright MCP (generated screenshots)
+.playwright-mcp/
+
 # Logs
 *.log
 logs/
@@ -102,6 +105,9 @@ package-lock.json
 testfolder/
 test/
 scripts/tests/
+
+# Work directory (temporary worktree artifacts)
+work/
 
 # SSH keys and sensitive test data
 **/ssh_host_*_key
