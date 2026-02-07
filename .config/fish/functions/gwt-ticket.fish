@@ -391,9 +391,16 @@ $prompt_suffix"
         end
     end
 
-    # Write launch script to avoid quoting hell with nested tmux send-keys
-    set -l launch_script "$worktree_path/.claude/launch-claude.fish"
+    # Ensure instance env dir exists (launch script goes here for reliable container access)
+    # The instance env dir is a static mount in devcontainer.json (/devcontainer/env),
+    # unlike --mount flags which don't apply to existing containers.
+    set -l instance_env "$HOME/.devcontainer/instances/$instance_name/env"
+    mkdir -p "$instance_env"
+    mkdir -p "$HOME/.devcontainer/instances/$instance_name/work"
     mkdir -p "$worktree_path/.claude"
+
+    # Write launch script to instance env dir (guaranteed mount inside container)
+    set -l launch_script "$instance_env/launch-claude.fish"
 
     # Build launch script with proper escaping
     set -l escaped_prompt (string escape -- "$prompt")
@@ -435,8 +442,9 @@ $prompt_suffix"
     chmod +x $launch_script
 
     if $use_devcon
-        # Build devcon up command - mount both worktree and repo root (for --add-dir)
-        set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path $resolved_repo_root"
+        # Build devcon up command - rebuild ensures fresh container with correct mounts
+        # Without -r, devcontainer up reuses existing containers that may lack --mount binds
+        set -l devcon_up_cmd "devcon claude -i $instance_name -r -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path $resolved_repo_root"
         for mount in $mounts
             set devcon_up_cmd "$devcon_up_cmd $mount"
         end
@@ -446,8 +454,8 @@ $prompt_suffix"
         set -l config_file "$HOME/dotfiles/devcontainer/claude-code-plugins/.devcontainer/devcontainer.json"
         set -l exec_cmd "devcontainer exec --config $config_file --workspace-folder $workspace"
 
-        # Container-internal path for the launch script
-        set -l container_launch_script "/mounts/$worktree_basename/.claude/launch-claude.fish"
+        # Container-internal path for the launch script (via static devcontainer.json mount)
+        set -l container_launch_script "/devcontainer/env/launch-claude.fish"
 
         # Host-side wrapper for the Claude pane:
         # 1. devcontainer exec runs Claude inside the container
