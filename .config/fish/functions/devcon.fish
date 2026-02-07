@@ -212,6 +212,12 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         mkdir -p "$instance_base/env"
         mkdir -p "$instance_base/work"
     end
+
+    # Ensure shared .claude directory exists for credential bind mount
+    if not test -d "$HOME/.devcontainer/shared/.claude"
+        mkdir -p "$HOME/.devcontainer/shared/.claude"
+        chmod 700 "$HOME/.devcontainer/shared/.claude"
+    end
     if not test -d "$workspace"
         echo "Creating instance workspace: $workspace/"
         mkdir -p "$workspace"
@@ -305,7 +311,7 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
     if test "$container_type" = "claude"
         set -l export_script "$HOME/dotfiles/scripts/devcontainer/export-claude-credentials.sh"
         if test -f "$export_script"
-            bash "$export_script" "$instance_name"
+            bash "$export_script"
         end
     end
 

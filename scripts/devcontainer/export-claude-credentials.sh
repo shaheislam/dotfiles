@@ -1,31 +1,46 @@
 #!/usr/bin/env bash
 # export-claude-credentials.sh
 # Extracts Claude Code OAuth credentials from macOS Keychain
-# and writes them to a file that can be mounted into devcontainers.
+# and writes them to the shared .claude directory used by all devcontainers.
 #
 # This runs on the HOST (macOS) before launching a devcontainer.
-# The exported credentials are stored per-instance so each
-# devcontainer can pick them up on start.
+# Credentials are written to ~/.devcontainer/shared/.claude/.credentials.json
+# which is bind-mounted into every container.
 #
-# Usage: export-claude-credentials.sh [instance-name]
+# Usage: export-claude-credentials.sh [--force]
 
 set -euo pipefail
 
-INSTANCE_NAME="${1:-default}"
 KEYCHAIN_SERVICE="Claude Code-credentials"
-EXPORT_DIR="${HOME}/.devcontainer/instances/${INSTANCE_NAME}/env"
+SHARED_DIR="${HOME}/.devcontainer/shared/.claude"
+EXPORT_FILE="${SHARED_DIR}/.credentials.json"
+FORCE=false
 
-# Ensure export directory exists
-mkdir -p "${EXPORT_DIR}"
+for arg in "$@"; do
+    case "$arg" in
+        --force|-f) FORCE=true ;;
+    esac
+done
 
-EXPORT_FILE="${EXPORT_DIR}/.claude-credentials.json"
-
-# Try to extract from macOS Keychain
+# Only runs on macOS
 if [[ "$(uname)" != "Darwin" ]]; then
     echo "Skipping credential export (not macOS)"
     exit 0
 fi
 
+# Ensure shared directory exists with correct permissions
+mkdir -p "${SHARED_DIR}"
+chmod 700 "${SHARED_DIR}"
+
+# Skip if valid credentials already exist (unless --force)
+if [[ -f "${EXPORT_FILE}" ]] && ! $FORCE; then
+    if python3 -c "import sys,json; json.load(open('${EXPORT_FILE}'))" 2>/dev/null; then
+        echo "Credentials already exist at ${EXPORT_FILE} (use --force to overwrite)"
+        exit 0
+    fi
+fi
+
+# Extract from macOS Keychain
 CREDS=$(security find-generic-password -a "$USER" -w -s "${KEYCHAIN_SERVICE}" 2>/dev/null || true)
 
 if [[ -z "${CREDS}" ]]; then
@@ -45,4 +60,4 @@ umask 077
 echo "${CREDS}" > "${EXPORT_FILE}"
 chmod 600 "${EXPORT_FILE}"
 
-echo "Claude Code credentials exported for instance: ${INSTANCE_NAME}"
+echo "Claude Code credentials exported to shared directory"

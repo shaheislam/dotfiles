@@ -186,4 +186,25 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
     else
         echo "Run with --prune to remove these instances"
     end
+
+    # Clean up orphaned claude-code-config-* Docker volumes from old per-container approach
+    if command -q docker
+        set -l orphaned_vols (docker volume ls -q --filter "name=claude-code-config-" 2>/dev/null)
+        if test (count $orphaned_vols) -gt 0
+            echo ""
+            echo "Found "(count $orphaned_vols)" orphaned claude-code-config volume(s):"
+            for vol in $orphaned_vols
+                echo "  $vol"
+            end
+            if $do_prune
+                for vol in $orphaned_vols
+                    echo "Removing orphaned volume: $vol"
+                    docker volume rm $vol 2>/dev/null
+                end
+                echo "Removed "(count $orphaned_vols)" orphaned volume(s)"
+            else
+                echo "Run with --prune to remove these volumes"
+            end
+        end
+    end
 end

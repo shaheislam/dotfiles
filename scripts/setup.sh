@@ -1194,8 +1194,8 @@ phase_10_advanced_features() {
     local export_script="$DOTFILES_ROOT/scripts/devcontainer/export-claude-credentials.sh"
     if [[ -f "$export_script" ]] && [[ "$(uname)" == "Darwin" ]]; then
         print_step "Exporting Claude Code credentials for devcontainer auto-login..."
-        if bash "$export_script" "default" 2>/dev/null; then
-            print_success "Claude Code credentials exported for default instance"
+        if bash "$export_script" 2>/dev/null; then
+            print_success "Claude Code credentials exported to shared directory"
         else
             print_warning "No Claude Code credentials found - run 'claude login' first"
         fi
