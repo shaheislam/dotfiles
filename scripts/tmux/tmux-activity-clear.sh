@@ -4,23 +4,21 @@
 SESSION="$1"
 WINDOW="$2"
 
-INDICATOR="*"
-
-# Remove indicator from window name if present
+# Remove any indicator prefix from window name (emoji or legacy text)
 current_name=$(tmux display-message -t "${SESSION}:${WINDOW}" -p "#{window_name}" 2>/dev/null)
-if [[ "$current_name" == "${INDICATOR}"* ]]; then
-    # Try to restore original name from state file
-    STATE_DIR="/tmp/tmux-claude-state"
-    original_file="$STATE_DIR/original-name-$WINDOW"
-    if [[ -f "$original_file" ]]; then
-        new_name=$(cat "$original_file")
-        rm -f "$original_file"
-    else
-        # Fallback: strip indicator
-        new_name="${current_name#${INDICATOR}}"
-        new_name="${new_name# }"
-        [[ -z "$new_name" ]] && new_name="claude"
-    fi
+
+# Strip emoji indicators (🟢, 🔵, 🟢🔵)
+new_name="$current_name"
+new_name="${new_name#🟢🔵 }"
+new_name="${new_name#🟢 }"
+new_name="${new_name#🔵 }"
+# Strip legacy text indicators (*, +, *+)
+new_name="${new_name#\*+ }"
+new_name="${new_name#\* }"
+new_name="${new_name#+ }"
+
+if [[ "$current_name" != "$new_name" ]]; then
+    [[ -z "$new_name" ]] && new_name="shell"
     tmux rename-window -t "${SESSION}:${WINDOW}" "$new_name" 2>/dev/null
 fi
 

@@ -7,19 +7,19 @@
 # Setup PATH to include homebrew
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
-# Indicators matching tmux-claude-watcher.sh
-CLAUDE_INDICATOR="*"
-OPENCODE_INDICATOR="+"
+# Indicators matching tmux-claude-watcher.sh (now using emojis directly)
+CLAUDE_INDICATOR="🟢"
+OPENCODE_INDICATOR="🔵"
 
 # Get window indicator emoji from a window name with watcher prefixes
-# e.g. "* claude" → "🟢", "+ opencode" → "🔵", "*+ both" → "🟢🔵"
+# Window names now contain emoji directly: "🟢 claude", "🔵 opencode", "🟢🔵 both"
 get_window_indicator() {
   local win_name="$1"
-  if [[ "$win_name" == \*+\ * ]]; then
+  if [[ "$win_name" == "🟢🔵 "* ]]; then
     echo "🟢🔵"
-  elif [[ "$win_name" == \*\ * ]]; then
+  elif [[ "$win_name" == "🟢 "* ]]; then
     echo "🟢"
-  elif [[ "$win_name" == +\ * ]]; then
+  elif [[ "$win_name" == "🔵 "* ]]; then
     echo "🔵"
   fi
 }
@@ -27,9 +27,9 @@ get_window_indicator() {
 # Strip indicator prefixes from window name (matching tmux-claude-watcher.sh)
 strip_window_indicator() {
   local win_name="$1"
-  win_name="${win_name#\*+ }"
-  win_name="${win_name#\* }"
-  win_name="${win_name#+ }"
+  win_name="${win_name#🟢🔵 }"
+  win_name="${win_name#🟢 }"
+  win_name="${win_name#🔵 }"
   echo "$win_name"
 }
 
@@ -107,19 +107,19 @@ while IFS= read -r line; do
   window_lines=""
   while IFS=$(printf "\t") read -r widx wname; do
     ind=""
-    if [[ "$wname" == \*+\ * ]]; then
+    if [[ "$wname" == "🟢🔵 "* ]]; then
       ind="🟢🔵"
-    elif [[ "$wname" == \*\ * ]]; then
+    elif [[ "$wname" == "🟢 "* ]]; then
       ind="🟢"
-    elif [[ "$wname" == +\ * ]]; then
+    elif [[ "$wname" == "🔵 "* ]]; then
       ind="🔵"
     fi
     if [ -n "$ind" ]; then
       [[ "$ind" == *🟢* ]] && [[ "$indicators" != *🟢* ]] && indicators+="🟢"
       [[ "$ind" == *🔵* ]] && [[ "$indicators" != *🔵* ]] && indicators+="🔵"
-      clean="${wname#\*+ }"
-      clean="${clean#\* }"
-      clean="${clean#+ }"
+      clean="${wname#🟢🔵 }"
+      clean="${clean#🟢 }"
+      clean="${clean#🔵 }"
       window_lines+="[W] ${ind} ${sess}:${widx} ${clean}
 "
     fi
