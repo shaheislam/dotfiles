@@ -17,7 +17,7 @@
 #   --session S          Tmux session name (default: repo name)
 #   --system S           Ticketing system: linear or jira
 #   --mount M            Additional mount (repeatable)
-#   --no-devcon          Skip devcontainer, use local environment
+#   --devcon          Use devcontainer for isolation (default: local)
 #   --dry-run            Show what would be executed without running
 #   --help               Show this help
 
@@ -51,14 +51,14 @@ OPTIONS:
   --session S          Tmux session name (default: repo name)
   --system S           Ticketing system: linear or jira
   --mount M            Additional mount directory (repeatable)
-  --no-devcon          Skip devcontainer, use local environment
+  --devcon          Use devcontainer for isolation (default: local)
   --dry-run            Show what would be executed without running
   --help               Show this help
 
 EXAMPLES:
   ticket-execute.sh ENG-123 "Fix auth bug" "Session tokens expire" --max 10
   ticket-execute.sh DEVOPS-456 "Add monitoring" "Add Prometheus" --system jira
-  ticket-execute.sh ENG-789 "Refactor API" "Clean up" --no-devcon
+  ticket-execute.sh ENG-789 "Refactor API" "Clean up" --devcon
 
 WHAT IT DOES:
   Delegates to gwt-ticket for:
@@ -81,7 +81,7 @@ SLASH_COMMAND=""
 PROMPT_TEMPLATE=""
 PROMPT_PREFIX=""
 PROMPT_SUFFIX=""
-USE_DEVCON=true
+USE_DEVCON=false
 DRY_RUN=false
 MOUNTS=()
 
@@ -121,8 +121,8 @@ while [[ $# -gt 0 ]]; do
             MOUNTS+=("$2")
             shift 2
             ;;
-        --no-devcon)
-            USE_DEVCON=false
+        --devcon)
+            USE_DEVCON=true
             shift
             ;;
         --dry-run)
@@ -190,8 +190,8 @@ if [[ -n "$PROMPT_SUFFIX" ]]; then
     GWT_ARGS+=("--prompt-suffix" "$PROMPT_SUFFIX")
 fi
 
-if [[ "$USE_DEVCON" == "false" ]]; then
-    GWT_ARGS+=("--no-devcon")
+if [[ "$USE_DEVCON" == "true" ]]; then
+    GWT_ARGS+=("--devcon")
 fi
 
 for mount in "${MOUNTS[@]}"; do
@@ -244,8 +244,8 @@ if [[ -n "$PROMPT_SUFFIX" ]]; then
     GWT_CMD="$GWT_CMD --prompt-suffix '$PROMPT_SUFFIX'"
 fi
 
-if [[ "$USE_DEVCON" == "false" ]]; then
-    GWT_CMD="$GWT_CMD --no-devcon"
+if [[ "$USE_DEVCON" == "true" ]]; then
+    GWT_CMD="$GWT_CMD --devcon"
 fi
 
 for mount in "${MOUNTS[@]}"; do

@@ -3,7 +3,7 @@ function ticket-execute --description "Execute a ticket autonomously using devco
     #
     # Options:
     #   --max N        Max ralph-loop iterations (default: 20)
-    #   --no-devcon    Skip devcontainer
+    #   --devcon       Use devcontainer for isolation
     #   --dry-run      Show what would be executed
     #   --status       Check execution status for a worktree
     #   --watch        Watch for completion and run post-completion hook
@@ -32,7 +32,7 @@ function ticket-execute --description "Execute a ticket autonomously using devco
                 echo ""
                 echo "Options:"
                 echo "  --max N        Max iterations (default: 20)"
-                echo "  --no-devcon    Skip devcontainer"
+                echo "  --devcon       Use devcontainer for isolation"
                 echo "  --dry-run      Show what would be executed"
                 echo ""
                 echo "Examples:"
@@ -183,15 +183,15 @@ function ticket-execute --description "Execute a ticket autonomously using devco
     # Parse extra args for gwt-ticket
     set -l gwt_args
     set -l max_iter 20
-    set -l use_devcon true
+    set -l use_devcon false
 
     for arg in $extra_args
         switch $arg
             case --max
                 # Next iteration will grab the value
                 set -a gwt_args $arg
-            case --no-devcon
-                set use_devcon false
+            case --devcon
+                set use_devcon true
                 set -a gwt_args $arg
             case '*'
                 set -a gwt_args $arg

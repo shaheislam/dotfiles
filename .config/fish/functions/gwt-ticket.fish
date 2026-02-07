@@ -15,7 +15,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --prompt-suffix S    Text to append to prompt
     #   --mount, -m     Additional mount (repeatable)
     #   --session S     Tmux session name (default: repo name)
-    #   --no-devcon     Skip devcontainer, use local environment
+    #   --devcon        Use devcontainer for isolation (default: local)
     #   --system S      Ticketing system: linear or jira
     #   --help, -h      Show help
 
@@ -32,7 +32,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l max_iterations 20
     set -l session_name ""
     set -l ticketing_system ""
-    set -l use_devcon true
+    set -l use_devcon false
     set -l mounts
     set -l show_help false
     set -l skip_next false
@@ -54,8 +54,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         switch $arg
             case --help -h
                 set show_help true
-            case --no-devcon
-                set use_devcon false
+            case --devcon
+                set use_devcon true
             case --max
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -167,7 +167,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "Usage: gwt-ticket [issue-key] <title> <description> [options]"
         echo ""
         echo "Execute a ticket autonomously with ralph-loop."
-        echo "Claude Code runs in a devcontainer for isolation; nvim and terminal run on host."
+        echo "Runs locally by default. Use --devcon for devcontainer isolation."
         echo ""
         echo "Arguments:"
         echo "  issue-key     Issue key (e.g., ENG-123, DEVOPS-456)"
@@ -183,7 +183,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --prompt-suffix S    Text to append to prompt"
         echo "  --mount, -m          Add directory mount (repeatable)"
         echo "  --session S          Tmux session name (default: repo name)"
-        echo "  --no-devcon          Skip devcontainer, use local environment"
+        echo "  --devcon             Use devcontainer for isolation (default: local)"
         echo "  --system S           Ticketing system: linear or jira"
         echo "  --help, -h           Show this help"
         echo ""

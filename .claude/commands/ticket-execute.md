@@ -125,7 +125,7 @@ Post-completion:
 - `--session S`: Tmux session name (default: repo name)
 - `--system S`: Ticketing system: linear or jira
 - `--mount M`: Additional mount directory (repeatable)
-- `--no-devcon`: Skip devcontainer (use local environment)
+- `--devcon`: Use devcontainer for isolation (default: local)
 - `--dry-run`: Show what would be executed without running
 
 ## Prompt Template Variables
