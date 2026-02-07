@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Ticket queue daemon for rate-limit-aware autonomous execution -->
+    <!-- Install: launchctl load ~/Library/LaunchAgents/com.dotfiles.ticket-queue.plist -->
+    <!-- Remove:  launchctl unload ~/Library/LaunchAgents/com.dotfiles.ticket-queue.plist -->
+
+    <key>Label</key>
+    <string>com.dotfiles.ticket-queue</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>exec $HOME/dotfiles/scripts/ticket-queue/queue-daemon.sh run</string>
+    </array>
+
+    <!-- Don't auto-start on login (user should opt-in via gwt-queue start) -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- Keep alive only when explicitly loaded -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/ticket-queue-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/ticket-queue-stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/shahe</string>
+    </dict>
+</dict>
+</plist>
