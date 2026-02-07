@@ -151,6 +151,9 @@ kind-logs-*/
 **/charts/*.tar.gz
 **/requirements.lock
 
+# Docker buildx state (machine-specific cache/refs)
+.docker/
+
 # Container Runtime Logs
 podman-machine.log
 docker-machine.log

@@ -1,4 +1,4 @@
-function gwt-ticket --description "Execute ticket autonomously with ralph-loop in devcontainer"
+function gwt-ticket --description "Execute ticket autonomously with ralph-loop (Claude in devcontainer, nvim+terminal on host)"
     # Usage: gwt-ticket [issue-key] <title> <description> [options]
     #
     # Creates worktree via gwt-dev, sets up tmux window, and launches Claude
@@ -166,7 +166,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
     if $show_help
         echo "Usage: gwt-ticket [issue-key] <title> <description> [options]"
         echo ""
-        echo "Execute a ticket autonomously with ralph-loop in a devcontainer."
+        echo "Execute a ticket autonomously with ralph-loop."
+        echo "Claude Code runs in a devcontainer for isolation; nvim and terminal run on host."
         echo ""
         echo "Arguments:"
         echo "  issue-key     Issue key (e.g., ENG-123, DEVOPS-456)"
@@ -382,6 +383,14 @@ Do not ask questions - make reasonable decisions and iterate."
 $prompt_suffix"
     end
 
+    # Pre-check: verify Docker is accessible before attempting devcontainer
+    if $use_devcon
+        if not docker info >/dev/null 2>&1
+            echo "Warning: Docker not available, falling back to local execution..."
+            set use_devcon false
+        end
+    end
+
     # Write launch script to avoid quoting hell with nested tmux send-keys
     set -l launch_script "$worktree_path/.claude/launch-claude.fish"
     mkdir -p "$worktree_path/.claude"
@@ -392,7 +401,16 @@ $prompt_suffix"
     # Resolve main repo root for --add-dir (inherits CLAUDE.md into worktree sessions)
     set -l resolved_repo_root (realpath $repo_root)
 
+    # Compute paths: container-internal when using devcon, host paths otherwise
+    set -l add_dir_path $resolved_repo_root
+    set -l worktree_basename (basename $worktree_path)
+    set -l repo_basename (basename $resolved_repo_root)
+    if $use_devcon
+        set add_dir_path "/mounts/$repo_basename"
+    end
+
     # Write script using echo to avoid printf escape issues
+    # When using devcon, this script runs INSIDE the container via devcontainer exec
     echo '#!/usr/bin/env fish' > $launch_script
     echo "set -l prompt $escaped_prompt" >> $launch_script
     echo "" >> $launch_script
@@ -402,27 +420,23 @@ $prompt_suffix"
     # ralph-loop needs special args, others just get the prompt
     # -- separates flags from positional args (prompt starts with / which --add-dir would consume)
     if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-        echo 'claude --dangerously-skip-permissions --add-dir '$resolved_repo_root' -- "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >> $launch_script
+        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >> $launch_script
     else
         # For other commands, just pass the prompt as the argument
-        echo 'claude --dangerously-skip-permissions --add-dir '$resolved_repo_root' -- "'$slash_command' \\"$prompt\\""' >> $launch_script
+        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\""' >> $launch_script
     end
-    echo "" >> $launch_script
-    echo "# Auto-trigger post-completion (PR creation, ticket transition, notification)" >> $launch_script
-    echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $launch_script
+
+    if not $use_devcon
+        # For local mode, post-completion runs inside the launch script
+        echo "" >> $launch_script
+        echo "# Auto-trigger post-completion (PR creation, ticket transition, notification)" >> $launch_script
+        echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $launch_script
+    end
     chmod +x $launch_script
 
     if $use_devcon
-        # Pre-check: verify Docker is accessible before attempting devcontainer
-        if not docker info >/dev/null 2>&1
-            echo "Warning: Docker not available, falling back to local execution..."
-            set use_devcon false
-        end
-    end
-
-    if $use_devcon
-        # Build devcon up command as a string for send-keys
-        set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path"
+        # Build devcon up command - mount both worktree and repo root (for --add-dir)
+        set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path $resolved_repo_root"
         for mount in $mounts
             set devcon_up_cmd "$devcon_up_cmd $mount"
         end
@@ -432,29 +446,52 @@ $prompt_suffix"
         set -l config_file "$HOME/dotfiles/devcontainer/claude-code-plugins/.devcontainer/devcontainer.json"
         set -l exec_cmd "devcontainer exec --config $config_file --workspace-folder $workspace"
 
-        # 3-pane layout: Claude left, nvim diffview top-right, terminal bottom-right
-        # All panes run INSIDE the devcontainer via devcontainer exec.
-        # The original pane also enters the container after setup to prevent
-        # host file access when panes exit.
+        # Container-internal path for the launch script
+        set -l container_launch_script "/mounts/$worktree_basename/.claude/launch-claude.fish"
+
+        # Host-side wrapper for the Claude pane:
+        # 1. devcontainer exec runs Claude inside the container
+        # 2. Post-completion runs on host after Claude exits (has git, gh, etc.)
+        # 3. Falls back to interactive fish on failure so pane stays open for debugging
+        set -l claude_pane_script "$worktree_path/.claude/start-claude-pane.fish"
+        echo '#!/usr/bin/env fish' > $claude_pane_script
+        echo "$exec_cmd fish $container_launch_script" >> $claude_pane_script
+        echo "set -l claude_exit \$status" >> $claude_pane_script
+        echo "" >> $claude_pane_script
+        echo "# Post-completion runs on host (has access to git, gh, etc.)" >> $claude_pane_script
+        echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $claude_pane_script
+        echo "" >> $claude_pane_script
+        echo "if test \$claude_exit -ne 0" >> $claude_pane_script
+        echo "    echo 'Claude Code devcontainer exec failed (exit '\$claude_exit')'" >> $claude_pane_script
+        echo "    echo 'Container: $instance_name'" >> $claude_pane_script
+        echo "    echo 'Exec cmd: $exec_cmd'" >> $claude_pane_script
+        echo "    echo 'Script: $container_launch_script'" >> $claude_pane_script
+        echo "    exec fish" >> $claude_pane_script
+        echo "end" >> $claude_pane_script
+        chmod +x $claude_pane_script
+
+        # Hybrid layout: Claude in devcontainer, nvim + terminal on host
+        # Only Claude Code needs isolation (runs --dangerously-skip-permissions).
+        # Nvim and terminal stay on host for native config and full access.
         # ┌──────────────┬──────────────┐
-        # │              │ nvim diffview │ ← top-right (devcontainer)
+        # │              │ nvim diffview │ ← top-right (host)
         # │  Claude Code ├──────────────┤
-        # │              │   terminal   │ ← bottom-right (devcontainer)
+        # │  (devcon)    │   terminal   │ ← bottom-right (host)
         # └──────────────┴──────────────┘
         # Write setup script to avoid send-keys buffer corruption from direnv output
         # Must be fish (not bash) because devcon is a fish function
         set -l setup_script "$worktree_path/.claude/setup-panes.fish"
         echo '#!/usr/bin/env fish' > $setup_script
-        echo "# Auto-generated by gwt-ticket - sets up 3-pane devcontainer layout" >> $setup_script
+        echo "# Auto-generated by gwt-ticket - hybrid layout (Claude in devcon, nvim+terminal on host)" >> $setup_script
         echo "$devcon_up_cmd" >> $setup_script
         echo "or begin; echo 'Devcontainer failed to start'; exit 1; end" >> $setup_script
         echo "sleep 2" >> $setup_script
-        echo "tmux split-window -hb -p 50 -c '$worktree_path' '$exec_cmd fish $launch_script'" >> $setup_script
+        echo "tmux split-window -hb -p 50 -c '$worktree_path' 'fish $claude_pane_script'" >> $setup_script
         echo "tmux last-pane" >> $setup_script
-        echo "tmux split-window -v -p 30 -c '$worktree_path' '$exec_cmd fish'" >> $setup_script
+        echo "tmux split-window -v -p 30 -c '$worktree_path'" >> $setup_script
         echo "tmux select-pane -U" >> $setup_script
-        echo "$exec_cmd nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" >> $setup_script
-        echo "exec $exec_cmd fish" >> $setup_script
+        echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" >> $setup_script
+        echo "exec fish" >> $setup_script
         chmod +x $setup_script
 
         # Short send-keys payload immune to direnv interference
