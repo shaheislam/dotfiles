@@ -98,6 +98,10 @@ Isolated parallel dev environments: worktree name = devcontainer instance name â
 
 Setup scripts run automatically: `.devcontainer/setup.sh` or `scripts/setup-worktree.sh`
 
+**Subscription Profiles**: Use `--sub NAME` flag on `gwt-ticket`, `gwt-claude`, or `ticket-execute` to select which Claude Max subscription to use. Maps to `CLAUDE_CONFIG_DIR=~/.claude-NAME`.
+- **Setup**: `CLAUDE_CONFIG_DIR=~/.claude-personal claude` (authenticate once per profile)
+- **Usage**: `gwtt "Fix bug" "Details" --sub personal` or `gwtc feature/auth --sub work`
+
 ### Claude Code Devcontainer Auto-Login
 Auto-authenticates Claude Code inside devcontainers by bind-mounting the host's `~/.claude` directory directly.
 All containers share the same config directory â€” credentials, plugins, settings, and hooks are all available. When any container refreshes OAuth tokens, all others see the update immediately.
