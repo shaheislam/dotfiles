@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # export-claude-credentials.sh
 # Extracts Claude Code OAuth credentials from macOS Keychain
-# and writes them to the shared .claude directory used by all devcontainers.
+# and writes them to ~/.claude/.credentials.json (bind-mounted into devcontainers).
 #
 # This runs on the HOST (macOS) before launching a devcontainer.
-# Credentials are written to ~/.devcontainer/shared/.claude/.credentials.json
+# Credentials are written to ~/.claude/.credentials.json
 # which is bind-mounted into every container.
 #
 # Usage: export-claude-credentials.sh [--force]
@@ -12,8 +12,7 @@
 set -euo pipefail
 
 KEYCHAIN_SERVICE="Claude Code-credentials"
-SHARED_DIR="${HOME}/.devcontainer/shared/.claude"
-EXPORT_FILE="${SHARED_DIR}/.credentials.json"
+EXPORT_FILE="${HOME}/.claude/.credentials.json"
 FORCE=false
 
 for arg in "$@"; do
@@ -27,10 +26,6 @@ if [[ "$(uname)" != "Darwin" ]]; then
     echo "Skipping credential export (not macOS)"
     exit 0
 fi
-
-# Ensure shared directory exists with correct permissions
-mkdir -p "${SHARED_DIR}"
-chmod 700 "${SHARED_DIR}"
 
 # Skip if valid credentials already exist (unless --force)
 if [[ -f "${EXPORT_FILE}" ]] && ! $FORCE; then
@@ -60,4 +55,4 @@ umask 077
 echo "${CREDS}" > "${EXPORT_FILE}"
 chmod 600 "${EXPORT_FILE}"
 
-echo "Claude Code credentials exported to shared directory"
+echo "Claude Code credentials exported to ~/.claude/.credentials.json"

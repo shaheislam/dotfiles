@@ -3,17 +3,16 @@
 # Smoke test for Claude Code devcontainer auto-login feature.
 #
 # Tests:
-# 1. Export script creates shared directory and exports credentials
+# 1. Export script creates and exports credentials
 # 2. Exported file is valid JSON with expected structure
 # 3. Idempotency: second export is a no-op
 # 4. --force flag overwrites existing credentials
-# 5. Permissions are correct (700 dir, 600 file)
+# 5. Permissions are correct (600 file)
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SHARED_DIR="${HOME}/.devcontainer/shared/.claude"
-CRED_FILE="${SHARED_DIR}/.credentials.json"
+CRED_FILE="${HOME}/.claude/.credentials.json"
 PASS=0
 FAIL=0
 
@@ -27,7 +26,6 @@ fi
 cleanup() {
     # Restore original credentials if we backed them up
     if [[ -n "${BACKUP}" ]] && [[ -f "${BACKUP}" ]]; then
-        mkdir -p "${SHARED_DIR}"
         cp "${BACKUP}" "${CRED_FILE}"
         chmod 600 "${CRED_FILE}"
         rm -f "${BACKUP}"
@@ -56,21 +54,8 @@ echo "Test 1: Export credentials from Keychain"
 "${SCRIPT_DIR}/export-claude-credentials.sh" --force >/dev/null 2>&1
 print_result $? "Export script completed"
 
-# Test 2: Shared directory exists with correct permissions
-echo "Test 2: Shared directory permissions"
-if test -d "${SHARED_DIR}"; then
-    DIR_PERMS=$(/usr/bin/stat -f "%OLp" "${SHARED_DIR}" 2>/dev/null || stat -c "%a" "${SHARED_DIR}" 2>/dev/null || echo "unknown")
-    if [[ "${DIR_PERMS}" = "700" ]]; then
-        print_result 0 "Directory permissions are 700 (got: ${DIR_PERMS})"
-    else
-        print_result 1 "Directory permissions are 700 (got: ${DIR_PERMS})"
-    fi
-else
-    print_result 1 "Shared directory exists"
-fi
-
-# Test 3: Credential file exists with correct permissions
-echo "Test 3: Credential file permissions"
+# Test 2: Credential file exists with correct permissions
+echo "Test 2: Credential file permissions"
 if test -f "${CRED_FILE}"; then
     FILE_PERMS=$(/usr/bin/stat -f "%OLp" "${CRED_FILE}" 2>/dev/null || stat -c "%a" "${CRED_FILE}" 2>/dev/null || echo "unknown")
     if [[ "${FILE_PERMS}" = "600" ]]; then
@@ -82,16 +67,16 @@ else
     print_result 1 "Credential file exists"
 fi
 
-# Test 4: File is valid JSON
-echo "Test 4: Valid JSON"
+# Test 3: File is valid JSON
+echo "Test 3: Valid JSON"
 if python3 -c "import json; json.load(open('${CRED_FILE}'))" 2>/dev/null; then
     print_result 0 "File contains valid JSON"
 else
     print_result 1 "File contains valid JSON"
 fi
 
-# Test 5: JSON has expected structure (claudeAiOauth key)
-echo "Test 5: Expected credential structure"
+# Test 4: JSON has expected structure (claudeAiOauth key)
+echo "Test 4: Expected credential structure"
 if python3 -c "
 import json
 d = json.load(open('${CRED_FILE}'))
@@ -105,8 +90,8 @@ else
     print_result 1 "Contains claudeAiOauth with accessToken and refreshToken"
 fi
 
-# Test 6: Idempotency - second export is a no-op
-echo "Test 6: Idempotency (second export is no-op)"
+# Test 5: Idempotency - second export is a no-op
+echo "Test 5: Idempotency (second export is no-op)"
 OUTPUT=$("${SCRIPT_DIR}/export-claude-credentials.sh" 2>&1)
 if echo "${OUTPUT}" | grep -q "already exist"; then
     print_result 0 "Second export skipped (credentials already exist)"
@@ -114,8 +99,8 @@ else
     print_result 1 "Second export skipped (expected 'already exist' message, got: ${OUTPUT})"
 fi
 
-# Test 7: --force flag overwrites existing credentials
-echo "Test 7: --force flag overwrites"
+# Test 6: --force flag overwrites existing credentials
+echo "Test 6: --force flag overwrites"
 OUTPUT=$("${SCRIPT_DIR}/export-claude-credentials.sh" --force 2>&1)
 if echo "${OUTPUT}" | grep -q "exported"; then
     print_result 0 "--force flag triggers fresh export"

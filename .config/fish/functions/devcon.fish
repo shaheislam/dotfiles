@@ -213,11 +213,6 @@ function devcon --description "Launch devcontainer with dynamic mounts and advan
         mkdir -p "$instance_base/work"
     end
 
-    # Ensure shared .claude directory exists for credential bind mount
-    if not test -d "$HOME/.devcontainer/shared/.claude"
-        mkdir -p "$HOME/.devcontainer/shared/.claude"
-        chmod 700 "$HOME/.devcontainer/shared/.claude"
-    end
     if not test -d "$workspace"
         echo "Creating instance workspace: $workspace/"
         mkdir -p "$workspace"

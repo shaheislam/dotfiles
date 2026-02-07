@@ -63,7 +63,7 @@
   "remoteUser": "node",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-    "source=${localEnv:HOME}/.devcontainer/shared/.claude,target=/home/node/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.claude,target=/home/node/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.devcontainer/instances/${localEnv:DEVCON_INSTANCE:default}/env,target=/devcontainer/env,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.devcontainer/instances/${localEnv:DEVCON_INSTANCE:default}/work,target=/work,type=bind,consistency=cached",
     "source=${localEnv:HOME}/neovim,target=/devcontainer/neovim,type=bind,consistency=cached",

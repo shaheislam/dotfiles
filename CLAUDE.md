@@ -99,10 +99,10 @@ Isolated parallel dev environments: worktree name = devcontainer instance name �
 Setup scripts run automatically: `.devcontainer/setup.sh` or `scripts/setup-worktree.sh`
 
 ### Claude Code Devcontainer Auto-Login
-Auto-authenticates Claude Code inside devcontainers via a shared bind mount at `~/.devcontainer/shared/.claude`.
-All containers share the same credential directory — when any container refreshes OAuth tokens, all others see the update immediately.
-- **Key File**: `scripts/devcontainer/export-claude-credentials.sh` (exports Keychain to shared dir, idempotent, `--force` to overwrite)
-- **Shared Dir**: `~/.devcontainer/shared/.claude` (bind-mounted to `/home/node/.claude` in containers)
+Auto-authenticates Claude Code inside devcontainers by bind-mounting the host's `~/.claude` directory directly.
+All containers share the same config directory — credentials, plugins, settings, and hooks are all available. When any container refreshes OAuth tokens, all others see the update immediately.
+- **Key File**: `scripts/devcontainer/export-claude-credentials.sh` (exports Keychain to `~/.claude`, idempotent, `--force` to overwrite)
+- **Mount**: `~/.claude` (bind-mounted to `/home/node/.claude` in containers)
 - **Test**: `scripts/devcontainer/test-claude-autologin.sh`
 
 ### Claude & Opencode Activity Watcher
