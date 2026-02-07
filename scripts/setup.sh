@@ -1066,6 +1066,19 @@ phase_9_fonts_and_apps() {
             fi
         fi
 
+        # Setup Ticket Queue LaunchAgent (auto-start daemon on login)
+        print_step "Setting up ticket queue daemon..."
+        local queue_plist="$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
+        if [[ -f "$queue_plist" ]]; then
+            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.ticket-queue"; then
+                launchctl bootstrap "gui/$(id -u)" "$queue_plist" 2>/dev/null && \
+                    print_success "Ticket queue daemon started" || \
+                    log_verbose "Ticket queue daemon start skipped"
+            else
+                log_verbose "Ticket queue daemon already running"
+            fi
+        fi
+
         # Setup Karabiner-Elements (keyboard remapping)
         print_step "Setting up Karabiner-Elements..."
         if [[ -d "$DOTFILES_ROOT/.config/karabiner" ]]; then

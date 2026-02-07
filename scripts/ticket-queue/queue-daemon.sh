@@ -584,7 +584,7 @@ print(len([t for t in q.get('tickets', []) if t.get('status') == 'queued']))
     done
 }
 
-# Start daemon in background
+# Start daemon via launchctl
 cmd_start() {
     ensure_queue
 
@@ -595,30 +595,47 @@ cmd_start() {
         return 0
     fi
 
-    echo -e "${GREEN}Starting ticket queue daemon...${NC}"
-    nohup "$0" run >> "$LOG_FILE" 2>&1 &
-    local daemon_pid=$!
-    echo $daemon_pid > "$PID_FILE"
-    echo -e "PID: $daemon_pid"
-    echo -e "Log: $LOG_FILE"
-    echo -e "Queue: $QUEUE_FILE"
-    log "Daemon started via 'start' command (PID: $daemon_pid)"
-}
-
-# Stop daemon
-cmd_stop() {
-    if ! is_running; then
-        echo -e "${YELLOW}Daemon not running${NC}"
-        return 0
+    local plist="$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
+    if [[ ! -f "$plist" ]]; then
+        echo -e "${RED}LaunchAgent plist not found: $plist${NC}"
+        echo -e "Run 'stow' from ~/dotfiles to install it"
+        return 1
     fi
 
-    local pid
-    pid=$(cat "$PID_FILE")
-    echo -e "Stopping daemon (PID: $pid)..."
-    kill "$pid" 2>/dev/null || true
+    echo -e "${GREEN}Starting ticket queue daemon...${NC}"
+    local uid
+    uid=$(id -u)
+    launchctl bootstrap "gui/$uid" "$plist" 2>/dev/null \
+        || launchctl kickstart -k "gui/$uid/com.dotfiles.ticket-queue" 2>/dev/null \
+        || true
+    sleep 1
+    if is_running; then
+        local pid
+        pid=$(cat "$PID_FILE")
+        echo -e "PID: $pid"
+    fi
+    echo -e "Log: $LOG_FILE"
+    echo -e "Queue: $QUEUE_FILE"
+    log "Daemon started via 'start' command (launchctl)"
+}
+
+# Stop daemon via launchctl
+cmd_stop() {
+    local uid
+    uid=$(id -u)
+    launchctl bootout "gui/$uid/com.dotfiles.ticket-queue" 2>/dev/null || true
+
+    # Also kill directly in case launchctl unload didn't stop it
+    if is_running; then
+        local pid
+        pid=$(cat "$PID_FILE")
+        echo -e "Stopping daemon (PID: $pid)..."
+        kill "$pid" 2>/dev/null || true
+    fi
+
     rm -f "$PID_FILE"
     echo -e "${GREEN}Daemon stopped${NC}"
-    log "Daemon stopped via 'stop' command"
+    log "Daemon stopped via 'stop' command (launchctl)"
 }
 
 # Dispatch next ticket immediately (bypass usage check)

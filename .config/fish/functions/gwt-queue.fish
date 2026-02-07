@@ -91,9 +91,22 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             bash $queue_daemon next
 
         case start
-            bash $queue_daemon start
+            set -l plist "$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
+            if not test -f "$plist"
+                echo "Error: LaunchAgent plist not found: $plist"
+                echo "Run 'stow' from ~/dotfiles to install it"
+                return 1
+            end
+            set -l uid (id -u)
+            launchctl bootstrap gui/$uid "$plist" 2>/dev/null
+            or launchctl kickstart -k gui/$uid/com.dotfiles.ticket-queue 2>/dev/null
+            sleep 1
+            bash $queue_daemon status
 
         case stop
+            set -l uid (id -u)
+            launchctl bootout gui/$uid/com.dotfiles.ticket-queue 2>/dev/null
+            # Also delegate to daemon script for PID cleanup
             bash $queue_daemon stop
 
         case status
