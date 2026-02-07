@@ -16,6 +16,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --mount, -m     Additional mount (repeatable)
     #   --session S     Tmux session name (default: repo name)
     #   --devcon        Use devcontainer for isolation (default: local)
+    #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
     #   --system S      Ticketing system: linear or jira
     #   --help, -h      Show help
 
@@ -42,6 +43,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l prompt_template ""
     set -l prompt_prefix ""
     set -l prompt_suffix ""
+    set -l sub_profile ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -126,6 +128,22 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --prompt-suffix requires text"
                     return 1
                 end
+            case --sub
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set sub_profile $argv[$next_i]
+                    # Validate the config dir exists
+                    set -l config_dir "$HOME/.claude-$sub_profile"
+                    if not test -d "$config_dir"
+                        echo "Error: Profile '$sub_profile' not found ($config_dir)"
+                        echo "Run: claude-sub setup $sub_profile"
+                        return 1
+                    end
+                    set skip_next true
+                else
+                    echo "Error: --sub requires a profile name (e.g., work, personal)"
+                    return 1
+                end
             case --mount -m
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -181,6 +199,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --prompt-template F  Custom prompt template file"
         echo "  --prompt-prefix P    Text to prepend to prompt"
         echo "  --prompt-suffix S    Text to append to prompt"
+        echo "  --sub NAME           Claude subscription profile (uses ~/.claude-NAME config dir)"
         echo "  --mount, -m          Add directory mount (repeatable)"
         echo "  --session S          Tmux session name (default: repo name)"
         echo "  --devcon             Use devcontainer for isolation (default: local)"
@@ -190,6 +209,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "Examples:"
         echo "  # Standard ticket execution"
         echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Session tokens expire incorrectly\""
+        echo ""
+        echo "  # Use a specific Claude subscription"
+        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --sub personal"
         echo ""
         echo "  # Use feature-dev instead of ralph-loop"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Description\" --command /feature-dev:feature-dev"
@@ -285,6 +307,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     echo "Command:   $slash_command"
     if test -n "$prompt_template"
         echo "Template:  $prompt_template"
+    end
+    if test -n "$sub_profile"
+        echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
     end
     if test -n "$prompt_prefix"
         echo "Prefix:    (custom)"
@@ -422,6 +447,16 @@ $prompt_suffix"
     echo "set -l prompt $escaped_prompt" >> $launch_script
     echo "" >> $launch_script
 
+    # Set CLAUDE_CONFIG_DIR if subscription profile specified
+    if test -n "$sub_profile"
+        if $use_devcon
+            echo "set -gx CLAUDE_CONFIG_DIR /home/node/.claude-$sub_profile" >> $launch_script
+        else
+            echo "set -gx CLAUDE_CONFIG_DIR $HOME/.claude-$sub_profile" >> $launch_script
+        end
+        echo "" >> $launch_script
+    end
+
     # Build the claude command based on slash_command
     # --add-dir passes the main repo root so worktree sessions inherit its CLAUDE.md
     # ralph-loop needs special args, others just get the prompt
@@ -444,7 +479,12 @@ $prompt_suffix"
     if $use_devcon
         # Build devcon up command - rebuild ensures fresh container with correct mounts
         # Without -r, devcontainer up reuses existing containers that may lack --mount binds
-        set -l devcon_up_cmd "devcon claude -i $instance_name -r -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 $worktree_path $resolved_repo_root"
+        set -l devcon_up_cmd "devcon claude -i $instance_name -r -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1"
+        # Pass CLAUDE_CONFIG_DIR env var into container for subscription profile
+        if test -n "$sub_profile"
+            set devcon_up_cmd "$devcon_up_cmd -E CLAUDE_CONFIG_DIR=/home/node/.claude-$sub_profile"
+        end
+        set devcon_up_cmd "$devcon_up_cmd $worktree_path $resolved_repo_root"
         for mount in $mounts
             set devcon_up_cmd "$devcon_up_cmd $mount"
         end

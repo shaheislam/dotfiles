@@ -5,6 +5,9 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
     # usage limits reset. A background daemon monitors the OAuth usage
     # API and auto-dispatches when capacity is available.
     #
+    # Supports multiple subscription profiles (--sub NAME). When no sub
+    # is specified, the daemon auto-selects the profile with lowest usage.
+    #
     # Commands:
     #   add [issue-key] <title> [desc] [--opts]  Add ticket to queue
     #   list / ls                                 List queued tickets
@@ -14,7 +17,8 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
     #   start                                     Start queue daemon
     #   stop                                      Stop queue daemon
     #   status                                    Show daemon + queue + usage
-    #   usage                                     Check Claude usage only
+    #   usage [--sub NAME]                        Check Claude usage
+    #   profiles                                  List subscription profiles + usage
     #   log [N]                                   Show last N log lines (default: 20)
     #   help                                      Show help
 
@@ -57,10 +61,11 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
                 echo "Queue-specific options:"
                 echo "  --repo PATH          Git repo path (default: current dir)"
                 echo "  --priority N         Priority 1-10, higher first (default: 5)"
+                echo "  --sub NAME           Subscription profile (default: auto-select)"
                 echo ""
                 echo "Examples:"
                 echo "  gwt-queue add ENG-123 \"Fix auth bug\" \"Tokens expire too early\""
-                echo "  gwt-queue add \"Add dark mode\" \"Theme toggle for settings page\""
+                echo "  gwt-queue add \"Add dark mode\" \"Theme toggle\" --sub personal"
                 echo "  gwt-queue add ENG-456 \"Refactor API\" --max 30 --priority 8"
                 return 1
             end
@@ -112,13 +117,38 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
         case status
             bash $queue_daemon status
 
+        case profiles
+            bash $queue_daemon profiles
+
         case usage
-            if test -x "$usage_script"
-                bash $usage_script $rest
-            else
+            if not test -x "$usage_script"
                 echo "Error: claude-usage.sh not found"
                 return 1
             end
+            # Extract --sub from rest args and convert to --config-dir
+            set -l usage_args
+            set -l skip_next false
+            for i in (seq (count $rest))
+                if $skip_next
+                    set skip_next false
+                    continue
+                end
+                set -l arg $rest[$i]
+                if test "$arg" = "--sub"
+                    set -l next_i (math $i + 1)
+                    if test $next_i -le (count $rest)
+                        set -l sub_name $rest[$next_i]
+                        set -a usage_args --config-dir "$HOME/.claude-$sub_name"
+                        set skip_next true
+                    else
+                        echo "Error: --sub requires a profile name"
+                        return 1
+                    end
+                else
+                    set -a usage_args $arg
+                end
+            end
+            bash $usage_script $usage_args
 
         case log
             set -l lines 20
@@ -133,7 +163,7 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             end
 
         case help --help -h ''
-            echo "gwt-queue - Rate-limit-aware ticket queue for autonomous execution"
+            echo "gwt-queue - Rate-limit-aware ticket queue with multi-subscription support"
             echo ""
             echo "USAGE:"
             echo "  gwt-queue <command> [args...]"
@@ -147,18 +177,23 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             echo "  start                               Start the queue daemon"
             echo "  stop                                Stop the queue daemon"
             echo "  status                              Show daemon + queue + usage status"
-            echo "  usage [--json|--wait]               Check Claude Code usage limits"
+            echo "  usage [--sub NAME] [--json|--wait]  Check Claude Code usage limits"
+            echo "  profiles                            List subscription profiles + usage"
             echo "  log [N]                             Show last N log lines (default: 20)"
             echo "  help                                Show this help"
             echo ""
-            echo "WORKFLOW:"
-            echo "  1. Queue tickets:  gwt-queue add ENG-123 \"Fix auth\" \"Details...\""
-            echo "  2. Start daemon:   gwt-queue start"
-            echo "  3. Monitor:        gwt-queue status"
-            echo "  4. Check log:      gwt-queue log"
+            echo "SUBSCRIPTION PROFILES:"
+            echo "  --sub NAME on 'add' pins a ticket to a specific subscription."
+            echo "  Without --sub, the daemon auto-dispatches to whichever profile"
+            echo "  has the lowest utilization (smart multi-sub dispatching)."
             echo ""
-            echo "The daemon monitors Claude usage via OAuth API and dispatches"
-            echo "tickets via gwt-ticket when utilization drops below threshold."
+            echo "WORKFLOW:"
+            echo "  1. Set up profiles: claude-sub setup personal"
+            echo "  2. Queue tickets:   gwt-queue add ENG-123 \"Fix auth\" --sub personal"
+            echo "  3. Or auto-route:   gwt-queue add \"Fix auth\" \"Details...\""
+            echo "  4. Start daemon:    gwt-queue start"
+            echo "  5. Monitor:         gwt-queue status"
+            echo "  6. Check profiles:  gwt-queue profiles"
             echo ""
             echo "CONFIGURATION (env vars):"
             echo "  QUEUE_POLL_INTERVAL  Check interval seconds (default: 300)"

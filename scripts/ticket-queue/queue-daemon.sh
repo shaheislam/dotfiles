@@ -71,6 +71,11 @@ QUEUE ADD FORMAT:
   Additional queue-specific options:
     --repo PATH    Git repo to run gwt-ticket in (default: current dir)
     --priority N   Priority 1-10, higher = first (default: 5)
+    --sub NAME     Claude subscription profile (dispatches with --sub NAME)
+                   If omitted, daemon auto-selects profile with lowest usage
+
+ADDITIONAL COMMANDS:
+  queue-daemon.sh profiles           # List subscription profiles + usage
 
 ENVIRONMENT:
   QUEUE_POLL_INTERVAL  Poll interval seconds (default: 300)
@@ -116,6 +121,7 @@ cmd_add() {
     local description=""
     local repo_path=""
     local priority=5
+    local sub_profile=""
     local gwt_args=()
     local skip_next=false
     local positional_index=0
@@ -136,6 +142,10 @@ cmd_add() {
                 ;;
             --priority)
                 priority="${!next_i}"
+                skip_next=true
+                ;;
+            --sub)
+                sub_profile="${!next_i}"
                 skip_next=true
                 ;;
             --max|--session|--system|--command|--prompt-template|--prompt-prefix|--prompt-suffix|--mount|-m)
@@ -198,7 +208,7 @@ print(json.dumps(args))
 
     # Add to queue using env vars for safe JSON handling (avoids shell quoting issues)
     local position total
-    read -r position total < <(_QUEUE_TITLE="$title" _QUEUE_DESC="${description:-$title}" python3 << PYEOF
+    read -r position total < <(_QUEUE_TITLE="$title" _QUEUE_DESC="${description:-$title}" _QUEUE_SUB="$sub_profile" python3 << PYEOF
 import json, sys, os
 
 # Read inputs safely
@@ -212,6 +222,7 @@ gwt_args = json.loads('$gwt_args_json')
 # Read title/description from env to avoid shell quoting issues
 title = os.environ.get('_QUEUE_TITLE', '')
 description = os.environ.get('_QUEUE_DESC', title)
+sub = os.environ.get('_QUEUE_SUB', '')
 
 ticket = {
     'id': ticket_id,
@@ -222,7 +233,8 @@ ticket = {
     'priority': priority,
     'status': 'queued',
     'added_at': added_at,
-    'gwt_args': gwt_args
+    'gwt_args': gwt_args,
+    'sub': sub
 }
 
 queue_file = "$QUEUE_FILE"
@@ -248,9 +260,14 @@ PYEOF
     echo -e "  ID:       $ticket_id"
     echo -e "  Repo:     $repo_path"
     echo -e "  Priority: $priority"
+    if [[ -n "$sub_profile" ]]; then
+        echo -e "  Sub:      $sub_profile"
+    else
+        echo -e "  Sub:      (auto - dispatches to any available)"
+    fi
     echo -e "  Position: ${position:-?} of ${total:-?}"
 
-    log "Added ticket $ticket_id: $display_key - $title (priority: $priority)"
+    log "Added ticket $ticket_id: $display_key - $title (priority: $priority, sub: ${sub_profile:-auto})"
 }
 
 # List queued tickets
@@ -276,8 +293,10 @@ else:
             key_display = key if key != 'TASK' else '(auto)'
             pri = t.get('priority', 5)
             status = t.get('status', 'queued')
+            sub = t.get('sub', '')
+            sub_display = f' | Sub: {sub}' if sub else ' | Sub: auto'
             print(f'  {i+1}. [{t["id"]}] {key_display} - {t["title"]}')
-            print(f'     Priority: {pri} | Repo: {t.get("repo_path", "?")} | Status: {status}')
+            print(f'     Priority: {pri} | Repo: {t.get("repo_path", "?")}{sub_display} | Status: {status}')
         print()
 
     if completed:
@@ -423,19 +442,26 @@ print(json.dumps(tickets[0]))
     description=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['description'])")
     repo_path=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['repo_path'])")
 
-    # Get extra gwt args
+    # Get extra gwt args and sub profile
     local gwt_extra_args
     gwt_extra_args=$(echo "$ticket_json" | python3 -c "
 import json, sys
 args = json.load(sys.stdin).get('gwt_args', [])
 print(' '.join(args))
 ")
+    local ticket_sub
+    ticket_sub=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('sub', ''))")
+
+    # If dispatch_sub was passed (from daemon loop), use it to override empty ticket sub
+    local effective_sub="${ticket_sub:-${DISPATCH_SUB:-}}"
 
     local display_key="$issue_key"
     [[ "$issue_key" == "TASK" ]] && display_key="(auto)"
 
-    log "Dispatching ticket $ticket_id: $display_key - $title"
-    echo -e "${GREEN}Dispatching:${NC} $display_key - $title"
+    local sub_display=""
+    [[ -n "$effective_sub" ]] && sub_display=" (sub: $effective_sub)"
+    log "Dispatching ticket $ticket_id: $display_key - $title$sub_display"
+    echo -e "${GREEN}Dispatching:${NC} $display_key - $title$sub_display"
 
     # Mark as dispatching
     python3 -c "
@@ -459,6 +485,9 @@ with open('$QUEUE_FILE', 'w') as f:
     gwt_cmd="$gwt_cmd '$title'"
     if [[ -n "$description" && "$description" != "$title" ]]; then
         gwt_cmd="$gwt_cmd '$description'"
+    fi
+    if [[ -n "$effective_sub" ]]; then
+        gwt_cmd="$gwt_cmd --sub $effective_sub"
     fi
     if [[ -n "$gwt_extra_args" ]]; then
         gwt_cmd="$gwt_cmd $gwt_extra_args"
@@ -531,6 +560,125 @@ send_notification() {
     fi
 }
 
+# List all subscription profile directories
+# Returns: lines of "name config_dir" pairs
+list_sub_profiles() {
+    # Default profile (Keychain-based)
+    echo "default ${HOME}/.claude"
+    # Named profiles
+    for dir in "${HOME}"/.claude-*/; do
+        if [[ -d "$dir" ]] && [[ -f "$dir/.credentials.json" ]]; then
+            local name
+            name=$(basename "$dir" | sed 's/^\.claude-//')
+            echo "$name $dir"
+        fi
+    done
+}
+
+# Check usage for a specific profile, returns 0 if available
+# Sets PROFILE_UTILIZATION to the max of 5h and 7d utilization
+check_profile_usage() {
+    local profile_name="$1"
+    local config_dir="$2"
+
+    local usage_args=(--available --threshold "$THRESHOLD")
+    if [[ "$profile_name" != "default" ]]; then
+        usage_args+=(--config-dir "$config_dir")
+    fi
+
+    # Get JSON to extract utilization for comparison
+    local json_args=(--json)
+    if [[ "$profile_name" != "default" ]]; then
+        json_args+=(--config-dir "$config_dir")
+    fi
+
+    local usage_json
+    usage_json=$("$USAGE_SCRIPT" "${json_args[@]}" 2>/dev/null) || return 2
+
+    # Extract max utilization for ranking
+    PROFILE_UTILIZATION=$(echo "$usage_json" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+five = (data.get('five_hour') or {}).get('utilization', 0)
+seven = (data.get('seven_day') or {}).get('utilization', 0)
+print(max(five, seven))
+" 2>/dev/null || echo 100)
+
+    # Check against threshold
+    "$USAGE_SCRIPT" "${usage_args[@]}" 2>/dev/null
+    return $?
+}
+
+# Find the best available profile for dispatching
+# Returns profile name on stdout, or empty if none available
+find_available_profile() {
+    local best_name=""
+    local best_util=100
+
+    while IFS=' ' read -r name dir; do
+        if check_profile_usage "$name" "$dir"; then
+            local util="$PROFILE_UTILIZATION"
+            local is_lower
+            if command -v bc &>/dev/null; then
+                is_lower=$(echo "$util < $best_util" | bc -l 2>/dev/null || echo 0)
+            else
+                is_lower=$(python3 -c "print(1 if $util < $best_util else 0)" 2>/dev/null || echo 0)
+            fi
+            if [[ "$is_lower" == "1" ]] || [[ -z "$best_name" ]]; then
+                best_name="$name"
+                best_util="$util"
+            fi
+        fi
+    done < <(list_sub_profiles)
+
+    echo "$best_name"
+}
+
+# Get the sub profile for the next queued ticket (empty = auto)
+get_next_ticket_sub() {
+    python3 -c "
+import json, sys
+with open('$QUEUE_FILE') as f:
+    queue = json.load(f)
+tickets = [t for t in queue.get('tickets', []) if t.get('status') == 'queued']
+if tickets:
+    print(tickets[0].get('sub', ''))
+else:
+    sys.exit(1)
+" 2>/dev/null
+}
+
+# Show all subscription profiles with current usage
+cmd_profiles() {
+    echo -e "${BLUE}=== Subscription Profiles ===${NC}"
+    echo ""
+    printf "%-12s %-30s %s\n" "PROFILE" "DIRECTORY" "USAGE"
+    printf "%-12s %-30s %s\n" "-------" "---------" "-----"
+
+    while IFS=' ' read -r name dir; do
+        local usage_display
+        local json_args=(--json)
+        if [[ "$name" != "default" ]]; then
+            json_args+=(--config-dir "$dir")
+        fi
+
+        local usage_json
+        if usage_json=$("$USAGE_SCRIPT" "${json_args[@]}" 2>/dev/null); then
+            usage_display=$(echo "$usage_json" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+five = (data.get('five_hour') or {}).get('utilization', 0)
+seven = (data.get('seven_day') or {}).get('utilization', 0)
+print(f'5h: {five}% | 7d: {seven}%')
+" 2>/dev/null || echo "parse error")
+        else
+            usage_display="not authenticated"
+        fi
+
+        printf "%-12s %-30s %s\n" "$name" "$dir" "$usage_display"
+    done < <(list_sub_profiles)
+}
+
 # Main daemon loop
 daemon_loop() {
     log "Daemon started (PID: $$, threshold: ${THRESHOLD}%, poll: ${POLL_INTERVAL}s, cooldown: ${COOLDOWN}s)"
@@ -566,17 +714,44 @@ print(len([t for t in q.get('tickets', []) if t.get('status') == 'queued']))
             continue
         fi
 
-        # Check usage
-        if "$USAGE_SCRIPT" --available --threshold "$THRESHOLD" 2>/dev/null; then
-            log "Capacity available (below ${THRESHOLD}%), dispatching next ticket..."
-            dispatch_next || true
-            last_dispatch=$(date +%s)
-        else
-            local exit_code=$?
-            if [[ $exit_code -eq 1 ]]; then
-                log "Rate limited, waiting... ($queued_count tickets queued)"
+        # Get the next ticket's sub preference
+        local ticket_sub
+        ticket_sub=$(get_next_ticket_sub 2>/dev/null) || { sleep "$POLL_INTERVAL"; continue; }
+
+        if [[ -n "$ticket_sub" ]]; then
+            # Ticket has explicit sub - check only that profile
+            local config_dir="${HOME}/.claude-${ticket_sub}"
+            if [[ "$ticket_sub" == "default" ]]; then
+                config_dir="${HOME}/.claude"
+            fi
+
+            local usage_args=(--available --threshold "$THRESHOLD")
+            if [[ "$ticket_sub" != "default" ]]; then
+                usage_args+=(--config-dir "$config_dir")
+            fi
+
+            if "$USAGE_SCRIPT" "${usage_args[@]}" 2>/dev/null; then
+                log "Capacity available on '$ticket_sub' (below ${THRESHOLD}%), dispatching..."
+                DISPATCH_SUB="" dispatch_next || true
+                last_dispatch=$(date +%s)
             else
-                log "Cannot check usage (exit code: $exit_code), retrying..."
+                log "Profile '$ticket_sub' rate limited, waiting... ($queued_count tickets queued)"
+            fi
+        else
+            # No explicit sub - find any available profile
+            local available_profile
+            available_profile=$(find_available_profile)
+
+            if [[ -n "$available_profile" ]]; then
+                local sub_arg=""
+                if [[ "$available_profile" != "default" ]]; then
+                    sub_arg="$available_profile"
+                fi
+                log "Capacity available on '$available_profile' (below ${THRESHOLD}%), dispatching..."
+                DISPATCH_SUB="$sub_arg" dispatch_next || true
+                last_dispatch=$(date +%s)
+            else
+                log "All profiles rate limited, waiting... ($queued_count tickets queued)"
             fi
         fi
 
@@ -658,6 +833,7 @@ case "${1:-help}" in
         ;;
     clear) cmd_clear ;;
     next) cmd_next ;;
+    profiles) cmd_profiles ;;
     help|--help|-h) show_help ;;
     *) echo "Unknown command: $1"; show_help; exit 1 ;;
 esac

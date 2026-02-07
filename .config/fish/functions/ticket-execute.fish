@@ -32,6 +32,7 @@ function ticket-execute --description "Execute a ticket autonomously using devco
                 echo ""
                 echo "Options:"
                 echo "  --max N        Max iterations (default: 20)"
+                echo "  --sub NAME     Claude subscription profile (uses ~/.claude-NAME config dir)"
                 echo "  --devcon       Use devcontainer for isolation"
                 echo "  --dry-run      Show what would be executed"
                 echo ""

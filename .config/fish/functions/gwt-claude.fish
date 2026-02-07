@@ -1,23 +1,28 @@
 function gwt-claude --description "Launch Claude Code in worktree devcontainer"
-    # Usage: gwt-claude [branch-name]
+    # Usage: gwt-claude [branch-name] [options]
     #
     # Launches Claude Code inside the devcontainer associated with a worktree.
     # If no branch is specified, uses fzf to select from available worktrees.
     #
     # Options:
+    #   --sub NAME    Claude subscription profile (uses ~/.claude-NAME config dir)
     #   --help, -h    Show this help
 
     if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
-        echo "Usage: gwt-claude [branch-name]"
+        echo "Usage: gwt-claude [branch-name] [options]"
         echo ""
         echo "Launch Claude Code in a worktree's devcontainer."
         echo ""
         echo "If no branch is specified, an fzf picker shows available worktrees."
         echo "The devcontainer must already be running or will be started."
         echo ""
+        echo "Options:"
+        echo "  --sub NAME    Claude subscription profile (uses ~/.claude-NAME config dir)"
+        echo ""
         echo "Examples:"
-        echo "  gwt-claude                  # Pick worktree with fzf"
-        echo "  gwt-claude feature/auth     # Specific worktree"
+        echo "  gwt-claude                          # Pick worktree with fzf"
+        echo "  gwt-claude feature/auth             # Specific worktree"
+        echo "  gwt-claude feature/auth --sub work  # Specific subscription"
         return 0
     end
 
@@ -27,8 +32,41 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
         return 1
     end
 
+    # Parse arguments - extract --sub flag and branch name
+    set -l sub_profile ""
+    set -l branch ""
+    set -l skip_next false
+
+    for i in (seq (count $argv))
+        if $skip_next
+            set skip_next false
+            continue
+        end
+        set -l arg $argv[$i]
+        switch $arg
+            case --sub
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set sub_profile $argv[$next_i]
+                    set -l config_dir "$HOME/.claude-$sub_profile"
+                    if not test -d "$config_dir"
+                        echo "Error: Profile '$sub_profile' not found ($config_dir)"
+                        echo "Run: claude-sub setup $sub_profile"
+                        return 1
+                    end
+                    set skip_next true
+                else
+                    echo "Error: --sub requires a profile name (e.g., work, personal)"
+                    return 1
+                end
+            case '*'
+                if test -z "$branch"
+                    set branch $arg
+                end
+        end
+    end
+
     set -l repo (basename (git rev-parse --show-toplevel))
-    set -l branch $argv[1]
     set -l worktree_path ""
     set -l instance_name ""
 
@@ -87,13 +125,20 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
         end
     end
 
+    # Build devcon env flags for subscription profile
+    set -l sub_env_flags
+    if test -n "$sub_profile"
+        set sub_env_flags -E "CLAUDE_CONFIG_DIR=/home/node/.claude-$sub_profile"
+        echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
+    end
+
     if $instance_running
         echo "Container running, exec into claude..."
         # Execute claude in the running container
-        devcon claude -i $instance_name --exec
+        devcon claude -i $instance_name $sub_env_flags --exec
     else
         echo "Starting devcontainer..."
         # Start the devcontainer with the worktree mounted
-        devcon claude -i $instance_name $worktree_path --exec
+        devcon claude -i $instance_name $sub_env_flags $worktree_path --exec
     end
 end

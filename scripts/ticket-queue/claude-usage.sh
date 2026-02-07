@@ -11,6 +11,7 @@
 #   claude-usage.sh --available      # Exit 0 if capacity available, 1 if not
 #   claude-usage.sh --wait           # Block until capacity is available
 #   claude-usage.sh --threshold 80   # Custom threshold (default: 90%)
+#   claude-usage.sh --config-dir ~/.claude-personal  # Use specific profile
 #
 # Exit codes:
 #   0 = Success (or capacity available in --available mode)
@@ -27,6 +28,7 @@ OUTPUT_MODE="human"
 THRESHOLD=90
 WAIT_MODE=false
 POLL_INTERVAL=300  # 5 minutes
+CONFIG_DIR=""  # Empty = use Keychain, set = read from config dir
 
 # Colors
 RED='\033[0;31m'
@@ -49,12 +51,14 @@ USAGE:
   claude-usage.sh --poll N         # Poll interval in seconds (default: 300)
 
 OPTIONS:
-  --json         Output raw JSON from API
-  --available    Check if utilization is below threshold
-  --wait         Block until utilization drops below threshold
-  --threshold N  Utilization percentage threshold (default: 90)
-  --poll N       Poll interval in seconds for --wait mode (default: 300)
-  --help         Show this help
+  --json            Output raw JSON from API
+  --available       Check if utilization is below threshold
+  --wait            Block until utilization drops below threshold
+  --threshold N     Utilization percentage threshold (default: 90)
+  --poll N          Poll interval in seconds for --wait mode (default: 300)
+  --config-dir DIR  Read credentials from DIR/.credentials.json
+                    (default: macOS Keychain)
+  --help            Show this help
 
 EXIT CODES:
   0 = Success / capacity available
@@ -64,7 +68,8 @@ EXIT CODES:
 
 NOTES:
   Uses the undocumented OAuth usage API endpoint.
-  Requires Claude Code OAuth credentials in macOS Keychain.
+  Default: reads OAuth credentials from macOS Keychain.
+  With --config-dir: reads from DIR/.credentials.json (for subscription profiles).
 EOF
 }
 
@@ -82,13 +87,17 @@ while [[ $# -gt 0 ]]; do
             POLL_INTERVAL="${2:?Error: --poll requires seconds}"
             shift 2
             ;;
+        --config-dir)
+            CONFIG_DIR="${2:?Error: --config-dir requires a directory path}"
+            shift 2
+            ;;
         --help|-h) show_help; exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done
 
-# Get OAuth token from macOS Keychain
-get_oauth_token() {
+# Get OAuth token from macOS Keychain (default)
+get_oauth_token_from_keychain() {
     local keychain_data
     keychain_data=$(security find-generic-password -s "Claude Code-credentials" -w 2>/dev/null) || {
         echo "Error: Cannot read Claude Code credentials from Keychain" >&2
@@ -96,10 +105,36 @@ get_oauth_token() {
         return 2
     }
 
-    # Extract access token - try python3 first, fall back to jq
+    _extract_token_from_json "$keychain_data"
+}
+
+# Get OAuth token from a config directory's .credentials.json
+get_oauth_token_from_config_dir() {
+    local config_dir="$1"
+    local cred_file="$config_dir/.credentials.json"
+
+    if [[ ! -f "$cred_file" ]]; then
+        echo "Error: Credentials file not found: $cred_file" >&2
+        echo "Run: claude-sub login $(basename "$config_dir" | sed 's/^\.claude-//')" >&2
+        return 2
+    fi
+
+    local cred_data
+    cred_data=$(cat "$cred_file") || {
+        echo "Error: Cannot read $cred_file" >&2
+        return 2
+    }
+
+    _extract_token_from_json "$cred_data"
+}
+
+# Extract OAuth access token from JSON credential data
+_extract_token_from_json() {
+    local json_data="$1"
     local token
+
     if command -v python3 &>/dev/null; then
-        token=$(echo "$keychain_data" | python3 -c "
+        token=$(echo "$json_data" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -111,11 +146,11 @@ try:
 except Exception:
     sys.exit(1)
 " 2>/dev/null) || {
-            echo "Error: Cannot extract OAuth token from Keychain data" >&2
+            echo "Error: Cannot extract OAuth token from credential data" >&2
             return 2
         }
     elif command -v jq &>/dev/null; then
-        token=$(echo "$keychain_data" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null) || {
+        token=$(echo "$json_data" | jq -r '.claudeAiOauth.accessToken // empty' 2>/dev/null) || {
             echo "Error: Cannot extract OAuth token" >&2
             return 2
         }
@@ -130,6 +165,15 @@ except Exception:
     fi
 
     echo "$token"
+}
+
+# Route to correct token source based on CONFIG_DIR
+get_oauth_token() {
+    if [[ -n "$CONFIG_DIR" ]]; then
+        get_oauth_token_from_config_dir "$CONFIG_DIR"
+    else
+        get_oauth_token_from_keychain
+    fi
 }
 
 # Query the usage API
