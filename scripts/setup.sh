@@ -628,14 +628,17 @@ phase_4_cloud_tools() {
         log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill"
 
         # Fix hookify plugin import paths (upstream bug: uses 'from hookify.core.*' but PLUGIN_ROOT structure doesn't support it)
-        for hookify_dir in "$HOME/.claude/plugins/cache/claude-code-plugins/hookify"/*/; do
+        # Patch both cache (runtime) and marketplace (source) directories
+        for hookify_dir in \
+            "$HOME/.claude/plugins/cache/claude-code-plugins/hookify"/*/ \
+            "$HOME/.claude/plugins/marketplaces/claude-code-plugins/plugins/hookify/"; do
             if [[ -d "$hookify_dir" ]]; then
                 find "$hookify_dir" -name "*.py" -exec sed -i '' 's/from hookify\.core\./from core./g' {} + 2>/dev/null || true
                 find "$hookify_dir" -name "*.py" -exec sed -i '' 's/from hookify\.matchers\./from matchers./g' {} + 2>/dev/null || true
                 find "$hookify_dir" -name "*.py" -exec sed -i '' 's/from hookify\.utils\./from utils./g' {} + 2>/dev/null || true
             fi
         done
-        log_verbose "Patched hookify plugin imports"
+        log_verbose "Patched hookify plugin imports (cache + marketplace)"
 
         # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
         if [[ ! -d "$HOME/ralph-claude-code" ]]; then
