@@ -150,6 +150,39 @@ Autonomously execute tickets from Linear/Jira using devcontainers + ralph-loop.
 **Ticketing detection**: `.claude/settings.local.json` → `.linear.toml` → git remote patterns → default Linear.
 See `gwt-ticket --help` for full options.
 
+### Ticket Queue (Rate-Limit-Aware Scheduling)
+Queue tickets to auto-execute via `gwt-ticket` when Claude Code usage limits reset.
+
+**Architecture**: Background daemon polls OAuth usage API → dispatches when utilization < threshold.
+
+| Command | Description |
+|---------|-------------|
+| `gwt-queue add [KEY] <title> [desc] [--opts]` | Queue ticket for later execution |
+| `gwt-queue list` / `ls` | List queued tickets |
+| `gwt-queue remove <id>` | Remove ticket from queue |
+| `gwt-queue start` | Start queue daemon |
+| `gwt-queue stop` | Stop queue daemon |
+| `gwt-queue status` | Show daemon + queue + usage |
+| `gwt-queue usage` | Check Claude usage limits |
+| `gwt-queue next` | Dispatch next ticket immediately |
+| `gwt-queue log [N]` | Show daemon log |
+
+**Configuration** (env vars):
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `QUEUE_POLL_INTERVAL` | `300` | Seconds between usage checks |
+| `QUEUE_THRESHOLD` | `80` | Dispatch when utilization below this % |
+| `QUEUE_COOLDOWN` | `600` | Min seconds between dispatches |
+
+**Files**:
+- Queue data: `~/.claude/ticket-queue.json`
+- Daemon scripts: `scripts/ticket-queue/`
+- Fish function: `.config/fish/functions/gwt-queue.fish`
+- LaunchAgent: `Library/LaunchAgents/com.dotfiles.ticket-queue.plist` (optional auto-start)
+
+**Usage checker**: `scripts/ticket-queue/claude-usage.sh` queries the undocumented OAuth usage API
+(`/api/oauth/usage`) for 5-hour and 7-day utilization with exact reset timestamps.
+
 ### Docker Container Testing for Linux Compatibility
 Test dotfiles on Linux distributions via Colima + Docker. Location: `scripts/docker/`. See `scripts/docker/README.md`.
 - **ALWAYS** test cross-platform changes in containers (start with Ubuntu)
