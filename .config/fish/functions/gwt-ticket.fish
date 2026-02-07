@@ -471,7 +471,16 @@ $prompt_suffix"
     if not $use_devcon
         # For local mode, post-completion runs inside the launch script
         echo "" >> $launch_script
-        echo "# Auto-trigger post-completion (PR creation, ticket transition, notification)" >> $launch_script
+        echo "# Auto-merge feature branch into main" >> $launch_script
+        echo "~/dotfiles/scripts/auto-merge.sh $worktree_path" >> $launch_script
+        echo "set -l merge_exit \$status" >> $launch_script
+        echo "if test \$merge_exit -eq 2" >> $launch_script
+        echo "    # Non-additive conflicts - open nvim for resolution in main repo" >> $launch_script
+        echo "    cd $resolved_repo_root" >> $launch_script
+        echo "    nvim -c 'DiffviewOpen'" >> $launch_script
+        echo "end" >> $launch_script
+        echo "" >> $launch_script
+        echo "# Post-completion (PR creation, ticket transition, notification)" >> $launch_script
         echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $launch_script
     end
     chmod +x $launch_script
@@ -505,6 +514,15 @@ $prompt_suffix"
         echo '#!/usr/bin/env fish' > $claude_pane_script
         echo "$exec_cmd fish $container_launch_script" >> $claude_pane_script
         echo "set -l claude_exit \$status" >> $claude_pane_script
+        echo "" >> $claude_pane_script
+        echo "# Auto-merge feature branch into main (runs on host)" >> $claude_pane_script
+        echo "~/dotfiles/scripts/auto-merge.sh $worktree_path" >> $claude_pane_script
+        echo "set -l merge_exit \$status" >> $claude_pane_script
+        echo "if test \$merge_exit -eq 2" >> $claude_pane_script
+        echo "    # Non-additive conflicts - open nvim for resolution in main repo" >> $claude_pane_script
+        echo "    cd $resolved_repo_root" >> $claude_pane_script
+        echo "    nvim -c 'DiffviewOpen'" >> $claude_pane_script
+        echo "end" >> $claude_pane_script
         echo "" >> $claude_pane_script
         echo "# Post-completion runs on host (has access to git, gh, etc.)" >> $claude_pane_script
         echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $claude_pane_script
