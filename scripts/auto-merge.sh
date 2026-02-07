@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 #
-# auto-merge.sh - Attempt merge with additive-only conflict resolution
+# auto-merge.sh - Merge feature branch into main with additive conflict resolution
 #
-# Merges target branch (default: main) INTO the current feature branch,
-# automatically resolving conflicts ONLY when they are additive:
-#   - Base ancestor is empty (new file added on both sides)
+# From the main repo checkout, merges a feature branch INTO main.
+# Automatically resolves conflicts ONLY when they are additive:
+#   - Base ancestor is empty (new file added on both sides) -> take theirs (feature work)
 #   - Only one side changed the file (other side matches base)
 #
-# If both sides modified existing content, merge is aborted to prevent data loss.
+# If both sides modified existing content, merge is left in-progress
+# so the caller can open nvim DiffviewOpen for manual resolution.
+#
+# Uses git object hashes (git ls-files -u) for comparison — binary-safe,
+# zero I/O overhead vs content comparison.
 #
 # Usage:
-#   auto-merge.sh <WORKTREE_PATH> [--target BRANCH] [--dry-run]
+#   auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run]
 #
 # Exit codes:
-#   0 - Merge completed successfully
+#   0 - Merge completed successfully (or nothing to merge)
 #   1 - Error (bad args, not a git repo, etc.)
-#   2 - Non-additive conflicts found, merge aborted
+#   2 - Non-additive conflicts, merge left in-progress (caller should open nvim)
 #   3 - Uncommitted changes prevent merge
 
 set -euo pipefail
@@ -26,14 +30,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-TARGET_BRANCH="main"
 DRY_RUN=false
 WORKTREE_PATH=""
+REPO_ROOT=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --target)
-            TARGET_BRANCH="$2"
+        --repo-root)
+            REPO_ROOT="$2"
             shift 2
             ;;
         --dry-run)
@@ -41,20 +45,20 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --help|-h)
-            echo "Usage: auto-merge.sh <WORKTREE_PATH> [--target BRANCH] [--dry-run]"
+            echo "Usage: auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run]"
             echo ""
-            echo "Merges target branch into feature branch, auto-resolving additive-only conflicts."
-            echo "Aborts if any conflict involves both sides modifying existing code."
+            echo "Merges feature branch into main, auto-resolving additive-only conflicts."
+            echo "Non-additive conflicts are left in-progress for manual resolution."
             echo ""
             echo "Options:"
-            echo "  --target BRANCH  Target branch to merge from (default: main)"
+            echo "  --repo-root DIR  Main repo checkout to merge into (default: derived from worktree)"
             echo "  --dry-run        Check if merge is possible without committing"
             echo "  --help           Show this help"
             echo ""
             echo "Exit codes:"
-            echo "  0 - Merge succeeded"
+            echo "  0 - Merge succeeded (or nothing to merge)"
             echo "  1 - Error"
-            echo "  2 - Non-additive conflicts, merge aborted"
+            echo "  2 - Non-additive conflicts, merge left in-progress"
             echo "  3 - Uncommitted changes"
             exit 0
             ;;
@@ -74,66 +78,79 @@ if [[ -z "$WORKTREE_PATH" ]]; then
     exit 1
 fi
 
-cd "$WORKTREE_PATH"
-
-if ! git rev-parse --git-dir &>/dev/null; then
-    echo -e "${RED}Error: Not a git repository: $WORKTREE_PATH${NC}" >&2
+if [[ ! -d "$WORKTREE_PATH" ]]; then
+    echo -e "${RED}Error: Not a directory: $WORKTREE_PATH${NC}" >&2
     exit 1
 fi
 
-FEATURE_BRANCH=$(git branch --show-current)
+# Determine feature branch from worktree
+FEATURE_BRANCH=$(git -C "$WORKTREE_PATH" branch --show-current)
 
 if [[ -z "$FEATURE_BRANCH" ]]; then
-    echo -e "${RED}Error: Could not determine current branch${NC}" >&2
+    echo -e "${RED}Error: Could not determine feature branch in $WORKTREE_PATH${NC}" >&2
     exit 1
 fi
 
-if [[ "$FEATURE_BRANCH" == "$TARGET_BRANCH" ]]; then
-    echo -e "${YELLOW}Already on $TARGET_BRANCH, nothing to merge${NC}"
+# Derive main repo root from worktree's git common dir if not given
+if [[ -z "$REPO_ROOT" ]]; then
+    GIT_COMMON_DIR=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir)
+    # git-common-dir gives the main repo's .git dir (absolute or relative)
+    # The repo root is one level up from .git
+    REPO_ROOT=$(cd "$WORKTREE_PATH" && cd "$GIT_COMMON_DIR/.." && pwd)
+fi
+
+if [[ ! -d "$REPO_ROOT/.git" ]] && ! git -C "$REPO_ROOT" rev-parse --git-dir &>/dev/null; then
+    echo -e "${RED}Error: Not a git repository: $REPO_ROOT${NC}" >&2
+    exit 1
+fi
+
+# Check what branch main repo is on
+MAIN_BRANCH=$(git -C "$REPO_ROOT" branch --show-current)
+
+if [[ -z "$MAIN_BRANCH" ]]; then
+    echo -e "${RED}Error: Could not determine branch in main repo $REPO_ROOT${NC}" >&2
+    exit 1
+fi
+
+if [[ "$FEATURE_BRANCH" == "$MAIN_BRANCH" ]]; then
+    echo -e "${YELLOW}Feature branch is same as main repo branch ($MAIN_BRANCH), nothing to merge${NC}"
     exit 0
 fi
 
-# Check for uncommitted changes
+# Work from main repo root
+cd "$REPO_ROOT"
+
+# Check for uncommitted changes in main repo
 if [[ -n "$(git status --porcelain)" ]]; then
-    echo -e "${RED}Error: Uncommitted changes prevent merge${NC}" >&2
+    echo -e "${RED}Error: Uncommitted changes in main repo prevent merge${NC}" >&2
     git status --short >&2
     exit 3
 fi
 
 echo -e "${BLUE}=== Auto-Merge ===${NC}"
-echo -e "Feature: ${GREEN}$FEATURE_BRANCH${NC}"
-echo -e "Target:  ${GREEN}$TARGET_BRANCH${NC}"
+echo -e "Feature: ${GREEN}$FEATURE_BRANCH${NC} (from $WORKTREE_PATH)"
+echo -e "Into:    ${GREEN}$MAIN_BRANCH${NC} (at $REPO_ROOT)"
 echo ""
 
-# Fetch latest target branch
-echo "Fetching latest $TARGET_BRANCH..."
-git fetch origin "$TARGET_BRANCH" 2>/dev/null || true
-
-# Resolve target ref (prefer origin/TARGET if available)
-TARGET_REF="origin/$TARGET_BRANCH"
-if ! git rev-parse "$TARGET_REF" &>/dev/null; then
-    TARGET_REF="$TARGET_BRANCH"
-fi
-
 # Check if merge is needed
-MERGE_BASE=$(git merge-base "$TARGET_REF" "$FEATURE_BRANCH" 2>/dev/null || true)
-TARGET_HEAD=$(git rev-parse "$TARGET_REF")
+MERGE_BASE=$(git merge-base "$MAIN_BRANCH" "$FEATURE_BRANCH" 2>/dev/null || true)
+FEATURE_HEAD=$(git rev-parse "$FEATURE_BRANCH")
 
 if [[ -z "$MERGE_BASE" ]]; then
     echo -e "${YELLOW}No common ancestor found, skipping merge${NC}"
     exit 0
 fi
 
-if [[ "$TARGET_HEAD" == "$MERGE_BASE" ]]; then
-    echo -e "${GREEN}Feature branch is already up to date with $TARGET_BRANCH${NC}"
+if [[ "$FEATURE_HEAD" == "$MERGE_BASE" ]]; then
+    echo -e "${GREEN}Main is already up to date with $FEATURE_BRANCH${NC}"
     exit 0
 fi
 
-# Attempt merge of target into feature branch
-echo "Attempting merge of $TARGET_BRANCH into $FEATURE_BRANCH..."
+# Attempt merge of feature into main
+echo "Attempting merge of $FEATURE_BRANCH into $MAIN_BRANCH..."
 
 MERGE_RESULT=0
-git merge --no-commit --no-ff "$TARGET_REF" 2>/dev/null || MERGE_RESULT=$?
+git merge --no-commit --no-ff "$FEATURE_BRANCH" 2>/dev/null || MERGE_RESULT=$?
 
 if [[ $MERGE_RESULT -eq 0 ]]; then
     # Clean merge - no conflicts
@@ -142,7 +159,7 @@ if [[ $MERGE_RESULT -eq 0 ]]; then
         git merge --abort 2>/dev/null || true
         exit 0
     fi
-    git commit --no-edit -m "merge: bring $FEATURE_BRANCH up to date with $TARGET_BRANCH"
+    git commit --no-edit -m "merge: integrate $FEATURE_BRANCH into $MAIN_BRANCH"
     echo -e "${GREEN}Merged cleanly (no conflicts)${NC}"
     exit 0
 fi
@@ -159,16 +176,9 @@ if [[ -z "$CONFLICTED_FILES" ]]; then
     exit 1
 fi
 
-# Analyze each conflicted file using git's 3-way merge stages:
-#   Stage 1 = base (common ancestor)
-#   Stage 2 = ours (current branch = feature)
-#   Stage 3 = theirs (merge source = target/main)
-#
-# Additive patterns we can safely resolve:
-#   - Base empty (new file): take ours (feature work takes priority)
-#   - Base == theirs (target unchanged): take ours
-#   - Base == ours (feature unchanged): take theirs
-#   - Both modified existing content: NOT additive, abort
+# Parse git ls-files -u once, then extract hashes per file
+# Stages: 1 = base (common ancestor), 2 = ours (main), 3 = theirs (feature)
+UNMERGED=$(git ls-files -u)
 
 ALL_ADDITIVE=true
 NON_ADDITIVE_FILES=()
@@ -177,38 +187,38 @@ RESOLVED_COUNT=0
 while IFS= read -r file; do
     echo -n "  $file: "
 
-    # Get content for each stage (empty string if stage doesn't exist = file is new)
-    # Stage 1 = base, Stage 2 = ours (feature), Stage 3 = theirs (target)
-    BASE_CONTENT=$(git show ":1:$file" 2>/dev/null || true)
-    OURS_CONTENT=$(git show ":2:$file" 2>/dev/null || true)
-    THEIRS_CONTENT=$(git show ":3:$file" 2>/dev/null || true)
+    # Extract object hashes for each stage
+    # Format of ls-files -u: <mode> <hash> <stage> <file>
+    BASE_HASH=$(echo "$UNMERGED" | awk "\$4 == \"$file\" && \$3 == 1 {print \$2}")
+    OURS_HASH=$(echo "$UNMERGED" | awk "\$4 == \"$file\" && \$3 == 2 {print \$2}")
+    THEIRS_HASH=$(echo "$UNMERGED" | awk "\$4 == \"$file\" && \$3 == 3 {print \$2}")
 
-    if [[ -z "$BASE_CONTENT" ]]; then
-        # No base = new file on both sides (additive)
-        echo -e "${GREEN}new file (additive) -> taking ours${NC}"
-        git checkout --ours -- "$file" 2>/dev/null || git show ":2:$file" > "$file"
-        git add "$file"
-        RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
-    elif [[ "$BASE_CONTENT" == "$THEIRS_CONTENT" ]]; then
-        # Target didn't change this file, only we did
-        echo -e "${GREEN}target unchanged (additive) -> taking ours${NC}"
-        git checkout --ours -- "$file" 2>/dev/null || git show ":2:$file" > "$file"
-        git add "$file"
-        RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
-    elif [[ "$BASE_CONTENT" == "$OURS_CONTENT" ]]; then
-        # We didn't change this file, only target did
-        echo -e "${GREEN}feature unchanged (additive) -> taking theirs${NC}"
+    if [[ -z "$BASE_HASH" ]]; then
+        # No base = new file on both sides (additive) -> take theirs (feature's work)
+        echo -e "${GREEN}new file (additive) -> taking theirs (feature)${NC}"
         git checkout --theirs -- "$file" 2>/dev/null || git show ":3:$file" > "$file"
         git add "$file"
         RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
-    elif [[ -z "$OURS_CONTENT" ]] && [[ -n "$THEIRS_CONTENT" ]]; then
-        # We deleted, they modified - not additive
-        echo -e "${RED}deleted by us, modified by them (NOT additive)${NC}"
+    elif [[ "$BASE_HASH" == "$OURS_HASH" ]]; then
+        # Main didn't change this file, only feature did -> take theirs
+        echo -e "${GREEN}main unchanged (additive) -> taking theirs (feature)${NC}"
+        git checkout --theirs -- "$file" 2>/dev/null || git show ":3:$file" > "$file"
+        git add "$file"
+        RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
+    elif [[ "$BASE_HASH" == "$THEIRS_HASH" ]]; then
+        # Feature didn't change this file, only main did -> take ours
+        echo -e "${GREEN}feature unchanged (additive) -> taking ours (main)${NC}"
+        git checkout --ours -- "$file" 2>/dev/null || git show ":2:$file" > "$file"
+        git add "$file"
+        RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
+    elif [[ -z "$OURS_HASH" ]] && [[ -n "$THEIRS_HASH" ]]; then
+        # Main deleted, feature modified - not additive
+        echo -e "${RED}deleted by main, modified by feature (NOT additive)${NC}"
         ALL_ADDITIVE=false
         NON_ADDITIVE_FILES+=("$file")
-    elif [[ -n "$OURS_CONTENT" ]] && [[ -z "$THEIRS_CONTENT" ]]; then
-        # They deleted, we modified - not additive
-        echo -e "${RED}modified by us, deleted by them (NOT additive)${NC}"
+    elif [[ -n "$OURS_HASH" ]] && [[ -z "$THEIRS_HASH" ]]; then
+        # Feature deleted, main modified - not additive
+        echo -e "${RED}modified by main, deleted by feature (NOT additive)${NC}"
         ALL_ADDITIVE=false
         NON_ADDITIVE_FILES+=("$file")
     else
@@ -226,8 +236,13 @@ if ! $ALL_ADDITIVE; then
         echo -e "  - $f"
     done
     echo ""
-    echo -e "${YELLOW}Aborting merge to prevent data loss${NC}"
-    git merge --abort
+    if $DRY_RUN; then
+        echo -e "${YELLOW}Dry run: non-additive conflicts would need manual resolution${NC}"
+        git merge --abort 2>/dev/null || true
+        exit 2
+    fi
+    echo -e "${YELLOW}Merge left in-progress for manual resolution${NC}"
+    echo -e "${YELLOW}Open nvim with DiffviewOpen to resolve, then commit${NC}"
     exit 2
 fi
 
@@ -235,20 +250,20 @@ fi
 if $DRY_RUN; then
     echo ""
     echo -e "${GREEN}Dry run: all $RESOLVED_COUNT conflict(s) are additive and resolvable${NC}"
-    git merge --abort 2>/dev/null || git reset --hard HEAD
+    git merge --abort 2>/dev/null || true
     exit 0
 fi
 
 # Final safety check - ensure no unresolved conflicts remain
 REMAINING=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
 if [[ -n "$REMAINING" ]]; then
-    echo -e "${RED}Unexpected unresolved conflicts remain, aborting${NC}" >&2
-    git merge --abort
+    echo -e "${RED}Unexpected unresolved conflicts remain${NC}" >&2
+    echo -e "${YELLOW}Merge left in-progress for manual resolution${NC}"
     exit 2
 fi
 
 # Commit the merge
-git commit --no-edit -m "merge: resolve additive conflicts, bring $FEATURE_BRANCH up to date with $TARGET_BRANCH"
+git commit --no-edit -m "merge: integrate $FEATURE_BRANCH into $MAIN_BRANCH (additive conflicts resolved)"
 
 echo ""
 echo -e "${GREEN}Merge completed successfully${NC}"

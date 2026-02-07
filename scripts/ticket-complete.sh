@@ -40,10 +40,9 @@ OPTIONS:
 WHAT IT DOES:
   1. Reads state from .claude/ticket-execute.local.md
   2. Creates PR with ticket link in description
-  3. Auto-merges main into feature branch (additive conflicts only)
-  4. Transitions ticket to Done/Review
-  5. Sends notification (if configured)
-  6. Cleans up state file
+  3. Transitions ticket to Done/Review
+  4. Sends notification (if configured)
+  5. Cleans up state file
 
 REQUIREMENTS:
   - gh CLI authenticated
@@ -200,7 +199,7 @@ echo ""
 cd "$WORKTREE_PATH"
 
 # Step 1: Check for uncommitted changes
-echo -e "${BLUE}[1/5] Checking git status...${NC}"
+echo -e "${BLUE}[1/4] Checking git status...${NC}"
 if [[ -n "$(git status --porcelain)" ]]; then
     echo -e "${YELLOW}Warning: Uncommitted changes detected${NC}"
     git status --short
@@ -208,7 +207,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 # Step 2: Create PR
-echo -e "${BLUE}[2/5] Creating Pull Request...${NC}"
+echo -e "${BLUE}[2/4] Creating Pull Request...${NC}"
 
 # Get current branch
 BRANCH=$(git branch --show-current)
@@ -282,44 +281,8 @@ else
     echo -e "${YELLOW}gh CLI not found, skipping PR creation${NC}"
 fi
 
-# Step 3: Auto-merge (bring feature branch up to date with main)
-echo -e "${BLUE}[3/5] Attempting auto-merge with main...${NC}"
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AUTO_MERGE_SCRIPT="$SCRIPT_DIR/auto-merge.sh"
-
-if [[ -x "$AUTO_MERGE_SCRIPT" ]]; then
-    MERGE_EXIT=0
-    "$AUTO_MERGE_SCRIPT" "$WORKTREE_PATH" || MERGE_EXIT=$?
-
-    case $MERGE_EXIT in
-        0)
-            echo -e "${GREEN}Auto-merge succeeded${NC}"
-            # Push the merge commit
-            if git rev-parse --abbrev-ref --symbolic-full-name @{u} &>/dev/null; then
-                echo "Pushing merge commit..."
-                git push || echo -e "${YELLOW}Push failed (may need manual push)${NC}"
-            fi
-            ;;
-        2)
-            echo -e "${YELLOW}Non-additive conflicts detected, skipping auto-merge${NC}"
-            echo -e "${YELLOW}Manual merge required before PR can be merged${NC}"
-            ;;
-        3)
-            echo -e "${YELLOW}Uncommitted changes, skipping auto-merge${NC}"
-            ;;
-        *)
-            echo -e "${YELLOW}Auto-merge encountered an error (exit $MERGE_EXIT), skipping${NC}"
-            ;;
-    esac
-else
-    echo -e "${YELLOW}auto-merge.sh not found, skipping${NC}"
-fi
-
-echo ""
-
-# Step 4: Link PR to ticket / Transition ticket
-echo -e "${BLUE}[4/5] Updating ticket...${NC}"
+# Step 3: Link PR to ticket / Transition ticket
+echo -e "${BLUE}[3/4] Updating ticket...${NC}"
 
 if $IS_AUTO_GENERATED; then
     echo -e "${YELLOW}Skipping ticket updates (auto-generated task, no external ticket)${NC}"
@@ -354,8 +317,8 @@ else
     echo -e "${YELLOW}No ticketing system configured, skipping${NC}"
 fi
 
-# Step 5: Send notification
-echo -e "${BLUE}[5/5] Sending notification...${NC}"
+# Step 4: Send notification
+echo -e "${BLUE}[4/4] Sending notification...${NC}"
 
 NOTIFICATION_TITLE="Ticket $ISSUE_KEY Complete"
 NOTIFICATION_MSG="$TITLE - PR: $PR_URL"
