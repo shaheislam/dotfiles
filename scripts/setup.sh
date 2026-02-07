@@ -309,6 +309,12 @@ phase_2_cli_tools() {
         else
             print_warning "Failed to download Catppuccin Mocha theme for bat"
         fi
+
+        # Rebuild bat cache for custom themes (handles version upgrades)
+        if [[ -d "$DOTFILES_ROOT/.config/bat/themes" ]] || [[ -d "$(bat --config-dir)/themes" ]]; then
+            bat cache --build >/dev/null 2>&1 && \
+                print_success "bat cache rebuilt for custom themes" || true
+        fi
     fi
 
     mark_step_complete "cli_tools"
