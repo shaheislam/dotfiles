@@ -135,8 +135,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     # Validate the config dir exists
                     set -l config_dir "$HOME/.claude-$sub_profile"
                     if not test -d "$config_dir"
-                        echo "Error: Subscription profile directory not found: $config_dir"
-                        echo "Set up with: CLAUDE_CONFIG_DIR=$config_dir claude"
+                        echo "Error: Profile '$sub_profile' not found ($config_dir)"
+                        echo "Run: claude-sub setup $sub_profile"
                         return 1
                     end
                     set skip_next true
