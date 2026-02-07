@@ -905,9 +905,17 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 | `llm-pull <model>` | Pull a new model from Ollama registry |
 | `llm-web` | Launch Open WebUI in browser |
 
+**Coding Agent Commands** (agentic experience with local models):
+| Command | Description |
+|---------|-------------|
+| `opencode-local` | OpenCode + Ollama (primary - full agent with file editing, shell) |
+| `claude-local` | Claude Code + Ollama (alternative - same env, different frontend) |
+| `claude-local --model MODEL` | Use a specific Ollama model with Claude Code |
+
 **Default Models**:
 | Model | Size | Purpose |
 |-------|------|---------|
+| qwen3-coder | ~5GB | Agentic coding, 256K context (recommended for coding agents) |
 | qwen2.5-coder:7b | ~4GB | Fast coding assistant |
 | deepseek-coder-v2:16b | ~9GB | Deep reasoning for complex code |
 | llama3.1:8b | ~4GB | Fast general-purpose |
@@ -920,6 +928,8 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 
 **API Compatibility**: Ollama exposes an OpenAI-compatible API at `http://localhost:11434/v1`, allowing tools that support `OPENAI_API_BASE` to use local models.
 
+**OpenCode Configuration**: `.config/opencode/opencode.json` configures Ollama as a provider with `qwen3-coder` as the default model. Managed via stow.
+
 **Pipe Support**: Fish functions support piped input for context:
 ```bash
 cat main.py | llm-code 'review this code for bugs'
@@ -927,9 +937,10 @@ git diff | llm-code 'write a commit message'
 echo 'some text' | llm 'summarize this'
 ```
 
-**Testing**: `scripts/test-selfhost-llm.sh` (22 config tests, `--live` for runtime tests)
+**Testing**: `scripts/test-selfhost-llm.sh` (config tests + coding agent tests, `--live` for runtime tests)
 
 ### Recent Updates
+- **2026-02-07**: Added local coding agent integration (OpenCode + Claude Code via Ollama with qwen3-coder)
 - **2026-02-05**: Added Self-Hosted LLM infrastructure (Ollama + Open WebUI + Fish functions)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
 - **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)

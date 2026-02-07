@@ -1,4 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "theme": "system"  // Uses terminal's transparent background (requires terminal transparency enabled)
+  "theme": "system",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen3-coder": {
+          "name": "Qwen3 Coder (local)"
+        }
+      }
+    }
+  },
+  "model": "ollama/qwen3-coder"
 }

@@ -41,6 +41,7 @@ MODELS_ONLY=false
 CODING_MODELS=(
     "qwen2.5-coder:7b"    # Strong coding model, reasonable size
     "deepseek-coder-v2:16b" # Deep reasoning for complex code tasks
+    "qwen3-coder"          # Agentic coding model, 256K context (OpenCode/Claude Code)
 )
 
 GENERAL_MODELS=(
@@ -86,6 +87,7 @@ MODELS INSTALLED:
     Coding:
       - qwen2.5-coder:7b      (~4GB)  Fast coding assistant
       - deepseek-coder-v2:16b  (~9GB)  Deep reasoning for complex code
+      - qwen3-coder            (~5GB)  Agentic coding, 256K context
 
     General:
       - llama3.1:8b            (~4GB)  Fast general-purpose
@@ -342,6 +344,35 @@ configure_autostart() {
     esac
 }
 
+configure_opencode() {
+    print_header "Phase 5: OpenCode Configuration"
+
+    if ! command -v opencode &>/dev/null; then
+        print_warning "OpenCode not installed - skipping configuration"
+        print_step "Install with: brew install opencode"
+        return 0
+    fi
+
+    local config_dir="$HOME/.config/opencode"
+    local config_file="$config_dir/opencode.json"
+    local dotfiles_config="$DOTFILES_ROOT/.config/opencode/opencode.json"
+
+    # Config is managed by stow - just verify it's in place
+    if [[ -f "$config_file" ]]; then
+        if grep -q '"ollama"' "$config_file" 2>/dev/null; then
+            print_success "OpenCode Ollama provider already configured"
+        else
+            print_warning "OpenCode config exists but missing Ollama provider"
+            print_step "Run 'stow .' from dotfiles root to update symlinks"
+        fi
+    else
+        print_step "OpenCode config will be symlinked by stow"
+        print_step "Run 'cd ~/dotfiles && stow .' to create symlinks"
+    fi
+
+    print_success "OpenCode ready for local LLM use (opencode-local)"
+}
+
 print_summary() {
     print_header "Setup Complete"
 
@@ -355,6 +386,10 @@ print_summary() {
     echo "    ollama run qwen2.5-coder:7b    # Coding assistant"
     echo "    ollama run llama3.1:8b          # General chat"
     echo "    open-webui serve                # Web interface"
+    echo ""
+    echo "  Coding agents (local):"
+    echo "    opencode-local                  # OpenCode + Ollama (primary)"
+    echo "    claude-local                    # Claude Code + Ollama (alternative)"
     echo ""
     echo "  Fish shell commands (after fish reload):"
     echo "    llm <prompt>                    # Quick query (default model)"
@@ -389,6 +424,7 @@ main() {
     pull_models
     install_open_webui
     configure_autostart
+    configure_opencode
     print_summary
 }
 

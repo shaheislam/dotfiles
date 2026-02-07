@@ -133,6 +133,82 @@ for func in "${FISH_FUNCTIONS[@]}"; do
 done
 
 # ============================================================================
+# Coding Agent Integration Tests
+# ============================================================================
+
+echo ""
+echo "--- Coding Agent Functions ---"
+
+# Test: claude-local.fish exists
+AGENT_FUNCTIONS=(
+    "claude-local"
+    "opencode-local"
+)
+
+for func in "${AGENT_FUNCTIONS[@]}"; do
+    func_file="$DOTFILES_ROOT/.config/fish/functions/${func}.fish"
+    if [[ -f "$func_file" ]]; then
+        pass "Fish function exists: $func"
+    else
+        fail "Fish function missing: $func ($func_file)"
+    fi
+done
+
+# Test: Agent functions have --help support
+for func in "${AGENT_FUNCTIONS[@]}"; do
+    func_file="$DOTFILES_ROOT/.config/fish/functions/${func}.fish"
+    if [[ -f "$func_file" ]] && grep -qF -- "--help" "$func_file"; then
+        pass "Fish function has --help: $func"
+    else
+        fail "Fish function missing --help: $func"
+    fi
+done
+
+# Test: Agent functions have description
+for func in "${AGENT_FUNCTIONS[@]}"; do
+    func_file="$DOTFILES_ROOT/.config/fish/functions/${func}.fish"
+    if [[ -f "$func_file" ]] && grep -qF -- "--description" "$func_file"; then
+        pass "Fish function has description: $func"
+    else
+        fail "Fish function missing description: $func"
+    fi
+done
+
+# Test: OpenCode config has Ollama provider
+echo ""
+echo "--- OpenCode Configuration ---"
+opencode_config="$DOTFILES_ROOT/.config/opencode/opencode.json"
+if [[ -f "$opencode_config" ]]; then
+    pass "OpenCode config exists"
+    if python3 -c "import json; json.load(open('$opencode_config'))" 2>/dev/null; then
+        pass "OpenCode config is valid JSON"
+    else
+        fail "OpenCode config is not valid JSON"
+    fi
+    if grep -q '"ollama"' "$opencode_config"; then
+        pass "OpenCode config has Ollama provider"
+    else
+        fail "OpenCode config missing Ollama provider"
+    fi
+    if grep -q 'qwen3-coder' "$opencode_config"; then
+        pass "OpenCode config has qwen3-coder model"
+    else
+        fail "OpenCode config missing qwen3-coder model"
+    fi
+else
+    fail "OpenCode config missing: .config/opencode/opencode.json"
+fi
+
+# Test: Setup script has qwen3-coder
+echo ""
+echo "--- Model Configuration ---"
+if grep -q 'qwen3-coder' "$DOTFILES_ROOT/scripts/setup-selfhost-llm.sh"; then
+    pass "Setup script includes qwen3-coder model"
+else
+    fail "Setup script missing qwen3-coder model"
+fi
+
+# ============================================================================
 # Live Tests (optional - requires Ollama running)
 # ============================================================================
 
