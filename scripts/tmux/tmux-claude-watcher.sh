@@ -3,9 +3,9 @@
 # Shows indicators only when tools have done work since you last viewed the window
 #
 # Indicators:
-#   * = Claude is idle and has worked since last view
-#   + = Opencode is idle and has worked since last view
-#   *+ = Both are idle in the same window
+#   ● = Claude is idle and has worked since last view
+#   ◆ = Opencode is idle and has worked since last view
+#   ●◆ = Both are idle in the same window
 #
 # Detection method:
 # - Uses stdout offset tracking to detect when tools produce output
@@ -21,9 +21,9 @@
 # Run with: tmux-claude-watcher.sh start
 # Stop with: tmux-claude-watcher.sh stop
 
-# Text indicators (emojis have encoding issues in daemon context)
-CLAUDE_INDICATOR="*"
-OPENCODE_INDICATOR="+"
+# Unicode indicators (BMP characters — no locale workarounds needed)
+CLAUDE_INDICATOR="●"
+OPENCODE_INDICATOR="◆"
 
 # Get tmux socket for explicit connection (needed for daemon)
 TMUX_SOCKET="${TMUX%%,*}"
@@ -44,8 +44,8 @@ start_daemon() {
 
         # Ensure variables are set correctly in daemon context
         TMUX_SOCKET="${TMUX%%,*}"
-        CLAUDE_INDICATOR="*"
-        OPENCODE_INDICATOR="+"
+        CLAUDE_INDICATOR="●"
+        OPENCODE_INDICATOR="◆"
 
         while true; do
             check_all_windows
@@ -70,15 +70,27 @@ stop_daemon() {
 # Strip all known indicators from window name
 get_clean_window_name() {
     local win_name="$1"
-    # Strip combined indicator first (with space)
-    win_name="${win_name#${CLAUDE_INDICATOR}${OPENCODE_INDICATOR} }"
-    # Strip individual indicators (with space)
-    win_name="${win_name#${CLAUDE_INDICATOR} }"
-    win_name="${win_name#${OPENCODE_INDICATOR} }"
-    # Strip indicators without space (edge case)
-    win_name="${win_name#${CLAUDE_INDICATOR}${OPENCODE_INDICATOR}}"
-    win_name="${win_name#${CLAUDE_INDICATOR}}"
-    win_name="${win_name#${OPENCODE_INDICATOR}}"
+    # Strip current indicators (combined first, then individual, with and without space)
+    win_name="${win_name#●◆ }"
+    win_name="${win_name#● }"
+    win_name="${win_name#◆ }"
+    win_name="${win_name#●◆}"
+    win_name="${win_name#●}"
+    win_name="${win_name#◆}"
+    # Strip legacy emoji indicators
+    win_name="${win_name#🟢🔵 }"
+    win_name="${win_name#🟢 }"
+    win_name="${win_name#🔵 }"
+    win_name="${win_name#🟢🔵}"
+    win_name="${win_name#🟢}"
+    win_name="${win_name#🔵}"
+    # Strip legacy text indicators
+    win_name="${win_name#\*+ }"
+    win_name="${win_name#\* }"
+    win_name="${win_name#+ }"
+    win_name="${win_name#\*+}"
+    win_name="${win_name#\*}"
+    win_name="${win_name#+}"
     echo "$win_name"
 }
 
