@@ -32,10 +32,14 @@ STATE_DIR="/tmp/tmux-claude-state"
 POLL_INTERVAL=3
 
 start_daemon() {
-    if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-        echo "Watcher already running (PID $(cat "$PID_FILE"))"
-        return 1
-    fi
+    # Kill ALL existing watcher instances (not just PID file tracked one)
+    # This handles stale processes from old code, crashed restarts, etc.
+    local my_pid=$$
+    pgrep -f "tmux-claude-watcher.sh start" 2>/dev/null | while read pid; do
+        [[ "$pid" != "$my_pid" ]] && kill "$pid" 2>/dev/null
+    done
+    rm -f "$PID_FILE"
+    sleep 0.2  # Brief pause for processes to exit
 
     mkdir -p "$STATE_DIR"
 
@@ -58,13 +62,11 @@ start_daemon() {
 }
 
 stop_daemon() {
-    if [[ -f "$PID_FILE" ]]; then
-        kill "$(cat "$PID_FILE")" 2>/dev/null
-        rm -f "$PID_FILE"
-        echo "Watcher stopped"
-    else
-        echo "Watcher not running"
-    fi
+    pgrep -f "tmux-claude-watcher.sh start" 2>/dev/null | while read pid; do
+        kill "$pid" 2>/dev/null
+    done
+    rm -f "$PID_FILE"
+    echo "Watcher stopped"
 }
 
 # Strip all known indicators from window name
@@ -96,9 +98,12 @@ get_clean_window_name() {
 
 # Centralized function to update window indicators based on state files
 update_window_indicators() {
-    local win_idx="$1"
+    local session="$1"
+    local win_idx="$2"
+    local state_key="${session}-${win_idx}"
+
     local current_name
-    current_name=$(tmux display-message -t ":${win_idx}" -p "#{window_name}" 2>/dev/null) || return
+    current_name=$(tmux display-message -t "${session}:${win_idx}" -p "#{window_name}" 2>/dev/null) || return
 
     local clean_name
     clean_name=$(get_clean_window_name "$current_name")
@@ -106,8 +111,8 @@ update_window_indicators() {
     local prefix=""
 
     # Build prefix from notification state (consistent order: Claude first)
-    [[ -f "$STATE_DIR/claude-notified-$win_idx" ]] && prefix+="$CLAUDE_INDICATOR"
-    [[ -f "$STATE_DIR/opencode-notified-$win_idx" ]] && prefix+="$OPENCODE_INDICATOR"
+    [[ -f "$STATE_DIR/claude-notified-$state_key" ]] && prefix+="$CLAUDE_INDICATOR"
+    [[ -f "$STATE_DIR/opencode-notified-$state_key" ]] && prefix+="$OPENCODE_INDICATOR"
 
     local new_name
     if [[ -n "$prefix" ]]; then
@@ -118,54 +123,56 @@ update_window_indicators() {
 
     # Only rename if changed (avoid unnecessary tmux operations)
     if [[ "$current_name" != "$new_name" ]]; then
-        # Use explicit session targeting to ensure it works from daemon
-        local session
-        session=$(tmux display-message -p "#{session_name}" 2>/dev/null)
-        # Execute rename with explicit socket
+        # Execute rename with explicit socket and session targeting
         tmux -S "$TMUX_SOCKET" rename-window -t "${session}:${win_idx}" "$new_name"
     fi
 }
 
 check_all_windows() {
-    # Get active window using window_active flag (more reliable than display-message)
-    local active_window
-    active_window=$(tmux list-windows -F "#{window_index}:#{window_active}" 2>/dev/null | grep ':1$' | cut -d: -f1)
-    [[ -z "$active_window" ]] && return
+    # Get active window per session (to know what user is currently viewing)
+    local active_windows
+    active_windows=$(tmux list-windows -a -F "#{session_name}:#{window_index}:#{window_active}" 2>/dev/null | grep ':1$')
+    [[ -z "$active_windows" ]] && return
 
-    # Use for loop with array to avoid pipe subshell issues
+    # All windows across all sessions
     local windows
-    readarray -t windows < <(tmux list-windows -F "#{window_index}" 2>/dev/null)
+    readarray -t windows < <(tmux list-windows -a -F "#{session_name}:#{window_index}" 2>/dev/null)
 
-    for win_idx in "${windows[@]}"; do
-        # Skip active window
-        [[ "$win_idx" == "$active_window" ]] && continue
+    for entry in "${windows[@]}"; do
+        local session="${entry%%:*}"
+        local win_idx="${entry#*:}"
+
+        # Skip if this is the active window in its session
+        echo "$active_windows" | grep -q "^${session}:${win_idx}:" && continue
 
         # Process each tool independently
         # Claude: matches /opt/homebrew/bin/claude (full path)
         # Opencode: matches "opencode" (appears without path in ps, preceded by space)
-        process_tool_state "$win_idx" "claude" '/claude( |$)'
-        process_tool_state "$win_idx" "opencode" '(^| |/)opencode( |$)'
+        process_tool_state "$session" "$win_idx" "claude" '/claude( |$)'
+        process_tool_state "$session" "$win_idx" "opencode" '(^| |/)opencode( |$)'
     done
 }
 
 # Process state machine for a single tool in a window
 process_tool_state() {
-    local win_idx="$1"
-    local tool="$2"
-    local pattern="$3"
+    local session="$1"
+    local win_idx="$2"
+    local tool="$3"
+    local pattern="$4"
 
-    local worked_file="$STATE_DIR/${tool}-worked-$win_idx"
-    local notified_file="$STATE_DIR/${tool}-notified-$win_idx"
+    local state_key="${session}-${win_idx}"
+    local worked_file="$STATE_DIR/${tool}-worked-$state_key"
+    local notified_file="$STATE_DIR/${tool}-notified-$state_key"
 
     # get_tool_status detects work via stdout offset and sets worked_file
     local status
-    status=$(get_tool_status "$win_idx" "$tool" "$pattern")
+    status=$(get_tool_status "$session" "$win_idx" "$tool" "$pattern")
 
     # Show indicator if tool is present and has worked since last view
     if [[ "$status" == "idle" ]]; then
         if [[ ! -f "$notified_file" ]] && [[ -f "$worked_file" ]]; then
             touch "$notified_file"
-            update_window_indicators "$win_idx"
+            update_window_indicators "$session" "$win_idx"
         fi
     fi
     # If status is "none", tool not found - do nothing
@@ -173,14 +180,17 @@ process_tool_state() {
 
 # Generic tool status detection
 get_tool_status() {
-    local win_idx="$1"
-    local tool="$2"
-    local pattern="$3"
+    local session="$1"
+    local win_idx="$2"
+    local tool="$3"
+    local pattern="$4"
+
+    local state_key="${session}-${win_idx}"
 
     # First: try local detection
-    for pane_idx in $(tmux list-panes -t ":${win_idx}" -F "#{pane_index}" 2>/dev/null); do
+    for pane_idx in $(tmux list-panes -t "${session}:${win_idx}" -F "#{pane_index}" 2>/dev/null); do
         local tty
-        tty=$(tmux display-message -t ":${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
+        tty=$(tmux display-message -t "${session}:${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
         [[ -z "$tty" ]] && continue
 
         local tool_pid
@@ -192,20 +202,29 @@ get_tool_status() {
         # since user last viewed, work was done
         local stdout_offset
         stdout_offset=$(lsof -p "$tool_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
-        local baseline_file="$STATE_DIR/${tool}-baseline-$win_idx"
-        local worked_file="$STATE_DIR/${tool}-worked-$win_idx"
+        local baseline_file="$STATE_DIR/${tool}-baseline-$state_key"
+        local worked_file="$STATE_DIR/${tool}-worked-$state_key"
 
-        if [[ -n "$stdout_offset" ]] && [[ -f "$baseline_file" ]]; then
-            local baseline
-            baseline=$(cat "$baseline_file")
-            # If offset increased by more than 100 bytes since user viewed, work happened
-            if [[ "$stdout_offset" -gt "$baseline" ]]; then
-                local diff=$(( stdout_offset - baseline ))
-                if [[ "$diff" -gt 100 ]]; then
-                    # Work detected! Set worked flag (only once)
-                    if [[ ! -f "$worked_file" ]]; then
-                        touch "$worked_file"
+        if [[ -n "$stdout_offset" ]]; then
+            if [[ -f "$baseline_file" ]]; then
+                local baseline
+                baseline=$(cat "$baseline_file")
+                # If offset increased by more than 100 bytes since user viewed, work happened
+                if [[ "$stdout_offset" -gt "$baseline" ]]; then
+                    local diff=$(( stdout_offset - baseline ))
+                    if [[ "$diff" -gt 100 ]]; then
+                        # Work detected! Set worked flag (only once)
+                        if [[ ! -f "$worked_file" ]]; then
+                            touch "$worked_file"
+                        fi
                     fi
+                fi
+            else
+                # No baseline (window never viewed since daemon start)
+                # Create baseline and assume work was done — show indicator
+                echo "$stdout_offset" > "$baseline_file"
+                if [[ ! -f "$worked_file" ]]; then
+                    touch "$worked_file"
                 fi
             fi
         fi
@@ -219,7 +238,7 @@ get_tool_status() {
     # Second: check for devcontainer
     if command -v docker >/dev/null 2>&1; then
         local container
-        container=$(find_devcontainer_for_window "$win_idx")
+        container=$(find_devcontainer_for_window "${session}:${win_idx}")
         if [[ -n "$container" ]]; then
             get_tool_status_in_container "$container" "$tool" "$pattern"
             return 0
@@ -231,9 +250,9 @@ get_tool_status() {
 
 # Find devcontainer instance name for a tmux window
 find_devcontainer_for_window() {
-    local win_idx="$1"
+    local target="$1"  # session:win_idx format
     local win_name
-    win_name=$(tmux display-message -t ":${win_idx}" -p "#{window_name}" 2>/dev/null)
+    win_name=$(tmux display-message -t "$target" -p "#{window_name}" 2>/dev/null)
 
     # Strip any indicator prefix
     win_name=$(get_clean_window_name "$win_name")
@@ -290,22 +309,24 @@ get_tool_status_in_container() {
 
 # Called by tmux hook when user switches to a window
 mark_viewed() {
-    local win_idx="$1"
+    local session="$1"
+    local win_idx="$2"
+    local state_key="${session}-${win_idx}"
     mkdir -p "$STATE_DIR"
 
     # Clear all state files for both tools
-    rm -f "$STATE_DIR/claude-worked-$win_idx"
-    rm -f "$STATE_DIR/claude-notified-$win_idx"
-    rm -f "$STATE_DIR/claude-baseline-$win_idx"
-    rm -f "$STATE_DIR/opencode-worked-$win_idx"
-    rm -f "$STATE_DIR/opencode-notified-$win_idx"
-    rm -f "$STATE_DIR/opencode-baseline-$win_idx"
+    rm -f "$STATE_DIR/claude-worked-$state_key"
+    rm -f "$STATE_DIR/claude-notified-$state_key"
+    rm -f "$STATE_DIR/claude-baseline-$state_key"
+    rm -f "$STATE_DIR/opencode-worked-$state_key"
+    rm -f "$STATE_DIR/opencode-notified-$state_key"
+    rm -f "$STATE_DIR/opencode-baseline-$state_key"
 
     # Record stdout offset baseline for both Claude and Opencode
     # This lets us detect work that happens AFTER user leaves
-    for pane_idx in $(tmux list-panes -t ":${win_idx}" -F "#{pane_index}" 2>/dev/null); do
+    for pane_idx in $(tmux list-panes -t "${session}:${win_idx}" -F "#{pane_index}" 2>/dev/null); do
         local tty
-        tty=$(tmux display-message -t ":${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
+        tty=$(tmux display-message -t "${session}:${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
         [[ -z "$tty" ]] && continue
 
         # Check for Claude
@@ -315,7 +336,7 @@ mark_viewed() {
             local stdout_offset
             stdout_offset=$(lsof -p "$claude_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
             if [[ -n "$stdout_offset" ]]; then
-                echo "$stdout_offset" > "$STATE_DIR/claude-baseline-$win_idx"
+                echo "$stdout_offset" > "$STATE_DIR/claude-baseline-$state_key"
             fi
         fi
 
@@ -326,13 +347,13 @@ mark_viewed() {
             local stdout_offset
             stdout_offset=$(lsof -p "$opencode_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
             if [[ -n "$stdout_offset" ]]; then
-                echo "$stdout_offset" > "$STATE_DIR/opencode-baseline-$win_idx"
+                echo "$stdout_offset" > "$STATE_DIR/opencode-baseline-$state_key"
             fi
         fi
     done
 
     # Remove all indicators from window name
-    update_window_indicators "$win_idx"
+    update_window_indicators "$session" "$win_idx"
 }
 
 case "${1:-}" in
@@ -345,9 +366,9 @@ case "${1:-}" in
             echo "Not running"
         fi
         ;;
-    mark-viewed) mark_viewed "$2" ;;
+    mark-viewed) mark_viewed "$2" "$3" ;;
     *)
-        echo "Usage: $0 {start|stop|status|mark-viewed <window>}"
+        echo "Usage: $0 {start|stop|status|mark-viewed <session> <window>}"
         exit 1
         ;;
 esac

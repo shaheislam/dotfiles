@@ -27,7 +27,7 @@ if [[ "$current_name" != "$new_name" ]]; then
 fi
 
 # Mark window as viewed (tells watcher not to re-add indicator until Claude works again)
-~/dotfiles/scripts/tmux/tmux-claude-watcher.sh mark-viewed "$WINDOW"
+~/dotfiles/scripts/tmux/tmux-claude-watcher.sh mark-viewed "$SESSION" "$WINDOW"
 
 # Refresh status bar
 tmux refresh-client -S 2>/dev/null
