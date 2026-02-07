@@ -341,3 +341,183 @@ Practical agent rules in root `AGENTS.md` - concrete rules based on observed bad
 - Karabiner-Elements config (use GUI), Brewfile organization, tmux plugin installation (TPM)
 - Theme consistency verification, 1Password/SSH setup, stow conflict resolution
 - LazyVim plugin config (lives in `~/neovim`)
+||||||| c6b065e
+**Workflow**:
+```bash
+# Quick ticket creation
+/todo Fix pagination bug in users API
+
+# Execute with picker (fzf)
+tex
+
+# Execute specific ticket
+tex ENG-123
+
+# Monitor execution
+tmux attach -t <repo-name>
+tex --status .
+
+# Manual completion if needed
+tex --complete .
+
+# Direct gwt-ticket usage (bypasses ticket fetching)
+gwt-ticket ENG-TEST "Test ticket" "Test description" --no-devcon
+
+# Ticket-free autonomous execution
+gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
+# → Window: fix-auth-bug (uses title slug)
+# → Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug
+# → No ticket tracking, PR created without ticket link
+```
+
+**Post-Completion**:
+1. Creates PR with ticket link in description
+2. Transitions ticket to "Review" or "Done"
+3. Sends macOS notification
+
+**Dependencies**:
+- `linear` CLI (`brew install schpet/tap/linear`) - for Linear tickets
+- `acli` - for Jira tickets
+- `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
+- `ralph-loop` - autonomous iteration
+
+### Recent Updates
+- **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
+- **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
+- **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
+- **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
+- **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
+- **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
+- **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
+- **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
+- **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
+- **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)
+- **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
+- **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
+- **2025-10-05**: Added Kubernetes manifests directory with documentation requirements
+
+**Workflow**:
+```bash
+# Quick ticket creation
+/todo Fix pagination bug in users API
+
+# Execute with picker (fzf)
+tex
+
+# Execute specific ticket
+tex ENG-123
+
+# Monitor execution
+tmux attach -t <repo-name>
+tex --status .
+
+# Manual completion if needed
+tex --complete .
+
+# Direct gwt-ticket usage (bypasses ticket fetching)
+gwt-ticket ENG-TEST "Test ticket" "Test description" --no-devcon
+
+# Ticket-free autonomous execution
+gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
+# → Window: fix-auth-bug (uses title slug)
+# → Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug
+# → No ticket tracking, PR created without ticket link
+```
+
+**Post-Completion**:
+1. Creates PR with ticket link in description
+2. Transitions ticket to "Review" or "Done"
+3. Sends macOS notification
+
+**Dependencies**:
+- `linear` CLI (`brew install schpet/tap/linear`) - for Linear tickets
+- `acli` - for Jira tickets
+- `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
+- `ralph-loop` - autonomous iteration
+
+### Self-Hosted LLM Infrastructure
+
+**Purpose**: Local LLM stack as a resilience layer when cloud AI services (Claude, Codex, etc.) go down.
+
+**Setup Script**: `scripts/setup-selfhost-llm.sh`
+
+**Components**:
+- **Ollama**: Local LLM runtime (runs models on your hardware)
+- **Open WebUI**: Browser-based chat interface (ChatGPT/Claude replacement)
+- **Fish functions**: CLI integration for quick model interaction
+
+**Usage**:
+```bash
+# Install the full stack
+./scripts/setup-selfhost-llm.sh
+
+# Just pull/update models
+./scripts/setup-selfhost-llm.sh --models-only
+
+# Include large models (32GB+ RAM required)
+./scripts/setup-selfhost-llm.sh --large-models
+
+# Uninstall everything
+./scripts/setup-selfhost-llm.sh --uninstall
+```
+
+**Fish Shell Commands**:
+| Command | Description |
+|---------|-------------|
+| `llm <prompt>` | Quick query (default: llama3.1:8b) |
+| `llm-code <prompt>` | Code-focused query (default: qwen2.5-coder:7b) |
+| `llm-chat [model]` | Interactive chat session |
+| `llm-status` | Check Ollama status and installed models |
+| `llm-pull <model>` | Pull a new model from Ollama registry |
+| `llm-web` | Launch Open WebUI in browser |
+
+**Coding Agent Commands** (agentic experience with local models):
+| Command | Description |
+|---------|-------------|
+| `opencode-local` | OpenCode + Ollama (primary - full agent with file editing, shell) |
+| `claude-local` | Claude Code + Ollama (alternative - same env, different frontend) |
+| `claude-local --model MODEL` | Use a specific Ollama model with Claude Code |
+
+**Default Models**:
+| Model | Size | Purpose |
+|-------|------|---------|
+| qwen3-coder | ~5GB | Agentic coding, 256K context (recommended for coding agents) |
+| qwen2.5-coder:7b | ~4GB | Fast coding assistant |
+| deepseek-coder-v2:16b | ~9GB | Deep reasoning for complex code |
+| llama3.1:8b | ~4GB | Fast general-purpose |
+| mistral:7b | ~4GB | Balanced all-rounder |
+
+**Environment Variables**:
+- `LLM_DEFAULT_MODEL`: Override default general model (default: llama3.1:8b)
+- `LLM_CODE_MODEL`: Override default coding model (default: qwen2.5-coder:7b)
+- `OPEN_WEBUI_PORT`: Override Open WebUI port (default: 8080)
+
+**API Compatibility**: Ollama exposes an OpenAI-compatible API at `http://localhost:11434/v1`, allowing tools that support `OPENAI_API_BASE` to use local models.
+
+**OpenCode Configuration**: `.config/opencode/opencode.json` configures Ollama as a provider with `qwen3-coder` as the default model. Managed via stow.
+
+**Pipe Support**: Fish functions support piped input for context:
+```bash
+cat main.py | llm-code 'review this code for bugs'
+git diff | llm-code 'write a commit message'
+echo 'some text' | llm 'summarize this'
+```
+
+**Testing**: `scripts/test-selfhost-llm.sh` (config tests + coding agent tests, `--live` for runtime tests)
+
+### Recent Updates
+- **2026-02-07**: Added local coding agent integration (OpenCode + Claude Code via Ollama with qwen3-coder)
+- **2026-02-05**: Added Self-Hosted LLM infrastructure (Ollama + Open WebUI + Fish functions)
+- **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
+- **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
+- **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
+- **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
+- **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
+- **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
+- **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
+- **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
+- **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
+- **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)
+- **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
+- **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
+- **2025-10-05**: Added Kubernetes manifests directory with documentation requirements
