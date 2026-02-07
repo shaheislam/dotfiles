@@ -52,13 +52,14 @@ RUN curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install
   && zoxide --version
 
 # Install atuin (shell history sync, required for Ctrl+R fzf integration)
+# Note: release assets no longer include version in filename (changed in v18.x)
 RUN ARCH=$(dpkg --print-architecture) \
   && ATUIN_VERSION=$(curl -fsSL https://api.github.com/repos/atuinsh/atuin/releases/latest | grep -Po '"tag_name": "v?\K[^"]*') \
   && echo "Installing atuin ${ATUIN_VERSION}..." \
   && if [ "$ARCH" = "arm64" ]; then ATUIN_ARCH="aarch64"; else ATUIN_ARCH="x86_64"; fi \
-  && curl -fSL -o /tmp/atuin.tar.gz "https://github.com/atuinsh/atuin/releases/download/v${ATUIN_VERSION}/atuin-v${ATUIN_VERSION}-${ATUIN_ARCH}-unknown-linux-gnu.tar.gz" \
+  && curl -fSL -o /tmp/atuin.tar.gz "https://github.com/atuinsh/atuin/releases/download/v${ATUIN_VERSION}/atuin-${ATUIN_ARCH}-unknown-linux-gnu.tar.gz" \
   && tar -xzf /tmp/atuin.tar.gz -C /tmp \
-  && mv /tmp/atuin-v${ATUIN_VERSION}-${ATUIN_ARCH}-unknown-linux-gnu/atuin /usr/local/bin/ \
+  && find /tmp -name atuin -type f -executable -exec mv {} /usr/local/bin/atuin \; \
   && rm -rf /tmp/atuin* \
   && atuin --version
 
@@ -91,12 +92,15 @@ RUN ARCH=$(dpkg --print-architecture) \
   && fd --version
 
 # Install ripgrep (grep replacement, used by FZF default command)
+# Note: no arm64 .deb available, use tar.gz instead
 RUN ARCH=$(dpkg --print-architecture) \
   && RG_VERSION=$(curl -fsSL https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep -Po '"tag_name": "\K[^"]*') \
   && echo "Installing ripgrep ${RG_VERSION}..." \
-  && curl -fSL -o /tmp/ripgrep.deb "https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}/ripgrep_${RG_VERSION}-1_${ARCH}.deb" \
-  && dpkg -i /tmp/ripgrep.deb \
-  && rm /tmp/ripgrep.deb \
+  && if [ "$ARCH" = "arm64" ]; then RG_ARCH="aarch64"; else RG_ARCH="x86_64"; fi \
+  && curl -fSL -o /tmp/ripgrep.tar.gz "https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}/ripgrep-${RG_VERSION}-${RG_ARCH}-unknown-linux-gnu.tar.gz" \
+  && tar -xzf /tmp/ripgrep.tar.gz -C /tmp \
+  && find /tmp -name rg -type f -executable -exec mv {} /usr/local/bin/rg \; \
+  && rm -rf /tmp/ripgrep* \
   && rg --version
 
 # Install git-delta
