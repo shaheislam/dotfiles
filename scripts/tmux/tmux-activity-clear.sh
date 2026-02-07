@@ -4,11 +4,15 @@
 SESSION="$1"
 WINDOW="$2"
 
-# Remove any indicator prefix from window name (emoji or legacy text)
+# Remove any indicator prefix from window name (current, legacy emoji, legacy text)
 current_name=$(tmux display-message -t "${SESSION}:${WINDOW}" -p "#{window_name}" 2>/dev/null)
 
-# Strip emoji indicators (🟢, 🔵, 🟢🔵)
 new_name="$current_name"
+# Strip current indicators (●/◆)
+new_name="${new_name#●◆ }"
+new_name="${new_name#● }"
+new_name="${new_name#◆ }"
+# Strip legacy emoji indicators (🟢/🔵)
 new_name="${new_name#🟢🔵 }"
 new_name="${new_name#🟢 }"
 new_name="${new_name#🔵 }"

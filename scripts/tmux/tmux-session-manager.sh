@@ -2,39 +2,39 @@
 
 # Tmux Session Manager with Tmuxinator Integration
 # Provides unified interface for sessions, tmuxinator templates, directories, and path completion
-# Includes Claude/Opencode idle indicators (🟢/🔵) per session
+# Includes Claude/Opencode idle indicators (●/◆) per session
 
 # Setup PATH to include homebrew
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
-# Indicators matching tmux-claude-watcher.sh (now using emojis directly)
-CLAUDE_INDICATOR="🟢"
-OPENCODE_INDICATOR="🔵"
+# Indicators matching tmux-claude-watcher.sh (BMP Unicode characters)
+CLAUDE_INDICATOR="●"
+OPENCODE_INDICATOR="◆"
 
-# Get window indicator emoji from a window name with watcher prefixes
-# Window names now contain emoji directly: "🟢 claude", "🔵 opencode", "🟢🔵 both"
+# Get window indicator from a window name with watcher prefixes
+# Window names contain indicator directly: "● claude", "◆ opencode", "●◆ both"
 get_window_indicator() {
   local win_name="$1"
-  if [[ "$win_name" == "🟢🔵 "* ]]; then
-    echo "🟢🔵"
-  elif [[ "$win_name" == "🟢 "* ]]; then
-    echo "🟢"
-  elif [[ "$win_name" == "🔵 "* ]]; then
-    echo "🔵"
+  if [[ "$win_name" == "●◆ "* ]]; then
+    echo "●◆"
+  elif [[ "$win_name" == "● "* ]]; then
+    echo "●"
+  elif [[ "$win_name" == "◆ "* ]]; then
+    echo "◆"
   fi
 }
 
 # Strip indicator prefixes from window name (matching tmux-claude-watcher.sh)
 strip_window_indicator() {
   local win_name="$1"
-  win_name="${win_name#🟢🔵 }"
-  win_name="${win_name#🟢 }"
-  win_name="${win_name#🔵 }"
+  win_name="${win_name#●◆ }"
+  win_name="${win_name#● }"
+  win_name="${win_name#◆ }"
   echo "$win_name"
 }
 
 # Check a session's windows for Claude/Opencode idle indicators
-# Returns indicator string like "🟢", "🔵", or "🟢🔵"
+# Returns indicator string like "●", "◆", or "●◆"
 get_session_indicators() {
   local session="$1"
   local has_claude=false
@@ -43,18 +43,18 @@ get_session_indicators() {
   while IFS= read -r win_name; do
     local ind
     ind=$(get_window_indicator "$win_name")
-    [[ "$ind" == *🟢* ]] && has_claude=true
-    [[ "$ind" == *🔵* ]] && has_opencode=true
+    [[ "$ind" == *●* ]] && has_claude=true
+    [[ "$ind" == *◆* ]] && has_opencode=true
   done < <(tmux list-windows -t "$session" -F "#{window_name}" 2>/dev/null)
 
   local indicators=""
-  $has_claude && indicators+="🟢"
-  $has_opencode && indicators+="🔵"
+  $has_claude && indicators+="●"
+  $has_opencode && indicators+="◆"
   echo "$indicators"
 }
 
 # List windows with idle indicators for a session
-# Output format: [W] 🟢 session:win_idx clean_name
+# Output format: [W] ● session:win_idx clean_name
 list_indicator_windows() {
   local session="$1"
   while IFS=$'\t' read -r win_idx win_name; do
@@ -107,19 +107,19 @@ while IFS= read -r line; do
   window_lines=""
   while IFS=$(printf "\t") read -r widx wname; do
     ind=""
-    if [[ "$wname" == "🟢🔵 "* ]]; then
-      ind="🟢🔵"
-    elif [[ "$wname" == "🟢 "* ]]; then
-      ind="🟢"
-    elif [[ "$wname" == "🔵 "* ]]; then
-      ind="🔵"
+    if [[ "$wname" == "●◆ "* ]]; then
+      ind="●◆"
+    elif [[ "$wname" == "● "* ]]; then
+      ind="●"
+    elif [[ "$wname" == "◆ "* ]]; then
+      ind="◆"
     fi
     if [ -n "$ind" ]; then
-      [[ "$ind" == *🟢* ]] && [[ "$indicators" != *🟢* ]] && indicators+="🟢"
-      [[ "$ind" == *🔵* ]] && [[ "$indicators" != *🔵* ]] && indicators+="🔵"
-      clean="${wname#🟢🔵 }"
-      clean="${clean#🟢 }"
-      clean="${clean#🔵 }"
+      [[ "$ind" == *●* ]] && [[ "$indicators" != *●* ]] && indicators+="●"
+      [[ "$ind" == *◆* ]] && [[ "$indicators" != *◆* ]] && indicators+="◆"
+      clean="${wname#●◆ }"
+      clean="${clean#● }"
+      clean="${clean#◆ }"
       window_lines+="[W] ${ind} ${sess}:${widx} ${clean}
 "
     fi
@@ -177,7 +177,7 @@ RESULT=$(
   initial_list | fzf \
   --reverse \
   --ansi \
-  --header "Sessions [S] | Tmuxinator [T] | Zoxide [Z] | 🟢 Claude idle | 🔵 Opencode idle | Tab to complete" \
+  --header "Sessions [S] | Tmuxinator [T] | Zoxide [Z] | ● Claude idle | ◆ Opencode idle | Tab to complete" \
   --height=100% \
   --print-query \
   --bind "tab:reload(bash -c '$reload_cmd')" \
@@ -199,7 +199,7 @@ case "$PREFIX" in
     ;;
 
   "[W]")
-    # Switch to specific window with indicator (format: 🟢 session:win_idx name)
+    # Switch to specific window with indicator (format: ● session:win_idx name)
     TARGET=$(echo "$CONTENT" | awk '{print $2}')
     tmux switch-client -t "$TARGET" || tmux attach -t "$TARGET"
     ;;

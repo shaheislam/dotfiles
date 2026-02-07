@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test script for tmux window indicator system
-# Validates that emoji indicators (🟢/🔵) work correctly in:
+# Validates that Unicode indicators (●/◆) work correctly in:
 # 1. Window names (visible in choose-tree via C-s s)
 # 2. Status bar
 # 3. Session manager
@@ -52,16 +52,21 @@ echo "▸ Testing get_clean_window_name (watcher)"
 # Source the function (extract it for testing)
 get_clean_window_name() {
     local win_name="$1"
-    # Strip combined emoji indicators first (with space)
+    # Strip current indicators (combined first, then individual, with and without space)
+    win_name="${win_name#●◆ }"
+    win_name="${win_name#● }"
+    win_name="${win_name#◆ }"
+    win_name="${win_name#●◆}"
+    win_name="${win_name#●}"
+    win_name="${win_name#◆}"
+    # Strip legacy emoji indicators
     win_name="${win_name#🟢🔵 }"
-    # Strip individual emoji indicators (with space)
     win_name="${win_name#🟢 }"
     win_name="${win_name#🔵 }"
-    # Strip emoji indicators without space (edge case)
     win_name="${win_name#🟢🔵}"
     win_name="${win_name#🟢}"
     win_name="${win_name#🔵}"
-    # Also strip legacy text indicators for backward compatibility
+    # Strip legacy text indicators
     win_name="${win_name#\*+ }"
     win_name="${win_name#\* }"
     win_name="${win_name#+ }"
@@ -72,13 +77,16 @@ get_clean_window_name() {
 }
 
 assert_eq "clean name with no indicator" "claude" "$(get_clean_window_name "claude")"
-assert_eq "strip 🟢 indicator" "claude" "$(get_clean_window_name "🟢 claude")"
-assert_eq "strip 🔵 indicator" "opencode" "$(get_clean_window_name "🔵 opencode")"
-assert_eq "strip 🟢🔵 combined" "both" "$(get_clean_window_name "🟢🔵 both")"
+assert_eq "strip ● indicator" "claude" "$(get_clean_window_name "● claude")"
+assert_eq "strip ◆ indicator" "opencode" "$(get_clean_window_name "◆ opencode")"
+assert_eq "strip ●◆ combined" "both" "$(get_clean_window_name "●◆ both")"
+assert_eq "strip legacy 🟢 indicator" "claude" "$(get_clean_window_name "🟢 claude")"
+assert_eq "strip legacy 🔵 indicator" "opencode" "$(get_clean_window_name "🔵 opencode")"
+assert_eq "strip legacy 🟢🔵 combined" "both" "$(get_clean_window_name "🟢🔵 both")"
 assert_eq "strip legacy * indicator" "claude" "$(get_clean_window_name "* claude")"
 assert_eq "strip legacy + indicator" "opencode" "$(get_clean_window_name "+ opencode")"
 assert_eq "strip legacy *+ indicator" "both" "$(get_clean_window_name "*+ both")"
-assert_eq "no space after emoji" "test" "$(get_clean_window_name "🟢test")"
+assert_eq "no space after ●" "test" "$(get_clean_window_name "●test")"
 assert_eq "preserve non-indicator names" "my-project" "$(get_clean_window_name "my-project")"
 
 # --- Test: session manager get_window_indicator ---
@@ -87,20 +95,20 @@ echo "▸ Testing get_window_indicator (session manager)"
 
 get_window_indicator() {
     local win_name="$1"
-    if [[ "$win_name" == "🟢🔵 "* ]]; then
-        echo "🟢🔵"
-    elif [[ "$win_name" == "🟢 "* ]]; then
-        echo "🟢"
-    elif [[ "$win_name" == "🔵 "* ]]; then
-        echo "🔵"
+    if [[ "$win_name" == "●◆ "* ]]; then
+        echo "●◆"
+    elif [[ "$win_name" == "● "* ]]; then
+        echo "●"
+    elif [[ "$win_name" == "◆ "* ]]; then
+        echo "◆"
     fi
 }
 
-assert_eq "detect 🟢 indicator" "🟢" "$(get_window_indicator "🟢 claude")"
-assert_eq "detect 🔵 indicator" "🔵" "$(get_window_indicator "🔵 opencode")"
-assert_eq "detect 🟢🔵 combined" "🟢🔵" "$(get_window_indicator "🟢🔵 both")"
+assert_eq "detect ● indicator" "●" "$(get_window_indicator "● claude")"
+assert_eq "detect ◆ indicator" "◆" "$(get_window_indicator "◆ opencode")"
+assert_eq "detect ●◆ combined" "●◆" "$(get_window_indicator "●◆ both")"
 assert_eq "no indicator returns empty" "" "$(get_window_indicator "plain-window")"
-assert_eq "no indicator for partial match" "" "$(get_window_indicator "some🟢thing")"
+assert_eq "no indicator for partial match" "" "$(get_window_indicator "some●thing")"
 
 # --- Test: session manager strip_window_indicator ---
 echo ""
@@ -108,15 +116,15 @@ echo "▸ Testing strip_window_indicator (session manager)"
 
 strip_window_indicator() {
     local win_name="$1"
-    win_name="${win_name#🟢🔵 }"
-    win_name="${win_name#🟢 }"
-    win_name="${win_name#🔵 }"
+    win_name="${win_name#●◆ }"
+    win_name="${win_name#● }"
+    win_name="${win_name#◆ }"
     echo "$win_name"
 }
 
-assert_eq "strip 🟢" "claude" "$(strip_window_indicator "🟢 claude")"
-assert_eq "strip 🔵" "opencode" "$(strip_window_indicator "🔵 opencode")"
-assert_eq "strip 🟢🔵" "both" "$(strip_window_indicator "🟢🔵 both")"
+assert_eq "strip ●" "claude" "$(strip_window_indicator "● claude")"
+assert_eq "strip ◆" "opencode" "$(strip_window_indicator "◆ opencode")"
+assert_eq "strip ●◆" "both" "$(strip_window_indicator "●◆ both")"
 assert_eq "preserve clean name" "plain" "$(strip_window_indicator "plain")"
 
 # --- Test: activity-clear strip logic ---
@@ -125,15 +133,22 @@ echo "▸ Testing activity-clear strip logic"
 
 strip_activity() {
     local new_name="$1"
+    # Current indicators
+    new_name="${new_name#●◆ }"
+    new_name="${new_name#● }"
+    new_name="${new_name#◆ }"
+    # Legacy emoji indicators
     new_name="${new_name#🟢🔵 }"
     new_name="${new_name#🟢 }"
     new_name="${new_name#🔵 }"
     echo "$new_name"
 }
 
-assert_eq "clear 🟢 from name" "editor" "$(strip_activity "🟢 editor")"
-assert_eq "clear 🔵 from name" "main" "$(strip_activity "🔵 main")"
-assert_eq "clear 🟢🔵 from name" "dev" "$(strip_activity "🟢🔵 dev")"
+assert_eq "clear ● from name" "editor" "$(strip_activity "● editor")"
+assert_eq "clear ◆ from name" "main" "$(strip_activity "◆ main")"
+assert_eq "clear ●◆ from name" "dev" "$(strip_activity "●◆ dev")"
+assert_eq "clear legacy 🟢 from name" "editor" "$(strip_activity "🟢 editor")"
+assert_eq "clear legacy 🔵 from name" "main" "$(strip_activity "🔵 main")"
 assert_eq "no change for clean name" "fish" "$(strip_activity "fish")"
 
 # --- Test: indicator build logic (from update_window_indicators) ---
@@ -143,8 +158,8 @@ echo "▸ Testing indicator build logic"
 build_indicator() {
     local has_claude="$1" has_opencode="$2" clean_name="$3"
     local prefix=""
-    [[ "$has_claude" == "true" ]] && prefix+="🟢"
-    [[ "$has_opencode" == "true" ]] && prefix+="🔵"
+    [[ "$has_claude" == "true" ]] && prefix+="●"
+    [[ "$has_opencode" == "true" ]] && prefix+="◆"
     if [[ -n "$prefix" ]]; then
         echo "${prefix} ${clean_name}"
     else
@@ -152,23 +167,23 @@ build_indicator() {
     fi
 }
 
-assert_eq "claude only indicator" "🟢 claude" "$(build_indicator true false "claude")"
-assert_eq "opencode only indicator" "🔵 opencode" "$(build_indicator false true "opencode")"
-assert_eq "both indicators" "🟢🔵 both" "$(build_indicator true true "both")"
+assert_eq "claude only indicator" "● claude" "$(build_indicator true false "claude")"
+assert_eq "opencode only indicator" "◆ opencode" "$(build_indicator false true "opencode")"
+assert_eq "both indicators" "●◆ both" "$(build_indicator true true "both")"
 assert_eq "no indicators" "clean" "$(build_indicator false false "clean")"
 
 # --- Test: UTF-8 encoding ---
 echo ""
 echo "▸ Testing UTF-8 encoding"
 
-emoji_bytes=$(printf '🟢' | wc -c | tr -d ' ')
-assert_eq "🟢 is 4 bytes UTF-8" "4" "$emoji_bytes"
+indicator_bytes=$(printf '●' | wc -c | tr -d ' ')
+assert_eq "● is 3 bytes UTF-8 (BMP)" "3" "$indicator_bytes"
 
-emoji_bytes=$(printf '🔵' | wc -c | tr -d ' ')
-assert_eq "🔵 is 4 bytes UTF-8" "4" "$emoji_bytes"
+indicator_bytes=$(printf '◆' | wc -c | tr -d ' ')
+assert_eq "◆ is 3 bytes UTF-8 (BMP)" "3" "$indicator_bytes"
 
-combined="🟢🔵 test"
-assert_eq "combined emoji string is valid" "🟢🔵 test" "$combined"
+combined="●◆ test"
+assert_eq "combined indicator string is valid" "●◆ test" "$combined"
 
 # =============================================================================
 # Summary
@@ -209,26 +224,26 @@ if [[ "${1:-}" == "--live" ]]; then
     echo "Created test window: $TEST_WIN (index $WIN_IDX)"
 
     echo ""
-    echo "▸ Test 1: Add 🟢 indicator"
-    tmux rename-window -t "${SESSION}:${WIN_IDX}" "🟢 ${TEST_WIN}"
+    echo "▸ Test 1: Add ● indicator"
+    tmux rename-window -t "${SESSION}:${WIN_IDX}" "● ${TEST_WIN}"
     actual=$(tmux display-message -t "${SESSION}:${WIN_IDX}" -p "#{window_name}")
-    assert_eq "window name has 🟢 prefix" "🟢 ${TEST_WIN}" "$actual"
+    assert_eq "window name has ● prefix" "● ${TEST_WIN}" "$actual"
 
     sleep 1
 
     echo ""
-    echo "▸ Test 2: Add 🔵 indicator"
-    tmux rename-window -t "${SESSION}:${WIN_IDX}" "🔵 ${TEST_WIN}"
+    echo "▸ Test 2: Add ◆ indicator"
+    tmux rename-window -t "${SESSION}:${WIN_IDX}" "◆ ${TEST_WIN}"
     actual=$(tmux display-message -t "${SESSION}:${WIN_IDX}" -p "#{window_name}")
-    assert_eq "window name has 🔵 prefix" "🔵 ${TEST_WIN}" "$actual"
+    assert_eq "window name has ◆ prefix" "◆ ${TEST_WIN}" "$actual"
 
     sleep 1
 
     echo ""
-    echo "▸ Test 3: Add 🟢🔵 combined indicator"
-    tmux rename-window -t "${SESSION}:${WIN_IDX}" "🟢🔵 ${TEST_WIN}"
+    echo "▸ Test 3: Add ●◆ combined indicator"
+    tmux rename-window -t "${SESSION}:${WIN_IDX}" "●◆ ${TEST_WIN}"
     actual=$(tmux display-message -t "${SESSION}:${WIN_IDX}" -p "#{window_name}")
-    assert_eq "window name has 🟢🔵 prefix" "🟢🔵 ${TEST_WIN}" "$actual"
+    assert_eq "window name has ●◆ prefix" "●◆ ${TEST_WIN}" "$actual"
 
     sleep 1
 
@@ -241,11 +256,18 @@ if [[ "${1:-}" == "--live" ]]; then
     sleep 1
 
     echo ""
-    echo "▸ Test 5: Verify choose-tree visibility"
+    echo "▸ Test 5: Indicator persistence (5 seconds)"
+    tmux rename-window -t "${SESSION}:${WIN_IDX}" "● ${TEST_WIN}"
+    echo "  Set indicator, waiting 5 seconds..."
+    sleep 5
+    actual=$(tmux display-message -t "${SESSION}:${WIN_IDX}" -p "#{window_name}")
+    assert_eq "indicator persists after 5s" "● ${TEST_WIN}" "$actual"
+
+    echo ""
+    echo "▸ Test 6: Verify choose-tree visibility"
     echo "  Opening choose-tree for 3 seconds to verify indicators..."
-    tmux rename-window -t "${SESSION}:${WIN_IDX}" "🟢 ${TEST_WIN}"
-    # Show choose-tree briefly so user can see the indicator
-    echo -e "  ${YELLOW}Check the choose-tree view - you should see 🟢 next to ${TEST_WIN}${NC}"
+    tmux rename-window -t "${SESSION}:${WIN_IDX}" "● ${TEST_WIN}"
+    echo -e "  ${YELLOW}Check the choose-tree view - you should see ● next to ${TEST_WIN}${NC}"
     echo "  (The choose-tree will open in a moment, press q to close it)"
     sleep 2
 

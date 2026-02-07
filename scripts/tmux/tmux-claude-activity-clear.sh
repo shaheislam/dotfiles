@@ -10,7 +10,11 @@ STATE_DIR="/tmp/tmux-claude-activity"
 current_name=$(tmux display-message -t "${SESSION}:${WINDOW}" -p "#{window_name}" 2>/dev/null)
 
 new_name="$current_name"
-# Strip emoji indicators (combined first, then individual)
+# Strip current indicators (●/◆, combined first then individual)
+new_name="${new_name#●◆ }"
+new_name="${new_name#● }"
+new_name="${new_name#◆ }"
+# Strip legacy emoji indicators (🟢/🔵)
 new_name="${new_name#🟢🔵 }"
 new_name="${new_name#🟢 }"
 new_name="${new_name#🔵 }"
