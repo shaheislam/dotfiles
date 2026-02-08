@@ -9,12 +9,13 @@
 #
 # Detection method:
 # - Uses stdout offset tracking to detect when tools produce output
-# - When user views a window: record current stdout offset as baseline
-# - When user is away: compare current offset to baseline
+# - When user views a window: clear all state (baseline, worked, notified)
+# - When user leaves: daemon's next poll establishes a new baseline
+# - On subsequent polls: compare current offset to baseline
 # - If offset increased by >100 bytes: tool has done work, show indicator
 #
 # State files (in /tmp/tmux-claude-state/):
-# - *-baseline-N: stdout offset when user last viewed window N
+# - *-baseline-N: stdout offset established after user left window N
 # - *-worked-N: flag indicating tool produced output since last view
 # - *-notified-N: flag indicating indicator is currently shown
 #
@@ -220,12 +221,12 @@ get_tool_status() {
                     fi
                 fi
             else
-                # No baseline (window never viewed since daemon start)
-                # Create baseline and assume work was done — show indicator
+                # No baseline yet — record current offset as starting point
+                # Don't assume work was done; only future output beyond this
+                # point counts as new work. This prevents false indicators when
+                # the user views a window then leaves without the tool doing
+                # any actual work (idle UI redraws would otherwise trigger it).
                 echo "$stdout_offset" > "$baseline_file"
-                if [[ ! -f "$worked_file" ]]; then
-                    touch "$worked_file"
-                fi
             fi
         fi
         # Always return "idle" - the worked flag handles work detection
@@ -314,43 +315,17 @@ mark_viewed() {
     local state_key="${session}-${win_idx}"
     mkdir -p "$STATE_DIR"
 
-    # Clear all state files for both tools
+    # Clear all state files for both tools — including baselines.
+    # The daemon will re-establish baselines on the next poll after the user
+    # leaves this window. This prevents false indicators caused by idle UI
+    # output (prompt redraws, status updates) that occurs while the user is
+    # viewing the window.
     rm -f "$STATE_DIR/claude-worked-$state_key"
     rm -f "$STATE_DIR/claude-notified-$state_key"
     rm -f "$STATE_DIR/claude-baseline-$state_key"
     rm -f "$STATE_DIR/opencode-worked-$state_key"
     rm -f "$STATE_DIR/opencode-notified-$state_key"
     rm -f "$STATE_DIR/opencode-baseline-$state_key"
-
-    # Record stdout offset baseline for both Claude and Opencode
-    # This lets us detect work that happens AFTER user leaves
-    for pane_idx in $(tmux list-panes -t "${session}:${win_idx}" -F "#{pane_index}" 2>/dev/null); do
-        local tty
-        tty=$(tmux display-message -t "${session}:${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
-        [[ -z "$tty" ]] && continue
-
-        # Check for Claude
-        local claude_pid
-        claude_pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E '/claude( |$)' | head -1 | awk '{print $1}')
-        if [[ -n "$claude_pid" ]]; then
-            local stdout_offset
-            stdout_offset=$(lsof -p "$claude_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
-            if [[ -n "$stdout_offset" ]]; then
-                echo "$stdout_offset" > "$STATE_DIR/claude-baseline-$state_key"
-            fi
-        fi
-
-        # Check for Opencode
-        local opencode_pid
-        opencode_pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E '(^| |/)opencode( |$)' | head -1 | awk '{print $1}')
-        if [[ -n "$opencode_pid" ]]; then
-            local stdout_offset
-            stdout_offset=$(lsof -p "$opencode_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
-            if [[ -n "$stdout_offset" ]]; then
-                echo "$stdout_offset" > "$STATE_DIR/opencode-baseline-$state_key"
-            fi
-        fi
-    done
 
     # Remove all indicators from window name
     update_window_indicators "$session" "$win_idx"
