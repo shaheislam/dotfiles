@@ -11,6 +11,7 @@ Usage:
     gmailclean organize      - Create labels and filters to organize inbox
     gmailclean report        - Generate inbox health report
     gmailclean cleanup       - Archive old emails from unsubscribed senders
+    gmailclean archive       - Bulk archive all inbox emails older than N days
     gmailclean centralize    - Set up forwarding rules to consolidate accounts
     gmailclean nuke          - Full cleanup: scan + unsubscribe + organize
 """
@@ -922,6 +923,93 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_archive(args: argparse.Namespace) -> None:
+    """Archive command: bulk archive all inbox emails older than N days."""
+    days = args.days
+    dry_run = args.dry_run
+    auto = getattr(args, "auto", False)
+
+    console.print(
+        Panel(f"[bold]Archiving inbox emails older than {days} days...[/bold]", border_style="blue")
+    )
+
+    service = get_gmail_service()
+    query = f"label:inbox older_than:{days}d"
+
+    # Collect all matching message IDs via pagination
+    msg_ids: list[str] = []
+    page_token = None
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Searching for old emails...", total=None)
+        while True:
+            result = (
+                service.users()
+                .messages()
+                .list(userId="me", q=query, maxResults=500, pageToken=page_token)
+                .execute()
+            )
+            messages = result.get("messages", [])
+            msg_ids.extend(m["id"] for m in messages)
+            progress.update(task, description=f"Found {len(msg_ids)} emails so far...")
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                break
+
+    if not msg_ids:
+        console.print(f"[green]No inbox emails older than {days} days found. Inbox is clean![/green]")
+        return
+
+    if dry_run:
+        console.print(
+            Panel(
+                f"[bold yellow]Dry Run[/bold yellow]\n\n"
+                f"  Found: {len(msg_ids)} emails older than {days} days\n"
+                f"[dim]Run without --dry-run to actually archive[/dim]",
+                border_style="yellow",
+            )
+        )
+        return
+
+    if not auto:
+        console.print(f"\n[bold]Found {len(msg_ids)} emails older than {days} days.[/bold]")
+        confirm = input("Archive all of them? [y/N] ").strip().lower()
+        if confirm not in ("y", "yes"):
+            console.print("[yellow]Aborted.[/yellow]")
+            return
+
+    # Batch archive: remove INBOX label in chunks of 1000
+    archived_count = 0
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Archiving...", total=len(msg_ids))
+        for batch_start in range(0, len(msg_ids), 1000):
+            batch = msg_ids[batch_start : batch_start + 1000]
+            service.users().messages().batchModify(
+                userId="me",
+                body={
+                    "ids": batch,
+                    "removeLabelIds": ["INBOX"],
+                },
+            ).execute()
+            archived_count += len(batch)
+            progress.update(task, advance=len(batch), description=f"Archived {archived_count}/{len(msg_ids)}...")
+
+    console.print(
+        Panel(
+            f"[bold green]Archive Complete[/bold green]\n\n"
+            f"  Archived: {archived_count} emails older than {days} days",
+            border_style="green",
+        )
+    )
+
+
 def cmd_centralize(args: argparse.Namespace) -> None:
     """Centralize command: set up forwarding filters and show account consolidation info."""
     console.print(
@@ -1141,6 +1229,19 @@ def main() -> None:
         "--dry-run", action="store_true", help="Show what would be archived without doing it"
     )
 
+    # archive command
+    archive_parser = subparsers.add_parser("archive", help="Bulk archive old inbox emails")
+    archive_parser.add_argument(
+        "--days", type=int, default=30, help="Archive emails older than N days (default: 30)"
+    )
+    archive_parser.add_argument(
+        "--dry-run", action="store_true", help="Show count without archiving"
+    )
+    archive_parser.add_argument(
+        "--auto", "--yes", "-y", action="store_true", dest="auto",
+        help="Skip confirmation prompt",
+    )
+
     # centralize command
     subparsers.add_parser(
         "centralize", help="Set up forwarding rules to consolidate email accounts"
@@ -1166,6 +1267,7 @@ def main() -> None:
         "organize": cmd_organize,
         "report": cmd_report,
         "cleanup": cmd_cleanup,
+        "archive": cmd_archive,
         "centralize": cmd_centralize,
         "nuke": cmd_nuke,
     }
