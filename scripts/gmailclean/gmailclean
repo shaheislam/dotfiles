@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# gmailclean - Gmail inbox cleanup wrapper
+# Runs the gmailclean Python script using the local venv
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VENV_DIR="$SCRIPT_DIR/.venv"
+
+if [ ! -d "$VENV_DIR" ]; then
+    echo "gmailclean not set up yet. Running setup..."
+    bash "$SCRIPT_DIR/setup.sh"
+fi
+
+exec "$VENV_DIR/bin/python3" "$SCRIPT_DIR/gmailclean.py" "$@"
