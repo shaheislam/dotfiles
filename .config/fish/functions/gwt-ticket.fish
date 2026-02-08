@@ -44,6 +44,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l prompt_prefix ""
     set -l prompt_suffix ""
     set -l sub_profile ""
+    set -l bridge_mode false
 
     for i in (seq (count $argv))
         if $skip_next
@@ -160,6 +161,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --mount requires a directory path"
                     return 1
                 end
+            case --bridge
+                set bridge_mode true
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -204,6 +207,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --session S          Tmux session name (default: repo name)"
         echo "  --devcon             Use devcontainer for isolation (default: local)"
         echo "  --system S           Ticketing system: linear or jira"
+        echo "  --bridge             Enable cross-provider reasoning bridge (Codex/OpenCode review)"
         echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
@@ -310,6 +314,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
     if test -n "$sub_profile"
         echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
+    end
+    if $bridge_mode
+        echo "Bridge:    enabled (cross-provider review)"
     end
     if test -n "$prompt_prefix"
         echo "Prefix:    (custom)"
@@ -457,6 +464,12 @@ $prompt_suffix"
         echo "" >> $launch_script
     end
 
+    # Set CROSS_PROVIDER_BRIDGE if bridge mode enabled
+    if $bridge_mode
+        echo "set -gx CROSS_PROVIDER_BRIDGE 1" >> $launch_script
+        echo "" >> $launch_script
+    end
+
     # Build the claude command based on slash_command
     # --add-dir passes the main repo root so worktree sessions inherit its CLAUDE.md
     # ralph-loop needs special args, others just get the prompt
@@ -492,6 +505,9 @@ $prompt_suffix"
         # Pass CLAUDE_CONFIG_DIR env var into container for subscription profile
         if test -n "$sub_profile"
             set devcon_up_cmd "$devcon_up_cmd -E CLAUDE_CONFIG_DIR=/home/node/.claude-$sub_profile"
+        end
+        if $bridge_mode
+            set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_BRIDGE=1"
         end
         set devcon_up_cmd "$devcon_up_cmd $worktree_path $resolved_repo_root"
         for mount in $mounts

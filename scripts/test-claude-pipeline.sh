@@ -28,7 +28,7 @@ assert_contains() {
     local description="$1"
     local haystack="$2"
     local needle="$3"
-    if echo "$haystack" | grep -q "$needle"; then
+    if echo "$haystack" | grep -q -- "$needle"; then
         print_success "$description"
         ((PASS++))
     else
@@ -129,11 +129,203 @@ else
 fi
 
 # ============================================================================
+# Cross-Provider Bridge Hook Tests (no API calls)
+# ============================================================================
+
+print_header "Cross-Provider Bridge Hook Tests"
+
+HOOK_SCRIPT="$SCRIPT_DIR/../.claude/hooks/cross-provider-bridge.sh"
+
+# Test: Hook script exists and is executable
+if [[ -x "$HOOK_SCRIPT" ]]; then
+    print_success "cross-provider-bridge.sh exists and is executable"
+    ((PASS++))
+else
+    print_error "cross-provider-bridge.sh not found or not executable"
+    ((FAIL++))
+fi
+
+# Test: Hook exits 0 when CROSS_PROVIDER_BRIDGE is not set (disabled by default)
+hook_disabled_output=$(echo '{"stop_hook_active": false, "transcript_path": "/nonexistent"}' | CROSS_PROVIDER_BRIDGE="" bash "$HOOK_SCRIPT" 2>&1)
+hook_disabled_exit=$?
+assert_exit_code "Hook disabled: exits 0 (silent pass-through)" "0" "$hook_disabled_exit"
+
+# Test: Hook exits 0 when stop_hook_active is true (loop prevention)
+hook_loop_output=$(echo '{"stop_hook_active": true, "transcript_path": "/nonexistent"}' | CROSS_PROVIDER_BRIDGE=1 bash "$HOOK_SCRIPT" 2>&1)
+hook_loop_exit=$?
+assert_exit_code "Hook loop prevention: exits 0 when stop_hook_active=true" "0" "$hook_loop_exit"
+
+# Test: Hook exits 0 when transcript path is missing
+hook_no_transcript=$(echo '{"stop_hook_active": false}' | CROSS_PROVIDER_BRIDGE=1 bash "$HOOK_SCRIPT" 2>&1)
+hook_no_transcript_exit=$?
+assert_exit_code "Hook no transcript: exits 0 gracefully" "0" "$hook_no_transcript_exit"
+
+# Test: Hook exits 0 when transcript file doesn't exist
+hook_bad_path=$(echo '{"stop_hook_active": false, "transcript_path": "/tmp/nonexistent-transcript.jsonl"}' | CROSS_PROVIDER_BRIDGE=1 bash "$HOOK_SCRIPT" 2>&1)
+hook_bad_path_exit=$?
+assert_exit_code "Hook bad transcript path: exits 0 gracefully" "0" "$hook_bad_path_exit"
+
+# Test: Hook exits 0 when no providers are available (graceful fallback)
+# Use unknown provider names so the case statement skips all entries
+tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test reasoning output"}' > "$tmpfile"
+hook_no_providers=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$tmpfile\"}" | \
+    CROSS_PROVIDER_BRIDGE=1 \
+    CROSS_PROVIDER_ORDER="nonexistent1,nonexistent2" \
+    bash "$HOOK_SCRIPT" 2>&1)
+hook_no_providers_exit=$?
+rm -f "$tmpfile"
+assert_exit_code "Hook no providers available: exits 0 (silent fallback)" "0" "$hook_no_providers_exit"
+
+# Test: Settings.json has Stop hook registered
+if [[ -f "$SCRIPT_DIR/../.claude/settings.json" ]]; then
+    settings_content=$(cat "$SCRIPT_DIR/../.claude/settings.json")
+    if echo "$settings_content" | grep -q '"Stop"'; then
+        print_success "Settings.json has Stop hook registered"
+        ((PASS++))
+    else
+        print_error "Settings.json missing Stop hook"
+        ((FAIL++))
+    fi
+    if echo "$settings_content" | grep -q 'cross-provider-bridge.sh'; then
+        print_success "Settings.json references cross-provider-bridge.sh"
+        ((PASS++))
+    else
+        print_error "Settings.json doesn't reference cross-provider-bridge.sh"
+        ((FAIL++))
+    fi
+fi
+
+# ============================================================================
+# gwt-ticket --bridge Flag Tests (no API calls)
+# ============================================================================
+
+print_header "gwt-ticket --bridge Flag Tests"
+
+if command -v fish &>/dev/null; then
+    gwtt_help=$(fish -c "source $SCRIPT_DIR/../.config/fish/functions/gwt-ticket.fish; gwt-ticket --help" 2>&1)
+    assert_contains "gwt-ticket help: shows --bridge flag" "$gwtt_help" "--bridge"
+    assert_contains "gwt-ticket help: bridge description mentions cross-provider" "$gwtt_help" "cross-provider"
+else
+    print_warning "Fish shell not installed - skipping gwt-ticket tests"
+    ((SKIP++))
+fi
+
+# ============================================================================
 # Live Tests (require Claude subscription)
 # ============================================================================
 
 if $LIVE_MODE; then
-    print_header "Live Tests (API calls)"
+    print_header "Live Cross-Provider Bridge Tests"
+
+    HOOK_SCRIPT="$SCRIPT_DIR/../.claude/hooks/cross-provider-bridge.sh"
+
+    # Create a realistic mock transcript
+    bridge_tmpdir=$(mktemp -d)
+    bridge_transcript="$bridge_tmpdir/transcript.jsonl"
+    cat > "$bridge_transcript" << 'JSONL'
+{"role": "user", "content": "Explain why quicksort has O(n log n) average time complexity"}
+{"role": "assistant", "content": "Quicksort achieves O(n log n) average-case time complexity because:\n\n1. **Partitioning**: Each partition step processes all n elements in O(n) time.\n2. **Recursive depth**: On average, the pivot splits the array roughly in half, giving O(log n) levels of recursion.\n3. **Total work**: n elements × log n levels = O(n log n).\n\nThe worst case is O(n²) when the pivot consistently selects the minimum or maximum element, creating n levels of recursion instead of log n. This happens with already-sorted input using naive pivot selection.\n\nMitigation strategies:\n- Randomized pivot selection\n- Median-of-three pivot\n- Introsort (switch to heapsort when recursion depth exceeds 2 log n)"}
+JSONL
+
+    # Test: Codex provider (if available)
+    has_codex=false
+    if command -v codex &>/dev/null && { [ -n "${CODEX_API_KEY:-}" ] || [ -n "${OPENAI_API_KEY:-}" ]; }; then
+        has_codex=true
+        print_warning "Running cross-provider bridge with Codex..."
+        codex_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
+            CROSS_PROVIDER_BRIDGE=1 \
+            CROSS_PROVIDER_ORDER="codex" \
+            CROSS_PROVIDER_MAX_CHARS=2000 \
+            timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
+        codex_exit=$?
+
+        if [ -n "$codex_output" ]; then
+            # Should return JSON with decision: "block"
+            if echo "$codex_output" | jq -e '.decision == "block"' &>/dev/null; then
+                print_success "Codex bridge: returned block decision with review"
+                ((PASS++))
+            else
+                print_error "Codex bridge: output is not valid block JSON"
+                ((FAIL++))
+            fi
+            if echo "$codex_output" | jq -e '.reason | length > 50' &>/dev/null; then
+                print_success "Codex bridge: reason contains substantial review"
+                ((PASS++))
+            else
+                print_error "Codex bridge: reason too short or missing"
+                ((FAIL++))
+            fi
+        else
+            print_warning "Codex bridge: no output (provider may be unavailable)"
+            ((SKIP++))
+        fi
+    else
+        print_warning "Codex not available (need codex binary + OPENAI_API_KEY) - skipping"
+        ((SKIP++))
+    fi
+
+    # Test: OpenCode provider (if available)
+    has_opencode=false
+    if command -v opencode &>/dev/null; then
+        has_opencode=true
+        print_warning "Running cross-provider bridge with OpenCode..."
+        opencode_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
+            CROSS_PROVIDER_BRIDGE=1 \
+            CROSS_PROVIDER_ORDER="opencode" \
+            CROSS_PROVIDER_MAX_CHARS=2000 \
+            timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
+
+        if [ -n "$opencode_output" ]; then
+            if echo "$opencode_output" | jq -e '.decision == "block"' &>/dev/null; then
+                print_success "OpenCode bridge: returned block decision with review"
+                ((PASS++))
+            else
+                print_error "OpenCode bridge: output is not valid block JSON"
+                ((FAIL++))
+            fi
+            if echo "$opencode_output" | jq -e '.reason | length > 50' &>/dev/null; then
+                print_success "OpenCode bridge: reason contains substantial review"
+                ((PASS++))
+            else
+                print_error "OpenCode bridge: reason too short or missing"
+                ((FAIL++))
+            fi
+        else
+            print_warning "OpenCode bridge: no output (provider may be unavailable)"
+            ((SKIP++))
+        fi
+    else
+        print_warning "OpenCode not available - skipping"
+        ((SKIP++))
+    fi
+
+    # Test: Fallback order (codex first, then opencode)
+    if $has_codex || $has_opencode; then
+        print_warning "Running cross-provider bridge with default fallback order..."
+        fallback_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
+            CROSS_PROVIDER_BRIDGE=1 \
+            CROSS_PROVIDER_MAX_CHARS=2000 \
+            timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
+
+        if [ -n "$fallback_output" ]; then
+            if echo "$fallback_output" | jq -e '.decision == "block"' &>/dev/null; then
+                print_success "Fallback bridge: at least one provider succeeded"
+                ((PASS++))
+            else
+                print_error "Fallback bridge: output is not valid block JSON"
+                ((FAIL++))
+            fi
+        else
+            print_error "Fallback bridge: no output despite available providers"
+            ((FAIL++))
+        fi
+    fi
+
+    rm -rf "$bridge_tmpdir"
+
+    # ========================================================================
+    print_header "Live Pipeline Tests (API calls)"
 
     if ! command -v claude &>/dev/null; then
         print_error "claude CLI not found"

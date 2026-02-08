@@ -343,131 +343,6 @@ Practical agent rules in root `AGENTS.md` - concrete rules based on observed bad
 - Karabiner-Elements config (use GUI), Brewfile organization, tmux plugin installation (TPM)
 - Theme consistency verification, 1Password/SSH setup, stow conflict resolution
 - LazyVim plugin config (lives in `~/neovim`)
-||||||| c6b065e
-**Workflow**:
-```bash
-# Quick ticket creation
-/todo Fix pagination bug in users API
-
-# Execute with picker (fzf)
-tex
-
-# Execute specific ticket
-tex ENG-123
-
-# Monitor execution
-tmux attach -t <repo-name>
-tex --status .
-
-# Manual completion if needed
-tex --complete .
-
-# Direct gwt-ticket usage (bypasses ticket fetching)
-gwt-ticket ENG-TEST "Test ticket" "Test description" --no-devcon
-
-# Ticket-free autonomous execution
-gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
-# → Window: fix-auth-bug (uses title slug)
-# → Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug
-# → No ticket tracking, PR created without ticket link
-```
-
-**Post-Completion**:
-1. Creates PR with ticket link in description
-2. Transitions ticket to "Review" or "Done"
-3. Sends macOS notification
-
-**Dependencies**:
-- `linear` CLI (`brew install schpet/tap/linear`) - for Linear tickets
-- `acli` - for Jira tickets
-- `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
-- `ralph-loop` - autonomous iteration
-
-### Beads Agent Memory (steveyegge/beads)
-Git-backed, agent-optimized issue tracker providing persistent memory across Claude Code sessions.
-
-**Install**: `brew install beads` (in Brewfile) + `claude plugin install beads@steveyegge/beads` (in setup.sh)
-
-**Per-Project Setup**: `bd init --quiet` (creates `.beads/` directory with `issues.jsonl`)
-
-**Claude Code Integration**: `bd setup claude` installs SessionStart/PreCompact hooks automatically.
-
-**Core Workflow**:
-| Command | Description |
-|---------|-------------|
-| `bd prime` | Inject project context at session start (~1-2k tokens) |
-| `bd ready --json` | Find unblocked tasks available for work |
-| `bd create` | Create new issue (bug, feature, task, epic) |
-| `bd show <id>` | View issue details with dependencies |
-| `bd update <id>` | Modify issue status, priority, notes |
-| `bd close <id>` | Mark issue complete |
-| `bd dep` | Manage dependency relationships (blocks, related, parent-child) |
-| `bd sync` | Persist changes via git (run before session end) |
-| `bd stats` | Project progress statistics |
-
-**Slash Commands** (via plugin): `/beads:ready`, `/beads:create`, `/beads:show`, `/beads:update`, `/beads:close`, `/beads:workflow`, `/beads:stats`
-
-**Architecture**: Issues stored as JSONL in `.beads/`, forming a DAG with dependency edges. Git-native (branches/merges with code). Worktree-compatible.
-
-**Relationship to Existing Tools**: Beads handles **implementation-level** sub-task tracking and agent memory. Linear/Jira remain the source of truth for **team-level** ticket coordination. Flow: Linear ticket -> `gwt-ticket` -> agent uses Beads for sub-tasks -> PR.
-
-**Evaluation**: See `docs/beads-evaluation.md` for full analysis.
-
-### Recent Updates
-- **2026-02-08**: Added Claude Pipeline multi-model reasoning chains (claude-pipeline/cpipe - opus→sonnet piping)
-- **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
-- **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
-- **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
-- **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
-- **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
-- **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
-- **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
-- **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
-- **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
-- **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
-- **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)
-- **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
-- **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
-- **2025-10-05**: Added Kubernetes manifests directory with documentation requirements
-
-**Workflow**:
-```bash
-# Quick ticket creation
-/todo Fix pagination bug in users API
-
-# Execute with picker (fzf)
-tex
-
-# Execute specific ticket
-tex ENG-123
-
-# Monitor execution
-tmux attach -t <repo-name>
-tex --status .
-
-# Manual completion if needed
-tex --complete .
-
-# Direct gwt-ticket usage (bypasses ticket fetching)
-gwt-ticket ENG-TEST "Test ticket" "Test description" --no-devcon
-
-# Ticket-free autonomous execution
-gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
-# → Window: fix-auth-bug (uses title slug)
-# → Branch: task-YYYYMMDD-HHMMSS-fix-auth-bug
-# → No ticket tracking, PR created without ticket link
-```
-
-**Post-Completion**:
-1. Creates PR with ticket link in description
-2. Transitions ticket to "Review" or "Done"
-3. Sends macOS notification
-
-**Dependencies**:
-- `linear` CLI (`brew install schpet/tap/linear`) - for Linear tickets
-- `acli` - for Jira tickets
-- `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
-- `ralph-loop` - autonomous iteration
 
 ### Claude Pipeline (Multi-Model Reasoning Chains)
 
@@ -565,7 +440,36 @@ echo 'some text' | llm 'summarize this'
 
 **Testing**: `scripts/test-selfhost-llm.sh` (config tests + coding agent tests, `--live` for runtime tests)
 
+### Cross-Provider Reasoning Bridge
+Stop hook that sends Claude's reasoning to an independent AI provider (Codex/OpenCode) for correlation-bias mitigation.
+Graceful fallback: Codex → OpenCode → silent continue (zero failures).
+
+**Enable**: `CROSS_PROVIDER_BRIDGE=1 claude`
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CROSS_PROVIDER_BRIDGE` | `0` | Enable/disable the bridge |
+| `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority order |
+| `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars to send |
+| `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
+
+**Architecture**: Uses `type: "command"` Stop hook (not `prompt`/`agent` which use Anthropic models — same-provider defeats the purpose).
+**Hook**: `.claude/hooks/cross-provider-bridge.sh` | **Testing**: `scripts/test-claude-pipeline.sh` (`--live` for E2E tests)
+
+**Usage**:
+```bash
+# Autonomous ticket with cross-provider review
+gwtt ENG-123 --bridge
+
+# Ticket-free with bridge
+gwtt "Fix auth bug" "Session tokens expire" --bridge
+
+# Manual interactive session
+CROSS_PROVIDER_BRIDGE=1 claude
+```
+
 ### Recent Updates
+- **2026-02-08**: Added Cross-Provider Reasoning Bridge (Stop hook for correlation-bias mitigation via Codex/OpenCode)
 - **2026-02-08**: Added Claude Pipeline multi-model reasoning chains (claude-pipeline/cpipe - opus→sonnet piping)
 - **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
 - **2026-02-07**: Added local coding agent integration (OpenCode + Claude Code via Ollama with qwen3-coder)

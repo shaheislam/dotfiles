@@ -113,16 +113,85 @@ claude -p --model opus "Analyze security vulnerabilities" | \
   claude -p --model haiku "Review the fixes for completeness"
 ```
 
+## Cross-Provider Bridge (Stop Hook)
+
+Automatically sends Claude's reasoning to an independent AI provider (Codex or OpenCode) for cross-provider validation. Mitigates correlation issues between same-provider models.
+
+### How It Works
+
+```
+Claude reasons (Opus) → Stop hook fires → Sends to Codex/OpenCode → Feeds review back
+    ↓                                                                      ↓
+stop_hook_active=false                                          stop_hook_active=true
+(bridge runs)                                                   (bridge skips → no loop)
+```
+
+The hook is disabled by default. Enable it with `CROSS_PROVIDER_BRIDGE=1`.
+
+### Graceful Fallback
+
+The bridge tries providers in order and silently falls through if none are available:
+
+1. **Codex** (`codex exec -`): Requires `codex` CLI + `CODEX_API_KEY` or `OPENAI_API_KEY`
+2. **OpenCode** (`opencode run -q`): Requires `opencode` CLI + configured auth
+3. **Silent continue**: If nothing works, Claude continues normally - zero failures
+
+### Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CROSS_PROVIDER_BRIDGE` | *(unset)* | Set to `1` to enable |
+| `CROSS_PROVIDER_ORDER` | `codex,opencode` | Comma-separated provider priority |
+| `CROSS_PROVIDER_CODEX_MODEL` | *(codex default)* | Override Codex model |
+| `CROSS_PROVIDER_OPENCODE_MODEL` | `openai/gpt-4o` | OpenCode model (provider/model format) |
+| `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars sent for review |
+| `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
+
+### Integration with gwt-ticket
+
+The bridge works transparently with autonomous ticket execution:
+
+```bash
+# Enable bridge globally (all Claude sessions get cross-provider review)
+export CROSS_PROVIDER_BRIDGE=1
+
+# Run ticket - bridge fires during every ralph-loop iteration
+gwt-ticket ENG-123 "Fix auth bug" "Session tokens expire"
+
+# Or enable per-session via prompt prefix
+gwt-ticket ENG-123 "Fix" "Desc" --prompt-prefix "IMPORTANT: Cross-provider review is active"
+```
+
+No changes needed to gwt-ticket, ralph-loop, or gwt-queue - the Stop hook fires automatically.
+
+### Usage Examples
+
+```bash
+# Enable for current shell session
+export CROSS_PROVIDER_BRIDGE=1
+export OPENAI_API_KEY=sk-...  # for Codex
+
+# Prefer OpenCode over Codex
+export CROSS_PROVIDER_ORDER=opencode,codex
+export CROSS_PROVIDER_OPENCODE_MODEL=openai/o3
+
+# Disable temporarily
+unset CROSS_PROVIDER_BRIDGE
+```
+
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LLM_CODE_MODEL` | `qwen3-coder` | Ollama model used when `--preset local` |
+| `CROSS_PROVIDER_BRIDGE` | *(unset)* | Set to `1` to enable cross-provider bridge |
+| `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority for bridge |
+| `CROSS_PROVIDER_OPENCODE_MODEL` | `openai/gpt-4o` | Model for OpenCode bridge |
 
 ## Testing
 
 ```bash
-# Config tests (no API calls)
+# Config tests (no API calls) - includes hook tests
 ./scripts/test-claude-pipeline.sh
 
 # Live tests (uses Claude subscription)
