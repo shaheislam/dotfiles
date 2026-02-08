@@ -185,6 +185,129 @@ assert_eq "◆ is 3 bytes UTF-8 (BMP)" "3" "$indicator_bytes"
 combined="●◆ test"
 assert_eq "combined indicator string is valid" "●◆ test" "$combined"
 
+# --- Test: state machine logic (file-based, no tmux needed) ---
+echo ""
+echo "▸ Testing state machine logic (work detection)"
+
+TEST_STATE_DIR=$(mktemp -d)
+trap "rm -rf '$TEST_STATE_DIR'" EXIT
+
+# Helper: simulate get_tool_status work detection logic
+simulate_work_check() {
+    local state_dir="$1"
+    local state_key="$2"
+    local tool="$3"
+    local stdout_offset="$4"
+
+    local baseline_file="$state_dir/${tool}-baseline-$state_key"
+    local worked_file="$state_dir/${tool}-worked-$state_key"
+
+    if [[ -n "$stdout_offset" ]]; then
+        if [[ -f "$baseline_file" ]]; then
+            local baseline
+            baseline=$(cat "$baseline_file")
+            if [[ "$stdout_offset" -gt "$baseline" ]]; then
+                local diff=$(( stdout_offset - baseline ))
+                if [[ "$diff" -gt 100 ]]; then
+                    if [[ ! -f "$worked_file" ]]; then
+                        touch "$worked_file"
+                    fi
+                fi
+            fi
+        else
+            # No baseline — record current offset without assuming work
+            echo "$stdout_offset" > "$baseline_file"
+        fi
+    fi
+}
+
+# Helper: simulate mark_viewed
+simulate_mark_viewed() {
+    local state_dir="$1"
+    local state_key="$2"
+    local tool="$3"
+    local stdout_offset="$4"
+
+    rm -f "$state_dir/${tool}-worked-$state_key"
+    rm -f "$state_dir/${tool}-notified-$state_key"
+    rm -f "$state_dir/${tool}-baseline-$state_key"
+
+    # Record baseline if tool found
+    if [[ -n "$stdout_offset" ]]; then
+        echo "$stdout_offset" > "$state_dir/${tool}-baseline-$state_key"
+    fi
+}
+
+# Helper: check if indicator would show
+would_show_indicator() {
+    local state_dir="$1"
+    local state_key="$2"
+    local tool="$3"
+
+    local worked_file="$state_dir/${tool}-worked-$state_key"
+    local notified_file="$state_dir/${tool}-notified-$state_key"
+
+    if [[ ! -f "$notified_file" ]] && [[ -f "$worked_file" ]]; then
+        echo "yes"
+    else
+        echo "no"
+    fi
+}
+
+# Test: View window then leave without AI doing work — no false indicator
+SK="test-session-1"
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "5000"
+# User views window, Claude renders idle prompt (+50 bytes, under threshold)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "5050"
+assert_eq "no indicator for small idle output after viewing" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+
+# Test: View window then leave, AI does real work — indicator shows
+SK="test-session-2"
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "5000"
+# Claude does real work (+500 bytes, above threshold)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "5500"
+assert_eq "indicator shows for real work after viewing" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+
+# Test: First encounter (no baseline) — no false indicator
+SK="test-session-3"
+# Daemon encounters window for the first time (no baseline exists)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "10000"
+assert_eq "no indicator on first encounter (baseline set)" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Verify baseline was created
+assert_eq "baseline created on first encounter" "10000" "$(cat "$TEST_STATE_DIR/claude-baseline-$SK")"
+# Now if Claude does work beyond baseline, indicator shows
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "10200"
+assert_eq "indicator shows after work beyond first baseline" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+
+# Test: mark_viewed clears state, then idle UI redraws don't trigger
+SK="test-session-4"
+# Initial: Claude did work, indicator was shown
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "8000"
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8500"
+touch "$TEST_STATE_DIR/claude-notified-$SK"
+# User switches to this window
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "8500"
+# User leaves, Claude's idle UI redraws (+80 bytes, under threshold)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8580"
+assert_eq "no indicator for idle redraw after re-viewing" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+
+# Test: mark_viewed clears baseline, daemon re-establishes without false flag
+SK="test-session-5"
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "3000"
+# Clear baseline to simulate mark_viewed clearing it
+rm -f "$TEST_STATE_DIR/claude-baseline-$SK"
+rm -f "$TEST_STATE_DIR/claude-worked-$SK"
+rm -f "$TEST_STATE_DIR/claude-notified-$SK"
+# Daemon polls: no baseline (mark_viewed cleared it), but Claude has stdout at 3050
+# (idle prompt rendered while user was viewing)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "3050"
+assert_eq "no false indicator when baseline cleared and re-established" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Now Claude does real work
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "3250"
+assert_eq "indicator shows for real work after baseline re-established" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+
+rm -rf "$TEST_STATE_DIR"
+
 # =============================================================================
 # Summary
 # =============================================================================
