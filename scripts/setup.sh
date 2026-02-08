@@ -457,6 +457,16 @@ phase_4_cloud_tools() {
         print_success "recall already installed at: $(which recall)"
     fi
 
+    # Install beads CLI (agent memory / git-backed issue tracker)
+    if ! command_exists bd; then
+        print_step "Installing beads (agent memory)..."
+        brew install beads >/dev/null 2>&1 && \
+            print_success "beads installed" || \
+            print_warning "Failed to install beads - install manually with: brew install beads"
+    else
+        print_success "beads CLI already installed at: $(which bd)"
+    fi
+
     # Install Claude Code Router
     if ! command_exists ccr; then
         print_step "Installing Claude Code Router..."
@@ -625,8 +635,12 @@ phase_4_cloud_tools() {
         # Infrastructure/Terraform skill
         claude plugin install terraform-skill@antonbabenko >/dev/null 2>&1 || true
 
-        print_success "Claude Code plugins installed (13 plugins)"
-        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill"
+        # Agent memory / issue tracking
+        claude plugin marketplace add steveyegge/beads >/dev/null 2>&1 || true
+        claude plugin install beads@steveyegge/beads >/dev/null 2>&1 || true
+
+        print_success "Claude Code plugins installed (14 plugins)"
+        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads"
 
         # Fix hookify plugin import paths (upstream bug: uses 'from hookify.core.*' but PLUGIN_ROOT structure doesn't support it)
         # Patch both cache (runtime) and marketplace (source) directories

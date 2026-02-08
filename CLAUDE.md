@@ -228,14 +228,15 @@ Karabiner-Elements: `.config/karabiner/karabiner.json` (stow managed). Caps Lock
 
 ### Claude Code Plugins
 
-Plugins are installed from three marketplaces:
+Plugins are installed from four marketplaces:
 - `anthropics/claude-code` (alias: `claude-code-plugins`) - Official Anthropic plugins
 - `kenryu42/cc-marketplace` (alias: `cc-marketplace`) - Community safety plugins
 - `antonbabenko/terraform-skill` (alias: `antonbabenko`) - Terraform/OpenTofu development skill
+- `steveyegge/beads` - Git-backed agent memory and issue tracking
 
 **Installation**: Plugins stored in `~/.claude/settings.json`. For cross-device consistency, installation commands are in `scripts/setup.sh`.
 
-**Installed Plugins (13 total)**:
+**Installed Plugins (14 total)**:
 
 | Plugin | Command | Purpose |
 |--------|---------|---------|
@@ -252,6 +253,7 @@ Plugins are installed from three marketplaces:
 | **code-simplifier** | Auto-triggered | Identifies over-engineering, suggests simpler implementations |
 | **security-guidance** | Auto-triggered | Security best practices, vulnerability detection, compliance guidance |
 | **terraform-skill** | Auto-activated | Terraform/OpenTofu module development, testing frameworks, CI/CD workflows |
+| **beads** | `/beads:ready`, `/beads:create` | Git-backed agent memory, in-repo issue tracking with DAG dependencies |
 
 **Managing**: `claude plugin install|disable|enable|uninstall plugin-name@marketplace`
 
@@ -381,7 +383,38 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 - `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
 - `ralph-loop` - autonomous iteration
 
+### Beads Agent Memory (steveyegge/beads)
+Git-backed, agent-optimized issue tracker providing persistent memory across Claude Code sessions.
+
+**Install**: `brew install beads` (in Brewfile) + `claude plugin install beads@steveyegge/beads` (in setup.sh)
+
+**Per-Project Setup**: `bd init --quiet` (creates `.beads/` directory with `issues.jsonl`)
+
+**Claude Code Integration**: `bd setup claude` installs SessionStart/PreCompact hooks automatically.
+
+**Core Workflow**:
+| Command | Description |
+|---------|-------------|
+| `bd prime` | Inject project context at session start (~1-2k tokens) |
+| `bd ready --json` | Find unblocked tasks available for work |
+| `bd create` | Create new issue (bug, feature, task, epic) |
+| `bd show <id>` | View issue details with dependencies |
+| `bd update <id>` | Modify issue status, priority, notes |
+| `bd close <id>` | Mark issue complete |
+| `bd dep` | Manage dependency relationships (blocks, related, parent-child) |
+| `bd sync` | Persist changes via git (run before session end) |
+| `bd stats` | Project progress statistics |
+
+**Slash Commands** (via plugin): `/beads:ready`, `/beads:create`, `/beads:show`, `/beads:update`, `/beads:close`, `/beads:workflow`, `/beads:stats`
+
+**Architecture**: Issues stored as JSONL in `.beads/`, forming a DAG with dependency edges. Git-native (branches/merges with code). Worktree-compatible.
+
+**Relationship to Existing Tools**: Beads handles **implementation-level** sub-task tracking and agent memory. Linear/Jira remain the source of truth for **team-level** ticket coordination. Flow: Linear ticket -> `gwt-ticket` -> agent uses Beads for sub-tasks -> PR.
+
+**Evaluation**: See `docs/beads-evaluation.md` for full analysis.
+
 ### Recent Updates
+- **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
 - **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
 - **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
@@ -506,6 +539,7 @@ echo 'some text' | llm 'summarize this'
 **Testing**: `scripts/test-selfhost-llm.sh` (config tests + coding agent tests, `--live` for runtime tests)
 
 ### Recent Updates
+- **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
 - **2026-02-07**: Added local coding agent integration (OpenCode + Claude Code via Ollama with qwen3-coder)
 - **2026-02-05**: Added Self-Hosted LLM infrastructure (Ollama + Open WebUI + Fish functions)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
