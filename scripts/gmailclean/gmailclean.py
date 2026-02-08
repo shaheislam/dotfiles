@@ -343,13 +343,7 @@ def scan_inbox(service: Any, max_results: int = 500) -> list[dict]:
                             "one_click": unsub_info.get("one_click", False),
                             "category": category,
                             "email_count": 1,
-                            "labels": [
-                                l["name"]
-                                for l in msg.get("labelIds", [])
-                                if isinstance(l, str)
-                            ]
-                            if isinstance(msg.get("labelIds"), list)
-                            else msg.get("labelIds", []),
+                            "labels": msg.get("labelIds", []),
                         }
                     )
 
