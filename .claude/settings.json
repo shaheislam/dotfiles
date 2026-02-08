@@ -24,6 +24,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/cross-provider-bridge.sh",
+            "timeout": 180,
+            "statusMessage": "Cross-provider review..."
+          }
+        ]
+      }
     ]
   },
   "env": {
