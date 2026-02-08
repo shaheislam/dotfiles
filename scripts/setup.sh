@@ -628,18 +628,11 @@ phase_4_cloud_tools() {
         print_success "Claude Code plugins installed (13 plugins)"
         log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill"
 
-        # Fix hookify plugin import paths (upstream bug: uses 'from hookify.core.*' but PLUGIN_ROOT structure doesn't support it)
-        # Patch both cache (runtime) and marketplace (source) directories
-        for hookify_dir in \
-            "$HOME/.claude/plugins/cache/claude-code-plugins/hookify"/*/ \
-            "$HOME/.claude/plugins/marketplaces/claude-code-plugins/plugins/hookify/"; do
-            if [[ -d "$hookify_dir" ]]; then
-                find "$hookify_dir" -name "*.py" -exec sed -i '' 's/from hookify\.core\./from core./g' {} + 2>/dev/null || true
-                find "$hookify_dir" -name "*.py" -exec sed -i '' 's/from hookify\.matchers\./from matchers./g' {} + 2>/dev/null || true
-                find "$hookify_dir" -name "*.py" -exec sed -i '' 's/from hookify\.utils\./from utils./g' {} + 2>/dev/null || true
-            fi
-        done
-        log_verbose "Patched hookify plugin imports (cache + marketplace)"
+        # Fix hookify plugin import paths (upstream bug: versioned cache dir hookify/0.1.0/
+        # breaks Python's 'from hookify.core...' imports - registers synthetic package via sys.modules)
+        if [[ -x "$DOTFILES_ROOT/scripts/fix-hookify-imports.sh" ]]; then
+            "$DOTFILES_ROOT/scripts/fix-hookify-imports.sh" || true
+        fi
 
         # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
         if [[ ! -d "$HOME/ralph-claude-code" ]]; then
