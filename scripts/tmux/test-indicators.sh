@@ -192,7 +192,9 @@ echo "▸ Testing state machine logic (work detection)"
 TEST_STATE_DIR=$(mktemp -d)
 trap "rm -rf '$TEST_STATE_DIR'" EXIT
 
-# Helper: simulate get_tool_status work detection logic
+# Helper: simulate get_tool_status work detection logic (matches watcher daemon)
+# Two-step confirmation: first detection creates pending file, second confirms as work
+# Threshold: 2048 bytes (filters out idle UI refreshes ~100-900 bytes)
 simulate_work_check() {
     local state_dir="$1"
     local state_key="$2"
@@ -201,18 +203,36 @@ simulate_work_check() {
 
     local baseline_file="$state_dir/${tool}-baseline-$state_key"
     local worked_file="$state_dir/${tool}-worked-$state_key"
+    local pending_file="$state_dir/${tool}-pending-$state_key"
 
     if [[ -n "$stdout_offset" ]]; then
         if [[ -f "$baseline_file" ]]; then
             local baseline
             baseline=$(cat "$baseline_file")
-            if [[ "$stdout_offset" -gt "$baseline" ]]; then
-                local diff=$(( stdout_offset - baseline ))
-                if [[ "$diff" -gt 100 ]]; then
-                    if [[ ! -f "$worked_file" ]]; then
-                        touch "$worked_file"
+            local diff=$(( stdout_offset - baseline ))
+            if [[ "$diff" -gt 2048 ]]; then
+                if [[ -f "$pending_file" ]]; then
+                    # Second consecutive detection — confirm as real work
+                    local pending_offset
+                    pending_offset=$(cat "$pending_file")
+                    if [[ "$stdout_offset" -gt "$pending_offset" ]]; then
+                        # Output is still growing — this is real work
+                        if [[ ! -f "$worked_file" ]]; then
+                            touch "$worked_file"
+                        fi
+                        rm -f "$pending_file"
+                    else
+                        # Output stopped growing — was just a UI burst, reset
+                        rm -f "$pending_file"
+                        echo "$stdout_offset" > "$baseline_file"
                     fi
+                else
+                    # First detection — record pending, confirm on next poll
+                    echo "$stdout_offset" > "$pending_file"
                 fi
+            else
+                # Below threshold — clear any pending state
+                rm -f "$pending_file"
             fi
         else
             # No baseline — record current offset without assuming work
@@ -221,21 +241,16 @@ simulate_work_check() {
     fi
 }
 
-# Helper: simulate mark_viewed
+# Helper: simulate mark_viewed (clears ALL state including pending)
 simulate_mark_viewed() {
     local state_dir="$1"
     local state_key="$2"
     local tool="$3"
-    local stdout_offset="$4"
 
     rm -f "$state_dir/${tool}-worked-$state_key"
     rm -f "$state_dir/${tool}-notified-$state_key"
     rm -f "$state_dir/${tool}-baseline-$state_key"
-
-    # Record baseline if tool found
-    if [[ -n "$stdout_offset" ]]; then
-        echo "$stdout_offset" > "$state_dir/${tool}-baseline-$state_key"
-    fi
+    rm -f "$state_dir/${tool}-pending-$state_key"
 }
 
 # Helper: check if indicator would show
@@ -254,57 +269,111 @@ would_show_indicator() {
     fi
 }
 
-# Test: View window then leave without AI doing work — no false indicator
+# Test: Small idle output under threshold — no indicator
 SK="test-session-1"
-simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "5000"
-# User views window, Claude renders idle prompt (+50 bytes, under threshold)
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude"
+echo "5000" > "$TEST_STATE_DIR/claude-baseline-$SK"
+# Claude renders idle prompt (+50 bytes, well under 2048 threshold)
 simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "5050"
-assert_eq "no indicator for small idle output after viewing" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+assert_eq "no indicator for small idle output (50 bytes)" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
 
-# Test: View window then leave, AI does real work — indicator shows
+# Test: Medium idle burst under threshold — no indicator (the key false positive fix)
+SK="test-session-1b"
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude"
+echo "5000" > "$TEST_STATE_DIR/claude-baseline-$SK"
+# Claude status line refresh (+900 bytes, under 2048 threshold)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "5900"
+assert_eq "no indicator for UI burst (900 bytes)" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+
+# Test: Real work requires two consecutive polls with growing output
 SK="test-session-2"
-simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "5000"
-# Claude does real work (+500 bytes, above threshold)
-simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "5500"
-assert_eq "indicator shows for real work after viewing" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude"
+echo "5000" > "$TEST_STATE_DIR/claude-baseline-$SK"
+# Poll 1: Claude starts producing output (+3000 bytes, above threshold)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8000"
+assert_eq "first detection creates pending, not worked" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+assert_eq "pending file created" "8000" "$(cat "$TEST_STATE_DIR/claude-pending-$SK" 2>/dev/null)"
+# Poll 2: Output still growing — confirms real work
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "12000"
+assert_eq "indicator shows after confirmed growing output" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+assert_eq "pending file cleared after confirmation" "" "$(cat "$TEST_STATE_DIR/claude-pending-$SK" 2>/dev/null)"
+
+# Test: One-time burst above threshold but NOT growing — no indicator (UI burst)
+SK="test-session-2b"
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude"
+echo "5000" > "$TEST_STATE_DIR/claude-baseline-$SK"
+# Poll 1: Burst above threshold
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8000"
+assert_eq "pending after burst" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Poll 2: Offset unchanged — burst stopped, not real work
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8000"
+assert_eq "no indicator when burst stops (same offset)" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+assert_eq "baseline reset after burst dismissed" "8000" "$(cat "$TEST_STATE_DIR/claude-baseline-$SK")"
 
 # Test: First encounter (no baseline) — no false indicator
 SK="test-session-3"
 # Daemon encounters window for the first time (no baseline exists)
 simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "10000"
 assert_eq "no indicator on first encounter (baseline set)" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
-# Verify baseline was created
 assert_eq "baseline created on first encounter" "10000" "$(cat "$TEST_STATE_DIR/claude-baseline-$SK")"
-# Now if Claude does work beyond baseline, indicator shows
-simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "10200"
-assert_eq "indicator shows after work beyond first baseline" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Claude does real work: poll 1 (pending)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "15000"
+assert_eq "first work detection pending" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Claude does more work: poll 2 (confirmed)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "20000"
+assert_eq "indicator shows after confirmed work beyond first baseline" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
 
 # Test: mark_viewed clears state, then idle UI redraws don't trigger
 SK="test-session-4"
 # Initial: Claude did work, indicator was shown
-simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "8000"
-simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8500"
+echo "8000" > "$TEST_STATE_DIR/claude-baseline-$SK"
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "15000"
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "20000"
 touch "$TEST_STATE_DIR/claude-notified-$SK"
 # User switches to this window
-simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "8500"
-# User leaves, Claude's idle UI redraws (+80 bytes, under threshold)
-simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8580"
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude"
+# Daemon re-establishes baseline
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "20000"
+assert_eq "baseline re-established after mark_viewed" "20000" "$(cat "$TEST_STATE_DIR/claude-baseline-$SK")"
+# Claude's idle UI redraws (+80 bytes, under threshold)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "20080"
 assert_eq "no indicator for idle redraw after re-viewing" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
 
 # Test: mark_viewed clears baseline, daemon re-establishes without false flag
 SK="test-session-5"
-simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude" "3000"
-# Clear baseline to simulate mark_viewed clearing it
-rm -f "$TEST_STATE_DIR/claude-baseline-$SK"
-rm -f "$TEST_STATE_DIR/claude-worked-$SK"
-rm -f "$TEST_STATE_DIR/claude-notified-$SK"
-# Daemon polls: no baseline (mark_viewed cleared it), but Claude has stdout at 3050
-# (idle prompt rendered while user was viewing)
+# Simulate mark_viewed clearing all state
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude"
+# Daemon polls: no baseline, Claude has stdout at 3050
 simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "3050"
 assert_eq "no false indicator when baseline cleared and re-established" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
-# Now Claude does real work
-simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "3250"
-assert_eq "indicator shows for real work after baseline re-established" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Claude does real work (poll 1: pending)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "6000"
+assert_eq "pending after first work detection" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Claude does more work (poll 2: confirmed)
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "9000"
+assert_eq "indicator shows after confirmed work post re-establish" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+
+# Test: mark_viewed clears pending state (no stale pending after switching)
+SK="test-session-6"
+echo "5000" > "$TEST_STATE_DIR/claude-baseline-$SK"
+# Poll 1: above threshold, pending created
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8000"
+assert_eq "pending file exists before mark_viewed" "8000" "$(cat "$TEST_STATE_DIR/claude-pending-$SK" 2>/dev/null)"
+# User switches to window (clears everything including pending)
+simulate_mark_viewed "$TEST_STATE_DIR" "$SK" "claude"
+assert_eq "pending cleared by mark_viewed" "" "$(cat "$TEST_STATE_DIR/claude-pending-$SK" 2>/dev/null)"
+
+# Test: Idle burst followed by real work — indicator shows on real work
+SK="test-session-7"
+echo "5000" > "$TEST_STATE_DIR/claude-baseline-$SK"
+# UI burst: above threshold but stops
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8000"
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "8000"
+assert_eq "no indicator after dismissed burst" "no" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
+# Now real work happens
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "12000"
+simulate_work_check "$TEST_STATE_DIR" "$SK" "claude" "18000"
+assert_eq "indicator shows for real work after dismissed burst" "yes" "$(would_show_indicator "$TEST_STATE_DIR" "$SK" "claude")"
 
 rm -rf "$TEST_STATE_DIR"
 
