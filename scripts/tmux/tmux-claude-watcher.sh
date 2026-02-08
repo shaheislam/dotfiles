@@ -12,11 +12,12 @@
 # - When user views a window: clear all state (baseline, worked, notified)
 # - When user leaves: daemon's next poll establishes a new baseline
 # - On subsequent polls: compare current offset to baseline
-# - If offset increased by >100 bytes: tool has done work, show indicator
+# - If offset increased by >2048 bytes: tool has done work, show indicator
 #
 # State files (in /tmp/tmux-claude-state/):
 # - *-baseline-N: stdout offset established after user left window N
-# - *-worked-N: flag indicating tool produced output since last view
+# - *-pending-N: offset snapshot when growth first detected (confirmation pending)
+# - *-worked-N: flag indicating tool produced confirmed output since last view
 # - *-notified-N: flag indicating indicator is currently shown
 #
 # Run with: tmux-claude-watcher.sh start
@@ -207,18 +208,34 @@ get_tool_status() {
         local worked_file="$STATE_DIR/${tool}-worked-$state_key"
 
         if [[ -n "$stdout_offset" ]]; then
+            local pending_file="$STATE_DIR/${tool}-pending-$state_key"
             if [[ -f "$baseline_file" ]]; then
                 local baseline
                 baseline=$(cat "$baseline_file")
-                # If offset increased by more than 100 bytes since user viewed, work happened
-                if [[ "$stdout_offset" -gt "$baseline" ]]; then
-                    local diff=$(( stdout_offset - baseline ))
-                    if [[ "$diff" -gt 100 ]]; then
-                        # Work detected! Set worked flag (only once)
-                        if [[ ! -f "$worked_file" ]]; then
-                            touch "$worked_file"
+                local diff=$(( stdout_offset - baseline ))
+                if [[ "$diff" -gt 2048 ]]; then
+                    if [[ -f "$pending_file" ]]; then
+                        # Second consecutive detection — confirm as real work
+                        local pending_offset
+                        pending_offset=$(cat "$pending_file")
+                        if [[ "$stdout_offset" -gt "$pending_offset" ]]; then
+                            # Output is still growing — this is real work
+                            if [[ ! -f "$worked_file" ]]; then
+                                touch "$worked_file"
+                            fi
+                            rm -f "$pending_file"
+                        else
+                            # Output stopped growing — was just a UI burst, reset
+                            rm -f "$pending_file"
+                            echo "$stdout_offset" > "$baseline_file"
                         fi
+                    else
+                        # First detection — record pending, confirm on next poll
+                        echo "$stdout_offset" > "$pending_file"
                     fi
+                else
+                    # Below threshold — clear any pending state
+                    rm -f "$pending_file"
                 fi
             else
                 # No baseline yet — record current offset as starting point
@@ -323,9 +340,11 @@ mark_viewed() {
     rm -f "$STATE_DIR/claude-worked-$state_key"
     rm -f "$STATE_DIR/claude-notified-$state_key"
     rm -f "$STATE_DIR/claude-baseline-$state_key"
+    rm -f "$STATE_DIR/claude-pending-$state_key"
     rm -f "$STATE_DIR/opencode-worked-$state_key"
     rm -f "$STATE_DIR/opencode-notified-$state_key"
     rm -f "$STATE_DIR/opencode-baseline-$state_key"
+    rm -f "$STATE_DIR/opencode-pending-$state_key"
 
     # Remove all indicators from window name
     update_window_indicators "$session" "$win_idx"
