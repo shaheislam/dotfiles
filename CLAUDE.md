@@ -414,6 +414,7 @@ Git-backed, agent-optimized issue tracker providing persistent memory across Cla
 **Evaluation**: See `docs/beads-evaluation.md` for full analysis.
 
 ### Recent Updates
+- **2026-02-08**: Added Claude Pipeline multi-model reasoning chains (claude-pipeline/cpipe - opus→sonnet piping)
 - **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
 - **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
 - **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
@@ -467,6 +468,32 @@ gwt-ticket "Fix auth bug" "Session tokens expire incorrectly"
 - `acli` - for Jira tickets
 - `gwt-dev` - worktree + devcontainer integration (reused by gwt-ticket)
 - `ralph-loop` - autonomous iteration
+
+### Claude Pipeline (Multi-Model Reasoning Chains)
+
+Chain Claude Code models in the terminal: pass reasoning output from one model as input to another.
+Uses your existing Claude Code subscription (Max/Pro/Teams) - no API key needed.
+
+**Fish Functions**: `claude-pipeline` (`cpipe`)
+
+| Command | Description |
+|---------|-------------|
+| `claude-pipeline <prompt>` | Default: opus reasons → sonnet implements |
+| `cpipe --preset review <prompt>` | opus → sonnet → haiku (3-stage with review) |
+| `cpipe --preset cheap <prompt>` | sonnet → haiku (cost-effective) |
+| `cpipe --preset local <prompt>` | ollama → sonnet (local reasoning → cloud implementation) |
+| `cpipe --reason MODEL --execute MODEL` | Custom model selection |
+| `cpipe --stages N` | 2-5 stages |
+| `cpipe --save /tmp/out` | Save intermediate outputs |
+| `cpipe --dry-run` | Show pipeline without executing |
+
+**Pipe support**: `cat code.ts | cpipe 'refactor with better error handling'`
+
+**How it works**: `claude -p --model opus "plan" | claude -p --model sonnet "implement"`
+
+**In-TUI Alternative**: `/model opusplan` auto-switches opus (plan mode) → sonnet (execution) within a session.
+
+**Docs**: `docs/claude-pipeline.md` | **Testing**: `scripts/test-claude-pipeline.sh` (`--live` for API tests)
 
 ### Self-Hosted LLM Infrastructure
 
@@ -539,6 +566,7 @@ echo 'some text' | llm 'summarize this'
 **Testing**: `scripts/test-selfhost-llm.sh` (config tests + coding agent tests, `--live` for runtime tests)
 
 ### Recent Updates
+- **2026-02-08**: Added Claude Pipeline multi-model reasoning chains (claude-pipeline/cpipe - opus→sonnet piping)
 - **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
 - **2026-02-07**: Added local coding agent integration (OpenCode + Claude Code via Ollama with qwen3-coder)
 - **2026-02-05**: Added Self-Hosted LLM infrastructure (Ollama + Open WebUI + Fish functions)
