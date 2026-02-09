@@ -369,8 +369,11 @@ on_completion() {
                 repo_root=$(cd "$WORKTREE_PATH" && cd "$repo_root/.." && pwd)
             fi
             # Send DiffviewOpen to existing nvim pane (pane 1 = top-right)
+            # Split into two send-keys with sleep to let :cd take effect
             local target="${tmux_session}:${tmux_window}"
-            tmux send-keys -t "${target}.1" Escape ":DiffviewClose" Enter ":cd $repo_root" Enter ":DiffviewOpen" Enter 2>/dev/null || true
+            tmux send-keys -t "${target}.1" Escape ":DiffviewClose" Enter ":cd $repo_root" Enter ":checktime" Enter 2>/dev/null || true
+            sleep 0.5
+            tmux send-keys -t "${target}.1" ":DiffviewOpen" Enter 2>/dev/null || true
         fi
     fi
 
