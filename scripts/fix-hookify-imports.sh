@@ -3,11 +3,11 @@
 #
 # Problem: The hookify plugin uses `from hookify.core...` imports, but Claude Code's
 # versioned plugin cache structure (hookify/0.1.0/) breaks Python package resolution.
-# The hook scripts add parent_dir to sys.path, but parent_dir is hookify/ which only
-# contains 0.1.0/ - not the hookify package Python expects.
+# Additionally, CLAUDE_PLUGIN_ROOT may not be available as an env var at runtime
+# (Claude Code interpolates it in the command string but may not export it).
 #
-# Fix: Replace the broken sys.path manipulation with a synthetic package registration
-# using sys.modules, pointing hookify.__path__ to the versioned PLUGIN_ROOT directory.
+# Fix: Derive PLUGIN_ROOT from __file__ (the script's own path) and register a
+# synthetic hookify package via sys.modules. This works regardless of env vars.
 #
 # This script should be run after plugin installs/updates (FORCE_AUTOUPDATE_PLUGINS=1
 # causes re-downloads every session, overwriting previous patches).
@@ -31,46 +31,49 @@ if [[ ! -d "$HOOKS_DIR" ]]; then
     exit 0
 fi
 
-# The broken pattern to find
-BROKEN_PATTERN="parent_dir = os.path.dirname(PLUGIN_ROOT)"
-
-# Check if already patched (look for the fix marker)
-PATCHED_MARKER="sys.modules\['hookify'\]"
-
 patched=0
 skipped=0
 
 for hook_file in "$HOOKS_DIR"/*.py; do
     [[ -f "$hook_file" ]] || continue
 
-    if grep -q "$PATCHED_MARKER" "$hook_file" 2>/dev/null; then
+    # Skip files that don't import from hookify (e.g. __init__.py)
+    if ! grep -q "from hookify\." "$hook_file" 2>/dev/null; then
+        continue
+    fi
+
+    # Skip if already has v2 fix (__file__-based)
+    if grep -q "os.path.dirname(os.path.dirname(os.path.abspath(__file__)))" "$hook_file" 2>/dev/null; then
         skipped=$((skipped + 1))
         continue
     fi
 
-    if ! grep -q "$BROKEN_PATTERN" "$hook_file" 2>/dev/null; then
-        continue
-    fi
+    # Apply the patch using Python with file path as argument
+    python3 - "$hook_file" << 'PYEOF'
+import sys
 
-    # Apply the fix: replace the broken path setup block
-    python3 -c "
-import re, sys
+hook_file = sys.argv[1]
 
-with open('$hook_file', 'r') as f:
+with open(hook_file, 'r') as f:
     content = f.read()
 
-old_block = '''# CRITICAL: Add plugin root to Python path for imports
+# Pattern variants to replace (ordered most specific to least specific)
+patterns = [
+    # v1 fix: env-var-based synthetic module (current broken fix)
+    '''# CRITICAL: Register hookify as a synthetic package pointing to PLUGIN_ROOT
+# The versioned directory structure (hookify/0.1.0/) prevents normal package resolution,
+# so we register the package manually with __path__ pointing to the versioned dir.
+import types
 PLUGIN_ROOT = os.environ.get('CLAUDE_PLUGIN_ROOT')
-if PLUGIN_ROOT:
-    parent_dir = os.path.dirname(PLUGIN_ROOT)
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
-    if PLUGIN_ROOT not in sys.path:
-        sys.path.insert(0, PLUGIN_ROOT)'''
+if PLUGIN_ROOT and 'hookify' not in sys.modules:
+    _pkg = types.ModuleType('hookify')
+    _pkg.__path__ = [PLUGIN_ROOT]
+    _pkg.__package__ = 'hookify'
+    sys.modules['hookify'] = _pkg''',
 
-# Also handle the variant with extra comment line
-old_block_variant = '''# CRITICAL: Add plugin root to Python path for imports
-# We need to add the parent of the plugin directory so Python can find \"hookify\" package
+    # Original broken: env-var sys.path with extra comments
+    '''# CRITICAL: Add plugin root to Python path for imports
+# We need to add the parent of the plugin directory so Python can find "hookify" package
 PLUGIN_ROOT = os.environ.get('CLAUDE_PLUGIN_ROOT')
 if PLUGIN_ROOT:
     # Add the parent directory of the plugin
@@ -80,30 +83,45 @@ if PLUGIN_ROOT:
 
     # Also add PLUGIN_ROOT itself in case we have other scripts
     if PLUGIN_ROOT not in sys.path:
-        sys.path.insert(0, PLUGIN_ROOT)'''
+        sys.path.insert(0, PLUGIN_ROOT)''',
 
-new_block = '''# CRITICAL: Register hookify as a synthetic package pointing to PLUGIN_ROOT
-# The versioned directory structure (hookify/0.1.0/) prevents normal package resolution,
-# so we register the package manually with __path__ pointing to the versioned dir.
-import types
+    # Original broken: env-var sys.path (compact)
+    '''# CRITICAL: Add plugin root to Python path for imports
 PLUGIN_ROOT = os.environ.get('CLAUDE_PLUGIN_ROOT')
-if PLUGIN_ROOT and 'hookify' not in sys.modules:
+if PLUGIN_ROOT:
+    parent_dir = os.path.dirname(PLUGIN_ROOT)
+    if parent_dir not in sys.path:
+        sys.path.insert(0, parent_dir)
+    if PLUGIN_ROOT not in sys.path:
+        sys.path.insert(0, PLUGIN_ROOT)''',
+]
+
+new_block = '''# CRITICAL: Register hookify as a synthetic package for imports
+# Derive PLUGIN_ROOT from this script's location (hooks/ subdir of plugin root).
+# Cannot rely on CLAUDE_PLUGIN_ROOT env var - it may only be interpolated in the
+# command string, not exported to the subprocess environment.
+import types
+PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if 'hookify' not in sys.modules:
     _pkg = types.ModuleType('hookify')
     _pkg.__path__ = [PLUGIN_ROOT]
     _pkg.__package__ = 'hookify'
     sys.modules['hookify'] = _pkg'''
 
-if old_block_variant in content:
-    content = content.replace(old_block_variant, new_block)
-elif old_block in content:
-    content = content.replace(old_block, new_block)
-else:
-    print(f'WARNING: Could not find expected pattern in {sys.argv[0]}', file=sys.stderr)
+replaced = False
+for pattern in patterns:
+    if pattern in content:
+        content = content.replace(pattern, new_block)
+        replaced = True
+        break
+
+if not replaced:
+    print(f'WARNING: No known pattern found in {hook_file}', file=sys.stderr)
     sys.exit(1)
 
-with open('$hook_file', 'w') as f:
+with open(hook_file, 'w') as f:
     f.write(content)
-"
+PYEOF
 
     patched=$((patched + 1))
 done
