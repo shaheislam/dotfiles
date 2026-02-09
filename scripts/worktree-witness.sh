@@ -247,6 +247,19 @@ monitor_loop() {
     local consecutive_dead=0
 
     while true; do
+        # Check for active gates — pause monitoring while gated
+        local gates_script="$SCRIPT_DIR/phase-gates.sh"
+        if [[ -x "$gates_script" ]] && "$gates_script" has-active "$WORKTREE_PATH" 2>/dev/null; then
+            log "Gate active — pausing monitoring"
+            # Try to resolve gate conditions
+            "$gates_script" check ci-pipeline "$WORKTREE_PATH" 2>/dev/null || true
+            "$gates_script" check pr-review "$WORKTREE_PATH" 2>/dev/null || true
+            "$gates_script" check dependency "$WORKTREE_PATH" 2>/dev/null || true
+            # human-input gates resolve via signal command only
+            sleep "$POLL_INTERVAL"
+            continue
+        fi
+
         # Get current agent state
         local state_json
         state_json=$("$AGENT_STATE" "$WORKTREE_PATH" --json 2>/dev/null) || state_json='{"state":"unknown"}'
@@ -331,6 +344,7 @@ monitor_loop() {
 on_completion() {
     log "Running post-completion actions"
 
+    local merge_exit=0
     if $DO_MERGE; then
         # Check if merge-queue daemon is running
         local merge_queue="$SCRIPT_DIR/merge-queue.sh"
@@ -338,11 +352,25 @@ on_completion() {
             log "Submitting to merge queue"
             "$merge_queue" add "$WORKTREE_PATH" 2>/dev/null || {
                 log "Merge queue submission failed, falling back to direct merge"
-                "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" 2>/dev/null || true
+                "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" 2>/dev/null || merge_exit=$?
             }
         else
             log "Direct auto-merge (no queue daemon)"
-            "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" 2>/dev/null || true
+            "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" 2>/dev/null || merge_exit=$?
+        fi
+
+        # Handle merge conflicts — open DiffviewOpen in the Claude pane
+        if [[ "$merge_exit" -eq 2 ]]; then
+            log "Merge conflicts detected, opening DiffviewOpen"
+            notify "Merge Conflict" "$issue_key: Non-additive conflicts need resolution"
+            local repo_root
+            repo_root=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir 2>/dev/null)
+            if [[ -n "$repo_root" ]]; then
+                repo_root=$(cd "$WORKTREE_PATH" && cd "$repo_root/.." && pwd)
+            fi
+            # Send DiffviewOpen to existing nvim pane (pane 1 = top-right)
+            local target="${tmux_session}:${tmux_window}"
+            tmux send-keys -t "${target}.1" Escape ":DiffviewClose" Enter ":cd $repo_root" Enter ":DiffviewOpen" Enter 2>/dev/null || true
         fi
     fi
 

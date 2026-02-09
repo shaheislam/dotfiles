@@ -20,10 +20,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --system S      Ticketing system: linear or jira
     #   --help, -h      Show help
 
-    # Check if we're in a git repository
-    if not git rev-parse --git-dir >/dev/null 2>&1
-        echo "Error: Not in a git repository"
-        return 1
+    # Check if we're in a git repository (skip for --status which works from anywhere)
+    if not contains -- --status $argv
+        if not git rev-parse --git-dir >/dev/null 2>&1
+            echo "Error: Not in a git repository"
+            return 1
+        end
     end
 
     # Parse arguments
@@ -46,6 +48,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l sub_profile ""
     set -l bridge_mode false
     set -l workflow_template ""
+    set -l show_status false
+    set -l status_json false
+    set -l gate_type ""
+    set -l gate_dep_worktree ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -173,6 +179,28 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --bridge
                 set bridge_mode true
+            case --status
+                set show_status true
+            case --json
+                set status_json true
+            case --gate
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set gate_type $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --gate requires type (ci-pipeline, pr-review, human-input, dependency)"
+                    return 1
+                end
+            case --gate-dep
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set gate_dep_worktree $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --gate-dep requires worktree path"
+                    return 1
+                end
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -219,6 +247,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --system S           Ticketing system: linear or jira"
         echo "  --bridge             Enable cross-provider reasoning bridge (Codex/OpenCode review)"
         echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
+        echo "  --status             Show all agent states (shortcut for agent-state.sh --all)"
+        echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency)"
+        echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
@@ -246,6 +277,27 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  {{DESCRIPTION}}        Issue description"
         echo "  {{WORKTREE_PATH}}      Path to worktree"
         echo "  {{COMPLETION_PROMISE}} Completion string (TICKET_ENG-123_COMPLETE)"
+        return 0
+    end
+
+    # Show agent status
+    if $show_status
+        set -l agent_state_script ""
+        for p in ~/dotfiles/scripts/agent-state.sh ~/dotfiles-gastownbeads/scripts/agent-state.sh
+            if test -x "$p"
+                set agent_state_script $p
+                break
+            end
+        end
+        if test -z "$agent_state_script"
+            echo "Error: agent-state.sh not found"
+            return 1
+        end
+        if $status_json
+            $agent_state_script --all --json
+        else
+            $agent_state_script --all
+        end
         return 0
     end
 
@@ -340,6 +392,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
     if test -n "$prompt_suffix"
         echo "Suffix:    (custom)"
+    end
+    if test -n "$gate_type"
+        echo "Gate:      $gate_type"
+        if test -n "$gate_dep_worktree"
+            echo "Gate dep:  $gate_dep_worktree"
+        end
     end
     echo ""
 
@@ -539,19 +597,9 @@ $prompt_suffix"
     end
 
     if not $use_devcon
-        # For local mode, post-completion runs inside the launch script
+        # Pane stays open for witness to use (conflict resolution, debugging)
         echo "" >> $launch_script
-        echo "# Auto-merge feature branch into main" >> $launch_script
-        echo "~/dotfiles/scripts/auto-merge.sh $worktree_path" >> $launch_script
-        echo "set -l merge_exit \$status" >> $launch_script
-        echo "if test \$merge_exit -eq 2" >> $launch_script
-        echo "    # Non-additive conflicts - open nvim for resolution in main repo" >> $launch_script
-        echo "    cd $resolved_repo_root" >> $launch_script
-        echo "    nvim -c 'DiffviewOpen'" >> $launch_script
-        echo "end" >> $launch_script
-        echo "" >> $launch_script
-        echo "# Post-completion (PR creation, ticket transition, notification)" >> $launch_script
-        echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $launch_script
+        echo "exec fish" >> $launch_script
     end
     chmod +x $launch_script
 
@@ -588,18 +636,6 @@ $prompt_suffix"
         echo "$exec_cmd fish $container_launch_script" >> $claude_pane_script
         echo "set -l claude_exit \$status" >> $claude_pane_script
         echo "" >> $claude_pane_script
-        echo "# Auto-merge feature branch into main (runs on host)" >> $claude_pane_script
-        echo "~/dotfiles/scripts/auto-merge.sh $worktree_path" >> $claude_pane_script
-        echo "set -l merge_exit \$status" >> $claude_pane_script
-        echo "if test \$merge_exit -eq 2" >> $claude_pane_script
-        echo "    # Non-additive conflicts - open nvim for resolution in main repo" >> $claude_pane_script
-        echo "    cd $resolved_repo_root" >> $claude_pane_script
-        echo "    nvim -c 'DiffviewOpen'" >> $claude_pane_script
-        echo "end" >> $claude_pane_script
-        echo "" >> $claude_pane_script
-        echo "# Post-completion runs on host (has access to git, gh, etc.)" >> $claude_pane_script
-        echo "~/dotfiles/scripts/ticket-complete.sh $worktree_path" >> $claude_pane_script
-        echo "" >> $claude_pane_script
         echo "if test \$claude_exit -ne 0" >> $claude_pane_script
         echo "    echo 'Claude Code devcontainer exec failed (exit '\$claude_exit')'" >> $claude_pane_script
         echo "    echo 'Container: $instance_name'" >> $claude_pane_script
@@ -607,6 +643,9 @@ $prompt_suffix"
         echo "    echo 'Script: $container_launch_script'" >> $claude_pane_script
         echo "    exec fish" >> $claude_pane_script
         echo "end" >> $claude_pane_script
+        echo "" >> $claude_pane_script
+        echo "# Pane stays open for witness to use (conflict resolution, debugging)" >> $claude_pane_script
+        echo "exec fish" >> $claude_pane_script
         chmod +x $claude_pane_script
 
         # Hybrid layout: Claude in devcontainer, nvim + terminal on host
@@ -693,6 +732,48 @@ the post-completion hook will:
 ## Prompt Given
 
 $prompt" > $state_file
+
+    # Create phase gate if --gate was specified
+    if test -n "$gate_type"
+        set -l gates_script ""
+        for p in ~/dotfiles/scripts/phase-gates.sh ~/dotfiles-gastownbeads/scripts/phase-gates.sh
+            if test -x "$p"
+                set gates_script $p
+                break
+            end
+        end
+        if test -n "$gates_script"
+            set -l gate_env
+            if test "$gate_type" = dependency -a -n "$gate_dep_worktree"
+                set gate_env "DEP_WORKTREE=$gate_dep_worktree"
+            end
+            env $gate_env bash "$gates_script" create "$gate_type" "$worktree_path"
+            echo "Gate created: $gate_type"
+        else
+            echo "Warning: phase-gates.sh not found, skipping gate creation"
+        end
+    end
+
+    # Ensure merge-queue daemon is running (serializes merges across agents)
+    set -l merge_queue_script ""
+    for p in ~/dotfiles/scripts/merge-queue.sh ~/dotfiles-gastownbeads/scripts/merge-queue.sh
+        if test -x "$p"
+            set merge_queue_script $p
+            break
+        end
+    end
+    if test -n "$merge_queue_script"
+        set -l daemon_running false
+        if test -f /tmp/merge-queue-daemon.pid
+            if kill -0 (cat /tmp/merge-queue-daemon.pid) 2>/dev/null
+                set daemon_running true
+            end
+        end
+        if not $daemon_running
+            bash "$merge_queue_script" daemon
+            echo "Started merge-queue daemon"
+        end
+    end
 
     # Spawn worktree witness (per-worktree lifecycle monitor)
     set -l witness_script "$HOME/dotfiles/scripts/worktree-witness.sh"
