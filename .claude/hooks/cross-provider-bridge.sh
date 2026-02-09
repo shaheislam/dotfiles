@@ -10,7 +10,7 @@
 #   CROSS_PROVIDER_BRIDGE=1                Enable the bridge (default: disabled)
 #   CROSS_PROVIDER_ORDER=codex,opencode    Provider priority order
 #   CROSS_PROVIDER_CODEX_MODEL=            Codex model override
-#   CROSS_PROVIDER_OPENCODE_MODEL=         OpenCode model (default: openai/gpt-4o)
+#   CROSS_PROVIDER_OPENCODE_MODEL=         OpenCode model (default: ollama/qwen3-coder)
 #   CROSS_PROVIDER_MAX_CHARS=4000          Max context chars to send
 #   CROSS_PROVIDER_PROMPT=                 Custom review prompt
 set -uo pipefail
@@ -89,10 +89,8 @@ for provider in "${providers[@]}"; do
             if ! command -v codex &>/dev/null; then
                 continue
             fi
-            # Codex needs CODEX_API_KEY or OPENAI_API_KEY
-            if [ -z "${CODEX_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
-                continue
-            fi
+            # Codex supports both API key and subscription (ChatGPT) auth
+            # No key check needed — let codex exec fail naturally if unauthed
 
             codex_cmd=(codex exec)
             if [ -n "${CROSS_PROVIDER_CODEX_MODEL:-}" ]; then
@@ -110,9 +108,9 @@ for provider in "${providers[@]}"; do
             if ! command -v opencode &>/dev/null; then
                 continue
             fi
-            oc_model="${CROSS_PROVIDER_OPENCODE_MODEL:-openai/gpt-4o}"
-            # opencode run: non-interactive mode, -q suppresses spinner
-            cross_provider_output=$(timeout 120 opencode run -q --model "$oc_model" "$full_prompt" 2>/dev/null) || true
+            oc_model="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
+            # opencode run: positional message args, no -q flag exists
+            cross_provider_output=$(timeout 120 opencode run --model "$oc_model" "$full_prompt" 2>/dev/null) || true
             if [ -n "$cross_provider_output" ]; then
                 provider_used="OpenCode ($oc_model)"
                 break
