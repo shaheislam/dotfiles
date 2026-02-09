@@ -143,7 +143,7 @@ The bridge tries providers in order and silently falls through if none are avail
 | `CROSS_PROVIDER_BRIDGE` | *(unset)* | Set to `1` to enable |
 | `CROSS_PROVIDER_ORDER` | `codex,opencode` | Comma-separated provider priority |
 | `CROSS_PROVIDER_CODEX_MODEL` | *(codex default)* | Override Codex model |
-| `CROSS_PROVIDER_OPENCODE_MODEL` | `openai/gpt-4o` | OpenCode model (provider/model format) |
+| `CROSS_PROVIDER_OPENCODE_MODEL` | `ollama/qwen3-coder` | OpenCode model (provider/model format) |
 | `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars sent for review |
 | `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
 
@@ -186,7 +186,7 @@ unset CROSS_PROVIDER_BRIDGE
 | `LLM_CODE_MODEL` | `qwen3-coder` | Ollama model used when `--preset local` |
 | `CROSS_PROVIDER_BRIDGE` | *(unset)* | Set to `1` to enable cross-provider bridge |
 | `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority for bridge |
-| `CROSS_PROVIDER_OPENCODE_MODEL` | `openai/gpt-4o` | Model for OpenCode bridge |
+| `CROSS_PROVIDER_OPENCODE_MODEL` | `ollama/qwen3-coder` | Model for OpenCode bridge |
 
 ## Testing
 

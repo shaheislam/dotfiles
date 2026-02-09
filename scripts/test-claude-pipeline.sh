@@ -202,14 +202,23 @@ fi
 
 print_header "gwt-ticket --bridge Flag Tests"
 
+GWT_TICKET_FISH="$SCRIPT_DIR/../.config/fish/functions/gwt-ticket.fish"
+
 if command -v fish &>/dev/null; then
-    gwtt_help=$(fish -c "source $SCRIPT_DIR/../.config/fish/functions/gwt-ticket.fish; gwt-ticket --help" 2>&1)
+    gwtt_help=$(fish -c "source $GWT_TICKET_FISH; gwt-ticket --help" 2>&1)
     assert_contains "gwt-ticket help: shows --bridge flag" "$gwtt_help" "--bridge"
     assert_contains "gwt-ticket help: bridge description mentions cross-provider" "$gwtt_help" "cross-provider"
 else
-    print_warning "Fish shell not installed - skipping gwt-ticket tests"
+    print_warning "Fish shell not installed - skipping gwt-ticket help tests"
     ((SKIP++))
 fi
+
+# Source-level wiring: verify both local and devcon code paths set CROSS_PROVIDER_BRIDGE
+gwtt_source=$(cat "$GWT_TICKET_FISH")
+assert_contains "gwt-ticket source: local path sets CROSS_PROVIDER_BRIDGE in launch script" \
+    "$gwtt_source" "CROSS_PROVIDER_BRIDGE 1"
+assert_contains "gwt-ticket source: devcon path passes -E CROSS_PROVIDER_BRIDGE" \
+    "$gwtt_source" "-E CROSS_PROVIDER_BRIDGE=1"
 
 # ============================================================================
 # Live Tests (require Claude subscription)
