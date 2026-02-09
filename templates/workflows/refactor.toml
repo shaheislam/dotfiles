@@ -1,0 +1,29 @@
+[workflow]
+name = "refactor"
+description = "Refactor code for better quality"
+slash_command = "/ralph-wiggum:ralph-loop"
+max_iterations = 75
+
+[prompt]
+template = """
+You are refactoring: {title}
+
+Context: {description}
+
+Steps:
+1. Read and understand the current implementation thoroughly
+2. Identify specific improvements (DRY, SOLID, readability, performance)
+3. Plan the refactoring approach to minimize risk
+4. Make incremental changes, testing after each step
+5. Ensure all existing tests pass
+6. Add tests for any new abstractions
+7. Create atomic commits with descriptive messages
+
+When complete, output {completion_promise}
+
+Do not ask questions - make reasonable decisions and iterate."""
+
+[completion]
+promise_prefix = "TICKET_"
+auto_merge = true
+create_pr = true

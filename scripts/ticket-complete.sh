@@ -39,10 +39,11 @@ OPTIONS:
 
 WHAT IT DOES:
   1. Reads state from .claude/ticket-execute.local.md
-  2. Creates PR with ticket link in description
-  3. Transitions ticket to Done/Review
-  4. Sends notification (if configured)
-  5. Cleans up state file
+  2. Merges into main (via merge-queue daemon or direct auto-merge)
+  3. Creates PR with ticket link in description
+  4. Transitions ticket to Done/Review
+  5. Sends notification (if configured)
+  6. Cleans up state file
 
 REQUIREMENTS:
   - gh CLI authenticated
@@ -198,16 +199,43 @@ echo ""
 
 cd "$WORKTREE_PATH"
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Step 1: Check for uncommitted changes
-echo -e "${BLUE}[1/4] Checking git status...${NC}"
+echo -e "${BLUE}[1/5] Checking git status...${NC}"
 if [[ -n "$(git status --porcelain)" ]]; then
     echo -e "${YELLOW}Warning: Uncommitted changes detected${NC}"
     git status --short
     echo ""
 fi
 
-# Step 2: Create PR
-echo -e "${BLUE}[2/4] Creating Pull Request...${NC}"
+# Step 2: Merge into main (via queue or direct)
+echo -e "${BLUE}[2/5] Merging into main...${NC}"
+
+MERGE_QUEUE="${SCRIPT_DIR}/merge-queue.sh"
+AUTO_MERGE="${SCRIPT_DIR}/auto-merge.sh"
+MERGE_QUEUE_PID="/tmp/merge-queue-daemon.pid"
+
+if [[ -f "$MERGE_QUEUE_PID" ]] && kill -0 "$(cat "$MERGE_QUEUE_PID")" 2>/dev/null; then
+    # Daemon running - queue the merge
+    echo -e "${BLUE}Merge queue daemon detected, queuing merge...${NC}"
+    "$MERGE_QUEUE" add "$WORKTREE_PATH"
+    echo -e "${GREEN}Merge queued (daemon will process)${NC}"
+elif [[ -x "$AUTO_MERGE" ]]; then
+    # No daemon - merge directly
+    MERGE_EXIT=0
+    "$AUTO_MERGE" "$WORKTREE_PATH" || MERGE_EXIT=$?
+    case $MERGE_EXIT in
+        0) echo -e "${GREEN}Merge completed${NC}" ;;
+        2) echo -e "${YELLOW}Non-additive conflicts - manual resolution needed${NC}" ;;
+        *) echo -e "${YELLOW}Merge returned exit $MERGE_EXIT${NC}" ;;
+    esac
+else
+    echo -e "${YELLOW}auto-merge.sh not found, skipping merge${NC}"
+fi
+
+# Step 3: Create PR
+echo -e "${BLUE}[3/5] Creating Pull Request...${NC}"
 
 # Get current branch
 BRANCH=$(git branch --show-current)
@@ -281,8 +309,8 @@ else
     echo -e "${YELLOW}gh CLI not found, skipping PR creation${NC}"
 fi
 
-# Step 3: Link PR to ticket / Transition ticket
-echo -e "${BLUE}[3/4] Updating ticket...${NC}"
+# Step 4: Link PR to ticket / Transition ticket
+echo -e "${BLUE}[4/5] Updating ticket...${NC}"
 
 if $IS_AUTO_GENERATED; then
     echo -e "${YELLOW}Skipping ticket updates (auto-generated task, no external ticket)${NC}"
@@ -317,8 +345,8 @@ else
     echo -e "${YELLOW}No ticketing system configured, skipping${NC}"
 fi
 
-# Step 4: Send notification
-echo -e "${BLUE}[4/4] Sending notification...${NC}"
+# Step 5: Send notification
+echo -e "${BLUE}[5/5] Sending notification...${NC}"
 
 NOTIFICATION_TITLE="Ticket $ISSUE_KEY Complete"
 NOTIFICATION_MSG="$TITLE - PR: $PR_URL"

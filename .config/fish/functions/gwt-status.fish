@@ -70,10 +70,24 @@ function gwt-status --description "Show worktree + devcontainer status"
     # Get current worktree
     set current_wt (git rev-parse --show-toplevel 2>/dev/null)
 
+    # Find agent-state.sh script
+    set -l agent_state_script ""
+    for p in ~/dotfiles/scripts/agent-state.sh ~/dotfiles-gastownbeads/scripts/agent-state.sh
+        if test -x "$p"
+            set agent_state_script $p
+            break
+        end
+    end
+
     # Print header
     echo ""
-    printf "%-40s %-20s %-15s %-10s\n" "WORKTREE" "BRANCH" "CONTAINER" "STATUS"
-    printf "%-40s %-20s %-15s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 10 "-")
+    if test -n "$agent_state_script"
+        printf "%-40s %-20s %-15s %-18s %-10s\n" "WORKTREE" "BRANCH" "CONTAINER" "AGENT" "STATUS"
+        printf "%-40s %-20s %-15s %-18s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 18 "-") (string repeat -n 10 "-")
+    else
+        printf "%-40s %-20s %-15s %-10s\n" "WORKTREE" "BRANCH" "CONTAINER" "STATUS"
+        printf "%-40s %-20s %-15s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 10 "-")
+    end
 
     # Get running devcontainers
     set -l running_containers
@@ -128,19 +142,72 @@ function gwt-status --description "Show worktree + devcontainer status"
             set marker "  "
         end
 
+        # Derive agent state
+        set -l agent_display "-"
+        set -l agent_color normal
+        if test -n "$agent_state_script"
+            set -l agent_json ($agent_state_script $wt_path --json 2>/dev/null)
+            if test -n "$agent_json"
+                set -l astate (echo $agent_json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('state','none'))" 2>/dev/null; or echo "none")
+                set -l aiter (echo $agent_json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('iteration',''))" 2>/dev/null; or echo "")
+                set -l amax (echo $agent_json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('max_iterations',''))" 2>/dev/null; or echo "")
+
+                switch $astate
+                    case running
+                        set agent_color green
+                        if test -n "$aiter" -a "$aiter" != "0" -a -n "$amax"
+                            set agent_display "▶ running [$aiter/$amax]"
+                        else
+                            set agent_display "▶ running"
+                        end
+                    case idle
+                        set agent_color yellow
+                        set agent_display "⏸ idle"
+                    case stuck
+                        set agent_color red
+                        if test -n "$aiter" -a "$aiter" != "0" -a -n "$amax"
+                            set agent_display "⚠ stuck [$aiter/$amax]"
+                        else
+                            set agent_display "⚠ stuck"
+                        end
+                    case completed
+                        set agent_color cyan
+                        set agent_display "✓ done"
+                    case dead
+                        set agent_color red
+                        set agent_display "✗ dead"
+                    case none '*'
+                        set agent_display "-"
+                        set agent_color normal
+                end
+            end
+        end
+
         # Truncate path for display
         set -l display_path $wt_path
         if test (string length $wt_path) -gt 38
             set display_path "..."(string sub -s -35 $wt_path)
         end
 
-        printf "%s%-38s %-20s %-15s %s\n" $marker $display_path $wt_branch $instance_name $container_status
+        if test -n "$agent_state_script"
+            printf "%s%-38s %-20s %-15s %s%-18s%s %s\n" $marker $display_path $wt_branch $instance_name (set_color $agent_color) $agent_display (set_color normal) $container_status
+        else
+            printf "%s%-38s %-20s %-15s %s\n" $marker $display_path $wt_branch $instance_name $container_status
+        end
     end
 
     echo ""
 
     # Summary
-    echo "Legend: running | stopped | devcontainer ready | no devcontainer"
+    echo "Container: running | stopped | ready"
+    if test -n "$agent_state_script"
+        printf "Agent:     %s▶ running%s | %s⏸ idle%s | %s⚠ stuck%s | %s✓ done%s | %s✗ dead%s\n" \
+            (set_color green) (set_color normal) \
+            (set_color yellow) (set_color normal) \
+            (set_color red) (set_color normal) \
+            (set_color cyan) (set_color normal) \
+            (set_color red) (set_color normal)
+    end
     echo ""
     echo "Commands:"
     echo "  gwt-dev <branch> -e     Create worktree + start devcontainer"

@@ -6,6 +6,7 @@
 #   ● = Claude is idle and has worked since last view
 #   ◆ = Opencode is idle and has worked since last view
 #   ●◆ = Both are idle in the same window
+#   ⚠ = ralph-loop stuck (iteration unchanged for >STUCK_THRESHOLD seconds)
 #
 # Detection method:
 # - Uses stdout offset tracking to detect when tools produce output
@@ -19,6 +20,8 @@
 # - *-pending-N: offset snapshot when growth first detected (confirmation pending)
 # - *-worked-N: flag indicating tool produced confirmed output since last view
 # - *-notified-N: flag indicating indicator is currently shown
+# - ralph-iteration-N: last seen iteration:timestamp for stuck detection
+# - ralph-stuck-N: flag indicating ralph-loop is stuck
 #
 # Run with: tmux-claude-watcher.sh start
 # Stop with: tmux-claude-watcher.sh stop
@@ -26,6 +29,11 @@
 # Unicode indicators (BMP characters — no locale workarounds needed)
 CLAUDE_INDICATOR="●"
 OPENCODE_INDICATOR="◆"
+STUCK_INDICATOR="⚠"
+
+# How long (seconds) an active ralph-loop can go without incrementing iteration
+# before it's considered stuck. Default 600s (10 min).
+STUCK_THRESHOLD="${STUCK_THRESHOLD:-600}"
 
 # Get tmux socket for explicit connection (needed for daemon)
 TMUX_SOCKET="${TMUX%%,*}"
@@ -52,6 +60,8 @@ start_daemon() {
         TMUX_SOCKET="${TMUX%%,*}"
         CLAUDE_INDICATOR="●"
         OPENCODE_INDICATOR="◆"
+        STUCK_INDICATOR="⚠"
+        STUCK_THRESHOLD="${STUCK_THRESHOLD:-600}"
 
         while true; do
             check_all_windows
@@ -74,6 +84,9 @@ stop_daemon() {
 # Strip all known indicators from window name
 get_clean_window_name() {
     local win_name="$1"
+    # Strip stuck indicator (appears first when present)
+    win_name="${win_name#⚠ }"
+    win_name="${win_name#⚠}"
     # Strip current indicators (combined first, then individual, with and without space)
     win_name="${win_name#●◆ }"
     win_name="${win_name#● }"
@@ -112,6 +125,9 @@ update_window_indicators() {
 
     local prefix=""
 
+    # Stuck indicator comes first (most urgent)
+    [[ -f "$STATE_DIR/ralph-stuck-$state_key" ]] && prefix+="$STUCK_INDICATOR"
+
     # Build prefix from notification state (consistent order: Claude first)
     [[ -f "$STATE_DIR/claude-notified-$state_key" ]] && prefix+="$CLAUDE_INDICATOR"
     [[ -f "$STATE_DIR/opencode-notified-$state_key" ]] && prefix+="$OPENCODE_INDICATOR"
@@ -127,6 +143,86 @@ update_window_indicators() {
     if [[ "$current_name" != "$new_name" ]]; then
         # Execute rename with explicit socket and session targeting
         tmux -S "$TMUX_SOCKET" rename-window -t "${session}:${win_idx}" "$new_name"
+    fi
+}
+
+# Check ralph-loop state for stuck agents in a window
+check_ralph_loop_state() {
+    local session="$1"
+    local win_idx="$2"
+    local state_key="${session}-${win_idx}"
+    local stuck_file="$STATE_DIR/ralph-stuck-$state_key"
+    local iter_file="$STATE_DIR/ralph-iteration-$state_key"
+
+    # Find pane current path to locate worktree
+    local pane_path
+    pane_path=$(tmux display-message -t "${session}:${win_idx}.0" -p "#{pane_current_path}" 2>/dev/null)
+    [[ -z "$pane_path" ]] && return
+
+    local ralph_file="${pane_path}/.claude/ralph-loop.local.md"
+    if [[ ! -f "$ralph_file" ]]; then
+        # No ralph-loop state — clear any stale stuck/iteration files
+        rm -f "$stuck_file" "$iter_file"
+        return
+    fi
+
+    # Parse YAML frontmatter for active and iteration fields
+    local active="" iteration=""
+    local in_frontmatter=false
+    while IFS= read -r line; do
+        if [[ "$line" == "---" ]]; then
+            if $in_frontmatter; then
+                break  # end of frontmatter
+            else
+                in_frontmatter=true
+                continue
+            fi
+        fi
+        $in_frontmatter || continue
+        case "$line" in
+            active:*) active="${line#active:}"; active="${active// /}" ;;
+            iteration:*) iteration="${line#iteration:}"; iteration="${iteration// /}" ;;
+        esac
+    done < "$ralph_file"
+
+    # Not active — clear stuck state
+    if [[ "$active" != "true" ]]; then
+        rm -f "$stuck_file" "$iter_file"
+        return
+    fi
+
+    # Active — track iteration progress
+    local now
+    now=$(date +%s)
+
+    if [[ -f "$iter_file" ]]; then
+        local stored
+        stored=$(cat "$iter_file")
+        local stored_iter="${stored%%:*}"
+        local stored_ts="${stored#*:}"
+
+        if [[ "$iteration" == "$stored_iter" ]]; then
+            # Iteration hasn't changed — check how long
+            local elapsed=$(( now - stored_ts ))
+            if [[ "$elapsed" -ge "$STUCK_THRESHOLD" ]]; then
+                if [[ ! -f "$stuck_file" ]]; then
+                    touch "$stuck_file"
+                    update_window_indicators "$session" "$win_idx"
+                    # Notify on first stuck detection
+                    osascript -e "display notification \"ralph-loop stuck in window ${session}:${win_idx} (iteration $iteration unchanged for ${elapsed}s)\" with title \"Agent Stuck ⚠\"" 2>/dev/null || true
+                fi
+            fi
+        else
+            # Iteration advanced — reset tracking, clear stuck
+            echo "${iteration}:${now}" > "$iter_file"
+            if [[ -f "$stuck_file" ]]; then
+                rm -f "$stuck_file"
+                update_window_indicators "$session" "$win_idx"
+            fi
+        fi
+    else
+        # First time seeing this ralph-loop — record baseline
+        echo "${iteration}:${now}" > "$iter_file"
     fi
 }
 
@@ -152,6 +248,9 @@ check_all_windows() {
         # Opencode: matches "opencode" (appears without path in ps, preceded by space)
         process_tool_state "$session" "$win_idx" "claude" '/claude( |$)'
         process_tool_state "$session" "$win_idx" "opencode" '(^| |/)opencode( |$)'
+
+        # Check for stuck ralph-loop agents
+        check_ralph_loop_state "$session" "$win_idx"
     done
 }
 
@@ -345,6 +444,8 @@ mark_viewed() {
     rm -f "$STATE_DIR/opencode-notified-$state_key"
     rm -f "$STATE_DIR/opencode-baseline-$state_key"
     rm -f "$STATE_DIR/opencode-pending-$state_key"
+    rm -f "$STATE_DIR/ralph-stuck-$state_key"
+    rm -f "$STATE_DIR/ralph-iteration-$state_key"
 
     # Remove all indicators from window name
     update_window_indicators "$session" "$win_idx"

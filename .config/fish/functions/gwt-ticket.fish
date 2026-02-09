@@ -45,6 +45,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l prompt_suffix ""
     set -l sub_profile ""
     set -l bridge_mode false
+    set -l workflow_template ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -161,6 +162,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --mount requires a directory path"
                     return 1
                 end
+            case --template -t
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set workflow_template $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --template requires a workflow name (e.g., implement, bugfix, refactor, test)"
+                    return 1
+                end
             case --bridge
                 set bridge_mode true
             case '-*'
@@ -208,6 +218,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --devcon             Use devcontainer for isolation (default: local)"
         echo "  --system S           Ticketing system: linear or jira"
         echo "  --bridge             Enable cross-provider reasoning bridge (Codex/OpenCode review)"
+        echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
         echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
@@ -219,6 +230,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo ""
         echo "  # Use feature-dev instead of ralph-loop"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Description\" --command /feature-dev:feature-dev"
+        echo ""
+        echo "  # Use a workflow template (implement, bugfix, refactor, test)"
+        echo "  gwt-ticket ENG-123 \"Add auth\" \"OAuth2 flow\" --template implement"
         echo ""
         echo "  # Custom prompt template with variables"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --prompt-template ~/.claude/prompts/careful.md"
@@ -312,6 +326,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if test -n "$prompt_template"
         echo "Template:  $prompt_template"
     end
+    if test -n "$workflow_template"
+        echo "Workflow:  $workflow_template (~/dotfiles/templates/workflows/$workflow_template.toml)"
+    end
     if test -n "$sub_profile"
         echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
     end
@@ -375,17 +392,56 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l completion_promise "TICKET_"$issue_key"_COMPLETE"
     set -l base_prompt ""
 
-    if test -n "$prompt_template"
-        # Use custom template with variable substitution
-        set base_prompt (cat $prompt_template \
-            | string replace -a '{{ISSUE_KEY}}' $issue_key \
-            | string replace -a '{{TITLE}}' $title \
-            | string replace -a '{{DESCRIPTION}}' $description \
-            | string replace -a '{{WORKTREE_PATH}}' $worktree_path \
-            | string replace -a '{{COMPLETION_PROMISE}}' $completion_promise)
-    else
-        # Default template
-        set base_prompt "Fix ticket $issue_key: $title
+    # Load workflow template if --template was specified
+    if test -n "$workflow_template"
+        set -l template_file "$HOME/dotfiles/templates/workflows/$workflow_template.toml"
+        if not test -f "$template_file"
+            echo "Error: Workflow template not found: $template_file"
+            echo "Available templates:"
+            for f in $HOME/dotfiles/templates/workflows/*.toml
+                echo "  "(basename $f .toml)
+            end
+            return 1
+        end
+
+        # Parse TOML values (simple key = "value" extraction)
+        set -l tpl_slash_command (grep '^slash_command = ' $template_file | head -1 | sed 's/^[^=]*= *//' | tr -d '"')
+        set -l tpl_max_iterations (grep '^max_iterations = ' $template_file | head -1 | sed 's/^[^=]*= *//' | tr -d '"')
+
+        # Extract multiline template between triple quotes
+        set -l tpl_prompt (sed -n '/^template = """/,/^"""/{ /^template = """/d; /^"""/d; p; }' $template_file | string collect)
+
+        # Override slash_command and max_iterations if template provides them
+        if test -n "$tpl_slash_command"
+            set slash_command $tpl_slash_command
+        end
+        if test -n "$tpl_max_iterations"
+            set max_iterations $tpl_max_iterations
+        end
+
+        # Substitute template variables
+        if test -n "$tpl_prompt"
+            set base_prompt (echo $tpl_prompt \
+                | string replace -a '{title}' $title \
+                | string replace -a '{description}' $description \
+                | string replace -a '{completion_promise}' $completion_promise \
+                | string replace -a '{issue_key}' $issue_key)
+        end
+    end
+
+    # If no base_prompt yet (no --template, or template had no prompt), check other sources
+    if test -z "$base_prompt"
+        if test -n "$prompt_template"
+            # Use custom template file with variable substitution
+            set base_prompt (cat $prompt_template \
+                | string replace -a '{{ISSUE_KEY}}' $issue_key \
+                | string replace -a '{{TITLE}}' $title \
+                | string replace -a '{{DESCRIPTION}}' $description \
+                | string replace -a '{{WORKTREE_PATH}}' $worktree_path \
+                | string replace -a '{{COMPLETION_PROMISE}}' $completion_promise)
+        else
+            # Default template
+            set base_prompt "Fix ticket $issue_key: $title
 
 $description
 
@@ -399,6 +455,7 @@ Instructions:
 7. When complete, output $completion_promise
 
 Do not ask questions - make reasonable decisions and iterate."
+        end
     end
 
     # Apply prefix and suffix
@@ -637,6 +694,17 @@ the post-completion hook will:
 
 $prompt" > $state_file
 
+    # Spawn worktree witness (per-worktree lifecycle monitor)
+    set -l witness_script "$HOME/dotfiles/scripts/worktree-witness.sh"
+    if not test -x "$witness_script"
+        # Try gastownbeads path as fallback
+        set witness_script "$HOME/dotfiles-gastownbeads/scripts/worktree-witness.sh"
+    end
+    if test -x "$witness_script"
+        bash "$witness_script" "$worktree_path" --poll-interval 30 --max-retries 3 &
+        disown
+    end
+
     echo ""
     echo "=== Ticket execution started ==="
     echo ""
@@ -653,6 +721,7 @@ $prompt" > $state_file
     echo "Monitoring:"
     echo "  tmux attach -t $session_name"
     echo "  tmux select-window -t $session_name:$window_name"
+    echo "  worktree-witness.sh status $worktree_path"
     echo ""
     echo "Post-completion:"
     echo "  ticket-execute --complete $worktree_path"

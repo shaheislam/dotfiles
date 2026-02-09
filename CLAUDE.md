@@ -120,7 +120,66 @@ All containers share the same config directory — credentials, plugins, setting
 
 ### Claude & Opencode Activity Watcher
 Background daemon monitoring tmux windows for idle processes: `scripts/tmux/tmux-claude-watcher.sh`
-- 🟢 = Claude idle, 🔵 = Opencode idle, 🟢🔵 = Both idle
+- ● = Claude idle, ◆ = Opencode idle, ●◆ = Both idle
+- ⚠ = Ralph-loop stuck (iteration unchanged for >10min, GUPP violation detection)
+
+### Agent Orchestration (Gastown Patterns)
+Multi-agent lifecycle management inspired by Gastown's orchestration patterns.
+
+**Agent State Derivation** (`scripts/agent-state.sh`):
+Derives agent state from tmux + git + ralph-loop state files (ZFC pattern - derive from ground truth, don't cache).
+```bash
+agent-state.sh <worktree-path> --json    # JSON output
+agent-state.sh --all                      # All active worktrees
+```
+States: `running` | `idle` | `stuck` | `completed` | `dead` | `none`
+
+**Worktree Witness** (`scripts/worktree-witness.sh`):
+Per-worktree lifecycle monitor, auto-spawned by `gwt-ticket`. Monitors ralph-loop progress, detects crashes, auto-retries (up to 3), submits to merge queue on completion.
+```bash
+worktree-witness.sh status <worktree>    # Check witness status
+worktree-witness.sh stop <worktree>      # Stop monitoring
+```
+
+**Merge Queue** (`scripts/merge-queue.sh`):
+Serializes merges to prevent conflicts when multiple agents complete simultaneously.
+```bash
+merge-queue.sh add <worktree>            # Queue for merge
+merge-queue.sh daemon                     # Start queue processor
+merge-queue.sh list                       # Show queue
+merge-queue.sh stop                       # Stop daemon
+```
+
+**Agent Triage** (`scripts/agent-triage.sh`):
+Intelligent decision system for agent problems. Actions: START (crash recovery), WAKE (nudge idle), NUDGE (restart stuck), NOTHING.
+```bash
+agent-triage.sh <worktree>               # Assess and act
+agent-triage.sh <worktree> --dry-run     # Assess only
+```
+
+**Phase Gates** (`scripts/phase-gates.sh`):
+Pause agents on external conditions (CI pipeline, PR review, human input, dependency).
+```bash
+phase-gates.sh create ci-pipeline <worktree>   # Create gate
+phase-gates.sh check ci-pipeline <worktree>    # Check condition
+phase-gates.sh signal <worktree>               # Signal human gate
+phase-gates.sh list <worktree>                 # List gates
+```
+
+**Workflow Templates** (`templates/workflows/*.toml`):
+Externalized prompt templates for `gwt-ticket`. Available: `implement`, `bugfix`, `refactor`, `test`.
+```bash
+gwt-ticket ENG-123 "Add auth" "OAuth2" --template implement
+gwt-ticket BUG-456 "Fix crash" "NPE" --template bugfix
+```
+
+| Script | Purpose |
+|--------|---------|
+| `agent-state.sh` | Derive agent state from ground truth |
+| `worktree-witness.sh` | Per-worktree lifecycle monitor |
+| `merge-queue.sh` | Serialized merge processing |
+| `agent-triage.sh` | Intelligent restart decisions |
+| `phase-gates.sh` | Pause/resume on external conditions |
 
 ### MCP Server Integration
 
@@ -469,6 +528,7 @@ CROSS_PROVIDER_BRIDGE=1 claude
 ```
 
 ### Recent Updates
+- **2026-02-09**: Added Gastown agent orchestration patterns (agent-state, witness, merge-queue, triage, phase-gates, workflow templates)
 - **2026-02-08**: Added Cross-Provider Reasoning Bridge (Stop hook for correlation-bias mitigation via Codex/OpenCode)
 - **2026-02-08**: Added Claude Pipeline multi-model reasoning chains (claude-pipeline/cpipe - opus→sonnet piping)
 - **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)

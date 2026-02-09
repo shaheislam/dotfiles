@@ -1,0 +1,28 @@
+[workflow]
+name = "implement"
+description = "Implement a new feature"
+slash_command = "/ralph-wiggum:ralph-loop"
+max_iterations = 100
+
+[prompt]
+template = """
+You are implementing a feature: {title}
+
+Context: {description}
+
+Steps:
+1. Read the codebase to understand the existing architecture
+2. Design the implementation approach
+3. Write the code following existing patterns
+4. Add tests where applicable
+5. Run tests to verify
+6. Create atomic commits with descriptive messages
+
+When complete, output {completion_promise}
+
+Do not ask questions - make reasonable decisions and iterate."""
+
+[completion]
+promise_prefix = "TICKET_"
+auto_merge = true
+create_pr = true
