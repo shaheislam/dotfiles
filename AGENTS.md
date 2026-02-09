@@ -2,7 +2,7 @@
 
 This file documents specific behaviors and constraints for AI agents working on this repository. Each rule addresses a concrete mistake agents repeatedly make.
 
-## File Locations
+## File 
 
 - The tmux config is at `~/dotfiles/.tmux.conf` in the repo root. NEVER create `.config/tmux/tmux.conf` - it will conflict with the stow symlink.
 - Neovim config is NOT in this repo. It lives at `~/neovim` (separate repository). Do not create or modify nvim configs here.
@@ -53,7 +53,7 @@ This file documents specific behaviors and constraints for AI agents working on 
 
 ## Common Mistakes to Avoid
 
-- Do not add emojis to commit conflict.
+- Do not add emojis to commit messages.
 - Do not reference AI tools in commit messages.
 - Do not create files outside `~/dotfiles` (exception: `~/neovim`).
 - Do not use `npx` for MCP commands in setup.sh - use `bunx`.
