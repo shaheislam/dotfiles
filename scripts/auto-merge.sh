@@ -44,9 +44,10 @@ open_diffview() {
         | grep -i nvim | head -1 | awk '{print $1}')
 
     if [[ -n "$nvim_pane" ]]; then
-        tmux send-keys -t "${target}.${nvim_pane}" Escape ":DiffviewClose" Enter ":cd $REPO_ROOT" Enter ":checktime" Enter
-        sleep 0.5
-        tmux send-keys -t "${target}.${nvim_pane}" ":DiffviewOpen" Enter
+        tmux send-keys -t "${target}.${nvim_pane}" Escape Enter
+        sleep 0.3
+        tmux send-keys -t "${target}.${nvim_pane}" \
+            ":lua pcall(vim.cmd, 'DiffviewClose'); vim.cmd('cd $REPO_ROOT'); vim.cmd('checktime'); vim.cmd('DiffviewOpen')" Enter
         echo -e "${BLUE}Opened DiffviewOpen in nvim pane ${nvim_pane} (${target})${NC}"
     else
         echo -e "${YELLOW}Warning: No nvim pane found in $target, skipping DiffviewOpen${NC}" >&2
