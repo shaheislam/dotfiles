@@ -359,7 +359,7 @@ on_completion() {
             "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" 2>/dev/null || merge_exit=$?
         fi
 
-        # Handle merge conflicts — open DiffviewOpen in the Claude pane
+        # Handle merge conflicts — open DiffviewOpen in the nvim pane
         if [[ "$merge_exit" -eq 2 ]]; then
             log "Merge conflicts detected, opening DiffviewOpen"
             notify "Merge Conflict" "$issue_key: Non-additive conflicts need resolution"
@@ -368,12 +368,19 @@ on_completion() {
             if [[ -n "$repo_root" ]]; then
                 repo_root=$(cd "$WORKTREE_PATH" && cd "$repo_root/.." && pwd)
             fi
-            # Send DiffviewOpen to existing nvim pane (pane 1 = top-right)
-            # Split into two send-keys with sleep to let :cd take effect
+            # Find nvim pane dynamically (handles any pane-base-index)
             local target="${tmux_session}:${tmux_window}"
-            tmux send-keys -t "${target}.1" Escape ":DiffviewClose" Enter ":cd $repo_root" Enter ":checktime" Enter 2>/dev/null || true
-            sleep 0.5
-            tmux send-keys -t "${target}.1" ":DiffviewOpen" Enter 2>/dev/null || true
+            local nvim_pane
+            nvim_pane=$(tmux list-panes -t "$target" -F '#{pane_index} #{pane_current_command}' 2>/dev/null \
+                | grep -i nvim | head -1 | awk '{print $1}')
+
+            if [[ -n "$nvim_pane" ]]; then
+                tmux send-keys -t "${target}.${nvim_pane}" Escape ":DiffviewClose" Enter ":cd $repo_root" Enter ":checktime" Enter
+                sleep 0.5
+                tmux send-keys -t "${target}.${nvim_pane}" ":DiffviewOpen" Enter
+            else
+                log "No nvim pane found in $target, skipping DiffviewOpen"
+            fi
         fi
     fi
 
