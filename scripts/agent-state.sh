@@ -222,9 +222,24 @@ get_agent_state() {
     fi
 
     # Ralph-loop completed but ticket still active → completed
+    # Check explicit active:false OR file deleted by ralph-wiggum stop hook
     if [[ "$ralph_active" == "false" ]]; then
         echo '{"state":"completed","worktree":"'"$worktree_path"'","issue_key":"'"$issue_key"'","title":"'"$(echo "$title" | sed 's/"/\\"/g')"'","iteration":"'"${iteration:-0}"'","max_iterations":"'"${max_iterations:-0}"'"}'
         return 0
+    fi
+
+    # Ralph file deleted by stop hook on completion
+    # If ticket active + witness monitoring + ralph file gone → ralph completed
+    if [[ ! -f "$ralph_file" ]]; then
+        local witness_file="$worktree_path/.claude/witness.local.md"
+        if [[ -f "$witness_file" ]]; then
+            local witness_active
+            witness_active=$(parse_yaml_value "active" "$witness_file")
+            if [[ "$witness_active" == "true" ]]; then
+                echo '{"state":"completed","worktree":"'"$worktree_path"'","issue_key":"'"$issue_key"'","title":"'"$(echo "$title" | sed 's/"/\\"/g')"'","iteration":"0","max_iterations":"0"}'
+                return 0
+            fi
+        fi
     fi
 
     # Find tmux target to check process state
