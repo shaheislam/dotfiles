@@ -53,7 +53,7 @@ This file documents specific behaviors and constraints for AI agents working on 
 
 ## Common Mistakes to Avoid
 
-- Do not add emojis to commit abc.
+- Do not add emojis to commit messages.
 - Do not reference AI tools in commit messages.
 - Do not create files outside `~/dotfiles` (exception: `~/neovim`).
 - Do not use `npx` for MCP commands in setup.sh - use `bunx`.
