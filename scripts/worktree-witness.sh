@@ -352,35 +352,17 @@ on_completion() {
             log "Submitting to merge queue"
             "$merge_queue" add "$WORKTREE_PATH" 2>/dev/null || {
                 log "Merge queue submission failed, falling back to direct merge"
-                "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" 2>/dev/null || merge_exit=$?
+                "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" --open-diffview "${tmux_session}:${tmux_window}" 2>/dev/null || merge_exit=$?
             }
         else
             log "Direct auto-merge (no queue daemon)"
-            "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" 2>/dev/null || merge_exit=$?
+            "$SCRIPT_DIR/auto-merge.sh" "$WORKTREE_PATH" --open-diffview "${tmux_session}:${tmux_window}" 2>/dev/null || merge_exit=$?
         fi
 
-        # Handle merge conflicts — open DiffviewOpen in the nvim pane
+        # Handle merge conflicts — auto-merge.sh handles DiffviewOpen via --open-diffview
         if [[ "$merge_exit" -eq 2 ]]; then
-            log "Merge conflicts detected, opening DiffviewOpen"
+            log "Merge conflicts detected (auto-merge handles DiffviewOpen)"
             notify "Merge Conflict" "$issue_key: Non-additive conflicts need resolution"
-            local repo_root
-            repo_root=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir 2>/dev/null)
-            if [[ -n "$repo_root" ]]; then
-                repo_root=$(cd "$WORKTREE_PATH" && cd "$repo_root/.." && pwd)
-            fi
-            # Find nvim pane dynamically (handles any pane-base-index)
-            local target="${tmux_session}:${tmux_window}"
-            local nvim_pane
-            nvim_pane=$(tmux list-panes -t "$target" -F '#{pane_index} #{pane_current_command}' 2>/dev/null \
-                | grep -i nvim | head -1 | awk '{print $1}')
-
-            if [[ -n "$nvim_pane" ]]; then
-                tmux send-keys -t "${target}.${nvim_pane}" Escape ":DiffviewClose" Enter ":cd $repo_root" Enter ":checktime" Enter
-                sleep 0.5
-                tmux send-keys -t "${target}.${nvim_pane}" ":DiffviewOpen" Enter
-            else
-                log "No nvim pane found in $target, skipping DiffviewOpen"
-            fi
         fi
     fi
 

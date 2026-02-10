@@ -14,7 +14,7 @@
 # zero I/O overhead vs content comparison.
 #
 # Usage:
-#   auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run]
+#   auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run] [--open-diffview SESSION:WINDOW]
 #
 # Exit codes:
 #   0 - Merge completed successfully (or nothing to merge)
@@ -33,6 +33,25 @@ NC='\033[0m'
 DRY_RUN=false
 WORKTREE_PATH=""
 REPO_ROOT=""
+OPEN_DIFFVIEW=""
+
+# Open DiffviewOpen in the nvim pane of the given tmux target
+open_diffview() {
+    [[ -z "$OPEN_DIFFVIEW" ]] && return 0
+    local target="$OPEN_DIFFVIEW"
+    local nvim_pane
+    nvim_pane=$(tmux list-panes -t "$target" -F '#{pane_index} #{pane_current_command}' 2>/dev/null \
+        | grep -i nvim | head -1 | awk '{print $1}')
+
+    if [[ -n "$nvim_pane" ]]; then
+        tmux send-keys -t "${target}.${nvim_pane}" Escape ":DiffviewClose" Enter ":cd $REPO_ROOT" Enter ":checktime" Enter
+        sleep 0.5
+        tmux send-keys -t "${target}.${nvim_pane}" ":DiffviewOpen" Enter
+        echo -e "${BLUE}Opened DiffviewOpen in nvim pane ${nvim_pane} (${target})${NC}"
+    else
+        echo -e "${YELLOW}Warning: No nvim pane found in $target, skipping DiffviewOpen${NC}" >&2
+    fi
+}
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -44,16 +63,21 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        --open-diffview)
+            OPEN_DIFFVIEW="$2"
+            shift 2
+            ;;
         --help|-h)
-            echo "Usage: auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run]"
+            echo "Usage: auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run] [--open-diffview SESSION:WINDOW]"
             echo ""
             echo "Merges feature branch into main, auto-resolving additive-only conflicts."
             echo "Non-additive conflicts are left in-progress for manual resolution."
             echo ""
             echo "Options:"
-            echo "  --repo-root DIR  Main repo checkout to merge into (default: derived from worktree)"
-            echo "  --dry-run        Check if merge is possible without committing"
-            echo "  --help           Show this help"
+            echo "  --repo-root DIR              Main repo checkout to merge into (default: derived from worktree)"
+            echo "  --dry-run                    Check if merge is possible without committing"
+            echo "  --open-diffview SESSION:WIN  Open DiffviewOpen in nvim pane on non-additive conflicts"
+            echo "  --help                       Show this help"
             echo ""
             echo "Exit codes:"
             echo "  0 - Merge succeeded (or nothing to merge)"
@@ -243,6 +267,7 @@ if ! $ALL_ADDITIVE; then
     fi
     echo -e "${YELLOW}Merge left in-progress for manual resolution${NC}"
     echo -e "${YELLOW}Open nvim with DiffviewOpen to resolve, then commit${NC}"
+    open_diffview
     exit 2
 fi
 
@@ -259,6 +284,7 @@ REMAINING=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
 if [[ -n "$REMAINING" ]]; then
     echo -e "${RED}Unexpected unresolved conflicts remain${NC}" >&2
     echo -e "${YELLOW}Merge left in-progress for manual resolution${NC}"
+    open_diffview
     exit 2
 fi
 
