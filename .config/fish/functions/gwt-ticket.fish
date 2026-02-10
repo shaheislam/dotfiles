@@ -664,7 +664,7 @@ $prompt_suffix"
         echo "$devcon_up_cmd" >> $setup_script
         echo "or begin; echo 'Devcontainer failed to start'; exit 1; end" >> $setup_script
         echo "sleep 2" >> $setup_script
-        echo "tmux split-window -hb -p 50 -c '$worktree_path' 'fish $claude_pane_script'" >> $setup_script
+        echo "tmux split-window -hb -p 35 -c '$worktree_path' 'fish $claude_pane_script'" >> $setup_script
         echo "tmux last-pane" >> $setup_script
         echo "tmux split-window -v -p 30 -c '$worktree_path'" >> $setup_script
         echo "tmux select-pane -U" >> $setup_script
@@ -685,7 +685,7 @@ $prompt_suffix"
         tmux send-keys -t "$session_name:$window_name" "cd $worktree_path" Enter
         # Step 2: Split horizontally - Claude on left (50%), current pane stays right
         # -hb = new pane before (left), -p 50 = 50% width
-        tmux split-window -t "$session_name:$window_name" -hb -p 50 -c "$worktree_path" "fish $launch_script"
+        tmux split-window -t "$session_name:$window_name" -hb -p 35 -c "$worktree_path" "fish $launch_script"
         # After split: pane layout is [Claude(left,active)] [shell(right)]
         # Step 3: Switch to right pane and split it vertically for diffview + terminal
         tmux last-pane -t "$session_name:$window_name"
