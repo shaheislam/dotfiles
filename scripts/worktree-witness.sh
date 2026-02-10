@@ -239,8 +239,8 @@ EOF
 # Main monitoring loop
 monitor_loop() {
     trap 'cleanup' EXIT
-    echo $$ > "$PID_FILE"
-    log "Witness started for $issue_key (PID $$)"
+    echo $BASHPID > "$PID_FILE"
+    log "Witness started for $issue_key (PID $BASHPID)"
 
     local retries=0
     local last_state=""
