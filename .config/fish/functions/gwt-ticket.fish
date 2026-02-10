@@ -343,9 +343,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         set branch_name "$key_lower-$slug"
     end
 
-    # Get repository info
-    set -l repo (basename (git rev-parse --show-toplevel))
-    set -l repo_root (git rev-parse --show-toplevel)
+    # Get repository info (resolve to main repo root, not worktree root)
+    set -l git_common_dir (git rev-parse --git-common-dir)
+    set -l repo_root (realpath "$git_common_dir/..")
+    set -l repo (basename $repo_root)
 
     # Default session name to repo name if not explicitly set
     if test -z "$session_name"
@@ -434,14 +435,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Step 3: Create window for this ticket
     echo "[3/4] Creating ticket window..."
 
-    # Check if window already exists
-    if tmux list-windows -t $session_name -F '#{window_name}' | grep -q "^$window_name\$"
-        echo "Window $window_name already exists, selecting it..."
-        tmux select-window -t "$session_name:$window_name"
-    else
-        tmux new-window -t $session_name -n $window_name -c $worktree_path
-        echo "Created window: $window_name"
-    end
+    # Always create a new window (tmux allows duplicate names)
+    tmux new-window -t $session_name -n $window_name -c $worktree_path
+    echo "Created window: $window_name"
 
     # Step 4: Build and launch Claude
     echo "[4/4] Launching Claude with $slash_command..."

@@ -66,7 +66,10 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
         end
     end
 
-    set -l repo (basename (git rev-parse --show-toplevel))
+    # Resolve to main repo root (not worktree root)
+    set -l git_common_dir (git rev-parse --git-common-dir)
+    set -l repo_root (realpath "$git_common_dir/..")
+    set -l repo (basename $repo_root)
     set -l worktree_path ""
     set -l instance_name ""
 
@@ -92,7 +95,7 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
     else
         # Construct worktree path from branch
         set -l worktree_name "$repo-$branch"
-        set worktree_path (git rev-parse --show-toplevel)/../$worktree_name
+        set worktree_path "$repo_root/../$worktree_name"
         set instance_name (string replace -a "/" "-" $worktree_name)
 
         # Verify worktree exists

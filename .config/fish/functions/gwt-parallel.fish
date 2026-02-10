@@ -104,9 +104,11 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
         return 1
     end
 
-    set -l repo (basename (git rev-parse --show-toplevel))
-    set -l repo_root (git rev-parse --show-toplevel)
-    set -l resolved_repo_root (realpath $repo_root)
+    # Resolve to main repo root (not worktree root)
+    set -l git_common_dir (git rev-parse --git-common-dir)
+    set -l repo_root (realpath "$git_common_dir/..")
+    set -l repo (basename $repo_root)
+    set -l resolved_repo_root $repo_root
 
     echo "Launching "(count $branches)" worktrees in parallel..."
     if test (count $mounts) -gt 0

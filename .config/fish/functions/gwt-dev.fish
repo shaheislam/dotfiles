@@ -144,10 +144,12 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
         return 1
     end
 
-    # Get repository name and construct worktree path
-    set -l repo (basename (git rev-parse --show-toplevel))
+    # Get repository name and construct worktree path (resolve to main repo, not worktree)
+    set -l git_common_dir (git rev-parse --git-common-dir)
+    set -l repo_root (realpath "$git_common_dir/..")
+    set -l repo (basename $repo_root)
     set -l worktree_name "$repo-$branch"
-    set -l worktree_path (git rev-parse --show-toplevel)/../$worktree_name
+    set -l worktree_path "$repo_root/../$worktree_name"
 
     # Clean up branch name for instance naming (replace / with -)
     set -l instance_name (string replace -a "/" "-" $worktree_name)

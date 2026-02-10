@@ -18,7 +18,8 @@ function gwt-status --description "Show worktree + devcontainer status"
         set show_all true
     end
 
-    set -l repo (basename (git rev-parse --show-toplevel))
+    # Resolve to main repo name (not worktree name)
+    set -l repo (basename (realpath (git rev-parse --git-common-dir)"/.."))
 
     # Get worktrees
     set -l worktrees (git worktree list --porcelain 2>/dev/null)

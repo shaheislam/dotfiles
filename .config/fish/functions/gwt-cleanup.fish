@@ -50,7 +50,8 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
     # Get current repo name if in a git repo
     set -l repo ""
     if git rev-parse --git-dir >/dev/null 2>&1
-        set repo (basename (git rev-parse --show-toplevel))
+        # Resolve to main repo name (not worktree name)
+        set repo (basename (realpath (git rev-parse --git-common-dir)"/.."))
     end
 
     # Get list of current worktrees
