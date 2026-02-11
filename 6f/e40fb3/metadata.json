@@ -1,0 +1,16 @@
+{
+  "session_id": "7c7553e2-b58b-4e39-95ce-6aa8b030b288",
+  "timestamp": "2026-02-11T11:47:06Z",
+  "branch": "entry",
+  "token_estimate": 4254,
+  "transcript_lines": 21,
+  "files_modified": [
+    "CLAUDE.md"
+  ],
+  "new_files": [],
+  "tool_calls_summary": [
+    "   5 Bash"
+  ],
+  "summary": "Agent session checkpoint",
+  "commit_sha": "6fe40fb3ba9d6778631795693b84de2f3d4a9b47"
+}
