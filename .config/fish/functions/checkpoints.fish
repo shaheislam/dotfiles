@@ -5,9 +5,14 @@ function checkpoints --description "Manage agent checkpoint system (ckpt)"
     #
     # Usage:
     #   checkpoints enable [--strategy manual|auto]
-    #   checkpoints disable
+    #   checkpoints disable [--purge]
     #   checkpoints status / checkpoints log / checkpoints show <sha>
-    #   checkpoints rewind    (interactive fzf browser)
+    #   checkpoints resume [branch]    (context for resuming work)
+    #   checkpoints context [--commits N]  (condensed session primer)
+    #   checkpoints search <query>     (search checkpoint content)
+    #   checkpoints rewind             (interactive fzf browser)
+    #   checkpoints clean              (remove orphaned data)
+    #   checkpoints reset [--force]    (delete checkpoint branch)
     #   checkpoints doctor
 
     # Find the script

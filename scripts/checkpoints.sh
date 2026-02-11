@@ -8,11 +8,16 @@
 #
 # Usage:
 #   checkpoints.sh enable [--strategy manual|auto]   # Install hooks
-#   checkpoints.sh disable                            # Remove hooks
+#   checkpoints.sh disable [--purge]                   # Disable (--purge also removes shared git hooks)
 #   checkpoints.sh status                             # Current session state
 #   checkpoints.sh log [--branch <name>]              # List checkpoints
 #   checkpoints.sh show <commit-sha>                  # Show checkpoint for commit
+#   checkpoints.sh resume [branch]                    # Show latest checkpoint context for branch
+#   checkpoints.sh context [--commits N]              # Condensed context for session priming
+#   checkpoints.sh search <query>                     # Search checkpoints
 #   checkpoints.sh rewind                             # Interactive checkpoint browser (fzf)
+#   checkpoints.sh clean                              # Remove orphaned checkpoint data
+#   checkpoints.sh reset [--force]                    # Delete checkpoint branch
 #   checkpoints.sh doctor                             # Validate hooks installed
 #
 # Exit codes:
@@ -205,32 +210,40 @@ cmd_disable() {
     require_git_repo
     local root
     root=$(git_root)
-    # Git hooks live in the common dir (shared across worktrees)
-    local git_hooks_dir
-    git_hooks_dir="$(git rev-parse --git-common-dir)/hooks"
+    local purge=false
 
-    # Remove checkpoint sections from git hooks
-    local marker="# --- checkpoints ---"
-    local end_marker="# --- end checkpoints ---"
-    for hook_name in prepare-commit-msg post-commit pre-push; do
-        local hook_path="${git_hooks_dir}/${hook_name}"
-        if [[ -f "$hook_path" ]] && grep -q "$marker" "$hook_path" 2>/dev/null; then
-            # Remove everything between markers (inclusive)
-            sed -i '' "/${marker}/,/${end_marker}/d" "$hook_path"
-            # Remove hook file if it's now just a shebang
-            local line_count
-            line_count=$(wc -l < "$hook_path" | tr -d ' ')
-            if [[ "$line_count" -le 1 ]]; then
-                rm "$hook_path"
-            fi
-            print_success "${hook_name}: removed"
-        fi
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --purge) purge=true; shift ;;
+            *) shift ;;
+        esac
     done
 
-    # Remove config
+    # Remove local config (this alone disables — hooks are no-ops without config)
     if [[ -d "${root}/${PENDING_DIR}" ]]; then
         rm -rf "${root}/${PENDING_DIR}"
         print_success "Pending directory removed"
+    fi
+
+    # Only remove shared hooks with --purge (safe for standalone repos,
+    # dangerous in worktree setups where other worktrees may still be enabled)
+    if $purge; then
+        local git_hooks_dir
+        git_hooks_dir="$(git rev-parse --git-common-dir)/hooks"
+        local marker="# --- checkpoints ---"
+        local end_marker="# --- end checkpoints ---"
+        for hook_name in prepare-commit-msg post-commit pre-push; do
+            local hook_path="${git_hooks_dir}/${hook_name}"
+            if [[ -f "$hook_path" ]] && grep -q "$marker" "$hook_path" 2>/dev/null; then
+                sed -i '' "/${marker}/,/${end_marker}/d" "$hook_path"
+                local line_count
+                line_count=$(wc -l < "$hook_path" | tr -d ' ')
+                if [[ "$line_count" -le 1 ]]; then
+                    rm "$hook_path"
+                fi
+                print_success "${hook_name}: removed"
+            fi
+        done
     fi
 
     print_success "Checkpoints disabled"
@@ -462,6 +475,387 @@ cmd_rewind() {
     fi
 }
 
+cmd_resume() {
+    require_git_repo
+    local target_branch="${1:-}"
+
+    if [[ -z "$target_branch" ]]; then
+        target_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+    fi
+
+    if [[ -z "$target_branch" ]]; then
+        print_error "Could not determine current branch"
+        exit 1
+    fi
+
+    if ! git show-ref --quiet "refs/heads/${CHECKPOINT_BRANCH}" 2>/dev/null; then
+        print_error "No checkpoint branch found. Run: checkpoints enable"
+        exit 2
+    fi
+
+    # Find the latest checkpoint for this branch
+    local files
+    files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" 2>/dev/null | grep 'metadata.json$' || true)
+
+    if [[ -z "$files" ]]; then
+        print_info "No checkpoints recorded yet"
+        return 0
+    fi
+
+    local latest_sha="" latest_timestamp="" latest_meta=""
+    while IFS= read -r meta_path; do
+        local content
+        content=$(git show "${CHECKPOINT_BRANCH}:${meta_path}" 2>/dev/null || continue)
+        local branch_name timestamp
+        branch_name=$(echo "$content" | jq -r '.branch // ""' 2>/dev/null)
+        timestamp=$(echo "$content" | jq -r '.timestamp // ""' 2>/dev/null)
+
+        if [[ "$branch_name" == "$target_branch" ]]; then
+            if [[ -z "$latest_timestamp" || "$timestamp" > "$latest_timestamp" ]]; then
+                latest_timestamp="$timestamp"
+                latest_meta="$content"
+                latest_sha=$(echo "$content" | jq -r '.commit_sha // ""' 2>/dev/null)
+            fi
+        fi
+    done <<< "$files"
+
+    if [[ -z "$latest_meta" ]]; then
+        print_info "No checkpoints found for branch: ${target_branch}"
+        return 0
+    fi
+
+    # Extract checkpoint data
+    local summary files_modified new_files tool_calls token_estimate
+    summary=$(echo "$latest_meta" | jq -r '.summary // "no summary"' 2>/dev/null)
+    files_modified=$(echo "$latest_meta" | jq -r '.files_modified // [] | .[]' 2>/dev/null)
+    new_files=$(echo "$latest_meta" | jq -r '.new_files // [] | .[]' 2>/dev/null)
+    tool_calls=$(echo "$latest_meta" | jq -r '.tool_calls_summary // [] | .[]' 2>/dev/null)
+    token_estimate=$(echo "$latest_meta" | jq -r '.token_estimate // 0' 2>/dev/null)
+
+    # Get the commit message and diff stat
+    local commit_msg="" diff_stat=""
+    if git rev-parse "$latest_sha" >/dev/null 2>&1; then
+        commit_msg=$(git log -1 --format=%s "$latest_sha" 2>/dev/null || true)
+        diff_stat=$(git diff --stat "${latest_sha}^..${latest_sha}" 2>/dev/null || true)
+    fi
+
+    # Get stored prompt
+    local shard="${latest_sha:0:2}/${latest_sha:2:6}"
+    local prompt_content=""
+    local session_files
+    session_files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" -- "${shard}/sessions" 2>/dev/null || true)
+    if [[ -n "$session_files" ]]; then
+        while IFS= read -r sf; do
+            case "$sf" in
+                */prompt.txt)
+                    prompt_content=$(git show "${CHECKPOINT_BRANCH}:${sf}" 2>/dev/null | head -10)
+                    break
+                    ;;
+            esac
+        done <<< "$session_files"
+    fi
+
+    # Output formatted resume context
+    echo -e "${BOLD}Resume Context: ${target_branch}${NC}"
+    echo "═══════════════════════════════════════════════════"
+    echo -e "${CYAN}Last checkpoint:${NC} ${latest_sha:0:12} (${latest_timestamp})"
+    echo -e "${CYAN}Commit:${NC} ${commit_msg}"
+    echo -e "${CYAN}Tokens used:${NC} ~${token_estimate}"
+    echo -e "${CYAN}Summary:${NC} ${summary}"
+
+    if [[ -n "$files_modified" ]]; then
+        echo -e "\n${YELLOW}Files modified:${NC}"
+        echo "$files_modified" | sed 's/^/  /'
+    fi
+    if [[ -n "$new_files" ]]; then
+        echo -e "\n${YELLOW}New files:${NC}"
+        echo "$new_files" | sed 's/^/  /'
+    fi
+    if [[ -n "$tool_calls" ]]; then
+        echo -e "\n${YELLOW}Tool calls:${NC}"
+        echo "$tool_calls" | sed 's/^/  /'
+    fi
+    if [[ -n "$prompt_content" ]]; then
+        echo -e "\n${YELLOW}Last prompt:${NC}"
+        echo "$prompt_content" | sed 's/^/  /'
+    fi
+    if [[ -n "$diff_stat" ]]; then
+        echo -e "\n${YELLOW}Diff stat:${NC}"
+        echo "$diff_stat" | sed 's/^/  /'
+    fi
+
+    echo ""
+    echo -e "${GREEN}To continue where you left off, use this context in your next prompt.${NC}"
+}
+
+cmd_context() {
+    require_git_repo
+    local max_commits=5
+    local branch_filter=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --commits) max_commits="$2"; shift 2 ;;
+            --branch) branch_filter="$2"; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+
+    if ! git show-ref --quiet "refs/heads/${CHECKPOINT_BRANCH}" 2>/dev/null; then
+        print_error "No checkpoint branch found"
+        exit 2
+    fi
+
+    local files
+    files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" 2>/dev/null | grep 'metadata.json$' || true)
+
+    if [[ -z "$files" ]]; then
+        print_info "No checkpoints recorded yet"
+        return 0
+    fi
+
+    # Collect all checkpoints with timestamps for sorting
+    local entries=()
+    while IFS= read -r meta_path; do
+        local content
+        content=$(git show "${CHECKPOINT_BRANCH}:${meta_path}" 2>/dev/null || continue)
+        local timestamp branch_name
+        timestamp=$(echo "$content" | jq -r '.timestamp // "1970-01-01T00:00:00Z"' 2>/dev/null)
+        branch_name=$(echo "$content" | jq -r '.branch // ""' 2>/dev/null)
+
+        if [[ -n "$branch_filter" && "$branch_name" != "$branch_filter" ]]; then
+            continue
+        fi
+
+        entries+=("${timestamp}|${meta_path}")
+    done <<< "$files"
+
+    if [[ ${#entries[@]} -eq 0 ]]; then
+        print_info "No checkpoints match filter"
+        return 0
+    fi
+
+    # Sort by timestamp descending
+    local sorted
+    sorted=$(printf '%s\n' "${entries[@]}" | sort -r | head -n "$max_commits")
+
+    # Output condensed context block
+    echo "--- Checkpoint Context (last ${max_commits} commits) ---"
+    echo ""
+    while IFS= read -r entry; do
+        local ts meta_path
+        ts="${entry%%|*}"
+        meta_path="${entry#*|}"
+
+        local content
+        content=$(git show "${CHECKPOINT_BRANCH}:${meta_path}" 2>/dev/null || continue)
+        local commit_sha summary branch_name files_mod token_est
+        commit_sha=$(echo "$content" | jq -r '.commit_sha // "unknown"' 2>/dev/null)
+        summary=$(echo "$content" | jq -r '.summary // "no summary"' 2>/dev/null | head -c 100)
+        branch_name=$(echo "$content" | jq -r '.branch // ""' 2>/dev/null)
+        files_mod=$(echo "$content" | jq -r '.files_modified // [] | join(", ")' 2>/dev/null)
+        token_est=$(echo "$content" | jq -r '.token_estimate // 0' 2>/dev/null)
+
+        # Get commit subject
+        local commit_msg=""
+        if git rev-parse "$commit_sha" >/dev/null 2>&1; then
+            commit_msg=$(git log -1 --format=%s "$commit_sha" 2>/dev/null || true)
+        fi
+
+        echo "- ${commit_sha:0:8} [${branch_name}] ${ts}"
+        echo "  Commit: ${commit_msg:-unknown}"
+        echo "  Why: ${summary}"
+        if [[ -n "$files_mod" ]]; then
+            echo "  Files: ${files_mod}"
+        fi
+        echo ""
+    done <<< "$sorted"
+    echo "--- End Context ---"
+}
+
+cmd_search() {
+    require_git_repo
+    local query="${1:-}"
+
+    if [[ -z "$query" ]]; then
+        print_error "Usage: checkpoints search <query>"
+        exit 1
+    fi
+
+    if ! git show-ref --quiet "refs/heads/${CHECKPOINT_BRANCH}" 2>/dev/null; then
+        print_error "No checkpoint branch found"
+        exit 2
+    fi
+
+    echo -e "${BOLD}Searching checkpoints for: ${query}${NC}"
+    echo "─────────────────────────────────────────────────────────────"
+
+    local found=0
+
+    # Search metadata files
+    local meta_files
+    meta_files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" 2>/dev/null | grep 'metadata.json$' || true)
+
+    if [[ -n "$meta_files" ]]; then
+        while IFS= read -r meta_path; do
+            local content
+            content=$(git show "${CHECKPOINT_BRANCH}:${meta_path}" 2>/dev/null || continue)
+
+            if echo "$content" | grep -qi "$query" 2>/dev/null; then
+                local commit_sha timestamp summary branch_name
+                commit_sha=$(echo "$content" | jq -r '.commit_sha // "unknown"' 2>/dev/null)
+                timestamp=$(echo "$content" | jq -r '.timestamp // "unknown"' 2>/dev/null)
+                summary=$(echo "$content" | jq -r '.summary // "no summary"' 2>/dev/null | head -c 60)
+                branch_name=$(echo "$content" | jq -r '.branch // ""' 2>/dev/null)
+                echo -e "  ${GREEN}metadata${NC} ${commit_sha:0:12} [${branch_name}] ${timestamp}"
+                echo -e "    ${summary}"
+                found=$((found + 1))
+            fi
+        done <<< "$meta_files"
+    fi
+
+    # Search transcript and prompt files
+    local all_files
+    all_files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" 2>/dev/null \
+        | grep -E '(transcript\.jsonl|prompt\.txt)$' || true)
+
+    if [[ -n "$all_files" ]]; then
+        while IFS= read -r file_path; do
+            local file_content
+            file_content=$(git show "${CHECKPOINT_BRANCH}:${file_path}" 2>/dev/null || continue)
+
+            if echo "$file_content" | grep -qi "$query" 2>/dev/null; then
+                # Extract shard from path to find the commit
+                local shard_prefix
+                shard_prefix=$(echo "$file_path" | cut -d'/' -f1-2)
+                local file_type
+                file_type=$(basename "$file_path")
+
+                echo -e "  ${CYAN}${file_type}${NC} at ${shard_prefix}"
+                echo "$file_content" | grep -i "$query" 2>/dev/null | head -3 | sed 's/^/    /'
+                found=$((found + 1))
+            fi
+        done <<< "$all_files"
+    fi
+
+    echo ""
+    if [[ $found -eq 0 ]]; then
+        print_info "No matches found"
+    else
+        print_success "${found} match(es) found"
+    fi
+}
+
+cmd_clean() {
+    require_git_repo
+
+    if ! git show-ref --quiet "refs/heads/${CHECKPOINT_BRANCH}" 2>/dev/null; then
+        print_info "No checkpoint branch — nothing to clean"
+        return 0
+    fi
+
+    echo -e "${BOLD}Cleaning orphaned checkpoints...${NC}"
+
+    local files
+    files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" 2>/dev/null | grep 'metadata.json$' || true)
+
+    if [[ -z "$files" ]]; then
+        print_info "No checkpoints to clean"
+        return 0
+    fi
+
+    local orphaned=0
+    local total=0
+    local orphaned_shards=()
+
+    while IFS= read -r meta_path; do
+        total=$((total + 1))
+        local content
+        content=$(git show "${CHECKPOINT_BRANCH}:${meta_path}" 2>/dev/null || continue)
+        local commit_sha
+        commit_sha=$(echo "$content" | jq -r '.commit_sha // ""' 2>/dev/null)
+
+        if [[ -n "$commit_sha" ]] && ! git rev-parse "$commit_sha" >/dev/null 2>&1; then
+            local shard
+            shard=$(dirname "$meta_path")
+            orphaned_shards+=("$shard")
+            orphaned=$((orphaned + 1))
+            print_warn "Orphaned: ${commit_sha:0:12} (commit no longer exists)"
+        fi
+    done <<< "$files"
+
+    if [[ $orphaned -eq 0 ]]; then
+        print_success "All ${total} checkpoints are valid"
+        return 0
+    fi
+
+    print_info "Found ${orphaned} orphaned checkpoint(s) out of ${total}"
+
+    # Rebuild the tree without orphaned entries
+    local tmp_index
+    tmp_index=$(mktemp)
+    export GIT_INDEX_FILE="$tmp_index"
+    local cleanup_func
+    cleanup_func() { rm -f "$tmp_index"; }
+    trap cleanup_func EXIT
+
+    git read-tree "${CHECKPOINT_BRANCH}" 2>/dev/null
+
+    for shard in "${orphaned_shards[@]}"; do
+        # Remove all files under this shard
+        local shard_files
+        shard_files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" -- "$shard" 2>/dev/null || true)
+        if [[ -n "$shard_files" ]]; then
+            while IFS= read -r sf; do
+                git update-index --force-remove "$sf" 2>/dev/null || true
+            done <<< "$shard_files"
+        fi
+    done
+
+    local new_tree
+    new_tree=$(git write-tree)
+    local parent_sha
+    parent_sha=$(git rev-parse "${CHECKPOINT_BRANCH}")
+    local new_commit
+    new_commit=$(echo "clean: removed ${orphaned} orphaned checkpoint(s)" | git commit-tree "$new_tree" -p "$parent_sha")
+    git update-ref "refs/heads/${CHECKPOINT_BRANCH}" "$new_commit"
+
+    unset GIT_INDEX_FILE
+    rm -f "$tmp_index"
+    trap - EXIT
+
+    print_success "Removed ${orphaned} orphaned checkpoint(s)"
+}
+
+cmd_reset() {
+    require_git_repo
+    local force=false
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force|-f) force=true; shift ;;
+            *) shift ;;
+        esac
+    done
+
+    if ! git show-ref --quiet "refs/heads/${CHECKPOINT_BRANCH}" 2>/dev/null; then
+        print_info "No checkpoint branch to reset"
+        return 0
+    fi
+
+    local count
+    count=$(git rev-list --count "${CHECKPOINT_BRANCH}" 2>/dev/null || echo 0)
+
+    if ! $force; then
+        print_warn "This will delete the ${CHECKPOINT_BRANCH} branch (${count} commits)"
+        print_warn "All checkpoint data will be permanently lost"
+        print_error "Use --force to confirm: checkpoints reset --force"
+        exit 1
+    fi
+
+    git update-ref -d "refs/heads/${CHECKPOINT_BRANCH}"
+    print_success "Checkpoint branch deleted (${count} commits removed)"
+    print_info "Run 'checkpoints enable' to start fresh"
+}
+
 cmd_doctor() {
     require_git_repo
     local root
@@ -555,11 +949,16 @@ usage() {
     echo ""
     echo "Commands:"
     echo "  enable [--strategy manual|auto]   Install checkpoint hooks"
-    echo "  disable                            Remove checkpoint hooks"
+    echo "  disable [--purge]                  Disable checkpoints (--purge removes shared git hooks)"
     echo "  status                             Show current checkpoint state"
     echo "  log [--branch <name>]              List checkpoints"
     echo "  show <commit-sha>                  Show checkpoint for a commit"
+    echo "  resume [branch]                    Show latest checkpoint context for a branch"
+    echo "  context [--commits N] [--branch b] Condensed context of recent checkpoints"
+    echo "  search <query>                     Search checkpoint metadata and transcripts"
     echo "  rewind                             Interactive checkpoint browser"
+    echo "  clean                              Remove orphaned checkpoint data"
+    echo "  reset [--force]                    Delete checkpoint branch entirely"
     echo "  doctor                             Validate checkpoint setup"
     echo ""
     echo "Checkpoint data is stored on the '${CHECKPOINT_BRANCH}' orphan branch."
@@ -571,11 +970,16 @@ main() {
 
     case "$cmd" in
         enable)  cmd_enable "$@" ;;
-        disable) cmd_disable ;;
+        disable) cmd_disable "$@" ;;
         status)  cmd_status ;;
         log)     cmd_log "$@" ;;
         show)    cmd_show "$@" ;;
+        resume)  cmd_resume "$@" ;;
+        context) cmd_context "$@" ;;
+        search)  cmd_search "$@" ;;
         rewind)  cmd_rewind ;;
+        clean)   cmd_clean ;;
+        reset)   cmd_reset "$@" ;;
         doctor)  cmd_doctor ;;
         --help|-h|help|"")
             usage

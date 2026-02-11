@@ -202,11 +202,16 @@ Captures Claude Code session transcript slices and stores them as structured met
 | Command | Description |
 |---------|-------------|
 | `ckpt enable [--strategy manual\|auto]` | Install checkpoint hooks in current repo |
-| `ckpt disable` | Remove checkpoint hooks |
+| `ckpt disable [--purge]` | Disable checkpoints (--purge removes shared git hooks) |
 | `ckpt status` | Show current session state |
 | `ckpt log [--branch <name>]` | List checkpoints |
 | `ckpt show <commit-sha>` | Show reasoning for a commit |
+| `ckpt resume [branch]` | Show latest checkpoint context for resuming work |
+| `ckpt context [--commits N]` | Condensed context of recent checkpoints for session priming |
+| `ckpt search <query>` | Search checkpoint metadata and transcripts |
 | `ckpt rewind` | Interactive checkpoint browser (fzf) |
+| `ckpt clean` | Remove orphaned checkpoint data |
+| `ckpt reset [--force]` | Delete checkpoint branch entirely |
 | `ckpt doctor` | Validate checkpoint setup |
 
 **Coexistence**: Checkpoints (commit-level audit trail) complement Beads (issue-level agent memory) — different granularity, different storage, no conflict.

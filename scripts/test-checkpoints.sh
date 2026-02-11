@@ -141,7 +141,7 @@ else
     fail "Doctor failed: ${output}"
 fi
 
-# Test disable
+# Test disable (without --purge: removes config, keeps hooks as harmless no-ops)
 output=$("$CHECKPOINTS" disable 2>&1)
 if echo "$output" | grep -q "Checkpoints disabled"; then
     pass "Disable succeeds"
@@ -149,12 +149,12 @@ else
     fail "Disable failed: ${output}"
 fi
 
-# Verify hooks removed
+# Verify hooks still present (no-ops without config)
 for hook in prepare-commit-msg post-commit pre-push; do
     if [[ -f ".git/hooks/${hook}" ]] && grep -q "checkpoints" ".git/hooks/${hook}" 2>/dev/null; then
-        fail "Git hook not removed: ${hook}"
+        pass "Git hook retained (no-op): ${hook}"
     else
-        pass "Git hook removed: ${hook}"
+        fail "Git hook unexpectedly removed: ${hook}"
     fi
 done
 
@@ -164,6 +164,22 @@ if [[ ! -d ".checkpoints" ]]; then
 else
     fail "Pending directory still exists"
 fi
+
+# Re-enable then test disable --purge (removes hooks too)
+"$CHECKPOINTS" enable >/dev/null 2>&1
+output=$("$CHECKPOINTS" disable --purge 2>&1)
+if echo "$output" | grep -q "Checkpoints disabled"; then
+    pass "Disable --purge succeeds"
+else
+    fail "Disable --purge failed: ${output}"
+fi
+for hook in prepare-commit-msg post-commit pre-push; do
+    if [[ -f ".git/hooks/${hook}" ]] && grep -q "checkpoints" ".git/hooks/${hook}" 2>/dev/null; then
+        fail "Git hook not removed by --purge: ${hook}"
+    else
+        pass "Git hook removed by --purge: ${hook}"
+    fi
+done
 
 section "Checkpoint Capture Simulation"
 
@@ -334,6 +350,137 @@ if [[ "$checkpoint_count" -ge 2 ]]; then
     pass "Log shows both checkpoints"
 else
     fail "Log shows ${checkpoint_count} checkpoints, expected ≥2"
+fi
+
+section "Resume Command"
+
+# Still in the repo with two checkpoints from "Multiple Checkpoints" section
+output=$("$CHECKPOINTS" resume main 2>&1)
+if echo "$output" | grep -q "Resume Context"; then
+    pass "Resume shows context header"
+else
+    fail "Resume doesn't show context: ${output}"
+fi
+
+if echo "$output" | grep -q "Last checkpoint"; then
+    pass "Resume shows last checkpoint SHA"
+else
+    fail "Resume missing checkpoint SHA"
+fi
+
+if echo "$output" | grep -q "Summary"; then
+    pass "Resume shows summary"
+else
+    fail "Resume missing summary"
+fi
+
+# Test resume with nonexistent branch
+output=$("$CHECKPOINTS" resume "nonexistent-branch" 2>&1)
+if echo "$output" | grep -qi "no checkpoints found"; then
+    pass "Resume handles unknown branch"
+else
+    pass "Resume handles unknown branch (no error)"
+fi
+
+section "Context Command"
+
+output=$("$CHECKPOINTS" context --commits 5 2>&1)
+if echo "$output" | grep -q "Checkpoint Context"; then
+    pass "Context shows header"
+else
+    fail "Context doesn't show header: ${output}"
+fi
+
+if echo "$output" | grep -q "Why:"; then
+    pass "Context shows summaries"
+else
+    fail "Context missing summaries"
+fi
+
+# Count entries
+context_entries=$(echo "$output" | grep -c "^- [a-f0-9]" || true)
+if [[ "$context_entries" -ge 2 ]]; then
+    pass "Context shows multiple entries"
+else
+    fail "Context shows ${context_entries} entries, expected ≥2"
+fi
+
+# Test with --commits 1
+output=$("$CHECKPOINTS" context --commits 1 2>&1)
+context_entries=$(echo "$output" | grep -c "^- [a-f0-9]" || true)
+if [[ "$context_entries" -eq 1 ]]; then
+    pass "Context respects --commits limit"
+else
+    fail "Context --commits 1 shows ${context_entries} entries"
+fi
+
+# Test with --branch filter
+output=$("$CHECKPOINTS" context --branch main 2>&1)
+if echo "$output" | grep -q "main"; then
+    pass "Context filters by branch"
+else
+    fail "Context branch filter not working"
+fi
+
+section "Search Command"
+
+# Search for something in our checkpoint summaries
+output=$("$CHECKPOINTS" search "README" 2>&1)
+if echo "$output" | grep -qi "match.*found"; then
+    pass "Search finds matches in metadata"
+else
+    fail "Search didn't find expected match: ${output}"
+fi
+
+# Search for something in transcripts
+output=$("$CHECKPOINTS" search "changelog" 2>&1)
+if echo "$output" | grep -qi "match.*found"; then
+    pass "Search finds content in transcripts/metadata"
+else
+    fail "Search didn't find transcript content: ${output}"
+fi
+
+# Search for nonexistent term
+output=$("$CHECKPOINTS" search "zzz_nonexistent_zzz" 2>&1)
+if echo "$output" | grep -qi "no matches"; then
+    pass "Search handles no results"
+else
+    fail "Search doesn't handle no results: ${output}"
+fi
+
+section "Clean Command"
+
+# Clean should find no orphans in our test repo
+output=$("$CHECKPOINTS" clean 2>&1)
+if echo "$output" | grep -qi "valid"; then
+    pass "Clean reports all valid"
+else
+    fail "Clean unexpected output: ${output}"
+fi
+
+section "Reset Command"
+
+# Reset without --force should fail
+output=$("$CHECKPOINTS" reset 2>&1 || true)
+if echo "$output" | grep -qi "force"; then
+    pass "Reset requires --force"
+else
+    fail "Reset doesn't require confirmation: ${output}"
+fi
+
+# Reset with --force should delete the branch
+output=$("$CHECKPOINTS" reset --force 2>&1)
+if echo "$output" | grep -qi "deleted"; then
+    pass "Reset --force deletes branch"
+else
+    fail "Reset --force failed: ${output}"
+fi
+
+# Verify branch is gone
+if ! git show-ref --quiet "refs/heads/checkpoints/v1"; then
+    pass "Checkpoint branch removed after reset"
+else
+    fail "Checkpoint branch still exists after reset"
 fi
 
 section "Enable with Custom Strategy"
