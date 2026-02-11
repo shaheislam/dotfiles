@@ -14,6 +14,8 @@ print_header() { echo -e "\n${YELLOW}=== $1 ===${NC}"; }
 print_success() { echo -e "${GREEN}  PASS${NC} $1"; }
 print_error() { echo -e "${RED}  FAIL${NC} $1"; }
 print_warning() { echo -e "${YELLOW}  SKIP${NC} $1"; }
+CYAN='\033[0;36m'
+print_info() { echo -e "${CYAN}  INFO${NC} $1"; }
 
 PASS=0
 FAIL=0
@@ -317,6 +319,65 @@ else
     ((FAIL++))
 fi
 
+# Test: strip_provider_metadata extracts only model response from Codex output
+strip_test_input='[2026-01-01T00:00:00] OpenAI Codex v1.0
+--------
+workdir: /test
+model: gpt-5
+--------
+[2026-01-01T00:00:00] User instructions:
+If the reasoning is sound, start with CONSENSUS:
+
+[2026-01-01T00:00:01] thinking
+I should review carefully.
+[2026-01-01T00:00:02] codex
+**Summary block**
+[2026-01-01T00:00:02] codex
+
+CONCERNS:
+- Issue 1
+- Issue 2
+[2026-01-01T00:00:03] tokens used: 500'
+
+strip_test_output=$(echo "$strip_test_input" | awk '
+    /^\[.*\] codex$/ { content = ""; collecting = 1; next }
+    /^\[.*\] tokens used:/ { next }
+    collecting { content = content "\n" $0 }
+    END { sub(/^\n+/, "", content); print content }
+')
+
+if echo "$strip_test_output" | grep -q 'CONCERNS:'; then
+    print_success "Metadata stripping: extracts CONCERNS from Codex output"
+    ((PASS++))
+else
+    print_error "Metadata stripping: failed to extract CONCERNS"
+    ((FAIL++))
+fi
+
+if echo "$strip_test_output" | grep -q 'reasoning is sound'; then
+    print_error "Metadata stripping: echoed prompt leaked through (false consensus risk)"
+    ((FAIL++))
+else
+    print_success "Metadata stripping: echoed prompt correctly stripped"
+    ((PASS++))
+fi
+
+if echo "$strip_test_output" | grep -q 'thinking'; then
+    print_error "Metadata stripping: thinking block leaked through"
+    ((FAIL++))
+else
+    print_success "Metadata stripping: thinking blocks correctly stripped"
+    ((PASS++))
+fi
+
+if echo "$strip_test_output" | grep -q 'tokens used'; then
+    print_error "Metadata stripping: tokens line leaked through"
+    ((FAIL++))
+else
+    print_success "Metadata stripping: tokens line correctly stripped"
+    ((PASS++))
+fi
+
 # Test: Settings.json has Stop hook registered
 if [[ -f "$SCRIPT_DIR/../.claude/settings.json" ]]; then
     settings_content=$(cat "$SCRIPT_DIR/../.claude/settings.json")
@@ -381,7 +442,7 @@ JSONL
     has_codex=false
     if command -v codex &>/dev/null && codex login status &>/dev/null; then
         has_codex=true
-        print_warning "Running cross-provider bridge with Codex..."
+        print_info "Running cross-provider bridge with Codex..."
         codex_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
             CROSS_PROVIDER_BRIDGE=1 \
             CROSS_PROVIDER_ORDER="codex" \
@@ -391,14 +452,15 @@ JSONL
 
         if [ -n "$codex_output" ]; then
             # Should return JSON with decision: "block"
-            if echo "$codex_output" | jq -e '.decision == "block"' &>/dev/null; then
+            # Use printf instead of echo: echo interprets \n in jq's JSON escapes
+            if printf '%s\n' "$codex_output" | jq -e '.decision == "block"' &>/dev/null; then
                 print_success "Codex bridge: returned block decision with review"
                 ((PASS++))
             else
                 print_error "Codex bridge: output is not valid block JSON"
                 ((FAIL++))
             fi
-            if echo "$codex_output" | jq -e '.reason | length > 50' &>/dev/null; then
+            if printf '%s\n' "$codex_output" | jq -e '.reason | length > 50' &>/dev/null; then
                 print_success "Codex bridge: reason contains substantial review"
                 ((PASS++))
             else
@@ -406,7 +468,7 @@ JSONL
                 ((FAIL++))
             fi
             # Check reason includes iteration context
-            if echo "$codex_output" | jq -e '.reason | test("iteration")' &>/dev/null; then
+            if printf '%s\n' "$codex_output" | jq -e '.reason | test("iteration")' &>/dev/null; then
                 print_success "Codex bridge: reason includes iteration context"
                 ((PASS++))
             else
@@ -426,7 +488,7 @@ JSONL
     has_opencode=false
     if command -v opencode &>/dev/null; then
         has_opencode=true
-        print_warning "Running cross-provider bridge with OpenCode..."
+        print_info "Running cross-provider bridge with OpenCode..."
         opencode_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
             CROSS_PROVIDER_BRIDGE=1 \
             CROSS_PROVIDER_ORDER="opencode" \
@@ -434,14 +496,14 @@ JSONL
             timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
 
         if [ -n "$opencode_output" ]; then
-            if echo "$opencode_output" | jq -e '.decision == "block"' &>/dev/null; then
+            if printf '%s\n' "$opencode_output" | jq -e '.decision == "block"' &>/dev/null; then
                 print_success "OpenCode bridge: returned block decision with review"
                 ((PASS++))
             else
                 print_error "OpenCode bridge: output is not valid block JSON"
                 ((FAIL++))
             fi
-            if echo "$opencode_output" | jq -e '.reason | length > 50' &>/dev/null; then
+            if printf '%s\n' "$opencode_output" | jq -e '.reason | length > 50' &>/dev/null; then
                 print_success "OpenCode bridge: reason contains substantial review"
                 ((PASS++))
             else
@@ -459,14 +521,14 @@ JSONL
 
     # Test: Fallback order (codex first, then opencode)
     if $has_codex || $has_opencode; then
-        print_warning "Running cross-provider bridge with default fallback order..."
+        print_info "Running cross-provider bridge with default fallback order..."
         fallback_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
             CROSS_PROVIDER_BRIDGE=1 \
             CROSS_PROVIDER_MAX_CHARS=2000 \
             timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
 
         if [ -n "$fallback_output" ]; then
-            if echo "$fallback_output" | jq -e '.decision == "block"' &>/dev/null; then
+            if printf '%s\n' "$fallback_output" | jq -e '.decision == "block"' &>/dev/null; then
                 print_success "Fallback bridge: at least one provider succeeded"
                 ((PASS++))
             else
@@ -489,7 +551,7 @@ JSONL
         ((FAIL++))
     else
         # Test: Basic 2-stage pipeline (cheap preset to save tokens)
-        print_warning "Running live pipeline (cheap preset)..."
+        print_info "Running live pipeline (cheap preset)..."
         live_output=$(fish -c "source $SCRIPT_DIR/../.config/fish/functions/claude-pipeline.fish; claude-pipeline --preset cheap 'What is 2+2? Reply with just the number.'" 2>&1)
         live_exit=$?
         assert_exit_code "Live pipeline exits 0" "0" "$live_exit"
