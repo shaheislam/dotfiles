@@ -199,6 +199,12 @@ echo ""
 
 cd "$WORKTREE_PATH"
 
+# Sync beads agent memory before PR creation
+if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+    echo -e "${BLUE}Syncing beads agent memory...${NC}"
+    (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Step 1: Check for uncommitted changes

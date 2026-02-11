@@ -344,6 +344,12 @@ monitor_loop() {
 on_completion() {
     log "Running post-completion actions"
 
+    # Sync beads agent memory before merge
+    if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+        log "Syncing beads state"
+        (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
+    fi
+
     local merge_exit=0
     if $DO_MERGE; then
         # Check if merge-queue daemon is running
