@@ -485,13 +485,16 @@ JSONL
     fi
 
     # Test: OpenCode provider (if available)
+    # Requires: opencode binary + Ollama running + model pulled
     has_opencode=false
-    if command -v opencode &>/dev/null; then
+    opencode_model="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen2.5-coder:1.5b}"
+    if command -v opencode &>/dev/null && curl -sf http://localhost:11434/api/tags &>/dev/null; then
         has_opencode=true
-        print_info "Running cross-provider bridge with OpenCode..."
+        print_info "Running cross-provider bridge with OpenCode ($opencode_model)..."
         opencode_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
             CROSS_PROVIDER_BRIDGE=1 \
             CROSS_PROVIDER_ORDER="opencode" \
+            CROSS_PROVIDER_OPENCODE_MODEL="$opencode_model" \
             CROSS_PROVIDER_MAX_CHARS=2000 \
             timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
 
@@ -515,7 +518,7 @@ JSONL
             ((SKIP++))
         fi
     else
-        print_warning "OpenCode not available - skipping"
+        print_warning "OpenCode not available (need opencode binary + Ollama running) - skipping"
         ((SKIP++))
     fi
 

@@ -140,6 +140,9 @@ pm_map_package_name() {
         helm) echo "helm" ;;
         terraform) echo "terraform" ;;
 
+        # Casks (require --cask flag)
+        ollama) echo "--cask ollama" ;;
+
         # Default: return as-is
         *) echo "$generic" ;;
     esac
