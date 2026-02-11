@@ -442,6 +442,7 @@ echo 'some text' | llm 'summarize this'
 
 ### Cross-Provider Reasoning Bridge
 Stop hook that sends Claude's reasoning to an independent AI provider (Codex/OpenCode) for correlation-bias mitigation.
+Iterative consensus: reviewer and Claude exchange feedback until agreement or max iterations.
 Graceful fallback: Codex → OpenCode → silent continue (zero failures).
 
 **Enable**: `CROSS_PROVIDER_BRIDGE=1 claude`
@@ -452,6 +453,7 @@ Graceful fallback: Codex → OpenCode → silent continue (zero failures).
 | `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority order |
 | `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars to send |
 | `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
+| `CROSS_PROVIDER_MAX_ITERATIONS` | `3` | Max consensus iterations (set `1` for single-shot) |
 
 **Architecture**: Uses `type: "command"` Stop hook (not `prompt`/`agent` which use Anthropic models — same-provider defeats the purpose).
 **Hook**: `.claude/hooks/cross-provider-bridge.sh` | **Testing**: `scripts/test-claude-pipeline.sh` (`--live` for E2E tests)

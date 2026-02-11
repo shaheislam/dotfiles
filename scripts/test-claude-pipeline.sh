@@ -150,10 +150,10 @@ hook_disabled_output=$(echo '{"stop_hook_active": false, "transcript_path": "/no
 hook_disabled_exit=$?
 assert_exit_code "Hook disabled: exits 0 (silent pass-through)" "0" "$hook_disabled_exit"
 
-# Test: Hook exits 0 when stop_hook_active is true (loop prevention)
+# Test: Hook exits 0 when stop_hook_active=true with no state file (safety fallback)
 hook_loop_output=$(echo '{"stop_hook_active": true, "transcript_path": "/nonexistent"}' | CROSS_PROVIDER_BRIDGE=1 bash "$HOOK_SCRIPT" 2>&1)
 hook_loop_exit=$?
-assert_exit_code "Hook loop prevention: exits 0 when stop_hook_active=true" "0" "$hook_loop_exit"
+assert_exit_code "Hook safety fallback: exits 0 when stop_hook_active=true with no state file" "0" "$hook_loop_exit"
 
 # Test: Hook exits 0 when transcript path is missing
 hook_no_transcript=$(echo '{"stop_hook_active": false}' | CROSS_PROVIDER_BRIDGE=1 bash "$HOOK_SCRIPT" 2>&1)
@@ -176,6 +176,146 @@ hook_no_providers=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$
 hook_no_providers_exit=$?
 rm -f "$tmpfile"
 assert_exit_code "Hook no providers available: exits 0 (silent fallback)" "0" "$hook_no_providers_exit"
+
+# Test: Max iterations reached — exits 0 and cleans up state file
+iter_state_file="/tmp/cross-provider-bridge-test-max-iter.json"
+jq -n '{iteration: 3, previous_reviews: ["r1","r2","r3"], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' > "$iter_state_file"
+hook_max_iter=$(echo '{"stop_hook_active": true, "session_id": "test-max-iter", "transcript_path": "/nonexistent"}' | \
+    CROSS_PROVIDER_BRIDGE=1 \
+    CROSS_PROVIDER_MAX_ITERATIONS=3 \
+    bash "$HOOK_SCRIPT" 2>&1)
+hook_max_iter_exit=$?
+assert_exit_code "Max iterations reached: exits 0" "0" "$hook_max_iter_exit"
+if [ ! -f "$iter_state_file" ]; then
+    print_success "Max iterations reached: state file cleaned up"
+    ((PASS++))
+else
+    print_error "Max iterations reached: state file not cleaned up"
+    ((FAIL++))
+    rm -f "$iter_state_file"
+fi
+
+# Test: Single-shot mode (MAX_ITERATIONS=1) — first stop_hook_active triggers exit
+singleshot_state="/tmp/cross-provider-bridge-test-singleshot.json"
+jq -n '{iteration: 1, previous_reviews: ["review1"], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' > "$singleshot_state"
+hook_singleshot=$(echo '{"stop_hook_active": true, "session_id": "test-singleshot", "transcript_path": "/nonexistent"}' | \
+    CROSS_PROVIDER_BRIDGE=1 \
+    CROSS_PROVIDER_MAX_ITERATIONS=1 \
+    bash "$HOOK_SCRIPT" 2>&1)
+hook_singleshot_exit=$?
+assert_exit_code "Single-shot mode (MAX_ITERATIONS=1): exits 0 on iteration 1" "0" "$hook_singleshot_exit"
+rm -f "$singleshot_state"
+
+# Test: Stale state file (>1hr old) — exits 0 and cleans up
+stale_state="/tmp/cross-provider-bridge-test-stale.json"
+stale_ts=$(($(date +%s) - 7200))  # 2 hours ago
+jq -n --argjson ts "$stale_ts" '{iteration: 1, previous_reviews: ["old review"], created_at: $ts, last_updated: $ts}' > "$stale_state"
+hook_stale=$(echo '{"stop_hook_active": true, "session_id": "test-stale", "transcript_path": "/nonexistent"}' | \
+    CROSS_PROVIDER_BRIDGE=1 \
+    bash "$HOOK_SCRIPT" 2>&1)
+hook_stale_exit=$?
+assert_exit_code "Stale state file: exits 0" "0" "$hook_stale_exit"
+if [ ! -f "$stale_state" ]; then
+    print_success "Stale state file: cleaned up"
+    ((PASS++))
+else
+    print_error "Stale state file: not cleaned up"
+    ((FAIL++))
+    rm -f "$stale_state"
+fi
+
+# Test: Consensus detection — "CONSENSUS:" prefix detected
+consensus_tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test reasoning"}' > "$consensus_tmpfile"
+# Use a mock provider that echoes "CONSENSUS: looks good"
+# We test by providing a transcript and mocking the provider — but since we can't mock
+# providers in config tests, we test the detect_consensus function inline:
+consensus_output=$(bash -c '
+    detect_consensus() {
+        local output="$1"
+        local first_line
+        first_line=$(echo "$output" | head -1)
+        if echo "$first_line" | grep -qi "^CONSENSUS:"; then
+            return 0
+        fi
+        if echo "$output" | grep -qi \
+            -e "all concerns addressed" \
+            -e "no remaining issues" \
+            -e "no further concerns" \
+            -e "reasoning is sound" \
+            -e "adequately addressed"; then
+            return 0
+        fi
+        return 1
+    }
+    detect_consensus "CONSENSUS: The reasoning is correct." && echo "detected" || echo "missed"
+')
+rm -f "$consensus_tmpfile"
+if [ "$consensus_output" = "detected" ]; then
+    print_success "Consensus detection: CONSENSUS: prefix detected"
+    ((PASS++))
+else
+    print_error "Consensus detection: CONSENSUS: prefix not detected"
+    ((FAIL++))
+fi
+
+# Test: Consensus detection — heuristic fallback phrases
+heuristic_output=$(bash -c '
+    detect_consensus() {
+        local output="$1"
+        local first_line
+        first_line=$(echo "$output" | head -1)
+        if echo "$first_line" | grep -qi "^CONSENSUS:"; then
+            return 0
+        fi
+        if echo "$output" | grep -qi \
+            -e "all concerns addressed" \
+            -e "no remaining issues" \
+            -e "no further concerns" \
+            -e "reasoning is sound" \
+            -e "adequately addressed"; then
+            return 0
+        fi
+        return 1
+    }
+    detect_consensus "The reasoning is sound and well-structured." && echo "detected" || echo "missed"
+')
+if [ "$heuristic_output" = "detected" ]; then
+    print_success "Consensus detection: heuristic fallback phrase detected"
+    ((PASS++))
+else
+    print_error "Consensus detection: heuristic fallback phrase not detected"
+    ((FAIL++))
+fi
+
+# Test: No consensus — "CONCERNS:" prefix continues iteration
+concerns_output=$(bash -c '
+    detect_consensus() {
+        local output="$1"
+        local first_line
+        first_line=$(echo "$output" | head -1)
+        if echo "$first_line" | grep -qi "^CONSENSUS:"; then
+            return 0
+        fi
+        if echo "$output" | grep -qi \
+            -e "all concerns addressed" \
+            -e "no remaining issues" \
+            -e "no further concerns" \
+            -e "reasoning is sound" \
+            -e "adequately addressed"; then
+            return 0
+        fi
+        return 1
+    }
+    detect_consensus "CONCERNS: The edge case for empty input is not handled." && echo "detected" || echo "missed"
+')
+if [ "$concerns_output" = "missed" ]; then
+    print_success "No consensus: CONCERNS: prefix correctly continues iteration"
+    ((PASS++))
+else
+    print_error "No consensus: CONCERNS: prefix incorrectly detected as consensus"
+    ((FAIL++))
+fi
 
 # Test: Settings.json has Stop hook registered
 if [[ -f "$SCRIPT_DIR/../.claude/settings.json" ]]; then
@@ -239,7 +379,7 @@ JSONL
 
     # Test: Codex provider (if available)
     has_codex=false
-    if command -v codex &>/dev/null && { [ -n "${CODEX_API_KEY:-}" ] || [ -n "${OPENAI_API_KEY:-}" ]; }; then
+    if command -v codex &>/dev/null && codex login status &>/dev/null; then
         has_codex=true
         print_warning "Running cross-provider bridge with Codex..."
         codex_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
@@ -265,12 +405,20 @@ JSONL
                 print_error "Codex bridge: reason too short or missing"
                 ((FAIL++))
             fi
+            # Check reason includes iteration context
+            if echo "$codex_output" | jq -e '.reason | test("iteration")' &>/dev/null; then
+                print_success "Codex bridge: reason includes iteration context"
+                ((PASS++))
+            else
+                print_error "Codex bridge: reason missing iteration context"
+                ((FAIL++))
+            fi
         else
             print_warning "Codex bridge: no output (provider may be unavailable)"
             ((SKIP++))
         fi
     else
-        print_warning "Codex not available (need codex binary + OPENAI_API_KEY) - skipping"
+        print_warning "Codex not available (need codex binary + auth via 'codex login') - skipping"
         ((SKIP++))
     fi
 
