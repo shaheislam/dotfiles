@@ -52,6 +52,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l status_json false
     set -l gate_type ""
     set -l gate_dep_worktree ""
+    set -l no_checkpoints false
 
     for i in (seq (count $argv))
         if $skip_next
@@ -179,6 +180,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --bridge
                 set bridge_mode true
+            case --no-checkpoints
+                set no_checkpoints true
             case --status
                 set show_status true
             case --json
@@ -428,6 +431,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         if not test -d "$worktree_path/.beads"
             pushd $worktree_path
             bd init --quiet 2>/dev/null; or true
+            popd
+        end
+    end
+
+    # Auto-enable checkpoints for worktree
+    if not $no_checkpoints
+        if test -f ~/dotfiles/scripts/checkpoints.sh
+            pushd $worktree_path
+            bash ~/dotfiles/scripts/checkpoints.sh enable 2>/dev/null; or true
             popd
         end
     end

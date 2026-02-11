@@ -190,6 +190,27 @@ Git-backed agent memory that persists across sessions. Auto-initialized in workt
 - **Completion**: `worktree-witness.sh` and `ticket-complete.sh` run `bd sync` before merge/PR
 - **Commands**: `/beads:ready` (prime context), `/beads:create` (create issue)
 
+### Checkpoints (Session Context ↔ Git Commits)
+Captures Claude Code session transcript slices and stores them as structured metadata linked to commit SHAs on a `checkpoints/v1` orphan branch. Answers "why was this commit made?" not just "what changed?"
+
+- **CLI**: `checkpoints` / `ckpt` (Fish wrapper for `scripts/checkpoints.sh`)
+- **Hooks**: UserPromptSubmit (pre-prompt state), Stop (capture transcript slice)
+- **Git Hooks**: prepare-commit-msg (add trailer), post-commit (store on orphan branch), pre-push (push checkpoint branch)
+- **Per-worktree**: `gwt-ticket` runs `checkpoints enable` automatically (`--no-checkpoints` to opt out)
+- **Storage**: Orphan branch `checkpoints/v1`, sharded by commit SHA (`ab/cdef12/metadata.json`)
+
+| Command | Description |
+|---------|-------------|
+| `ckpt enable [--strategy manual\|auto]` | Install checkpoint hooks in current repo |
+| `ckpt disable` | Remove checkpoint hooks |
+| `ckpt status` | Show current session state |
+| `ckpt log [--branch <name>]` | List checkpoints |
+| `ckpt show <commit-sha>` | Show reasoning for a commit |
+| `ckpt rewind` | Interactive checkpoint browser (fzf) |
+| `ckpt doctor` | Validate checkpoint setup |
+
+**Coexistence**: Checkpoints (commit-level audit trail) complement Beads (issue-level agent memory) — different granularity, different storage, no conflict.
+
 ### MCP Server Integration
 
 **CRITICAL MCP Configuration Parity Rule**:
@@ -539,6 +560,7 @@ CROSS_PROVIDER_BRIDGE=1 claude
 ```
 
 ### Recent Updates
+- **2026-02-11**: Added Checkpoints system (session context linked to git commits, orphan branch storage, ckpt CLI)
 - **2026-02-11**: Added gwt-doctor agent health check, activated Beads agent memory (phases 3-5)
 - **2026-02-09**: Added Gastown agent orchestration patterns (agent-state, witness, merge-queue, triage, phase-gates, workflow templates)
 - **2026-02-08**: Added Cross-Provider Reasoning Bridge (Stop hook for correlation-bias mitigation via Codex/OpenCode)
