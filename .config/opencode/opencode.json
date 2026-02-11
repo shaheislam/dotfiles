@@ -11,6 +11,12 @@
       "models": {
         "qwen3-coder": {
           "name": "Qwen3 Coder (local)"
+        },
+        "qwen2.5-coder:0.5b": {
+          "name": "Qwen2.5 Coder 0.5B (local, fast)"
+        },
+        "qwen2.5-coder:1.5b": {
+          "name": "Qwen2.5 Coder 1.5B (local, balanced)"
         }
       }
     }
