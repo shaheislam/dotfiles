@@ -24,7 +24,13 @@
     },
     "drawio": {
       "command": "bunx",
-      "args": ["drawio-mcp-server"]
+      "args": [
+        "drawio-mcp-server"
+      ]
     }
+  },
+  "preferences": {
+    "sidebarMode": "chat",
+    "coworkScheduledTasksEnabled": false
   }
 }
