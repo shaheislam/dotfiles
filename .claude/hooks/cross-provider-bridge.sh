@@ -61,6 +61,28 @@ if [ "$stop_hook_active" = "true" ]; then
     previous_review=$(jq -r '.previous_reviews[-1] // empty' "$state_file" 2>/dev/null)
 fi
 
+# Strip provider CLI metadata, extracting only the model's response content
+# Codex CLI wraps responses in timestamped headers, echoed prompts, and thinking blocks
+strip_provider_metadata() {
+    local output="$1"
+    # Codex CLI: response follows last "] codex" line, ends before "] tokens used:"
+    if echo "$output" | grep -q '^\[.*\] codex$'; then
+        local cleaned
+        cleaned=$(echo "$output" | awk '
+            /^\[.*\] codex$/ { content = ""; collecting = 1; next }
+            /^\[.*\] tokens used:/ { next }
+            collecting { content = content "\n" $0 }
+            END { sub(/^\n+/, "", content); print content }
+        ')
+        if [ -n "$cleaned" ]; then
+            echo "$cleaned"
+            return
+        fi
+    fi
+    # No known metadata pattern — return as-is
+    echo "$output"
+}
+
 # Consensus detection: check if reviewer output indicates agreement
 detect_consensus() {
     local output="$1"
@@ -204,6 +226,9 @@ if [ -z "$cross_provider_output" ]; then
     rm -f "$state_file" 2>/dev/null
     exit 0
 fi
+
+# Strip provider CLI metadata (Codex headers, echoed prompt, thinking blocks)
+cross_provider_output=$(strip_provider_metadata "$cross_provider_output")
 
 # Check for consensus
 if detect_consensus "$cross_provider_output"; then
