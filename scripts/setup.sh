@@ -467,6 +467,13 @@ phase_4_cloud_tools() {
         print_success "beads CLI already installed at: $(which bd)"
     fi
 
+    if command_exists bd; then
+        print_step "Configuring beads Claude Code hooks..."
+        bd setup claude >/dev/null 2>&1 && \
+            print_success "Beads hooks installed" || \
+            log_verbose "Beads hook setup skipped"
+    fi
+
     # Install Claude Code Router
     if ! command_exists ccr; then
         print_step "Installing Claude Code Router..."

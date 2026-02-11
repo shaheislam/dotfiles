@@ -719,6 +719,7 @@ if status is-interactive
     alias gwtclean="gwt-cleanup"      # Cleanup stale devcontainer instances
     alias gwtt="gwt-ticket"           # Autonomous ticket execution
     alias gwtq="gwt-queue"            # Ticket queue management
+    alias gwtdoc="gwt-doctor"          # Agent orchestration health check
     alias csub="claude-sub"           # Claude subscription profiles
 
     # Ticket execution aliases

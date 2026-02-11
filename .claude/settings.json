@@ -12,7 +12,8 @@
     "learning-output-style@claude-code-plugins": true,
     "code-simplifier@claude-plugins-official": true,
     "security-guidance@claude-code-plugins": true,
-    "terraform-skill@antonbabenko": true
+    "terraform-skill@antonbabenko": true,
+    "beads@steveyegge/beads": true
   },
   "hooks": {
     "SessionStart": [
@@ -21,6 +22,24 @@
           {
             "type": "command",
             "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd sync 2>/dev/null || true"
           }
         ]
       }

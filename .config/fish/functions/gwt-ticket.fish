@@ -422,6 +422,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Resolve worktree path
     set worktree_path (realpath $worktree_path)
 
+    # Auto-init beads agent memory for worktree
+    if command -q bd
+        if not test -d "$worktree_path/.beads"
+            pushd $worktree_path
+            bd init --quiet 2>/dev/null; or true
+            popd
+        end
+    end
+
     # Step 2: Ensure tmux session exists
     echo "[2/4] Setting up tmux session..."
     if not tmux has-session -t $session_name 2>/dev/null
