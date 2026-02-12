@@ -925,6 +925,12 @@ phase_8_dotfiles() {
 
     stow_dotfiles
 
+    # Ensure Claude Code hook scripts are executable after stow
+    if [[ -d "$HOME/.claude/hooks" ]]; then
+        chmod +x "$HOME/.claude/hooks"/*.py "$HOME/.claude/hooks"/*.sh 2>/dev/null || true
+        log_verbose "Claude Code hook scripts marked executable"
+    fi
+
     # Configure git template directory for auto-setup hooks (e.g., .gitignore_local)
     if command_exists git; then
         git config --global init.templateDir ~/.config/git/templates
