@@ -369,11 +369,32 @@ else
     fail "BufEnter not filtering diffview:// buffers"
 fi
 
-# BufEnter skips term:// buffers
-if grep -q 'term://' "$git_lua"; then
-    pass "BufEnter skips term:// buffers"
+# BufEnter skips non-file buffers via buftype check
+if grep -q 'vim.bo.buftype' "$git_lua"; then
+    pass "BufEnter skips non-file buffers (buftype check)"
 else
-    fail "BufEnter not filtering term:// buffers"
+    fail "BufEnter not filtering non-file buffers"
+fi
+
+# Path canonicalization with vim.fn.resolve
+if grep -B5 -A5 "buf_root" "$git_lua" | grep -q "vim.fn.resolve"; then
+    pass "Repo root comparison uses vim.fn.resolve() for symlinks"
+else
+    fail "Repo root comparison missing vim.fn.resolve()"
+fi
+
+# Short-circuit when buffer is under current root
+if grep -q "sub(1," "$git_lua"; then
+    pass "Short-circuit: skips walk when buffer is under current root"
+else
+    fail "Short-circuit for same-root buffers missing"
+fi
+
+# Path escaping in DiffviewOpen -C
+if grep -q "fnameescape" "$git_lua"; then
+    pass "DiffviewOpen -C uses fnameescape() for path safety"
+else
+    fail "DiffviewOpen -C missing path escaping"
 fi
 
 # diffview_current_root tracking variable
@@ -384,7 +405,7 @@ else
 fi
 
 # view_opened sets diffview_current_root
-if grep -A3 "view_opened" "$git_lua" | grep -q "diffview_current_root"; then
+if grep -A5 "view_opened = function" "$git_lua" | grep -q "diffview_current_root"; then
     pass "view_opened sets diffview_current_root"
 else
     fail "view_opened does not set diffview_current_root"
