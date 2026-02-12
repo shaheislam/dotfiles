@@ -55,9 +55,11 @@ This file documents specific behaviors and constraints for AI agents working on 
 
 - Do not add emojis to commit messages.
 - Do not reference AI tools in commit messages.
-- Do not create files outside `~/dotfiles` (exception: `~/neovim`).
+- Do not create files outside `~/dotfiles` (exception: `~/neovim`; exception: runtime logs/caches in `~/.claude/` — see below).
 - Do not use `npx` for MCP commands in setup.sh - use `bunx`.
-- Do not modify `.claude/settings.json` directly - plugins are managed via `claude plugin` commands.
+- Do not modify `.claude/settings.json` to manage **plugins** — use `claude plugin` commands.
+- **Exception: Hooks** are configured directly in `.claude/settings.json` under the `"hooks"` key per [official docs](https://code.claude.com/docs/en/hooks). There is no CLI for hook registration. When wiring hooks, update settings.json in both `~/dotfiles/.claude/` (stow source) and verify `~/.claude/` (symlink target) reflects the change.
+- **Exception: Runtime data** — Hook scripts may write runtime logs/caches to `~/.claude/hooks/logs/` and similar paths. This is expected behavior (same pattern as Beads `bd sync`, checkpoints, notification logs). These are runtime artifacts, not source configs, and must NOT be committed to the dotfiles repo.
 - Do not create README.md files unless explicitly asked.
 - Do not add Tokyo Night theme configs without checking all tools for consistency.
 

@@ -34,12 +34,55 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/use_bun.py",
+            "statusMessage": "Checking package manager..."
+          },
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/validate-bash.py",
+            "statusMessage": "Validating bash command..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "hooks": [
           {
             "type": "command",
             "command": "bd sync 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/macos_notification.py 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true"
           }
         ]
       }

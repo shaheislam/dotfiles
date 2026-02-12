@@ -135,6 +135,14 @@ test_mcp() {
     if [ -f "$DOTFILES_ROOT/.mcp.json" ]; then
         run_test ".mcp.json is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.mcp.json'))\""
     fi
+
+    # Hook-dependent MCP servers: deepwiki-context.py requires deepwiki MCP
+    # deepwiki is a Claude Code built-in MCP (not in .mcp.json), so verify
+    # context7 parity as the hook's fallback documentation source
+    if [ -f "$desktop_config" ] && [ -f "$DOTFILES_ROOT/.mcp.json" ]; then
+        run_test "context7 in Desktop config" "python3 -c \"import json; d=json.load(open('$desktop_config')); assert 'context7' in d.get('mcpServers', {})\""
+        run_test "context7 in CLI config" "python3 -c \"import json; d=json.load(open('$DOTFILES_ROOT/.mcp.json')); assert 'context7' in d.get('mcpServers', {})\""
+    fi
 }
 
 test_tmux() {
@@ -149,8 +157,15 @@ test_hooks() {
     echo -e "${BLUE}--- Claude Code Hooks Tests ---${NC}"
     run_test "Hooks directory exists" "[ -d '$DOTFILES_ROOT/.claude/hooks' ]"
 
-    for hook in use_bun.py validate-bash.py ts_lint.py macos_notification.py; do
+    # Core hook scripts exist and are executable
+    for hook in use_bun.py validate-bash.py ts_lint.py macos_notification.py deepwiki-context.py add-context.py log_pre_tool_use.py; do
         run_test "Hook $hook exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
+        run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
+    done
+
+    for hook in cross-provider-bridge.sh log-notification.sh file-modified.sh; do
+        run_test "Hook $hook exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
+        run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
     done
 
     # Validate Python syntax
@@ -160,6 +175,38 @@ test_hooks() {
             run_test "Hook $name valid Python" "python3 -c \"import py_compile; py_compile.compile('$hook', doraise=True)\""
         fi
     done
+
+    # Settings.json hook events configured
+    local settings="$DOTFILES_ROOT/.claude/settings.json"
+    if [ -f "$settings" ]; then
+        for event in SessionStart PreToolUse PostToolUse PreCompact Notification UserPromptSubmit Stop; do
+            run_test "Hook event wired: $event" "python3 -c \"import json; d=json.load(open('$settings')); assert '$event' in d.get('hooks', {})\""
+        done
+    fi
+
+    # Functional: use_bun.py blocks npm, allows bun
+    local hooks_dir="$DOTFILES_ROOT/.claude/hooks"
+    run_test "use_bun.py blocks npm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py allows bun" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
+
+    # Functional: validate-bash.py - blocklist
+    run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "validate-bash blocks sudo rm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sudo rm -rf node_modules\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "validate-bash blocks dd to device" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dd if=/dev/zero of=/dev/sda\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+
+    # Functional: validate-bash.py - allowlist (devcontainer/worktree)
+    run_test "validate-bash allows git status" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+    run_test "validate-bash allowlist: devcontainer up" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"devcontainer up\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+    run_test "validate-bash allowlist: worktree add" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git worktree add ../feat\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+    run_test "validate-bash allowlist: worktree list" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git worktree list\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+    run_test "validate-bash allowlist: docker compose" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"docker compose up -d\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+
+    # Functional: validate-bash.py - fail-closed on bad input
+    run_test "validate-bash fail-closed on bad JSON" "echo 'not-json' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+
+    # Functional: deepwiki-context.py language detection
+    run_test "deepwiki detects Python" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/main.py\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null | grep -q python"
+    run_test "deepwiki silent for unknown" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/data.xyz\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null"
 }
 
 test_agents_md() {
