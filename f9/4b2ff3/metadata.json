@@ -1,0 +1,14 @@
+{
+  "session_id": "57b28f1c-5db2-4d3b-8b33-c2a6dc6d0b82",
+  "timestamp": "2026-02-12T17:42:19Z",
+  "branch": "entry",
+  "token_estimate": 3978,
+  "transcript_lines": 20,
+  "files_modified": [],
+  "new_files": [],
+  "tool_calls_summary": [
+    "   3 Bash"
+  ],
+  "summary": "Agent session checkpoint",
+  "commit_sha": "f94b2ff3c6708be05742dc75336f551675fdc474"
+}
