@@ -168,6 +168,10 @@ Same supported events as prompt hooks. Use when verification requires inspecting
 
 ### Settings File Locations
 
+Hooks are configured directly in `settings.json` files per the
+[official documentation](https://code.claude.com/docs/en/hooks). There is no
+CLI command for hook registration — `claude plugin` manages plugins, not hooks.
+
 | Location | Scope | Shareable |
 |----------|-------|-----------|
 | `~/.claude/settings.json` | All projects | No (local machine) |
@@ -244,20 +248,20 @@ MCP tools follow pattern `mcp__<server>__<tool>`:
 
 | Script | Type | Event Target | Status |
 |--------|------|-------------|--------|
-| `use_bun.py` | Python | PreToolUse (Bash) | **Not wired** |
-| `add-context.py` | Python | UserPromptSubmit | **Not wired** |
-| `validate-bash.py` | Python | PreToolUse (Bash) | **Not wired** |
-| `deepwiki-context.py` | Python | PostToolUse (Read) | **Not wired** |
-| `macos_notification.py` | Python | Notification | **Not wired** |
-| `log-notification.sh` | Bash | Notification | **Not wired** |
-| `file-modified.sh` | Bash | PostToolUse (Edit/Write) | **Not wired** |
-| `log_pre_tool_use.py` | Python | PreToolUse | **Not wired** |
-| `ts_lint.py` | Python | PostToolUse | **Not wired** |
-| `play_audio.py` | Python | Notification | **Not wired** |
+| `use_bun.py` | Python | PreToolUse (Bash) | **Active** |
+| `validate-bash.py` | Python | PreToolUse (Bash) | **Active** |
+| `deepwiki-context.py` | Python | PostToolUse (Read) | **Active** |
+| `macos_notification.py` | Python | Notification | **Active** |
+| `log-notification.sh` | Bash | Notification | **Active** |
 | `cross-provider-bridge.sh` | Bash | Stop | **Active** |
-| `jfdi/audit-log.py` | Python | Multiple | **Not wired** |
-| `jfdi/prompt-inject-context.py` | Python | UserPromptSubmit | **Not wired** |
-| `jfdi/session-end-extract.py` | Python | SessionEnd | **Not wired** |
+| `add-context.py` | Python | UserPromptSubmit | Not wired |
+| `file-modified.sh` | Bash | PostToolUse (Edit/Write) | Not wired |
+| `log_pre_tool_use.py` | Python | PreToolUse | Not wired |
+| `ts_lint.py` | Python | PostToolUse | Not wired |
+| `play_audio.py` | Python | Notification | Not wired |
+| `jfdi/audit-log.py` | Python | Multiple | Not wired |
+| `jfdi/prompt-inject-context.py` | Python | UserPromptSubmit | Not wired |
+| `jfdi/session-end-extract.py` | Python | SessionEnd | Not wired |
 
 ### Checkpoint Hooks (in `scripts/hooks/`)
 
@@ -273,83 +277,29 @@ MCP tools follow pattern `mcp__<server>__<tool>`:
 
 ## Available But Unconfigured Hooks
 
-These scripts exist in `.claude/hooks/` but are not wired into `settings.json`. They represent **quick wins** for enhancing the setup.
+These scripts exist in `.claude/hooks/` but are not yet wired into `settings.json`.
 
-### High-Value Recommendations
+### Candidates for Future Wiring
 
-#### 1. Bun Enforcement (`use_bun.py`) — PreToolUse
+#### 1. Context Injection (`add-context.py`) — UserPromptSubmit
 
-**Why**: Blocks npm/npx/yarn/pnpm commands, suggests bun equivalents. Already has exception list for specific MCPs.
+**Why**: Adds timestamp, git info, Python version, and secret detection to every prompt. Useful for audit trails.
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/use_bun.py"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+#### 2. File Modification Tracking (`file-modified.sh`) — PostToolUse
 
-#### 2. macOS Notifications (`macos_notification.py`) — Notification
+**Why**: Logs file modifications with Python/JSON syntax checking. Good for change auditing.
 
-**Why**: Desktop notifications when Claude needs attention. Different sounds for errors/warnings/success.
+#### 3. TypeScript Lint (`ts_lint.py`) — PostToolUse
 
-```json
-{
-  "hooks": {
-    "Notification": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/macos_notification.py"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+**Why**: Auto-runs linting after TypeScript file edits.
 
-#### 3. Bash Validation (`validate-bash.py`) — PreToolUse
+#### 4. Audio Alerts (`play_audio.py`) — Notification
 
-**Why**: Blocks dangerous commands (`rm -rf /`, `sudo rm`, `dd`), suggests optimizations (grep → rg, find → fd).
+**Why**: Plays audio cues for notifications. Alternative to `macos_notification.py`.
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-bash.py"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
+#### 5. Pre-Tool Logging (`log_pre_tool_use.py`) — PreToolUse
 
-#### 4. Notification Logging (`log-notification.sh`) — Notification
-
-**Why**: Audit trail of all notifications in `~/.claude/hooks/logs/`.
-
-#### 5. DeepWiki Context (`deepwiki-context.py`) — PostToolUse
-
-**Why**: Auto-suggests relevant DeepWiki repos when reading files based on language detection.
+**Why**: Logs all tool invocations for debugging and audit purposes.
 
 ---
 
