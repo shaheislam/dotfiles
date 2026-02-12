@@ -362,11 +362,11 @@ else
     fail "BufEnter autocmd missing"
 fi
 
-# BufEnter skips diffview:// buffers
-if grep -q 'diffview://' "$git_lua"; then
-    pass "BufEnter skips diffview:// buffers"
+# BufEnter skips URI-scheme buffers (diffview://, fugitive://, term://, etc.)
+if grep -q '%w+://' "$git_lua"; then
+    pass "BufEnter skips URI-scheme buffers (diffview://, fugitive://, term://, etc.)"
 else
-    fail "BufEnter not filtering diffview:// buffers"
+    fail "BufEnter not filtering URI-scheme buffers"
 fi
 
 # BufEnter skips non-file buffers via buftype check
@@ -423,6 +423,13 @@ if grep -q "buf_enter_switching" "$git_lua"; then
     pass "BufEnter has reentrancy guard"
 else
     fail "BufEnter missing reentrancy guard"
+fi
+
+# DiffviewOpen failure reverts diffview_current_root to prev_root
+if grep -q "prev_root" "$git_lua"; then
+    pass "DiffviewOpen failure reverts diffview_current_root"
+else
+    fail "DiffviewOpen failure does not revert diffview_current_root"
 fi
 
 echo ""
