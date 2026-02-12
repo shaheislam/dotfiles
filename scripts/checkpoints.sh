@@ -315,9 +315,13 @@ cmd_status() {
 cmd_log() {
     require_git_repo
     local branch_filter=""
+    local git_mode=false
+    local limit_n=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --branch) branch_filter="$2"; shift 2 ;;
+            --git) git_mode=true; shift ;;
+            -n) limit_n="$2"; shift 2 ;;
             *) shift ;;
         esac
     done
@@ -325,6 +329,12 @@ cmd_log() {
     if ! git show-ref --quiet "refs/heads/${CHECKPOINT_BRANCH}" 2>/dev/null; then
         print_error "No checkpoint branch found. Run: checkpoints enable"
         exit 2
+    fi
+
+    # Git mode: annotated git log with checkpoint markers
+    if $git_mode; then
+        cmd_log_git "$branch_filter" "$limit_n"
+        return
     fi
 
     # List checkpoint metadata files from orphan branch
@@ -362,6 +372,74 @@ cmd_log() {
             "${tokens}" \
             "${summary}"
     done <<< "$files"
+}
+
+# Annotated git log with checkpoint markers
+cmd_log_git() {
+    local branch_filter="$1"
+    local limit_n="$2"
+
+    # Build associative array of checkpoint data keyed by full SHA
+    declare -A ckpt_data
+    local meta_files
+    meta_files=$(git ls-tree -r --name-only "${CHECKPOINT_BRANCH}" 2>/dev/null | grep 'metadata.json$' || true)
+
+    if [[ -n "$meta_files" ]]; then
+        while IFS= read -r meta_path; do
+            local content
+            content=$(git show "${CHECKPOINT_BRANCH}:${meta_path}" 2>/dev/null || true)
+            [[ -z "$content" ]] && continue
+
+            local sha tokens tools summary ckpt_branch
+            sha=$(echo "$content" | jq -r '.commit_sha // ""' 2>/dev/null)
+            ckpt_branch=$(echo "$content" | jq -r '.branch // ""' 2>/dev/null)
+            [[ -z "$sha" ]] && continue
+
+            # Filter by branch if requested
+            if [[ -n "$branch_filter" && "$ckpt_branch" != "$branch_filter" ]]; then
+                continue
+            fi
+
+            tokens=$(echo "$content" | jq -r '.token_estimate // 0' 2>/dev/null)
+            tools=$(echo "$content" | jq -r '(.tool_calls_summary // []) | map(. | ltrimstr(" ")) | join(", ")' 2>/dev/null)
+            summary=$(echo "$content" | jq -r '.summary // ""' 2>/dev/null | head -c 40)
+
+            ckpt_data["$sha"]="${tokens}|${tools}|${summary}"
+        done <<< "$meta_files"
+    fi
+
+    # Walk git log
+    local git_log_args=("--format=%H %s")
+    if [[ -n "$limit_n" ]]; then
+        git_log_args+=("-n" "$limit_n")
+    fi
+
+    while IFS= read -r line; do
+        local full_sha msg
+        full_sha="${line%% *}"
+        msg="${line#* }"
+        local short_sha="${full_sha:0:7}"
+
+        echo -e "${CYAN}${short_sha}${NC} ${msg}"
+
+        if [[ -n "${ckpt_data[$full_sha]:-}" ]]; then
+            local entry="${ckpt_data[$full_sha]}"
+            local tokens tools summary
+            tokens="${entry%%|*}"
+            entry="${entry#*|}"
+            tools="${entry%%|*}"
+            summary="${entry#*|}"
+
+            local annotation="✦ ${tokens} tokens"
+            if [[ -n "$tools" ]]; then
+                annotation+=" │ ${tools}"
+            fi
+            if [[ -n "$summary" ]]; then
+                annotation+=" │ ${summary}"
+            fi
+            echo -e "        ${YELLOW}╰─${NC} ${annotation}"
+        fi
+    done < <(git log "${git_log_args[@]}")
 }
 
 cmd_show() {
@@ -951,7 +1029,7 @@ usage() {
     echo "  enable [--strategy manual|auto]   Install checkpoint hooks"
     echo "  disable [--purge]                  Disable checkpoints (--purge removes shared git hooks)"
     echo "  status                             Show current checkpoint state"
-    echo "  log [--branch <name>]              List checkpoints"
+    echo "  log [--branch <name>] [--git] [-n N] List checkpoints (--git: annotated git log)"
     echo "  show <commit-sha>                  Show checkpoint for a commit"
     echo "  resume [branch]                    Show latest checkpoint context for a branch"
     echo "  context [--commits N] [--branch b] Condensed context of recent checkpoints"

@@ -528,6 +528,118 @@ else
     pass "Log handles empty state (no error)"
 fi
 
+section "Log --git (Annotated Git Log)"
+
+# Set up a fresh repo with mixed commits (some with checkpoints, some without)
+setup_test_repo
+"$CHECKPOINTS" enable 2>&1 >/dev/null
+
+# Commit 1: with checkpoint
+fake_sid_git1="test-git-$(date +%s)-1"
+mkdir -p ".checkpoints/${fake_sid_git1}"
+cat > ".checkpoints/${fake_sid_git1}/pending.json" <<EOF
+{
+  "session_id": "${fake_sid_git1}",
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "branch": "main",
+  "token_estimate": 1200,
+  "transcript_lines": 10,
+  "files_modified": ["README.md"],
+  "new_files": [],
+  "tool_calls_summary": ["  2 Bash", "  3 Read"],
+  "summary": "First checkpoint commit"
+}
+EOF
+echo "first checkpoint" > ".checkpoints/${fake_sid_git1}/prompt.txt"
+echo '{"type":"human","message":{"content":"first"}}' > ".checkpoints/${fake_sid_git1}/transcript.jsonl"
+echo "change 1" >> README.md
+git add README.md
+git commit -q -m "First commit with checkpoint"
+sha_git1=$(git rev-parse HEAD)
+
+# Commit 2: without checkpoint (no pending data)
+echo "change 2" >> README.md
+git add README.md
+git commit -q -m "Second commit without checkpoint"
+sha_git2=$(git rev-parse HEAD)
+
+# Commit 3: with checkpoint
+fake_sid_git3="test-git-$(date +%s)-3"
+mkdir -p ".checkpoints/${fake_sid_git3}"
+cat > ".checkpoints/${fake_sid_git3}/pending.json" <<EOF
+{
+  "session_id": "${fake_sid_git3}",
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "branch": "main",
+  "token_estimate": 2500,
+  "transcript_lines": 25,
+  "files_modified": ["README.md"],
+  "new_files": ["notes.txt"],
+  "tool_calls_summary": ["  1 Edit"],
+  "summary": "Third checkpoint commit"
+}
+EOF
+echo "third checkpoint" > ".checkpoints/${fake_sid_git3}/prompt.txt"
+echo '{"type":"human","message":{"content":"third"}}' > ".checkpoints/${fake_sid_git3}/transcript.jsonl"
+echo "change 3" >> README.md
+echo "notes" > notes.txt
+git add README.md notes.txt
+git commit -q -m "Third commit with checkpoint"
+sha_git3=$(git rev-parse HEAD)
+
+# Test: --git shows all 3 commits (plus initial)
+output=$("$CHECKPOINTS" log --git 2>&1)
+commit_lines=$(echo "$output" | grep -c "^..*[a-f0-9]\{7\}" || true)
+if [[ "$commit_lines" -ge 3 ]]; then
+    pass "log --git shows all commits"
+else
+    fail "log --git shows ${commit_lines} commits, expected ≥3"
+fi
+
+# Test: checkpoint annotation present only on checkpoint commits
+annotation_count=$(echo "$output" | grep -c "✦" || true)
+if [[ "$annotation_count" -eq 2 ]]; then
+    pass "Checkpoint annotations on exactly 2 commits"
+else
+    fail "Expected 2 checkpoint annotations, got ${annotation_count}"
+fi
+
+# Test: annotation contains tokens
+if echo "$output" | grep "✦" | grep -q "tokens"; then
+    pass "Annotations contain token counts"
+else
+    fail "Annotations missing token counts"
+fi
+
+# Test: annotation contains tools
+if echo "$output" | grep "✦" | grep -q "Bash\|Read\|Edit"; then
+    pass "Annotations contain tool summaries"
+else
+    fail "Annotations missing tool summaries"
+fi
+
+# Test: -n flag limits output
+output=$("$CHECKPOINTS" log --git -n 1 2>&1)
+commit_lines=$(echo "$output" | grep -c "^..*[a-f0-9]\{7\}" || true)
+if [[ "$commit_lines" -eq 1 ]]; then
+    pass "log --git -n 1 shows only 1 commit"
+else
+    fail "log --git -n 1 shows ${commit_lines} commits, expected 1"
+fi
+
+# Test: non-checkpoint commit has no annotation
+if echo "$output" | grep -q "Second commit without"; then
+    # If the second commit is shown, make sure it has no annotation
+    second_line=$(echo "$output" | grep -A1 "Second commit without" | tail -1)
+    if echo "$second_line" | grep -q "✦"; then
+        fail "Non-checkpoint commit has annotation"
+    else
+        pass "Non-checkpoint commit has no annotation"
+    fi
+else
+    pass "Non-checkpoint commit filtered correctly by -n"
+fi
+
 # --- Summary ---
 
 echo ""
