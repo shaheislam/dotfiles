@@ -311,6 +311,38 @@ Script: `scripts/setup-mobile-coding.sh`. Mobile tmux layout: `scripts/tmux/tmux
 ### Clawdbot AI Assistant (Optional)
 WhatsApp/Telegram interface to Claude. Installed via `scripts/setup-mobile-coding.sh` or `npm install -g clawdbot@latest`.
 
+### OpenClaw AI Assistant Platform
+Self-hosted, single-user AI assistant with multi-channel unified inbox (Telegram, Slack, Discord, WhatsApp, Signal, WebChat).
+Local-first Gateway at `ws://127.0.0.1:18789` with session isolation and Docker sandboxing.
+
+**Setup**: `npm install -g openclaw@latest && openclaw onboard --install-daemon`
+**Docs**: `docs/openclaw-setup.md` (comprehensive plan with security hardening)
+**Config Template**: `scripts/openclaw/openclaw-base.json` (security-hardened defaults)
+**Tests**: `scripts/test-filter.sh openclaw` (42 tests: config, security, functions, scripts)
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `openclaw start` | `claw start` | Start Gateway daemon |
+| `openclaw stop` | `claw stop` | Stop Gateway daemon |
+| `openclaw status` | `claw status` | Show Gateway status |
+| `openclaw doctor` | `claw doctor` | Health checks |
+| `openclaw send <ch> <msg>` | `claw send` | Send to channel |
+| `openclaw audit` | `claw audit` | Security audit |
+| `openclaw pair <ch> <code>` | `claw pair` | Approve DM pairing |
+| `openclaw agent <msg>` | `claw agent` | Direct agent query |
+| `openclaw-notify` | - | Notification helper (Fish) |
+
+**Security Defaults**: Loopback binding, token auth, DM pairing on all channels, sandbox for non-main sessions, browser/canvas/cron/nodes tools denied, elevated execution disabled, Tailscale Serve (not Funnel).
+
+**Integration Points**: `oc_notify()` bash helper in `scripts/openclaw/notify.sh` for gwt-ticket, ralph-loop, merge-queue, cross-provider-bridge notifications.
+
+**Files**:
+- Fish functions: `.config/fish/functions/openclaw.fish`, `openclaw-notify.fish`
+- Bash helper: `scripts/openclaw/notify.sh` (source for `oc_notify`, `oc_notify_ticket`)
+- Base config: `scripts/openclaw/openclaw-base.json`
+- Runtime state: `~/.openclaw/` (NOT in git - contains secrets)
+- LaunchAgent: `~/Library/LaunchAgents/bot.molt.gateway.plist` (managed by `openclaw gateway install`)
+
 ### DNS Configuration
 Cloudflare DNS (1.1.1.1, 1.0.0.1) configured in `scripts/setup/macos-defaults.sh` to bypass UK ISP DNS blocking.
 
@@ -624,6 +656,7 @@ CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=ollama CROSS_PROVIDER_OLLAMA_MODEL=
 ```
 
 ### Recent Updates
+- **2026-02-12**: Added OpenClaw AI assistant platform integration (multi-channel inbox, security-hardened config, Fish functions, notification helpers, 42-test suite)
 - **2026-02-12**: Enhanced Cross-Provider Bridge with multi-provider support (Gemini, Ollama, DeepSeek, Claude), verbose mode, configurable timeout/logging, per-provider model overrides, gwt-ticket bridge flags
 - **2026-02-12**: Added comprehensive hooks integration (PreToolUse bun/bash validation, Notification desktop alerts/logging, PostToolUse DeepWiki context, test suite, docs)
 - **2026-02-11**: Added Checkpoints system (session context linked to git commits, orphan branch storage, ckpt CLI)
