@@ -151,6 +151,17 @@ test_tmux() {
     run_test "tmux scripts directory exists" "[ -d '$DOTFILES_ROOT/scripts/tmux' ]"
     run_test "Claude watcher script exists" "[ -f '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
     run_test "Claude watcher is executable" "[ -x '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
+
+    # Empty window fix: gwt-ticket should create session with named window directly
+    local GWT_TICKET="$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish"
+    run_test "gwt-ticket creates session with window name (-n flag)" \
+        "grep -q 'tmux new-session -d -s \$session_name -n \$window_name -c \$worktree_path' '$GWT_TICKET'"
+    run_test "gwt-ticket tracks new session creation" \
+        "grep -q 'created_new_session' '$GWT_TICKET'"
+    run_test "gwt-ticket skips new-window when session just created" \
+        "grep -q 'created_new_session.*false' '$GWT_TICKET'"
+    run_test "gwt-ticket only creates extra window for existing sessions" \
+        "grep -A2 'test.*created_new_session.*false' '$GWT_TICKET' | grep -q 'tmux new-window'"
 }
 
 test_hooks() {

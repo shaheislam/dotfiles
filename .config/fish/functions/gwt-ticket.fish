@@ -565,18 +565,24 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
 
     # Step 2: Ensure tmux session exists
     echo "[2/4] Setting up tmux session..."
+    set -l created_new_session false
     if not tmux has-session -t $session_name 2>/dev/null
-        tmux new-session -d -s $session_name
+        # Create session with the ticket window as the initial window
+        # This avoids an extra default window (which would show reattach-to-user-namespace)
+        tmux new-session -d -s $session_name -n $window_name -c $worktree_path
+        set created_new_session true
         echo "Created tmux session: $session_name"
     else
         echo "Tmux session exists: $session_name"
     end
 
-    # Step 3: Create window for this ticket
+    # Step 3: Create window for this ticket (only if session already existed)
     echo "[3/4] Creating ticket window..."
 
-    # Always create a new window (tmux allows duplicate names)
-    tmux new-window -t $session_name -n $window_name -c $worktree_path
+    if test "$created_new_session" = false
+        # Session existed, create a new window for this ticket
+        tmux new-window -t $session_name -n $window_name -c $worktree_path
+    end
     echo "Created window: $window_name"
 
     # Step 4: Build and launch Claude
