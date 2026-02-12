@@ -230,15 +230,16 @@ ls -la ~/.openclaw/.env
 
 ### Phase Placement in setup.sh
 
-OpenClaw installation belongs in **Phase 4 (Cloud Tools)** alongside other AI/agent tools:
+OpenClaw installation is wired in **Phase 4 (Cloud Tools)** of `scripts/setup.sh` alongside other agent tools. It uses `bun add -g` (per repo policy — `use_bun.py` hook enforces bun over npm).
 
 ```bash
-# Phase 4: Cloud Tools & AI Integration
+# Phase 4: Cloud Tools & AI Integration (already wired in scripts/setup.sh)
+# Simplified reference of the install logic:
 install_openclaw() {
     log_info "Installing OpenClaw..."
 
-    # Install via npm (global)
-    npm install -g openclaw@latest
+    # Install via bun (global) — npm is blocked by use_bun.py hook
+    bun add -g openclaw
 
     # Create state directory with secure permissions
     mkdir -p ~/.openclaw
@@ -401,14 +402,17 @@ File: `scripts/openclaw/openclaw-base.json`
 
 ```ruby
 # AI Assistant Platform
-# OpenClaw is installed via npm (global), NOT Homebrew. No Brewfile entry needed.
+# OpenClaw is installed via bun (global: `bun add -g openclaw`), NOT Homebrew.
+# No Brewfile entry needed — no Homebrew formula exists.
 # All runtime dependencies are already in Brewfile:
-# - node@22 (required: >= 22.12.0)
+# - bun (for global package installation, per repo policy)
+# - node@22 (required runtime: >= 22.12.0)
 # - colima + docker (for sandbox mode)
 # - tailscale (for remote access, if enabled)
-# The `openclaw` binary is installed to npm's global bin directory,
-# which is already on PATH via Node.js configuration in config.fish.
+# The `openclaw` binary is installed to bun's global bin directory,
+# which is already on PATH via bun configuration in config.fish.
 # No additional PATH entries needed for Fish or Zsh.
+# Installation is wired in scripts/setup.sh Phase 4.
 ```
 
 ---
@@ -643,6 +647,48 @@ openclaw config set channels.slack.dmPolicy pairing
 # 6. Restart and pair
 openclaw gateway restart
 ```
+
+---
+
+## Sandbox Profiles for Devcontainer Sessions
+
+The default sandbox config (`workspaceAccess: "none"`, `docker.network: "none"`) is intentionally restrictive for **non-main sessions** (group chats, untrusted channels). The main session is always unrestricted.
+
+For devcontainer-based workflows (via `devcon.fish` / `gwt-dev`), where bun/Node.js need workspace access, override sandbox settings per-agent:
+
+```json
+{
+  "agents": {
+    "list": [
+      {
+        "name": "devcontainer-agent",
+        "sandbox": {
+          "mode": "off",
+          "workspaceAccess": "rw"
+        },
+        "tools": {
+          "profile": "full"
+        }
+      }
+    ]
+  }
+}
+```
+
+Or relax at runtime for a specific session:
+
+```bash
+# Temporarily allow workspace access for devcontainer coding session
+openclaw config set agents.defaults.sandbox.workspaceAccess rw
+
+# Restore restrictive defaults after session
+openclaw config set agents.defaults.sandbox.workspaceAccess none
+```
+
+The key distinction:
+- **Main session** (direct DM with bot owner): Full access, no sandbox restrictions
+- **Non-main sessions** (group chats, other users): Sandboxed with restrictive defaults
+- **Devcontainer agents**: Override via per-agent config when workspace access is needed
 
 ---
 
@@ -943,7 +989,7 @@ claw doctor
 - [ ] Update CLAUDE.md with OpenClaw section
 
 ### Phase 2: Channel Setup (Manual, Post-Install)
-- [ ] Install OpenClaw: `npm install -g openclaw@latest`
+- [ ] Install OpenClaw: `bun add -g openclaw`
 - [ ] Run onboarding: `openclaw onboard --install-daemon`
 - [ ] Configure Telegram bot via @BotFather
 - [ ] Configure Slack app (if team use)
