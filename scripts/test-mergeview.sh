@@ -309,6 +309,27 @@ else
     fail "fs_event watchers ignore user toggle"
 fi
 
+# :DiffviewAutoSwitchToggle command exists
+if grep -q "DiffviewAutoSwitchToggle" "$git_lua"; then
+    pass ":DiffviewAutoSwitchToggle command registered"
+else
+    fail ":DiffviewAutoSwitchToggle command missing"
+fi
+
+# No hardcoded -C ~/dotfiles (all -C uses resolved paths)
+if grep -q '\-C ~/dotfiles\|-C \$HOME/dotfiles\|-C.*home.*dotfiles' "$git_lua"; then
+    fail "Hardcoded -C ~/dotfiles found"
+else
+    pass "No hardcoded -C paths (all use resolved repo dir)"
+fi
+
+# view:update_files() guarded with feature detection
+if grep -q "view.update_files then" "$git_lua"; then
+    pass "view:update_files() guarded with feature detection"
+else
+    fail "view:update_files() called without feature detection guard"
+fi
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed, $TOTAL total ==="
 exit $FAIL
