@@ -54,6 +54,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l gate_dep_worktree ""
     set -l no_checkpoints false
     set -l bridge_iterations ""
+    set -l bridge_providers ""
+    set -l bridge_verbose false
+    set -l bridge_model ""
+    set -l bridge_timeout ""
+    set -l bridge_log ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -189,6 +194,49 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                         set skip_next true
                     end
                 end
+            case --bridge-providers
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set bridge_providers $argv[$next_i]
+                    set bridge_mode true
+                    set skip_next true
+                else
+                    echo "Error: --bridge-providers requires a comma-separated list (e.g., gemini,codex,ollama)"
+                    return 1
+                end
+            case --bridge-verbose
+                set bridge_verbose true
+                set bridge_mode true
+            case --bridge-model
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set bridge_model $argv[$next_i]
+                    set bridge_mode true
+                    set skip_next true
+                else
+                    echo "Error: --bridge-model requires a model name"
+                    return 1
+                end
+            case --bridge-timeout
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set bridge_timeout $argv[$next_i]
+                    set bridge_mode true
+                    set skip_next true
+                else
+                    echo "Error: --bridge-timeout requires seconds"
+                    return 1
+                end
+            case --bridge-log
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set bridge_log $argv[$next_i]
+                    set bridge_mode true
+                    set skip_next true
+                else
+                    echo "Error: --bridge-log requires a file path"
+                    return 1
+                end
             case --no-checkpoints
                 set no_checkpoints true
             case --status
@@ -258,6 +306,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --devcon             Use devcontainer for isolation (default: local)"
         echo "  --system S           Ticketing system: linear or jira"
         echo "  --bridge [N]         Enable cross-provider reasoning bridge (N=max iterations, default: 3)"
+        echo "  --bridge-providers P Comma-separated provider order (codex,gemini,ollama,deepseek,claude,opencode)"
+        echo "  --bridge-verbose     Verbose bridge logging to stderr"
+        echo "  --bridge-model M     Model override for primary provider"
+        echo "  --bridge-timeout S   Per-provider timeout in seconds (default: 120)"
+        echo "  --bridge-log FILE    Log bridge reviews to file"
         echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
         echo "  --status             Show all agent states (shortcut for agent-state.sh --all)"
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency)"
@@ -398,10 +451,23 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
     end
     if $bridge_mode
+        set -l bridge_info "enabled (cross-provider review"
         if test -n "$bridge_iterations"
-            echo "Bridge:    enabled (cross-provider review, max $bridge_iterations iterations)"
-        else
-            echo "Bridge:    enabled (cross-provider review)"
+            set bridge_info "$bridge_info, max $bridge_iterations iterations"
+        end
+        if test -n "$bridge_providers"
+            set bridge_info "$bridge_info, providers: $bridge_providers"
+        end
+        if test -n "$bridge_model"
+            set bridge_info "$bridge_info, model: $bridge_model"
+        end
+        set bridge_info "$bridge_info)"
+        echo "Bridge:    $bridge_info"
+        if $bridge_verbose
+            echo "           verbose mode on"
+        end
+        if test -n "$bridge_log"
+            echo "           log: $bridge_log"
         end
     end
     if test -n "$prompt_prefix"
@@ -615,6 +681,37 @@ $prompt_suffix"
         if test -n "$bridge_iterations"
             echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS $bridge_iterations" >> $launch_script
         end
+        if test -n "$bridge_providers"
+            echo "set -gx CROSS_PROVIDER_ORDER $bridge_providers" >> $launch_script
+        end
+        if $bridge_verbose
+            echo "set -gx CROSS_PROVIDER_VERBOSE 1" >> $launch_script
+        end
+        if test -n "$bridge_model"
+            # Set model for the first provider in the order
+            # This is a convenience flag — for fine-grained control use env vars directly
+            set -l first_provider (string split ',' -- (test -n "$bridge_providers"; and echo $bridge_providers; or echo "codex"))[1]
+            switch $first_provider
+                case codex
+                    echo "set -gx CROSS_PROVIDER_CODEX_MODEL $bridge_model" >> $launch_script
+                case gemini
+                    echo "set -gx CROSS_PROVIDER_GEMINI_MODEL $bridge_model" >> $launch_script
+                case ollama
+                    echo "set -gx CROSS_PROVIDER_OLLAMA_MODEL $bridge_model" >> $launch_script
+                case deepseek
+                    echo "set -gx CROSS_PROVIDER_DEEPSEEK_MODEL $bridge_model" >> $launch_script
+                case claude
+                    echo "set -gx CROSS_PROVIDER_CLAUDE_MODEL $bridge_model" >> $launch_script
+                case opencode
+                    echo "set -gx CROSS_PROVIDER_OPENCODE_MODEL $bridge_model" >> $launch_script
+            end
+        end
+        if test -n "$bridge_timeout"
+            echo "set -gx CROSS_PROVIDER_TIMEOUT $bridge_timeout" >> $launch_script
+        end
+        if test -n "$bridge_log"
+            echo "set -gx CROSS_PROVIDER_LOG $bridge_log" >> $launch_script
+        end
         echo "" >> $launch_script
     end
 
@@ -648,6 +745,18 @@ $prompt_suffix"
             set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_BRIDGE=1"
             if test -n "$bridge_iterations"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_MAX_ITERATIONS=$bridge_iterations"
+            end
+            if test -n "$bridge_providers"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_ORDER=$bridge_providers"
+            end
+            if $bridge_verbose
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_VERBOSE=1"
+            end
+            if test -n "$bridge_timeout"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_TIMEOUT=$bridge_timeout"
+            end
+            if test -n "$bridge_log"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_LOG=$bridge_log"
             end
         end
         set devcon_up_cmd "$devcon_up_cmd $worktree_path $resolved_repo_root"
