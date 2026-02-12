@@ -563,36 +563,68 @@ echo 'some text' | llm 'summarize this'
 **Testing**: `scripts/test-selfhost-llm.sh` (config tests + coding agent tests, `--live` for runtime tests)
 
 ### Cross-Provider Reasoning Bridge
-Stop hook that sends Claude's reasoning to an independent AI provider (Codex/OpenCode) for correlation-bias mitigation.
+Stop hook that sends Claude's reasoning to an independent AI provider for correlation-bias mitigation.
 Iterative consensus: reviewer and Claude exchange feedback until agreement or max iterations.
-Graceful fallback: Codex → OpenCode → silent continue (zero failures).
+Graceful fallback through provider chain → silent continue (zero failures).
+
+**Supported Providers**: Codex, Gemini, Ollama, DeepSeek (via Ollama), Claude, OpenCode
 
 **Enable**: `CROSS_PROVIDER_BRIDGE=1 claude`
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `CROSS_PROVIDER_BRIDGE` | `0` | Enable/disable the bridge |
-| `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority order |
+| `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority/fallback order |
+| `CROSS_PROVIDER_VERBOSE` | `0` | Verbose logging to stderr |
 | `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars to send |
 | `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
 | `CROSS_PROVIDER_MAX_ITERATIONS` | `3` | Max consensus iterations (set `1` for single-shot) |
+| `CROSS_PROVIDER_TIMEOUT` | `120` | Per-provider timeout in seconds |
+| `CROSS_PROVIDER_LOG` | *(none)* | Log file path for review history |
+
+**Provider-specific model overrides**:
+| Variable | Default | Provider |
+|----------|---------|----------|
+| `CROSS_PROVIDER_CODEX_MODEL` | *(CLI default)* | Codex |
+| `CROSS_PROVIDER_GEMINI_MODEL` | *(CLI default)* | Gemini |
+| `CROSS_PROVIDER_OLLAMA_MODEL` | `qwen3-coder` | Ollama |
+| `CROSS_PROVIDER_DEEPSEEK_MODEL` | `deepseek-r1` | DeepSeek (via Ollama) |
+| `CROSS_PROVIDER_CLAUDE_MODEL` | `sonnet` | Claude |
+| `CROSS_PROVIDER_OPENCODE_MODEL` | `ollama/qwen3-coder` | OpenCode |
 
 **Architecture**: Uses `type: "command"` Stop hook (not `prompt`/`agent` which use Anthropic models — same-provider defeats the purpose).
 **Hook**: `.claude/hooks/cross-provider-bridge.sh` | **Testing**: `scripts/test-claude-pipeline.sh` (`--live` for E2E tests)
+
+**gwt-ticket bridge flags**:
+| Flag | Description |
+|------|-------------|
+| `--bridge [N]` | Enable bridge (N=max iterations, default: 3) |
+| `--bridge-providers P` | Comma-separated provider order (e.g., `gemini,codex,ollama`) |
+| `--bridge-verbose` | Verbose bridge logging |
+| `--bridge-model M` | Model override for primary provider |
+| `--bridge-timeout S` | Per-provider timeout in seconds |
+| `--bridge-log FILE` | Log bridge reviews to file |
 
 **Usage**:
 ```bash
 # Autonomous ticket with cross-provider review
 gwtt ENG-123 --bridge
 
-# Ticket-free with bridge
-gwtt "Fix auth bug" "Session tokens expire" --bridge
+# Choose providers and model
+gwtt ENG-123 --bridge --bridge-providers gemini,ollama --bridge-model gemini-2.5-pro
 
-# Manual interactive session
-CROSS_PROVIDER_BRIDGE=1 claude
+# Verbose bridge with log file
+gwtt "Fix auth bug" "Details" --bridge --bridge-verbose --bridge-log /tmp/bridge.log
+
+# Manual interactive session with Gemini as reviewer
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=gemini claude
+
+# Use local Ollama for offline review
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=ollama CROSS_PROVIDER_OLLAMA_MODEL=qwen3-coder claude
 ```
 
 ### Recent Updates
+- **2026-02-12**: Enhanced Cross-Provider Bridge with multi-provider support (Gemini, Ollama, DeepSeek, Claude), verbose mode, configurable timeout/logging, per-provider model overrides, gwt-ticket bridge flags
 - **2026-02-12**: Added comprehensive hooks integration (PreToolUse bun/bash validation, Notification desktop alerts/logging, PostToolUse DeepWiki context, test suite, docs)
 - **2026-02-11**: Added Checkpoints system (session context linked to git commits, orphan branch storage, ckpt CLI)
 - **2026-02-11**: Added gwt-doctor agent health check, activated Beads agent memory (phases 3-5)
