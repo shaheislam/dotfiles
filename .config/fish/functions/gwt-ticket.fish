@@ -13,6 +13,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
     #   --prompt-suffix S    Text to append to prompt
+    #   --local         Use local Ollama model (default: qwen3-coder)
+    #   --model MODEL   Use specific Ollama model (implies --local)
     #   --mount, -m     Additional mount (repeatable)
     #   --session S     Tmux session name (default: repo name)
     #   --no-devcon     Skip devcontainer, use local environment
@@ -42,6 +44,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
     set -l prompt_template ""
     set -l prompt_prefix ""
     set -l prompt_suffix ""
+    set -l use_local false
+    set -l local_model ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -126,6 +130,21 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
                     echo "Error: --prompt-suffix requires text"
                     return 1
                 end
+            case --local
+                set use_local true
+                if test -z "$local_model"
+                    set local_model "qwen3-coder"
+                end
+            case --model
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set local_model $argv[$next_i]
+                    set use_local true
+                    set skip_next true
+                else
+                    echo "Error: --model requires a model name (e.g., qwen3-coder)"
+                    return 1
+                end
             case --mount -m
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -180,6 +199,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
         echo "  --prompt-template F  Custom prompt template file"
         echo "  --prompt-prefix P    Text to prepend to prompt"
         echo "  --prompt-suffix S    Text to append to prompt"
+        echo "  --local              Use local Ollama model (default: qwen3-coder)"
+        echo "  --model MODEL        Use specific Ollama model (implies --local)"
         echo "  --mount, -m          Add directory mount (repeatable)"
         echo "  --session S          Tmux session name (default: repo name)"
         echo "  --no-devcon          Skip devcontainer, use local environment"
@@ -195,6 +216,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
         echo ""
         echo "  # Custom prompt template with variables"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --prompt-template ~/.claude/prompts/careful.md"
+        echo ""
+        echo "  # Run with local Ollama model (no cloud API)"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --local"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --model deepseek-coder-v2:16b"
         echo ""
         echo "  # Add instructions before/after"
         echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --prompt-prefix \"IMPORTANT: No test changes\""
@@ -282,6 +307,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop i
     echo "Max iter:  $max_iterations"
     echo "Session:   $session_name"
     echo "Command:   $slash_command"
+    if $use_local
+        echo "Model:     $local_model (local Ollama)"
+    end
     if test -n "$prompt_template"
         echo "Template:  $prompt_template"
     end
@@ -400,6 +428,43 @@ $prompt_suffix"
     echo "set -l prompt $escaped_prompt" >> $launch_script
     echo "" >> $launch_script
 
+    # If using local Ollama, add auto-start and env var bridge
+    if $use_local
+        echo '# Ensure Ollama is running (auto-start)' >> $launch_script
+        echo 'if not curl -sf http://localhost:11434/api/tags >/dev/null 2>&1' >> $launch_script
+        echo '    echo "Starting Ollama..."' >> $launch_script
+        echo '    if test -d "/Applications/Ollama.app"' >> $launch_script
+        echo '        open -a Ollama' >> $launch_script
+        echo '    else' >> $launch_script
+        echo '        ollama serve &>/dev/null &' >> $launch_script
+        echo '    end' >> $launch_script
+        echo '    set -l attempts 0' >> $launch_script
+        echo '    while not curl -sf http://localhost:11434/api/tags >/dev/null 2>&1' >> $launch_script
+        echo '        sleep 1' >> $launch_script
+        echo '        set attempts (math $attempts + 1)' >> $launch_script
+        echo '        if test $attempts -ge 30' >> $launch_script
+        echo '            echo "Error: Ollama failed to start after 30s"' >> $launch_script
+        echo '            exit 1' >> $launch_script
+        echo '        end' >> $launch_script
+        echo '    end' >> $launch_script
+        echo '    echo "Ollama is running"' >> $launch_script
+        echo 'end' >> $launch_script
+        echo '' >> $launch_script
+        # Check if model is available, pull if needed
+        echo '# Ensure model is available' >> $launch_script
+        echo "if not ollama list 2>/dev/null | string match -q '*$local_model*'" >> $launch_script
+        echo "    echo 'Pulling model $local_model...'" >> $launch_script
+        echo "    ollama pull $local_model" >> $launch_script
+        echo 'end' >> $launch_script
+        echo '' >> $launch_script
+        # Set bridge env vars
+        echo '# Bridge Claude Code to local Ollama' >> $launch_script
+        echo 'set -gx ANTHROPIC_BASE_URL http://localhost:11434' >> $launch_script
+        echo 'set -gx ANTHROPIC_API_KEY ollama' >> $launch_script
+        echo "set -gx ANTHROPIC_MODEL $local_model" >> $launch_script
+        echo '' >> $launch_script
+    end
+
     # Build the claude command based on slash_command
     # ralph-loop needs special args, others just get the prompt
     if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
@@ -459,6 +524,8 @@ completion_promise: \"TICKET_"$issue_key"_COMPLETE\"
 worktree_path: \"$worktree_path\"
 tmux_session: \"$session_name\"
 tmux_window: \"$window_name\"
+use_local: $use_local
+local_model: \"$local_model\"
 ---
 
 # Ticket Execution State
@@ -487,6 +554,9 @@ $prompt" > $state_file
     echo "Worktree:  $worktree_path"
     echo "Tmux:      $session_name:$window_name"
     echo "Max iter:  $max_iterations"
+    if $use_local
+        echo "Model:     $local_model (local Ollama)"
+    end
     echo ""
     echo "Monitoring:"
     echo "  tmux attach -t $session_name"

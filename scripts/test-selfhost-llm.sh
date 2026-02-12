@@ -208,6 +208,22 @@ else
     fail "Setup script missing qwen3-coder model"
 fi
 
+# Test: gwt-ticket has --local flag support
+echo ""
+echo "--- gwt-ticket Integration ---"
+gwt_ticket="$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish"
+if [[ -f "$gwt_ticket" ]] && grep -q '\-\-local' "$gwt_ticket"; then
+    pass "gwt-ticket has --local flag"
+else
+    fail "gwt-ticket missing --local flag"
+fi
+
+if [[ -f "$gwt_ticket" ]] && grep -q 'ANTHROPIC_BASE_URL' "$gwt_ticket"; then
+    pass "gwt-ticket has Ollama bridge env vars"
+else
+    fail "gwt-ticket missing Ollama bridge env vars"
+fi
+
 # ============================================================================
 # Live Tests (optional - requires Ollama running)
 # ============================================================================
