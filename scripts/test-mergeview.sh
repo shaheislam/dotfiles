@@ -278,6 +278,37 @@ else
     fail "Debounce rationale not documented"
 fi
 
+# ─── User Control ─────────────────────────────────────────────────────
+echo ""
+echo "--- User Control ---"
+# vim.g.diffview_auto_switch toggle exists
+if grep -q "diffview_auto_switch" "$git_lua"; then
+    pass "diffview_auto_switch user toggle exists"
+else
+    fail "diffview_auto_switch user toggle missing"
+fi
+
+# Toggle default is true
+if grep -q "diffview_auto_switch = true" "$git_lua"; then
+    pass "diffview_auto_switch defaults to true"
+else
+    fail "diffview_auto_switch default not set to true"
+fi
+
+# poll_merge_state respects toggle
+if grep -A5 "function poll_merge_state" "$git_lua" | grep -q "diffview_auto_switch"; then
+    pass "poll_merge_state respects user toggle"
+else
+    fail "poll_merge_state ignores user toggle"
+fi
+
+# fs_event watchers respect toggle
+if grep -B2 -A2 "diffview_auto_switch == false" "$git_lua" | grep -q "return"; then
+    pass "fs_event watchers respect user toggle"
+else
+    fail "fs_event watchers ignore user toggle"
+fi
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed, $TOTAL total ==="
 exit $FAIL
