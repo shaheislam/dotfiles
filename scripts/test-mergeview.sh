@@ -51,11 +51,10 @@ else
     fail "Main repo .git dir not found"
 fi
 
-# ─── Test 5: Verify MERGE_HEAD path computation ─────────────────────
-merge_head_path="$main_git_dir/MERGE_HEAD"
+# ─── Test 5: Verify conflict state file paths ───────────────────────
 echo ""
-echo "--- MERGE_HEAD Detection ---"
-pass "MERGE_HEAD path would be: $merge_head_path"
+echo "--- Conflict State Detection ---"
+pass "MERGE_HEAD path would be: $main_git_dir/MERGE_HEAD"
 
 # ─── Test 6: git rev-parse from main repo works ─────────────────────
 main_work_dir="${main_git_dir%/.git}"
@@ -144,9 +143,43 @@ fi
 
 # ─── Test 17: Verify TermLeave has delay ─────────────────────────────
 if grep -A5 "TermLeave" "$git_lua" | grep -q "defer_fn"; then
-    pass "TermLeave has deferred execution (for MERGE_HEAD write timing)"
+    pass "TermLeave has deferred execution (for conflict state file write timing)"
 else
     fail "TermLeave missing deferred execution"
+fi
+
+# ─── Test 18: Verify TermClose autocmd exists ────────────────────────
+if grep -q "TermClose" "$git_lua"; then
+    pass "TermClose autocmd registered (catches terminal job exit)"
+else
+    fail "TermClose autocmd missing from git.lua"
+fi
+
+# ─── Test 19: Verify CONFLICT_STATE_FILES covers all conflict types ──
+echo ""
+echo "--- Broader Conflict Detection ---"
+for state_file in MERGE_HEAD REBASE_HEAD CHERRY_PICK_HEAD REVERT_HEAD; do
+    if grep -q "$state_file" "$git_lua"; then
+        pass "$state_file detection present"
+    else
+        fail "$state_file detection missing"
+    fi
+done
+
+# ─── Test 23: Verify check_conflict_state helper exists ──────────────
+if grep -q "check_conflict_state" "$git_lua"; then
+    pass "check_conflict_state helper function exists"
+else
+    fail "check_conflict_state helper missing"
+fi
+
+# ─── Test 24: Verify augroup uses clear = true ───────────────────────
+echo ""
+echo "--- Autocmd Hygiene ---"
+if grep -q "clear = true" "$git_lua"; then
+    pass "Augroup uses clear = true (prevents stacking on reload)"
+else
+    fail "Augroup missing clear = true"
 fi
 
 echo ""
