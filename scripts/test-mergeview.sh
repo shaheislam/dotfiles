@@ -155,31 +155,71 @@ else
     fail "TermClose autocmd missing from git.lua"
 fi
 
-# ─── Test 19: Verify CONFLICT_STATE_FILES covers all conflict types ──
+# ─── Test 19-25: Verify CONFLICT_STATE_FILES covers all conflict types ─
 echo ""
 echo "--- Broader Conflict Detection ---"
-for state_file in MERGE_HEAD REBASE_HEAD CHERRY_PICK_HEAD REVERT_HEAD; do
-    if grep -q "$state_file" "$git_lua"; then
-        pass "$state_file detection present"
+for state_file in MERGE_HEAD REBASE_HEAD CHERRY_PICK_HEAD REVERT_HEAD rebase-merge rebase-apply sequencer; do
+    if grep -q "\"$state_file\"" "$git_lua"; then
+        pass "$state_file detection present in CONFLICT_STATE_FILES"
     else
-        fail "$state_file detection missing"
+        fail "$state_file detection missing from CONFLICT_STATE_FILES"
     fi
 done
 
-# ─── Test 23: Verify check_conflict_state helper exists ──────────────
+# ─── Test 26: Verify check_conflict_state helper exists ──────────────
 if grep -q "check_conflict_state" "$git_lua"; then
     pass "check_conflict_state helper function exists"
 else
     fail "check_conflict_state helper missing"
 fi
 
-# ─── Test 24: Verify augroup uses clear = true ───────────────────────
+# ─── Autocmd Hygiene ──────────────────────────────────────────────────
 echo ""
 echo "--- Autocmd Hygiene ---"
 if grep -q "clear = true" "$git_lua"; then
     pass "Augroup uses clear = true (prevents stacking on reload)"
 else
     fail "Augroup missing clear = true"
+fi
+
+# ─── Event Scoping: all callbacks bail when Diffview not open ────────
+echo ""
+echo "--- Event Scoping ---"
+if grep -q "get_current_view" "$git_lua"; then
+    pass "Callbacks check get_current_view() before acting"
+else
+    fail "Missing get_current_view() guard"
+fi
+
+# poll_merge_state bails early on no view (checks get_current_view then "not view")
+if grep -A10 "function poll_merge_state" "$git_lua" | grep -q "not view"; then
+    pass "poll_merge_state bails when no Diffview view"
+else
+    fail "poll_merge_state missing view guard"
+fi
+
+# WinEnter explicitly scoped
+if grep -B2 -A8 "WinEnter" "$git_lua" | grep -q "get_current_view"; then
+    pass "WinEnter scoped to Diffview-active state"
+else
+    fail "WinEnter not scoped to Diffview"
+fi
+
+# ─── Worktree gitdir resolution ──────────────────────────────────────
+echo ""
+echo "--- Worktree Resolution ---"
+# get_git_dir parses .git file for worktree indirection
+if grep -A15 "get_git_dir" "$git_lua" | grep -q "gitdir:"; then
+    pass "get_git_dir parses .git file indirection for linked worktrees"
+else
+    fail "get_git_dir missing .git file parsing"
+fi
+
+# get_git_dir resolves relative paths
+if grep -A30 "function get_git_dir" "$git_lua" | grep -q 'vim.fn.resolve'; then
+    pass "get_git_dir resolves paths with vim.fn.resolve()"
+else
+    fail "get_git_dir missing path resolution"
 fi
 
 echo ""
