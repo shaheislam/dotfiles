@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 # test-mergeview.sh — Verify cross-worktree merge detection in Diffview
 #
-# Tests the Neovim git.lua plugin's ability to detect merge conflicts
-# from a worktree context when the main repo has conflicts.
+# Static analysis tests for the Neovim git.lua plugin's conflict detection.
+# Validates: worktree structure, conflict state files, autocmd wiring,
+# event scoping, debounce/retry mechanisms, and Lua syntax.
+#
+# Note: Integration tests requiring a running Neovim instance (Diffview
+# close/reopen lifecycle, actual conflict state transitions, tmux pane
+# FocusGained interplay) must be tested manually via the workflow:
+#   1. Open Neovim in worktree with :DiffviewOpen
+#   2. Open :terminal split, run git merge/rebase/cherry-pick
+#   3. Verify Diffview detects conflict and reopens with -C flag
 #
 # Usage: ./scripts/test-mergeview.sh
 
@@ -220,6 +228,54 @@ if grep -A30 "function get_git_dir" "$git_lua" | grep -q 'vim.fn.resolve'; then
     pass "get_git_dir resolves paths with vim.fn.resolve()"
 else
     fail "get_git_dir missing path resolution"
+fi
+
+# ─── FSEvents Coalescing Mitigation ──────────────────────────────────
+echo ""
+echo "--- FSEvents Retry Mechanism ---"
+# poll_with_retry helper exists
+if grep -q "poll_with_retry" "$git_lua"; then
+    pass "poll_with_retry helper exists (bounded FSEvents retry)"
+else
+    fail "poll_with_retry helper missing"
+fi
+
+# Retry uses bounded delay (800ms second check)
+if grep -A15 "function poll_with_retry" "$git_lua" | grep -q "800"; then
+    pass "Retry uses 800ms bounded second check"
+else
+    fail "Retry missing bounded delay"
+fi
+
+# FocusGained uses poll_with_retry
+if grep -A5 "FocusGained" "$git_lua" | grep -q "poll_with_retry"; then
+    pass "FocusGained uses poll_with_retry"
+else
+    fail "FocusGained not using retry mechanism"
+fi
+
+# TermLeave/TermClose use poll_with_retry
+if grep -A5 "TermLeave.*TermClose" "$git_lua" | grep -q "poll_with_retry"; then
+    pass "TermLeave/TermClose use poll_with_retry"
+else
+    fail "Terminal events not using retry mechanism"
+fi
+
+# ─── Design Decisions ────────────────────────────────────────────────
+echo ""
+echo "--- Design Decisions ---"
+# ModeChanged intentionally excluded (documented)
+if grep -q "ModeChanged is intentionally not used" "$git_lua"; then
+    pass "ModeChanged exclusion documented with rationale"
+else
+    fail "ModeChanged exclusion not documented"
+fi
+
+# Debounce rationale documented
+if grep -q "Debounce rationale" "$git_lua"; then
+    pass "Debounce values documented with rationale"
+else
+    fail "Debounce rationale not documented"
 fi
 
 echo ""
