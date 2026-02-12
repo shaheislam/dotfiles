@@ -526,16 +526,14 @@ phase_4_cloud_tools() {
         print_success "OpenAI Codex CLI already installed at: $(which codex)"
     fi
 
-    # Install OpenClaw (self-hosted AI assistant gateway)
+    # OpenClaw gateway CLI (installed via Brewfile as openclaw-cli)
     if ! command_exists openclaw; then
-        print_step "Installing OpenClaw gateway..."
-        if command_exists bun; then
-            bun add -g openclaw >/dev/null 2>&1 && \
-                print_success "OpenClaw installed" || \
-                log_verbose "OpenClaw installation skipped (optional)"
-        fi
+        print_step "Installing OpenClaw gateway CLI..."
+        brew install openclaw-cli >/dev/null 2>&1 && \
+            print_success "OpenClaw CLI installed" || \
+            log_verbose "OpenClaw CLI installation skipped (optional)"
     else
-        print_success "OpenClaw already installed at: $(which openclaw)"
+        print_success "OpenClaw CLI already installed at: $(which openclaw)"
     fi
 
     # Configure OpenClaw with security-hardened defaults

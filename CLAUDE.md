@@ -315,10 +315,10 @@ WhatsApp/Telegram interface to Claude. Installed via `scripts/setup-mobile-codin
 Self-hosted, single-user AI assistant with multi-channel unified inbox (Telegram, Slack, Discord, WhatsApp, Signal, WebChat).
 Local-first Gateway at `ws://127.0.0.1:18789` with session isolation and Docker sandboxing.
 
-**Setup**: `bun add -g openclaw && openclaw onboard --install-daemon`
+**Setup**: `brew install openclaw-cli && openclaw onboard --install-daemon`
 **Docs**: `docs/openclaw-setup.md` (comprehensive plan with security hardening)
 **Config Template**: `scripts/openclaw/openclaw-base.json` (security-hardened defaults)
-**Tests**: `scripts/test-filter.sh openclaw` (53 tests: config, security, functions, scripts, jq validator)
+**Tests**: `scripts/test-filter.sh openclaw` (61 tests: config, security, functions, scripts, sandbox profile, jq validator)
 
 | Command | Alias | Description |
 |---------|-------|-------------|
