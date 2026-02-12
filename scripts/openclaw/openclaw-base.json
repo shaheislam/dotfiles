@@ -1,0 +1,73 @@
+{
+  "gateway": {
+    "bind": "loopback",
+    "port": 18789,
+    "auth": {
+      "mode": "token"
+    },
+    "tailscale": {
+      "mode": "serve",
+      "resetOnExit": true
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "model": {
+        "provider": "anthropic",
+        "name": "claude-sonnet-4-5-20250929"
+      },
+      "workspace": "~/.openclaw/workspace",
+      "sandbox": {
+        "mode": "non-main",
+        "scope": "session",
+        "workspaceAccess": "none",
+        "docker": {
+          "network": "none"
+        }
+      }
+    }
+  },
+
+  "tools": {
+    "profile": "coding",
+    "deny": ["browser", "canvas", "nodes", "cron"],
+    "elevated": {
+      "allowFrom": []
+    }
+  },
+
+  "channels": {
+    "telegram": {
+      "dmPolicy": "pairing"
+    },
+    "discord": {
+      "dmPolicy": "pairing"
+    },
+    "slack": {
+      "dmPolicy": "pairing"
+    },
+    "whatsapp": {
+      "dmPolicy": "pairing"
+    },
+    "signal": {
+      "dmPolicy": "pairing"
+    }
+  },
+
+  "sessions": {
+    "ttl": 3600000,
+    "pruning": {
+      "enabled": true,
+      "interval": 60000
+    }
+  },
+
+  "logging": {
+    "redactSensitive": "tools"
+  },
+
+  "plugins": {
+    "allow": []
+  }
+}
