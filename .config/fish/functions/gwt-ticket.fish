@@ -329,7 +329,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge [N]         Enable cross-provider reasoning bridge (N=max iterations, default: 3)"
         echo "  --bridge-providers P Comma-separated provider order (codex,gemini,ollama,deepseek,claude,opencode)"
         echo "  --bridge-verbose     Verbose bridge logging to stderr"
-        echo "  --bridge-model M     Model override for primary provider"
+        echo "  --bridge-model M     Model override for first provider in --bridge-providers order"
         echo "  --bridge-timeout S   Per-provider timeout in seconds (default: 120)"
         echo "  --bridge-log FILE    Log bridge reviews to file"
         echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
@@ -368,6 +368,18 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  {{WORKTREE_PATH}}      Path to worktree"
         echo "  {{COMPLETION_PROMISE}} Completion string (TICKET_ENG-123_COMPLETE)"
         return 0
+    end
+
+    # Validate --bridge-providers if specified
+    if test -n "$bridge_providers"
+        set -l known_providers codex gemini ollama deepseek claude opencode
+        for p in (string split ',' -- $bridge_providers)
+            if not contains -- $p $known_providers
+                echo "Error: Unknown bridge provider '$p'"
+                echo "Valid providers: "(string join ', ' $known_providers)
+                return 1
+            end
+        end
     end
 
     # Show agent status
@@ -708,6 +720,8 @@ $prompt_suffix"
         echo "set -gx CROSS_PROVIDER_BRIDGE 1" >> $launch_script
         if test -n "$bridge_iterations"
             echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS $bridge_iterations" >> $launch_script
+        else
+            echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS 3" >> $launch_script
         end
         if test -n "$bridge_providers"
             echo "set -gx CROSS_PROVIDER_ORDER $bridge_providers" >> $launch_script
@@ -810,6 +824,8 @@ $prompt_suffix"
             set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_BRIDGE=1"
             if test -n "$bridge_iterations"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_MAX_ITERATIONS=$bridge_iterations"
+            else
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_MAX_ITERATIONS=3"
             end
             if test -n "$bridge_providers"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_ORDER=$bridge_providers"

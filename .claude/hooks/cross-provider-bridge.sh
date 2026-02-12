@@ -50,7 +50,8 @@ log_verbose() {
         echo "[bridge] $*" >&2
     fi
     if [ -n "$LOG_FILE" ]; then
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG_FILE"
+        mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [${session_id:-unknown}] $*" >> "$LOG_FILE"
     fi
 }
 
@@ -64,7 +65,7 @@ transcript_path=""
     read -r session_id
     read -r stop_hook_active
     read -r transcript_path
-} < <(echo "$INPUT" | jq -r '
+} < <(echo "$INPUT" | timeout 5 jq -r '
     (.session_id // ""),
     (.stop_hook_active // false | tostring),
     (.transcript_path // "")
@@ -89,7 +90,7 @@ if [ "$stop_hook_active" = "true" ]; then
         exit 0
     fi
     # Stale check (>10 min — shorter window for faster crash recovery)
-    created_at=$(jq -r '.created_at // 0' "$state_file" 2>/dev/null)
+    created_at=$(timeout 5 jq -r '.created_at // 0' "$state_file" 2>/dev/null)
     now=$(date +%s)
     if [ $((now - created_at)) -gt 600 ]; then
         log_verbose "State file stale (>10min), cleaning up"
@@ -97,14 +98,14 @@ if [ "$stop_hook_active" = "true" ]; then
         exit 0
     fi
     # Max iterations check
-    current_iteration=$(jq -r '.iteration // 0' "$state_file" 2>/dev/null)
+    current_iteration=$(timeout 5 jq -r '.iteration // 0' "$state_file" 2>/dev/null)
     if [ "$current_iteration" -ge "$max_iterations" ]; then
         log_verbose "Max iterations reached ($current_iteration/$max_iterations), allowing stop"
         rm -f "$state_file"
         exit 0
     fi
     # Load previous review for follow-up prompt
-    previous_review=$(jq -r '.previous_reviews[-1] // empty' "$state_file" 2>/dev/null)
+    previous_review=$(timeout 5 jq -r '.previous_reviews[-1] // empty' "$state_file" 2>/dev/null)
 fi
 
 # Strip provider CLI metadata, extracting only the model's response content
@@ -135,6 +136,21 @@ strip_provider_metadata() {
         fi
     fi
     # No known metadata pattern — return as-is
+    echo "$output"
+}
+
+# Strip thinking blocks common in reasoning models (<think>...</think>, <thinking>...</thinking>)
+# Applied to ALL provider output to prevent false consensus from heuristic phrases in thinking blocks
+strip_thinking_blocks() {
+    local output="$1"
+    if echo "$output" | grep -q '<think\(ing\)\?>'; then
+        local cleaned
+        cleaned=$(echo "$output" | sed '/<think\(ing\)\?>/,/<\/think\(ing\)\?>/d' | sed '/^[[:space:]]*$/d')
+        if [ -n "$cleaned" ]; then
+            echo "$cleaned"
+            return
+        fi
+    fi
     echo "$output"
 }
 
@@ -298,8 +314,8 @@ if [ -z "$transcript_path" ] || [ ! -f "$transcript_path" ]; then
 fi
 
 # Extract last assistant message — tail-first for performance on large transcripts
-# JSONL messages are single lines, so tail -100 is generous for finding the last assistant turn
-last_response=$(tail -100 "$transcript_path" | jq -rs '
+# JSONL messages are single lines; 500 covers sessions with many tool calls
+last_response=$(tail -500 "$transcript_path" | timeout 10 jq -rs '
     [.[] | select(
         .role == "assistant" or
         .type == "assistant" or
@@ -430,13 +446,15 @@ fi
 
 log_verbose "Provider $provider_used returned ${#cross_provider_output} chars"
 
-# Strip provider CLI metadata (Codex headers, echoed prompt, thinking blocks, ANSI codes)
+# Strip provider CLI metadata (Codex headers, echoed prompt, ANSI codes)
 cross_provider_output=$(strip_provider_metadata "$cross_provider_output")
+# Strip thinking blocks from any provider (prevents false consensus from heuristic phrases)
+cross_provider_output=$(strip_thinking_blocks "$cross_provider_output")
 
 # Log the review if log file configured
 if [ -n "$LOG_FILE" ]; then
     {
-        echo "--- Review by $provider_used (iteration $((current_iteration + 1))/$max_iterations) ---"
+        echo "--- Review by $provider_used (iteration $((current_iteration + 1))/$max_iterations) [session: ${session_id:-unknown}] ---"
         echo "$cross_provider_output"
         echo "---"
         echo ""
@@ -456,16 +474,16 @@ log_verbose "No consensus — blocking for iteration $((current_iteration + 1))/
 new_iteration=$((current_iteration + 1))
 if [ -n "$state_file" ]; then
     if [ -f "$state_file" ]; then
-        # Append review to existing state
-        jq --arg review "$cross_provider_output" \
+        # Append review to existing state (PID-unique temp file prevents race conditions)
+        timeout 5 jq --arg review "$cross_provider_output" \
            --arg provider "$provider_used" \
            --argjson iter "$new_iteration" \
            --argjson ts "$(date +%s)" \
            '.iteration = $iter | .previous_reviews += [$review] | .providers_used += [$provider] | .last_updated = $ts' \
-           "$state_file" > "${state_file}.tmp" && mv "${state_file}.tmp" "$state_file"
+           "$state_file" > "${state_file}.tmp.$$" && mv "${state_file}.tmp.$$" "$state_file"
     else
         # Create new state file
-        jq -n --arg review "$cross_provider_output" \
+        timeout 5 jq -n --arg review "$cross_provider_output" \
               --arg provider "$provider_used" \
               --argjson iter "$new_iteration" \
               --argjson ts "$(date +%s)" \
