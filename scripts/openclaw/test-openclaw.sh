@@ -70,8 +70,10 @@ run_test "Sensitive log redaction enabled" \
     "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['logging']['redactSensitive'] == 'tools'\""
 run_test "Plugin allowlist is empty" \
     "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['plugins']['allow'] == []\""
-run_test "Tailscale mode is serve (not funnel)" \
-    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['gateway']['tailscale']['mode'] == 'serve'\""
+run_test "Tailscale mode is off (opt-in required)" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['gateway']['tailscale']['mode'] == 'off'\""
+run_test "Nodes tool NOT denied (needed for bun/Node.js)" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert 'nodes' not in c['tools']['deny']\""
 run_test "Tool profile is coding" \
     "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['tools']['profile'] == 'coding'\""
 
@@ -110,6 +112,16 @@ run_test "notify.sh checks for openclaw binary" \
     "grep -q 'command -v openclaw' '$DOTFILES_ROOT/scripts/openclaw/notify.sh'"
 run_test "notify.sh checks gateway status" \
     "grep -q 'gateway status' '$DOTFILES_ROOT/scripts/openclaw/notify.sh'"
+run_test "notify.sh has failure logging" \
+    "grep -q '_oc_log' '$DOTFILES_ROOT/scripts/openclaw/notify.sh'"
+run_test "notify.sh supports strict mode" \
+    "grep -q 'OPENCLAW_NOTIFY_STRICT' '$DOTFILES_ROOT/scripts/openclaw/notify.sh'"
+run_test "openclaw-notify.fish has failure logging" \
+    "grep -q '_oc_fish_log' '$DOTFILES_ROOT/.config/fish/functions/openclaw-notify.fish'"
+run_test "openclaw-notify.fish supports strict mode" \
+    "grep -q 'OPENCLAW_NOTIFY_STRICT' '$DOTFILES_ROOT/.config/fish/functions/openclaw-notify.fish'"
+run_test "notify.sh documents non-Fish rationale" \
+    "grep -q 'non-Fish contexts' '$DOTFILES_ROOT/scripts/openclaw/notify.sh'"
 
 # --- Documentation tests ---
 echo -e "\n${BLUE}--- Documentation ---${NC}"
@@ -121,6 +133,23 @@ run_test "Plan has implementation phases" \
     "grep -q 'Implementation Phases' '$DOTFILES_ROOT/docs/openclaw-setup.md'"
 run_test "Plan has security checklist" \
     "grep -q 'Security Checklist' '$DOTFILES_ROOT/docs/openclaw-setup.md'"
+
+# --- Config validator (jq) ---
+echo -e "\n${BLUE}--- Config Validator ---${NC}"
+if command -v jq &>/dev/null; then
+    run_test "jq validates base config" \
+        "jq empty '$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json'"
+    run_test "jq: gateway.bind exists" \
+        "jq -e '.gateway.bind' '$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json'"
+    run_test "jq: auth.mode exists" \
+        "jq -e '.gateway.auth.mode' '$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json'"
+    run_test "jq: sandbox config exists" \
+        "jq -e '.agents.defaults.sandbox' '$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json'"
+    run_test "jq: no funnel in tailscale mode" \
+        "[ \"\$(jq -r '.gateway.tailscale.mode' '$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')\" != 'funnel' ]"
+else
+    echo -e "${YELLOW}  SKIP${NC} jq not installed (skipping jq validator tests)"
+fi
 
 # --- Security policy tests ---
 echo -e "\n${BLUE}--- Security Policy ---${NC}"
