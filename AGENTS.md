@@ -77,4 +77,3 @@ This file documents specific behaviors and constraints for AI agents working on 
 - Brewfile sorting/organization: maintain the existing grouping structure.
 - LazyVim plugin config: this lives in `~/neovim`, not here.
 
-def
