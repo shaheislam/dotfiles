@@ -330,6 +330,80 @@ else
     fail "view:update_files() called without feature detection guard"
 fi
 
+# ─── Repo Following ──────────────────────────────────────────────────
+echo ""
+echo "--- Repo Following ---"
+
+# find_repo_root helper exists
+if grep -q "function find_repo_root" "$git_lua"; then
+    pass "find_repo_root helper exists"
+else
+    fail "find_repo_root helper missing"
+fi
+
+# diffview_follow_repo toggle exists
+if grep -q "diffview_follow_repo" "$git_lua"; then
+    pass "diffview_follow_repo toggle exists"
+else
+    fail "diffview_follow_repo toggle missing"
+fi
+
+# :DiffviewFollowRepoToggle command exists
+if grep -q "DiffviewFollowRepoToggle" "$git_lua"; then
+    pass ":DiffviewFollowRepoToggle command registered"
+else
+    fail ":DiffviewFollowRepoToggle command missing"
+fi
+
+# BufEnter autocmd for repo following
+if grep -q "BufEnter" "$git_lua"; then
+    pass "BufEnter autocmd registered for repo following"
+else
+    fail "BufEnter autocmd missing"
+fi
+
+# BufEnter skips diffview:// buffers
+if grep -q 'diffview://' "$git_lua"; then
+    pass "BufEnter skips diffview:// buffers"
+else
+    fail "BufEnter not filtering diffview:// buffers"
+fi
+
+# BufEnter skips term:// buffers
+if grep -q 'term://' "$git_lua"; then
+    pass "BufEnter skips term:// buffers"
+else
+    fail "BufEnter not filtering term:// buffers"
+fi
+
+# diffview_current_root tracking variable
+if grep -q "diffview_current_root" "$git_lua"; then
+    pass "diffview_current_root tracking variable exists"
+else
+    fail "diffview_current_root tracking missing"
+fi
+
+# view_opened sets diffview_current_root
+if grep -A3 "view_opened" "$git_lua" | grep -q "diffview_current_root"; then
+    pass "view_opened sets diffview_current_root"
+else
+    fail "view_opened does not set diffview_current_root"
+fi
+
+# view_closed clears diffview_current_root
+if grep -A3 "view_closed" "$git_lua" | grep -q "diffview_current_root"; then
+    pass "view_closed clears diffview_current_root"
+else
+    fail "view_closed does not clear diffview_current_root"
+fi
+
+# BufEnter has reentrancy guard
+if grep -q "buf_enter_switching" "$git_lua"; then
+    pass "BufEnter has reentrancy guard"
+else
+    fail "BufEnter missing reentrancy guard"
+fi
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed, $TOTAL total ==="
 exit $FAIL
