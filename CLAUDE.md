@@ -204,7 +204,7 @@ Captures Claude Code session transcript slices and stores them as structured met
 | `ckpt enable [--strategy manual\|auto]` | Install checkpoint hooks in current repo |
 | `ckpt disable [--purge]` | Disable checkpoints (--purge removes shared git hooks) |
 | `ckpt status` | Show current session state |
-| `ckpt log [--branch <name>]` | List checkpoints |
+| `ckpt log [--branch <name>] [--git] [-n N]` | List checkpoints (--git: annotated git log) |
 | `ckpt show <commit-sha>` | Show reasoning for a commit |
 | `ckpt resume [branch]` | Show latest checkpoint context for resuming work |
 | `ckpt context [--commits N]` | Condensed context of recent checkpoints for session priming |
