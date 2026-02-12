@@ -53,6 +53,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l gate_type ""
     set -l gate_dep_worktree ""
     set -l no_checkpoints false
+    set -l bridge_iterations ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -180,6 +181,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --bridge
                 set bridge_mode true
+<<<<<<< HEAD
             case --no-checkpoints
                 set no_checkpoints true
             case --status
@@ -203,6 +205,16 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 else
                     echo "Error: --gate-dep requires worktree path"
                     return 1
+||||||| 26069d9
+=======
+                # Optional: --bridge N sets max consensus iterations
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    if string match -qr '^[0-9]+$' $argv[$next_i]
+                        set bridge_iterations $argv[$next_i]
+                        set skip_next true
+                    end
+>>>>>>> pipeline
                 end
             case '-*'
                 echo "Error: Unknown option: $arg"
@@ -248,11 +260,17 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --session S          Tmux session name (default: repo name)"
         echo "  --devcon             Use devcontainer for isolation (default: local)"
         echo "  --system S           Ticketing system: linear or jira"
+<<<<<<< HEAD
         echo "  --bridge             Enable cross-provider reasoning bridge (Codex/OpenCode review)"
         echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
         echo "  --status             Show all agent states (shortcut for agent-state.sh --all)"
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency)"
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
+||||||| 26069d9
+        echo "  --bridge             Enable cross-provider reasoning bridge (Codex/OpenCode review)"
+=======
+        echo "  --bridge [N]         Enable cross-provider reasoning bridge (N=max iterations, default: 3)"
+>>>>>>> pipeline
         echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
@@ -389,7 +407,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
     end
     if $bridge_mode
-        echo "Bridge:    enabled (cross-provider review)"
+        if test -n "$bridge_iterations"
+            echo "Bridge:    enabled (cross-provider review, max $bridge_iterations iterations)"
+        else
+            echo "Bridge:    enabled (cross-provider review)"
+        end
     end
     if test -n "$prompt_prefix"
         echo "Prefix:    (custom)"
@@ -599,6 +621,9 @@ $prompt_suffix"
     # Set CROSS_PROVIDER_BRIDGE if bridge mode enabled
     if $bridge_mode
         echo "set -gx CROSS_PROVIDER_BRIDGE 1" >> $launch_script
+        if test -n "$bridge_iterations"
+            echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS $bridge_iterations" >> $launch_script
+        end
         echo "" >> $launch_script
     end
 
@@ -630,6 +655,9 @@ $prompt_suffix"
         end
         if $bridge_mode
             set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_BRIDGE=1"
+            if test -n "$bridge_iterations"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_MAX_ITERATIONS=$bridge_iterations"
+            end
         end
         set devcon_up_cmd "$devcon_up_cmd $worktree_path $resolved_repo_root"
         for mount in $mounts

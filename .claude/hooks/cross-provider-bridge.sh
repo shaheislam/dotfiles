@@ -25,11 +25,20 @@ if [ "${CROSS_PROVIDER_BRIDGE:-}" != "1" ]; then
     exit 0
 fi
 
-# Extract session_id for state file keying
-session_id=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+# Single jq parse for all input fields (one fork instead of three)
+session_id=""
+stop_hook_active="false"
+transcript_path=""
+{
+    read -r session_id
+    read -r stop_hook_active
+    read -r transcript_path
+} < <(echo "$INPUT" | jq -r '
+    (.session_id // ""),
+    (.stop_hook_active // false | tostring),
+    (.transcript_path // "")
+' 2>/dev/null) || true
 
-# Iteration-aware stop_hook_active handling
-stop_hook_active=$(echo "$INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)
 max_iterations="${CROSS_PROVIDER_MAX_ITERATIONS:-3}"
 state_file=""
 current_iteration=0
@@ -44,10 +53,10 @@ if [ "$stop_hook_active" = "true" ]; then
     if [ -z "$state_file" ] || [ ! -f "$state_file" ]; then
         exit 0
     fi
-    # Stale check (>1 hour old)
+    # Stale check (>10 min — shorter window for faster crash recovery)
     created_at=$(jq -r '.created_at // 0' "$state_file" 2>/dev/null)
     now=$(date +%s)
-    if [ $((now - created_at)) -gt 3600 ]; then
+    if [ $((now - created_at)) -gt 600 ]; then
         rm -f "$state_file"
         exit 0
     fi
@@ -92,7 +101,11 @@ detect_consensus() {
     if echo "$first_line" | grep -qi '^CONSENSUS:'; then
         return 0
     fi
-    # Heuristic fallback
+    # Skip heuristic if reviewer explicitly flagged concerns
+    if echo "$first_line" | grep -qi '^CONCERNS:'; then
+        return 1
+    fi
+    # Heuristic fallback (only when no explicit prefix)
     if echo "$output" | grep -qi \
         -e 'all concerns addressed' \
         -e 'no remaining issues' \
@@ -104,15 +117,14 @@ detect_consensus() {
     return 1
 }
 
-# Extract transcript path from hook input
-transcript_path=$(echo "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null)
+# Validate transcript path (already parsed from input above)
 if [ -z "$transcript_path" ] || [ ! -f "$transcript_path" ]; then
     exit 0
 fi
 
-# Extract last assistant message from JSONL transcript
-# Handles multiple possible formats robustly
-last_response=$(jq -rs '
+# Extract last assistant message — tail-first for performance on large transcripts
+# JSONL messages are single lines, so tail -100 is generous for finding the last assistant turn
+last_response=$(tail -100 "$transcript_path" | jq -rs '
     [.[] | select(
         .role == "assistant" or
         .type == "assistant" or
@@ -126,7 +138,7 @@ last_response=$(jq -rs '
         [.message.content[] | select(.type == "text") | .text] | join("\n")
     else empty
     end
-' "$transcript_path" 2>/dev/null) || true
+' 2>/dev/null) || true
 
 if [ -z "$last_response" ]; then
     exit 0

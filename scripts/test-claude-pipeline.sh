@@ -208,7 +208,7 @@ hook_singleshot_exit=$?
 assert_exit_code "Single-shot mode (MAX_ITERATIONS=1): exits 0 on iteration 1" "0" "$hook_singleshot_exit"
 rm -f "$singleshot_state"
 
-# Test: Stale state file (>1hr old) — exits 0 and cleans up
+# Test: Stale state file (>10min old) — exits 0 and cleans up
 stale_state="/tmp/cross-provider-bridge-test-stale.json"
 stale_ts=$(($(date +%s) - 7200))  # 2 hours ago
 jq -n --argjson ts "$stale_ts" '{iteration: 1, previous_reviews: ["old review"], created_at: $ts, last_updated: $ts}' > "$stale_state"
@@ -226,34 +226,33 @@ else
     rm -f "$stale_state"
 fi
 
-# Test: Consensus detection — "CONSENSUS:" prefix detected
-consensus_tmpfile=$(mktemp)
-echo '{"role": "assistant", "content": "Test reasoning"}' > "$consensus_tmpfile"
-# Use a mock provider that echoes "CONSENSUS: looks good"
-# We test by providing a transcript and mocking the provider — but since we can't mock
-# providers in config tests, we test the detect_consensus function inline:
-consensus_output=$(bash -c '
-    detect_consensus() {
-        local output="$1"
-        local first_line
-        first_line=$(echo "$output" | head -1)
-        if echo "$first_line" | grep -qi "^CONSENSUS:"; then
-            return 0
-        fi
-        if echo "$output" | grep -qi \
-            -e "all concerns addressed" \
-            -e "no remaining issues" \
-            -e "no further concerns" \
-            -e "reasoning is sound" \
-            -e "adequately addressed"; then
-            return 0
-        fi
+# Test: Consensus detection — uses the tightened detect_consensus with CONCERNS: guard
+# Inline copy of the function from the hook (must stay in sync)
+_detect_consensus() {
+    local output="$1"
+    local first_line
+    first_line=$(echo "$output" | head -1)
+    if echo "$first_line" | grep -qi "^CONSENSUS:"; then
+        return 0
+    fi
+    # Skip heuristic if reviewer explicitly flagged concerns
+    if echo "$first_line" | grep -qi "^CONCERNS:"; then
         return 1
-    }
-    detect_consensus "CONSENSUS: The reasoning is correct." && echo "detected" || echo "missed"
-')
-rm -f "$consensus_tmpfile"
-if [ "$consensus_output" = "detected" ]; then
+    fi
+    # Heuristic fallback (only when no explicit prefix)
+    if echo "$output" | grep -qi \
+        -e "all concerns addressed" \
+        -e "no remaining issues" \
+        -e "no further concerns" \
+        -e "reasoning is sound" \
+        -e "adequately addressed"; then
+        return 0
+    fi
+    return 1
+}
+
+# Test: CONSENSUS: prefix detected
+if _detect_consensus "CONSENSUS: The reasoning is correct."; then
     print_success "Consensus detection: CONSENSUS: prefix detected"
     ((PASS++))
 else
@@ -261,28 +260,8 @@ else
     ((FAIL++))
 fi
 
-# Test: Consensus detection — heuristic fallback phrases
-heuristic_output=$(bash -c '
-    detect_consensus() {
-        local output="$1"
-        local first_line
-        first_line=$(echo "$output" | head -1)
-        if echo "$first_line" | grep -qi "^CONSENSUS:"; then
-            return 0
-        fi
-        if echo "$output" | grep -qi \
-            -e "all concerns addressed" \
-            -e "no remaining issues" \
-            -e "no further concerns" \
-            -e "reasoning is sound" \
-            -e "adequately addressed"; then
-            return 0
-        fi
-        return 1
-    }
-    detect_consensus "The reasoning is sound and well-structured." && echo "detected" || echo "missed"
-')
-if [ "$heuristic_output" = "detected" ]; then
+# Test: Heuristic fallback phrases (no prefix)
+if _detect_consensus "The reasoning is sound and well-structured."; then
     print_success "Consensus detection: heuristic fallback phrase detected"
     ((PASS++))
 else
@@ -290,32 +269,22 @@ else
     ((FAIL++))
 fi
 
-# Test: No consensus — "CONCERNS:" prefix continues iteration
-concerns_output=$(bash -c '
-    detect_consensus() {
-        local output="$1"
-        local first_line
-        first_line=$(echo "$output" | head -1)
-        if echo "$first_line" | grep -qi "^CONSENSUS:"; then
-            return 0
-        fi
-        if echo "$output" | grep -qi \
-            -e "all concerns addressed" \
-            -e "no remaining issues" \
-            -e "no further concerns" \
-            -e "reasoning is sound" \
-            -e "adequately addressed"; then
-            return 0
-        fi
-        return 1
-    }
-    detect_consensus "CONCERNS: The edge case for empty input is not handled." && echo "detected" || echo "missed"
-')
-if [ "$concerns_output" = "missed" ]; then
+# Test: CONCERNS: prefix correctly continues iteration
+if ! _detect_consensus "CONCERNS: The edge case for empty input is not handled."; then
     print_success "No consensus: CONCERNS: prefix correctly continues iteration"
     ((PASS++))
 else
     print_error "No consensus: CONCERNS: prefix incorrectly detected as consensus"
+    ((FAIL++))
+fi
+
+# Test: CONCERNS: prefix with heuristic phrase in body — must NOT false-positive
+# This is the key regression test for the tightened heuristic
+if ! _detect_consensus "CONCERNS: While the reasoning is sound on auth, there's a missing null check on line 42."; then
+    print_success "No consensus: CONCERNS: + heuristic phrase in body correctly blocked"
+    ((PASS++))
+else
+    print_error "No consensus: CONCERNS: + heuristic phrase in body incorrectly detected as consensus"
     ((FAIL++))
 fi
 
@@ -378,23 +347,32 @@ else
     ((PASS++))
 fi
 
-# Test: Settings.json has Stop hook registered
+# Test: Project settings.json does NOT have Stop hook (avoid double-registration)
+# The Stop hook lives in user-level ~/.claude/settings.json, not project-level
 if [[ -f "$SCRIPT_DIR/../.claude/settings.json" ]]; then
     settings_content=$(cat "$SCRIPT_DIR/../.claude/settings.json")
-    if echo "$settings_content" | grep -q '"Stop"'; then
-        print_success "Settings.json has Stop hook registered"
-        ((PASS++))
-    else
-        print_error "Settings.json missing Stop hook"
-        ((FAIL++))
-    fi
     if echo "$settings_content" | grep -q 'cross-provider-bridge.sh'; then
-        print_success "Settings.json references cross-provider-bridge.sh"
+        print_error "Project settings.json has bridge hook (should be user-level only)"
+        ((FAIL++))
+    else
+        print_success "Project settings.json: no duplicate bridge hook"
+        ((PASS++))
+    fi
+fi
+
+# Test: User-level ~/.claude/settings.json has Stop hook registered
+if [[ -f "$HOME/.claude/settings.json" ]]; then
+    user_settings=$(cat "$HOME/.claude/settings.json")
+    if echo "$user_settings" | grep -q 'cross-provider-bridge.sh'; then
+        print_success "User settings.json has bridge Stop hook registered"
         ((PASS++))
     else
-        print_error "Settings.json doesn't reference cross-provider-bridge.sh"
-        ((FAIL++))
+        print_warning "User settings.json missing bridge hook (run setup.sh to register)"
+        ((SKIP++))
     fi
+else
+    print_warning "User ~/.claude/settings.json not found"
+    ((SKIP++))
 fi
 
 # ============================================================================
@@ -420,6 +398,17 @@ assert_contains "gwt-ticket source: local path sets CROSS_PROVIDER_BRIDGE in lau
     "$gwtt_source" "CROSS_PROVIDER_BRIDGE 1"
 assert_contains "gwt-ticket source: devcon path passes -E CROSS_PROVIDER_BRIDGE" \
     "$gwtt_source" "-E CROSS_PROVIDER_BRIDGE=1"
+
+# Test: --bridge N iterations passthrough in both local and devcon code paths
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_MAX_ITERATIONS" \
+    "$gwtt_source" "CROSS_PROVIDER_MAX_ITERATIONS"
+assert_contains "gwt-ticket source: devcon path passes -E CROSS_PROVIDER_MAX_ITERATIONS" \
+    "$gwtt_source" "-E CROSS_PROVIDER_MAX_ITERATIONS="
+
+# Test: --bridge N help text updated
+if command -v fish &>/dev/null; then
+    assert_contains "gwt-ticket help: --bridge shows optional N" "$gwtt_help" "\[N\]"
+fi
 
 # ============================================================================
 # Live Tests (require Claude subscription)
