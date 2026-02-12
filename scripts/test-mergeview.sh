@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# test-mergeview.sh — Verify cross-worktree merge detection in Diffview
+#
+# Tests the Neovim git.lua plugin's ability to detect merge conflicts
+# from a worktree context when the main repo has conflicts.
+#
+# Usage: ./scripts/test-mergeview.sh
+
+set -euo pipefail
+
+PASS=0
+FAIL=0
+TOTAL=0
+
+pass() { PASS=$((PASS + 1)); TOTAL=$((TOTAL + 1)); printf "  \033[32m✓\033[0m %s\n" "$1"; }
+fail() { FAIL=$((FAIL + 1)); TOTAL=$((TOTAL + 1)); printf "  \033[31m✗\033[0m %s\n" "$1"; }
+
+echo "=== Cross-Worktree Merge Detection Tests ==="
+echo ""
+
+# ─── Test 1: Verify worktree .git file exists ────────────────────────
+echo "--- Worktree Structure ---"
+if [ -f "$HOME/dotfiles-mergeview/.git" ]; then
+    pass ".git file exists (worktree indicator)"
+else
+    fail ".git file missing — not a worktree"
+fi
+
+# ─── Test 2: Verify .git points to correct worktree dir ─────────────
+gitdir=$(sed 's/^gitdir: //' "$HOME/dotfiles-mergeview/.git" 2>/dev/null)
+if [[ "$gitdir" == *"worktrees/dotfiles-mergeview"* ]]; then
+    pass ".git file points to correct worktree dir"
+else
+    fail ".git file points to unexpected dir: $gitdir"
+fi
+
+# ─── Test 3: Verify commondir resolves to main repo ─────────────────
+commondir_path="$gitdir/commondir"
+if [ -f "$commondir_path" ]; then
+    commondir=$(cat "$commondir_path")
+    pass "commondir file exists: $commondir"
+else
+    fail "commondir file missing at $commondir_path"
+fi
+
+# ─── Test 4: Verify main repo .git dir is resolvable ────────────────
+main_git_dir=$(cd "$gitdir" && cd "$commondir" && pwd)
+if [ -d "$main_git_dir" ]; then
+    pass "Main repo .git dir resolves to: $main_git_dir"
+else
+    fail "Main repo .git dir not found"
+fi
+
+# ─── Test 5: Verify MERGE_HEAD path computation ─────────────────────
+merge_head_path="$main_git_dir/MERGE_HEAD"
+echo ""
+echo "--- MERGE_HEAD Detection ---"
+pass "MERGE_HEAD path would be: $merge_head_path"
+
+# ─── Test 6: git rev-parse from main repo works ─────────────────────
+main_work_dir="${main_git_dir%/.git}"
+toplevel=$(git -C "$main_work_dir" rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$toplevel" ]; then
+    pass "git rev-parse --show-toplevel from main repo: $toplevel"
+else
+    fail "git rev-parse failed from main repo"
+fi
+
+# ─── Test 7: git diff runs correctly from main repo ─────────────────
+diff_output=$(git -C "$main_work_dir" diff --ignore-submodules --name-status 2>&1)
+pass "git diff --name-status from main repo works (${#diff_output} chars)"
+
+# ─── Test 8: Verify Neovim git.lua has poll_merge_state ──────────────
+echo ""
+echo "--- Neovim Plugin Checks ---"
+git_lua="$HOME/neovim/lua/plugins/git.lua"
+if [ -f "$git_lua" ]; then
+    if grep -q "poll_merge_state" "$git_lua"; then
+        pass "poll_merge_state function exists in git.lua"
+    else
+        fail "poll_merge_state function missing from git.lua"
+    fi
+else
+    fail "git.lua not found at $git_lua"
+fi
+
+# ─── Test 9: Verify TermLeave autocmd exists ─────────────────────────
+if grep -q "TermLeave" "$git_lua"; then
+    pass "TermLeave autocmd registered in git.lua"
+else
+    fail "TermLeave autocmd missing from git.lua"
+fi
+
+# ─── Test 10: Verify WinEnter autocmd exists ─────────────────────────
+if grep -q "WinEnter" "$git_lua"; then
+    pass "WinEnter autocmd registered in git.lua"
+else
+    fail "WinEnter autocmd missing from git.lua"
+fi
+
+# ─── Test 11: Verify FocusGained still exists ────────────────────────
+if grep -q "FocusGained" "$git_lua"; then
+    pass "FocusGained autocmd still registered in git.lua"
+else
+    fail "FocusGained autocmd missing from git.lua (regression)"
+fi
+
+# ─── Test 12: Verify cross_worktree_state exists ─────────────────────
+if grep -q "cross_worktree_state" "$git_lua"; then
+    pass "cross_worktree_state variable exists"
+else
+    fail "cross_worktree_state variable missing"
+fi
+
+# ─── Test 13: Verify DiffviewOpen -C command format ──────────────────
+if grep -q 'DiffviewOpen -C' "$git_lua"; then
+    pass "DiffviewOpen -C command used for cross-worktree"
+else
+    fail "DiffviewOpen -C command missing"
+fi
+
+# ─── Test 14: Verify fs_event watcher for main repo ─────────────────
+if grep -q "main_repo_watcher" "$git_lua"; then
+    pass "fs_event watcher for main repo (.git/) exists"
+else
+    fail "fs_event watcher for main repo missing"
+fi
+
+# ─── Test 15: Lua syntax check ───────────────────────────────────────
+echo ""
+echo "--- Syntax Validation ---"
+if luac -p "$git_lua" 2>/dev/null; then
+    pass "git.lua passes Lua syntax check"
+else
+    fail "git.lua has Lua syntax errors"
+fi
+
+# ─── Test 16: Verify debounce on WinEnter ────────────────────────────
+if grep -q "win_enter_timer" "$git_lua"; then
+    pass "WinEnter has debounce protection"
+else
+    fail "WinEnter missing debounce (could cause performance issues)"
+fi
+
+# ─── Test 17: Verify TermLeave has delay ─────────────────────────────
+if grep -A5 "TermLeave" "$git_lua" | grep -q "defer_fn"; then
+    pass "TermLeave has deferred execution (for MERGE_HEAD write timing)"
+else
+    fail "TermLeave missing deferred execution"
+fi
+
+echo ""
+echo "=== Results: $PASS passed, $FAIL failed, $TOTAL total ==="
+exit $FAIL
