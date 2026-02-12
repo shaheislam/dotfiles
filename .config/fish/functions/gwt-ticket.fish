@@ -563,6 +563,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
 
+    # Relax OpenClaw sandbox for devcontainer coding sessions
+    set -l sandbox_script "$HOME/dotfiles/scripts/openclaw/sandbox-profile.sh"
+    if test -x "$sandbox_script"
+        bash "$sandbox_script" devcontainer 2>/dev/null; or true
+    end
+
     # Step 2: Ensure tmux session exists
     echo "[2/4] Setting up tmux session..."
     if not tmux has-session -t $session_name 2>/dev/null

@@ -123,6 +123,25 @@ run_test "openclaw-notify.fish supports strict mode" \
 run_test "notify.sh documents non-Fish rationale" \
     "grep -q 'non-Fish contexts' '$DOTFILES_ROOT/scripts/openclaw/notify.sh'"
 
+# --- Sandbox profile tests ---
+echo -e "\n${BLUE}--- Sandbox Profile ---${NC}"
+run_test "sandbox-profile.sh exists" \
+    "[ -f '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh' ]"
+run_test "sandbox-profile.sh is executable" \
+    "[ -x '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh' ]"
+run_test "sandbox-profile.sh valid bash syntax" \
+    "bash -n '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has devcontainer profile" \
+    "grep -q 'devcontainer)' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has default profile" \
+    "grep -q 'default)' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh restores none on default" \
+    "grep -q 'workspaceAccess.*none' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "gwt-ticket wires sandbox devcontainer" \
+    "grep -q 'sandbox_script.*devcontainer' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+run_test "worktree-witness restores sandbox default" \
+    "grep -q 'sandbox_script.*default' '$DOTFILES_ROOT/scripts/worktree-witness.sh'"
+
 # --- Documentation tests ---
 echo -e "\n${BLUE}--- Documentation ---${NC}"
 run_test "Setup plan exists" \
