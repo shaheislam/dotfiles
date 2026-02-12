@@ -35,6 +35,12 @@ if [ "${CROSS_PROVIDER_BRIDGE:-}" != "1" ]; then
     exit 0
 fi
 
+# --- Default models (single source of truth for provider functions + dispatch) ---
+DEFAULT_OLLAMA_MODEL="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
+DEFAULT_DEEPSEEK_MODEL="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"
+DEFAULT_CLAUDE_MODEL="${CROSS_PROVIDER_CLAUDE_MODEL:-sonnet}"
+DEFAULT_OPENCODE_MODEL="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
+
 # --- Verbose logging ---
 VERBOSE="${CROSS_PROVIDER_VERBOSE:-0}"
 LOG_FILE="${CROSS_PROVIDER_LOG:-}"
@@ -216,10 +222,9 @@ provider_ollama() {
         log_verbose "Provider ollama: server not running"
         return 1
     fi
-    local model="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
-    log_verbose "Provider ollama: running model=$model"
+    log_verbose "Provider ollama: running model=$DEFAULT_OLLAMA_MODEL"
     local output
-    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$model" 2>/dev/null) || true
+    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$DEFAULT_OLLAMA_MODEL" 2>/dev/null) || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -239,10 +244,9 @@ provider_deepseek() {
         log_verbose "Provider deepseek: ollama server not running"
         return 1
     fi
-    local model="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"
-    log_verbose "Provider deepseek: running model=$model via ollama"
+    log_verbose "Provider deepseek: running model=$DEFAULT_DEEPSEEK_MODEL via ollama"
     local output
-    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$model" 2>/dev/null) || true
+    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$DEFAULT_DEEPSEEK_MODEL" 2>/dev/null) || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -257,10 +261,9 @@ provider_claude() {
         log_verbose "Provider claude: binary not found"
         return 1
     fi
-    local model="${CROSS_PROVIDER_CLAUDE_MODEL:-sonnet}"
-    log_verbose "Provider claude: running model=$model"
+    log_verbose "Provider claude: running model=$DEFAULT_CLAUDE_MODEL"
     local output
-    output=$(echo "$prompt" | timeout "$provider_timeout" claude -p --model "$model" 2>/dev/null) || true
+    output=$(echo "$prompt" | timeout "$provider_timeout" claude -p --model "$DEFAULT_CLAUDE_MODEL" 2>/dev/null) || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -275,10 +278,9 @@ provider_opencode() {
         log_verbose "Provider opencode: binary not found"
         return 1
     fi
-    local oc_model="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
-    log_verbose "Provider opencode: running model=$oc_model"
+    log_verbose "Provider opencode: running model=$DEFAULT_OPENCODE_MODEL"
     local output
-    output=$(timeout "$provider_timeout" opencode run --model "$oc_model" "$prompt" 2>/dev/null) || true
+    output=$(timeout "$provider_timeout" opencode run --model "$DEFAULT_OPENCODE_MODEL" "$prompt" 2>/dev/null) || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -370,7 +372,8 @@ provider_used=""
 log_verbose "Provider order: ${providers[*]}"
 
 for provider in "${providers[@]}"; do
-    provider=$(echo "$provider" | xargs)  # trim whitespace
+    provider="${provider#"${provider%%[![:space:]]*}"}"  # trim leading
+    provider="${provider%"${provider##*[![:space:]]}"}"  # trim trailing
 
     log_verbose "Trying provider: $provider"
 
@@ -389,29 +392,25 @@ for provider in "${providers[@]}"; do
             ;;
         ollama)
             if cross_provider_output=$(provider_ollama "$full_prompt"); then
-                local_model="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
-                provider_used="Ollama ($local_model)"
+                provider_used="Ollama ($DEFAULT_OLLAMA_MODEL)"
                 break
             fi
             ;;
         deepseek)
             if cross_provider_output=$(provider_deepseek "$full_prompt"); then
-                local_model="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"
-                provider_used="DeepSeek ($local_model)"
+                provider_used="DeepSeek ($DEFAULT_DEEPSEEK_MODEL)"
                 break
             fi
             ;;
         claude)
             if cross_provider_output=$(provider_claude "$full_prompt"); then
-                local_model="${CROSS_PROVIDER_CLAUDE_MODEL:-sonnet}"
-                provider_used="Claude ($local_model)"
+                provider_used="Claude ($DEFAULT_CLAUDE_MODEL)"
                 break
             fi
             ;;
         opencode)
             if cross_provider_output=$(provider_opencode "$full_prompt"); then
-                local_model="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
-                provider_used="OpenCode ($local_model)"
+                provider_used="OpenCode ($DEFAULT_OPENCODE_MODEL)"
                 break
             fi
             ;;
