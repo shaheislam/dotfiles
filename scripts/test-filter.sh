@@ -149,8 +149,15 @@ test_hooks() {
     echo -e "${BLUE}--- Claude Code Hooks Tests ---${NC}"
     run_test "Hooks directory exists" "[ -d '$DOTFILES_ROOT/.claude/hooks' ]"
 
-    for hook in use_bun.py validate-bash.py ts_lint.py macos_notification.py; do
+    # Core hook scripts exist and are executable
+    for hook in use_bun.py validate-bash.py ts_lint.py macos_notification.py deepwiki-context.py add-context.py log_pre_tool_use.py; do
         run_test "Hook $hook exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
+        run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
+    done
+
+    for hook in cross-provider-bridge.sh log-notification.sh file-modified.sh; do
+        run_test "Hook $hook exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
+        run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
     done
 
     # Validate Python syntax
@@ -160,6 +167,29 @@ test_hooks() {
             run_test "Hook $name valid Python" "python3 -c \"import py_compile; py_compile.compile('$hook', doraise=True)\""
         fi
     done
+
+    # Settings.json hook events configured
+    local settings="$DOTFILES_ROOT/.claude/settings.json"
+    if [ -f "$settings" ]; then
+        for event in SessionStart PreToolUse PostToolUse PreCompact Notification UserPromptSubmit Stop; do
+            run_test "Hook event wired: $event" "python3 -c \"import json; d=json.load(open('$settings')); assert '$event' in d.get('hooks', {})\""
+        done
+    fi
+
+    # Functional: use_bun.py blocks npm, allows bun
+    local hooks_dir="$DOTFILES_ROOT/.claude/hooks"
+    run_test "use_bun.py blocks npm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py allows bun" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
+
+    # Functional: validate-bash.py blocks dangerous, allows safe, no false positives
+    run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "validate-bash allows git status" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+    run_test "validate-bash allows devcontainer up" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"devcontainer up\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+    run_test "validate-bash allows worktree add" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git worktree add ../feat\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
+
+    # Functional: deepwiki-context.py language detection
+    run_test "deepwiki detects Python" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/main.py\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null | grep -q python"
+    run_test "deepwiki silent for unknown" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/data.xyz\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null"
 }
 
 test_agents_md() {

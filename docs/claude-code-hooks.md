@@ -1,6 +1,9 @@
 # Claude Code Hooks - Complete Integration Guide
 
-> Comprehensive reference for the hooks system in our dotfiles setup. Covers all 14 hook events, the 3 hook types, our existing hooks, activation patterns, and recipes for new hooks.
+> Reference for the hooks system in our dotfiles setup based on official documentation at
+> [code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks) and
+> [code.claude.com/docs/en/hooks-guide](https://code.claude.com/docs/en/hooks-guide).
+> Covers all hook events, the 3 hook types, our existing hooks, activation patterns, and recipes.
 
 ## Table of Contents
 
@@ -584,22 +587,19 @@ Rewrite tool input before execution:
 
 ## Codex Comparison
 
-**Codex CLI does NOT have a comparable hooks system.** Based on official documentation (Feb 2026):
+Based on [Codex CLI reference](https://developers.openai.com/codex/cli/reference/) (Feb 2026), Codex has a notification hook that fires when the agent finishes a turn, but no broader lifecycle hook system. See [GitHub Discussion #2150](https://github.com/openai/codex/discussions/2150) for community requests.
 
-| Feature | Claude Code | Codex CLI |
+| Feature | Claude Code ([docs](https://code.claude.com/docs/en/hooks)) | Codex CLI ([docs](https://developers.openai.com/codex/cli/reference/)) |
 |---------|------------|-----------|
-| Hook events | 14 lifecycle events | Notification hook only |
-| Hook types | Command, Prompt, Agent | Command only (basic) |
-| Blocking capability | PreToolUse, Stop, etc. | No |
-| Input modification | updatedInput on PreToolUse | No |
+| Hook events | SessionStart, PreToolUse, PostToolUse, Stop, etc. | Notification only |
+| Hook types | Command, Prompt, Agent | Command only |
+| Blocking capability | PreToolUse, Stop, UserPromptSubmit, etc. | No |
+| Input modification | `updatedInput` on PreToolUse | No |
 | Context injection | SessionStart, UserPromptSubmit | No |
 | Async hooks | Yes (background execution) | No |
 | Matcher patterns | Regex on tool names/events | No |
-| Plugin hooks | Yes (hooks.json in plugins) | No |
-| Skill/agent frontmatter hooks | Yes | No |
-| MCP tool matching | `mcp__server__tool` patterns | No |
 
-**Verdict**: Claude Code's hooks system is significantly more mature. The only Codex hook-like feature is a notification callback when the agent finishes. For our cross-provider bridge, we already use Codex as a *consumer* (via `codex exec`) rather than a hook provider.
+For our cross-provider bridge, we use Codex as a *consumer* (via `codex exec`) rather than a hook provider. If Codex adds hooks in the future, we could consider lightweight pre-shell intercepts as the reviewer suggested.
 
 ---
 

@@ -340,7 +340,7 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 
 **Hook Scripts**: `.claude/hooks/` (Python/Bash scripts, symlinked via stow)
 
-**Testing**: `scripts/test-hooks.sh` (46 tests: settings validation, script permissions, functional tests, wiring verification)
+**Testing**: `scripts/test-filter.sh hooks` (44 tests: permissions, syntax, wiring, functional). Standalone: `scripts/test-hooks.sh` for detailed output.
 
 **Adding New Hooks**:
 1. Create script in `.claude/hooks/` (make executable)
