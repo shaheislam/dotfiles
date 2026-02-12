@@ -56,6 +56,7 @@ list_groups() {
     echo "  tmux          - tmux configuration"
     echo "  hooks         - Claude Code hooks"
     echo "  agents-md     - AGENTS.md file validation"
+    echo "  openclaw      - OpenClaw integration"
     echo "  all           - Run all groups"
 }
 
@@ -247,6 +248,7 @@ case "$GROUP" in
     tmux) test_tmux ;;
     hooks) test_hooks ;;
     agents-md) test_agents_md ;;
+    openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
     all)
         test_fish
         test_stow
@@ -257,6 +259,9 @@ case "$GROUP" in
         test_tmux
         test_hooks
         test_agents_md
+        # OpenClaw tests run from their own script (separate counters)
+        echo ""
+        source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
         ;;
     *)
         echo "Unknown test group: $GROUP"
