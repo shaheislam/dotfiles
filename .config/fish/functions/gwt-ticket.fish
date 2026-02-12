@@ -147,7 +147,6 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --prompt-suffix requires text"
                     return 1
                 end
-<<<<<<< HEAD
             case --sub
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -162,8 +161,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set skip_next true
                 else
                     echo "Error: --sub requires a profile name (e.g., work, personal)"
-||||||| 50c475e
-=======
+                    return 1
+                end
             case --local
                 set use_local true
                 if test -z "$local_model"
@@ -177,7 +176,6 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set skip_next true
                 else
                     echo "Error: --model requires a model name (e.g., qwen3-coder)"
->>>>>>> selfhostllm
                     return 1
                 end
             case --mount -m
@@ -695,7 +693,6 @@ $prompt_suffix"
     echo "set -l prompt $escaped_prompt" >> $launch_script
     echo "" >> $launch_script
 
-<<<<<<< HEAD
     # Set CLAUDE_CONFIG_DIR if subscription profile specified
     if test -n "$sub_profile"
         if $use_devcon
@@ -744,8 +741,8 @@ $prompt_suffix"
             echo "set -gx CROSS_PROVIDER_LOG $bridge_log" >> $launch_script
         end
         echo "" >> $launch_script
-||||||| 50c475e
-=======
+    end
+
     # If using local Ollama, add auto-start and env var bridge
     if $use_local
         echo '# Ensure Ollama is running (auto-start)' >> $launch_script
@@ -781,7 +778,6 @@ $prompt_suffix"
         echo 'set -gx ANTHROPIC_API_KEY ollama' >> $launch_script
         echo "set -gx ANTHROPIC_MODEL $local_model" >> $launch_script
         echo '' >> $launch_script
->>>>>>> selfhostllm
     end
 
     # Build the claude command based on slash_command
