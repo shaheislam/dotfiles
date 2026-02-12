@@ -134,15 +134,15 @@ OpenClaw's threat model acknowledges that an AI assistant with shell access is i
 | **Network** | `gateway.port` | `18789` (default) | Standard port, loopback only |
 | **Auth** | `gateway.auth.mode` | `token` | Stronger than password |
 | **Auth** | `OPENCLAW_GATEWAY_TOKEN` | 64-char random hex | Generated via `openssl rand -hex 32` |
-| **Remote** | `gateway.tailscale.mode` | `serve` | Tailnet-only, NOT funnel (no public exposure) |
-| **Remote** | `gateway.auth.allowTailscale` | `true` | Accept Tailscale identity headers |
+| **Remote** | `gateway.tailscale.mode` | `off` | Disabled by default; opt-in with `openclaw config set gateway.tailscale.mode serve` |
+| **Remote** | `gateway.auth.allowTailscale` | `true` | Accept Tailscale identity headers (only relevant when Tailscale enabled) |
 | **DM** | `channels.*.dmPolicy` | `pairing` | All channels require pairing approval |
 | **Sandbox** | `agents.defaults.sandbox.mode` | `non-main` | Sandbox all non-main sessions |
 | **Sandbox** | `agents.defaults.sandbox.scope` | `session` | One container per session |
 | **Sandbox** | `agents.defaults.sandbox.workspaceAccess` | `none` | No host workspace access in sandbox |
 | **Sandbox** | `agents.defaults.sandbox.docker.network` | `none` | No network in sandbox containers |
 | **Tools** | `tools.profile` | `coding` | Restrict to coding-relevant tools |
-| **Tools** | `tools.deny` | `[browser, canvas, nodes, cron]` | Deny high-risk tools by default |
+| **Tools** | `tools.deny` | `[browser, canvas, cron]` | Deny high-risk tools by default (`nodes` NOT denied — needed for bun/Node.js workflows) |
 | **Tools** | `tools.elevated.allowFrom` | `[]` (empty) | No elevated execution |
 | **Plugins** | `plugins.allow` | explicit allowlist | Only trusted plugins |
 | **Logging** | `logging.redactSensitive` | `tools` | Redact sensitive tool output |
@@ -178,6 +178,25 @@ BRAVE_API_KEY=<for-web-search>
 - NEVER store secrets in `openclaw.json` (use env vars)
 - Use 1Password CLI (`op read`) for secret injection where possible
 - Add `~/.openclaw/.env` to global gitignore
+
+### Tailscale Remote Access (Opt-In)
+
+Tailscale mode is **disabled by default** (`off`). When enabled, use **Serve** (tailnet-only), never **Funnel** (public internet).
+
+```bash
+# Enable Tailscale Serve (tailnet-only access)
+openclaw config set gateway.tailscale.mode serve
+
+# NEVER use Funnel (exposes Gateway publicly)
+# openclaw config set gateway.tailscale.mode funnel  # DO NOT DO THIS
+```
+
+**When enabling Tailscale Serve**:
+- Verify tailnet ACLs restrict access to your devices only
+- Confirm TLS is active (Tailscale Serve handles TLS automatically)
+- Gateway still binds to loopback; Tailscale proxies through its HTTPS endpoint
+- `gateway.auth.allowTailscale: true` accepts Tailscale identity headers as auth
+- Run `openclaw security audit --deep` after enabling to validate configuration
 
 ### Security Audit
 
@@ -382,11 +401,14 @@ File: `scripts/openclaw/openclaw-base.json`
 
 ```ruby
 # AI Assistant Platform
-# OpenClaw is installed via npm, not Homebrew, but depends on:
-# - node@22 (already in Brewfile)
-# - colima + docker (already in Brewfile, for sandbox mode)
-# - tailscale (already in Brewfile, for remote access)
-# No additional Brewfile entries needed.
+# OpenClaw is installed via npm (global), NOT Homebrew. No Brewfile entry needed.
+# All runtime dependencies are already in Brewfile:
+# - node@22 (required: >= 22.12.0)
+# - colima + docker (for sandbox mode)
+# - tailscale (for remote access, if enabled)
+# The `openclaw` binary is installed to npm's global bin directory,
+# which is already on PATH via Node.js configuration in config.fish.
+# No additional PATH entries needed for Fish or Zsh.
 ```
 
 ---
@@ -681,6 +703,15 @@ if [[ "$CROSS_PROVIDER_BRIDGE_NOTIFY" == "1" ]] && command -v openclaw &>/dev/nu
 fi
 ```
 
+### Notification Architecture (Fish + Bash)
+
+**Why two implementations?** The Fish function (`openclaw-notify.fish`) is the primary implementation for interactive use. The Bash helper (`scripts/openclaw/notify.sh`) exists because several agent orchestration scripts are pure Bash (`worktree-witness.sh`, `merge-queue.sh`, `cross-provider-bridge.sh`) and cannot call Fish functions. Both implementations share the same behavior:
+
+- Graceful degradation (skip if openclaw not installed or gateway down)
+- Structured failure logging to `~/.openclaw/notify.log`
+- Strict mode via `OPENCLAW_NOTIFY_STRICT=1` (fail on notification errors)
+- Fallback to `terminal-notifier` when gateway is unavailable (Fish only)
+
 ### Notification Helper Script
 
 File: `scripts/openclaw/notify.sh`
@@ -964,7 +995,7 @@ set -gx OPENCLAW_NOTIFY_CHANNEL default
 - [ ] Sandbox mode set to `non-main`
 - [ ] Sandbox has no network access
 - [ ] Sandbox has no workspace access
-- [ ] Browser, canvas, nodes, cron tools denied
+- [ ] Browser, canvas, cron tools denied (nodes allowed for bun/Node.js)
 - [ ] Elevated execution disabled (empty allowFrom)
 - [ ] Plugin allowlist is explicit (not wildcard)
 - [ ] Sensitive log redaction enabled
@@ -973,7 +1004,8 @@ set -gx OPENCLAW_NOTIFY_CHANNEL default
 - [ ] No secrets in openclaw.json
 - [ ] No secrets committed to git
 - [ ] Security audit passes: `openclaw security audit --deep`
-- [ ] Tailscale Serve (NOT Funnel) for remote access
+- [ ] Tailscale mode is `off` by default (opt-in: `openclaw config set gateway.tailscale.mode serve`)
+- [ ] If Tailscale enabled: Serve only (NOT Funnel), verify tailnet ACLs, confirm TLS
 
 ---
 

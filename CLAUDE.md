@@ -332,7 +332,7 @@ Local-first Gateway at `ws://127.0.0.1:18789` with session isolation and Docker 
 | `openclaw agent <msg>` | `claw agent` | Direct agent query |
 | `openclaw-notify` | - | Notification helper (Fish) |
 
-**Security Defaults**: Loopback binding, token auth, DM pairing on all channels, sandbox for non-main sessions, browser/canvas/cron/nodes tools denied, elevated execution disabled, Tailscale Serve (not Funnel).
+**Security Defaults**: Loopback binding, token auth, DM pairing on all channels, sandbox for non-main sessions, browser/canvas/cron tools denied, elevated execution disabled, Tailscale off by default (opt-in via `openclaw config set gateway.tailscale.mode serve`).
 
 **Integration Points**: `oc_notify()` bash helper in `scripts/openclaw/notify.sh` for gwt-ticket, ralph-loop, merge-queue, cross-provider-bridge notifications.
 
