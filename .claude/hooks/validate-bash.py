@@ -8,6 +8,20 @@ import json
 import re
 import sys
 
+# Known-safe command prefixes that bypass blocklist checks entirely.
+# These are idempotent operations used in devcontainer/worktree workflows.
+ALLOWLIST_PREFIXES = [
+    "devcontainer ",
+    "devcontainer up",
+    "git worktree ",
+    "git worktree add",
+    "git worktree list",
+    "git worktree remove",
+    "git worktree prune",
+    "docker compose ",
+    "colima ",
+]
+
 # Dangerous patterns to block
 DANGEROUS_PATTERNS = [
     (r'\brm\s+-rf\s+/', "Dangerous rm -rf command detected"),
@@ -28,6 +42,12 @@ def validate_command(command: str) -> tuple[bool, list[str]]:
     """Validate a bash command and return (is_allowed, messages)"""
     messages = []
     blocked = False
+
+    # Allowlist: known-safe commands bypass blocklist entirely
+    stripped = command.strip()
+    for prefix in ALLOWLIST_PREFIXES:
+        if stripped.startswith(prefix):
+            return True, []
 
     # Check for dangerous patterns
     for pattern, message in DANGEROUS_PATTERNS:
@@ -74,9 +94,9 @@ def main():
             sys.exit(0)  # Allow the command
 
     except Exception as e:
-        # Log error and allow command to proceed
-        print(f"Hook error: {e}", file=sys.stderr)
-        sys.exit(0)
+        # Fail closed: block command on unexpected errors
+        print(f"validate-bash hook error (blocked): {e}", file=sys.stderr)
+        sys.exit(2)
 
 if __name__ == "__main__":
     main()

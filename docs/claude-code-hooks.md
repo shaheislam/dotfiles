@@ -553,6 +553,28 @@ For our cross-provider bridge, we use Codex as a *consumer* (via `codex exec`) r
 
 ---
 
+## Validation Checklist
+
+Run these after any hooks change:
+
+```bash
+# Primary: hooks-specific tests (functional + wiring + permissions)
+./scripts/test-filter.sh hooks     # Expect: all pass
+
+# MCP parity (deepwiki-context.py depends on MCP servers being configured)
+./scripts/test-filter.sh mcp       # Expect: all pass
+
+# Broader regression
+./scripts/smoke-test.sh            # Note: setup.sh syntax error is pre-existing
+./scripts/validate-macos.sh        # macOS-specific checks
+```
+
+**Known pre-existing issues** (not caused by hooks changes):
+- `smoke-test.sh` fails on `setup.sh syntax valid` (line 1613 syntax error in setup.sh)
+- `validate-macos.sh` exits early after OS detection (pre-existing incomplete checks)
+
+---
+
 ## Debugging & Troubleshooting
 
 ### Debug Mode
