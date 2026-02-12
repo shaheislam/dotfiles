@@ -254,8 +254,9 @@ else
     fail "FocusGained not using retry mechanism"
 fi
 
-# TermLeave/TermClose use poll_with_retry
-if grep -A5 "TermLeave.*TermClose" "$git_lua" | grep -q "poll_with_retry"; then
+# TermLeave and TermClose both use poll_with_retry
+if grep -A5 '"TermLeave"' "$git_lua" | grep -q "poll_with_retry" && \
+   grep -A5 '"TermClose"' "$git_lua" | grep -q "poll_with_retry"; then
     pass "TermLeave/TermClose use poll_with_retry"
 else
     fail "Terminal events not using retry mechanism"
@@ -418,11 +419,18 @@ else
     fail "view_closed does not clear diffview_current_root"
 fi
 
-# BufEnter has reentrancy guard
-if grep -q "buf_enter_switching" "$git_lua"; then
-    pass "BufEnter has reentrancy guard"
+# Shared reentrancy guard for repo-following
+if grep -q "repo_switch_in_progress" "$git_lua"; then
+    pass "Shared reentrancy guard (repo_switch_in_progress) exists"
 else
-    fail "BufEnter missing reentrancy guard"
+    fail "Shared reentrancy guard missing"
+fi
+
+# Shared retarget_diffview helper
+if grep -q "function retarget_diffview" "$git_lua"; then
+    pass "retarget_diffview shared helper exists"
+else
+    fail "retarget_diffview shared helper missing"
 fi
 
 # DiffviewOpen failure reverts diffview_current_root to prev_root
@@ -430,6 +438,59 @@ if grep -q "prev_root" "$git_lua"; then
     pass "DiffviewOpen failure reverts diffview_current_root"
 else
     fail "DiffviewOpen failure does not revert diffview_current_root"
+fi
+
+# ─── Terminal CWD Detection ──────────────────────────────────────────
+echo ""
+echo "--- Terminal CWD Detection ---"
+
+# get_terminal_cwd helper exists
+if grep -q "function get_terminal_cwd" "$git_lua"; then
+    pass "get_terminal_cwd helper exists"
+else
+    fail "get_terminal_cwd helper missing"
+fi
+
+# get_terminal_cwd uses terminal_job_id
+if grep -q "terminal_job_id" "$git_lua"; then
+    pass "get_terminal_cwd queries terminal_job_id"
+else
+    fail "get_terminal_cwd missing terminal_job_id"
+fi
+
+# get_terminal_cwd supports macOS (lsof)
+if grep -q "lsof" "$git_lua"; then
+    pass "Terminal cwd detection supports macOS (lsof)"
+else
+    fail "Terminal cwd detection missing macOS support"
+fi
+
+# get_terminal_cwd supports Linux (/proc/PID/cwd)
+if grep -q "/proc/" "$git_lua"; then
+    pass "Terminal cwd detection supports Linux (/proc/PID/cwd)"
+else
+    fail "Terminal cwd detection missing Linux support"
+fi
+
+# TermLeave uses get_terminal_cwd for repo-following
+if grep -A20 "TermLeave" "$git_lua" | grep -q "get_terminal_cwd"; then
+    pass "TermLeave uses get_terminal_cwd for repo-following"
+else
+    fail "TermLeave not using terminal cwd detection"
+fi
+
+# TermLeave calls retarget_diffview
+if grep -A30 "TermLeave" "$git_lua" | grep -q "retarget_diffview"; then
+    pass "TermLeave uses retarget_diffview helper"
+else
+    fail "TermLeave not using retarget_diffview"
+fi
+
+# BufEnter calls retarget_diffview
+if grep -A50 "BufEnter" "$git_lua" | grep -q "retarget_diffview"; then
+    pass "BufEnter uses retarget_diffview helper"
+else
+    fail "BufEnter not using retarget_diffview"
 fi
 
 echo ""
