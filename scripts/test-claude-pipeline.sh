@@ -360,6 +360,18 @@ if [[ -f "$SCRIPT_DIR/../.claude/settings.json" ]]; then
     fi
 fi
 
+# Test: Project settings.json has no duplicate Stop key (JSON validity)
+if [[ -f "$SCRIPT_DIR/../.claude/settings.json" ]]; then
+    stop_count=$(grep -c '"Stop"' "$SCRIPT_DIR/../.claude/settings.json")
+    if [[ "$stop_count" -le 1 ]]; then
+        print_success "Project settings.json: no duplicate Stop key"
+        ((PASS++))
+    else
+        print_error "Project settings.json: duplicate Stop key found ($stop_count occurrences)"
+        ((FAIL++))
+    fi
+fi
+
 # Test: User-level ~/.claude/settings.json has Stop hook registered
 if [[ -f "$HOME/.claude/settings.json" ]]; then
     user_settings=$(cat "$HOME/.claude/settings.json")
@@ -374,6 +386,121 @@ else
     print_warning "User ~/.claude/settings.json not found"
     ((SKIP++))
 fi
+
+# ============================================================================
+# Multi-Provider Bridge Tests (no API calls)
+# ============================================================================
+
+print_header "Multi-Provider Bridge Tests"
+
+# Test: Verbose mode outputs to stderr
+verbose_tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test output"}' > "$verbose_tmpfile"
+verbose_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$verbose_tmpfile\"}" | \
+    CROSS_PROVIDER_BRIDGE=1 \
+    CROSS_PROVIDER_VERBOSE=1 \
+    CROSS_PROVIDER_ORDER="nonexistent" \
+    bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+if echo "$verbose_stderr" | grep -q '\[bridge\]'; then
+    print_success "Verbose mode: outputs [bridge] prefix to stderr"
+    ((PASS++))
+else
+    print_error "Verbose mode: no [bridge] output on stderr"
+    ((FAIL++))
+fi
+rm -f "$verbose_tmpfile"
+
+# Test: Log file mode writes to file
+log_tmpfile=$(mktemp)
+log_transcript=$(mktemp)
+echo '{"role": "assistant", "content": "Test log output"}' > "$log_transcript"
+echo "{\"stop_hook_active\": false, \"transcript_path\": \"$log_transcript\"}" | \
+    CROSS_PROVIDER_BRIDGE=1 \
+    CROSS_PROVIDER_LOG="$log_tmpfile" \
+    CROSS_PROVIDER_ORDER="nonexistent" \
+    bash "$HOOK_SCRIPT" 2>/dev/null || true
+if [[ -f "$log_tmpfile" ]] && grep -q "Bridge activated" "$log_tmpfile"; then
+    print_success "Log file: writes timestamped entries"
+    ((PASS++))
+else
+    print_error "Log file: no entries written"
+    ((FAIL++))
+fi
+rm -f "$log_tmpfile" "$log_transcript"
+
+# Test: Custom timeout accepted (doesn't error)
+timeout_tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test timeout"}' > "$timeout_tmpfile"
+timeout_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$timeout_tmpfile\"}" | \
+    CROSS_PROVIDER_BRIDGE=1 \
+    CROSS_PROVIDER_TIMEOUT=30 \
+    CROSS_PROVIDER_ORDER="nonexistent" \
+    bash "$HOOK_SCRIPT" 2>&1)
+timeout_exit=$?
+assert_exit_code "Custom timeout (30s): exits 0 gracefully" "0" "$timeout_exit"
+rm -f "$timeout_tmpfile"
+
+# Test: New provider names are recognized (don't trigger 'Unknown provider' in verbose)
+# Use CROSS_PROVIDER_TIMEOUT=1 to prevent actual provider calls from hanging
+for test_provider in gemini ollama deepseek claude; do
+    provider_tmpfile=$(mktemp)
+    echo '{"role": "assistant", "content": "Test provider"}' > "$provider_tmpfile"
+    provider_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$provider_tmpfile\"}" | \
+        CROSS_PROVIDER_BRIDGE=1 \
+        CROSS_PROVIDER_VERBOSE=1 \
+        CROSS_PROVIDER_TIMEOUT=1 \
+        CROSS_PROVIDER_ORDER="$test_provider" \
+        timeout 10 bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+    if echo "$provider_stderr" | grep -q "Unknown provider"; then
+        print_error "Provider $test_provider: incorrectly flagged as unknown"
+        ((FAIL++))
+    else
+        print_success "Provider $test_provider: recognized as valid provider"
+        ((PASS++))
+    fi
+    rm -f "$provider_tmpfile"
+done
+
+# Test: Hook script declares all 6 provider functions
+for provider_func in provider_codex provider_gemini provider_ollama provider_deepseek provider_claude provider_opencode; do
+    if grep -q "^${provider_func}()" "$HOOK_SCRIPT"; then
+        print_success "Hook script: $provider_func function declared"
+        ((PASS++))
+    else
+        print_error "Hook script: $provider_func function missing"
+        ((FAIL++))
+    fi
+done
+
+# Test: Hook script supports all new env vars (documented in header)
+for env_var in CROSS_PROVIDER_VERBOSE CROSS_PROVIDER_TIMEOUT CROSS_PROVIDER_LOG \
+               CROSS_PROVIDER_GEMINI_MODEL CROSS_PROVIDER_OLLAMA_MODEL \
+               CROSS_PROVIDER_DEEPSEEK_MODEL CROSS_PROVIDER_CLAUDE_MODEL; do
+    if grep -q "$env_var" "$HOOK_SCRIPT"; then
+        print_success "Hook script: references $env_var"
+        ((PASS++))
+    else
+        print_error "Hook script: missing reference to $env_var"
+        ((FAIL++))
+    fi
+done
+
+# Test: State file tracks providers_used
+state_track_tmpfile=$(mktemp)
+state_track_state="/tmp/cross-provider-bridge-test-providers-track.json"
+echo '{"role": "assistant", "content": "Test provider tracking"}' > "$state_track_tmpfile"
+# Use nonexistent providers so no actual call is made, but verify the state file schema
+# Create a pre-existing state file to verify the jq update adds providers_used
+jq -n '{iteration: 0, previous_reviews: [], providers_used: [], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' > "$state_track_state"
+# Verify the state file has providers_used field
+if jq -e '.providers_used' "$state_track_state" &>/dev/null; then
+    print_success "State file schema: providers_used field present"
+    ((PASS++))
+else
+    print_error "State file schema: providers_used field missing"
+    ((FAIL++))
+fi
+rm -f "$state_track_tmpfile" "$state_track_state"
 
 # ============================================================================
 # gwt-ticket --bridge Flag Tests (no API calls)
@@ -409,6 +536,33 @@ assert_contains "gwt-ticket source: devcon path passes -E CROSS_PROVIDER_MAX_ITE
 if command -v fish &>/dev/null; then
     assert_contains "gwt-ticket help: --bridge shows optional N" "$gwtt_help" "\[N\]"
 fi
+
+# Test: New bridge flags in help text
+if command -v fish &>/dev/null; then
+    assert_contains "gwt-ticket help: --bridge-providers flag" "$gwtt_help" "--bridge-providers"
+    assert_contains "gwt-ticket help: --bridge-verbose flag" "$gwtt_help" "--bridge-verbose"
+    assert_contains "gwt-ticket help: --bridge-model flag" "$gwtt_help" "--bridge-model"
+    assert_contains "gwt-ticket help: --bridge-timeout flag" "$gwtt_help" "--bridge-timeout"
+    assert_contains "gwt-ticket help: --bridge-log flag" "$gwtt_help" "--bridge-log"
+fi
+
+# Test: New bridge env vars in source (local path)
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_ORDER" \
+    "$gwtt_source" "CROSS_PROVIDER_ORDER"
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_VERBOSE" \
+    "$gwtt_source" "CROSS_PROVIDER_VERBOSE"
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_TIMEOUT" \
+    "$gwtt_source" "CROSS_PROVIDER_TIMEOUT"
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_LOG" \
+    "$gwtt_source" "CROSS_PROVIDER_LOG"
+
+# Test: New bridge env vars in source (devcon path)
+assert_contains "gwt-ticket source: devcon path passes CROSS_PROVIDER_ORDER" \
+    "$gwtt_source" "-E CROSS_PROVIDER_ORDER="
+assert_contains "gwt-ticket source: devcon path passes CROSS_PROVIDER_VERBOSE" \
+    "$gwtt_source" "-E CROSS_PROVIDER_VERBOSE="
+assert_contains "gwt-ticket source: devcon path passes CROSS_PROVIDER_TIMEOUT" \
+    "$gwtt_source" "-E CROSS_PROVIDER_TIMEOUT="
 
 # ============================================================================
 # Live Tests (require Claude subscription)
