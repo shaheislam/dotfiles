@@ -76,3 +76,5 @@ This file documents specific behaviors and constraints for AI agents working on 
 - tmux plugin installation: TPM handles this, just add to `.tmux.conf`.
 - Brewfile sorting/organization: maintain the existing grouping structure.
 - LazyVim plugin config: this lives in `~/neovim`, not here.
+
+abc
