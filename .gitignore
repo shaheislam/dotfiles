@@ -220,3 +220,6 @@ awscli-bundle/
 /validate-macos.sh
 /UNIFIED-SETUP.md
 /license_header
+
+# Checkpoint pending data (ephemeral)
+.checkpoints/

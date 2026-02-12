@@ -42,6 +42,10 @@ if status is-interactive
     bind -M default \egl '_git_fzf_blame'
     bind -M insert \egl '_git_fzf_blame'
 
+    # ALT-G K - Git checkpoint browser
+    bind -M default \egk '_git_fzf_checkpoint_actions'
+    bind -M insert \egk '_git_fzf_checkpoint_actions'
+
     # ALT-G ? - Show help for git fzf actions
     bind -M default \eg\? '_git_fzf_actions_help'
     bind -M insert \eg\? '_git_fzf_actions_help'
@@ -71,6 +75,7 @@ function _git_fzf_actions_help
 │    ALT-G B         Branch actions (checkout/merge/rebase/delete)       │
 │    ALT-G S         Stash push (select specific files to stash)         │
 │    ALT-G L         Blame viewer (interactive git blame)                │
+│    ALT-G K         Checkpoint browser (commits with checkpoint data)  │
 │    ALT-G U         Untracked/clean actions (delete untracked files)    │
 │    ALT-G I         Gitignore generator (fetch from gitignore.io)       │
 │    ALT-G A         Gitattributes generator (from github templates)     │
@@ -99,6 +104,19 @@ function _git_fzf_actions_help
 │    ALT-S           Squash + autosquash (auto-rebase)                   │
 │    ALT-W           Reword + autosquash (auto-rebase)                   │
 │    ALT-V           Revert commit (create undo commit)                  │
+│    ALT-K           Toggle checkpoint preview (ckpt show)               │
+│    CTRL-/          Toggle preview                                      │
+│    CTRL-Y/E        Scroll preview up/down                              │
+│    CTRL-U/D        Half-page preview scroll                            │
+│                                                                         │
+│  Checkpoint Browser (ALT-G K):                                          │
+│    ENTER           Show checkpoint details (full)                      │
+│    ALT-G           Toggle to git show preview                          │
+│    ALT-E           Open commit in nvim                                 │
+│    ALT-C           Checkout commit                                     │
+│    ALT-I           Interactive rebase                                  │
+│    ALT-P           Cherry-pick commit                                  │
+│    ALT-V           Revert commit                                       │
 │    CTRL-/          Toggle preview                                      │
 │    CTRL-Y/E        Scroll preview up/down                              │
 │    CTRL-U/D        Half-page preview scroll                            │

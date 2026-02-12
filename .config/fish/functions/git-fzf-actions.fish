@@ -66,7 +66,7 @@ function _git_fzf_commit_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🍡 Git Commits" \
-            --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-F/S/W (fixup/squash/reword) | ALT-V (revert) | CTRL-/ (preview)" \
+            --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-F/S/W (fixup/squash/reword) | ALT-V (revert) | ALT-K (checkpoint) | CTRL-/ (preview)" \
             --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always" \
             --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always | less -R < /dev/tty > /dev/tty)" \
@@ -79,6 +79,7 @@ function _git_fzf_commit_actions
             --bind="alt-s:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --squash={} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-w:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --fixup=reword:{} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-v:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git revert < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-k:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs bash $HOME/dotfiles/scripts/checkpoints.sh show 2>/dev/null || echo 'No checkpoint for this commit')" \
             --bind="ctrl-/:toggle-preview" \
             --bind="ctrl-y:preview-up" \
             --bind="ctrl-e:preview-down" \
@@ -272,4 +273,65 @@ function _git_fzf_blame_file
         --bind="ctrl-e:preview-down" \
         --bind="ctrl-u:preview-half-page-up" \
         --bind="ctrl-d:preview-half-page-down"
+end
+
+# Git Checkpoint Browser - Browse commits with checkpoint data
+function _git_fzf_checkpoint_actions
+    if not git rev-parse --git-dir >/dev/null 2>&1
+        echo "Not in a git repository"
+        return 1
+    end
+
+    if not git show-ref --quiet refs/heads/checkpoints/v1 2>/dev/null
+        echo "No checkpoints found (no checkpoints/v1 branch)"
+        return 0
+    end
+
+    # Get checkpoint SHAs from orphan branch
+    set -l ckpt_shas
+    for meta in (git ls-tree -r --name-only checkpoints/v1 2>/dev/null | grep 'metadata.json$')
+        set -l sha (git show "checkpoints/v1:$meta" 2>/dev/null | jq -r '.commit_sha // empty' 2>/dev/null)
+        if test -n "$sha"
+            set -a ckpt_shas $sha
+        end
+    end
+
+    if test (count $ckpt_shas) -eq 0
+        echo "No checkpoints found"
+        return 0
+    end
+
+    set -l selected (
+        git log --oneline --no-walk --date=short --color=always \
+            --pretty='format:%C(auto)%cd %h%d %s (%an)' $ckpt_shas 2>/dev/null | \
+        fzf --ansi \
+            --multi \
+            --bind 'tab:toggle+down,shift-tab:toggle+up' \
+            --border-label="✦ Checkpoints" \
+            --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-V (revert) | ALT-G (git show) | CTRL-/ (preview)" \
+            --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs bash $HOME/dotfiles/scripts/checkpoints.sh show 2>/dev/null || echo 'No checkpoint data'" \
+            --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
+            --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs bash $HOME/dotfiles/scripts/checkpoints.sh show 2>/dev/null | less -R < /dev/tty > /dev/tty)" \
+            --bind="alt-e:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show | nvim -c 'set ft=git' - < /dev/tty > /dev/tty)" \
+            --bind="alt-g:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always)" \
+            --bind="alt-c:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git checkout < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-r:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git reset --hard < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-i:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git rebase -i {}^' < /dev/tty > /dev/tty)+abort" \
+            --bind="alt-p:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git cherry-pick < /dev/tty > /dev/tty)+reload(git log --oneline --no-walk --date=short --color=always --pretty='format:%C(auto)%cd %h%d %s (%an)' $ckpt_shas 2>/dev/null)" \
+            --bind="alt-v:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git revert < /dev/tty > /dev/tty)+abort" \
+            --bind="ctrl-/:toggle-preview" \
+            --bind="ctrl-y:preview-up" \
+            --bind="ctrl-e:preview-down" \
+            --bind="ctrl-u:preview-half-page-up" \
+            --bind="ctrl-d:preview-half-page-down"
+    )
+
+    if test -n "$selected"
+        set -l hashes
+        for line in $selected
+            set -l hash (echo $line | grep -o '[a-f0-9]\{7,\}' | head -n1)
+            set -a hashes $hash
+        end
+        commandline -i (string join ' ' $hashes)" "
+    end
 end
