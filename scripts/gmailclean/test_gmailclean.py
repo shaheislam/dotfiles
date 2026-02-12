@@ -14,12 +14,14 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from gmailclean import (
     categorize_email,
+    configure_account,
     extract_sender_domain,
     extract_sender_name,
     extract_unsubscribe_info,
     load_unsub_log,
     one_click_unsubscribe,
     save_unsub_log,
+    CONFIG_DIR,
     ORGANIZATION_LABELS,
 )
 
@@ -385,6 +387,71 @@ class TestSubscriptionData:
         parsed = json.loads(result)
         assert parsed["one_click"] is False
         assert parsed["email_count"] == 1
+
+
+class TestConfigureAccount:
+    """Tests for multi-account path configuration."""
+
+    def test_none_account_keeps_defaults(self):
+        import gmailclean
+        original_token = gmailclean.TOKEN_PATH
+        configure_account(None)
+        assert gmailclean.TOKEN_PATH == original_token
+
+    def test_account_sets_paths(self):
+        import gmailclean
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gmailclean.CONFIG_DIR = Path(tmpdir)
+            configure_account("work")
+            expected_dir = Path(tmpdir) / "accounts" / "work"
+            assert gmailclean.TOKEN_PATH == expected_dir / "token.json"
+            assert gmailclean.SCAN_CACHE_PATH == expected_dir / "scan_cache.json"
+            assert gmailclean.UNSUB_LOG_PATH == expected_dir / "unsubscribed.json"
+            assert gmailclean.EXTRACT_LOG_PATH == expected_dir / "extract_log.json"
+            assert expected_dir.is_dir()
+            # Restore
+            gmailclean.CONFIG_DIR = CONFIG_DIR
+            configure_account(None)
+
+    def test_account_creates_directory(self):
+        import gmailclean
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gmailclean.CONFIG_DIR = Path(tmpdir)
+            configure_account("personal")
+            assert (Path(tmpdir) / "accounts" / "personal").is_dir()
+            # Restore
+            gmailclean.CONFIG_DIR = CONFIG_DIR
+            configure_account(None)
+
+    def test_invalid_account_name_exits(self):
+        with pytest.raises(SystemExit):
+            configure_account("../evil")
+
+    def test_invalid_account_name_with_spaces_exits(self):
+        with pytest.raises(SystemExit):
+            configure_account("my account")
+
+    def test_valid_account_names(self):
+        import gmailclean
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gmailclean.CONFIG_DIR = Path(tmpdir)
+            for name in ["work", "personal-2", "my_gmail", "Account1"]:
+                configure_account(name)
+                assert gmailclean.TOKEN_PATH.parent.name == name
+            # Restore
+            gmailclean.CONFIG_DIR = CONFIG_DIR
+            configure_account(None)
+
+    def test_credentials_path_stays_at_root(self):
+        """credentials.json is the OAuth client, shared across accounts."""
+        import gmailclean
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gmailclean.CONFIG_DIR = Path(tmpdir)
+            configure_account("work")
+            assert gmailclean.CREDENTIALS_PATH == CONFIG_DIR / "credentials.json"
+            # Restore
+            gmailclean.CONFIG_DIR = CONFIG_DIR
+            configure_account(None)
 
 
 if __name__ == "__main__":
