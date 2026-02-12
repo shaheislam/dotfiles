@@ -526,6 +526,49 @@ phase_4_cloud_tools() {
         print_success "OpenAI Codex CLI already installed at: $(which codex)"
     fi
 
+    # Install OpenClaw (self-hosted AI assistant gateway)
+    if ! command_exists openclaw; then
+        print_step "Installing OpenClaw gateway..."
+        if command_exists bun; then
+            bun add -g openclaw >/dev/null 2>&1 && \
+                print_success "OpenClaw installed" || \
+                log_verbose "OpenClaw installation skipped (optional)"
+        fi
+    else
+        print_success "OpenClaw already installed at: $(which openclaw)"
+    fi
+
+    # Configure OpenClaw with security-hardened defaults
+    if command_exists openclaw; then
+        if [[ ! -f "$HOME/.openclaw/openclaw.json" ]]; then
+            print_step "Configuring OpenClaw with secure defaults..."
+            mkdir -p "$HOME/.openclaw"
+            chmod 700 "$HOME/.openclaw"
+            cp "$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json" "$HOME/.openclaw/openclaw.json"
+            chmod 600 "$HOME/.openclaw/openclaw.json"
+
+            # Generate gateway token
+            if [[ ! -f "$HOME/.openclaw/.env" ]]; then
+                local oc_token
+                oc_token=$(openssl rand -hex 32)
+                cat > "$HOME/.openclaw/.env" << OCEOF
+# OpenClaw Gateway Authentication
+# Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OPENCLAW_GATEWAY_TOKEN=${oc_token}
+OCEOF
+                chmod 600 "$HOME/.openclaw/.env"
+            fi
+            print_success "OpenClaw configured with secure defaults"
+        else
+            print_success "OpenClaw configuration already exists"
+        fi
+
+        # Install launchd service on macOS
+        if [[ "$DETECTED_OS" == "macos" ]]; then
+            openclaw gateway install >/dev/null 2>&1 || log_verbose "OpenClaw launchd service setup skipped"
+        fi
+    fi
+
     # Install iximiuz labctl CLI
     if ! command_exists labctl; then
         print_step "Installing iximiuz labctl CLI..."
