@@ -48,9 +48,9 @@ if [[ -z "$transcript_slice" ]]; then
     exit 0
 fi
 
-# Extract user prompts from the transcript slice
+# Extract user prompts from the transcript slice (handle string and array content)
 user_prompts=$(echo "$transcript_slice" \
-    | jq -r 'select(.type == "human") | .message.content // empty' 2>/dev/null \
+    | jq -r 'select(.type == "human") | .message.content | if type == "string" then . elif type == "array" then map(select(.type == "text") | .text) | join(" ") else empty end' 2>/dev/null \
     | head -50 || true)
 
 # Extract tool calls (name + file paths)
@@ -67,9 +67,9 @@ new_untracked=$(cd "$root" && git ls-files --others --exclude-standard 2>/dev/nu
 char_count=${#transcript_slice}
 token_estimate=$((char_count / 4))
 
-# Generate a summary from the first user prompt
-first_prompt=$(echo "$user_prompts" | head -1 | head -c 200)
-summary="${first_prompt:-"Agent session checkpoint"}"
+# Generate summary: the user's prompt (the "why" behind the commit)
+summary=$(echo "$user_prompts" | grep '.' | head -1)
+summary="${summary:-"Agent session checkpoint"}"
 
 # Write pending checkpoint
 pending_dir="${root}/${PENDING_DIR}/${session_id}"
