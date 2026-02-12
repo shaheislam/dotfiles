@@ -6,7 +6,7 @@
       "mode": "token"
     },
     "tailscale": {
-      "mode": "serve",
+      "mode": "off",
       "resetOnExit": true
     }
   },
@@ -31,7 +31,7 @@
 
   "tools": {
     "profile": "coding",
-    "deny": ["browser", "canvas", "nodes", "cron"],
+    "deny": ["browser", "canvas", "cron"],
     "elevated": {
       "allowFrom": []
     }
