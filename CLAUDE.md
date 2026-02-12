@@ -320,6 +320,34 @@ Local DNS ad blocking via Colima + Docker. Location: `scripts/pihole/`. Fish wra
 ### Keyboard Remapping
 Karabiner-Elements: `.config/karabiner/karabiner.json` (stow managed). Caps Lock ↔ Escape swap. Edit via GUI app.
 
+### Claude Code Hooks
+
+Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/claude-code-hooks.md` for complete reference.
+
+**Hook Events Configured** (`.claude/settings.json`):
+
+| Event | Hooks | Purpose |
+|-------|-------|---------|
+| **SessionStart** | `fix-hookify-imports.sh`, `bd prime` | Plugin fixes, Beads memory |
+| **PreToolUse** (Bash) | `use_bun.py`, `validate-bash.py` | Bun enforcement, dangerous command blocking |
+| **PostToolUse** (Read) | `deepwiki-context.py` | Language-aware DeepWiki repo suggestions |
+| **PreCompact** | `bd sync` | Beads memory sync before compaction |
+| **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
+| **UserPromptSubmit** | `checkpoint-pre-prompt.sh` | Checkpoint pre-prompt state capture |
+| **Stop** | `checkpoint-capture.sh`, `cross-provider-bridge.sh` | Checkpoint capture, cross-provider review |
+
+**Hook Types**: Command (shell scripts), Prompt (LLM yes/no), Agent (multi-turn with tools)
+
+**Hook Scripts**: `.claude/hooks/` (Python/Bash scripts, symlinked via stow)
+
+**Testing**: `scripts/test-hooks.sh` (46 tests: settings validation, script permissions, functional tests, wiring verification)
+
+**Adding New Hooks**:
+1. Create script in `.claude/hooks/` (make executable)
+2. Wire in `.claude/settings.json` under appropriate event
+3. Add tests in `scripts/test-hooks.sh`
+4. Update `docs/claude-code-hooks.md`
+
 ### Claude Code Plugins
 
 Plugins are installed from four marketplaces:
@@ -565,6 +593,7 @@ CROSS_PROVIDER_BRIDGE=1 claude
 ```
 
 ### Recent Updates
+- **2026-02-12**: Added comprehensive hooks integration (PreToolUse bun/bash validation, Notification desktop alerts/logging, PostToolUse DeepWiki context, test suite, docs)
 - **2026-02-11**: Added Checkpoints system (session context linked to git commits, orphan branch storage, ckpt CLI)
 - **2026-02-11**: Added gwt-doctor agent health check, activated Beads agent memory (phases 3-5)
 - **2026-02-09**: Added Gastown agent orchestration patterns (agent-state, witness, merge-queue, triage, phase-gates, workflow templates)
