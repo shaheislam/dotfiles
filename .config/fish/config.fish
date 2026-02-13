@@ -171,9 +171,7 @@ if status is-interactive
         source /opt/homebrew/opt/asdf/libexec/asdf.fish
     end
 
-    # Configure mise settings
-    # Configure mise settings once (this is a persistent setting, not needed every startup)
-    # Run `mise settings add idiomatic_version_file_enable_tools ruby` manually if needed
+    # mise activation (idiomatic_version_file settings configured in scripts/setup.sh)
     if command -v mise >/dev/null
         __cache_tool_init mise "mise activate fish"
     end

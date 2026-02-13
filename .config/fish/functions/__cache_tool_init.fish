@@ -4,6 +4,8 @@ function __cache_tool_init --description "Cache tool initialization scripts for 
     #
     # Caches tool init output, invalidated when tool binary changes (mtime check).
     # Avoids subprocess calls on cache hits for maximum startup speed.
+    # Cache files are restricted to owner-only permissions (0600).
+    # To force cache rebuild: fish-init-clear [tool_name]
 
     set -l cache_dir "$HOME/.cache/fish-init"
     set -l tool_name $argv[1]
@@ -29,8 +31,11 @@ function __cache_tool_init --description "Cache tool initialization scripts for 
     end
 
     # Slow path: regenerate cache
-    mkdir -p $cache_dir
+    mkdir -p $cache_dir 2>/dev/null
+    chmod 700 $cache_dir 2>/dev/null
     eval $init_cmd >$cache_file 2>/dev/null
+    chmod 600 $cache_file 2>/dev/null
     touch $stamp_file 2>/dev/null
+    chmod 600 $stamp_file 2>/dev/null
     source $cache_file
 end

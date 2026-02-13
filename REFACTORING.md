@@ -7,8 +7,16 @@ _Original: 2025-01-13_
 
 ### Baseline Measurement
 - **Fish shell startup time**: 1.298s (before refactoring)
-- **After refactoring**: 0.67-0.75s (warm cache)
-- **Improvement**: ~500ms faster (40-50% reduction)
+- **After refactoring**: 0.58s mean ± 0.06s stdev (n=10, warm cache)
+- **Range**: 0.51s - 0.70s
+- **Improvement**: ~720ms faster (55% reduction)
+- **Methodology**: 10 consecutive `time fish -i -c exit` runs, warm disk cache
+
+### Raw Timing Data (seconds)
+```
+0.51, 0.70, 0.55, 0.59, 0.62, 0.54, 0.62, 0.60, 0.51, 0.56
+Mean: 0.580  Stdev: 0.058  Median: 0.575
+```
 
 ### Root Causes Identified
 
@@ -17,7 +25,7 @@ _Original: 2025-01-13_
 | `thefuck --alias` (uncached subprocess) | ~557ms | FIXED - now cached |
 | `carapace _carapace fish` (uncached subprocess) | ~230ms | FIXED - now cached |
 | `fzf --fish` (uncached subprocess) | ~69ms | FIXED - now cached |
-| `mise settings add` (runs every startup) | ~50ms | FIXED - removed |
+| `mise settings add` (runs every startup) | ~50ms | FIXED - moved to setup.sh |
 | `atuin uuid` (subprocess per startup) | ~15ms | Kept (needed for session ID) |
 | `__cache_tool_init` version checks (subprocess per tool) | ~5-15ms x8 | FIXED - mtime-based |
 | nix.fish (15KB parsed eagerly) | ~20-50ms | FIXED - functions lazy-loaded |
@@ -32,17 +40,32 @@ _Original: 2025-01-13_
 ### 2. Improved `__cache_tool_init` function
 - **Before**: Always called `tool --version` subprocess even on cache hits
 - **After**: Uses binary mtime comparison - zero subprocess calls on cache hits
+- Cache files restricted to owner-only permissions (0600/0700)
 - Saves ~40-120ms across 8 cached tools
 
-### 3. Removed per-startup `mise settings add` call
+### 3. Moved per-startup `mise settings add` to setup.sh
 - `mise settings add idiomatic_version_file_enable_tools ruby` is a persistent setting
-- Only needs to run once, not every shell startup
+- Moved to `scripts/setup.sh` Phase 10 (runs once on setup, not every shell startup)
 
 ### 4. Moved nix.fish functions to lazy-loaded files
 - Extracted 13 functions from 15KB conf.d/nix.fish to individual function files
 - conf.d/nix.fish reduced from 421 lines to 58 lines (86% reduction)
 - Functions now lazy-load on first use instead of parsing at startup
+- All functions verified as pure (no event handlers, universal vars, or signal handlers)
 - Functions extracted: `nix-shell-with`, `nix-search`, `nix-update`, `nix-clean`, `nix-lsps`, `nix-init-flake`, `nix-status`, `nix-inheritance`, `hm-switch`, `hm-update`, `hm-packages`, `hm-generations`, `hm-rollback`, `nix-install`
+
+### 5. Added `fish-init-clear` cache management helper
+- `fish-init-clear` clears all cached init scripts
+- `fish-init-clear thefuck` clears a specific tool's cache
+- Use when: tool config changes (env vars, plugins), after major upgrades
+
+## Cache Invalidation Strategy
+
+Cache files in `~/.cache/fish-init/` are invalidated when the tool binary's mtime changes (i.e., after `brew upgrade`). This covers the vast majority of cases where init output changes.
+
+**Not covered** (by design): environment variable changes that affect init output (e.g., `TF_ALIAS` for thefuck, `FZF_DEFAULT_COMMAND` for fzf). These change extremely rarely in personal dotfiles. When they do, run `fish-init-clear` to force regeneration.
+
+**Rationale**: Adding env-hash cache keys would require subprocess calls on every startup, defeating the purpose of caching. The simple `fish-init-clear` escape hatch provides manual control when needed.
 
 ## Future Improvement Suggestions
 
@@ -117,6 +140,6 @@ If not already migrated, zoxide (Rust-based) is significantly faster than the pu
 
 ## Implementation Priority
 
-1. **Done**: Cache thefuck/carapace/fzf, improve __cache_tool_init, trim nix.fish
+1. **Done**: Cache thefuck/carapace/fzf, improve __cache_tool_init, trim nix.fish, cache security hardening, fish-init-clear helper
 2. **Next**: Extract remaining inline functions from config.fish (items 1, 5, 7)
 3. **Later**: Abbreviation conversion, done.fish deferral, naming standardization
