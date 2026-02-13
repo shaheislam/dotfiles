@@ -18,7 +18,7 @@ function __diffview_follow_cd --on-variable PWD
     set -l raw (tmux show-environment NVIM_DIFFVIEW_SOCKET 2>/dev/null)
     or return
     # Handle unset marker: "-NVIM_DIFFVIEW_SOCKET"
-    string match -q '-*' -- $raw; and return
+    string match -q -- '-*' "$raw"; and return
     set -l socket (string replace 'NVIM_DIFFVIEW_SOCKET=' '' -- $raw)
     test -n "$socket"; or return
     # Self-heal: if the socket file is gone (Neovim crashed/exited without
