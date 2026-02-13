@@ -32,6 +32,15 @@
             "command": "bd prime 2>/dev/null || true"
           }
         ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2>/dev/null || true"
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -49,6 +58,16 @@
             "statusMessage": "Validating bash command..."
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.py",
+            "statusMessage": "Checking file protection..."
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -58,6 +77,30 @@
           {
             "type": "command",
             "command": "python3 ~/.claude/hooks/deepwiki-context.py 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2>/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/file-modified.sh 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-failure.py 2>/dev/null || true"
           }
         ]
       }
