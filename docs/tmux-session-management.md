@@ -129,6 +129,20 @@ windows:
         - lazygit
 ```
 
+## Session Close Behavior
+
+When you close the last window of a session, tmux automatically switches to the most recently active remaining session instead of detaching (which would close the terminal). This is controlled by `detach-on-destroy off` in `.tmux.conf`.
+
+A `session-closed` hook also ensures the `main` session is always available as a fallback. If `main` is destroyed, the hook recreates it automatically.
+
+## Reloading Configuration
+
+`Ctrl-s + r` reloads the tmux config — **unless** the current pane is running Claude Code, in which case it triggers `recall` instead (context-aware binding).
+
+To reload config when in a Claude pane:
+- Switch to a non-Claude pane first, then `Ctrl-s + r`
+- Or run `tmux source-file ~/.tmux.conf` directly in any shell pane
+
 ## Configuration Files
 
 - **Tmux config**: `~/.tmux.conf`

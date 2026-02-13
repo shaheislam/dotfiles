@@ -3,47 +3,118 @@
 # Tests that closing sessions falls back correctly instead of detaching.
 #
 # Usage:
-#   test-session-close.sh kill-nonmain    # Killing non-main session preserves main
-#   test-session-close.sh recreate-main   # session-closed hook recreates main if destroyed
+#   test-session-close.sh kill-nonmain      # Killing non-main session preserves main
+#   test-session-close.sh recreate-main     # session-closed hook recreates main if destroyed
+#   test-session-close.sh client-switches   # Client moves to main when its session is killed
+#   test-session-close.sh sole-main-recreate # Killing sole main session recreates it
 
-set -euo pipefail
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOTFILES_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Track resources for cleanup
+_CLEANUP_SOCKET=""
+_CLEANUP_CONF=""
+_CLEANUP_PID=""
+
+cleanup() {
+    [[ -n "$_CLEANUP_PID" ]] && kill "$_CLEANUP_PID" 2>/dev/null || true
+    [[ -n "$_CLEANUP_SOCKET" ]] && tmux -L "$_CLEANUP_SOCKET" kill-server 2>/dev/null || true
+    [[ -n "$_CLEANUP_CONF" ]] && rm -f "$_CLEANUP_CONF"
+}
+trap cleanup EXIT
+
 # Build minimal config with only session-close-relevant settings
 build_test_conf() {
-    local conf
-    conf=$(mktemp "/tmp/tmux-test-sc-$$.XXXXXX")
-    grep -E 'detach-on-destroy|session-closed' "$DOTFILES_ROOT/.tmux.conf" > "$conf"
-    echo "$conf"
+    _CLEANUP_CONF=$(mktemp "/tmp/tmux-test-sc-$$.XXXXXX")
+    grep -E 'detach-on-destroy|session-closed' "$DOTFILES_ROOT/.tmux.conf" > "$_CLEANUP_CONF"
 }
 
 test_kill_nonmain() {
-    local socket="_test_sc_nm_$$"
-    local conf
-    conf=$(build_test_conf)
-    trap "tmux -L '$socket' kill-server 2>/dev/null || true; rm -f '$conf'" EXIT
+    _CLEANUP_SOCKET="_test_sc_nm_$$"
+    build_test_conf
 
-    tmux -L "$socket" -f "$conf" new-session -d -s main
-    tmux -L "$socket" new-session -d -s temp
-    tmux -L "$socket" kill-session -t temp
-    tmux -L "$socket" has-session -t main 2>/dev/null
+    tmux -L "$_CLEANUP_SOCKET" -f "$_CLEANUP_CONF" new-session -d -s main
+    tmux -L "$_CLEANUP_SOCKET" new-session -d -s temp
+    tmux -L "$_CLEANUP_SOCKET" kill-session -t temp
+    tmux -L "$_CLEANUP_SOCKET" has-session -t main 2>/dev/null
 }
 
 test_recreate_main() {
-    local socket="_test_sc_rm_$$"
-    local conf
-    conf=$(build_test_conf)
-    trap "tmux -L '$socket' kill-server 2>/dev/null || true; rm -f '$conf'" EXIT
+    _CLEANUP_SOCKET="_test_sc_rm_$$"
+    build_test_conf
 
-    tmux -L "$socket" -f "$conf" new-session -d -s main
-    tmux -L "$socket" new-session -d -s other
-    tmux -L "$socket" kill-session -t main
+    tmux -L "$_CLEANUP_SOCKET" -f "$_CLEANUP_CONF" new-session -d -s main
+    tmux -L "$_CLEANUP_SOCKET" new-session -d -s other
+    tmux -L "$_CLEANUP_SOCKET" kill-session -t main
     # session-closed hook fires asynchronously via if-shell — wait for it
     local i
     for i in 1 2 3 4 5; do
-        if tmux -L "$socket" has-session -t main 2>/dev/null; then
+        if tmux -L "$_CLEANUP_SOCKET" has-session -t main 2>/dev/null; then
+            return 0
+        fi
+        sleep 0.3
+    done
+    return 1
+}
+
+# Verify the client actually switches to main when its session is killed
+# Uses control mode (-C) with a FIFO to keep stdin open (needed when run
+# under output redirection, e.g. run_test's eval > /dev/null 2>&1)
+test_client_switches() {
+    _CLEANUP_SOCKET="_test_sc_cs_$$"
+    build_test_conf
+
+    local fifo="/tmp/tmux-test-fifo-$$"
+    mkfifo "$fifo"
+
+    tmux -L "$_CLEANUP_SOCKET" -f "$_CLEANUP_CONF" new-session -d -s main
+    tmux -L "$_CLEANUP_SOCKET" new-session -d -s temp
+
+    # Attach a control-mode client to temp; FIFO keeps stdin open
+    tmux -L "$_CLEANUP_SOCKET" -C attach-session -t temp < "$fifo" >/dev/null 2>&1 &
+    _CLEANUP_PID=$!
+    # Open write end to prevent EOF, hold in background fd
+    exec 7>"$fifo"
+    sleep 0.3
+
+    # Verify client is on temp
+    local before
+    before=$(tmux -L "$_CLEANUP_SOCKET" list-clients -F '#{client_session}' 2>/dev/null | head -1)
+    if [[ "$before" != "temp" ]]; then
+        exec 7>&-; rm -f "$fifo"
+        return 1
+    fi
+
+    # Kill temp — client should switch to main
+    tmux -L "$_CLEANUP_SOCKET" kill-session -t temp
+    sleep 0.5
+
+    # Verify client moved to main
+    local after
+    after=$(tmux -L "$_CLEANUP_SOCKET" list-clients -F '#{client_session}' 2>/dev/null | head -1)
+
+    # Close FIFO
+    exec 7>&-
+    rm -f "$fifo"
+    [[ "$after" == "main" ]]
+}
+
+# Edge case: main is the only session. Killing it should recreate main via hook,
+# not exit the server. Requires exit-empty off to keep server alive during the
+# brief moment between session destruction and hook recreation.
+test_sole_main_recreate() {
+    _CLEANUP_SOCKET="_test_sc_sole_$$"
+    build_test_conf
+    echo "set -g exit-empty off" >> "$_CLEANUP_CONF"
+
+    tmux -L "$_CLEANUP_SOCKET" -f "$_CLEANUP_CONF" new-session -d -s main
+    tmux -L "$_CLEANUP_SOCKET" kill-session -t main
+    # Wait for session-closed hook to recreate main
+    local i
+    for i in 1 2 3 4 5; do
+        if tmux -L "$_CLEANUP_SOCKET" has-session -t main 2>/dev/null; then
             return 0
         fi
         sleep 0.3
@@ -52,10 +123,12 @@ test_recreate_main() {
 }
 
 case "${1:-}" in
-    kill-nonmain)  test_kill_nonmain ;;
-    recreate-main) test_recreate_main ;;
+    kill-nonmain)       test_kill_nonmain ;;
+    recreate-main)      test_recreate_main ;;
+    client-switches)    test_client_switches ;;
+    sole-main-recreate) test_sole_main_recreate ;;
     *)
-        echo "Usage: $0 {kill-nonmain|recreate-main}"
+        echo "Usage: $0 {kill-nonmain|recreate-main|client-switches|sole-main-recreate}"
         exit 1
         ;;
 esac
