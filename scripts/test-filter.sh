@@ -253,8 +253,17 @@ test_hooks() {
     run_test "protect-files blocks node_modules" "echo '{\"tool_input\":{\"file_path\":\"/app/node_modules/foo/index.js\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files allows normal files" "echo '{\"tool_input\":{\"file_path\":\"/app/src/main.py\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
 
+    # Functional: protect-files.py allowlist (avoid false positives)
+    run_test "protect-files allows .env.example" "echo '{\"tool_input\":{\"file_path\":\"/app/.env.example\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
+    run_test "protect-files allows bun.lockb" "echo '{\"tool_input\":{\"file_path\":\"/app/bun.lockb\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
+    run_test "protect-files allows Cargo.lock" "echo '{\"tool_input\":{\"file_path\":\"/app/Cargo.lock\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
+    run_test "protect-files allows poetry.lock" "echo '{\"tool_input\":{\"file_path\":\"/app/poetry.lock\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
+
     # Functional: log-tool-failure.py exits 0 (non-blocking)
     run_test "log-tool-failure exits 0" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bad\"},\"error\":\"fail\"}' | python3 '$hooks_dir/log-tool-failure.py' 2>/dev/null"
+
+    # Functional: log-tool-failure.py redacts secrets
+    run_test "log-tool-failure redacts secrets" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"export API_KEY=abc123\"},\"error\":\"password leaked\"}' | python3 '$hooks_dir/log-tool-failure.py' 2>/dev/null && tail -1 ~/.claude/hooks/logs/tool-failures-\$(date +%Y-%m-%d).jsonl | grep -q REDACTED"
 
     # Functional: auto-format.py exits 0 on non-existent file (non-blocking)
     run_test "auto-format exits 0 for missing file" "echo '{\"tool_input\":{\"file_path\":\"/nonexistent/file.py\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null"

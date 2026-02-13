@@ -12,8 +12,11 @@ Non-blocking: always exits 0. Outputs a systemMessage with format result.
 """
 
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -26,14 +29,29 @@ FORMATTERS = {
 
 
 def format_json(file_path: str) -> bool:
-    """Format JSON using Python's built-in json module."""
+    """Format JSON using Python's built-in json module with atomic write."""
     try:
         with open(file_path, "r") as f:
-            data = json.load(f)
-        with open(file_path, "w") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-            f.write("\n")
-        return True
+            original = f.read()
+            data = json.loads(original)
+
+        formatted = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+
+        # Skip if already formatted (idempotent)
+        if formatted == original:
+            return False
+
+        # Atomic write via temp file in same directory
+        dir_path = os.path.dirname(file_path) or "."
+        fd, tmp_path = tempfile.mkstemp(dir=dir_path, suffix=".json.tmp")
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write(formatted)
+            os.replace(tmp_path, file_path)
+            return True
+        except Exception:
+            os.unlink(tmp_path)
+            return False
     except (json.JSONDecodeError, OSError):
         return False
 
@@ -62,13 +80,9 @@ def main():
 
         cmd, name = formatter_info
 
-        # Check if formatter is available
-        if not subprocess.run(["command", "-v", cmd[0]], capture_output=True, shell=True).returncode == 0:
-            # Try which instead
-            try:
-                subprocess.run(["which", cmd[0]], capture_output=True, check=True)
-            except (subprocess.CalledProcessError, FileNotFoundError):
-                sys.exit(0)  # Formatter not installed, skip silently
+        # Check if formatter is available via shutil.which
+        if not shutil.which(cmd[0]):
+            sys.exit(0)
 
         # Run formatter
         try:

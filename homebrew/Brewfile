@@ -113,6 +113,7 @@ brew "urlview"   # For tmux-urlview plugin to extract and open URLs
 brew "extract_url"  # Alternative URL extractor for tmux-urlview (more reliable)
 brew "shellcheck"
 brew "shfmt"
+brew "ruff"
 brew "gh"
 brew "pipx"
 brew "gemini-cli"
