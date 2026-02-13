@@ -406,10 +406,24 @@ else
 fi
 
 # view_opened sets diffview_current_root
-if grep -A5 "view_opened = function" "$git_lua" | grep -q "diffview_current_root"; then
+if grep -A10 "view_opened = function" "$git_lua" | grep -q "diffview_current_root"; then
     pass "view_opened sets diffview_current_root"
 else
     fail "view_opened does not set diffview_current_root"
+fi
+
+# view_opened reads repo root from Diffview's adapter context (not getcwd)
+if grep -A10 "view_opened = function" "$git_lua" | grep -q "adapter.ctx.toplevel"; then
+    pass "view_opened reads repo root from view.adapter.ctx.toplevel"
+else
+    fail "view_opened missing adapter.ctx.toplevel read"
+fi
+
+# view_opened falls back to find_repo_root when adapter unavailable
+if grep -A15 "view_opened = function" "$git_lua" | grep -q "find_repo_root"; then
+    pass "view_opened falls back to find_repo_root for non-adapter views"
+else
+    fail "view_opened missing find_repo_root fallback"
 fi
 
 # view_closed clears diffview_current_root
@@ -466,35 +480,35 @@ else
 fi
 
 # FocusGained uses get_tmux_last_pane_cwd for repo-following
-if grep -A40 "FocusGained" "$git_lua" | grep -q "get_tmux_last_pane_cwd"; then
+if grep -A50 "FocusGained" "$git_lua" | grep -q "get_tmux_last_pane_cwd"; then
     pass "FocusGained uses get_tmux_last_pane_cwd for repo-following"
 else
     fail "FocusGained not using tmux pane cwd detection"
 fi
 
 # FocusGained calls retarget_diffview
-if grep -A40 "FocusGained" "$git_lua" | grep -q "retarget_diffview"; then
+if grep -A50 "FocusGained" "$git_lua" | grep -q "retarget_diffview"; then
     pass "FocusGained calls retarget_diffview"
 else
     fail "FocusGained not calling retarget_diffview"
 fi
 
 # FocusGained checks diffview_follow_repo toggle
-if grep -A40 "FocusGained" "$git_lua" | grep -q "diffview_follow_repo"; then
+if grep -A50 "FocusGained" "$git_lua" | grep -q "diffview_follow_repo"; then
     pass "FocusGained respects diffview_follow_repo toggle"
 else
     fail "FocusGained ignores diffview_follow_repo toggle"
 fi
 
 # FocusGained checks get_current_view (only acts when Diffview is open)
-if grep -A40 "FocusGained" "$git_lua" | grep -q "get_current_view"; then
+if grep -A50 "FocusGained" "$git_lua" | grep -q "get_current_view"; then
     pass "FocusGained only retargets when Diffview is open"
 else
     fail "FocusGained missing Diffview open check"
 fi
 
 # FocusGained uses path_is_under for prefix check
-if grep -A40 "FocusGained" "$git_lua" | grep -q "path_is_under"; then
+if grep -A50 "FocusGained" "$git_lua" | grep -q "path_is_under"; then
     pass "FocusGained uses path_is_under for prefix check"
 else
     fail "FocusGained using raw prefix match"
@@ -560,7 +574,7 @@ else
 fi
 
 # FocusGained uses path_is_under
-if grep -A40 "FocusGained" "$git_lua" | grep -q "path_is_under"; then
+if grep -A50 "FocusGained" "$git_lua" | grep -q "path_is_under"; then
     pass "FocusGained uses path_is_under for prefix check"
 else
     fail "FocusGained using raw prefix match"
@@ -573,11 +587,123 @@ else
     fail "BufEnter using raw prefix match (vulnerable to dotfiles/dotfiles-mergeview)"
 fi
 
-# Nil-root retarget: FocusGained retargets even when diffview_current_root is nil
-if grep -A40 "FocusGained" "$git_lua" | grep -q "not diffview_current_root or"; then
-    pass "FocusGained retargets when diffview_current_root is nil"
+# Nil-root retarget: FocusGained retargets even when view_root is nil
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -q "not view_root or"; then
+    pass "FocusGained retargets when view_root is nil"
 else
-    fail "FocusGained blocks retarget when diffview_current_root is nil"
+    fail "FocusGained blocks retarget when view_root is nil"
+fi
+
+# ─── Edge Case Safety ──────────────────────────────────────────────
+echo ""
+echo "--- Edge Case Safety ---"
+
+# Non-git directory: FocusGained checks find_repo_root returns nil before retargeting
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -B1 "retarget_diffview" | grep -q "pane_root ~=\|not pane_root\|not view_root"; then
+    pass "FocusGained guards against non-git directories (find_repo_root nil check)"
+else
+    fail "FocusGained missing non-git directory guard"
+fi
+
+# Path escaping: DiffviewOpen uses fnameescape for special characters in paths
+if grep -q 'fnameescape(new_root)' "$git_lua"; then
+    pass "DiffviewOpen path argument uses fnameescape (handles spaces/special chars)"
+else
+    fail "DiffviewOpen missing fnameescape — unsafe with special characters in paths"
+fi
+
+# Idempotence: FocusGained skips retarget when pane root equals view root
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -q "pane_root ~= view_root"; then
+    pass "FocusGained is idempotent (skips retarget when same root)"
+else
+    fail "FocusGained missing idempotence check — may cause unnecessary reopen"
+fi
+
+# Reentrancy: repo_switch_in_progress prevents concurrent retargets
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -q "repo_switch_in_progress"; then
+    pass "FocusGained checks reentrancy guard (prevents rapid-switch race)"
+else
+    fail "FocusGained missing reentrancy guard"
+fi
+
+# No module-level override variable (uses Diffview's own adapter API instead)
+if ! grep -q "retarget_root_override" "$git_lua"; then
+    pass "No module-level override hack (uses view.adapter.ctx.toplevel)"
+else
+    fail "Stale retarget_root_override variable still present"
+fi
+
+# Failed DiffviewOpen notifies user (not silent)
+if grep -A15 "function retarget_diffview" "$git_lua" | grep -q 'vim.notify.*retarget failed'; then
+    pass "DiffviewOpen failure notifies user with WARN level"
+else
+    fail "DiffviewOpen failure is silent — no user notification"
+fi
+
+# Trailing-slash normalization on both sides of comparison
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -q 'gsub("/$"'; then
+    pass "FocusGained normalizes trailing slashes before comparison"
+else
+    fail "FocusGained missing trailing-slash normalization"
+fi
+
+# view_opened normalizes trailing slashes too
+if grep -A15 "view_opened = function" "$git_lua" | grep -q 'gsub("/$"'; then
+    pass "view_opened normalizes trailing slashes on diffview_current_root"
+else
+    fail "view_opened missing trailing-slash normalization"
+fi
+
+# Fallback cwd uses window-aware getcwd(0, 0) respecting :lcd/:tcd
+if grep -A15 "view_opened = function" "$git_lua" | grep -q 'getcwd(0, 0)'; then
+    pass "view_opened fallback uses window-aware getcwd(0, 0)"
+else
+    fail "view_opened fallback uses bare getcwd() — ignores :lcd/:tcd"
+fi
+
+# ─── Multi-Tab & Reentrancy Safety ─────────────────────────────────
+echo ""
+echo "--- Multi-Tab & Reentrancy Safety ---"
+
+# FocusGained reads root from active view's adapter (multi-tab safe)
+# Instead of the module-level diffview_current_root cache, it reads
+# current_view.adapter.ctx.toplevel — correct even with multiple Diffview tabs.
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -q "current_view.adapter"; then
+    pass "FocusGained reads root from active view's adapter (multi-tab safe)"
+else
+    fail "FocusGained uses cached diffview_current_root (not multi-tab safe)"
+fi
+
+# FocusGained stores the view from get_current_view (not discarding it)
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -q "local current_view = lib.get_current_view"; then
+    pass "FocusGained captures view object for adapter access"
+else
+    fail "FocusGained discards get_current_view return value"
+fi
+
+# FocusGained compares against view_root (not diffview_current_root)
+if grep -A50 "create_autocmd.*FocusGained" "$git_lua" | grep -q "pane_root ~= view_root"; then
+    pass "FocusGained compares pane root against live view root (not cache)"
+else
+    fail "FocusGained still compares against cached diffview_current_root"
+fi
+
+# Reentrancy guard: retarget_diffview sets and clears repo_switch_in_progress
+retarget_body=$(grep -A15 "function retarget_diffview" "$git_lua")
+if echo "$retarget_body" | grep -q "repo_switch_in_progress = true" && \
+   echo "$retarget_body" | grep -q "repo_switch_in_progress = false"; then
+    pass "retarget_diffview sets+clears reentrancy guard on both success and failure"
+else
+    fail "retarget_diffview missing reentrancy guard set/clear"
+fi
+
+# Reentrancy guard clears even when DiffviewOpen fails
+# The guard clear (repo_switch_in_progress = false) must be AFTER the if/end block
+# not inside the error branch, so it runs unconditionally.
+if grep -A15 "function retarget_diffview" "$git_lua" | grep -A2 "repo_switch_in_progress = false" | head -1 | grep -qv "if not open_ok"; then
+    pass "Reentrancy guard clears unconditionally (after success or failure)"
+else
+    fail "Reentrancy guard only clears on one code path"
 fi
 
 echo ""
