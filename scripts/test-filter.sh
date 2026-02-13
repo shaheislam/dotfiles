@@ -36,7 +36,7 @@ run_test() {
     local test_name="$1"
     local test_command="$2"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if eval "$test_command" > /dev/null 2>&1; then
+    if eval "$test_command" >/dev/null 2>&1; then
         echo -e "${GREEN}  PASS${NC} $test_name"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -72,7 +72,7 @@ test_fish() {
     done
 
     # Validate Fish syntax if fish is available
-    if command -v fish &> /dev/null; then
+    if command -v fish &>/dev/null; then
         run_test "Fish config.fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/config.fish'"
     fi
 }
@@ -196,12 +196,12 @@ test_hooks() {
     run_test "Hooks directory exists" "[ -d '$DOTFILES_ROOT/.claude/hooks' ]"
 
     # Core hook scripts exist and are executable
-    for hook in use_bun.py validate-bash.py ts_lint.py macos_notification.py deepwiki-context.py add-context.py log_pre_tool_use.py; do
+    for hook in use_bun.py validate-bash.py ts_lint.py macos_notification.py deepwiki-context.py add-context.py log_pre_tool_use.py protect-files.py log-tool-failure.py auto-format.py; do
         run_test "Hook $hook exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
         run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
     done
 
-    for hook in cross-provider-bridge.sh log-notification.sh file-modified.sh; do
+    for hook in cross-provider-bridge.sh log-notification.sh file-modified.sh post-compact-reinject.sh; do
         run_test "Hook $hook exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
         run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
     done
@@ -217,7 +217,7 @@ test_hooks() {
     # Settings.json hook events configured
     local settings="$DOTFILES_ROOT/.claude/settings.json"
     if [ -f "$settings" ]; then
-        for event in SessionStart PreToolUse PostToolUse PreCompact Notification UserPromptSubmit Stop; do
+        for event in SessionStart PreToolUse PostToolUse PostToolUseFailure PreCompact Notification UserPromptSubmit Stop; do
             run_test "Hook event wired: $event" "python3 -c \"import json; d=json.load(open('$settings')); assert '$event' in d.get('hooks', {})\""
         done
     fi
@@ -245,6 +245,23 @@ test_hooks() {
     # Functional: deepwiki-context.py language detection
     run_test "deepwiki detects Python" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/main.py\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null | grep -q python"
     run_test "deepwiki silent for unknown" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/data.xyz\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null"
+
+    # Functional: protect-files.py blocks sensitive files
+    run_test "protect-files blocks .env" "echo '{\"tool_input\":{\"file_path\":\"/app/.env\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files blocks .env.local" "echo '{\"tool_input\":{\"file_path\":\"/app/.env.local\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files blocks package-lock.json" "echo '{\"tool_input\":{\"file_path\":\"/app/package-lock.json\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files blocks node_modules" "echo '{\"tool_input\":{\"file_path\":\"/app/node_modules/foo/index.js\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files allows normal files" "echo '{\"tool_input\":{\"file_path\":\"/app/src/main.py\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
+
+    # Functional: log-tool-failure.py exits 0 (non-blocking)
+    run_test "log-tool-failure exits 0" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bad\"},\"error\":\"fail\"}' | python3 '$hooks_dir/log-tool-failure.py' 2>/dev/null"
+
+    # Functional: auto-format.py exits 0 on non-existent file (non-blocking)
+    run_test "auto-format exits 0 for missing file" "echo '{\"tool_input\":{\"file_path\":\"/nonexistent/file.py\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null"
+
+    # Functional: post-compact-reinject.sh outputs context reminders
+    run_test "post-compact outputs bun reminder" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *bun* ]]"
+    run_test "post-compact outputs Tokyo Night" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *'Tokyo Night'* ]]"
 }
 
 test_agents_md() {
@@ -272,40 +289,40 @@ print_summary() {
 GROUP="${1:-all}"
 
 case "$GROUP" in
-    --list|-l)
-        list_groups
-        exit 0
-        ;;
-    fish) test_fish ;;
-    stow) test_stow ;;
-    claude) test_claude ;;
-    setup-syntax) test_setup_syntax ;;
-    brewfile) test_brewfile ;;
-    mcp) test_mcp ;;
-    tmux) test_tmux ;;
-    hooks) test_hooks ;;
-    agents-md) test_agents_md ;;
-    openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
-    all)
-        test_fish
-        test_stow
-        test_claude
-        test_setup_syntax
-        test_brewfile
-        test_mcp
-        test_tmux
-        test_hooks
-        test_agents_md
-        # OpenClaw tests run from their own script (separate counters)
-        echo ""
-        source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
-        ;;
-    *)
-        echo "Unknown test group: $GROUP"
-        echo ""
-        list_groups
-        exit 1
-        ;;
+--list | -l)
+    list_groups
+    exit 0
+    ;;
+fish) test_fish ;;
+stow) test_stow ;;
+claude) test_claude ;;
+setup-syntax) test_setup_syntax ;;
+brewfile) test_brewfile ;;
+mcp) test_mcp ;;
+tmux) test_tmux ;;
+hooks) test_hooks ;;
+agents-md) test_agents_md ;;
+openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
+all)
+    test_fish
+    test_stow
+    test_claude
+    test_setup_syntax
+    test_brewfile
+    test_mcp
+    test_tmux
+    test_hooks
+    test_agents_md
+    # OpenClaw tests run from their own script (separate counters)
+    echo ""
+    source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
+    ;;
+*)
+    echo "Unknown test group: $GROUP"
+    echo ""
+    list_groups
+    exit 1
+    ;;
 esac
 
 print_summary
