@@ -717,6 +717,20 @@ else
     fail "Missing shared tmux pane check function"
 fi
 
+# Shared check accepts optional cwd parameter (Fish hook passes $PWD directly)
+if grep -P "check_tmux_pane_and_retarget\s*=\s*function\(cwd\)" "$git_lua" | grep -q "cwd"; then
+    pass "check_tmux_pane_and_retarget accepts cwd parameter (avoids {last} pane bug)"
+else
+    fail "check_tmux_pane_and_retarget missing cwd parameter"
+fi
+
+# When cwd is provided, tmux pane query is skipped
+if grep -A20 "check_tmux_pane_and_retarget" "$git_lua" | grep -q "cwd or get_tmux_last_pane_cwd"; then
+    pass "cwd parameter takes precedence over tmux pane query"
+else
+    fail "cwd parameter not used as override for tmux query"
+fi
+
 # FocusGained delegates to shared function (not inline logic)
 if grep -A10 "create_autocmd.*FocusGained" "$git_lua" | grep -q "check_tmux_pane_and_retarget"; then
     pass "FocusGained delegates to shared check function"
@@ -827,6 +841,15 @@ if grep -q 'nvim --server.*--remote-expr' "$fish_hook" 2>/dev/null; then
     pass "Fish hook uses nvim --server RPC to notify Neovim"
 else
     fail "Fish hook missing nvim --server RPC call"
+fi
+
+# Fish hook passes cwd to RPC (avoids tmux {last} pane ambiguity)
+# $PWD is escaped into $safe_pwd and embedded in the RPC call.
+if grep -q 'safe_pwd.*\$PWD\|string replace.*PWD' "$fish_hook" 2>/dev/null \
+    && grep -q 'diffview_check_pane.*safe_pwd' "$fish_hook" 2>/dev/null; then
+    pass "Fish hook passes escaped \$PWD to RPC (direct cwd, no tmux query needed)"
+else
+    fail "Fish hook doesn't pass cwd — Neovim will query wrong tmux pane"
 fi
 
 # Fish hook runs in background (doesn't block shell)
