@@ -224,6 +224,22 @@ gwtt ENG-123 --bridge 3 --bridge-providers gemini,codex,ollama
 
 ## 8. Relationship to Cross-Provider Bridge
 
+### Hook vs MCP: Why It's a Hook
+
+The cross-provider bridge is a **Stop hook** (`type: "command"`), NOT an MCP server.
+
+**Where it's configured**:
+- Hook entry: `.claude/settings.json` → `hooks.Stop[1]` → `bash ~/.claude/hooks/cross-provider-bridge.sh`
+- NOT in `.mcp.json` (only `playwright`, `steampipe`, `context7` are MCP servers)
+- NOT in Claude Desktop MCP config (no MCP parity needed)
+
+**Why a hook instead of MCP**:
+- **Purpose differs**: MCP servers provide tools Claude can call during a session (docs lookup, browser automation, SQL queries). Hooks fire deterministically on lifecycle events (session start, tool use, stop).
+- **Correlation bias**: The bridge's entire purpose is to get an *independent* review from a *different* AI provider. MCP tools run within Claude's session context — same provider, same biases. A Stop hook runs *after* Claude finishes, sending output to an external provider that has no shared context.
+- **Control flow**: MCP tools are invoked by Claude at its discretion. Hooks fire automatically on events. The bridge must fire on every stop (when enabled) — not when Claude decides to call it.
+
+### Bridge Capabilities
+
 The bridge is the **execution engine** for the Red Team path. Current bridge capabilities:
 
 - Iterative consensus (up to N rounds)
@@ -233,13 +249,13 @@ The bridge is the **execution engine** for the Red Team path. Current bridge cap
 - State persistence across iterations
 - Configurable prompts
 
-**Enhancement needed**: The bridge currently uses a general review prompt. Adding a `CROSS_PROVIDER_MODE` env var could switch between:
-- `review` (default): Current balanced review
-- `redteam`: Aggressive adversarial mode
+**Mode-based prompts** (`CROSS_PROVIDER_MODE` env var, validated with whitelist):
+- `review` (default): Balanced independent review
+- `redteam`: Hostile adversarial attack — finds fatal flaws, wrong assumptions, missing failure modes
 - `steelman`: Strongest possible argument FOR the proposal
-- `assumptions`: First Principles assumption extraction
+- `assumptions`: First Principles assumption decomposition with confidence grading
 
-This would be a small change to the bridge script — swap the prompt template based on mode.
+Unknown mode values are rejected with a log warning and fall back to `review`.
 
 ## 9. Why This Matters
 
