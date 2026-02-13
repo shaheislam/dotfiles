@@ -172,8 +172,8 @@ test_tmux() {
     run_test "client switches to main when session is killed (integration)" \
         "bash '$DOTFILES_ROOT/scripts/tmux/test-session-close.sh' client-switches"
 
-    run_test "sole main session is recreated after destruction (integration)" \
-        "bash '$DOTFILES_ROOT/scripts/tmux/test-session-close.sh' sole-main-recreate"
+    run_test "sole main session handled gracefully (integration)" \
+        "bash '$DOTFILES_ROOT/scripts/tmux/test-session-close.sh' sole-main-graceful"
 
     # Empty window fix: gwt-ticket should create session with named window directly
     local GWT_TICKET="$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish"
