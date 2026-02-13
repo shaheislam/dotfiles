@@ -254,8 +254,9 @@ else
     fail "FocusGained not using retry mechanism"
 fi
 
-# TermLeave/TermClose use poll_with_retry
-if grep -A5 "TermLeave.*TermClose" "$git_lua" | grep -q "poll_with_retry"; then
+# TermLeave and TermClose both use poll_with_retry
+if grep -A5 '"TermLeave"' "$git_lua" | grep -q "poll_with_retry" && \
+   grep -A5 '"TermClose"' "$git_lua" | grep -q "poll_with_retry"; then
     pass "TermLeave/TermClose use poll_with_retry"
 else
     fail "Terminal events not using retry mechanism"
@@ -328,6 +329,255 @@ if grep -q "view.update_files then" "$git_lua"; then
     pass "view:update_files() guarded with feature detection"
 else
     fail "view:update_files() called without feature detection guard"
+fi
+
+# ─── Repo Following ──────────────────────────────────────────────────
+echo ""
+echo "--- Repo Following ---"
+
+# find_repo_root helper exists
+if grep -q "function find_repo_root" "$git_lua"; then
+    pass "find_repo_root helper exists"
+else
+    fail "find_repo_root helper missing"
+fi
+
+# diffview_follow_repo toggle exists
+if grep -q "diffview_follow_repo" "$git_lua"; then
+    pass "diffview_follow_repo toggle exists"
+else
+    fail "diffview_follow_repo toggle missing"
+fi
+
+# :DiffviewFollowRepoToggle command exists
+if grep -q "DiffviewFollowRepoToggle" "$git_lua"; then
+    pass ":DiffviewFollowRepoToggle command registered"
+else
+    fail ":DiffviewFollowRepoToggle command missing"
+fi
+
+# BufEnter autocmd for repo following
+if grep -q "BufEnter" "$git_lua"; then
+    pass "BufEnter autocmd registered for repo following"
+else
+    fail "BufEnter autocmd missing"
+fi
+
+# BufEnter skips URI-scheme buffers (diffview://, fugitive://, term://, etc.)
+if grep -q '%w+://' "$git_lua"; then
+    pass "BufEnter skips URI-scheme buffers (diffview://, fugitive://, term://, etc.)"
+else
+    fail "BufEnter not filtering URI-scheme buffers"
+fi
+
+# BufEnter skips non-file buffers via buftype check
+if grep -q 'vim.bo.buftype' "$git_lua"; then
+    pass "BufEnter skips non-file buffers (buftype check)"
+else
+    fail "BufEnter not filtering non-file buffers"
+fi
+
+# Path canonicalization with vim.fn.resolve
+if grep -B5 -A5 "buf_root" "$git_lua" | grep -q "vim.fn.resolve"; then
+    pass "Repo root comparison uses vim.fn.resolve() for symlinks"
+else
+    fail "Repo root comparison missing vim.fn.resolve()"
+fi
+
+# Short-circuit when buffer is under current root
+if grep -q "sub(1," "$git_lua"; then
+    pass "Short-circuit: skips walk when buffer is under current root"
+else
+    fail "Short-circuit for same-root buffers missing"
+fi
+
+# Path escaping in DiffviewOpen -C
+if grep -q "fnameescape" "$git_lua"; then
+    pass "DiffviewOpen -C uses fnameescape() for path safety"
+else
+    fail "DiffviewOpen -C missing path escaping"
+fi
+
+# diffview_current_root tracking variable
+if grep -q "diffview_current_root" "$git_lua"; then
+    pass "diffview_current_root tracking variable exists"
+else
+    fail "diffview_current_root tracking missing"
+fi
+
+# view_opened sets diffview_current_root
+if grep -A5 "view_opened = function" "$git_lua" | grep -q "diffview_current_root"; then
+    pass "view_opened sets diffview_current_root"
+else
+    fail "view_opened does not set diffview_current_root"
+fi
+
+# view_closed clears diffview_current_root
+if grep -A3 "view_closed" "$git_lua" | grep -q "diffview_current_root"; then
+    pass "view_closed clears diffview_current_root"
+else
+    fail "view_closed does not clear diffview_current_root"
+fi
+
+# Shared reentrancy guard for repo-following
+if grep -q "repo_switch_in_progress" "$git_lua"; then
+    pass "Shared reentrancy guard (repo_switch_in_progress) exists"
+else
+    fail "Shared reentrancy guard missing"
+fi
+
+# Shared retarget_diffview helper
+if grep -q "function retarget_diffview" "$git_lua"; then
+    pass "retarget_diffview shared helper exists"
+else
+    fail "retarget_diffview shared helper missing"
+fi
+
+# DiffviewOpen failure reverts diffview_current_root to prev_root
+if grep -q "prev_root" "$git_lua"; then
+    pass "DiffviewOpen failure reverts diffview_current_root"
+else
+    fail "DiffviewOpen failure does not revert diffview_current_root"
+fi
+
+# ─── Tmux Pane Repo Following ────────────────────────────────────────
+echo ""
+echo "--- Tmux Pane Repo Following ---"
+
+# get_tmux_last_pane_cwd helper exists
+if grep -q "function get_tmux_last_pane_cwd" "$git_lua"; then
+    pass "get_tmux_last_pane_cwd helper exists"
+else
+    fail "get_tmux_last_pane_cwd helper missing"
+fi
+
+# get_tmux_last_pane_cwd checks TMUX env var
+if grep -A5 "function get_tmux_last_pane_cwd" "$git_lua" | grep -q 'vim.env.TMUX'; then
+    pass "get_tmux_last_pane_cwd checks TMUX env var"
+else
+    fail "get_tmux_last_pane_cwd missing TMUX env check"
+fi
+
+# get_tmux_last_pane_cwd queries pane_current_path
+if grep -A10 "function get_tmux_last_pane_cwd" "$git_lua" | grep -q 'pane_current_path'; then
+    pass "get_tmux_last_pane_cwd uses tmux pane_current_path"
+else
+    fail "get_tmux_last_pane_cwd not querying tmux pane_current_path"
+fi
+
+# FocusGained uses get_tmux_last_pane_cwd for repo-following
+if grep -A40 "FocusGained" "$git_lua" | grep -q "get_tmux_last_pane_cwd"; then
+    pass "FocusGained uses get_tmux_last_pane_cwd for repo-following"
+else
+    fail "FocusGained not using tmux pane cwd detection"
+fi
+
+# FocusGained calls retarget_diffview
+if grep -A40 "FocusGained" "$git_lua" | grep -q "retarget_diffview"; then
+    pass "FocusGained calls retarget_diffview"
+else
+    fail "FocusGained not calling retarget_diffview"
+fi
+
+# FocusGained checks diffview_follow_repo toggle
+if grep -A40 "FocusGained" "$git_lua" | grep -q "diffview_follow_repo"; then
+    pass "FocusGained respects diffview_follow_repo toggle"
+else
+    fail "FocusGained ignores diffview_follow_repo toggle"
+fi
+
+# FocusGained checks get_current_view (only acts when Diffview is open)
+if grep -A40 "FocusGained" "$git_lua" | grep -q "get_current_view"; then
+    pass "FocusGained only retargets when Diffview is open"
+else
+    fail "FocusGained missing Diffview open check"
+fi
+
+# FocusGained uses path_is_under for prefix check
+if grep -A40 "FocusGained" "$git_lua" | grep -q "path_is_under"; then
+    pass "FocusGained uses path_is_under for prefix check"
+else
+    fail "FocusGained using raw prefix match"
+fi
+
+# retarget_diffview is declared BEFORE FocusGained (Lua lexical scoping)
+retarget_line=$(grep -n "function retarget_diffview" "$git_lua" | head -1 | cut -d: -f1)
+focus_line=$(grep -n "create_autocmd.*FocusGained" "$git_lua" | head -1 | cut -d: -f1)
+if [ -n "$retarget_line" ] && [ -n "$focus_line" ] && [ "$retarget_line" -lt "$focus_line" ]; then
+    pass "retarget_diffview declared before FocusGained (Lua lexical scoping)"
+else
+    fail "retarget_diffview declared after FocusGained — callback can't see it"
+fi
+
+# ─── Neovim Terminal CWD Detection (fallback for :terminal splits) ───
+echo ""
+echo "--- Neovim Terminal CWD Detection ---"
+
+# get_terminal_cwd helper exists
+if grep -q "function get_terminal_cwd" "$git_lua"; then
+    pass "get_terminal_cwd helper exists"
+else
+    fail "get_terminal_cwd helper missing"
+fi
+
+# get_terminal_cwd supports macOS (lsof) + Linux (/proc)
+if grep -q "lsof" "$git_lua" && grep -q "/proc/" "$git_lua"; then
+    pass "Terminal cwd detection supports macOS (lsof) and Linux (/proc)"
+else
+    fail "Terminal cwd detection missing platform support"
+fi
+
+# TermLeave uses get_terminal_cwd for repo-following
+if grep -A20 "TermLeave" "$git_lua" | grep -q "get_terminal_cwd"; then
+    pass "TermLeave uses get_terminal_cwd for :terminal repo-following"
+else
+    fail "TermLeave not using terminal cwd detection"
+fi
+
+# BufEnter calls retarget_diffview
+if grep -A50 "BufEnter" "$git_lua" | grep -q "retarget_diffview"; then
+    pass "BufEnter uses retarget_diffview helper"
+else
+    fail "BufEnter not using retarget_diffview"
+fi
+
+# ─── Path Prefix Safety ─────────────────────────────────────────────
+echo ""
+echo "--- Path Prefix Safety ---"
+
+# path_is_under helper exists (prevents /dotfiles matching /dotfiles-mergeview)
+if grep -q "function path_is_under" "$git_lua"; then
+    pass "path_is_under helper exists (path-separator-aware prefix check)"
+else
+    fail "path_is_under helper missing — prefix check may false-positive"
+fi
+
+# path_is_under checks for trailing slash separator
+if grep -A5 "function path_is_under" "$git_lua" | grep -q 'root .. "/"'; then
+    pass "path_is_under requires path separator after prefix"
+else
+    fail "path_is_under missing path separator check"
+fi
+
+# FocusGained uses path_is_under
+if grep -A40 "FocusGained" "$git_lua" | grep -q "path_is_under"; then
+    pass "FocusGained uses path_is_under for prefix check"
+else
+    fail "FocusGained using raw prefix match"
+fi
+
+# BufEnter uses path_is_under (not raw string prefix)
+if grep -A30 '"BufEnter"' "$git_lua" | grep -q "path_is_under"; then
+    pass "BufEnter uses path_is_under for prefix check"
+else
+    fail "BufEnter using raw prefix match (vulnerable to dotfiles/dotfiles-mergeview)"
+fi
+
+# Nil-root retarget: FocusGained retargets even when diffview_current_root is nil
+if grep -A40 "FocusGained" "$git_lua" | grep -q "not diffview_current_root or"; then
+    pass "FocusGained retargets when diffview_current_root is nil"
+else
+    fail "FocusGained blocks retarget when diffview_current_root is nil"
 fi
 
 echo ""
