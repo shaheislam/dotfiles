@@ -350,6 +350,12 @@ on_completion() {
         (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
     fi
 
+    # Restore OpenClaw sandbox defaults after devcontainer session
+    local sandbox_script="$SCRIPT_DIR/openclaw/sandbox-profile.sh"
+    if [[ -x "$sandbox_script" ]]; then
+        "$sandbox_script" default 2>/dev/null || true
+    fi
+
     local merge_exit=0
     if $DO_MERGE; then
         # Check if merge-queue daemon is running

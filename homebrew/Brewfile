@@ -127,6 +127,8 @@ cask "1password-cli"  # 1Password CLI for tmux-1password plugin
 cask "amazon-q"  # Amazon Q Developer CLI
 brew "sst/tap/opencode"  # AI coding agent built for the terminal
 brew "zippoxer/tap/recall"  # Search and resume Claude Code conversations
+brew "openclaw-cli"  # Self-hosted personal AI assistant gateway CLI
+# cask "openclaw"  # macOS app (optional - enable if you want the menu bar companion)
 
 # Self-Hosted LLM Tools (resilience if cloud AI goes down)
 cask "ollama"  # Local LLM runtime - runs Llama, DeepSeek, Codestral, etc.
