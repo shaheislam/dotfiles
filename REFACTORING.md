@@ -1,242 +1,122 @@
-# Dotfiles Refactoring Plan
+# Dotfiles Refactoring Report
 
-_Generated: 2025-01-13_
+_Updated: 2026-02-13_
+_Original: 2025-01-13_
 
-## Overview
+## Performance Audit Results
 
-This document outlines potential improvements identified in the dotfiles repository structure and organization.
+### Baseline Measurement
+- **Fish shell startup time**: 1.298s (before refactoring)
+- **After refactoring**: 0.67-0.75s (warm cache)
+- **Improvement**: ~500ms faster (40-50% reduction)
 
-## Priority Improvements
+### Root Causes Identified
 
-### 1. Fish Config Modularization (High Priority)
+| Bottleneck | Time (ms) | Status |
+|-----------|-----------|--------|
+| `thefuck --alias` (uncached subprocess) | ~557ms | FIXED - now cached |
+| `carapace _carapace fish` (uncached subprocess) | ~230ms | FIXED - now cached |
+| `fzf --fish` (uncached subprocess) | ~69ms | FIXED - now cached |
+| `mise settings add` (runs every startup) | ~50ms | FIXED - removed |
+| `atuin uuid` (subprocess per startup) | ~15ms | Kept (needed for session ID) |
+| `__cache_tool_init` version checks (subprocess per tool) | ~5-15ms x8 | FIXED - mtime-based |
+| nix.fish (15KB parsed eagerly) | ~20-50ms | FIXED - functions lazy-loaded |
 
-**Current State**:
+## Changes Made
 
-- `config.fish` is 2,402 lines long
-- Contains 63 embedded functions
-- Difficult to navigate and maintain
+### 1. Cache thefuck, carapace, fzf initialization (~856ms saved)
+- `thefuck --alias | source` -> `__cache_tool_init thefuck "thefuck --alias"`
+- `carapace _carapace fish | source` -> `__cache_tool_init carapace "carapace _carapace fish"`
+- `fzf --fish | source` -> `__cache_tool_init fzf "fzf --fish"`
 
-**Proposed Solution**:
+### 2. Improved `__cache_tool_init` function
+- **Before**: Always called `tool --version` subprocess even on cache hits
+- **After**: Uses binary mtime comparison - zero subprocess calls on cache hits
+- Saves ~40-120ms across 8 cached tools
 
-- Extract functions into separate files in `~/.config/fish/functions/`
-- Create organized function groups:
-  - `aws-functions.fish` - 11 AWS/S3 related functions
-  - `git-functions.fish` - 10 git-related functions
-  - `utility-functions.fish` - remaining utility functions
-- Keep only initialization and environment setup in main `config.fish`
+### 3. Removed per-startup `mise settings add` call
+- `mise settings add idiomatic_version_file_enable_tools ruby` is a persistent setting
+- Only needs to run once, not every shell startup
 
-**Benefits**:
+### 4. Moved nix.fish functions to lazy-loaded files
+- Extracted 13 functions from 15KB conf.d/nix.fish to individual function files
+- conf.d/nix.fish reduced from 421 lines to 58 lines (86% reduction)
+- Functions now lazy-load on first use instead of parsing at startup
+- Functions extracted: `nix-shell-with`, `nix-search`, `nix-update`, `nix-clean`, `nix-lsps`, `nix-init-flake`, `nix-status`, `nix-inheritance`, `hm-switch`, `hm-update`, `hm-packages`, `hm-generations`, `hm-rollback`, `nix-install`
 
-- Fish loads functions on-demand (performance improvement)
-- Easier to find and modify specific functions
-- Better organization for version control
+## Future Improvement Suggestions
 
-### 2. Script Organization (Medium Priority)
+### High Impact (Terminal Speed)
 
-**Current State**:
+#### 1. Extract inline functions from config.fish to function files
+**Estimated savings**: 100-200ms
+**Functionality impact**: None (preserves all features)
 
-- 30 scripts in `/scripts` directory
-- Inconsistent naming conventions
-- No clear categorization
+config.fish still has ~60+ inline function definitions (splash wrappers, AWS functions, git helpers, Docker functions, etc.). Each function defined inline is parsed on every startup. Moving them to `~/.config/fish/functions/` makes them lazy-loaded.
 
-**Proposed Solution**:
+**Top candidates** (largest inline functions):
+- `ssmc` (~100 lines) - AWS SSM connect
+- `assume` (~80 lines) - Granted AWS role assumption
+- `ct-view` (~140 lines) - CloudTrail viewer
+- `gd-view` (~120 lines) - GuardDuty viewer
+- `s3-logs`, `s3-dates`, `s3-browse`, `logs` (~200 lines combined)
+- Splash wrapper functions (`docker`, `go`, `npm`, `yarn`, `pnpm`, `terraform`, `journalctl`, `tail`, `cat`, `less`) (~150 lines)
+- `gwtaf`, `gwtabf`, `gco`, `gstash` (~100 lines)
+- `dps`, `killp`, `psf`, `psg`, `port`, `ports` (~200 lines)
 
-```
-scripts/
-├── setup/         # Installation and setup scripts
-├── aws/          # AWS-related utilities
-├── tmux/         # Tmux management scripts
-└── tools/        # Miscellaneous tools
-```
+#### 2. Convert aliases to abbreviations
+**Estimated savings**: 10-50ms
+**Functionality impact**: Abbreviations expand in-place (visible in command line) vs aliases (transparent)
 
-**Benefits**:
+Fish abbreviations are slightly more efficient than aliases. The ~80+ aliases in config.fish could be converted to abbreviations where appropriate. Note: this changes UX slightly as abbreviations show the expanded form.
 
-- Clear organization by purpose
-- Easier discovery of scripts
-- Potential to consolidate similar scripts
+#### 3. Defer Atuin initialization
+**Estimated savings**: ~15ms
+**Functionality impact**: First command history might not be captured
 
-### 3. Remove Backup/Archive Files (Quick Win)
+The `atuin uuid` call could be deferred to first command execution rather than shell startup.
 
-**Current State**:
+#### 4. Lazy-load the `done.fish` conf.d file
+**Estimated savings**: ~20ms
+**Functionality impact**: First long-running command might not trigger notification
 
-- Multiple `.backup`, `.bak`, `.archive` files found:
-  - `.claude/usage/meta.json.bak`
-  - `.claude/PERSONAS.md.archive`
-  - `.config/fish/config.fish.backup`
-  - Various other backup files
+The 14KB done.fish notification plugin loads eagerly. It could be restructured to only activate when a command actually finishes.
 
-**Proposed Solution**:
+### Medium Impact (Simplicity)
 
-- Remove all backup files from repository
-- Add patterns to `.gitignore`:
-  ```
-  *.backup
-  *.bak
-  *.archive
-  *.orig
-  *~
-  ```
+#### 5. Remove deprecated Docker functions
+The `dps` function and related Docker management functions are marked as deprecated (replaced by CTRL-D FZF keybindings). Removing them would reduce config.fish by ~50 lines.
 
-**Benefits**:
+#### 6. Consolidate duplicate FZF configuration
+FZF configuration is split across config.fish and conf.d/fzf.fish. The rg/fd fallback logic and color theme could be unified.
 
-- Cleaner repository
-- Reduced clutter
-- Prevents accidental commits of backup files
+#### 7. Remove WSL-specific code on macOS-only setups
+If this is solely a macOS dotfiles repo, the WSL-specific block (~30 lines) in config.fish could be moved to a separate conf.d file that's only sourced on WSL.
 
-### 4. Setup Script Modularization (COMPLETED)
+### Low Impact (Code Quality)
 
-**Status**: DONE - The setup system has been consolidated and modularized.
+#### 8. Standardize function naming
+Current mix of `kebab-case` (nix-clean), `camelCase` (gwtaf), and `snake_case` (_atuin_preexec). Standardizing to `kebab-case` for public functions and `__underscore_prefix` for private would improve discoverability.
 
-**Current State**:
+#### 9. Add function descriptions to all functions
+Many inline functions lack `--description` flags. Fish uses these for completion hints and `functions --description` output.
 
-- `scripts/setup.sh` is the main orchestrator (~1,300 lines)
-- Modular library files in `scripts/lib/`:
-  - `common.sh` - Shared utilities and helpers
-  - `package-manager.sh` - Cross-platform package management
-  - `shell-setup.sh` - Shell configurations (Fish, Zsh, Oh My Zsh, Powerlevel10k)
-- Phase-based execution for clean separation
-- Cross-platform support (macOS and Linux)
+#### 10. Audit abbreviation/alias overlap
+Some commands have both an alias and an abbreviation (e.g., kubectl has aliases in config.fish AND abbreviations in plugins.fish). Consolidating would prevent confusion.
 
-**Benefits Achieved**:
+### Research-Based Suggestions
 
-- Modular execution via phases
-- Library code reuse
-- Better error isolation
-- Profile-based installation (minimal, developer, comprehensive)
+#### 11. Consider fish_add_path over manual PATH manipulation
+The nix.fish file uses manual `contains` + `set -gx PATH` patterns. `fish_add_path` (Fish 3.2+) handles deduplication automatically and is idempotent.
 
-### 5. Config Duplication Cleanup (Low Priority)
+#### 12. Profile with `fish --profile-startup`
+Fish 3.7+ has `--profile-startup` which only profiles startup code (not the `exit` command). This gives more accurate startup profiling than `--profile`.
 
-**Current State**:
+#### 13. Consider zoxide over z.fish
+If not already migrated, zoxide (Rust-based) is significantly faster than the pure-Fish z.fish implementation for directory jumping.
 
-- Some configurations exist in multiple places
-- Settings in both `conf.d/` and main config
-- Potential conflicts or overrides
+## Implementation Priority
 
-**Proposed Solution**:
-
-- Audit all configuration files
-- Consolidate plugin configurations
-- Document configuration hierarchy
-- Create clear separation of concerns
-
-**Benefits**:
-
-- Reduced confusion
-- Predictable configuration behavior
-- Easier troubleshooting
-
-### 6. Path Management Consolidation (Quick Win)
-
-**Current State**:
-
-- Multiple PATH additions scattered throughout configs
-- Hard to track what's adding to PATH
-- Potential duplicates
-
-**Proposed Solution**:
-
-- Create `~/.config/fish/paths.fish`
-- Centralize all PATH modifications
-- Source from main config
-- Add comments explaining each PATH addition
-
-**Benefits**:
-
-- Single source of truth for PATH
-- Easier debugging of PATH issues
-- Clear documentation of why each path is needed
-
-### 7. Function Naming Standardization (Low Priority)
-
-**Current State**:
-
-- Inconsistent naming conventions
-- Some functions use underscores, others don't
-- No clear naming pattern
-
-**Proposed Solution**:
-
-- Adopt consistent naming convention:
-  - Private functions: `__function_name`
-  - Public functions: `function_name`
-  - AWS functions: `aws_function_name`
-  - Git functions: `git_function_name`
-- Add descriptive comments to complex functions
-
-**Benefits**:
-
-- Predictable function names
-- Clear public/private distinction
-- Better autocomplete suggestions
-
-### 8. Documentation Generation (Nice to Have)
-
-**Current State**:
-
-- No comprehensive list of available functions
-- Users must read source to discover features
-
-**Proposed Solution**:
-
-- Add header comments to all functions
-- Generate `FUNCTIONS.md` with:
-  - Function name
-  - Description
-  - Usage examples
-  - Parameters
-- Consider using a documentation generator
-
-**Benefits**:
-
-- Better discoverability
-- Easier onboarding for new machines
-- Reference documentation
-
-## Implementation Strategy
-
-### Phase 1: Quick Wins (1-2 hours)
-
-1. Remove backup files
-2. Update `.gitignore`
-3. Consolidate PATH management
-
-### Phase 2: Function Extraction (2-4 hours)
-
-1. Extract AWS functions
-2. Extract Git functions
-3. Extract utility functions
-4. Test all functions still work
-
-### Phase 3: Script Organization (2-3 hours)
-
-1. Create directory structure
-2. Move scripts to appropriate directories
-3. Update any references to scripts
-
-### Phase 4: Setup Script Refactor (3-4 hours)
-
-1. Split setup script into modules
-2. Test each module independently
-3. Update main script to source modules
-
-### Phase 5: Documentation (2-3 hours)
-
-1. Add function documentation
-2. Generate FUNCTIONS.md
-3. Update main README
-
-## Expected Outcomes
-
-- **Performance**: Faster shell startup time
-- **Maintainability**: Easier to modify and extend
-- **Discoverability**: Clear organization and documentation
-- **Reliability**: Modular components easier to test
-- **Collaboration**: Better structure for sharing/contributing
-
-## Notes
-
-- All changes should be tested on a fresh system
-- Consider creating a backup branch before major refactoring
-- Each phase can be implemented independently
-- Prioritize based on immediate needs and available time
-
+1. **Done**: Cache thefuck/carapace/fzf, improve __cache_tool_init, trim nix.fish
+2. **Next**: Extract remaining inline functions from config.fish (items 1, 5, 7)
+3. **Later**: Abbreviation conversion, done.fish deferral, naming standardization
