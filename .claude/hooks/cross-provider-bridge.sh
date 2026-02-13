@@ -366,10 +366,17 @@ Check whether your previous concerns were adequately addressed.
 Focus only on whether previous concerns were addressed."
 else
     # Initial review prompt - mode-based selection
+    # Validate CROSS_PROVIDER_MODE (whitelist known values, reject unknown)
+    bridge_mode="${CROSS_PROVIDER_MODE:-review}"
+    case "$bridge_mode" in
+        review|redteam|steelman|assumptions) ;; # valid
+        *) log_verbose "Unknown CROSS_PROVIDER_MODE='$bridge_mode', falling back to 'review'"
+           bridge_mode="review" ;;
+    esac
     if [ -n "${CROSS_PROVIDER_PROMPT:-}" ]; then
         review_prompt="$CROSS_PROVIDER_PROMPT"
     else
-        case "${CROSS_PROVIDER_MODE:-review}" in
+        case "$bridge_mode" in
             redteam)
                 review_prompt="You are a hostile adversarial reviewer. Your job is to BREAK this plan. Find: 1) Fatal flaws that would cause project failure. 2) Hidden assumptions that are wrong. 3) Missing failure modes that aren't addressed. 4) Optimistic estimates that will slip. 5) Dependencies that will break. Be specific and ruthless. If you genuinely cannot find issues, start with \"CONSENSUS:\" — otherwise start with \"CONCERNS:\" and list them."
                 ;;

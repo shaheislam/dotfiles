@@ -41,6 +41,7 @@ This file documents specific behaviors and constraints for AI agents working on 
 - `scripts/devcontainer/test-claude-autologin.sh` - Test Claude autologin in devcontainers.
 - `.claude/hooks/use_bun.py` - Enforces bun over npm (PreToolUse hook).
 - `.claude/hooks/validate-bash.py` - Blocks dangerous bash commands (PreToolUse hook).
+- `scripts/plan-validate.sh <plan.md>` - Validates plan markdown against DQS required sections (10 required, `--strict` for optional).
 
 ## Git Worktree Functions
 
