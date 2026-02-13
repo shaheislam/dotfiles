@@ -594,7 +594,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
 
     if test "$created_new_session" = false
         # Session existed, create a new window for this ticket
-        tmux new-window -t $session_name -n $window_name -c $worktree_path
+        # Trailing colon forces session-level targeting — without it, tmux
+        # resolves bare "dotfiles" as window main:dotfiles when a window
+        # with that name exists in the current session.
+        tmux new-window -t "$session_name:" -n $window_name -c $worktree_path
     end
     echo "Created window: $window_name"
 
