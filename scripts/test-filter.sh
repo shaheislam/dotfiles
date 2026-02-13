@@ -157,6 +157,18 @@ test_tmux() {
     run_test "detach-on-destroy set to off (switch session on close)" \
         "grep -q 'detach-on-destroy off' '$DOTFILES_ROOT/.tmux.conf'"
 
+    # session-closed hook ensures main session is recreated if destroyed
+    run_test "session-closed hook recreates main session" \
+        "grep -q 'session-closed.*has-session -t main.*new-session -d -s main' '$DOTFILES_ROOT/.tmux.conf'"
+
+    # Integration tests: use a minimal config extracting only session-close settings
+    # (full .tmux.conf includes TPM plugins that fail in headless server mode)
+    run_test "killing non-main session preserves main (integration)" \
+        "bash '$DOTFILES_ROOT/scripts/tmux/test-session-close.sh' kill-nonmain"
+
+    run_test "session-closed hook recreates main after destruction (integration)" \
+        "bash '$DOTFILES_ROOT/scripts/tmux/test-session-close.sh' recreate-main"
+
     # Empty window fix: gwt-ticket should create session with named window directly
     local GWT_TICKET="$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish"
     run_test "gwt-ticket creates session with window name (-n flag)" \
