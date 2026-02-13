@@ -225,7 +225,11 @@ test_hooks() {
     # Functional: use_bun.py blocks npm, allows bun
     local hooks_dir="$DOTFILES_ROOT/.claude/hooks"
     run_test "use_bun.py blocks npm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py blocks yarn" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"yarn add react\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py blocks pnpm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pnpm install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py blocks npx" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npx create-react-app\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "use_bun.py allows bun" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
+    run_test "use_bun.py allows bunx" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bunx create-react-app\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
 
     # Functional: validate-bash.py - blocklist
     run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
@@ -250,6 +254,8 @@ test_hooks() {
     run_test "protect-files blocks .env" "echo '{\"tool_input\":{\"file_path\":\"/app/.env\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files blocks .env.local" "echo '{\"tool_input\":{\"file_path\":\"/app/.env.local\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files blocks package-lock.json" "echo '{\"tool_input\":{\"file_path\":\"/app/package-lock.json\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files blocks yarn.lock" "echo '{\"tool_input\":{\"file_path\":\"/app/yarn.lock\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files blocks pnpm-lock.yaml" "echo '{\"tool_input\":{\"file_path\":\"/app/pnpm-lock.yaml\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files blocks node_modules" "echo '{\"tool_input\":{\"file_path\":\"/app/node_modules/foo/index.js\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files allows normal files" "echo '{\"tool_input\":{\"file_path\":\"/app/src/main.py\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
 
