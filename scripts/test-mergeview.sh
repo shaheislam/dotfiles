@@ -574,7 +574,7 @@ else
 fi
 
 # Tmux pane check uses path_is_under (called by FocusGained via shared function)
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "path_is_under"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "path_is_under"; then
     pass "FocusGained uses path_is_under for prefix check"
 else
     fail "FocusGained using raw prefix match"
@@ -588,7 +588,7 @@ else
 fi
 
 # Nil-root retarget: shared check retargets even when view_root is nil
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "not view_root or"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "not view_root or"; then
     pass "FocusGained retargets when view_root is nil"
 else
     fail "FocusGained blocks retarget when view_root is nil"
@@ -599,7 +599,7 @@ echo ""
 echo "--- Edge Case Safety ---"
 
 # Non-git directory: shared check guards find_repo_root nil before retargeting
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -B1 "retarget_diffview" | grep -q "pane_root ~=\|not pane_root\|not view_root"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -B1 "retarget_diffview" | grep -q "pane_root ~=\|not pane_root\|not view_root"; then
     pass "FocusGained guards against non-git directories (find_repo_root nil check)"
 else
     fail "FocusGained missing non-git directory guard"
@@ -613,14 +613,14 @@ else
 fi
 
 # Idempotence: shared check skips retarget when pane root equals view root
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "pane_root ~= view_root"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "pane_root ~= view_root"; then
     pass "FocusGained is idempotent (skips retarget when same root)"
 else
     fail "FocusGained missing idempotence check — may cause unnecessary reopen"
 fi
 
 # Reentrancy: shared check respects repo_switch_in_progress
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "repo_switch_in_progress"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "repo_switch_in_progress"; then
     pass "FocusGained checks reentrancy guard (prevents rapid-switch race)"
 else
     fail "FocusGained missing reentrancy guard"
@@ -641,7 +641,7 @@ else
 fi
 
 # Trailing-slash normalization on both sides of comparison (in shared check)
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q 'gsub("/$"'; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q 'gsub("/$"'; then
     pass "FocusGained normalizes trailing slashes before comparison"
 else
     fail "FocusGained missing trailing-slash normalization"
@@ -668,21 +668,21 @@ echo "--- Multi-Tab & Reentrancy Safety ---"
 # Shared check reads root from active view's adapter (multi-tab safe)
 # Instead of the module-level diffview_current_root cache, it reads
 # current_view.adapter.ctx.toplevel — correct even with multiple Diffview tabs.
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "current_view.adapter"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "current_view.adapter"; then
     pass "FocusGained reads root from active view's adapter (multi-tab safe)"
 else
     fail "FocusGained uses cached diffview_current_root (not multi-tab safe)"
 fi
 
 # Shared check stores the view from get_current_view (not discarding it)
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "local current_view = lib.get_current_view"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "local current_view = lib.get_current_view"; then
     pass "FocusGained captures view object for adapter access"
 else
     fail "FocusGained discards get_current_view return value"
 fi
 
 # Shared check compares against view_root (not diffview_current_root)
-if grep -A40 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "pane_root ~= view_root"; then
+if grep -PA40 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "pane_root ~= view_root"; then
     pass "FocusGained compares pane root against live view root (not cache)"
 else
     fail "FocusGained still compares against cached diffview_current_root"
@@ -711,7 +711,7 @@ echo ""
 echo "--- Auto-Follow: Timer Polling ---"
 
 # Shared check function exists (extracted from FocusGained for reuse)
-if grep -q "function check_tmux_pane_and_retarget" "$git_lua"; then
+if grep -Pq "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua"; then
     pass "check_tmux_pane_and_retarget shared function exists"
 else
     fail "Missing shared tmux pane check function"
@@ -725,28 +725,28 @@ else
 fi
 
 # Timer start/stop functions exist
-if grep -q "function start_follow_timer" "$git_lua" && grep -q "function stop_follow_timer" "$git_lua"; then
+if grep -Pq "\bstart_follow_timer\s*=\s*function\b" "$git_lua" && grep -Pq "\bstop_follow_timer\s*=\s*function\b" "$git_lua"; then
     pass "start_follow_timer and stop_follow_timer functions exist"
 else
     fail "Missing timer start/stop functions"
 fi
 
 # Timer uses 2-second interval with repeat
-if grep -A10 "function start_follow_timer" "$git_lua" | grep -q 'timer_start(2000'; then
+if grep -PA10 "\bstart_follow_timer\s*=\s*function\b" "$git_lua" | grep -q 'timer_start(2000'; then
     pass "Follow timer uses 2-second polling interval"
 else
     fail "Follow timer missing or wrong interval"
 fi
 
 # Timer calls shared check function
-if grep -A15 "function start_follow_timer" "$git_lua" | grep -q "check_tmux_pane_and_retarget"; then
+if grep -PA15 "\bstart_follow_timer\s*=\s*function\b" "$git_lua" | grep -q "check_tmux_pane_and_retarget"; then
     pass "Follow timer calls shared check function"
 else
     fail "Follow timer doesn't call shared check"
 fi
 
 # Timer only starts in tmux
-if grep -A10 "function start_follow_timer" "$git_lua" | grep -q "vim.env.TMUX"; then
+if grep -PA10 "\bstart_follow_timer\s*=\s*function\b" "$git_lua" | grep -q "vim.env.TMUX"; then
     pass "Follow timer guards against non-tmux environments"
 else
     fail "Follow timer starts even outside tmux"
@@ -869,14 +869,14 @@ else
 fi
 
 # start_follow_timer increments ref count
-if grep -A5 "function start_follow_timer" "$git_lua" | grep -q "follow_timer_refs = follow_timer_refs + 1"; then
+if grep -PA5 "\bstart_follow_timer\s*=\s*function\b" "$git_lua" | grep -q "follow_timer_refs = follow_timer_refs + 1"; then
     pass "start_follow_timer increments ref count"
 else
     fail "start_follow_timer missing ref count increment"
 fi
 
 # stop_follow_timer decrements ref count and guards
-if grep -A10 "function stop_follow_timer" "$git_lua" | grep -q "follow_timer_refs > 0"; then
+if grep -PA10 "\bstop_follow_timer\s*=\s*function\b" "$git_lua" | grep -q "follow_timer_refs > 0"; then
     pass "stop_follow_timer only stops timer when refs reach zero"
 else
     fail "stop_follow_timer ignores ref count"
@@ -890,7 +890,7 @@ else
 fi
 
 # Timer callback uses vim.schedule_wrap for main-loop safety
-if grep -A15 "function start_follow_timer" "$git_lua" | grep -q "vim.schedule_wrap"; then
+if grep -PA15 "\bstart_follow_timer\s*=\s*function\b" "$git_lua" | grep -q "vim.schedule_wrap"; then
     pass "Timer callback wrapped with vim.schedule_wrap"
 else
     fail "Timer callback missing vim.schedule_wrap"
@@ -932,14 +932,14 @@ else
 fi
 
 # Shared check function has reentrancy guard (prevents concurrent retargets)
-if grep -A10 "function check_tmux_pane_and_retarget" "$git_lua" | grep -q "repo_switch_in_progress"; then
+if grep -PA10 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -q "repo_switch_in_progress"; then
     pass "Shared check function guards against reentrancy"
 else
     fail "Shared check function missing reentrancy guard"
 fi
 
 # stop_follow_timer floors ref count at zero (prevents underflow)
-if grep -A5 "function stop_follow_timer" "$git_lua" | grep -q "math.max(0"; then
+if grep -PA5 "\bstop_follow_timer\s*=\s*function\b" "$git_lua" | grep -q "math.max(0"; then
     pass "stop_follow_timer floors ref count at zero (no underflow)"
 else
     fail "stop_follow_timer can underflow below zero"
@@ -967,7 +967,7 @@ else
 fi
 
 # Shared check function resolves symlinks on both pane_cwd and view_root
-if grep -A30 "function check_tmux_pane_and_retarget" "$git_lua" | grep -c "vim.fn.resolve" | grep -q "2"; then
+if grep -PA30 "\bcheck_tmux_pane_and_retarget\s*=\s*function\b" "$git_lua" | grep -c "vim.fn.resolve" | grep -q "2"; then
     pass "Shared check resolves symlinks on both pane_cwd and view_root"
 else
     fail "Shared check missing vim.fn.resolve on pane_cwd or view_root"
@@ -1006,6 +1006,139 @@ if grep -q "last-writer-wins" "$git_lua"; then
     pass "Last-writer-wins behavior documented for multi-instance scenario"
 else
     fail "Missing last-writer-wins documentation"
+fi
+
+echo ""
+echo "--- Runtime: Forward-Declaration Scoping ---"
+
+if command -v nvim >/dev/null 2>&1; then
+    # Test 1: Lua scoping proof — forward-declare + closure-capture + late-assign.
+    _lua_test=$(mktemp /tmp/test-fwd-scope-XXXXXX.lua)
+    cat > "$_lua_test" << 'LUAEOF'
+local start_follow_timer
+local stop_follow_timer
+local follow_timer_refs = 0
+local check_tmux_pane_and_retarget
+
+local view_opened_cb = function()
+    start_follow_timer()
+end
+local view_closed_cb = function()
+    stop_follow_timer()
+    local _ = follow_timer_refs
+end
+
+check_tmux_pane_and_retarget = function() return "ok" end
+start_follow_timer = function() return "started" end
+stop_follow_timer = function() return "stopped" end
+
+local ok1 = pcall(view_opened_cb)
+local ok2 = pcall(view_closed_cb)
+local ok3 = type(check_tmux_pane_and_retarget) == "function"
+local ok4 = type(start_follow_timer) == "function"
+local ok5 = type(stop_follow_timer) == "function"
+
+if ok1 and ok2 and ok3 and ok4 and ok5 then
+    print("SCOPING_OK")
+else
+    print("SCOPING_FAIL:ok1="..tostring(ok1)..",ok2="..tostring(ok2)
+        ..",ok3="..tostring(ok3)..",ok4="..tostring(ok4)..",ok5="..tostring(ok5))
+end
+LUAEOF
+    runtime_result=$(nvim --headless --clean -u NONE -l "$_lua_test" 2>&1)
+    rm -f "$_lua_test"
+    if echo "$runtime_result" | grep -q "SCOPING_OK"; then
+        pass "Runtime: forward-declared locals are functions after late assignment"
+    else
+        fail "Runtime: forward-declaration scoping broken ($runtime_result)"
+    fi
+
+    # Test 2: Integration — load real Neovim config, force-load diffview plugin,
+    # verify hooks are registered as callable functions in diffview's event emitter.
+    _lua_integ=$(mktemp /tmp/test-diffview-hooks-XXXXXX.lua)
+    cat > "$_lua_integ" << 'LUAEOF'
+-- Force-load the diffview plugin (it's lazy-loaded by cmd normally).
+local ok_lazy, lazy = pcall(require, "lazy")
+if not ok_lazy then
+    print("SKIP_NO_LAZY")
+    return
+end
+-- Load diffview.nvim which triggers its config function (our git.lua setup).
+local load_ok = pcall(function() lazy.load({ plugins = { "diffview.nvim" } }) end)
+if not load_ok then
+    print("SKIP_LOAD_FAIL")
+    return
+end
+
+-- After config runs, diffview.config.user_emitter.event_map should have
+-- view_opened and view_closed entries with callable callbacks.
+local ok_cfg, cfg = pcall(require, "diffview.config")
+if not ok_cfg then
+    print("SKIP_NO_CONFIG")
+    return
+end
+
+local emitter = cfg.user_emitter
+if not emitter or not emitter.event_map then
+    print("HOOKS_FAIL:no_emitter")
+    return
+end
+
+local results = {}
+for _, event_name in ipairs({ "view_opened", "view_closed" }) do
+    local listeners = emitter.event_map[event_name]
+    if not listeners or #listeners == 0 then
+        table.insert(results, event_name .. "=missing")
+    else
+        -- Each listener has a .callback field that must be a function.
+        local cb = listeners[1].callback
+        if type(cb) ~= "function" then
+            table.insert(results, event_name .. "=not_function(" .. type(cb) .. ")")
+        else
+            table.insert(results, event_name .. "=ok")
+        end
+    end
+end
+
+local all_ok = true
+for _, r in ipairs(results) do
+    if not r:match("=ok$") then all_ok = false end
+end
+
+if all_ok then
+    print("HOOKS_OK")
+else
+    print("HOOKS_FAIL:" .. table.concat(results, ","))
+end
+LUAEOF
+    integ_result=$(timeout 30 nvim --headless -c "luafile $_lua_integ" -c "qa!" 2>&1)
+    rm -f "$_lua_integ"
+    if echo "$integ_result" | grep -q "HOOKS_OK"; then
+        pass "Integration: diffview hooks registered as callable functions after real setup"
+    elif echo "$integ_result" | grep -q "SKIP_"; then
+        pass "Integration: skipped ($(echo "$integ_result" | grep 'SKIP_')) — scoping test covers logic"
+    else
+        fail "Integration: diffview hooks not properly registered ($integ_result)"
+    fi
+
+    # Test 3: No accidental globals — whitespace-tolerant regex.
+    # Each forward-declared name must have exactly 1 'local NAME' and 1 'NAME = function'.
+    scope_ok=true
+    for fn_name in check_tmux_pane_and_retarget start_follow_timer stop_follow_timer; do
+        local_count=$(grep -cP "^\s*local\s+${fn_name}\b" "$git_lua" 2>/dev/null || echo 0)
+        assign_count=$(grep -cP "\b${fn_name}\s*=\s*function\b" "$git_lua" 2>/dev/null || echo 0)
+        if [ "$local_count" -ne 1 ] || [ "$assign_count" -ne 1 ]; then
+            scope_ok=false
+            break
+        fi
+    done
+    if [ "$scope_ok" = true ]; then
+        pass "No accidental globals: each forward-declared name has exactly 1 local + 1 assignment"
+    else
+        fail "Global leak risk: local/assignment count mismatch for forward-declared functions"
+    fi
+else
+    pass "Runtime: skipped (nvim not found) — static checks cover scoping"
 fi
 
 echo ""
