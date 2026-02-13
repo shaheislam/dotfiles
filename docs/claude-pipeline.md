@@ -35,6 +35,8 @@ Under the hood, `claude-pipeline` captures each stage's output and passes it as 
 | `--preset review` | 3 | opus → sonnet → haiku | Reason → implement → review |
 | `--preset cheap` | 2 | sonnet → haiku | Balanced reasoning → fast execution |
 | `--preset local` | 2 | ollama → sonnet | Local reasoning → cloud implementation |
+| `--preset council` | 3 | opus → sonnet → opus | Multi-perspective structured debate (DQS) |
+| `--preset redteam` | 2 | opus → sonnet | Adversarial attack → synthesis (DQS) |
 
 ## Options
 

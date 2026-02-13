@@ -27,6 +27,8 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
         echo "  --preset review   opus → sonnet → haiku (reason → implement → review)"
         echo "  --preset cheap    sonnet → haiku (balanced reasoning → fast execution)"
         echo "  --preset local    ollama → sonnet (local reasoning → cloud implementation)"
+        echo "  --preset council  opus → sonnet → opus (3-round structured debate)"
+        echo "  --preset redteam  opus → sonnet (adversarial attack → synthesis)"
         echo ""
         echo "Built-in Model Aliases:"
         echo "  opus      Opus 4.6 (deep reasoning, architecture)"
@@ -115,9 +117,21 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
                         set reason_model "ollama"
                         set execute_model "sonnet"
                         set stages 2
+                    case council
+                        set reason_model "opus"
+                        set execute_model "sonnet"
+                        set stages 3
+                        set stage_models "opus" "sonnet" "opus"
+                        set stage_prompts "Round 1 - State your position from multiple expert perspectives (architect, security, operations, user experience). Identify concerns, trade-offs, and risks for:" "Round 2 - Counter-argue the concerns raised. Steelman the proposal where valid, concede where criticisms hold. Respond to:" "Round 3 - Synthesize the debate. List: strongest arguments for, strongest arguments against, convergence points, unresolved tensions, and recommended changes for:"
+                    case redteam
+                        set reason_model "opus"
+                        set execute_model "sonnet"
+                        set stages 2
+                        set stage_models "opus" "sonnet"
+                        set stage_prompts "You are a hostile adversarial reviewer. BREAK this plan. Find: 1) Fatal flaws causing project failure 2) Hidden wrong assumptions 3) Missing failure modes 4) Optimistic estimates that will slip 5) Dependencies that will break. Be specific and ruthless. Attack:" "Synthesize the adversarial review into actionable findings. For each attack: rate severity (critical/high/medium/low), assess if the plan can survive it, and recommend specific mitigations. Review:"
                     case '*'
                         echo "Error: Unknown preset '$argv[$i]'"
-                        echo "Available: think, review, cheap, local"
+                        echo "Available: think, review, cheap, local, council, redteam"
                         return 1
                 end
             case '--*'

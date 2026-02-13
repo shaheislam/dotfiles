@@ -609,7 +609,8 @@ Graceful fallback through provider chain → silent continue (zero failures).
 | `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority/fallback order |
 | `CROSS_PROVIDER_VERBOSE` | `0` | Verbose logging to stderr |
 | `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars to send |
-| `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
+| `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt (overrides mode) |
+| `CROSS_PROVIDER_MODE` | `review` | Review mode: `review\|redteam\|steelman\|assumptions` |
 | `CROSS_PROVIDER_MAX_ITERATIONS` | `3` | Max consensus iterations (set `1` for single-shot) |
 | `CROSS_PROVIDER_TIMEOUT` | `120` | Per-provider timeout in seconds |
 | `CROSS_PROVIDER_LOG` | *(none)* | Log file path for review history |
@@ -655,7 +656,53 @@ CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=gemini claude
 CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=ollama CROSS_PROVIDER_OLLAMA_MODEL=qwen3-coder claude
 ```
 
+### Decision Quality System (DQS)
+Multi-perspective plan evaluation using three parallel analysis paths. Extends cross-provider bridge with structured adversarial reasoning.
+
+**Docs**: `docs/decision-quality-system.md`
+
+**Three Analysis Paths**:
+| Path | Method | Infrastructure |
+|------|--------|---------------|
+| **Council** | 4-perspective structured debate (3 rounds) | `cpipe --preset council` or Agent Teams |
+| **Red Team** | Adversarial attack on plan | `CROSS_PROVIDER_MODE=redteam` bridge |
+| **First Principles** | Assumption decomposition | `CROSS_PROVIDER_MODE=assumptions` bridge |
+
+**Pipeline Presets** (new):
+| Preset | Stages | Models | Purpose |
+|--------|--------|--------|---------|
+| `--preset council` | 3 | opus → sonnet → opus | Multi-perspective structured debate |
+| `--preset redteam` | 2 | opus → sonnet | Adversarial attack → synthesis |
+
+**Bridge Modes** (new `CROSS_PROVIDER_MODE` env var):
+| Mode | Behavior |
+|------|----------|
+| `review` (default) | Balanced independent review |
+| `redteam` | Hostile adversarial attack |
+| `steelman` | Strongest possible case FOR the plan |
+| `assumptions` | First-principles assumption decomposition |
+
+**Plan Template**: `templates/workflows/plan-review.toml` — 5-phase DQS evaluation workflow.
+
+**Usage**:
+```bash
+# Council debate via pipeline
+cat plan.md | cpipe --preset council "Evaluate this architecture proposal"
+
+# Red Team via bridge
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_MODE=redteam claude
+
+# First Principles via bridge
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_MODE=assumptions CROSS_PROVIDER_MAX_ITERATIONS=1 claude
+
+# Full DQS (all three paths)
+cat plan.md | cpipe --preset council --save /tmp/dqs "Evaluate"
+CROSS_PROVIDER_MODE=redteam CROSS_PROVIDER_BRIDGE=1 claude  # separate session
+cat /tmp/dqs-*.txt | claude -p --model opus "Synthesize into Decision Quality Report"
+```
+
 ### Recent Updates
+- **2026-02-13**: Added Decision Quality System (DQS) — multi-perspective plan evaluation with council/redteam/first-principles paths, bridge modes, pipeline presets
 - **2026-02-12**: Added OpenClaw AI assistant platform integration (multi-channel inbox, security-hardened config, Fish functions, notification helpers, 42-test suite)
 - **2026-02-12**: Enhanced Cross-Provider Bridge with multi-provider support (Gemini, Ollama, DeepSeek, Claude), verbose mode, configurable timeout/logging, per-provider model overrides, gwt-ticket bridge flags
 - **2026-02-12**: Added comprehensive hooks integration (PreToolUse bun/bash validation, Notification desktop alerts/logging, PostToolUse DeepWiki context, test suite, docs)

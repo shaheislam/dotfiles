@@ -13,7 +13,8 @@
 #   CROSS_PROVIDER_ORDER=codex,gemini,ollama    Provider priority/fallback order
 #   CROSS_PROVIDER_VERBOSE=1                    Verbose logging to stderr
 #   CROSS_PROVIDER_MAX_CHARS=4000               Max context chars to send
-#   CROSS_PROVIDER_PROMPT=                      Custom review prompt
+#   CROSS_PROVIDER_PROMPT=                      Custom review prompt (overrides mode)
+#   CROSS_PROVIDER_MODE=review                  Review mode: review|redteam|steelman|assumptions
 #   CROSS_PROVIDER_MAX_ITERATIONS=3             Max consensus iterations (1=single-shot)
 #   CROSS_PROVIDER_TIMEOUT=120                  Per-provider timeout in seconds
 #   CROSS_PROVIDER_LOG=                         Log file path for review history
@@ -364,11 +365,31 @@ Check whether your previous concerns were adequately addressed.
 - If concerns remain, start with \"CONCERNS:\" followed by specific actionable feedback.
 Focus only on whether previous concerns were addressed."
 else
-    # Initial review prompt
+    # Initial review prompt - mode-based selection
+    # Validate CROSS_PROVIDER_MODE (whitelist known values, reject unknown)
+    bridge_mode="${CROSS_PROVIDER_MODE:-review}"
+    case "$bridge_mode" in
+        review|redteam|steelman|assumptions) ;; # valid
+        *) log_verbose "Unknown CROSS_PROVIDER_MODE='$bridge_mode', falling back to 'review'"
+           bridge_mode="review" ;;
+    esac
     if [ -n "${CROSS_PROVIDER_PROMPT:-}" ]; then
         review_prompt="$CROSS_PROVIDER_PROMPT"
     else
-        review_prompt="You are an independent AI reviewer checking another AI model's work for correlation bias. Review the reasoning below and: 1) Flag any logical errors, incorrect assumptions, or missed edge cases. 2) Suggest alternative approaches the original model may have overlooked. 3) Identify any security or correctness concerns. 4) Be concise and actionable - only raise genuine issues. If the reasoning is sound, start with \"CONSENSUS:\" and briefly confirm. If you have concerns, start with \"CONCERNS:\" and list them."
+        case "$bridge_mode" in
+            redteam)
+                review_prompt="You are a hostile adversarial reviewer. Your job is to BREAK this plan. Find: 1) Fatal flaws that would cause project failure. 2) Hidden assumptions that are wrong. 3) Missing failure modes that aren't addressed. 4) Optimistic estimates that will slip. 5) Dependencies that will break. Be specific and ruthless. If you genuinely cannot find issues, start with \"CONSENSUS:\" — otherwise start with \"CONCERNS:\" and list them."
+                ;;
+            steelman)
+                review_prompt="You are an advocate for this approach. Build the STRONGEST possible case for why this reasoning is correct and this plan will succeed. Find: 1) Strengths that aren't explicitly stated. 2) Why potential concerns are manageable. 3) Evidence supporting the approach. 4) Advantages over alternatives. Start with \"CONSENSUS:\" and make the strongest case. If you find genuine fatal flaws you cannot steelman, start with \"CONCERNS:\"."
+                ;;
+            assumptions)
+                review_prompt="You are a first-principles analyst. Decompose the reasoning into its fundamental assumptions. For each assumption: 1) State it explicitly. 2) Grade confidence: high/medium/low. 3) How to verify it. 4) What changes if it's wrong. Do NOT accept any claim at face value. If all assumptions are well-grounded, start with \"CONSENSUS:\". If critical assumptions are unverified or wrong, start with \"CONCERNS:\" and list them."
+                ;;
+            *)
+                review_prompt="You are an independent AI reviewer checking another AI model's work for correlation bias. Review the reasoning below and: 1) Flag any logical errors, incorrect assumptions, or missed edge cases. 2) Suggest alternative approaches the original model may have overlooked. 3) Identify any security or correctness concerns. 4) Be concise and actionable - only raise genuine issues. If the reasoning is sound, start with \"CONSENSUS:\" and briefly confirm. If you have concerns, start with \"CONCERNS:\" and list them."
+                ;;
+        esac
     fi
 
     full_prompt="${review_prompt}

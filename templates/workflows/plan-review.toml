@@ -1,0 +1,56 @@
+[workflow]
+name = "plan-review"
+description = "Decision Quality System - structured plan evaluation with three-path analysis"
+slash_command = "/ralph-wiggum:ralph-loop"
+max_iterations = 15
+
+[prompt]
+template = """
+You are evaluating a plan using the Decision Quality System (DQS).
+
+Plan: {title}
+Context: {description}
+
+Phase 1 - Structure Validation:
+Verify the plan covers all required sections:
+  - Summary, Goals, Non-Goals, Current State
+  - Proposed Approach, Migration Strategy
+  - Risks & Mitigations, Key Decisions
+  - Work Breakdown, Open Questions
+
+Phase 2 - Council (Multi-Perspective Debate):
+Argue the plan from 4 perspectives (architect, security, ops, user):
+  Round 1: Each perspective states concerns
+  Round 2: Counter-arguments and rebuttals
+  Round 3: Converge on strongest arguments for and against
+
+Phase 3 - Red Team (Adversarial Attack):
+Try to break the plan:
+  - Fatal flaws that would cause failure
+  - Hidden assumptions that are wrong
+  - Missing failure modes
+  - Optimistic estimates
+
+Phase 4 - First Principles (Assumption Decomposition):
+For each major assumption:
+  - State it explicitly
+  - Grade confidence (high/medium/low)
+  - How to verify it
+  - What changes if it's wrong
+
+Phase 5 - Synthesis:
+Produce a Decision Quality Report with:
+  - Strongest arguments for/against
+  - Hidden assumptions
+  - Convergence points
+  - Risk assessment
+  - Recommended changes
+
+When the report is complete, output {completion_promise}
+
+Do not ask questions - work through all 5 phases systematically."""
+
+[completion]
+promise_prefix = "TICKET_"
+auto_merge = false
+create_pr = false
