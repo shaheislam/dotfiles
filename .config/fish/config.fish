@@ -330,13 +330,12 @@ if status is-interactive
 
     # Auto-attach to tmux session 'main' or create it if it doesn't exist
     # Only do this in WezTerm or when not already in tmux
+    # Uses tmux new -A (attach-or-create) without exec so that:
+    #   - Manual detach (prefix+d) returns to Fish, which then exits cleanly
+    #   - No nested shells (Fish exits immediately after tmux returns)
     if test -z "$TMUX" -a "$TERM_PROGRAM" = "WezTerm"
-        # Check if 'main' session exists
-        if tmux has-session -t main 2>/dev/null
-            exec tmux attach-session -t main
-        else
-            exec tmux new-session -s main
-        end
+        tmux new-session -A -s main
+        exit
     end
 
     # Enhanced aliases combining both configs

@@ -131,15 +131,25 @@ windows:
 
 ## Session Close Behavior
 
-When you close the last window of a session, tmux automatically switches to the most recently active remaining session instead of detaching. This is important because `config.fish` uses `exec tmux attach-session` in WezTerm — Fish is replaced by the tmux process, so a tmux detach would close the terminal entirely.
+When you close the last window of a session, tmux switches to the most recently active remaining session instead of detaching (which would close the terminal).
 
-Three settings work together to prevent this:
+Four settings work together (tested with tmux 3.5a):
 
 1. **`detach-on-destroy off`** (`.tmux.conf`): Switches to another session instead of detaching when a session is destroyed.
-2. **`session-closed` hook** (`.tmux.conf`): Recreates the `main` session if it was destroyed while other sessions still exist, ensuring a fallback target.
-3. **`exec tmux`** (`config.fish`): Auto-attaches to the `main` tmux session in WezTerm. The `exec` is intentional to avoid nested shells — the above settings ensure tmux never detaches unexpectedly.
+2. **`exit-empty off`** (`.tmux.conf`): Keeps the tmux server alive even when all sessions are briefly destroyed, giving hooks time to recreate `main`.
+3. **Proactive + reactive `main` creation** (`.tmux.conf`): A `run-shell` ensures `main` exists at server start; a `session-closed` hook recreates it if destroyed.
+4. **Non-exec auto-attach** (`config.fish`): `tmux new-session -A -s main` followed by `exit`. Fish is not replaced by tmux, so manual detach (`prefix+d`) returns to Fish which then exits cleanly. No nested shells.
 
-**Edge case**: If `main` is the last remaining session and you close it, the terminal will close. This is intentional — there's nothing to fall back to. Devcontainer and worktree sessions use distinct names and are not affected by the `main` fallback hook.
+Devcontainer and worktree sessions use distinct names (set by `gwt-ticket`) and are not affected by the `main` fallback hook.
+
+### Terminal Hold-on-Exit (Optional Safety Net)
+
+As defense-in-depth, terminal emulators can be configured to hold the tab open when the shell exits unexpectedly:
+
+- **WezTerm**: `config.exit_behavior = "Hold"` in `wezterm.lua` (holds pane open on non-zero exit)
+- **Ghostty**: `wait-after-command = true` in `~/.config/ghostty/config` (holds after process exits)
+
+These are not currently enabled since the tmux-side fix handles all cases, but can be added as guardrails if needed.
 
 ## Reloading Configuration
 

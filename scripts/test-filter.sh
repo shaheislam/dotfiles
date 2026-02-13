@@ -157,6 +157,10 @@ test_tmux() {
     run_test "detach-on-destroy set to off (switch session on close)" \
         "grep -q 'detach-on-destroy off' '$DOTFILES_ROOT/.tmux.conf'"
 
+    # exit-empty off keeps server alive so hooks can recreate main
+    run_test "exit-empty set to off (server survives sole session close)" \
+        "grep -q 'exit-empty off' '$DOTFILES_ROOT/.tmux.conf'"
+
     # session-closed hook ensures main session is recreated if destroyed
     run_test "session-closed hook recreates main session" \
         "grep -q 'session-closed.*has-session -t main.*new-session -d -s main' '$DOTFILES_ROOT/.tmux.conf'"

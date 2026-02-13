@@ -28,7 +28,7 @@ trap cleanup EXIT
 # Build minimal config with only session-close-relevant settings
 build_test_conf() {
     _CLEANUP_CONF=$(mktemp "/tmp/tmux-test-sc-$$.XXXXXX")
-    grep -E 'detach-on-destroy|session-closed' "$DOTFILES_ROOT/.tmux.conf" > "$_CLEANUP_CONF"
+    grep -E 'detach-on-destroy|exit-empty|session-closed' "$DOTFILES_ROOT/.tmux.conf" > "$_CLEANUP_CONF"
 }
 
 test_kill_nonmain() {
@@ -101,28 +101,24 @@ test_client_switches() {
     [[ "$after" == "main" ]]
 }
 
-# Edge case: main is the sole session. Verify server becomes unusable after
-# killing sole session (either exits completely, or hook recreates main).
-# Both outcomes are acceptable — the key behavior is that the user's terminal
-# doesn't hang in a broken state.
+# Edge case: main is the sole session. With exit-empty off, the server stays
+# alive after all sessions are destroyed, giving the session-closed hook time
+# to recreate main. Verify main is deterministically recreated.
 test_sole_main_graceful() {
     _CLEANUP_SOCKET="_test_sc_sole_$$"
     build_test_conf
 
     tmux -L "$_CLEANUP_SOCKET" -f "$_CLEANUP_CONF" new-session -d -s main
     tmux -L "$_CLEANUP_SOCKET" kill-session -t main
-    sleep 0.5
-    # Either outcome is acceptable:
-    # - Server exited (exit-empty killed it) → list-sessions fails
-    # - Hook recreated main (won the race) → main session exists
-    if tmux -L "$_CLEANUP_SOCKET" list-sessions 2>/dev/null | grep -q "main"; then
-        return 0  # hook recreated main — safe
-    fi
-    # Server exited — also safe (terminal closes as expected)
-    if ! tmux -L "$_CLEANUP_SOCKET" list-sessions 2>/dev/null; then
-        return 0
-    fi
-    return 1  # server alive but no main — unexpected
+    # session-closed hook fires asynchronously — wait for recreation
+    local i
+    for i in 1 2 3 4 5; do
+        if tmux -L "$_CLEANUP_SOCKET" has-session -t main 2>/dev/null; then
+            return 0
+        fi
+        sleep 0.3
+    done
+    return 1
 }
 
 case "${1:-}" in
