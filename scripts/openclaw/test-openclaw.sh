@@ -135,12 +135,160 @@ run_test "sandbox-profile.sh has devcontainer profile" \
     "grep -q 'devcontainer)' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
 run_test "sandbox-profile.sh has default profile" \
     "grep -q 'default)' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
-run_test "sandbox-profile.sh restores none on default" \
-    "grep -q 'workspaceAccess.*none' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has refcount logic" \
+    "grep -q 'sandbox-refcount' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh saves original values" \
+    "grep -q 'sandbox-prev.json' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh enforces permissions" \
+    "grep -q 'chmod 600' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has logging" \
+    "grep -q '_log' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh restores from saved values" \
+    "grep -q 'PREV_FILE' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has mkdir-based lock" \
+    "grep -q 'sandbox-lock' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has atomic write" \
+    "grep -q '_atomic_write_config' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has stale lock detection" \
+    "grep -q 'stale lock' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh handles no-op default" \
+    "grep -q 'no active relaxation' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh unlocks on exit" \
+    "grep -q \"trap '_unlock' EXIT\" '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh has fsync for durability" \
+    "grep -q 'os.fsync' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh saturates refcount at 0" \
+    "grep -q 'saturat' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh detects corruption (refcount=0 + saved state)" \
+    "grep -q 'possible corruption' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "sandbox-profile.sh logs corrupt refcount value" \
+    "grep -q 'corrupt refcount file' '$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh'"
+run_test "gwt-ticket gates sandbox behind devcon" \
+    "grep -q 'use_devcon' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish' && grep -A3 'use_devcon' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish' | grep -q 'sandbox_script'"
 run_test "gwt-ticket wires sandbox devcontainer" \
     "grep -q 'sandbox_script.*devcontainer' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+run_test "gwt-ticket reverts sandbox on devcon failure" \
+    "grep -q 'sandbox_script.*default' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+run_test "gwt-ticket sandbox call is inside use_devcon guard" \
+    "awk '/if .use_devcon/{found=1} found && /sandbox_script.*devcontainer/{match=1} /end/{if(found && !match) found=0}' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish' | grep -q '' || grep -B5 'sandbox_script.*devcontainer' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish' | grep -q 'use_devcon'"
 run_test "worktree-witness restores sandbox default" \
     "grep -q 'sandbox_script.*default' '$DOTFILES_ROOT/scripts/worktree-witness.sh'"
+
+# --- Sandbox profile functional tests ---
+# These exercise the actual script against a temp config to verify refcount
+# lifecycle, concurrency, underflow, and sidecar cleanup.
+echo -e "\n${BLUE}--- Sandbox Profile (functional) ---${NC}"
+if command -v jq &>/dev/null; then
+    SANDBOX_SCRIPT="$DOTFILES_ROOT/scripts/openclaw/sandbox-profile.sh"
+    _sandbox_setup() {
+        local td
+        td=$(mktemp -d)
+        mkdir -p "$td"
+        # Minimal config with custom initial values (not "none") to verify save/restore
+        cat > "$td/openclaw.json" << 'TESTEOF'
+{"agents":{"defaults":{"sandbox":{"workspaceAccess":"ro","docker":{"network":"host"}}}}}
+TESTEOF
+        chmod 600 "$td/openclaw.json"
+        echo "$td"
+    }
+    _sandbox_teardown() {
+        rm -rf "$1"
+    }
+
+    # Test: single relax → restore roundtrip preserves original values
+    run_test "functional: relax+restore preserves original values" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default >/dev/null 2>&1
+        ws=$(jq -r ".agents.defaults.sandbox.workspaceAccess" "$td/openclaw.json")
+        net=$(jq -r ".agents.defaults.sandbox.docker.network" "$td/openclaw.json")
+        _sandbox_teardown "$td"
+        [ "$ws" = "ro" ] && [ "$net" = "host" ]
+    '
+
+    # Test: refcount increments on multiple relax calls
+    run_test "functional: refcount increments correctly" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        count=$(cat "$td/.sandbox-refcount" 2>/dev/null)
+        _sandbox_teardown "$td"
+        [ "$count" = "2" ]
+    '
+
+    # Test: partial restore (refcount 2→1) keeps config relaxed
+    run_test "functional: partial restore keeps config relaxed" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default >/dev/null 2>&1
+        ws=$(jq -r ".agents.defaults.sandbox.workspaceAccess" "$td/openclaw.json")
+        count=$(cat "$td/.sandbox-refcount" 2>/dev/null)
+        _sandbox_teardown "$td"
+        [ "$ws" = "rw" ] && [ "$count" = "1" ]
+    '
+
+    # Test: full restore (refcount 2→1→0) restores original values and cleans up
+    run_test "functional: full restore cleans sidecar files" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default >/dev/null 2>&1
+        ws=$(jq -r ".agents.defaults.sandbox.workspaceAccess" "$td/openclaw.json")
+        _sandbox_teardown "$td"
+        [ "$ws" = "ro" ] && [ ! -f "$td/.sandbox-refcount" ] && [ ! -f "$td/.sandbox-prev.json" ]
+    '
+
+    # Test: default with no prior relax is a no-op
+    run_test "functional: default without relax is no-op" '
+        td=$(_sandbox_setup)
+        output=$(OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default 2>&1)
+        ws=$(jq -r ".agents.defaults.sandbox.workspaceAccess" "$td/openclaw.json")
+        _sandbox_teardown "$td"
+        echo "$output" | grep -q "no active relaxation" && [ "$ws" = "ro" ]
+    '
+
+    # Test: extra default calls (underflow) are no-ops, don't corrupt config
+    run_test "functional: underflow (extra defaults) is safe" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default >/dev/null 2>&1
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" default >/dev/null 2>&1
+        ws=$(jq -r ".agents.defaults.sandbox.workspaceAccess" "$td/openclaw.json")
+        _sandbox_teardown "$td"
+        [ "$ws" = "ro" ] && [ ! -f "$td/.sandbox-refcount" ]
+    '
+
+    # Test: config has 600 permissions after operations
+    run_test "functional: config permissions are 600 after write" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        perms=$(stat -c "%a" "$td/openclaw.json" 2>/dev/null || stat -f "%Lp" "$td/openclaw.json")
+        _sandbox_teardown "$td"
+        [ "$perms" = "600" ]
+    '
+
+    # Test: lock dir is cleaned up after operations
+    run_test "functional: no stale lock after operation" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        _sandbox_teardown "$td"
+        [ ! -d "$td/.sandbox-lock" ]
+    '
+
+    # Test: show works and reports refcount
+    run_test "functional: show reports refcount" '
+        td=$(_sandbox_setup)
+        OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" devcontainer >/dev/null 2>&1
+        output=$(OPENCLAW_CONFIG="$td/openclaw.json" bash "$SANDBOX_SCRIPT" show 2>&1)
+        _sandbox_teardown "$td"
+        echo "$output" | grep -q "refcount=1"
+    '
+else
+    echo -e "${YELLOW}  SKIP${NC} jq not installed (skipping sandbox functional tests)"
+fi
 
 # --- Documentation tests ---
 echo -e "\n${BLUE}--- Documentation ---${NC}"

@@ -318,7 +318,7 @@ Local-first Gateway at `ws://127.0.0.1:18789` with session isolation and Docker 
 **Setup**: `brew install openclaw-cli && openclaw onboard --install-daemon`
 **Docs**: `docs/openclaw-setup.md` (comprehensive plan with security hardening)
 **Config Template**: `scripts/openclaw/openclaw-base.json` (security-hardened defaults)
-**Tests**: `scripts/test-filter.sh openclaw` (61 tests: config, security, functions, scripts, sandbox profile, jq validator)
+**Tests**: `scripts/test-filter.sh openclaw` (86 tests: config, security, functions, scripts, sandbox profile, functional integration, jq validator)
 
 | Command | Alias | Description |
 |---------|-------|-------------|
