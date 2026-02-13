@@ -153,6 +153,10 @@ test_tmux() {
     run_test "Claude watcher script exists" "[ -f '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
     run_test "Claude watcher is executable" "[ -x '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
 
+    # Session close behavior: closing last window should switch to another session, not detach
+    run_test "detach-on-destroy set to off (switch session on close)" \
+        "grep -q 'detach-on-destroy off' '$DOTFILES_ROOT/.tmux.conf'"
+
     # Empty window fix: gwt-ticket should create session with named window directly
     local GWT_TICKET="$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish"
     run_test "gwt-ticket creates session with window name (-n flag)" \
