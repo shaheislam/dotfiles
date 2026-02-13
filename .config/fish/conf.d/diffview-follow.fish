@@ -28,8 +28,12 @@ function __diffview_follow_cd --on-variable PWD
         return
     end
 
-    # Notify Neovim via RPC (fire-and-forget, don't block the shell).
+    # Notify Neovim via RPC with the shell's actual $PWD (fire-and-forget).
+    # Passing cwd directly avoids the tmux {last} pane ambiguity — Neovim
+    # would otherwise query the wrong pane when the RPC arrives.
+    # Escape backslashes and double-quotes for safe Lua string embedding.
     # Backgrounded: if Neovim is busy/dead, Fish doesn't hang.
-    command nvim --server "$socket" --remote-expr 'v:lua.diffview_check_pane()' &>/dev/null &
+    set -l safe_pwd (string replace -a '\\' '\\\\' -- "$PWD" | string replace -a '"' '\\"')
+    command nvim --server "$socket" --remote-expr "v:lua.diffview_check_pane(\"$safe_pwd\")" &>/dev/null &
     disown 2>/dev/null
 end
