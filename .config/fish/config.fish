@@ -31,7 +31,6 @@ complete -c aws-sso -f -a "(__fish_complete_aws_profiles)" -d "Authenticate with
 complete -c dssmc -e
 complete -c dssmc -f -a "(__fish_complete_aws_profiles)" -d "Connect to EC2 via SSM tunnel for distant.nvim"
 
-
 # Only run in interactive sessions
 if status is-interactive
     # Set key bindings for better autocomplete
@@ -56,7 +55,7 @@ if status is-interactive
 
     # Environment Variables
     set -x BAT_THEME "Catppuccin Mocha"
-    set -x BAT_PAGING "never"  # Prevents FZF preview file descriptor errors
+    set -x BAT_PAGING never # Prevents FZF preview file descriptor errors
     # Pager defaults (avoid tools reading a bad $PAGER value)
     set -x PAGER less
     set -x MANPAGER "less -R"
@@ -64,8 +63,8 @@ if status is-interactive
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
 
     # Claude Code environment
-    set -gx FORCE_AUTOUPDATE_PLUGINS 1  # Auto-update plugins on session start
-    set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1  # Load CLAUDE.md from --add-dir paths
+    set -gx FORCE_AUTOUPDATE_PLUGINS 1 # Auto-update plugins on session start
+    set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1 # Load CLAUDE.md from --add-dir paths
 
     # ==================== Platform-Specific Configuration ====================
 
@@ -137,7 +136,7 @@ if status is-interactive
     end
 
     if command -v atuin >/dev/null
-        set -gx ATUIN_NOBIND "true"
+        set -gx ATUIN_NOBIND true
         # Skip the cached init - we'll define our own protected handlers
         # The cached version panics on invalid UTF-8 in command args
 
@@ -173,16 +172,17 @@ if status is-interactive
     end
 
     # Configure mise settings
+    # Configure mise settings once (this is a persistent setting, not needed every startup)
+    # Run `mise settings add idiomatic_version_file_enable_tools ruby` manually if needed
     if command -v mise >/dev/null
         __cache_tool_init mise "mise activate fish"
-        mise settings add idiomatic_version_file_enable_tools ruby 2>/dev/null
     end
 
     # Yazi file manager wrapper - q to stay, Q to cd to navigated directory
     function yazi
         set tmp (mktemp -t "yazi-cwd.XXXXXX")
         command yazi $argv --cwd-file="$tmp"
-        if read -z cwd < "$tmp"; and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
+        if read -z cwd <"$tmp"; and [ -n "$cwd" ]; and [ "$cwd" != "$PWD" ]
             builtin cd -- "$cwd"
         end
         rm -f -- "$tmp"
@@ -212,10 +212,11 @@ if status is-interactive
     #   shift-tab   - Select/deselect and move up
 
     # FZF configuration - enhanced version combining both configs
+    # Cached for ~69ms startup improvement
     if command -v fzf >/dev/null
         # fzf --fish requires fzf 0.48+, fallback for older versions
         if fzf --fish &>/dev/null
-            fzf --fish | source
+            __cache_tool_init fzf "fzf --fish"
         else if test -f /usr/share/doc/fzf/examples/key-bindings.fish
             source /usr/share/doc/fzf/examples/key-bindings.fish
         end
@@ -240,17 +241,17 @@ if status is-interactive
     set -gx FZF_ALT_C_COMMAND "fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 
     # FZF theme colors - Catppuccin Mocha theme to match other tools
-    set -l fg "#cdd6f4"          # Text
-    set -l bg "#1e1e2e"          # Base
+    set -l fg "#cdd6f4" # Text
+    set -l bg "#1e1e2e" # Base
     set -l bg_highlight "#313244" # Surface0
-    set -l purple "#b4befe"       # Lavender
-    set -l blue "#89b4fa"         # Blue
-    set -l cyan "#89dceb"         # Sky
-    set -l green "#a6e3a1"        # Green
-    set -l orange "#fab387"       # Peach
-    set -l red "#f38ba8"          # Red
-    set -l yellow "#f9e2af"       # Yellow
-    set -l magenta "#cba6f7"      # Mauve
+    set -l purple "#b4befe" # Lavender
+    set -l blue "#89b4fa" # Blue
+    set -l cyan "#89dceb" # Sky
+    set -l green "#a6e3a1" # Green
+    set -l orange "#fab387" # Peach
+    set -l red "#f38ba8" # Red
+    set -l yellow "#f9e2af" # Yellow
+    set -l magenta "#cba6f7" # Mauve
 
     # Enhanced FZF options matching WezTerm aesthetics (simulated transparency)
     # Using -1 for bg creates transparent background effect
@@ -290,9 +291,9 @@ if status is-interactive
 
     # History search with preview and copy-to-clipboard
     # Detect clipboard command (macOS pbcopy vs Linux xclip/xsel)
-    set -l _clip_cmd "true" # no-op fallback
+    set -l _clip_cmd true # no-op fallback
     if command -v pbcopy >/dev/null
-        set _clip_cmd "pbcopy"
+        set _clip_cmd pbcopy
     else if command -v xclip >/dev/null
         set _clip_cmd "xclip -selection clipboard"
     else if command -v xsel >/dev/null
@@ -314,14 +315,14 @@ if status is-interactive
     # Disable fish greeting
     set -g fish_greeting ""
 
-    # thefuck initialization
+    # thefuck initialization (cached for ~557ms startup improvement)
     if command -v thefuck >/dev/null
-        thefuck --alias | source
+        __cache_tool_init thefuck "thefuck --alias"
     end
 
-    # Carapace completions initialization
+    # Carapace completions initialization (cached for ~230ms startup improvement)
     if command -v carapace >/dev/null
-        carapace _carapace fish | source
+        __cache_tool_init carapace "carapace _carapace fish"
         # Remove Carapace's kubectl completions (Fish 4.1+ blocks autoload after complete -e)
         # Then explicitly source Fish-native evanlucas/fish-kubectl-completions
         complete -e kubectl
@@ -333,7 +334,7 @@ if status is-interactive
     # Uses tmux new -A (attach-or-create) without exec so that:
     #   - Manual detach (prefix+d) returns to Fish, which then exits cleanly
     #   - No nested shells (Fish exits immediately after tmux returns)
-    if test -z "$TMUX" -a "$TERM_PROGRAM" = "WezTerm"
+    if test -z "$TMUX" -a "$TERM_PROGRAM" = WezTerm
         tmux new-session -A -s main
         exit
     end
@@ -341,7 +342,7 @@ if status is-interactive
     # Enhanced aliases combining both configs
     alias python=python3
     alias mkdir="mkdir -p"
-    
+
     # Enhanced eza aliases with better visual organization (if eza installed)
     if command -v eza >/dev/null
         alias ls="eza --icons --group-directories-first"
@@ -355,13 +356,13 @@ if status is-interactive
         alias la="ls -a"
         alias l="ls -lah"
     end
-    
+
     alias k=kubectl
     alias vi=nvim
     alias vim=nvim
-    alias tmp="tmpmail --generate"  # Quick temp email generation
-    alias tmpm="tmpmail"  # Check temp mailbox
-    alias altair="open -a 'Altair GraphQL Client'"  # Open Altair GraphQL Client
+    alias tmp="tmpmail --generate" # Quick temp email generation
+    alias tmpm="tmpmail" # Check temp mailbox
+    alias altair="open -a 'Altair GraphQL Client'" # Open Altair GraphQL Client
 
     # Note: kubectl wrapper function defined in ~/.config/fish/functions/kubectl.fish
     # Provides automatic fzf integration for 'kubectl get' commands with YAML preview
@@ -383,9 +384,9 @@ if status is-interactive
     if command -v splash >/dev/null
         # Docker commands
         function docker --description "Docker with colored logs"
-            if test "$argv[1]" = "logs"
+            if test "$argv[1]" = logs
                 command docker $argv | splash
-            else if test "$argv[1]" = "compose"; and test "$argv[2]" = "logs"
+            else if test "$argv[1]" = compose; and test "$argv[2]" = logs
                 command docker $argv | splash
             else
                 command docker $argv
@@ -433,7 +434,7 @@ if status is-interactive
 
         # Terraform commands that produce logs
         function terraform --description "Terraform with colored output"
-            if test "$argv[1]" = "plan"; or test "$argv[1]" = "apply"; or test "$argv[1]" = "destroy"
+            if test "$argv[1]" = plan; or test "$argv[1]" = apply; or test "$argv[1]" = destroy
                 command terraform $argv | splash
             else
                 command terraform $argv
@@ -443,7 +444,7 @@ if status is-interactive
         # Go commands
         function go --description "Go with colored output for logs"
             # Check for SPLASH_ARGS environment variable for custom splash options
-            if test "$argv[1]" = "run"; or test "$argv[1]" = "test"; or test "$argv[1]" = "build"
+            if test "$argv[1]" = run; or test "$argv[1]" = test; or test "$argv[1]" = build
                 if set -q SPLASH_ARGS
                     # Use custom splash arguments if set
                     command go $argv 2>&1 | splash $SPLASH_ARGS
@@ -458,7 +459,7 @@ if status is-interactive
 
         # npm/yarn/pnpm commands
         function npm --description "npm with colored logs"
-            if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
+            if test "$argv[1]" = run; or test "$argv[1]" = start; or test "$argv[1]" = test
                 command npm $argv 2>&1 | splash
             else
                 command npm $argv
@@ -466,7 +467,7 @@ if status is-interactive
         end
 
         function yarn --description "yarn with colored logs"
-            if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
+            if test "$argv[1]" = run; or test "$argv[1]" = start; or test "$argv[1]" = test
                 command yarn $argv 2>&1 | splash
             else
                 command yarn $argv
@@ -474,7 +475,7 @@ if status is-interactive
         end
 
         function pnpm --description "pnpm with colored logs"
-            if test "$argv[1]" = "run"; or test "$argv[1]" = "start"; or test "$argv[1]" = "test"
+            if test "$argv[1]" = run; or test "$argv[1]" = start; or test "$argv[1]" = test
                 command pnpm $argv 2>&1 | splash
             else
                 command pnpm $argv
@@ -570,16 +571,16 @@ if status is-interactive
     end
 
     alias n=nvim
-    alias nvm="env NVIM_APPNAME=nvim-mini nvim"  # Minimal Neovim config
+    alias nvm="env NVIM_APPNAME=nvim-mini nvim" # Minimal Neovim config
     alias lg=lazygit
     alias fixterm="stty sane"
-    alias footyres="$HOME/dotfiles/scripts/bin/footyres"  # Football results CLI
+    alias footyres="$HOME/dotfiles/scripts/bin/footyres" # Football results CLI
 
     # Obsidian Aliases
     function obs --description "Navigate to Obsidian vault and open nvim"
         cd ~/obsidian && nvim .
     end
-    
+
     function todo --description "Navigate to Obsidian vault and open TODO.md"
         cd ~/obsidian && nvim TODO.md
     end
@@ -593,36 +594,36 @@ if status is-interactive
     alias gispriv="gh gist create"
 
     # System monitoring aliases
-    alias top="btop"  # Use btop as default process viewer
-    alias htop="htop --tree"  # Show htop with tree view by default
+    alias top="btop" # Use btop as default process viewer
+    alias htop="htop --tree" # Show htop with tree view by default
     # alias ps="procs"  # Disabled - procs is not a drop-in ps replacement (-p means --pager, not PID filter)
-    alias pst="procs --tree"  # Process tree view
-    alias psg="procs | grep"  # Search processes
-    alias net="sudo bandwhich"  # Network monitoring (requires sudo)
-    alias dig="doggo"  # Modern DNS lookup
-    alias dns="doggo"  # Alternative DNS alias
+    alias pst="procs --tree" # Process tree view
+    alias psg="procs | grep" # Search processes
+    alias net="sudo bandwhich" # Network monitoring (requires sudo)
+    alias dig="doggo" # Modern DNS lookup
+    alias dns="doggo" # Alternative DNS alias
 
     # Security & DevSecOps Tools
-    alias scan="trivy"  # Vulnerability scanner
-    alias vuln="grype"  # Container vulnerability scanner
-    alias sbom="syft"  # Generate SBOM
-    alias tfscan="tfsec"  # Terraform security scanner
-    alias iacscan="checkov"  # IaC security scanner
-    alias semscan="semgrep"  # Static analysis
-    alias dockerlint="hadolint"  # Dockerfile linter
+    alias scan="trivy" # Vulnerability scanner
+    alias vuln="grype" # Container vulnerability scanner
+    alias sbom="syft" # Generate SBOM
+    alias tfscan="tfsec" # Terraform security scanner
+    alias iacscan="checkov" # IaC security scanner
+    alias semscan="semgrep" # Static analysis
+    alias dockerlint="hadolint" # Dockerfile linter
 
     # Kubernetes & Container Tools
     # Use kubecolor for colorized kubectl output if available
     if command -q kubecolor
         alias kubectl="kubecolor"
     end
-    alias k="kubectl"  # Kubernetes CLI shorthand
-    alias kc="kubectx"  # Quick context switching
-    alias kn="kubens"  # Quick namespace switching
-    alias kx="kubie ctx"  # Switch kubernetes context with kubie (alternative)
-    alias kns="kubie ns"  # Switch namespace with kubie (alternative)
-    alias kdive="dive"  # Docker image explorer
-    alias kctop="ctop"  # Container metrics
+    alias k="kubectl" # Kubernetes CLI shorthand
+    alias kc="kubectx" # Quick context switching
+    alias kn="kubens" # Quick namespace switching
+    alias kx="kubie ctx" # Switch kubernetes context with kubie (alternative)
+    alias kns="kubie ns" # Switch namespace with kubie (alternative)
+    alias kdive="dive" # Docker image explorer
+    alias kctop="ctop" # Container metrics
 
     # Kubernetes shortcuts
     alias kgp="kubectl get pods"
@@ -653,42 +654,42 @@ if status is-interactive
     alias kindd="kind delete cluster"
 
     # Better File/System Tools
-    alias du="dust"  # Better disk usage
-    alias ncdu="ncdu --color dark"  # NCurses disk usage
+    alias du="dust" # Better disk usage
+    alias ncdu="ncdu --color dark" # NCurses disk usage
     # alias sed="sd"  # Disabled - breaks completion scripts that expect real sed
-    alias sedd="sd"  # Use 'sedd' for the sd tool instead
+    alias sedd="sd" # Use 'sedd' for the sd tool instead
     # alias cut="choose"  # Disabled - choose-rust is not a drop-in replacement for cut (different CLI interface)
-    alias loc="tokei"  # Code statistics
-    alias duf="duf"  # Better df
+    alias loc="tokei" # Code statistics
+    alias duf="duf" # Better df
 
     # Network Tools
-    alias http="xh"  # Friendly HTTP client
-    alias grpc="grpcurl"  # gRPC client
-    alias trace="mtr"  # Better traceroute
-    alias ping="gping"  # Ping with graph
-    alias bench="hyperfine"  # Command benchmarking
-    alias load="oha"  # HTTP load testing
+    alias http="xh" # Friendly HTTP client
+    alias grpc="grpcurl" # gRPC client
+    alias trace="mtr" # Better traceroute
+    alias ping="gping" # Ping with graph
+    alias bench="hyperfine" # Command benchmarking
+    alias load="oha" # HTTP load testing
 
     # Infrastructure Tools
-    alias tf="terraform"  # Terraform shorthand
-    alias tg="terragrunt"  # Terragrunt shorthand
-    alias tfdoc="terraform-docs"  # Terraform docs
-    alias tfcost="infracost"  # Infrastructure cost
+    alias tf="terraform" # Terraform shorthand
+    alias tg="terragrunt" # Terragrunt shorthand
+    alias tfdoc="terraform-docs" # Terraform docs
+    alias tfcost="infracost" # Infrastructure cost
 
     # Monitoring & Performance
-    alias mon="glances"  # System monitoring
-    alias logs="lnav"  # Log navigator
-    alias flame="flamegraph"  # Performance visualization
+    alias mon="glances" # System monitoring
+    alias logs="lnav" # Log navigator
+    alias flame="flamegraph" # Performance visualization
 
     # Development Tools
-    alias watch="watchexec"  # Execute on file change
-    alias j="just"  # Command runner
-    alias t="task"  # Task runner
-    alias act="act --container-architecture linux/amd64"  # GitHub Actions locally with ARM64 compatibility
+    alias watch="watchexec" # Execute on file change
+    alias j="just" # Command runner
+    alias t="task" # Task runner
+    alias act="act --container-architecture linux/amd64" # GitHub Actions locally with ARM64 compatibility
 
     # AI Tools
     # Use 'ccr code' or just 'ccr' to start Claude Code Router
-    alias claude-router="command ccr code"  # Alternative alias for Claude Code Router
+    alias claude-router="command ccr code" # Alternative alias for Claude Code Router
 
     # Utility aliases
     alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
@@ -696,11 +697,11 @@ if status is-interactive
     alias rest="~/sesh.sh restore"
     alias tr="clear; ~/dotfiles/scripts/tmux/tmux-smart-restore.sh"
     alias ts="tmux run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'"
-    alias tk="~/dotfiles/scripts/tmux/tmux-safe-kill-server.sh"  # Safe kill with auto-save
-    alias tkf="tmux kill-server"  # Force kill without save (use with caution)
+    alias tk="~/dotfiles/scripts/tmux/tmux-safe-kill-server.sh" # Safe kill with auto-save
+    alias tkf="tmux kill-server" # Force kill without save (use with caution)
 
     # Security aliases
-    alias vetf="vet --force"  # Force execution (use with caution)
+    alias vetf="vet --force" # Force execution (use with caution)
 
     # Git worktree aliases
     alias gwta="git worktree add"
@@ -711,34 +712,34 @@ if status is-interactive
     alias gwtm="git worktree move"
 
     # Worktree + Devcontainer integration aliases
-    alias gwtd="gwt-dev"              # Create worktree with devcontainer
-    alias gwtde="gwt-dev --exec"      # Create and exec into
-    alias gwtc="gwt-claude"           # Launch Claude in worktree
-    alias gwts="gwt-status"           # Show worktree + devcontainer status
-    alias gwtclean="gwt-cleanup"      # Cleanup stale devcontainer instances
-    alias gwtt="gwt-ticket"           # Autonomous ticket execution
-    alias gwtq="gwt-queue"            # Ticket queue management
-    alias gwtdoc="gwt-doctor"          # Agent orchestration health check
-    alias csub="claude-sub"           # Claude subscription profiles
+    alias gwtd="gwt-dev" # Create worktree with devcontainer
+    alias gwtde="gwt-dev --exec" # Create and exec into
+    alias gwtc="gwt-claude" # Launch Claude in worktree
+    alias gwts="gwt-status" # Show worktree + devcontainer status
+    alias gwtclean="gwt-cleanup" # Cleanup stale devcontainer instances
+    alias gwtt="gwt-ticket" # Autonomous ticket execution
+    alias gwtq="gwt-queue" # Ticket queue management
+    alias gwtdoc="gwt-doctor" # Agent orchestration health check
+    alias csub="claude-sub" # Claude subscription profiles
 
     # Ticket execution aliases
-    alias tex="ticket-execute"        # Execute ticket autonomously
-    alias texs="ticket-execute --status ."  # Check status
-    alias texw="ticket-execute --watch ."   # Watch for completion
+    alias tex="ticket-execute" # Execute ticket autonomously
+    alias texs="ticket-execute --status ." # Check status
+    alias texw="ticket-execute --watch ." # Watch for completion
 
     # Graphite merge queue aliases
-    alias gtq="gt-queue"                  # Merge queue status
-    alias gtql="gt-queue list"            # List queued PRs
-    alias gtqe="gt-queue enqueue"         # Enqueue current PR
-    alias gtqd="gt-queue dequeue"         # Dequeue current PR
-    alias gtqm="gt-queue merge"           # Merge via Graphite
-    alias gtqs="gt-queue submit --stack"  # Submit + merge-when-ready
-    alias gtqo="gt-queue open"            # Open dashboard
-    alias gtqw="gt-queue watch"           # Auto-refresh queue status
-    alias gtqr="gt-queue retry"           # Re-enqueue failed PR
-    alias gts="gt-stack"                  # Stack viewer
-    alias gtsi="gt-stack --interactive"   # Interactive stack viewer
-    alias gtss="gt submit --stack"        # Submit entire stack
+    alias gtq="gt-queue" # Merge queue status
+    alias gtql="gt-queue list" # List queued PRs
+    alias gtqe="gt-queue enqueue" # Enqueue current PR
+    alias gtqd="gt-queue dequeue" # Dequeue current PR
+    alias gtqm="gt-queue merge" # Merge via Graphite
+    alias gtqs="gt-queue submit --stack" # Submit + merge-when-ready
+    alias gtqo="gt-queue open" # Open dashboard
+    alias gtqw="gt-queue watch" # Auto-refresh queue status
+    alias gtqr="gt-queue retry" # Re-enqueue failed PR
+    alias gts="gt-stack" # Stack viewer
+    alias gtsi="gt-stack --interactive" # Interactive stack viewer
+    alias gtss="gt submit --stack" # Submit entire stack
 
     # Git local exclude management
     alias gls="gitlocal-setup"
@@ -780,7 +781,7 @@ if status is-interactive
             else if string match -q "delete *" "$selected"
                 set gist_id (echo $selected | awk '{print $2}' | awk '{print $1}')
                 read -P "Delete gist $gist_id? (y/N): " confirm
-                if test "$confirm" = "y"
+                if test "$confirm" = y
                     gh gist delete $gist_id
                     echo "Deleted gist: $gist_id"
                 end
@@ -805,7 +806,7 @@ if status is-interactive
             for gist in $selected
                 set -l gist_id (echo $gist | awk '{print $1}')
                 read -P "Delete gist $gist_id? (y/N): " confirm
-                if test "$confirm" = "y"
+                if test "$confirm" = y
                     gh gist delete $gist_id
                     echo "Deleted gist: $gist_id"
                 end
@@ -815,16 +816,16 @@ if status is-interactive
 
     function ssmc --description "Connect to EC2 instances via AWS SSM with interactive selection"
         set -l profile $argv[1]
-        
+
         # Try to get instances with current credentials first
         echo "Fetching EC2 instances..."
-        
+
         # Get all running instances with their SSM status
         set -l instances (aws ec2 describe-instances \
             --filters "Name=instance-state-name,Values=running" \
             --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,PrivateIpAddress]' \
             --output text 2>/dev/null)
-        
+
         # If no instances found and we have a profile, try with profile
         if test -z "$instances" -a -n "$profile"
             echo "Retrying with profile: $profile"
@@ -834,10 +835,10 @@ if status is-interactive
                 --query 'Reservations[*].Instances[*].[Tags[?Key==`Name`].Value|[0],InstanceId,InstanceType,PrivateIpAddress]' \
                 --output text 2>/dev/null)
         end
-        
+
         # If still no instances and no profile specified, try default
         if test -z "$instances" -a -z "$profile"
-            set profile "petlab"
+            set profile petlab
             echo "Trying default profile: $profile"
             set instances (aws ec2 describe-instances \
                 --profile $profile \
@@ -851,7 +852,7 @@ if status is-interactive
             echo "Tip: If using Granted, run 'assume <profile>' first"
             return 1
         end
-        
+
         # Get SSM connection status for all instances
         echo "Checking SSM connectivity..."
         set -l ssm_instances (aws ssm describe-instance-information \
@@ -868,10 +869,10 @@ if status is-interactive
             set -l ip_address $parts[4]
 
             # Handle instances without Name tag
-            if test "$name" = "None" -o -z "$name"
-                set name "Unnamed"
+            if test "$name" = None -o -z "$name"
+                set name Unnamed
             end
-            
+
             # Check if instance has SSM connectivity
             set -l ssm_status "SSM Offline"
             if string match -q "*$instance_id*" $ssm_instances
@@ -894,15 +895,15 @@ if status is-interactive
                     echo "Warning: Instance $instance_id does not have SSM connectivity"
                     echo "The SSM agent may not be installed or running on this instance"
                     read -P "Try to connect anyway? (y/N): " -n 1 confirm
-                    if test "$confirm" != "y" -a "$confirm" != "Y"
+                    if test "$confirm" != y -a "$confirm" != Y
                         return 1
                     end
                 end
-                
+
                 echo "Connecting to instance: $instance_id"
                 # Try without profile first (uses environment credentials if available)
                 aws ssm start-session --target $instance_id
-                
+
                 # If that fails and we have a profile, try with profile
                 if test $status -ne 0 -a -n "$profile"
                     echo "Retrying with profile: $profile"
@@ -986,7 +987,7 @@ if status is-interactive
     # Properly handles environment variable propagation from bash to Fish
     function assume --description "Assume AWS role using Granted"
         # Handle console flag for Firefox containers
-        if test "$argv[1]" = "-c"
+        if test "$argv[1]" = -c
             set -l profile $argv[2]
             if test -n "$profile"
                 # First assume the profile using bash with suppressed interactive prompts
@@ -1061,14 +1062,13 @@ if status is-interactive
     end
 
     # Enable Granted completions for Fish shell
-    if command -v granted &> /dev/null
+    if command -v granted &>/dev/null
         # Generate granted completions if not already installed
         if not test -f "$HOME/.config/fish/completions/granted.fish"
             granted completion --shell fish 2>/dev/null
         end
         # The completions will be auto-loaded by Fish from the completions directory
     end
-
 
     # Show current AWS account
     function aws-whoami --description "Show current AWS account and identity"
@@ -1079,7 +1079,6 @@ if status is-interactive
             echo "No AWS profile currently set"
         end
     end
-
 
     # S3grep wrapper to ensure AWS profile is used
     function s3grep
@@ -1209,7 +1208,7 @@ if status is-interactive
                 else if string match -q "⬆️  Go up one level" "$selected"
                     # Go up one directory level
                     set current_path (string replace -r '/[^/]+/$' '/' $current_path)
-                    if test "$current_path" = "/"
+                    if test "$current_path" = /
                         set current_path ""
                     end
                 else
@@ -1330,7 +1329,7 @@ if status is-interactive
                 else if string match -q "⬆️  Go up one level" "$selected"
                     # Go up one directory level
                     set current_path (string replace -r '/[^/]+/$' '/' $current_path)
-                    if test "$current_path" = "/"
+                    if test "$current_path" = /
                         set current_path ""
                     end
                 else
@@ -1378,10 +1377,10 @@ if status is-interactive
 🕐 Time: \(.eventTime // "Unknown")
 ───────────────────────────────────────────────────────────────"
                     end' 2>/dev/null || begin
-                        echo "Raw JSON (jq failed):"
-                        echo $json | head -c 500
-                        echo "..."
-                    end
+                    echo "Raw JSON (jq failed):"
+                    echo $json | head -c 500
+                    echo "..."
+                end
                 echo ""
             else
                 echo $line
@@ -1547,13 +1546,13 @@ if status is-interactive
                 # Try CloudTrail bucket
                 if aws s3 ls s3://petlab-centralize-logging/ >/dev/null 2>&1
                     echo "🔍 Searching CloudTrail logs..."
-                    s3-logs petlab-centralize-logging "$pattern" "AWSLogs/" | head -10
+                    s3-logs petlab-centralize-logging "$pattern" AWSLogs/ | head -10
                 end
 
                 # Try GuardDuty bucket
                 if aws s3 ls s3://petlab-guardduty-logging/ >/dev/null 2>&1
                     echo "🔍 Searching GuardDuty logs..."
-                    s3-logs petlab-guardduty-logging "$pattern" "AWSLogs/" | head -10
+                    s3-logs petlab-guardduty-logging "$pattern" AWSLogs/ | head -10
                 end
             end
         else
@@ -1562,7 +1561,6 @@ if status is-interactive
             s3-logs $bucket "$pattern"
         end
     end
-
 
     # Set environment variables
     set -gx EDITOR nvim
@@ -1578,7 +1576,6 @@ if status is-interactive
         set fish_tmux_autoconnect true
         set fish_tmux_autoname_session true
     end
-
 
     # Git worktree functions
     function gwtaf --description "Add worktree for existing branch in ../repo-branch format"
@@ -1609,7 +1606,7 @@ if status is-interactive
         # Check for devcontainer and prompt
         if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
             read -P "Devcontainer detected. Launch? [y/N] " response
-            if test "$response" = "y"; or test "$response" = "Y"
+            if test "$response" = y; or test "$response" = Y
                 set -l instance_name (string replace -a "/" "-" "$repo-$branch")
                 devcon claude -i $instance_name $abs_worktree_path -e
             else
@@ -1650,7 +1647,7 @@ if status is-interactive
         # Check for devcontainer and prompt
         if test -d "$abs_worktree_path/.devcontainer"; or test -f "$abs_worktree_path/devcontainer.json"
             read -P "Devcontainer detected. Launch? [y/N] " response
-            if test "$response" = "y"; or test "$response" = "Y"
+            if test "$response" = y; or test "$response" = Y
                 set -l instance_name (string replace -a "/" "-" "$repo-$branch")
                 devcon claude -i $instance_name $abs_worktree_path -e
             else
@@ -1704,7 +1701,7 @@ if status is-interactive
             else if string match -q "drop *" "$selected"
                 set stash_id (echo $selected | awk '{print $2}' | command cut -d: -f1)
                 read -P "Drop stash $stash_id? (y/N): " confirm
-                if test "$confirm" = "y"
+                if test "$confirm" = y
                     git stash drop $stash_id
                     echo "Dropped stash: $stash_id"
                 end
@@ -1760,7 +1757,7 @@ if status is-interactive
             else if string match -q "delete *" "$selected"
                 set container_id (echo $selected | awk '{print $2}')
                 read -P "Delete container $container_id? (y/N): " confirm
-                if test "$confirm" = "y"
+                if test "$confirm" = y
                     docker rm -f $container_id
                     echo "Deleted container: $container_id"
                 end
@@ -1823,7 +1820,7 @@ PID | User | CPU% | MEM% | Command" \
 
         if test -n "$selected"
             set -l pid (echo $selected | awk '{print $1}')
-            if test "$pid" != "PID"  # Skip header if selected
+            if test "$pid" != PID # Skip header if selected
                 echo "Details for PID $pid:"
                 procs $pid --tree
             end
@@ -1857,7 +1854,7 @@ PID | User | CPU% | MEM% | Command" \
 
         if test -n "$selected"
             set -l pid (echo $selected | awk '{print $1}')
-            if test "$pid" != "PID"  # Skip header if selected
+            if test "$pid" != PID # Skip header if selected
                 echo "Details for PID $pid:"
                 procs $pid --tree
             end
@@ -2030,7 +2027,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             set record_type (echo $selected | command cut -d' ' -f1)
         end
 
-        if test "$record_type" = "ALL"
+        if test "$record_type" = ALL
             # Show all common record types
             echo "🔍 A Records:"
             doggo $domain A
@@ -2107,7 +2104,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
                 for img in (echo $selected | tail -n +2)
                     set -l image_id (echo $img | awk '{print $1}')
                     read -P "Delete image $image_id? (y/N): " confirm
-                    if test "$confirm" = "y"
+                    if test "$confirm" = y
                         docker rmi $image_id
                         echo "Deleted image: $image_id"
                     end
@@ -2210,7 +2207,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
         set -l cleanup_devcontainers false
         if $has_devcontainers
             read -P "Also remove associated devcontainer instances? [y/N] " response
-            if test "$response" = "y"; or test "$response" = "Y"
+            if test "$response" = y; or test "$response" = Y
                 set cleanup_devcontainers true
             end
         end
@@ -2218,7 +2215,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
         # Prompt for branch cleanup (inspired by DHH's gd)
         read -P "Also delete associated local branches? [y/N] " branch_response
         set -l cleanup_branches false
-        if test "$branch_response" = "y"; or test "$branch_response" = "Y"
+        if test "$branch_response" = y; or test "$branch_response" = Y
             set cleanup_branches true
         end
 
@@ -2785,7 +2782,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             return 1
         end
 
-        set -l actions "breakdown" "diff" "configure"
+        set -l actions breakdown diff configure
 
         set -l selected (printf '%s\n' $actions | fzf \
             --prompt="Select infracost action: " \
@@ -2793,11 +2790,11 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             --border)
 
         switch "$selected"
-            case "breakdown"
+            case breakdown
                 infracost breakdown --path .
-            case "diff"
+            case diff
                 infracost diff --path .
-            case "configure"
+            case configure
                 infracost configure
         end
     end
@@ -2819,11 +2816,6 @@ if status is-interactive
         bind -M insert \t _fifc_or_fzf
     end
 end
-
-
-
-
-
 
 # Mise shims for version-managed tools (must be early in PATH)
 fish_add_path $HOME/.local/share/mise/shims
