@@ -1,47 +1,48 @@
 # Docker FZF Keybindings - CTRL-D prefix
 # Complements existing Docker workflows with fuzzy finding
 
-# Only activate if fzf and docker are available
-if type -q fzf && type -q docker
-    # CTRL-D ? for help
-    bind -M default \cd\? '__fzf_docker_sh list_bindings; commandline -f repaint'
-    bind -M insert \cd\? '__fzf_docker_sh list_bindings; commandline -f repaint'
-
-    # CTRL-D CTRL-C / CTRL-D C for Containers (running)
-    bind -M default \cdc '__fzf_docker_sh containers; commandline -f repaint'
-    bind -M insert \cdc '__fzf_docker_sh containers; commandline -f repaint'
-    bind -M default \cd\cc '__fzf_docker_sh containers; commandline -f repaint'
-    bind -M insert \cd\cc '__fzf_docker_sh containers; commandline -f repaint'
-
-    # CTRL-D CTRL-A / CTRL-D A for All containers
-    bind -M default \cda '__fzf_docker_sh all_containers; commandline -f repaint'
-    bind -M insert \cda '__fzf_docker_sh all_containers; commandline -f repaint'
-    bind -M default \cd\ca '__fzf_docker_sh all_containers; commandline -f repaint'
-    bind -M insert \cd\ca '__fzf_docker_sh all_containers; commandline -f repaint'
-
-    # CTRL-D CTRL-I / CTRL-D I for Images
-    bind -M default \cdi '__fzf_docker_sh images; commandline -f repaint'
-    bind -M insert \cdi '__fzf_docker_sh images; commandline -f repaint'
-    bind -M default \cd\ci '__fzf_docker_sh images; commandline -f repaint'
-    bind -M insert \cd\ci '__fzf_docker_sh images; commandline -f repaint'
-
-    # CTRL-D CTRL-V / CTRL-D V for Volumes
-    bind -M default \cdv '__fzf_docker_sh volumes; commandline -f repaint'
-    bind -M insert \cdv '__fzf_docker_sh volumes; commandline -f repaint'
-    bind -M default \cd\cv '__fzf_docker_sh volumes; commandline -f repaint'
-    bind -M insert \cd\cv '__fzf_docker_sh volumes; commandline -f repaint'
-
-    # CTRL-D CTRL-N / CTRL-D N for Networks
-    bind -M default \cdn '__fzf_docker_sh networks; commandline -f repaint'
-    bind -M insert \cdn '__fzf_docker_sh networks; commandline -f repaint'
-    bind -M default \cd\cn '__fzf_docker_sh networks; commandline -f repaint'
-    bind -M insert \cd\cn '__fzf_docker_sh networks; commandline -f repaint'
-
-    # CTRL-D CTRL-S / CTRL-D S for Compose Services
-    bind -M default \cds '__fzf_docker_sh compose_services; commandline -f repaint'
-    bind -M insert \cds '__fzf_docker_sh compose_services; commandline -f repaint'
-    bind -M default \cd\cs '__fzf_docker_sh compose_services; commandline -f repaint'
-    bind -M insert \cd\cs '__fzf_docker_sh compose_services; commandline -f repaint'
+# PERF: Deferred to fish_prompt event to avoid two expensive type -q calls at startup
+# (~50-90ms savings with large PATH). Bindings are ready before user interaction.
+if status is-interactive
+    function __docker_fzf_keybindings_init --on-event fish_prompt
+        functions -e __docker_fzf_keybindings_init # run once then remove
+        if not type -q fzf; or not type -q docker
+            return
+        end
+        # CTRL-D ? for help
+        bind -M default \cd\? '__fzf_docker_sh list_bindings; commandline -f repaint'
+        bind -M insert \cd\? '__fzf_docker_sh list_bindings; commandline -f repaint'
+        # CTRL-D C for Containers (running)
+        bind -M default \cdc '__fzf_docker_sh containers; commandline -f repaint'
+        bind -M insert \cdc '__fzf_docker_sh containers; commandline -f repaint'
+        bind -M default \cd\cc '__fzf_docker_sh containers; commandline -f repaint'
+        bind -M insert \cd\cc '__fzf_docker_sh containers; commandline -f repaint'
+        # CTRL-D A for All containers
+        bind -M default \cda '__fzf_docker_sh all_containers; commandline -f repaint'
+        bind -M insert \cda '__fzf_docker_sh all_containers; commandline -f repaint'
+        bind -M default \cd\ca '__fzf_docker_sh all_containers; commandline -f repaint'
+        bind -M insert \cd\ca '__fzf_docker_sh all_containers; commandline -f repaint'
+        # CTRL-D I for Images
+        bind -M default \cdi '__fzf_docker_sh images; commandline -f repaint'
+        bind -M insert \cdi '__fzf_docker_sh images; commandline -f repaint'
+        bind -M default \cd\ci '__fzf_docker_sh images; commandline -f repaint'
+        bind -M insert \cd\ci '__fzf_docker_sh images; commandline -f repaint'
+        # CTRL-D V for Volumes
+        bind -M default \cdv '__fzf_docker_sh volumes; commandline -f repaint'
+        bind -M insert \cdv '__fzf_docker_sh volumes; commandline -f repaint'
+        bind -M default \cd\cv '__fzf_docker_sh volumes; commandline -f repaint'
+        bind -M insert \cd\cv '__fzf_docker_sh volumes; commandline -f repaint'
+        # CTRL-D N for Networks
+        bind -M default \cdn '__fzf_docker_sh networks; commandline -f repaint'
+        bind -M insert \cdn '__fzf_docker_sh networks; commandline -f repaint'
+        bind -M default \cd\cn '__fzf_docker_sh networks; commandline -f repaint'
+        bind -M insert \cd\cn '__fzf_docker_sh networks; commandline -f repaint'
+        # CTRL-D S for Compose Services
+        bind -M default \cds '__fzf_docker_sh compose_services; commandline -f repaint'
+        bind -M insert \cds '__fzf_docker_sh compose_services; commandline -f repaint'
+        bind -M default \cd\cs '__fzf_docker_sh compose_services; commandline -f repaint'
+        bind -M insert \cd\cs '__fzf_docker_sh compose_services; commandline -f repaint'
+    end
 end
 
 # Quick Reference Guide

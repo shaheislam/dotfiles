@@ -1,47 +1,21 @@
 # Fish Shell Plugins and Completions Configuration
 # Replaces Oh My Zsh plugins functionality
 
-# Git abbreviations (replaces git plugin from Oh My Zsh)
-if type -q git
-    # Common git abbreviations
-    abbr -a g git
-    abbr -a ga 'git add'
-    abbr -a gaa 'git add --all'
-    abbr -a gb 'git branch'
-    abbr -a gba 'git branch -a'
-    abbr -a gc 'git commit -v'
-    abbr -a gca 'git commit -v -a'
-    abbr -a gcam 'git commit -a -m'
-    abbr -a gcm 'git commit -m'
-    abbr -a gco 'git checkout'
-    abbr -a gcb 'git checkout -b'
-    abbr -a gd 'git diff'
-    abbr -a gf 'git fetch'
-    abbr -a gl 'git pull'
-    abbr -a glog 'git log --oneline --decorate --graph'
-    abbr -a gp 'git push'
-    abbr -a gst 'git status'
-    abbr -a gsta 'git stash'
-    abbr -a gstp 'git stash pop'
-end
+# PERF: Abbreviations don't need type -q guards — they're just text expansions.
+# Removing type -q saves ~25-45ms per call at startup. If the tool isn't installed,
+# the expanded command simply shows "command not found" when used.
 
-# Docker completions (Fish has built-in docker completions)
-# Kubectl completions (replaces zsh-kubectl-prompt)
-# NOTE: Using custom FZF completions from kubectl-simple.fish + kubectl_fzf_native.fish
-# which leverage native __fish_kubectl_* functions. DO NOT source kubectl's Go-based
-# completions here as they conflict with the FZF integration.
-if type -q kubectl
-    # kubectl completion fish | source  # Disabled - conflicts with FZF completions
+# Git abbreviations are provided by jhillyerd/plugin-git (conf.d/git.fish)
+# which creates ~170 abbreviations. Do NOT duplicate them here.
 
-    # Kubectl abbreviations
-    abbr -a kgp 'kubectl get pods'
-    abbr -a kgs 'kubectl get services'
-    abbr -a kgd 'kubectl get deployments'
-    abbr -a kaf 'kubectl apply -f'
-    abbr -a kdel 'kubectl delete'
-    abbr -a klog 'kubectl logs'
-    abbr -a kexec 'kubectl exec -it'
-end
+# Kubectl abbreviations
+abbr -a kgp 'kubectl get pods'
+abbr -a kgs 'kubectl get services'
+abbr -a kgd 'kubectl get deployments'
+abbr -a kaf 'kubectl apply -f'
+abbr -a kdel 'kubectl delete'
+abbr -a klog 'kubectl logs'
+abbr -a kexec 'kubectl exec -it'
 
 # Enable Fish's built-in autosuggestions (replaces zsh-autosuggestions)
 set -g fish_autosuggestion_enabled 1
@@ -63,12 +37,12 @@ set -g fish_color_valid_path --underline
 set -g fish_history_search_case_sensitive 0
 
 # FZF integration for better tab completion (replaces fzf-tab)
-if type -q fzf
-    # Set up fzf key bindings
-    set -g FZF_CTRL_T_OPTS "--preview 'bat --color=always --line-range=:50 {}'"
-    set -g FZF_ALT_C_OPTS "--preview 'eza --tree --color=always {} | head -200'"
+# PERF: FZF env vars are cheap to set unconditionally. Only the function definition
+# and bind call need interactive mode, avoiding type -q fzf (~25-45ms savings).
+set -g FZF_CTRL_T_OPTS "--preview 'bat --color=always --line-range=:50 {}'"
+set -g FZF_ALT_C_OPTS "--preview 'eza --tree --color=always {} | head -200'"
 
-    # Custom fzf functions
+if status is-interactive
     function fzf_select_history
         history | fzf --query=(commandline) | read -l result
         and commandline $result
@@ -76,22 +50,4 @@ if type -q fzf
 
     # Bind to Ctrl+R for history search
     bind \cr fzf_select_history
-
-    # =============================================================================
-    # Git+FZF Integration
-    # =============================================================================
-    # Git functionality is now provided by fzf-git.sh (loaded via conf.d/fzf-git.fish)
-    # Use CTRL-G keybindings:
-    #   CTRL-G CTRL-F - Files
-    #   CTRL-G CTRL-B - Branches
-    #   CTRL-G CTRL-T - Tags
-    #   CTRL-G CTRL-R - Remotes
-    #   CTRL-G CTRL-H - Commit Hashes
-    #   CTRL-G CTRL-S - Stashes
-    #   CTRL-G CTRL-L - Reflogs
-    #   CTRL-G CTRL-W - Worktrees
-    #
-    # Tab completion is also available for git commands:
-    #   git add <TAB>, git checkout <TAB>, git merge <TAB>, etc.
-    # =============================================================================
 end

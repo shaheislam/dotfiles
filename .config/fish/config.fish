@@ -117,11 +117,12 @@ if status is-interactive
     # ==================== Tool Initialization (Cached for Performance) ====================
     # Using __cache_tool_init for ~50-100ms startup improvement
     # Cache invalidates automatically when tool version changes
-    # NOTE: type -q is used instead of command -v for existence checks.
-    # On macOS, command -v traverses the entire PATH (25-56ms per call).
-    # type -q is Fish-native and returns in <1ms.
+    # PERF: Use `test -x /opt/homebrew/bin/<tool>` instead of `type -q <tool>`.
+    # type -q scans every PATH entry (~120 dirs including Nix store) taking ~35ms per call.
+    # test -x is a single stat() syscall (~1ms). With ~14 tools this saves ~450ms total.
+    set -l _brew /opt/homebrew/bin
 
-    if type -q starship
+    if test -x $_brew/starship
         # PERF: Use --print-full-init to cache the actual init script, not a source shim.
         # `starship init fish` outputs `source (starship init fish --print-full-init | psub)`
         # which re-runs the subprocess on every startup, defeating the cache (~48ms).
@@ -130,13 +131,13 @@ if status is-interactive
         enable_transience
     end
 
-    if type -q zoxide
+    if test -x $_brew/zoxide
         # Disable zoxide doctor warnings
         set -x _ZO_DOCTOR 0
         __cache_tool_init zoxide "zoxide init fish"
     end
 
-    if type -q direnv
+    if test -x $_brew/direnv
         # Suppress direnv log messages (loading/unloading/using) for cleaner cd output
         set -gx DIRENV_LOG_FORMAT ""
         # PERF: eval_after_arrow defers direnv re-evaluation until the next command
@@ -146,7 +147,7 @@ if status is-interactive
         __cache_tool_init direnv "direnv hook fish"
     end
 
-    if type -q atuin
+    if test -x $_brew/atuin
         set -gx ATUIN_NOBIND true
         # Skip the cached init - we'll define our own protected handlers
         # The cached version panics on invalid UTF-8 in command args
@@ -190,7 +191,7 @@ if status is-interactive
     # PERF: Homebrew's vendor_conf.d/mise.fish runs `mise activate fish | source` (~112ms).
     # Suppressed via MISE_FISH_AUTO_ACTIVATE=0 in conf.d/00-env.fish (must load before vendor conf.d).
     # Our cached version avoids the subprocess on cache hit.
-    if type -q mise
+    if test -x $_brew/mise
         __cache_tool_init mise "mise activate fish"
     end
 
@@ -229,7 +230,7 @@ if status is-interactive
 
     # FZF configuration - enhanced version combining both configs
     # Cached for ~69ms startup improvement
-    if type -q fzf
+    if test -x $_brew/fzf
         # fzf --fish requires fzf 0.48+, fallback for older versions
         if fzf --fish &>/dev/null
             __cache_tool_init fzf "fzf --fish"
@@ -243,7 +244,7 @@ if status is-interactive
     end
 
     # Enhanced FZF configuration from extended config
-    if type -q rg
+    if test -x $_brew/rg
         set -gx FZF_DEFAULT_COMMAND 'rg --files'
         set -gx FZF_DEFAULT_OPTS '-m --height 50% --border'
     else
@@ -308,11 +309,11 @@ if status is-interactive
     # History search with preview and copy-to-clipboard
     # Detect clipboard command (macOS pbcopy vs Linux xclip/xsel)
     set -l _clip_cmd true # no-op fallback
-    if type -q pbcopy
+    if test -x /usr/bin/pbcopy
         set _clip_cmd pbcopy
-    else if type -q xclip
+    else if test -x /usr/bin/xclip
         set _clip_cmd "xclip -selection clipboard"
-    else if type -q xsel
+    else if test -x /usr/bin/xsel
         set _clip_cmd "xsel --clipboard --input"
     end
     set -gx FZF_CTRL_R_OPTS "--preview 'echo {}' \
@@ -332,12 +333,12 @@ if status is-interactive
     set -g fish_greeting ""
 
     # thefuck initialization (cached for ~557ms startup improvement)
-    if type -q thefuck
+    if test -x $_brew/thefuck
         __cache_tool_init thefuck "thefuck --alias"
     end
 
     # Carapace completions initialization (cached for ~230ms startup improvement)
-    if type -q carapace
+    if test -x $_brew/carapace
         __cache_tool_init carapace "carapace _carapace fish"
         # Remove Carapace's kubectl completions (Fish 4.1+ blocks autoload after complete -e)
         # Then explicitly source Fish-native evanlucas/fish-kubectl-completions
@@ -360,7 +361,7 @@ if status is-interactive
     alias mkdir="mkdir -p"
 
     # Enhanced eza aliases with better visual organization (if eza installed)
-    if type -q eza
+    if test -x $_brew/eza
         alias ls="eza --icons --group-directories-first"
         alias ll="eza -la --icons --group-directories-first --git"
         alias la="eza -a --icons --group-directories-first"
@@ -397,7 +398,7 @@ if status is-interactive
 
     # Splash log colorizer integration
     # Automatically pipe common log-producing commands through splash
-    if type -q splash
+    if test -x $_brew/splash
         # Docker commands
         function docker --description "Docker with colored logs"
             if test "$argv[1]" = logs
@@ -431,7 +432,7 @@ if status is-interactive
                 command cat $argv | splash
             else
                 # Use bat for other files if available, otherwise regular cat
-                if type -q bat
+                if test -x /opt/homebrew/bin/bat
                     bat $argv
                 else
                     command cat $argv
@@ -1078,7 +1079,7 @@ if status is-interactive
     end
 
     # Enable Granted completions for Fish shell
-    if type -q granted
+    if test -x $_brew/granted
         # Generate granted completions if not already installed
         if not test -f "$HOME/.config/fish/completions/granted.fish"
             granted completion --shell fish 2>/dev/null
