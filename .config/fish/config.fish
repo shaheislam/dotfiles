@@ -139,8 +139,11 @@ if status is-interactive
     if type -q direnv
         # Suppress direnv log messages (loading/unloading/using) for cleaner cd output
         set -gx DIRENV_LOG_FORMAT ""
+        # PERF: eval_after_arrow defers direnv re-evaluation until the next command
+        # after cd, instead of running `direnv export fish` on every prompt (~10-30ms).
+        # Must be set BEFORE sourcing direnv hook.
+        set -g direnv_fish_mode eval_after_arrow
         __cache_tool_init direnv "direnv hook fish"
-        set -g direnv_fish_mode eval_on_arrow
     end
 
     if type -q atuin
@@ -2837,7 +2840,12 @@ fish_add_path $HOME/.local/share/mise/shims
 fish_add_path $HOME/dotfiles/scripts
 
 # Krew kubectl plugin manager (with KREW_ROOT support)
-set -q KREW_ROOT; and set -gx PATH $PATH $KREW_ROOT/.krew/bin; or set -gx PATH $PATH $HOME/.krew/bin
+# PERF: Use fish_add_path for dedup (raw set -gx PATH appends duplicates on each shell)
+if set -q KREW_ROOT
+    fish_add_path $KREW_ROOT/.krew/bin
+else
+    fish_add_path $HOME/.krew/bin
+end
 
 # Nix profile for LSPs
 fish_add_path $HOME/.nix-profile/bin
