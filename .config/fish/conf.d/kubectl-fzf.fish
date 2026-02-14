@@ -3,7 +3,7 @@
 # Tab completion routing is handled by _fifc_or_fzf → _kubectl_fzf_tab_complete
 
 # Only proceed if kubectl is available
-if not command -v kubectl >/dev/null
+if not type -q kubectl
     exit
 end
 

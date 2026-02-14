@@ -13,21 +13,18 @@ function __cache_tool_init --description "Cache tool initialization scripts for 
     set -l cache_file "$cache_dir/$tool_name.fish"
     set -l stamp_file "$cache_dir/$tool_name.stamp"
 
-    # Fast path: if cache exists, check if tool binary is newer
-    if test -f $cache_file
-        set -l tool_path (command -v $tool_name 2>/dev/null)
-        # If tool exists and cache is newer than binary, use cache directly (no subprocess)
-        if test -n "$tool_path" -a -f $stamp_file
-            if test $cache_file -nt $tool_path
-                source $cache_file
-                return
-            end
-        else if test -n "$tool_path"
-            # No stamp file yet but cache exists - use it, regenerate stamp
-            source $cache_file
-            touch $stamp_file 2>/dev/null
-            return
-        end
+    # Fast path: if both cache and stamp exist, source directly (no subprocess).
+    # Skips the expensive command -v PATH traversal (25-56ms on macOS per call).
+    # Cache invalidation happens when tool binary changes — use fish-init-clear
+    # to force rebuild after upgrades, or delete stamp files.
+    if test -f $cache_file -a -f $stamp_file
+        source $cache_file
+        return
+    else if test -f $cache_file
+        # Cache exists but no stamp — use it, create stamp
+        source $cache_file
+        touch $stamp_file 2>/dev/null
+        return
     end
 
     # Slow path: regenerate cache
