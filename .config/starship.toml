@@ -8,18 +8,15 @@ $git_status\
 $character """
 
 right_format = """
-$golang\
-$python\
-$rust\
-$nodejs\
 $aws\
-$azure\
 $kubernetes\
-$terraform\
 $cmd_duration\
 """
 
-command_timeout = 500
+# PERF: Reduced from 500ms to 200ms. Language version detection (golang, python, rust,
+# nodejs, terraform) moved to disabled — they add latency to every prompt render and
+# are rarely needed. AWS and k8s context are kept as they affect command behavior.
+command_timeout = 200
 palette = 'catppuccin_mocha'
 
 [palettes.catppuccin_mocha]
@@ -115,6 +112,7 @@ ignore_submodules = true
 symbol = " "
 style = "fg:green"
 format = '[$symbol($version)]($style) '
+disabled = true
 
 [c]
 symbol = " "
@@ -125,11 +123,13 @@ format = '[$symbol($version)]($style) '
 symbol = " "
 style = "fg:peach"
 format = '[$symbol($version)]($style) '
+disabled = true
 
 [golang]
 symbol = " "
 style = "fg:sky bold"
 format = '[$symbol($version)]($style) '
+disabled = true
 
 [php]
 symbol = " "
@@ -155,6 +155,7 @@ format = '[$symbol($version)]($style) '
 symbol = " "
 style = "fg:yellow"
 format = '[$symbol($version)]($style) '
+disabled = true
 
 [docker_context]
 symbol = " "
@@ -192,7 +193,7 @@ logging = "logging"
 symbol = " "
 style = "fg:sapphire"
 format = '[$symbol$subscription]($style) '
-disabled = false
+disabled = true
 
 [azure.subscription_aliases]
 s165-teachingqualificationsservice-development = "s165-dev"
@@ -212,7 +213,7 @@ disabled = false
 symbol = " "
 style = "fg:mauve"
 format = '[$symbol($version)]($style) '
-disabled = false
+disabled = true
 
 [time]
 disabled = true

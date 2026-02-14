@@ -197,8 +197,11 @@ function __done_humanize_duration -a milliseconds
 end
 
 # verify that the system has graphical capabilities before initializing
+# PERF: Skip the expensive __done_get_focused_window_id probe at startup (lsappinfo ~160ms).
+# Instead, check for known graphical environments and defer the actual window ID capture
+# to the first postexec that exceeds __done_min_cmd_duration.
 if test -z "$SSH_CLIENT" # not over ssh
-    and count (__done_get_focused_window_id) >/dev/null # is able to get window id
+    and test -n "$DISPLAY" -o -n "$WAYLAND_DISPLAY" -o (uname) = Darwin
     set __done_enabled
 end
 

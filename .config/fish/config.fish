@@ -35,7 +35,7 @@ complete -c dssmc -f -a "(__fish_complete_aws_profiles)" -d "Connect to EC2 via 
 if status is-interactive
     # Set key bindings for better autocomplete
     set -g fish_key_bindings fish_vi_key_bindings
-    set -g fish_escape_delay_ms 100
+    set -g fish_escape_delay_ms 10
 
     # Fix arrow key bindings for vi mode
     # Clear any corrupted bindings first
@@ -122,7 +122,10 @@ if status is-interactive
     # type -q is Fish-native and returns in <1ms.
 
     if type -q starship
-        __cache_tool_init starship "starship init fish"
+        # PERF: Use --print-full-init to cache the actual init script, not a source shim.
+        # `starship init fish` outputs `source (starship init fish --print-full-init | psub)`
+        # which re-runs the subprocess on every startup, defeating the cache (~48ms).
+        __cache_tool_init starship "starship init fish --print-full-init"
         # Enable transient prompt for cleaner terminal history
         enable_transience
     end
@@ -152,10 +155,14 @@ if status is-interactive
         # Protected preexec handler with UTF-8 sanitization
         function _atuin_preexec --on-event fish_preexec
             if not test -n "$fish_private_mode"
-                # Sanitize command: strip invalid UTF-8 bytes to prevent Rust panics
-                set -l sanitized_cmd (printf '%s' "$argv[1]" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
-                if test -n "$sanitized_cmd"
-                    set -g ATUIN_HISTORY_ID (atuin history start -- "$sanitized_cmd" 2>/dev/null)
+                # PERF: Skip iconv for pure-ASCII commands (vast majority of inputs).
+                # Only sanitize when non-ASCII bytes are detected.
+                set -l cmd "$argv[1]"
+                if string match -qr '[^\x00-\x7f]' -- "$cmd"
+                    set cmd (printf '%s' "$cmd" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                end
+                if test -n "$cmd"
+                    set -g ATUIN_HISTORY_ID (atuin history start -- "$cmd" 2>/dev/null)
                 end
             end
         end
@@ -177,6 +184,9 @@ if status is-interactive
     end
 
     # mise activation (idiomatic_version_file settings configured in scripts/setup.sh)
+    # PERF: Homebrew's vendor_conf.d/mise.fish runs `mise activate fish | source` (~112ms).
+    # Suppressed via MISE_FISH_AUTO_ACTIVATE=0 in conf.d/00-env.fish (must load before vendor conf.d).
+    # Our cached version avoids the subprocess on cache hit.
     if type -q mise
         __cache_tool_init mise "mise activate fish"
     end

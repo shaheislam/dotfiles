@@ -8,3 +8,7 @@ set -gx Z_DATA "$Z_DATA_DIR/data"
 
 # Disable zoxide doctor warnings
 set -x _ZO_DOCTOR 0
+
+# PERF: Prevent Homebrew's vendor_conf.d/mise.fish from running `mise activate fish | source`
+# on every shell startup (~112ms). We use __cache_tool_init in config.fish instead.
+set -gx MISE_FISH_AUTO_ACTIVATE 0
