@@ -56,6 +56,7 @@ list_groups() {
     echo "  tmux          - tmux configuration"
     echo "  hooks         - Claude Code hooks"
     echo "  agents-md     - AGENTS.md file validation"
+    echo "  cd-perf       - CD performance optimizations"
     echo "  openclaw      - OpenClaw integration"
     echo "  all           - Run all groups"
 }
@@ -314,6 +315,42 @@ assert cmds.index([c for c in cmds if 'use_bun' in c][0]) < cmds.index([c for c 
     run_test "post-compact exits 0" "bash '$hooks_dir/post-compact-reinject.sh' >/dev/null 2>&1"
 }
 
+test_cd_perf() {
+    echo -e "${BLUE}--- CD Performance Tests ---${NC}"
+
+    # z plugin PWD hook should be disabled (commented out)
+    run_test "z plugin PWD hook is disabled" "grep -q '# function __z_on_variable_pwd' '$DOTFILES_ROOT/.config/fish/conf.d/z.fish'"
+    run_test "z plugin __z_add not called on cd" "! grep -qE '^[[:space:]]+__z_add' '$DOTFILES_ROOT/.config/fish/conf.d/z.fish'"
+
+    # Diffview hook should have negative caching
+    run_test "Diffview hook has negative cache" "grep -q '__diffview_no_socket_until' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    run_test "Diffview hook caches on tmux failure" "grep -q 'cache negative result' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+
+    # z.fish and diffview-follow.fish should have valid Fish syntax
+    if command -v fish &>/dev/null; then
+        run_test "z.fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/conf.d/z.fish'"
+        run_test "diffview-follow.fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    fi
+
+    # Zoxide should still be the active directory tracker
+    run_test "Zoxide init in config.fish" "grep -q 'zoxide' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Starship should have performance optimizations
+    run_test "Starship ignores submodules" "grep -q 'ignore_submodules = true' '$DOTFILES_ROOT/.config/starship.toml'"
+    run_test "Starship skips repo truncation" "grep -q 'truncate_to_repo = false' '$DOTFILES_ROOT/.config/starship.toml'"
+    run_test "Starship only_attached branch" "grep -q 'only_attached = true' '$DOTFILES_ROOT/.config/starship.toml'"
+    run_test "Starship command_timeout <= 200ms" "grep -qE 'command_timeout = (1[0-9]{0,2}|200|[1-9][0-9]?)$' '$DOTFILES_ROOT/.config/starship.toml'"
+
+    # Direnv should use deferred evaluation
+    run_test "Direnv uses eval_after_arrow" "grep -q 'eval_after_arrow' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Escape delay should be low
+    run_test "Fish escape delay <= 10ms" "grep -q 'fish_escape_delay_ms 10' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # tmux escape-time should be 0
+    run_test "tmux escape-time is 0" "grep -q 'escape-time 0' '$DOTFILES_ROOT/.tmux.conf'"
+}
+
 test_agents_md() {
     echo -e "${BLUE}--- AGENTS.md Validation ---${NC}"
     run_test "Root AGENTS.md exists" "[ -f '$DOTFILES_ROOT/AGENTS.md' ]"
@@ -352,6 +389,7 @@ mcp) test_mcp ;;
 tmux) test_tmux ;;
 hooks) test_hooks ;;
 agents-md) test_agents_md ;;
+cd-perf) test_cd_perf ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
@@ -363,6 +401,7 @@ all)
     test_tmux
     test_hooks
     test_agents_md
+    test_cd_perf
     # OpenClaw tests run from their own script (separate counters)
     echo ""
     source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
