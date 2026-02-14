@@ -1241,6 +1241,13 @@ phase_10_advanced_features() {
                         print_success "Trusted mise configuration for Neovim" || \
                         log_verbose "mise trust skipped"
                 fi
+
+                # Configure persistent mise settings (only needed once, not every shell startup)
+                if command -v mise &>/dev/null; then
+                    mise settings add idiomatic_version_file_enable_tools ruby 2>/dev/null && \
+                        print_success "Configured mise idiomatic version file for Ruby" || \
+                        log_verbose "mise settings already configured"
+                fi
             fi
         fi
     else
