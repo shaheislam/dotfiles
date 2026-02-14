@@ -131,6 +131,8 @@ if status is-interactive
     end
 
     if command -v direnv >/dev/null
+        # Suppress direnv log messages (loading/unloading/using) for cleaner cd output
+        set -gx DIRENV_LOG_FORMAT ""
         __cache_tool_init direnv "direnv hook fish"
         set -g direnv_fish_mode eval_on_arrow
     end

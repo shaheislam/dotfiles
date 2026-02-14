@@ -62,6 +62,8 @@ export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 
 # Initialize tools (using cached initialization for performance)
 command -v zoxide >/dev/null && _cache_tool_init zoxide "zoxide init zsh"
+# Suppress direnv log messages (loading/unloading/using) for cleaner cd output
+export DIRENV_LOG_FORMAT=""
 command -v direnv >/dev/null && _cache_tool_init direnv "direnv hook zsh"
 command -v atuin >/dev/null && _cache_tool_init atuin "atuin init zsh"
 
