@@ -42,9 +42,12 @@ end
 # Setup completions once first
 __z_complete
 
-function __z_on_variable_pwd --on-variable PWD
-    __z_add
-end
+# PERF: PWD hook disabled — zoxide provides the same directory-tracking via
+# __zoxide_hook (fast Rust binary, ~5ms) making __z_add redundant.
+# __z_add was the biggest cd-lag contributor: mktemp + awk + mv on every cd (~15-40ms).
+# function __z_on_variable_pwd --on-variable PWD
+#     __z_add
+# end
 
 function __z_uninstall --on-event z_uninstall
     functions -e __z_on_variable_pwd

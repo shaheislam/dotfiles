@@ -1,8 +1,9 @@
 # Environment variables that need to be set early
 # This file is loaded before other config files in conf.d
 
-# Fix z plugin path truncation (override bad inherited environment variable)
-# This MUST be set before z.fish loads in conf.d/
+# PERF: z plugin's PWD hook (__z_add) is disabled in z.fish — zoxide handles
+# directory tracking. These vars are kept so `z` queries still work against
+# the existing frecency database (read-only after this change).
 set -gx Z_DATA_DIR "$HOME/.local/share/z"
 set -gx Z_DATA "$Z_DATA_DIR/data"
 
