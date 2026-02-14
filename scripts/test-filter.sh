@@ -225,7 +225,11 @@ test_hooks() {
     # Functional: use_bun.py blocks npm, allows bun
     local hooks_dir="$DOTFILES_ROOT/.claude/hooks"
     run_test "use_bun.py blocks npm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npm install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py blocks yarn" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"yarn add react\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py blocks pnpm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"pnpm install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "use_bun.py blocks npx" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"npx create-react-app\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "use_bun.py allows bun" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bun install\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
+    run_test "use_bun.py allows bunx" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bunx create-react-app\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
 
     # Functional: validate-bash.py - blocklist
     run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
@@ -250,6 +254,8 @@ test_hooks() {
     run_test "protect-files blocks .env" "echo '{\"tool_input\":{\"file_path\":\"/app/.env\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files blocks .env.local" "echo '{\"tool_input\":{\"file_path\":\"/app/.env.local\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files blocks package-lock.json" "echo '{\"tool_input\":{\"file_path\":\"/app/package-lock.json\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files blocks yarn.lock" "echo '{\"tool_input\":{\"file_path\":\"/app/yarn.lock\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "protect-files blocks pnpm-lock.yaml" "echo '{\"tool_input\":{\"file_path\":\"/app/pnpm-lock.yaml\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files blocks node_modules" "echo '{\"tool_input\":{\"file_path\":\"/app/node_modules/foo/index.js\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files allows normal files" "echo '{\"tool_input\":{\"file_path\":\"/app/src/main.py\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
 
@@ -268,9 +274,44 @@ test_hooks() {
     # Functional: auto-format.py exits 0 on non-existent file (non-blocking)
     run_test "auto-format exits 0 for missing file" "echo '{\"tool_input\":{\"file_path\":\"/nonexistent/file.py\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null"
 
+    # Functional: auto-format.py skips unknown extensions (non-blocking)
+    run_test "auto-format skips unknown extension" "echo '{\"tool_input\":{\"file_path\":\"/tmp/data.xyz\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null"
+
+    # Functional: auto-format.py graceful on empty .sh file
+    run_test "auto-format graceful on empty sh" "
+        tmpsh=\$(mktemp /tmp/hook-test-XXXXXX.sh)
+        echo '{\"tool_input\":{\"file_path\":\"'\"\$tmpsh\"'\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null
+        rc=\$?; rm -f \"\$tmpsh\"; [ \$rc -eq 0 ]
+    "
+
+    # Functional: auto-format.py JSON idempotency (already formatted file unchanged)
+    run_test "auto-format JSON idempotent" "
+        tmpjson=\$(mktemp /tmp/hook-test-XXXXXX.json)
+        echo '{\"a\": 1}' > \"\$tmpjson\"
+        echo '{\"tool_input\":{\"file_path\":\"'\"\$tmpjson\"'\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null
+        md5_1=\$(md5 -q \"\$tmpjson\")
+        echo '{\"tool_input\":{\"file_path\":\"'\"\$tmpjson\"'\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null
+        md5_2=\$(md5 -q \"\$tmpjson\")
+        rm -f \"\$tmpjson\"
+        [ \"\$md5_1\" = \"\$md5_2\" ]
+    "
+
+    # Functional: protect-files.py path normalization (traversal prevention)
+    run_test "protect-files blocks traversal to .env" "echo '{\"tool_input\":{\"file_path\":\"/app/foo/../../.env\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
+
+    # Functional: hook ordering — PreToolUse Bash has use_bun before validate-bash
+    run_test "hook order: use_bun before validate-bash" "python3 -c \"
+import json
+d=json.load(open('$DOTFILES_ROOT/.claude/settings.json'))
+bash_hooks=[h for h in d['hooks']['PreToolUse'] if h.get('matcher')=='Bash'][0]['hooks']
+cmds=[h['command'] for h in bash_hooks]
+assert cmds.index([c for c in cmds if 'use_bun' in c][0]) < cmds.index([c for c in cmds if 'validate-bash' in c][0])
+\""
+
     # Functional: post-compact-reinject.sh outputs context reminders
     run_test "post-compact outputs bun reminder" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *bun* ]]"
     run_test "post-compact outputs Tokyo Night" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *'Tokyo Night'* ]]"
+    run_test "post-compact exits 0" "bash '$hooks_dir/post-compact-reinject.sh' >/dev/null 2>&1"
 }
 
 test_agents_md() {
