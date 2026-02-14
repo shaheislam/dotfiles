@@ -117,27 +117,28 @@ if status is-interactive
     # ==================== Tool Initialization (Cached for Performance) ====================
     # Using __cache_tool_init for ~50-100ms startup improvement
     # Cache invalidates automatically when tool version changes
+    # NOTE: type -q is used instead of command -v for existence checks.
+    # On macOS, command -v traverses the entire PATH (25-56ms per call).
+    # type -q is Fish-native and returns in <1ms.
 
-    if command -v starship >/dev/null
+    if type -q starship
         __cache_tool_init starship "starship init fish"
         # Enable transient prompt for cleaner terminal history
         enable_transience
     end
 
-    if command -v zoxide >/dev/null
+    if type -q zoxide
         # Disable zoxide doctor warnings
         set -x _ZO_DOCTOR 0
         __cache_tool_init zoxide "zoxide init fish"
     end
 
-    if command -v direnv >/dev/null
-        # Suppress direnv log messages (loading/unloading/using) for cleaner cd output
-        set -gx DIRENV_LOG_FORMAT ""
+    if type -q direnv
         __cache_tool_init direnv "direnv hook fish"
         set -g direnv_fish_mode eval_on_arrow
     end
 
-    if command -v atuin >/dev/null
+    if type -q atuin
         set -gx ATUIN_NOBIND true
         # Skip the cached init - we'll define our own protected handlers
         # The cached version panics on invalid UTF-8 in command args
@@ -174,7 +175,7 @@ if status is-interactive
     end
 
     # mise activation (idiomatic_version_file settings configured in scripts/setup.sh)
-    if command -v mise >/dev/null
+    if type -q mise
         __cache_tool_init mise "mise activate fish"
     end
 
@@ -213,7 +214,7 @@ if status is-interactive
 
     # FZF configuration - enhanced version combining both configs
     # Cached for ~69ms startup improvement
-    if command -v fzf >/dev/null
+    if type -q fzf
         # fzf --fish requires fzf 0.48+, fallback for older versions
         if fzf --fish &>/dev/null
             __cache_tool_init fzf "fzf --fish"
@@ -292,11 +293,11 @@ if status is-interactive
     # History search with preview and copy-to-clipboard
     # Detect clipboard command (macOS pbcopy vs Linux xclip/xsel)
     set -l _clip_cmd true # no-op fallback
-    if command -v pbcopy >/dev/null
+    if type -q pbcopy
         set _clip_cmd pbcopy
-    else if command -v xclip >/dev/null
+    else if type -q xclip
         set _clip_cmd "xclip -selection clipboard"
-    else if command -v xsel >/dev/null
+    else if type -q xsel
         set _clip_cmd "xsel --clipboard --input"
     end
     set -gx FZF_CTRL_R_OPTS "--preview 'echo {}' \
@@ -316,12 +317,12 @@ if status is-interactive
     set -g fish_greeting ""
 
     # thefuck initialization (cached for ~557ms startup improvement)
-    if command -v thefuck >/dev/null
+    if type -q thefuck
         __cache_tool_init thefuck "thefuck --alias"
     end
 
     # Carapace completions initialization (cached for ~230ms startup improvement)
-    if command -v carapace >/dev/null
+    if type -q carapace
         __cache_tool_init carapace "carapace _carapace fish"
         # Remove Carapace's kubectl completions (Fish 4.1+ blocks autoload after complete -e)
         # Then explicitly source Fish-native evanlucas/fish-kubectl-completions
@@ -344,7 +345,7 @@ if status is-interactive
     alias mkdir="mkdir -p"
 
     # Enhanced eza aliases with better visual organization (if eza installed)
-    if command -v eza >/dev/null
+    if type -q eza
         alias ls="eza --icons --group-directories-first"
         alias ll="eza -la --icons --group-directories-first --git"
         alias la="eza -a --icons --group-directories-first"
@@ -381,7 +382,7 @@ if status is-interactive
 
     # Splash log colorizer integration
     # Automatically pipe common log-producing commands through splash
-    if command -v splash >/dev/null
+    if type -q splash
         # Docker commands
         function docker --description "Docker with colored logs"
             if test "$argv[1]" = logs
@@ -415,7 +416,7 @@ if status is-interactive
                 command cat $argv | splash
             else
                 # Use bat for other files if available, otherwise regular cat
-                if command -v bat >/dev/null
+                if type -q bat
                     bat $argv
                 else
                     command cat $argv
@@ -1062,7 +1063,7 @@ if status is-interactive
     end
 
     # Enable Granted completions for Fish shell
-    if command -v granted &>/dev/null
+    if type -q granted
         # Generate granted completions if not already installed
         if not test -f "$HOME/.config/fish/completions/granted.fish"
             granted completion --shell fish 2>/dev/null
@@ -2076,7 +2077,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
         echo ""
         echo "🌐 Network Activity"
         echo "=================="
-        if command -v bandwhich >/dev/null
+        if type -q bandwhich
             echo "Run 'net' (sudo bandwhich) for detailed network monitoring"
         end
         echo ""
@@ -2400,7 +2401,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
     # Kubernetes context and namespace switcher with fzf
     function kctx --description "Switch Kubernetes context with fzf"
-        if not command -v kubectl >/dev/null
+        if not type -q kubectl
             echo "kubectl not installed"
             return 1
         end
@@ -2424,7 +2425,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
     end
 
     function kns --description "Switch Kubernetes namespace with fzf"
-        if not command -v kubectl >/dev/null
+        if not type -q kubectl
             echo "kubectl not installed"
             return 1
         end
@@ -2457,7 +2458,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
     # Pod selector with fzf (multi-select enabled)
     function kpod --description "Select Kubernetes pod with fzf"
-        if not command -v kubectl >/dev/null
+        if not type -q kubectl
             echo "kubectl not installed"
             return 1
         end
@@ -2586,7 +2587,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
     # Docker container selector with fzf (multi-select enabled, DEPRECATED - use CTRL-D CTRL-C)
     function dcon --description "[DEPRECATED] Select Docker container with fzf"
-        if not command -v docker >/dev/null
+        if not type -q docker
             echo "Docker not installed"
             return 1
         end
@@ -2621,7 +2622,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
     # Terraform workspace selector
     function tfw --description "Switch Terraform workspace with fzf"
-        if not command -v terraform >/dev/null
+        if not type -q terraform
             echo "Terraform not installed"
             return 1
         end
@@ -2690,7 +2691,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
     # Network port scanner with fzf
     function portscan --description "Scan ports with nmap and fzf"
-        if not command -v nmap >/dev/null
+        if not type -q nmap
             echo "nmap not installed"
             return 1
         end
@@ -2743,7 +2744,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
             --preview-window=right:80%:wrap)
 
         if test -n "$selected"
-            if command -v lnav >/dev/null
+            if type -q lnav
                 lnav $selected
             else
                 less +F $selected
@@ -2753,7 +2754,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
     # Performance benchmarking with fzf
     function benchf --description "Benchmark commands with hyperfine"
-        if not command -v hyperfine >/dev/null
+        if not type -q hyperfine
             echo "hyperfine not installed"
             return 1
         end
@@ -2777,7 +2778,7 @@ COMMAND | PID | USER | FD | TYPE | DEVICE | SIZE/OFF | NODE | NAME" \
 
     # Infrastructure cost estimation with fzf
     function tfcostf --description "Estimate infrastructure costs with infracost"
-        if not command -v infracost >/dev/null
+        if not type -q infracost
             echo "infracost not installed"
             return 1
         end

@@ -2,7 +2,7 @@
 # Replaces Oh My Zsh plugins functionality
 
 # Git abbreviations (replaces git plugin from Oh My Zsh)
-if command -v git >/dev/null
+if type -q git
     # Common git abbreviations
     abbr -a g git
     abbr -a ga 'git add'
@@ -30,7 +30,7 @@ end
 # NOTE: Using custom FZF completions from kubectl-simple.fish + kubectl_fzf_native.fish
 # which leverage native __fish_kubectl_* functions. DO NOT source kubectl's Go-based
 # completions here as they conflict with the FZF integration.
-if command -v kubectl >/dev/null
+if type -q kubectl
     # kubectl completion fish | source  # Disabled - conflicts with FZF completions
 
     # Kubectl abbreviations
@@ -63,7 +63,7 @@ set -g fish_color_valid_path --underline
 set -g fish_history_search_case_sensitive 0
 
 # FZF integration for better tab completion (replaces fzf-tab)
-if command -v fzf >/dev/null
+if type -q fzf
     # Set up fzf key bindings
     set -g FZF_CTRL_T_OPTS "--preview 'bat --color=always --line-range=:50 {}'"
     set -g FZF_ALT_C_OPTS "--preview 'eza --tree --color=always {} | head -200'"

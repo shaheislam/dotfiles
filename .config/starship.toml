@@ -19,7 +19,7 @@ $terraform\
 $cmd_duration\
 """
 
-command_timeout = 1000
+command_timeout = 500
 palette = 'catppuccin_mocha'
 
 [palettes.catppuccin_mocha]
@@ -89,6 +89,7 @@ format = "[$path]($style)"
 truncation_length = 3
 truncation_symbol = ""
 read_only = " 󰌾"
+truncate_to_repo = false
 
 [directory.substitutions]
 "~" = "~"
@@ -100,6 +101,7 @@ truncation_length = 25
 truncation_symbol = '…'
 ignore_branches = ['master', 'main']
 format = '[$symbol$branch]($style)'
+only_attached = true
 
 [git_status]
 style = "fg:yellow"
@@ -107,6 +109,7 @@ ahead = '⇡${count}'
 diverged = '⇕⇡${ahead_count}⇣${behind_count}'
 behind = '⇣${count}'
 format = '[$all_status$ahead_behind]($style) '
+ignore_submodules = true
 
 [nodejs]
 symbol = " "

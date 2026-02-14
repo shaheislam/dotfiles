@@ -2,7 +2,7 @@
 # Complements existing Docker workflows with fuzzy finding
 
 # Only activate if fzf and docker are available
-if command -v fzf >/dev/null 2>&1 && command -v docker >/dev/null 2>&1
+if type -q fzf && type -q docker
     # CTRL-D ? for help
     bind -M default \cd\? '__fzf_docker_sh list_bindings; commandline -f repaint'
     bind -M insert \cd\? '__fzf_docker_sh list_bindings; commandline -f repaint'
