@@ -67,6 +67,20 @@ Cache files in `~/.cache/fish-init/` are invalidated when the tool binary's mtim
 
 **Rationale**: Adding env-hash cache keys would require subprocess calls on every startup, defeating the purpose of caching. The simple `fish-init-clear` escape hatch provides manual control when needed.
 
+### 6. tmux status bar optimization
+- Reduced powerkit plugins from `cpu,memory,git,datetime,battery` to `git,datetime`
+- Eliminates 3 subprocess calls (cpu/memory/battery) per update cycle
+- Increased update interval from 5s to 15s (git branch + datetime don't need frequent refresh)
+- Consolidated 4 `set -ga terminal-overrides` calls into 1 combined call
+- Removed ~27 lines of dead commented-out minimal config
+- Removed orphaned battery/cpu/memory config lines
+
+### 7. WezTerm GPU optimization
+- Trimmed HarfBuzz features from `calt,liga,dlig,ss01,ss02` to `calt,liga` (discretionary ligatures and stylistic sets add shaping overhead without terminal benefit)
+- Reduced blur radius from 20 to 10 (visually similar, less GPU computation)
+- Changed cursor from `BlinkingBlock` to `SteadyBlock` (eliminates periodic redraws)
+- Kept `max_fps = 120` (display is ProMotion 120Hz MacBook Pro)
+
 ## Future Improvement Suggestions
 
 ### High Impact (Terminal Speed)

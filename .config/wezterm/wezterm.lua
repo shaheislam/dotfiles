@@ -9,7 +9,7 @@ config.font = wezterm.font_with_fallback({
   {
     family = 'JetBrainsMono Nerd Font',
     weight = 'Medium',
-    harfbuzz_features = { 'calt=1', 'liga=1', 'dlig=1', 'ss01=1', 'ss02=1' }, -- Enable ligatures
+    harfbuzz_features = { 'calt=1', 'liga=1' }, -- Standard ligatures only (dlig/ss* add shaping overhead)
   },
   'DankMono Nerd Font', -- Fallback
 })
@@ -60,7 +60,7 @@ config.color_scheme = 'Catppuccin Mocha'
 -- Window configuration
 config.window_decorations = "RESIZE"
 config.window_background_opacity = 0.90
-config.macos_window_background_blur = 20
+config.macos_window_background_blur = 10
 
 -- Tab bar
 config.hide_tab_bar_if_only_one_tab = true
@@ -68,8 +68,7 @@ config.tab_bar_at_bottom = false
 config.use_fancy_tab_bar = true
 
 -- Cursor
-config.default_cursor_style = 'BlinkingBlock'
-config.cursor_blink_rate = 500
+config.default_cursor_style = 'SteadyBlock'
 
 -- Shell
 config.default_prog = { '/opt/homebrew/bin/fish', '-l' }
