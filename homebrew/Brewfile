@@ -91,7 +91,7 @@ brew "trivy"      # Container image vulnerability scanner (Alt+T in FZF)
 brew "azure-cli"
 brew "imagemagick"
 brew "Azure/kubelogin/kubelogin"
-brew "reattach-to-user-namespace"
+# brew "reattach-to-user-namespace"  # Removed: not needed since macOS 12 (Monterey), and causes tmux-sensible to override default-command
 brew "bottom"
 brew "htop"
 brew "btop"
