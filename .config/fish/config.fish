@@ -152,8 +152,9 @@ if status is-interactive
         # Skip the cached init - we'll define our own protected handlers
         # The cached version panics on invalid UTF-8 in command args
 
-        # Set session ID (this rarely has UTF-8 issues)
-        set -gx ATUIN_SESSION (atuin uuid 2>/dev/null)
+        # PERF: Generate session UUID in Fish instead of spawning `atuin uuid` (~30ms).
+        # Atuin just needs a unique session identifier — any UUID v4 works.
+        set -gx ATUIN_SESSION (printf '%04x%04x-%04x-%04x-%04x-%04x%04x%04x' (random 0 65535) (random 0 65535) (random 0 65535) (math "0x4000 + "(random 0 4095)) (math "0x8000 + "(random 0 16383)) (random 0 65535) (random 0 65535) (random 0 65535))
         set --erase ATUIN_HISTORY_ID
 
         # Protected preexec handler with UTF-8 sanitization
@@ -231,12 +232,9 @@ if status is-interactive
     # FZF configuration - enhanced version combining both configs
     # Cached for ~69ms startup improvement
     if test -x $_brew/fzf
-        # fzf --fish requires fzf 0.48+, fallback for older versions
-        if fzf --fish &>/dev/null
-            __cache_tool_init fzf "fzf --fish"
-        else if test -f /usr/share/doc/fzf/examples/key-bindings.fish
-            source /usr/share/doc/fzf/examples/key-bindings.fish
-        end
+        # PERF: Skip `fzf --fish` version probe (~57ms subprocess). Homebrew fzf is always
+        # 0.48+ which supports --fish. The fallback path is for ancient Linux distros.
+        __cache_tool_init fzf "fzf --fish"
     end
 
     if test -f ~/.fzf.fish
@@ -631,7 +629,7 @@ if status is-interactive
 
     # Kubernetes & Container Tools
     # Use kubecolor for colorized kubectl output if available
-    if command -q kubecolor
+    if test -x $_brew/kubecolor
         alias kubectl="kubecolor"
     end
     alias k="kubectl" # Kubernetes CLI shorthand
