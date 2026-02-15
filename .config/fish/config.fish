@@ -193,6 +193,10 @@ if status is-interactive
     # Suppressed via MISE_FISH_AUTO_ACTIVATE=0 in conf.d/00-env.fish (must load before vendor conf.d).
     # Our cached version avoids the subprocess on cache hit.
     if test -x $_brew/mise
+        # PERF: eval_after_arrow defers mise re-evaluation until the next command
+        # after cd, instead of running `mise hook-env` synchronously on every cd (~154ms).
+        # Must be set BEFORE sourcing mise hook.
+        set -g mise_fish_mode eval_after_arrow
         __cache_tool_init mise "mise activate fish"
     end
 
