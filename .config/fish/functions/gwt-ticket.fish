@@ -30,6 +30,21 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
 
+    # Delegate to subcommands
+    if test (count $argv) -gt 0
+        switch $argv[1]
+            case --plan
+                gwtt-plan $argv[2..]
+                return $status
+            case --status
+                gwt-status $argv[2..]
+                return $status
+            case --queue
+                gwt-queue $argv[2..]
+                return $status
+        end
+    end
+
     # Parse arguments
     set -l issue_key ""
     set -l title ""
@@ -379,7 +394,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --auto-cleanup       Auto-remove worktree after successful merge (1hr grace period)"
         echo "  --no-auto-cleanup    Disable auto-cleanup (keep worktree after merge)"
         echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
-        echo "  --status             Show all agent states (shortcut for agent-state.sh --all)"
+        echo "  --plan NAME [specs]  Orchestrate multiple gwtt runs as a convoy (see gwtt-plan --help)"
+        echo "  --status [--convoy]  Show worktree/agent status (delegates to gwt-status)"
+        echo "  --queue <cmd> [...]  Manage ticket queue (delegates to gwt-queue)"
         echo "  --convoy NAME|ID     Associate ticket with a convoy (creates if name doesn't exist)"
         echo "  --molecule [ID]      Create/attach molecule workflow (auto-creates from template steps)"
         echo "  --town               Enable town-level bead sync on completion (default: on)"

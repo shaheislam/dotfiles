@@ -49,7 +49,7 @@ start_daemon() {
         [[ "$pid" != "$my_pid" ]] && kill "$pid" 2>/dev/null
     done
     rm -f "$PID_FILE"
-    sleep 0.2  # Brief pause for processes to exit
+    sleep 0.2 # Brief pause for processes to exit
 
     mkdir -p "$STATE_DIR"
 
@@ -69,7 +69,7 @@ start_daemon() {
         done
     ) &
 
-    echo $! > "$PID_FILE"
+    echo $! >"$PID_FILE"
     echo "Watcher started (PID $!)"
 }
 
@@ -108,7 +108,67 @@ get_clean_window_name() {
     win_name="${win_name#\*+}"
     win_name="${win_name#\*}"
     win_name="${win_name#+}"
+    # Strip convoy progress suffix like " [2/4]"
+    win_name=$(echo "$win_name" | sed 's/ \[[0-9]*\/[0-9]*\]$//')
     echo "$win_name"
+}
+
+# Get convoy progress for a worktree (cached per poll cycle)
+# Returns "N/M" string or empty if not in a convoy
+CONVOY_CACHE_TS=0
+declare -A CONVOY_PROGRESS_CACHE
+
+get_convoy_progress() {
+    local pane_path="$1"
+    local now
+    now=$(date +%s)
+
+    # Refresh convoy cache every 30s (avoid hammering JSONL on every window)
+    if ((now - CONVOY_CACHE_TS > 30)); then
+        CONVOY_CACHE_TS=$now
+        CONVOY_PROGRESS_CACHE=()
+
+        local convoy_file="${HOME}/.claude/convoys.jsonl"
+        [[ -f "$convoy_file" ]] || return
+
+        # Build cache: convoy_id → "completed/total"
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            local cid progress
+            read -r cid progress < <(python3 -c "
+import sys, json
+c = json.loads('''$line''')
+total = len(c['status'])
+completed = sum(1 for v in c['status'].values() if v == 'completed')
+print(c['id'], f'{completed}/{total}')" 2>/dev/null) || continue
+            [[ -n "$cid" ]] && CONVOY_PROGRESS_CACHE["$cid"]="$progress"
+        done <"$convoy_file"
+    fi
+
+    # Find convoy_id from worktree state file
+    [[ -z "$pane_path" ]] && return
+    local state_file="${pane_path}/.claude/gwt-ticket.local.md"
+    [[ -f "$state_file" ]] || return
+
+    local convoy_id=""
+    local in_fm=false
+    while IFS= read -r line; do
+        if [[ "$line" == "---" ]]; then
+            if $in_fm; then break; else
+                in_fm=true
+                continue
+            fi
+        fi
+        $in_fm || continue
+        case "$line" in
+        convoy_id:*)
+            convoy_id="${line#convoy_id:}"
+            convoy_id="${convoy_id// /}"
+            ;;
+        esac
+    done <"$state_file"
+
+    [[ -n "$convoy_id" ]] && [[ -n "${CONVOY_PROGRESS_CACHE[$convoy_id]:-}" ]] && echo "${CONVOY_PROGRESS_CACHE[$convoy_id]}"
 }
 
 # Centralized function to update window indicators based on state files
@@ -123,6 +183,9 @@ update_window_indicators() {
     local clean_name
     clean_name=$(get_clean_window_name "$current_name")
 
+    # Strip any existing convoy suffix like " [2/4]"
+    clean_name=$(echo "$clean_name" | sed 's/ \[[0-9]*\/[0-9]*\]$//')
+
     local prefix=""
 
     # Stuck indicator comes first (most urgent)
@@ -132,11 +195,21 @@ update_window_indicators() {
     [[ -f "$STATE_DIR/claude-notified-$state_key" ]] && prefix+="$CLAUDE_INDICATOR"
     [[ -f "$STATE_DIR/opencode-notified-$state_key" ]] && prefix+="$OPENCODE_INDICATOR"
 
+    # Convoy progress suffix
+    local convoy_suffix=""
+    local pane_path
+    pane_path=$(tmux display-message -t "${session}:${win_idx}.0" -p "#{pane_current_path}" 2>/dev/null)
+    if [[ -n "$pane_path" ]]; then
+        local progress
+        progress=$(get_convoy_progress "$pane_path")
+        [[ -n "$progress" ]] && convoy_suffix=" [${progress}]"
+    fi
+
     local new_name
     if [[ -n "$prefix" ]]; then
-        new_name="${prefix} ${clean_name}"
+        new_name="${prefix} ${clean_name}${convoy_suffix}"
     else
-        new_name="$clean_name"
+        new_name="${clean_name}${convoy_suffix}"
     fi
 
     # Only rename if changed (avoid unnecessary tmux operations)
@@ -172,7 +245,7 @@ check_ralph_loop_state() {
     while IFS= read -r line; do
         if [[ "$line" == "---" ]]; then
             if $in_frontmatter; then
-                break  # end of frontmatter
+                break # end of frontmatter
             else
                 in_frontmatter=true
                 continue
@@ -180,10 +253,16 @@ check_ralph_loop_state() {
         fi
         $in_frontmatter || continue
         case "$line" in
-            active:*) active="${line#active:}"; active="${active// /}" ;;
-            iteration:*) iteration="${line#iteration:}"; iteration="${iteration// /}" ;;
+        active:*)
+            active="${line#active:}"
+            active="${active// /}"
+            ;;
+        iteration:*)
+            iteration="${line#iteration:}"
+            iteration="${iteration// /}"
+            ;;
         esac
-    done < "$ralph_file"
+    done <"$ralph_file"
 
     # Not active — clear stuck state
     if [[ "$active" != "true" ]]; then
@@ -203,7 +282,7 @@ check_ralph_loop_state() {
 
         if [[ "$iteration" == "$stored_iter" ]]; then
             # Iteration hasn't changed — check how long
-            local elapsed=$(( now - stored_ts ))
+            local elapsed=$((now - stored_ts))
             if [[ "$elapsed" -ge "$STUCK_THRESHOLD" ]]; then
                 if [[ ! -f "$stuck_file" ]]; then
                     touch "$stuck_file"
@@ -214,7 +293,7 @@ check_ralph_loop_state() {
             fi
         else
             # Iteration advanced — reset tracking, clear stuck
-            echo "${iteration}:${now}" > "$iter_file"
+            echo "${iteration}:${now}" >"$iter_file"
             if [[ -f "$stuck_file" ]]; then
                 rm -f "$stuck_file"
                 update_window_indicators "$session" "$win_idx"
@@ -222,7 +301,7 @@ check_ralph_loop_state() {
         fi
     else
         # First time seeing this ralph-loop — record baseline
-        echo "${iteration}:${now}" > "$iter_file"
+        echo "${iteration}:${now}" >"$iter_file"
     fi
 }
 
@@ -311,7 +390,7 @@ get_tool_status() {
             if [[ -f "$baseline_file" ]]; then
                 local baseline
                 baseline=$(cat "$baseline_file")
-                local diff=$(( stdout_offset - baseline ))
+                local diff=$((stdout_offset - baseline))
                 if [[ "$diff" -gt 2048 ]]; then
                     if [[ -f "$pending_file" ]]; then
                         # Second consecutive detection — confirm as real work
@@ -326,11 +405,11 @@ get_tool_status() {
                         else
                             # Output stopped growing — was just a UI burst, reset
                             rm -f "$pending_file"
-                            echo "$stdout_offset" > "$baseline_file"
+                            echo "$stdout_offset" >"$baseline_file"
                         fi
                     else
                         # First detection — record pending, confirm on next poll
-                        echo "$stdout_offset" > "$pending_file"
+                        echo "$stdout_offset" >"$pending_file"
                     fi
                 else
                     # Below threshold — clear any pending state
@@ -342,7 +421,7 @@ get_tool_status() {
                 # point counts as new work. This prevents false indicators when
                 # the user views a window then leaves without the tool doing
                 # any actual work (idle UI redraws would otherwise trigger it).
-                echo "$stdout_offset" > "$baseline_file"
+                echo "$stdout_offset" >"$baseline_file"
             fi
         fi
         # Always return "idle" - the worked flag handles work detection
@@ -362,12 +441,12 @@ get_tool_status() {
         fi
     fi
 
-    echo "none"  # No tool matching pattern in this window
+    echo "none" # No tool matching pattern in this window
 }
 
 # Find devcontainer instance name for a tmux window
 find_devcontainer_for_window() {
-    local target="$1"  # session:win_idx format
+    local target="$1" # session:win_idx format
     local win_name
     win_name=$(tmux display-message -t "$target" -p "#{window_name}" 2>/dev/null)
 
@@ -396,7 +475,10 @@ get_tool_status_in_container() {
     local tool_pid
     tool_pid=$(docker exec "$container" pgrep -f "$pattern" 2>/dev/null | head -1)
 
-    [[ -z "$tool_pid" ]] && { echo "none"; return 0; }
+    [[ -z "$tool_pid" ]] && {
+        echo "none"
+        return 0
+    }
 
     # Check if busy using tool-specific detection
     if [[ "$tool" == "opencode" ]]; then
@@ -452,18 +534,18 @@ mark_viewed() {
 }
 
 case "${1:-}" in
-    start) start_daemon ;;
-    stop) stop_daemon ;;
-    status)
-        if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-            echo "Running (PID $(cat "$PID_FILE"))"
-        else
-            echo "Not running"
-        fi
-        ;;
-    mark-viewed) mark_viewed "$2" "$3" ;;
-    *)
-        echo "Usage: $0 {start|stop|status|mark-viewed <session> <window>}"
-        exit 1
-        ;;
+start) start_daemon ;;
+stop) stop_daemon ;;
+status)
+    if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        echo "Running (PID $(cat "$PID_FILE"))"
+    else
+        echo "Not running"
+    fi
+    ;;
+mark-viewed) mark_viewed "$2" "$3" ;;
+*)
+    echo "Usage: $0 {start|stop|status|mark-viewed <session> <window>}"
+    exit 1
+    ;;
 esac

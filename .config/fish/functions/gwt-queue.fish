@@ -71,6 +71,28 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             end
             bash $queue_daemon add $rest
 
+        case add-plan
+            # Queue all tasks from a plan for rate-limit-aware dispatch
+            if test (count $rest) -eq 0
+                echo "Usage: gwt-queue add-plan <convoy-name> [--file tasks.md | \"Title:Desc\" ...] [--opts]"
+                echo ""
+                echo "Queues each task from a plan for rate-limit-aware dispatching."
+                echo "Tasks are queued individually with convoy + plan context."
+                echo ""
+                echo "Task sources:"
+                echo "  \"Title:Desc\" ...      Inline task specs"
+                echo "  --file, -f FILE       Read tasks from markdown file"
+                echo ""
+                echo "Options forwarded to each queued gwt-ticket:"
+                echo "  --template, --sub, --priority, --max, etc."
+                echo ""
+                echo "Examples:"
+                echo "  gwt-queue add-plan auth-overhaul --file tasks.md --sub personal"
+                echo "  gwt-queue add-plan refactor \"API layer:Rewrite REST\" \"DB layer:Optimize queries\""
+                return 1
+            end
+            _gwt_queue_add_plan $rest
+
         case list ls
             bash $queue_daemon list
 
@@ -89,7 +111,7 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             if test "$confirm" = y -o "$confirm" = Y
                 bash $queue_daemon clear
             else
-                echo "Cancelled"
+                echo Cancelled
             end
 
         case next
@@ -134,7 +156,7 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
                     continue
                 end
                 set -l arg $rest[$i]
-                if test "$arg" = "--sub"
+                if test "$arg" = --sub
                     set -l next_i (math $i + 1)
                     if test $next_i -le (count $rest)
                         set -l sub_name $rest[$next_i]
@@ -170,6 +192,7 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             echo ""
             echo "COMMANDS:"
             echo "  add [key] <title> [desc] [--opts]  Queue a ticket for later execution"
+            echo "  add-plan <name> [specs] [--opts]    Queue all tasks from a plan"
             echo "  list / ls                           List all queued tickets"
             echo "  remove / rm <id>                    Remove ticket from queue"
             echo "  clear                               Clear all queued tickets"
@@ -205,4 +228,142 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             echo "Run 'gwt-queue help' for usage"
             return 1
     end
+end
+
+function _gwt_queue_add_plan --description "Queue a plan's tasks for rate-limit-aware dispatch"
+    set -l queue_daemon "$HOME/dotfiles/scripts/ticket-queue/queue-daemon.sh"
+    if not test -f "$queue_daemon"
+        set queue_daemon "$HOME/dotfiles-offline/scripts/ticket-queue/queue-daemon.sh"
+    end
+    if not test -f "$queue_daemon"
+        echo "Error: queue-daemon.sh not found"
+        return 1
+    end
+
+    set -l convoy_name ""
+    set -l task_file ""
+    set -l tasks
+    set -l passthrough
+    set -l skip_next false
+
+    for i in (seq (count $argv))
+        if $skip_next
+            set skip_next false
+            continue
+        end
+        set -l arg $argv[$i]
+        set -l next_i (math $i + 1)
+        switch $arg
+            case --file -f
+                if test $next_i -le (count $argv)
+                    set task_file $argv[$next_i]
+                    set skip_next true
+                end
+            case '-*'
+                set -a passthrough $arg
+                if test $next_i -le (count $argv)
+                    set -l next_val $argv[$next_i]
+                    if not string match -q -- '-*' $next_val
+                        set -a passthrough $next_val
+                        set skip_next true
+                    end
+                end
+            case '*'
+                if test -z "$convoy_name"
+                    set convoy_name $arg
+                else
+                    set -a tasks $arg
+                end
+        end
+    end
+
+    if test -z "$convoy_name"
+        echo "Error: Convoy name required"
+        return 1
+    end
+
+    # Parse markdown file if provided
+    if test -n "$task_file"
+        if not test -f "$task_file"
+            echo "Error: File not found: $task_file"
+            return 1
+        end
+        set -l parsed (awk '
+            /^## / {
+                if (title != "") {
+                    gsub(/^[[:space:]]+|[[:space:]]+$/, "", desc)
+                    if (desc == "") desc = title
+                    print title ":" desc
+                }
+                title = substr($0, 4)
+                desc = ""
+                next
+            }
+            title != "" && /^[^#]/ && !/^[[:space:]]*$/ {
+                line = $0
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", line)
+                if (line != "") {
+                    if (desc != "") desc = desc " "
+                    desc = desc line
+                }
+            }
+            END {
+                if (title != "") {
+                    gsub(/^[[:space:]]+|[[:space:]]+$/, "", desc)
+                    if (desc == "") desc = title
+                    print title ":" desc
+                }
+            }
+        ' "$task_file")
+        for line in $parsed
+            set -a tasks $line
+        end
+    end
+
+    if test (count $tasks) -eq 0
+        echo "Error: No tasks specified"
+        return 1
+    end
+
+    set -l task_count (count $tasks)
+
+    # Build plan context for all tasks
+    set -l all_titles
+    for i in (seq $task_count)
+        set -l t (string split -m1 ':' $tasks[$i])[1]
+        set -a all_titles $t
+    end
+
+    set -l task_list_text ""
+    for i in (seq $task_count)
+        if test -n "$task_list_text"
+            set task_list_text "$task_list_text; $i. $all_titles[$i]"
+        else
+            set task_list_text "$i. $all_titles[$i]"
+        end
+    end
+
+    echo "Queueing plan: $convoy_name ($task_count tasks)"
+    echo ""
+
+    set -l queued 0
+    for i in (seq $task_count)
+        set -l spec $tasks[$i]
+        set -l title (string split -m1 ':' $spec)[1]
+        set -l desc (string split -m1 ':' $spec)[2]
+        if test -z "$desc"
+            set desc $title
+        end
+
+        set -l plan_prefix "PLAN CONTEXT: You are task $i of $task_count in plan '$convoy_name'. YOUR TASK: $title. ALL TASKS IN THIS PLAN: $task_list_text. Focus ONLY on your assigned task."
+
+        echo "  [$i] Queueing: $title"
+        bash $queue_daemon add "$title" "$desc" --convoy $convoy_name --prompt-prefix "$plan_prefix" $passthrough
+        and set queued (math $queued + 1)
+    end
+
+    echo ""
+    echo "Queued $queued/$task_count tasks for convoy '$convoy_name'"
+    echo "Start daemon: gwt-queue start"
+    echo "Monitor:      gwt-queue status"
 end

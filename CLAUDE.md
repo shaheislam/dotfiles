@@ -224,12 +224,41 @@ gwt-dashboard open                        # Start + open http://127.0.0.1:8787
 **gwt-ticket orchestration flags**:
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--convoy <id>` | off | Associate with convoy batch |
+| `--convoy NAME\|ID` | off | Associate with convoy (creates by name if needed) |
+| `--plan NAME [specs]` | - | Orchestrate multiple gwtt runs as a convoy (see below) |
 | `--molecule [id]` | off | Durable multi-step workflow |
 | `--town` | **on** | Sync bead to town memory on completion |
 | `--no-town` | - | Disable town sync |
 | `--mayor` | off | Register with mayor (unnecessary if LaunchAgent running) |
 | `--no-mayor` | - | Disable mayor registration |
+
+**Plan Orchestration** (`gwtt-plan` / `gwtt --plan`):
+Spawn multiple gwtt runs as a convoy. Three task sources:
+```bash
+# Option A: Inline task specs (title:description pairs)
+gwtt --plan auth-overhaul \
+  "Add OAuth:Google OAuth with PKCE" \
+  "Add sessions:JWT with refresh tokens" \
+  "Add RBAC:Role-based access control"
+
+# Option B: From markdown file (## headings = tasks)
+gwtt --plan auth-overhaul --file tasks.md --template implement
+
+# Option C: AI decomposition (Claude breaks goal into tasks)
+gwtt --plan auth-overhaul --decompose "Build complete auth with OAuth, sessions, and RBAC"
+
+# Dry run to preview
+gwtt --plan auth-overhaul --file tasks.md --dry-run
+```
+Options: `--stagger N` (seconds between spawns, default 10), `--dry-run`, `--file`, `--decompose`. All other flags pass through to each gwtt. Interactive confirmation before spawning (cancel with `n`).
+
+**Plan Context Injection**: Each spawned agent receives a `--prompt-prefix` containing the plan name, its task number, assigned task title, and the full list of all tasks — so agents stay focused on their assignment and don't duplicate work.
+
+**Plan Resume**: `gwtt-plan resume <convoy-name>` re-runs only failed/pending tasks from a previous plan. Plan manifests are saved to `~/.claude/plans/<name>.json` automatically.
+
+**Queue Integration**: `gwt-queue add-plan <name> --file tasks.md [--sub personal]` queues all tasks for rate-limit-aware dispatching instead of immediate spawning.
+
+**Convoy Status View**: `gwt-status --convoy` groups agents by convoy with progress bars. The tmux watcher also shows convoy progress `[2/4]` in window names.
 
 ### Beads Agent Memory
 Git-backed agent memory that persists across sessions. Auto-initialized in worktrees by `gwt-ticket`.

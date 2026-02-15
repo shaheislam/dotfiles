@@ -14,8 +14,20 @@ function gwt-status --description "Show worktree + devcontainer status"
     end
 
     set -l show_all false
-    if test "$argv[1]" = "--all"; or test "$argv[1]" = "-a"
-        set show_all true
+    set -l show_convoy false
+    for arg in $argv
+        switch $arg
+            case --all -a
+                set show_all true
+            case --convoy -c
+                set show_convoy true
+        end
+    end
+
+    # Convoy view: group agents by convoy
+    if $show_convoy
+        _gwt_status_convoy
+        return $status
     end
 
     # Resolve to main repo name (not worktree name)
@@ -83,10 +95,10 @@ function gwt-status --description "Show worktree + devcontainer status"
     # Print header
     echo ""
     if test -n "$agent_state_script"
-        printf "%-40s %-20s %-15s %-18s %-10s\n" "WORKTREE" "BRANCH" "CONTAINER" "AGENT" "STATUS"
+        printf "%-40s %-20s %-15s %-18s %-10s\n" WORKTREE BRANCH CONTAINER AGENT STATUS
         printf "%-40s %-20s %-15s %-18s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 18 "-") (string repeat -n 10 "-")
     else
-        printf "%-40s %-20s %-15s %-10s\n" "WORKTREE" "BRANCH" "CONTAINER" "STATUS"
+        printf "%-40s %-20s %-15s %-10s\n" WORKTREE BRANCH CONTAINER STATUS
         printf "%-40s %-20s %-15s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 10 "-")
     end
 
@@ -108,7 +120,7 @@ function gwt-status --description "Show worktree + devcontainer status"
         set -l instance_name (string replace -a "/" "-" $wt_name)
 
         # Determine container status
-        set -l container_status "-"
+        set -l container_status -
 
         # Check instance storage exists
         set -l has_instance false
@@ -128,11 +140,11 @@ function gwt-status --description "Show worktree + devcontainer status"
         # Determine status display
         # All worktrees can launch devcontainers via the built-in devcon claude sandbox
         if $is_running
-            set container_status "running"
+            set container_status running
         else if $has_instance
-            set container_status "stopped"
+            set container_status stopped
         else
-            set container_status "ready"
+            set container_status ready
         end
 
         # Mark current worktree
@@ -144,7 +156,7 @@ function gwt-status --description "Show worktree + devcontainer status"
         end
 
         # Derive agent state
-        set -l agent_display "-"
+        set -l agent_display -
         set -l agent_color normal
         if test -n "$agent_state_script"
             set -l agent_json ($agent_state_script $wt_path --json 2>/dev/null)
@@ -156,7 +168,7 @@ function gwt-status --description "Show worktree + devcontainer status"
                 switch $astate
                     case running
                         set agent_color green
-                        if test -n "$aiter" -a "$aiter" != "0" -a -n "$amax"
+                        if test -n "$aiter" -a "$aiter" != 0 -a -n "$amax"
                             set agent_display "▶ running [$aiter/$amax]"
                         else
                             set agent_display "▶ running"
@@ -166,7 +178,7 @@ function gwt-status --description "Show worktree + devcontainer status"
                         set agent_display "⏸ idle"
                     case stuck
                         set agent_color red
-                        if test -n "$aiter" -a "$aiter" != "0" -a -n "$amax"
+                        if test -n "$aiter" -a "$aiter" != 0 -a -n "$amax"
                             set agent_display "⚠ stuck [$aiter/$amax]"
                         else
                             set agent_display "⚠ stuck"
@@ -178,7 +190,7 @@ function gwt-status --description "Show worktree + devcontainer status"
                         set agent_color red
                         set agent_display "✗ dead"
                     case none '*'
-                        set agent_display "-"
+                        set agent_display -
                         set agent_color normal
                 end
             end
@@ -214,4 +226,109 @@ function gwt-status --description "Show worktree + devcontainer status"
     echo "  gwt-dev <branch> -e     Create worktree + start devcontainer"
     echo "  gwt-claude <branch>     Launch Claude in worktree's devcontainer"
     echo "  gwt-cleanup             Remove stale devcontainer instances"
+    echo "  gwt-status --convoy     Group by convoy with progress"
+end
+
+function _gwt_status_convoy --description "Show agents grouped by convoy"
+    set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
+    if not test -x "$convoy_script"
+        set convoy_script "$HOME/dotfiles-gastown/scripts/convoy.sh"
+    end
+    if not test -x "$convoy_script"
+        echo "Error: convoy.sh not found"
+        return 1
+    end
+
+    # Get all active convoys as JSON
+    set -l convoys_json (bash "$convoy_script" list --active --json 2>/dev/null)
+    if test -z "$convoys_json" -o "$convoys_json" = "[]"
+        echo ""
+        echo "No active convoys."
+        echo ""
+        echo "Start a plan: gwtt --plan <name> ..."
+        return 0
+    end
+
+    # Find agent-state.sh
+    set -l agent_state_script ""
+    for p in ~/dotfiles/scripts/agent-state.sh ~/dotfiles-gastown/scripts/agent-state.sh
+        if test -x "$p"
+            set agent_state_script $p
+            break
+        end
+    end
+
+    # Get all worktrees for cross-referencing
+    set -l all_worktrees (git worktree list --porcelain 2>/dev/null)
+
+    echo ""
+
+    # Parse and display each convoy
+    printf '%s' "$convoys_json" | python3 -c "
+import sys, json, subprocess, os
+
+convoys = json.load(sys.stdin)
+agent_state = '$agent_state_script'
+
+for c in convoys:
+    name = c['name']
+    cid = c['id']
+    status = c.get('status', {})
+    total = len(status)
+    completed = sum(1 for v in status.values() if v == 'completed')
+    failed = sum(1 for v in status.values() if v == 'failed')
+    running = sum(1 for v in status.values() if v == 'running')
+    pending = sum(1 for v in status.values() if v == 'pending')
+
+    # Progress bar
+    bar_len = 25
+    filled = int(completed / total * bar_len) if total > 0 else 0
+    bar = '█' * filled + '░' * (bar_len - filled)
+
+    print(f'\033[1m{name}\033[0m ({cid})')
+    print(f'  [{bar}] {completed}/{total} complete', end='')
+    parts = []
+    if running: parts.append(f'\033[0;32m{running} running\033[0m')
+    if pending: parts.append(f'\033[2m{pending} pending\033[0m')
+    if failed: parts.append(f'\033[0;31m{failed} failed\033[0m')
+    if parts:
+        print('  (' + ', '.join(parts) + ')')
+    else:
+        print()
+
+    # Show each ticket with agent state if available
+    for ticket, st in status.items():
+        icon = {'completed': '\033[0;32m✓\033[0m', 'failed': '\033[0;31m✗\033[0m', 'running': '\033[0;34m▶\033[0m', 'pending': '\033[2m·\033[0m'}.get(st, '?')
+        agent_info = ''
+        if agent_state and st == 'running':
+            # Try to find worktree matching this ticket
+            ticket_lower = ticket.lower().replace(' ', '-')
+            for d in os.listdir(os.path.expanduser('~')):
+                wt = os.path.expanduser(f'~/{d}')
+                state_file = os.path.join(wt, '.claude', 'gwt-ticket.local.md')
+                if os.path.isfile(state_file):
+                    try:
+                        with open(state_file) as f:
+                            content = f.read(500)
+                        if ticket_lower in content.lower() or ticket in content:
+                            result = subprocess.run([agent_state, wt, '--json'], capture_output=True, text=True, timeout=5)
+                            if result.returncode == 0:
+                                d = json.loads(result.stdout)
+                                state = d.get('state', '')
+                                iteration = d.get('iteration', '')
+                                max_iter = d.get('max_iterations', '')
+                                if iteration and max_iter:
+                                    agent_info = f' [{iteration}/{max_iter}]'
+                                break
+                    except Exception:
+                        pass
+        print(f'    {icon} {ticket}: {st}{agent_info}')
+    print()
+" 2>/dev/null
+
+    echo "Commands:"
+    echo "  gwt-convoy status <id>     Detailed convoy view"
+    echo "  gwtt-plan resume <name>    Re-run failed tasks"
+    echo "  gwt-status                 Full worktree table"
+    echo ""
 end
