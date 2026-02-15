@@ -145,6 +145,93 @@ if status is-interactive
         # Must be set BEFORE sourcing direnv hook.
         set -g direnv_fish_mode eval_after_arrow
         __cache_tool_init direnv "direnv hook fish"
+
+        # PERF: Override direnv's fish_prompt handler to skip re-evaluation when
+        # the directory hasn't changed. The default handler runs `direnv export fish`
+        # on EVERY prompt (~660ms with Nix flakes). This override only evaluates on
+        # first prompt. After cd, the preexec handler re-evaluates before next command.
+        #
+        # Overrides __direnv_export_eval from `direnv hook fish` (direnv >=2.34).
+        # Fish replaces earlier function definitions — this is the intended
+        # customization mechanism for Fish shell integrations.
+        function __direnv_export_eval --on-event fish_prompt
+            if not set -q __direnv_initialized
+                set -g __direnv_initialized 1
+                /opt/homebrew/bin/direnv export fish | source
+                # Track .envrc by walking up from PWD — NOT from $DIRENV_FILE.
+                # In git worktrees, $DIRENV_FILE points to the main worktree's
+                # .envrc (e.g. ~/dotfiles/.envrc) even when we're in a different
+                # worktree (e.g. ~/dotfiles-inputdelay). Using the walk-up path
+                # keeps the scope check in the preexec handler consistent.
+                set -g __direnv_last_envrc ""
+                set -l dir "$PWD"
+                while test "$dir" != /
+                    if test -f "$dir/.envrc"
+                        set -g __direnv_last_envrc "$dir/.envrc"
+                        break
+                    end
+                    set dir (string replace -r '/[^/]+$' '' -- "$dir")
+                end
+            end
+            if test "$direnv_fish_mode" != disable_arrow
+                function __direnv_cd_hook --on-variable PWD
+                    if test "$direnv_fish_mode" = eval_after_arrow
+                        set -g __direnv_export_again 0
+                    else
+                        /opt/homebrew/bin/direnv export fish | source
+                    end
+                end
+            end
+        end
+
+        # PERF: Override direnv's preexec handler to skip re-evaluation when
+        # we're still in the same .envrc scope. Direnv takes ~660ms per call
+        # due to Nix flake evaluation. By finding the nearest .envrc ourselves
+        # (pure Fish walk-up, no subprocess), we skip the expensive call for cd
+        # within the same project tree. Only re-evaluates when crossing .envrc
+        # boundaries (e.g., cd from one project to another).
+        #
+        # Overrides __direnv_export_eval_2 from `direnv hook fish` (direnv >=2.34).
+        function __direnv_export_eval_2 --on-event fish_preexec
+            if set -q __direnv_export_again
+                set -e __direnv_export_again
+                # Find nearest .envrc by walking up from PWD (no subprocess)
+                set -l dir "$PWD"
+                set -l found_envrc ""
+                while test "$dir" != /
+                    if test -f "$dir/.envrc"
+                        set found_envrc "$dir/.envrc"
+                        break
+                    end
+                    set dir (string replace -r '/[^/]+$' '' -- "$dir")
+                end
+                # Skip expensive direnv if same .envrc scope as last evaluation
+                if test "$found_envrc" = "$__direnv_last_envrc"
+                    : # Same scope — no re-evaluation needed
+                else
+                    /opt/homebrew/bin/direnv export fish | source
+                    # Update scope tracker using walk-up path (worktree-safe)
+                    set -g __direnv_last_envrc "$found_envrc"
+                end
+            end
+            functions --erase __direnv_cd_hook
+        end
+
+        # Convenience: `denv` forces a full direnv re-evaluation and resets the
+        # scope cache. Use after editing .envrc without cd, or when switching
+        # between worktrees that share identical .envrc content.
+        function denv --description 'Force direnv reload and reset scope cache'
+            /opt/homebrew/bin/direnv export fish | source
+            set -g __direnv_last_envrc ""
+            set -l dir "$PWD"
+            while test "$dir" != /
+                if test -f "$dir/.envrc"
+                    set -g __direnv_last_envrc "$dir/.envrc"
+                    break
+                end
+                set dir (string replace -r '/[^/]+$' '' -- "$dir")
+            end
+        end
     end
 
     if test -x $_brew/atuin
@@ -198,6 +285,27 @@ if status is-interactive
         # Must be set BEFORE sourcing mise hook.
         set -g mise_fish_mode eval_after_arrow
         __cache_tool_init mise "mise activate fish"
+
+        # PERF: Override mise's fish_prompt handler to skip re-evaluation when
+        # the directory hasn't changed. The default runs `mise hook-env` on every
+        # prompt (~45ms). This override only evaluates on first prompt or after cd.
+        #
+        # Overrides __mise_env_eval from `mise activate fish` (mise >=2024.x).
+        function __mise_env_eval --on-event fish_prompt
+            if not set -q __mise_initialized
+                set -g __mise_initialized 1
+                /opt/homebrew/bin/mise hook-env -s fish | source
+            end
+            if test "$mise_fish_mode" != disable_arrow
+                function __mise_cd_hook --on-variable PWD
+                    if test "$mise_fish_mode" = eval_after_arrow
+                        set -g __mise_env_again 0
+                    else
+                        /opt/homebrew/bin/mise hook-env -s fish | source
+                    end
+                end
+            end
+        end
     end
 
     # Yazi file manager wrapper - q to stay, Q to cd to navigated directory

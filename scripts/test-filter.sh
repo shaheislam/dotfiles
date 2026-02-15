@@ -345,6 +345,48 @@ test_cd_perf() {
     run_test "Direnv uses eval_after_arrow" "grep -q 'direnv_fish_mode eval_after_arrow' '$DOTFILES_ROOT/.config/fish/config.fish'"
     run_test "Mise uses eval_after_arrow" "grep -q 'mise_fish_mode eval_after_arrow' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
+    # Prompt handlers should be overridden to skip redundant evaluations
+    run_test "Direnv prompt handler uses init guard" "grep -q '__direnv_initialized' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise prompt handler uses init guard" "grep -q '__mise_initialized' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Direnv preexec should check .envrc scope to skip re-evaluation within same project
+    run_test "Direnv preexec has envrc scope check" "grep -q '__direnv_last_envrc' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Scope tracker must use walk-up path, NOT $DIRENV_FILE (worktree-safe)
+    # In git worktrees, $DIRENV_FILE points to the main worktree's .envrc,
+    # which breaks the scope check and causes 660ms re-evaluation on every cd
+    run_test "Direnv scope uses walk-up not DIRENV_FILE" "! grep -q 'last_envrc.*DIRENV_FILE' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Nested .envrc: walk-up must find nearest, so child .envrc triggers re-eval
+    if command -v fish &>/dev/null; then
+        run_test "Nested .envrc detected by walk-up" "fish -c '
+            mkdir -p /tmp/test-envrc-nested/sub
+            echo x > /tmp/test-envrc-nested/.envrc
+            echo y > /tmp/test-envrc-nested/sub/.envrc
+            set -l d1 /tmp/test-envrc-nested; set -l f1 \"\"
+            while test \"\$d1\" != /
+                test -f \"\$d1/.envrc\"; and set f1 \"\$d1/.envrc\"; and break
+                set d1 (string replace -r \"/[^/]+\\\$\" \"\" -- \"\$d1\")
+            end
+            set -l d2 /tmp/test-envrc-nested/sub; set -l f2 \"\"
+            while test \"\$d2\" != /
+                test -f \"\$d2/.envrc\"; and set f2 \"\$d2/.envrc\"; and break
+                set d2 (string replace -r \"/[^/]+\\\$\" \"\" -- \"\$d2\")
+            end
+            rm -rf /tmp/test-envrc-nested
+            test \"\$f1\" != \"\$f2\"
+        '"
+    fi
+
+    # Direnv reload helper should exist for manual .envrc refresh
+    run_test "Direnv reload function (denv) exists" "grep -q 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # All hooks must be inside non-interactive guard
+    run_test "Hooks gated by is-interactive" "grep -q 'status is-interactive' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Scope cache must never use universal variables (set -U)
+    run_test "No universal vars in scope cache" "! grep -qE '__direnv_(last_envrc|initialized|export_again).*set -U' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
     # Escape delay should be low
     run_test "Fish escape delay <= 10ms" "grep -q 'fish_escape_delay_ms 10' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
