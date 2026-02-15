@@ -381,11 +381,24 @@ test_cd_perf() {
     # Direnv reload helper should exist for manual .envrc refresh
     run_test "Direnv reload function (denv) exists" "grep -q 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
+    # Mise preexec should check config scope to skip re-evaluation within same project
+    run_test "Mise preexec has config scope check" "grep -q '__mise_last_config' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise preexec is overridden" "grep -q 'function __mise_env_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise preexec no stray echo" "! grep -A2 'mise hook-env.*source' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -qE '^[[:space:]]*echo;?\$'"
+
+    # denv should reset both direnv and mise scope caches
+    run_test "denv resets mise scope cache" "grep -A15 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q '__mise_last_config'"
+
+    # Diffview should cache positive socket results (avoid 52ms tmux IPC per cd)
+    run_test "Diffview caches positive socket" "grep -q '__diffview_cached_socket' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    run_test "Diffview socket self-heals on stale" "grep -q 'Socket gone.*clear cache' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+
     # All hooks must be inside non-interactive guard
     run_test "Hooks gated by is-interactive" "grep -q 'status is-interactive' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
     # Scope cache must never use universal variables (set -U)
     run_test "No universal vars in scope cache" "! grep -qE '__direnv_(last_envrc|initialized|export_again).*set -U' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "No universal vars in mise scope cache" "! grep -qE '__mise_(last_config|initialized|env_again).*set -U' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
     # Escape delay should be low
     run_test "Fish escape delay <= 10ms" "grep -q 'fish_escape_delay_ms 10' '$DOTFILES_ROOT/.config/fish/config.fish'"
