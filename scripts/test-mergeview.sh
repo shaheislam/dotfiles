@@ -1218,9 +1218,9 @@ else
     fail "Async probe doesn't clean up temp file"
 fi
 
-# Negative cache counter initialized to 30 (covers ~60s at 1 cd/2s)
-if grep -q 'neg_remaining 30' "$fish_hook" 2>/dev/null; then
-    pass "Negative cache counter uses 30 cd threshold"
+# Negative cache counter initialized to 15 (responsive compromise; 2s timer in git.lua backs up)
+if grep -q 'neg_remaining 15' "$fish_hook" 2>/dev/null; then
+    pass "Negative cache counter uses 15 cd threshold"
 else
     fail "Negative cache counter missing or wrong threshold"
 fi
@@ -1237,6 +1237,34 @@ if grep -q 'command tmux show-environment.*&' "$fish_hook" 2>/dev/null; then
     pass "Async probe tmux query is backgrounded"
 else
     fail "Async probe tmux query is synchronous (blocks shell)"
+fi
+
+# Single-flight guard prevents concurrent tmux probes on rapid cd
+if grep -q 'Probe already in flight' "$fish_hook" 2>/dev/null; then
+    pass "Async probe has single-flight guard (prevents race conditions)"
+else
+    fail "Async probe missing single-flight guard"
+fi
+
+# tmux session invalidation clears positive cache on $TMUX change
+if grep -q 'TMUX.*!=.*__diffview_cached_tmux' "$fish_hook" 2>/dev/null; then
+    pass "Positive cache invalidated on tmux server/session change"
+else
+    fail "Positive cache not invalidated on tmux change"
+fi
+
+# Outside-tmux guard is the first check (early return)
+if head -5 <(sed -n '/^function __diffview_follow_cd/,/^end$/p' "$fish_hook") | grep -q 'set -q TMUX.*return'; then
+    pass "Outside-tmux guard is first check in function"
+else
+    fail "Outside-tmux guard missing or not first"
+fi
+
+# Design: 2s timer in git.lua documented as backup for inter-cd DiffView discovery
+if grep -q '2s timer in git.lua' "$fish_hook" 2>/dev/null; then
+    pass "Documents git.lua 2s timer as backup discovery mechanism"
+else
+    fail "Missing documentation of backup discovery mechanism"
 fi
 
 echo ""
