@@ -345,6 +345,10 @@ test_cd_perf() {
     run_test "Direnv uses eval_after_arrow" "grep -q 'direnv_fish_mode eval_after_arrow' '$DOTFILES_ROOT/.config/fish/config.fish'"
     run_test "Mise uses eval_after_arrow" "grep -q 'mise_fish_mode eval_after_arrow' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
+    # Prompt handlers should be overridden to skip redundant evaluations
+    run_test "Direnv prompt handler uses init guard" "grep -q '__direnv_initialized' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise prompt handler uses init guard" "grep -q '__mise_initialized' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
     # Escape delay should be low
     run_test "Fish escape delay <= 10ms" "grep -q 'fish_escape_delay_ms 10' '$DOTFILES_ROOT/.config/fish/config.fish'"
 

@@ -145,6 +145,27 @@ if status is-interactive
         # Must be set BEFORE sourcing direnv hook.
         set -g direnv_fish_mode eval_after_arrow
         __cache_tool_init direnv "direnv hook fish"
+
+        # PERF: Override direnv's fish_prompt handler to skip re-evaluation when
+        # the directory hasn't changed. The default handler runs `direnv export fish`
+        # on EVERY prompt (~660ms with Nix flakes). This override only evaluates on
+        # first prompt or when __direnv_export_again is set (by the PWD cd hook).
+        # The preexec handler (__direnv_export_eval_2) handles the actual re-eval after cd.
+        function __direnv_export_eval --on-event fish_prompt
+            if not set -q __direnv_initialized
+                set -g __direnv_initialized 1
+                /opt/homebrew/bin/direnv export fish | source
+            end
+            if test "$direnv_fish_mode" != disable_arrow
+                function __direnv_cd_hook --on-variable PWD
+                    if test "$direnv_fish_mode" = eval_after_arrow
+                        set -g __direnv_export_again 0
+                    else
+                        /opt/homebrew/bin/direnv export fish | source
+                    end
+                end
+            end
+        end
     end
 
     if test -x $_brew/atuin
@@ -198,6 +219,25 @@ if status is-interactive
         # Must be set BEFORE sourcing mise hook.
         set -g mise_fish_mode eval_after_arrow
         __cache_tool_init mise "mise activate fish"
+
+        # PERF: Override mise's fish_prompt handler to skip re-evaluation when
+        # the directory hasn't changed. The default runs `mise hook-env` on every
+        # prompt (~45ms). This override only evaluates on first prompt or after cd.
+        function __mise_env_eval --on-event fish_prompt
+            if not set -q __mise_initialized
+                set -g __mise_initialized 1
+                /opt/homebrew/bin/mise hook-env -s fish | source
+            end
+            if test "$mise_fish_mode" != disable_arrow
+                function __mise_cd_hook --on-variable PWD
+                    if test "$mise_fish_mode" = eval_after_arrow
+                        set -g __mise_env_again 0
+                    else
+                        /opt/homebrew/bin/mise hook-env -s fish | source
+                    end
+                end
+            end
+        end
     end
 
     # Yazi file manager wrapper - q to stay, Q to cd to navigated directory
