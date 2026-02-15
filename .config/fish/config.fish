@@ -146,14 +146,18 @@ if status is-interactive
         set -g direnv_fish_mode eval_after_arrow
         __cache_tool_init direnv "direnv hook fish"
 
-        # PERF: Override direnv's fish_prompt handler to skip re-evaluation when
-        # the directory hasn't changed. The default handler runs `direnv export fish`
-        # on EVERY prompt (~660ms with Nix flakes). This override only evaluates on
-        # first prompt. After cd, the preexec handler re-evaluates before next command.
+        # PERF: Override direnv's fish_prompt handler. The default runs
+        # `direnv export fish` on EVERY prompt (~660ms with Nix flakes).
+        # This override only evaluates on first prompt. After cd, the preexec
+        # handler re-evaluates before the next command.
+        #
+        # BUG FIX: The upstream eval_after_arrow pattern defines the PWD hook
+        # inside fish_prompt and erases it in fish_preexec. But fish_preexec
+        # fires BEFORE cd runs, so the hook is gone when PWD actually changes.
+        # Fix: define the PWD hook ONCE (persistently) instead of recreating
+        # it every prompt. The hook stays alive across the preexec/cd boundary.
         #
         # Overrides __direnv_export_eval from `direnv hook fish` (direnv >=2.34).
-        # Fish replaces earlier function definitions — this is the intended
-        # customization mechanism for Fish shell integrations.
         function __direnv_export_eval --on-event fish_prompt
             if not set -q __direnv_initialized
                 set -g __direnv_initialized 1
@@ -173,15 +177,13 @@ if status is-interactive
                     set dir (string replace -r '/[^/]+$' '' -- "$dir")
                 end
             end
-            if test "$direnv_fish_mode" != disable_arrow
-                function __direnv_cd_hook --on-variable PWD
-                    if test "$direnv_fish_mode" = eval_after_arrow
-                        set -g __direnv_export_again 0
-                    else
-                        /opt/homebrew/bin/direnv export fish | source
-                    end
-                end
-            end
+        end
+
+        # PERF: Persistent PWD hook for direnv. Defined once (not per-prompt).
+        # Sets a flag so the preexec handler knows to check direnv scope.
+        # This hook survives across the fish_preexec → cd → fish_prompt cycle.
+        function __direnv_cd_hook --on-variable PWD
+            set -g __direnv_export_again 0
         end
 
         # PERF: Override direnv's preexec handler to skip re-evaluation when
@@ -214,7 +216,6 @@ if status is-interactive
                     set -g __direnv_last_envrc "$found_envrc"
                 end
             end
-            functions --erase __direnv_cd_hook
         end
 
         # Convenience: `denv` forces a full direnv re-evaluation and resets the
@@ -289,9 +290,12 @@ if status is-interactive
         set -g mise_fish_mode eval_after_arrow
         __cache_tool_init mise "mise activate fish"
 
-        # PERF: Override mise's fish_prompt handler to skip re-evaluation when
-        # the directory hasn't changed. The default runs `mise hook-env` on every
-        # prompt (~45ms). This override only evaluates on first prompt or after cd.
+        # PERF: Override mise's fish_prompt handler. The default runs `mise hook-env`
+        # on every prompt (~45ms). This override only evaluates on first prompt.
+        #
+        # BUG FIX: Same as direnv — the upstream eval_after_arrow pattern's PWD hook
+        # was erased by fish_preexec before cd could fire it. Fix: define the PWD
+        # hook once (persistently) outside the prompt handler.
         #
         # Overrides __mise_env_eval from `mise activate fish` (mise >=2024.x).
         function __mise_env_eval --on-event fish_prompt
@@ -316,15 +320,13 @@ if status is-interactive
                     set dir (string replace -r '/[^/]+$' '' -- "$dir")
                 end
             end
-            if test "$mise_fish_mode" != disable_arrow
-                function __mise_cd_hook --on-variable PWD
-                    if test "$mise_fish_mode" = eval_after_arrow
-                        set -g __mise_env_again 0
-                    else
-                        /opt/homebrew/bin/mise hook-env -s fish | source
-                    end
-                end
-            end
+        end
+
+        # PERF: Persistent PWD hook for mise. Defined once (not per-prompt).
+        # Sets a flag so the preexec handler knows to check mise scope.
+        # This hook survives across the fish_preexec → cd → fish_prompt cycle.
+        function __mise_cd_hook --on-variable PWD
+            set -g __mise_env_again 0
         end
 
         # PERF: Override mise's preexec handler to skip re-evaluation when we're
@@ -364,7 +366,6 @@ if status is-interactive
                     set -g __mise_last_config "$found_config"
                 end
             end
-            functions --erase __mise_cd_hook
         end
     end
 
