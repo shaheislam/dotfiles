@@ -42,6 +42,8 @@ MAX_RETRIES=3
 DO_MERGE=true
 DO_NOTIFY=true
 FOREGROUND=false
+AUTO_CLEANUP=false
+GRACE_PERIOD=3600 # 1 hour default
 WORKTREE_PATH=""
 COMMAND=""
 
@@ -51,53 +53,67 @@ AGENT_STATE="$SCRIPT_DIR/agent-state.sh"
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        stop|status)
-            COMMAND="$1"
-            shift
-            ;;
-        --poll-interval)
-            POLL_INTERVAL="$2"
-            shift 2
-            ;;
-        --max-retries)
-            MAX_RETRIES="$2"
-            shift 2
-            ;;
-        --no-merge)
-            DO_MERGE=false
-            shift
-            ;;
-        --no-notify)
-            DO_NOTIFY=false
-            shift
-            ;;
-        --foreground)
-            FOREGROUND=true
-            shift
-            ;;
-        --help|-h)
-            echo "Usage: worktree-witness.sh <worktree-path> [options]"
-            echo "       worktree-witness.sh stop <worktree-path>"
-            echo "       worktree-witness.sh status <worktree-path>"
-            echo ""
-            echo "Per-worktree agent lifecycle monitor."
-            echo ""
-            echo "Options:"
-            echo "  --poll-interval N   Check interval in seconds (default: 30)"
-            echo "  --max-retries N     Crash recovery retries (default: 3)"
-            echo "  --no-merge          Skip auto-merge on completion"
-            echo "  --no-notify         Skip notifications"
-            echo "  --foreground        Run in foreground"
-            exit 0
-            ;;
-        -*)
-            echo -e "${RED}Error: Unknown option $1${NC}" >&2
-            exit 1
-            ;;
-        *)
-            WORKTREE_PATH="$1"
-            shift
-            ;;
+    stop | status)
+        COMMAND="$1"
+        shift
+        ;;
+    --poll-interval)
+        POLL_INTERVAL="$2"
+        shift 2
+        ;;
+    --max-retries)
+        MAX_RETRIES="$2"
+        shift 2
+        ;;
+    --no-merge)
+        DO_MERGE=false
+        shift
+        ;;
+    --no-notify)
+        DO_NOTIFY=false
+        shift
+        ;;
+    --foreground)
+        FOREGROUND=true
+        shift
+        ;;
+    --auto-cleanup)
+        AUTO_CLEANUP=true
+        shift
+        ;;
+    --no-auto-cleanup)
+        AUTO_CLEANUP=false
+        shift
+        ;;
+    --grace-period)
+        GRACE_PERIOD="$2"
+        shift 2
+        ;;
+    --help | -h)
+        echo "Usage: worktree-witness.sh <worktree-path> [options]"
+        echo "       worktree-witness.sh stop <worktree-path>"
+        echo "       worktree-witness.sh status <worktree-path>"
+        echo ""
+        echo "Per-worktree agent lifecycle monitor."
+        echo ""
+        echo "Options:"
+        echo "  --poll-interval N   Check interval in seconds (default: 30)"
+        echo "  --max-retries N     Crash recovery retries (default: 3)"
+        echo "  --no-merge          Skip auto-merge on completion"
+        echo "  --no-notify         Skip notifications"
+        echo "  --foreground        Run in foreground"
+        echo "  --auto-cleanup      Remove worktree after successful merge (with grace period)"
+        echo "  --grace-period N    Seconds to wait before auto-cleanup (default: 3600)"
+        exit 0
+        ;;
+    -*)
+        echo -e "${RED}Error: Unknown option $1${NC}" >&2
+        exit 1
+        ;;
+    *)
+        WORKTREE_PATH="$1"
+        shift
+        ;;
     esac
 done
 
@@ -123,7 +139,7 @@ parse_yaml() {
 # Log with timestamp
 log() {
     local msg="$1"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $msg" >> "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $msg" >>"$LOG_FILE"
 }
 
 # Send notification
@@ -219,7 +235,9 @@ title=$(parse_yaml "title" "$TICKET_STATE")
 tmux_session=$(parse_yaml "tmux_session" "$TICKET_STATE")
 tmux_window=$(parse_yaml "tmux_window" "$TICKET_STATE")
 
-cat > "$WITNESS_STATE" << EOF
+max_iterations=$(parse_yaml "max_iterations" "$TICKET_STATE")
+
+cat >"$WITNESS_STATE" <<EOF
 ---
 active: true
 worktree: "$WORKTREE_PATH"
@@ -229,6 +247,8 @@ retries: 0
 max_retries: $MAX_RETRIES
 last_state: "starting"
 last_check: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+iterations_observed: 0
+last_iteration: 0
 ---
 
 # Witness Monitor
@@ -236,15 +256,20 @@ last_check: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 Monitoring agent execution for $issue_key in $WORKTREE_PATH.
 EOF
 
+# Write initial progress file
+echo "{\"iteration\":0,\"max_iterations\":${max_iterations:-20},\"state\":\"starting\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" >"$WORKTREE_PATH/.claude/progress.json"
+
 # Main monitoring loop
 monitor_loop() {
     trap 'cleanup' EXIT
-    echo $BASHPID > "$PID_FILE"
+    echo $BASHPID >"$PID_FILE"
     log "Witness started for $issue_key (PID $BASHPID)"
 
     local retries=0
     local last_state=""
     local consecutive_dead=0
+    local last_observed_iteration=0
+    local iterations_observed=0
 
     while true; do
         # Check for active gates — pause monitoring while gated
@@ -270,69 +295,139 @@ monitor_loop() {
         local iteration
         iteration=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('iteration','0'))" 2>/dev/null) || iteration="0"
 
+        # Track iteration progress
+        if [[ "$iteration" != "0" && "$iteration" != "$last_observed_iteration" ]]; then
+            iterations_observed=$((iterations_observed + 1))
+            last_observed_iteration="$iteration"
+            sed -i '' "s/^iterations_observed:.*/iterations_observed: $iterations_observed/" "$WITNESS_STATE" 2>/dev/null || true
+            sed -i '' "s/^last_iteration:.*/last_iteration: $iteration/" "$WITNESS_STATE" 2>/dev/null || true
+            # Update progress file for gwt-status
+            echo "{\"iteration\":$iteration,\"max_iterations\":${max_iterations:-20},\"state\":\"$state\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" >"$WORKTREE_PATH/.claude/progress.json"
+        fi
+
         # Update witness state
         sed -i '' "s/^last_state:.*/last_state: \"$state\"/" "$WITNESS_STATE" 2>/dev/null || true
         sed -i '' "s/^last_check:.*/last_check: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" "$WITNESS_STATE" 2>/dev/null || true
 
         # State transitions
         case "$state" in
-            completed)
-                log "Agent completed (iteration: $iteration)"
-                notify "Agent Complete" "$issue_key: $title"
-                on_completion
-                break
-                ;;
-
-            dead)
-                consecutive_dead=$((consecutive_dead + 1))
-                # Wait for 2 consecutive dead readings to confirm (avoids race with startup)
-                if [[ "$consecutive_dead" -ge 2 ]]; then
-                    local reason
-                    reason=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('reason','unknown'))" 2>/dev/null) || reason="unknown"
-                    log "Agent dead: $reason (retry $retries/$MAX_RETRIES)"
-
-                    if [[ "$retries" -lt "$MAX_RETRIES" ]]; then
-                        retries=$((retries + 1))
-                        sed -i '' "s/^retries:.*/retries: $retries/" "$WITNESS_STATE" 2>/dev/null || true
-                        notify "Agent Crashed" "$issue_key: Attempting retry $retries/$MAX_RETRIES"
-                        on_crash_retry "$retries"
-                        consecutive_dead=0
-                        sleep 10  # Give restart time to initialize
-                    else
-                        log "Max retries exceeded"
-                        notify "Agent Failed" "$issue_key: Max retries ($MAX_RETRIES) exceeded"
-                        sed -i '' 's/^active: true/active: false/' "$WITNESS_STATE" 2>/dev/null || true
-                        exit 2
+        completed)
+            log "Agent completed (iteration: $iteration)"
+            notify "Agent Complete" "$issue_key: $title"
+            # Log CV event
+            local cv_script="$SCRIPT_DIR/agent-cv.sh"
+            if [[ -x "$cv_script" ]]; then
+                local started_at
+                started_at=$(parse_yaml "started_at" "$WITNESS_STATE")
+                local duration_s=0
+                if [[ -n "$started_at" ]]; then
+                    local start_epoch
+                    start_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$started_at" +%s 2>/dev/null) || start_epoch=0
+                    if [[ "$start_epoch" -gt 0 ]]; then
+                        duration_s=$(($(date +%s) - start_epoch))
                     fi
                 fi
-                ;;
+                "$cv_script" log "$WORKTREE_PATH" --event completed --detail "iteration=$iteration duration=${duration_s}s" 2>/dev/null || true
+            fi
+            # Send mail notification
+            local mail_script="$SCRIPT_DIR/agent-mail.sh"
+            if [[ -x "$mail_script" ]]; then
+                "$mail_script" send all -s "Agent Complete: $issue_key" -m "$title completed at iteration $iteration" --from "witness-$(basename "$WORKTREE_PATH")" 2>/dev/null || true
+            fi
+            # Update progress file
+            echo "{\"iteration\":$iteration,\"max_iterations\":${max_iterations:-20},\"state\":\"completed\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" >"$WORKTREE_PATH/.claude/progress.json"
+            on_completion
+            break
+            ;;
 
-            stuck)
-                if [[ "$last_state" != "stuck" ]]; then
-                    local stuck_for
-                    stuck_for=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('stuck_for','?'))" 2>/dev/null) || stuck_for="?"
-                    local minutes=$(( ${stuck_for:-0} / 60 ))
-                    log "Agent stuck on iteration $iteration for ${minutes}m"
-                    notify "Agent Stuck" "$issue_key: Stuck on iteration $iteration for ${minutes}m"
+        dead)
+            consecutive_dead=$((consecutive_dead + 1))
+            # Wait for 2 consecutive dead readings to confirm (avoids race with startup)
+            if [[ "$consecutive_dead" -ge 2 ]]; then
+                local reason
+                reason=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('reason','unknown'))" 2>/dev/null) || reason="unknown"
+                log "Agent dead: $reason (retry $retries/$MAX_RETRIES)"
 
-                    # Call triage if available
-                    local triage_script="$SCRIPT_DIR/agent-triage.sh"
-                    if [[ -x "$triage_script" ]]; then
-                        log "Calling triage..."
-                        "$triage_script" "$WORKTREE_PATH" 2>/dev/null || true
-                    fi
+                # Log CV crash event
+                local cv_script="$SCRIPT_DIR/agent-cv.sh"
+                if [[ -x "$cv_script" ]]; then
+                    "$cv_script" log "$WORKTREE_PATH" --event crash --detail "reason=$reason retry=$retries/$MAX_RETRIES" 2>/dev/null || true
                 fi
-                ;;
 
-            running|idle)
-                consecutive_dead=0
-                ;;
+                if [[ "$retries" -lt "$MAX_RETRIES" ]]; then
+                    retries=$((retries + 1))
+                    sed -i '' "s/^retries:.*/retries: $retries/" "$WITNESS_STATE" 2>/dev/null || true
+                    notify "Agent Crashed" "$issue_key: Attempting retry $retries/$MAX_RETRIES"
+                    on_crash_retry "$retries"
+                    consecutive_dead=0
+                    sleep 10 # Give restart time to initialize
+                else
+                    log "Max retries exceeded"
+                    notify "Agent Failed" "$issue_key: Max retries ($MAX_RETRIES) exceeded"
+                    if [[ -x "$cv_script" ]]; then
+                        "$cv_script" log "$WORKTREE_PATH" --event failed --detail "max retries ($MAX_RETRIES) exceeded" 2>/dev/null || true
+                    fi
+                    # Convoy: mark ticket failed
+                    local fail_convoy_id
+                    fail_convoy_id=$(parse_yaml "convoy_id" "$TICKET_STATE")
+                    if [[ -n "$fail_convoy_id" ]]; then
+                        local convoy_script="$SCRIPT_DIR/convoy.sh"
+                        if [[ -x "$convoy_script" ]]; then
+                            "$convoy_script" fail "$fail_convoy_id" "$issue_key" --reason "max retries exceeded" 2>/dev/null || true
+                        fi
+                    fi
+                    # Molecule: mark current step failed
+                    local fail_molecule_id
+                    fail_molecule_id=$(parse_yaml "molecule_id" "$TICKET_STATE")
+                    if [[ -n "$fail_molecule_id" ]]; then
+                        local molecule_script="$SCRIPT_DIR/molecule.sh"
+                        if [[ -x "$molecule_script" ]]; then
+                            "$molecule_script" fail "$fail_molecule_id" --reason "max retries exceeded" 2>/dev/null || true
+                        fi
+                    fi
+                    # Send failure mail
+                    local mail_script="$SCRIPT_DIR/agent-mail.sh"
+                    if [[ -x "$mail_script" ]]; then
+                        "$mail_script" send all -s "Agent Failed: $issue_key" -m "$title failed after $MAX_RETRIES retries" --from "witness-$(basename "$WORKTREE_PATH")" 2>/dev/null || true
+                    fi
+                    sed -i '' 's/^active: true/active: false/' "$WITNESS_STATE" 2>/dev/null || true
+                    exit 2
+                fi
+            fi
+            ;;
 
-            none)
-                # Ticket state file removed
-                log "Ticket state removed, exiting"
-                break
-                ;;
+        stuck)
+            if [[ "$last_state" != "stuck" ]]; then
+                local stuck_for
+                stuck_for=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('stuck_for','?'))" 2>/dev/null) || stuck_for="?"
+                local minutes=$((${stuck_for:-0} / 60))
+                log "Agent stuck on iteration $iteration for ${minutes}m"
+                notify "Agent Stuck" "$issue_key: Stuck on iteration $iteration for ${minutes}m"
+
+                # Log CV stuck event
+                local cv_script="$SCRIPT_DIR/agent-cv.sh"
+                if [[ -x "$cv_script" ]]; then
+                    "$cv_script" log "$WORKTREE_PATH" --event stuck --detail "iteration=$iteration stuck_for=${minutes}m" 2>/dev/null || true
+                fi
+
+                # Call triage if available
+                local triage_script="$SCRIPT_DIR/agent-triage.sh"
+                if [[ -x "$triage_script" ]]; then
+                    log "Calling triage..."
+                    "$triage_script" "$WORKTREE_PATH" 2>/dev/null || true
+                fi
+            fi
+            ;;
+
+        running | idle)
+            consecutive_dead=0
+            ;;
+
+        none)
+            # Ticket state file removed
+            log "Ticket state removed, exiting"
+            break
+            ;;
         esac
 
         last_state="$state"
@@ -344,10 +439,63 @@ monitor_loop() {
 on_completion() {
     log "Running post-completion actions"
 
-    # Sync beads agent memory before merge
+    # Sync beads agent memory before merge and close the bead
     if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
         log "Syncing beads state"
         (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
+        # Close the bead for this issue
+        if [[ -n "$issue_key" ]]; then
+            (cd "$WORKTREE_PATH" && bd close "$issue_key" 2>/dev/null) || true
+        fi
+    fi
+
+    # Convoy: mark ticket complete in convoy
+    local convoy_id
+    convoy_id=$(parse_yaml "convoy_id" "$TICKET_STATE")
+    if [[ -n "$convoy_id" ]]; then
+        local convoy_script="$SCRIPT_DIR/convoy.sh"
+        if [[ -x "$convoy_script" ]]; then
+            log "Marking $issue_key complete in convoy $convoy_id"
+            "$convoy_script" complete "$convoy_id" "$issue_key" 2>/dev/null || true
+        fi
+    fi
+
+    # Molecule: advance to next step
+    local molecule_id
+    molecule_id=$(parse_yaml "molecule_id" "$TICKET_STATE")
+    if [[ -n "$molecule_id" ]]; then
+        local molecule_script="$SCRIPT_DIR/molecule.sh"
+        if [[ -x "$molecule_script" ]]; then
+            log "Advancing molecule $molecule_id"
+            local mol_exit=0
+            "$molecule_script" advance "$molecule_id" 2>/dev/null || mol_exit=$?
+            if [[ "$mol_exit" -eq 2 ]]; then
+                log "Molecule $molecule_id complete (all steps done)"
+                local mail_script_mol="$SCRIPT_DIR/agent-mail.sh"
+                if [[ -x "$mail_script_mol" ]]; then
+                    "$mail_script_mol" send all -s "Molecule complete: $molecule_id" -m "All steps finished for $issue_key" --from "witness-$(basename "$WORKTREE_PATH")" 2>/dev/null || true
+                fi
+            elif [[ "$mol_exit" -eq 0 ]]; then
+                # More steps remain - send mail with next step info
+                local next_step
+                next_step=$("$molecule_script" resume "$molecule_id" 2>/dev/null | head -5) || true
+                local mail_script_mol="$SCRIPT_DIR/agent-mail.sh"
+                if [[ -x "$mail_script_mol" ]]; then
+                    "$mail_script_mol" send all -s "Molecule $molecule_id: next step" -m "Next: $next_step" --from "witness-$(basename "$WORKTREE_PATH")" 2>/dev/null || true
+                fi
+            fi
+        fi
+    fi
+
+    # Town beads: sync to cross-project memory
+    local town_sync
+    town_sync=$(parse_yaml "town_sync" "$TICKET_STATE")
+    if [[ "$town_sync" == "true" ]]; then
+        local town_script="$SCRIPT_DIR/town-beads.sh"
+        if [[ -x "$town_script" ]]; then
+            log "Syncing town bead for $issue_key"
+            "$town_script" sync "$issue_key" --from "$WORKTREE_PATH" 2>/dev/null || true
+        fi
     fi
 
     # Restore OpenClaw sandbox defaults after devcontainer session
@@ -387,8 +535,68 @@ on_completion() {
         }
     fi
 
+    # Log CV merge event and archive CV
+    local cv_script="$SCRIPT_DIR/agent-cv.sh"
+    if [[ -x "$cv_script" ]]; then
+        if [[ "$merge_exit" -eq 0 ]]; then
+            "$cv_script" log "$WORKTREE_PATH" --event merged --detail "merge_exit=$merge_exit" 2>/dev/null || true
+        fi
+        # Archive CV to permanent storage
+        local cv_file="$WORKTREE_PATH/.claude/worker-cv.jsonl"
+        if [[ -f "$cv_file" && -n "$issue_key" ]]; then
+            mkdir -p "$HOME/.claude/agent-cvs"
+            cp "$cv_file" "$HOME/.claude/agent-cvs/${issue_key}.jsonl" 2>/dev/null || true
+            log "CV archived to ~/.claude/agent-cvs/${issue_key}.jsonl"
+        fi
+    fi
+
     # Mark witness as done
     sed -i '' 's/^active: true/active: false/' "$WITNESS_STATE" 2>/dev/null || true
+
+    # Self-nuke: remove worktree after grace period if auto-cleanup enabled
+    if $AUTO_CLEANUP; then
+        self_nuke &
+        disown
+    fi
+}
+
+# Self-nuke: wait grace period then remove worktree and kill tmux session
+self_nuke() {
+    log "Self-nuke scheduled in ${GRACE_PERIOD}s"
+    sleep "$GRACE_PERIOD"
+
+    # Verify the branch was actually merged before nuking
+    local branch
+    branch=$(git -C "$WORKTREE_PATH" branch --show-current 2>/dev/null) || return 1
+    local repo_root
+    local git_common_dir
+    git_common_dir=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir 2>/dev/null) || return 1
+    repo_root=$(cd "$WORKTREE_PATH" && cd "$git_common_dir/.." && pwd)
+
+    # Check if branch is merged into main
+    if ! git -C "$repo_root" branch --merged main 2>/dev/null | grep -q "$branch"; then
+        log "Self-nuke aborted: $branch not merged into main"
+        return 1
+    fi
+
+    log "Self-nuke executing: removing worktree $WORKTREE_PATH"
+
+    # Remove worktree
+    git worktree remove "$WORKTREE_PATH" --force 2>/dev/null || {
+        log "Self-nuke: git worktree remove failed, trying rm"
+        rm -rf "$WORKTREE_PATH" 2>/dev/null || true
+        git -C "$repo_root" worktree prune 2>/dev/null || true
+    }
+
+    # Kill tmux window if it still exists
+    if [[ -n "${tmux_session:-}" && -n "${tmux_window:-}" ]]; then
+        tmux kill-window -t "${tmux_session}:${tmux_window}" 2>/dev/null || true
+    fi
+
+    # Clean up witness state files
+    rm -f "$PID_FILE" "$WITNESS_STATE" 2>/dev/null || true
+
+    log "Self-nuke complete"
 }
 
 # Handle crash recovery

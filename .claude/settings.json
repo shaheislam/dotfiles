@@ -34,6 +34,14 @@
         ]
       },
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2>/dev/null || true"
+          }
+        ]
+      },
+      {
         "matcher": "compact",
         "hooks": [
           {

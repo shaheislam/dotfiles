@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Dashboard</title>
+<style>
+  :root {
+    --bg: #1a1b26;
+    --bg-dark: #16161e;
+    --bg-highlight: #292e42;
+    --fg: #a9b1d6;
+    --fg-dark: #565f89;
+    --comment: #565f89;
+    --blue: #7aa2f7;
+    --cyan: #7dcfff;
+    --green: #9ece6a;
+    --red: #f7768e;
+    --yellow: #e0af68;
+    --magenta: #bb9af7;
+    --orange: #ff9e64;
+    --border: #292e42;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  h1 {
+    color: var(--blue);
+    font-size: 1.4em;
+    margin-bottom: 6px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header .meta {
+    color: var(--comment);
+    font-size: 0.8em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .card h2 {
+    color: var(--cyan);
+    font-size: 0.95em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card.full-width { grid-column: 1 / -1; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+  }
+
+  th {
+    text-align: left;
+    padding: 6px 10px;
+    color: var(--comment);
+    border-bottom: 1px solid var(--border);
+    font-weight: normal;
+    text-transform: uppercase;
+    font-size: 0.75em;
+    letter-spacing: 0.05em;
+  }
+
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .state { font-weight: bold; }
+  .state-running { color: var(--green); }
+  .state-idle { color: var(--yellow); }
+  .state-stuck { color: var(--red); }
+  .state-dead { color: var(--red); }
+  .state-completed { color: var(--green); }
+  .state-pending { color: var(--comment); }
+  .state-failed { color: var(--red); }
+
+  .progress-bar {
+    background: var(--bg-highlight);
+    border-radius: 4px;
+    height: 12px;
+    overflow: hidden;
+    min-width: 100px;
+  }
+
+  .progress-fill {
+    background: var(--green);
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  .progress-fill.has-failures { background: var(--orange); }
+
+  .empty {
+    color: var(--comment);
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+  }
+
+  .badge-green { background: rgba(158,206,106,0.15); color: var(--green); }
+  .badge-red { background: rgba(247,118,142,0.15); color: var(--red); }
+  .badge-yellow { background: rgba(224,175,104,0.15); color: var(--yellow); }
+  .badge-blue { background: rgba(122,162,247,0.15); color: var(--blue); }
+
+  .mail-item {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .mail-item:last-child { border-bottom: none; }
+
+  .mayor-decision {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85em;
+  }
+  .mayor-decision:last-child { border-bottom: none; }
+
+  #error-banner {
+    display: none;
+    background: rgba(247,118,142,0.1);
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    color: var(--red);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Agent Dashboard</h1>
+  <div class="meta">
+    <span id="last-update">Loading...</span>
+    <span> | Auto-refresh: 30s</span>
+  </div>
+</div>
+
+<div id="error-banner"></div>
+
+<div class="grid">
+  <div class="card"><h2>Active Agents</h2><div id="agents-content"><div class="empty">Loading...</div></div></div>
+  <div class="card"><h2>Convoys</h2><div id="convoys-content"><div class="empty">Loading...</div></div></div>
+  <div class="card"><h2>Molecules</h2><div id="molecules-content"><div class="empty">Loading...</div></div></div>
+  <div class="card"><h2>Mayor</h2><div id="mayor-content"><div class="empty">Loading...</div></div></div>
+  <div class="card"><h2>Merge Queue</h2><div id="queue-content"><div class="empty">Loading...</div></div></div>
+  <div class="card"><h2>Recent Mail</h2><div id="mail-content"><div class="empty">Loading...</div></div></div>
+</div>
+
+<script>
+// NOTE: This dashboard is localhost-only (127.0.0.1). All data comes from
+// local shell scripts, not user input. DOM construction uses safe methods
+// (createElement/textContent) throughout - no raw HTML insertion.
+
+function el(tag, attrs, children) {
+  const e = document.createElement(tag);
+  if (attrs) Object.entries(attrs).forEach(([k,v]) => {
+    if (k === 'className') e.className = v;
+    else if (k === 'textContent') e.textContent = v;
+    else if (k.startsWith('style_')) e.style[k.slice(6)] = v;
+    else e.setAttribute(k, v);
+  });
+  if (children) {
+    if (typeof children === 'string') e.textContent = children;
+    else if (Array.isArray(children)) children.forEach(c => { if (c) e.appendChild(c); });
+  }
+  return e;
+}
+
+function clearAndAppend(parent, child) {
+  while (parent.firstChild) parent.removeChild(parent.firstChild);
+  parent.appendChild(child);
+}
+
+function stateClass(state) {
+  return 'state state-' + (state || 'unknown');
+}
+
+function renderAgents(data) {
+  const container = document.getElementById('agents-content');
+  try {
+    const agents = typeof data === 'string' ? JSON.parse(data) : data;
+    const list = Array.isArray(agents) ? agents :
+      (typeof agents === 'object' ? Object.entries(agents).map(([p,a]) => ({...a, worktree: p})) : []);
+
+    if (list.length === 0) {
+      clearAndAppend(container, el('div', {className:'empty'}, 'No active agents'));
+      return;
+    }
+
+    const table = el('table');
+    const thead = el('thead');
+    const headerRow = el('tr');
+    ['Worktree','State','Iter'].forEach(h => headerRow.appendChild(el('th', null, h)));
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = el('tbody');
+    list.forEach(a => {
+      const row = el('tr');
+      const name = (a.worktree || a.path || '?').split('/').pop();
+      row.appendChild(el('td', null, name));
+      const stateCell = el('td');
+      stateCell.appendChild(el('span', {className: stateClass(a.state)}, a.state || 'unknown'));
+      row.appendChild(stateCell);
+      row.appendChild(el('td', null, String(a.iteration || '-')));
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    clearAndAppend(container, table);
+  } catch(e) {
+    clearAndAppend(container, el('div', {className:'empty'}, 'Error loading agents'));
+  }
+}
+
+function renderConvoys(data) {
+  const container = document.getElementById('convoys-content');
+  try {
+    const convoys = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!convoys || convoys.length === 0) {
+      clearAndAppend(container, el('div', {className:'empty'}, 'No convoys'));
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    convoys.forEach(c => {
+      const total = c.summary?.total || Object.keys(c.status || {}).length;
+      const completed = c.summary?.completed || 0;
+      const failed = c.summary?.failed || 0;
+      const pct = total > 0 ? Math.round(completed / total * 100) : 0;
+
+      const wrapper = el('div', {style_marginBottom:'12px'});
+      const header = el('div', {style_display:'flex', style_justifyContent:'space-between', style_marginBottom:'4px'});
+      header.appendChild(el('span', {style_color:'var(--blue)'}, c.name));
+      header.appendChild(el('span', {style_color:'var(--comment)', style_fontSize:'0.8em'}, completed+'/'+total));
+      wrapper.appendChild(header);
+
+      const bar = el('div', {className:'progress-bar'});
+      const fill = el('div', {className: failed > 0 ? 'progress-fill has-failures' : 'progress-fill'});
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      wrapper.appendChild(bar);
+      frag.appendChild(wrapper);
+    });
+    clearAndAppend(container, frag);
+  } catch(e) {
+    clearAndAppend(container, el('div', {className:'empty'}, 'Error loading convoys'));
+  }
+}
+
+function renderMolecules(data) {
+  const container = document.getElementById('molecules-content');
+  try {
+    const molecules = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!molecules || molecules.length === 0) {
+      clearAndAppend(container, el('div', {className:'empty'}, 'No molecules'));
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    molecules.forEach(m => {
+      const total = m.steps?.length || 0;
+      const current = m.current_step || 0;
+      const pct = total > 0 ? Math.round(current / total * 100) : 0;
+      const stepName = current < total ? m.steps[current] : 'done';
+
+      const wrapper = el('div', {style_marginBottom:'12px'});
+      const header = el('div', {style_display:'flex', style_justifyContent:'space-between', style_marginBottom:'4px'});
+      header.appendChild(el('span', {style_color:'var(--magenta)'}, m.name));
+
+      const right = el('span');
+      const badgeClass = m.step_status === 'failed' ? 'badge badge-red' :
+        m.step_status === 'complete' ? 'badge badge-green' : 'badge badge-blue';
+      const badgeText = m.step_status === 'failed' ? 'FAILED' :
+        m.step_status === 'complete' ? 'DONE' : stepName;
+      right.appendChild(el('span', {className: badgeClass}, badgeText));
+      right.appendChild(document.createTextNode(' '));
+      right.appendChild(el('span', {style_color:'var(--comment)', style_fontSize:'0.8em'}, current+'/'+total));
+      header.appendChild(right);
+      wrapper.appendChild(header);
+
+      const bar = el('div', {className:'progress-bar'});
+      const fill = el('div', {className:'progress-fill'});
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      wrapper.appendChild(bar);
+      frag.appendChild(wrapper);
+    });
+    clearAndAppend(container, frag);
+  } catch(e) {
+    clearAndAppend(container, el('div', {className:'empty'}, 'Error loading molecules'));
+  }
+}
+
+function renderMayor(data) {
+  const container = document.getElementById('mayor-content');
+  try {
+    const mayor = typeof data === 'string' ? JSON.parse(data) : data;
+    if (mayor?.error) {
+      clearAndAppend(container, el('div', {className:'empty'}, 'Mayor not available'));
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    const statusDiv = el('div', {style_marginBottom:'8px'});
+    statusDiv.appendChild(document.createTextNode('Daemon: '));
+    const badgeClass = mayor.running ? 'badge badge-green' : 'badge badge-red';
+    const badgeText = mayor.running ? 'RUNNING' : 'STOPPED';
+    statusDiv.appendChild(el('span', {className: badgeClass}, badgeText));
+    frag.appendChild(statusDiv);
+
+    frag.appendChild(el('div', {style_marginBottom:'8px', style_fontSize:'0.85em'},
+      'Decisions: ' + (mayor.total_decisions || 0)));
+
+    const counts = mayor.state_counts || {};
+    const countsDiv = el('div', {style_fontSize:'0.85em'});
+    const parts = Object.entries(counts);
+    if (parts.length === 0) {
+      countsDiv.textContent = 'No agents';
+    } else {
+      parts.forEach(([s,c], i) => {
+        if (i > 0) countsDiv.appendChild(document.createTextNode(' \u00b7 '));
+        countsDiv.appendChild(el('span', {className: stateClass(s)}, s + ': ' + c));
+      });
+    }
+    frag.appendChild(countsDiv);
+    clearAndAppend(container, frag);
+  } catch(e) {
+    clearAndAppend(container, el('div', {className:'empty'}, 'Error loading mayor'));
+  }
+}
+
+function renderQueue(data) {
+  const container = document.getElementById('queue-content');
+  try {
+    const items = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!items || (Array.isArray(items) && items.length === 0)) {
+      clearAndAppend(container, el('div', {className:'empty'}, 'Queue empty'));
+      return;
+    }
+
+    if (Array.isArray(items)) {
+      const table = el('table');
+      const thead = el('thead');
+      const headerRow = el('tr');
+      ['Item','Status'].forEach(h => headerRow.appendChild(el('th', null, h)));
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = el('tbody');
+      items.slice(0, 10).forEach(item => {
+        const row = el('tr');
+        const path = typeof item === 'string' ? item : (item.worktree || item.path || '?');
+        row.appendChild(el('td', null, path.split('/').pop()));
+        const statusCell = el('td');
+        const status = item.status || 'pending';
+        statusCell.appendChild(el('span', {className: stateClass(status)}, status));
+        row.appendChild(statusCell);
+        tbody.appendChild(row);
+      });
+      table.appendChild(tbody);
+      clearAndAppend(container, table);
+    } else {
+      clearAndAppend(container, el('div', {className:'empty'}, 'Queue empty'));
+    }
+  } catch(e) {
+    clearAndAppend(container, el('div', {className:'empty'}, 'Queue empty'));
+  }
+}
+
+function renderMail(data) {
+  const container = document.getElementById('mail-content');
+  try {
+    const messages = typeof data === 'string' ? JSON.parse(data) : data;
+    if (!messages || (Array.isArray(messages) && messages.length === 0)) {
+      clearAndAppend(container, el('div', {className:'empty'}, 'No messages'));
+      return;
+    }
+
+    if (Array.isArray(messages)) {
+      const frag = document.createDocumentFragment();
+      messages.slice(-8).reverse().forEach(m => {
+        const item = el('div', {className:'mail-item'});
+        const header = el('div');
+        const fromSpan = el('span', {style_color:'var(--blue)', style_fontWeight:'bold'});
+        fromSpan.textContent = (m.read === false ? '*' : '') + (m.from || '?');
+        header.appendChild(fromSpan);
+        header.appendChild(el('span', {style_color:'var(--comment)'}, ' \u2192 ' + (m.to || '?')));
+        item.appendChild(header);
+        item.appendChild(el('div', {style_color:'var(--fg)'}, m.subject || ''));
+        const time = (m.timestamp || '').slice(0, 16).replace('T', ' ');
+        item.appendChild(el('div', {style_color:'var(--comment)', style_fontSize:'0.8em'}, time));
+        frag.appendChild(item);
+      });
+      clearAndAppend(container, frag);
+    } else {
+      clearAndAppend(container, el('div', {className:'empty'}, 'No messages'));
+    }
+  } catch(e) {
+    clearAndAppend(container, el('div', {className:'empty'}, 'Error loading mail'));
+  }
+}
+
+async function fetchData(endpoint) {
+  try {
+    const res = await fetch(endpoint);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.text();
+  } catch(e) {
+    return JSON.stringify({error: e.message});
+  }
+}
+
+async function refresh() {
+  const errorBanner = document.getElementById('error-banner');
+  try {
+    const [agents, convoys, queue, mail, mayor, molecules] = await Promise.all([
+      fetchData('/api/agents'),
+      fetchData('/api/convoys'),
+      fetchData('/api/queue'),
+      fetchData('/api/mail'),
+      fetchData('/api/mayor'),
+      fetchData('/api/molecules'),
+    ]);
+
+    renderAgents(agents);
+    renderConvoys(convoys);
+    renderQueue(queue);
+    renderMail(mail);
+    renderMayor(mayor);
+    renderMolecules(molecules);
+
+    errorBanner.style.display = 'none';
+    document.getElementById('last-update').textContent =
+      'Updated: ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    errorBanner.textContent = 'Failed to refresh: ' + e.message;
+    errorBanner.style.display = 'block';
+  }
+}
+
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>
