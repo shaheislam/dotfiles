@@ -182,6 +182,55 @@ gwt-ticket BUG-456 "Fix crash" "NPE" --template bugfix
 | `agent-triage.sh` | Intelligent restart decisions |
 | `phase-gates.sh` | Pause/resume on external conditions |
 
+**Convoys** (`scripts/convoy.sh`):
+Batch work tracking — group related tickets, track collective completion. JSONL at `~/.claude/convoys.jsonl`.
+```bash
+gwt-convoy create auth-overhaul --tickets ENG-101,ENG-102
+gwt-convoy status <id>                    # Progress: N/M complete
+gwtt ENG-101 "Add OAuth" "Details" --convoy <id>
+```
+
+**Molecules** (`scripts/molecule.sh`):
+Durable multi-step workflows with ordered steps, checkpoints, and resume. State in `~/.claude/molecules/<id>.json`.
+```bash
+gwtt ENG-200 "Deploy pipeline" "CI/CD" --molecule --template implement
+gwt-molecule status <id>                  # Current step + progress
+gwt-molecule resume <id>                  # Resume context for current step
+```
+
+**Town Beads** (`scripts/town-beads.sh`):
+Cross-project memory — syncs bead summaries to `~/.claude/town-beads/` git repo. **Enabled by default** in `gwt-ticket` (use `--no-town` to disable).
+```bash
+gwt-town search "authentication"          # Search across all projects
+gwt-town context --recent 5              # Recent town beads for priming
+```
+
+**Mayor** (`scripts/gwt-mayor.sh`):
+Global coordinator daemon — scans all worktrees, detects stuck/dead agents, tracks convoys, logs decisions to `~/.claude/mayor-log.jsonl`. Runs as always-on LaunchAgent.
+```bash
+gwt-mayor status                          # Agent overview + recommendations
+gwt-mayor decide                          # Single decision cycle (manual)
+gwt-mayor log 10                          # Recent decisions
+```
+- **LaunchAgent**: `Library/LaunchAgents/com.dotfiles.gwt-mayor.plist` (auto-starts on login via `gwt-mayor.sh run`)
+- **Setup**: Loaded by `scripts/setup.sh` via `launchctl bootstrap`
+
+**Dashboard** (`scripts/agent-dashboard.sh`):
+Tokyo Night themed web dashboard showing agents, convoys, molecules, and mail.
+```bash
+gwt-dashboard open                        # Start + open http://127.0.0.1:8787
+```
+
+**gwt-ticket orchestration flags**:
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--convoy <id>` | off | Associate with convoy batch |
+| `--molecule [id]` | off | Durable multi-step workflow |
+| `--town` | **on** | Sync bead to town memory on completion |
+| `--no-town` | - | Disable town sync |
+| `--mayor` | off | Register with mayor (unnecessary if LaunchAgent running) |
+| `--no-mayor` | - | Disable mayor registration |
+
 ### Beads Agent Memory
 Git-backed agent memory that persists across sessions. Auto-initialized in worktrees by `gwt-ticket`.
 - **CLI**: `bd` (installed via Homebrew)
