@@ -393,6 +393,16 @@ test_cd_perf() {
     # denv should reset both direnv and mise scope caches
     run_test "denv resets mise scope cache" "grep -A15 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q '__mise_last_config'"
 
+    # PWD hooks must be persistent (not erased by preexec)
+    # BUG FIX: The upstream eval_after_arrow pattern defines PWD hooks inside fish_prompt
+    # and erases them in fish_preexec. But fish_preexec fires BEFORE cd runs, so the hooks
+    # are gone when PWD actually changes. Fix: persistent top-level hooks.
+    run_test "Direnv cd hook is persistent (top-level)" "grep -qE '^[[:space:]]+function __direnv_cd_hook --on-variable PWD' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise cd hook is persistent (top-level)" "grep -qE '^[[:space:]]+function __mise_cd_hook --on-variable PWD' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    # Preexec must NOT erase cd hooks (that was the bug)
+    run_test "Direnv preexec does not erase cd hook" "! grep -A20 'function __direnv_export_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'functions --erase __direnv_cd_hook'"
+    run_test "Mise preexec does not erase cd hook" "! grep -A20 'function __mise_env_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'functions --erase __mise_cd_hook'"
+
     # Diffview should cache positive socket results (avoid 52ms tmux IPC per cd)
     run_test "Diffview caches positive socket" "grep -q '__diffview_cached_socket' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
     run_test "Diffview socket self-heals on stale" "grep -q 'Socket gone.*clear cache' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
