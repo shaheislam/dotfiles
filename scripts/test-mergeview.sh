@@ -1267,6 +1267,55 @@ else
     fail "Missing documentation of backup discovery mechanism"
 fi
 
+# Shell exit cleanup handler exists (prevents /tmp probe file accumulation)
+if grep -q 'fish_exit' "$fish_hook" 2>/dev/null; then
+    pass "Shell exit cleanup handler for probe temp files"
+else
+    fail "Missing shell exit cleanup (probe files accumulate in /tmp)"
+fi
+
+# Exit cleanup removes probe file
+if grep -A5 'fish_exit' "$fish_hook" 2>/dev/null | grep -q 'rm -f.*probe_file'; then
+    pass "Exit cleanup removes probe temp file"
+else
+    fail "Exit cleanup doesn't remove probe file"
+fi
+
+# Socket validation uses test -S (socket type check, not just existence)
+if grep -c 'test -S' "$fish_hook" 2>/dev/null | grep -qE '^[2-9]|^[1-9][0-9]'; then
+    pass "Socket validated with test -S in multiple paths (positive cache + probe result)"
+else
+    fail "Socket validation with test -S missing from some paths"
+fi
+
+# tmux server restart documented in design notes
+if grep -q 'server restart' "$fish_hook" 2>/dev/null; then
+    pass "tmux server restart cache invalidation documented"
+else
+    fail "Missing tmux server restart documentation"
+fi
+
+# Counter-based vs time-based tradeoff documented
+if grep -q 'counter-based.*instead of time-based' "$fish_hook" 2>/dev/null; then
+    pass "Counter vs time-based cache tradeoff documented"
+else
+    fail "Missing counter vs time-based design rationale"
+fi
+
+# Next-cd gating explained with git.lua backup justification
+if grep -q 'next cd.*gated\|consumed on next cd' "$fish_hook" 2>/dev/null; then
+    pass "Next-cd gating documented with backup mechanism justification"
+else
+    fail "Missing next-cd gating design documentation"
+fi
+
+# Probe file uses fixed path per PID (deterministic, no mktemp)
+if grep -q 'diffview-probe-\$fish_pid' "$fish_hook" 2>/dev/null; then
+    pass "Probe uses fixed path per PID (deterministic cleanup)"
+else
+    fail "Probe uses dynamic paths (cleanup risk)"
+fi
+
 echo ""
 echo "=== Results: $PASS passed, $FAIL failed, $TOTAL total ==="
 exit $FAIL

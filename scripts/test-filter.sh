@@ -326,6 +326,8 @@ test_cd_perf() {
     run_test "Diffview hook has negative cache" "grep -q '__diffview_neg_remaining' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
     run_test "Diffview hook uses async tmux probe" "grep -q '__diffview_probe_file' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
     run_test "Diffview hook no date subprocess" "! grep -v '^#' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish' | grep -q 'date +%s'"
+    run_test "Diffview hook single-flight guard" "grep -q 'Probe already in flight' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    run_test "Diffview hook exit cleanup" "grep -q 'fish_exit' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
 
     # z.fish and diffview-follow.fish should have valid Fish syntax
     if command -v fish &>/dev/null; then
