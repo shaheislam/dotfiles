@@ -216,6 +216,22 @@ if status is-interactive
             end
             functions --erase __direnv_cd_hook
         end
+
+        # Convenience: `denv` forces a full direnv re-evaluation and resets the
+        # scope cache. Use after editing .envrc without cd, or when switching
+        # between worktrees that share identical .envrc content.
+        function denv --description 'Force direnv reload and reset scope cache'
+            /opt/homebrew/bin/direnv export fish | source
+            set -g __direnv_last_envrc ""
+            set -l dir "$PWD"
+            while test "$dir" != /
+                if test -f "$dir/.envrc"
+                    set -g __direnv_last_envrc "$dir/.envrc"
+                    break
+                end
+                set dir (string replace -r '/[^/]+$' '' -- "$dir")
+            end
+        end
     end
 
     if test -x $_brew/atuin

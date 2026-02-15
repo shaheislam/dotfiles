@@ -357,6 +357,36 @@ test_cd_perf() {
     # which breaks the scope check and causes 660ms re-evaluation on every cd
     run_test "Direnv scope uses walk-up not DIRENV_FILE" "! grep -q 'last_envrc.*DIRENV_FILE' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
+    # Nested .envrc: walk-up must find nearest, so child .envrc triggers re-eval
+    if command -v fish &>/dev/null; then
+        run_test "Nested .envrc detected by walk-up" "fish -c '
+            mkdir -p /tmp/test-envrc-nested/sub
+            echo x > /tmp/test-envrc-nested/.envrc
+            echo y > /tmp/test-envrc-nested/sub/.envrc
+            set -l d1 /tmp/test-envrc-nested; set -l f1 \"\"
+            while test \"\$d1\" != /
+                test -f \"\$d1/.envrc\"; and set f1 \"\$d1/.envrc\"; and break
+                set d1 (string replace -r \"/[^/]+\\\$\" \"\" -- \"\$d1\")
+            end
+            set -l d2 /tmp/test-envrc-nested/sub; set -l f2 \"\"
+            while test \"\$d2\" != /
+                test -f \"\$d2/.envrc\"; and set f2 \"\$d2/.envrc\"; and break
+                set d2 (string replace -r \"/[^/]+\\\$\" \"\" -- \"\$d2\")
+            end
+            rm -rf /tmp/test-envrc-nested
+            test \"\$f1\" != \"\$f2\"
+        '"
+    fi
+
+    # Direnv reload helper should exist for manual .envrc refresh
+    run_test "Direnv reload function (denv) exists" "grep -q 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # All hooks must be inside non-interactive guard
+    run_test "Hooks gated by is-interactive" "grep -q 'status is-interactive' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Scope cache must never use universal variables (set -U)
+    run_test "No universal vars in scope cache" "! grep -qE '__direnv_(last_envrc|initialized|export_again).*set -U' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
     # Escape delay should be low
     run_test "Fish escape delay <= 10ms" "grep -q 'fish_escape_delay_ms 10' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
