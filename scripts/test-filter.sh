@@ -340,6 +340,8 @@ test_cd_perf() {
     run_test "Starship skips repo truncation" "grep -q 'truncate_to_repo = false' '$DOTFILES_ROOT/.config/starship.toml'"
     run_test "Starship only_attached branch" "grep -q 'only_attached = true' '$DOTFILES_ROOT/.config/starship.toml'"
     run_test "Starship command_timeout <= 200ms" "grep -qE 'command_timeout = (1[0-9]{0,2}|200|[1-9][0-9]?)$' '$DOTFILES_ROOT/.config/starship.toml'"
+    # Kubernetes module disabled by default (reads ~/.kube/config, ~110ms per prompt)
+    run_test "Starship k8s disabled by default" "grep -A10 '^\[kubernetes\]' '$DOTFILES_ROOT/.config/starship.toml' | grep -q 'disabled = true'"
 
     # Direnv and mise should use deferred evaluation
     run_test "Direnv uses eval_after_arrow" "grep -q 'direnv_fish_mode eval_after_arrow' '$DOTFILES_ROOT/.config/fish/config.fish'"
