@@ -1183,8 +1183,8 @@ else
     fail "Fish hook missing counter-based negative cache"
 fi
 
-# Fish hook does NOT call date +%s synchronously
-if grep -q 'date +%s' "$fish_hook" 2>/dev/null; then
+# Fish hook does NOT call date +%s synchronously (comments mentioning it are OK)
+if grep -v '^#' "$fish_hook" 2>/dev/null | grep -q 'date +%s'; then
     fail "Fish hook still calls date +%s (blocks shell ~58ms per cd)"
 else
     pass "Fish hook eliminated date +%s subprocess from hot path"
@@ -1240,7 +1240,7 @@ else
 fi
 
 # Single-flight guard prevents concurrent tmux probes on rapid cd
-if grep -q 'Probe already in flight' "$fish_hook" 2>/dev/null; then
+if grep -q 'Single-flight guard' "$fish_hook" 2>/dev/null; then
     pass "Async probe has single-flight guard (prevents race conditions)"
 else
     fail "Async probe missing single-flight guard"
@@ -1314,6 +1314,70 @@ if grep -q 'diffview-probe-\$fish_pid' "$fish_hook" 2>/dev/null; then
     pass "Probe uses fixed path per PID (deterministic cleanup)"
 else
     fail "Probe uses dynamic paths (cleanup risk)"
+fi
+
+# Socket owner validation: test -O alongside test -S in positive cache path
+if grep -q 'test -S.*-a -O' "$fish_hook" 2>/dev/null; then
+    pass "Socket validated with test -S AND test -O (type + owner check)"
+else
+    fail "Socket missing owner validation (test -O)"
+fi
+
+# Owner check appears in both positive cache AND probe result paths
+owner_checks=$(grep -c -- '-a -O' "$fish_hook" 2>/dev/null)
+if [ "$owner_checks" -ge 2 ]; then
+    pass "Owner validation (-a -O) in both positive cache and probe result paths"
+else
+    fail "Owner validation missing from some paths (found $owner_checks, need >=2)"
+fi
+
+# Pre-fetch probe launches on last negative cache tick (remaining=1 → 0)
+if grep -q 'Pre-fetch.*last tick' "$fish_hook" 2>/dev/null; then
+    pass "Pre-fetch probe documented (launches on last negative cache tick)"
+else
+    fail "Pre-fetch probe missing or undocumented"
+fi
+
+# Pre-fetch probe actually launches async tmux query when counter hits 0
+if grep -B2 -A3 'neg_remaining.*= 0' "$fish_hook" 2>/dev/null | grep -q 'tmux show-environment'; then
+    pass "Pre-fetch probe launches tmux query when counter reaches 0"
+else
+    fail "Pre-fetch probe doesn't launch tmux query at counter expiry"
+fi
+
+# Stale probe detection: tracks cd's waited for probe result
+if grep -q '__diffview_probe_wait' "$fish_hook" 2>/dev/null; then
+    pass "Stale probe detection tracks cd's waited (probe_wait counter)"
+else
+    fail "Missing stale probe detection (no wait counter)"
+fi
+
+# Stale probe cleanup after 10 cd's (tmux hung or crashed)
+if grep -q 'probe_wait.*-gt 10' "$fish_hook" 2>/dev/null; then
+    pass "Stale probe cleaned up after 10 cd's without result"
+else
+    fail "Stale probe cleanup threshold missing"
+fi
+
+# Stale probe cleanup removes probe file and resets state
+if grep -A3 'probe_wait.*-gt 10' "$fish_hook" 2>/dev/null | grep -q 'set -e __diffview_probe_file'; then
+    pass "Stale probe cleanup removes probe file and resets state"
+else
+    fail "Stale probe cleanup incomplete"
+fi
+
+# DiffView discovery during negative cache documented
+if grep -q 'DiffView discovery work during negative cache' "$fish_hook" 2>/dev/null; then
+    pass "DiffView discovery during negative cache documented in design Q&A"
+else
+    fail "Missing documentation of DiffView discovery during negative cache"
+fi
+
+# Probe wait counter initialized to 0 on fresh probe launch
+if grep -q '__diffview_probe_wait 0' "$fish_hook" 2>/dev/null; then
+    pass "Probe wait counter initialized to 0 on fresh probe"
+else
+    fail "Probe wait counter not initialized on fresh probe"
 fi
 
 echo ""

@@ -5,7 +5,7 @@
 # when Diffview opens, and removes it when Diffview closes.
 #
 # PERF: Three-tier caching to eliminate blocking IPC from the cd hot path:
-#   1. Positive cache: cached socket path, validated with `test -S` (~1ms)
+#   1. Positive cache: cached socket path, validated with `test -S -O` (~1ms)
 #   2. Negative cache: cd-counter-based (no subprocess), expires after 15 cd's
 #   3. Async probe: tmux query runs in background, result consumed on next cd
 #
@@ -33,13 +33,19 @@
 #
 # Q: What about background process cleanup?
 # A: Probe uses a fixed path (/tmp/diffview-probe-$fish_pid) that is
-#    overwritten by the next probe and removed on shell exit via trap.
+#    overwritten by the next probe and removed on shell exit via __diffview_cleanup.
+#    Stale probes (from a hung tmux) are detected and cleaned after 10 cd's.
 #    Background `tmux` commands are lightweight and self-terminate.
 #
 # Q: How is tmux server restart handled?
 # A: $TMUX contains the server socket path + session ID. A server restart
-#    changes $TMUX, which invalidates the positive cache (line ~36).
+#    changes $TMUX, which invalidates the positive cache (line ~59).
 #    The async probe then re-queries the new server.
+#
+# Q: How does DiffView discovery work during negative cache?
+# A: The negative cache launches a pre-fetch probe on its last tick (remaining=1),
+#    so the result is ready to consume when the counter hits zero. This means
+#    DiffView that opens mid-countdown is discovered within at most 15+1 cd's.
 function __diffview_follow_cd --on-variable PWD
     # Only act inside tmux (first check, fast guard — $TMUX is always set in tmux)
     set -q TMUX; or return
@@ -51,22 +57,23 @@ function __diffview_follow_cd --on-variable PWD
     set -g __diffview_last_pwd "$PWD"
 
     # ── Tier 1: Positive cache (socket known and valid) ──────────────────
-    # Cost: ~1-3ms (Fish builtins + test -S only, no subprocess)
+    # Cost: ~1-3ms (Fish builtins + test -S -O only, no subprocess)
     # Invalidation: $TMUX change (server restart/session switch) or socket gone.
+    # Validation: test -S (socket type) + test -O (owned by current user).
     if set -q __diffview_cached_socket; and test -n "$__diffview_cached_socket"
         if test "$TMUX" != "$__diffview_cached_tmux"
             # tmux server/session changed — cached socket is from a different server
             set -e __diffview_cached_socket
             set -e __diffview_cached_tmux
             set -g __diffview_neg_remaining 0
-        else if test -S "$__diffview_cached_socket"
-            # Socket still valid (test -S: exists AND is a socket file) — fire RPC
+        else if test -S "$__diffview_cached_socket" -a -O "$__diffview_cached_socket"
+            # Socket valid: exists, is socket type, owned by us — fire RPC
             set -l safe_pwd (string replace -a '\\' '\\\\' -- "$PWD" | string replace -a '"' '\\"')
             command nvim --server "$__diffview_cached_socket" --remote-expr "v:lua.diffview_check_pane(\"$safe_pwd\")" &>/dev/null &
             disown 2>/dev/null
             return
         else
-            # Socket gone (Neovim exited) — clear cache, will re-probe below
+            # Socket gone or not ours — clear cache, will re-probe below
             set -e __diffview_cached_socket
             set -e __diffview_cached_tmux
             command tmux set-environment -u NVIM_DIFFVIEW_SOCKET 2>/dev/null &
@@ -80,8 +87,18 @@ function __diffview_follow_cd --on-variable PWD
     # avoiding per-cd subprocess overhead. The 2s timer in git.lua provides
     # backup discovery if DiffView opens between cd's, so the shell hook
     # missing a few cd's has no user-visible effect.
+    #
+    # Pre-fetch: on the last tick (remaining=1), launches an async probe so
+    # fresh data is ready when the counter expires. This keeps discovery
+    # responsive without adding subprocess cost to every cd.
     if set -q __diffview_neg_remaining; and test "$__diffview_neg_remaining" -gt 0
         set -g __diffview_neg_remaining (math "$__diffview_neg_remaining - 1")
+        # Pre-fetch: launch async probe on last tick so result is ready at expiry
+        if test "$__diffview_neg_remaining" = 0; and not set -q __diffview_probe_file
+            set -g __diffview_probe_file /tmp/diffview-probe-$fish_pid
+            command tmux show-environment NVIM_DIFFVIEW_SOCKET >$__diffview_probe_file 2>/dev/null &
+            disown 2>/dev/null
+        end
         return
     end
 
@@ -89,35 +106,49 @@ function __diffview_follow_cd --on-variable PWD
     # If we previously launched an async tmux probe, consume its result now.
     # Note: result is "next cd" gated. The git.lua 2s timer provides immediate
     # detection independent of this hook, so the one-cd delay has no UX impact.
-    if set -q __diffview_probe_file; and test -f "$__diffview_probe_file"
-        set -l probe_result (command cat "$__diffview_probe_file" 2>/dev/null)
-        command rm -f "$__diffview_probe_file" 2>/dev/null
-        set -e __diffview_probe_file
+    if set -q __diffview_probe_file
+        if test -f "$__diffview_probe_file"
+            set -l probe_result (command cat "$__diffview_probe_file" 2>/dev/null)
+            command rm -f "$__diffview_probe_file" 2>/dev/null
+            set -e __diffview_probe_file
 
-        if test -n "$probe_result"
-            # Got a result — check if it's an unset marker or valid socket
-            if string match -q -- '-*' "$probe_result"
-                set -g __diffview_neg_remaining 15
-                return
+            if test -n "$probe_result"
+                # Got a result — check if it's an unset marker or valid socket
+                if string match -q -- '-*' "$probe_result"
+                    set -g __diffview_neg_remaining 15
+                    return
+                end
+                set -l socket (string replace 'NVIM_DIFFVIEW_SOCKET=' '' -- $probe_result)
+                if test -n "$socket"; and test -S "$socket" -a -O "$socket"
+                    # Valid socket: exists, socket type, owned by us — cache and fire RPC
+                    set -g __diffview_cached_socket "$socket"
+                    set -g __diffview_cached_tmux "$TMUX"
+                    set -l safe_pwd (string replace -a '\\' '\\\\' -- "$PWD" | string replace -a '"' '\\"')
+                    command nvim --server "$socket" --remote-expr "v:lua.diffview_check_pane(\"$safe_pwd\")" &>/dev/null &
+                    disown 2>/dev/null
+                    return
+                else if test -n "$socket"; and not test -S "$socket"
+                    # Socket path exists but file gone — clean up stale env var
+                    command tmux set-environment -u NVIM_DIFFVIEW_SOCKET 2>/dev/null &
+                    disown 2>/dev/null
+                end
             end
-            set -l socket (string replace 'NVIM_DIFFVIEW_SOCKET=' '' -- $probe_result)
-            if test -n "$socket"; and test -S "$socket"
-                # Valid socket found (test -S confirms socket type) — cache and fire RPC
-                set -g __diffview_cached_socket "$socket"
-                set -g __diffview_cached_tmux "$TMUX"
-                set -l safe_pwd (string replace -a '\\' '\\\\' -- "$PWD" | string replace -a '"' '\\"')
-                command nvim --server "$socket" --remote-expr "v:lua.diffview_check_pane(\"$safe_pwd\")" &>/dev/null &
-                disown 2>/dev/null
-                return
-            else if test -n "$socket"; and not test -S "$socket"
-                # Socket path exists but file gone — clean up stale env var
-                command tmux set-environment -u NVIM_DIFFVIEW_SOCKET 2>/dev/null &
-                disown 2>/dev/null
+            # No valid socket from probe — set negative cache
+            set -g __diffview_neg_remaining 15
+            return
+        else
+            # Probe file not yet written — probe still in flight.
+            # Track how many cd's we've waited. If >10, treat as stale
+            # (tmux hung or crashed) and clean up to unblock future probes.
+            set -g __diffview_probe_wait (math (set -q __diffview_probe_wait; and echo $__diffview_probe_wait; or echo 0) + 1)
+            if test "$__diffview_probe_wait" -gt 10
+                # Stale probe — clean up and allow fresh probe next cd
+                command rm -f "$__diffview_probe_file" 2>/dev/null
+                set -e __diffview_probe_file
+                set -e __diffview_probe_wait
             end
+            return
         end
-        # No valid socket from probe — set negative cache
-        set -g __diffview_neg_remaining 15
-        return
     end
 
     # ── Launch async probe (single-flight guarded) ───────────────────────
@@ -126,14 +157,10 @@ function __diffview_follow_cd --on-variable PWD
     # Fish PID to avoid mktemp subprocess overhead.
     #
     # Single-flight guard: __diffview_probe_file is only set when we launch
-    # a probe and cleared when consumed (line ~71). If already set but no
-    # file exists yet, a probe is in flight — skip to prevent concurrent
-    # tmux queries from rapid cd bursts.
-    if set -q __diffview_probe_file
-        # Probe already in flight — don't spawn another
-        return
-    end
+    # a probe and cleared when consumed. If already set but no file exists
+    # yet, a probe is in flight — handled above with stale detection.
     set -g __diffview_probe_file /tmp/diffview-probe-$fish_pid
+    set -g __diffview_probe_wait 0
     command tmux show-environment NVIM_DIFFVIEW_SOCKET >$__diffview_probe_file 2>/dev/null &
     disown 2>/dev/null
 end
