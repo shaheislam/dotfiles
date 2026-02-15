@@ -164,7 +164,8 @@ if status is-interactive
         # call. They must also be defined AFTER __cache_tool_init sources the
         # cached upstream init so our definitions replace the upstream ones.
         #
-        # Overrides __direnv_export_eval from `direnv hook fish` (direnv >=2.34).
+        # Overrides __direnv_export_eval from `direnv hook fish`.
+        # Verified: direnv 2.37.1 outputs this pattern (2026-02-15).
         function __direnv_export_eval --on-event fish_prompt
             if not set -q __direnv_initialized
                 set -g __direnv_initialized 1
@@ -306,7 +307,8 @@ if status is-interactive
         # See direnv section above for detailed explanation and justification
         # for inline definition (event handlers require sourcing to register).
         #
-        # Overrides __mise_env_eval from `mise activate fish` (mise >=2024.x).
+        # Overrides __mise_env_eval from `mise activate fish`.
+        # Verified: mise 2025.11.5 outputs this pattern (2026-02-15).
         function __mise_env_eval --on-event fish_prompt
             if not set -q __mise_initialized
                 set -g __mise_initialized 1
