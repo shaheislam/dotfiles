@@ -295,6 +295,34 @@ cmd_start() {
     echo "  Stop: gwt-mayor stop"
 }
 
+cmd_run() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        --poll-interval)
+            POLL_INTERVAL="$2"
+            shift 2
+            ;;
+        *) shift ;;
+        esac
+    done
+
+    mkdir -p "$(dirname "$LOG_FILE")"
+    mkdir -p "$(dirname "$MAYOR_LOG")"
+
+    trap 'rm -f "$PID_FILE"; daemon_log "Mayor stopped"; exit 0' INT TERM
+    echo $$ >"$PID_FILE"
+    daemon_log "Mayor started foreground (PID $$, poll ${POLL_INTERVAL}s)"
+
+    while true; do
+        local decisions
+        decisions=$(decide_cycle 2>/dev/null) || decisions=0
+        if [[ "$decisions" -gt 0 ]]; then
+            daemon_log "Cycle complete: $decisions decisions"
+        fi
+        sleep "$POLL_INTERVAL"
+    done
+}
+
 cmd_stop() {
     if [[ -f "$PID_FILE" ]]; then
         local pid
@@ -520,7 +548,8 @@ show_help() {
     echo "  gwt-mayor.sh <command> [args...]"
     echo ""
     echo "COMMANDS:"
-    echo "  start [--poll-interval N]  Start mayor daemon (default: 60s)"
+    echo "  start [--poll-interval N]  Start mayor daemon in background (default: 60s)"
+    echo "  run [--poll-interval N]    Run mayor in foreground (for LaunchAgent)"
     echo "  stop                       Stop mayor daemon"
     echo "  status [--json]            Show mayor status + agent overview"
     echo "  report                     Generate full summary report"
@@ -545,6 +574,7 @@ shift
 
 case "$COMMAND" in
 start) cmd_start "$@" ;;
+run) cmd_run "$@" ;;
 stop) cmd_stop ;;
 status) cmd_status "$@" ;;
 report) cmd_report ;;

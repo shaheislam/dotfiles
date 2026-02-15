@@ -67,7 +67,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l rebase_merge false
     set -l convoy_id ""
     set -l molecule_id ""
-    set -l town_sync false
+    set -l town_sync true
     set -l mayor_tracked false
 
     for i in (seq (count $argv))
@@ -317,8 +317,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --town
                 set town_sync true
+            case --no-town
+                set town_sync false
             case --mayor
                 set mayor_tracked true
+            case --no-mayor
+                set mayor_tracked false
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -378,8 +382,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --status             Show all agent states (shortcut for agent-state.sh --all)"
         echo "  --convoy ID          Associate ticket with a convoy batch"
         echo "  --molecule [ID]      Create/attach molecule workflow (auto-creates from template steps)"
-        echo "  --town               Enable town-level bead sync on completion"
+        echo "  --town               Enable town-level bead sync on completion (default: on)"
+        echo "  --no-town            Disable town-level bead sync"
         echo "  --mayor              Register ticket with mayor for global tracking"
+        echo "  --no-mayor           Disable mayor registration"
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency)"
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --help, -h           Show this help"
