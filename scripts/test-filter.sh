@@ -412,8 +412,23 @@ test_cd_perf() {
     # Diffview cache invalidates on tmux server/session change
     run_test "Diffview invalidates on TMUX change" "grep -q '__diffview_cached_tmux' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
 
+    # Direnv must be defined before mise (ordering invariant for PATH precedence)
+    run_test "Direnv hooks defined before mise hooks" "
+        direnv_line=\$(grep -n 'function __direnv_export_eval ' '$DOTFILES_ROOT/.config/fish/config.fish' | head -1 | cut -d: -f1)
+        mise_line=\$(grep -n 'function __mise_env_eval ' '$DOTFILES_ROOT/.config/fish/config.fish' | head -1 | cut -d: -f1)
+        test -n \"\$direnv_line\" && test -n \"\$mise_line\" && test \"\$direnv_line\" -lt \"\$mise_line\"
+    "
+
+    # PWD hooks use --on-variable PWD which fires for any PWD change mechanism
+    # (cd, pushd, popd, z, j, builtin cd, etc.) — verify the hook binding
+    run_test "Direnv hook fires on any PWD change" "grep -q '__direnv_cd_hook --on-variable PWD' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise hook fires on any PWD change" "grep -q '__mise_cd_hook --on-variable PWD' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
     # All hooks must be inside non-interactive guard
     run_test "Hooks gated by is-interactive" "grep -q 'status is-interactive' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # Inline event handler exception is documented (AGENTS.md says functions/ for new funcs)
+    run_test "Inline handler justification documented" "grep -q 'event handlers require sourcing to register' '$DOTFILES_ROOT/.config/fish/config.fish' || grep -q 'autoload.*register event handlers' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
     # Scope cache must never use universal variables (set -U)
     run_test "No universal vars in scope cache" "! grep -qE '__direnv_(last_envrc|initialized|export_again).*set -U' '$DOTFILES_ROOT/.config/fish/config.fish'"

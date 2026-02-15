@@ -151,11 +151,18 @@ if status is-interactive
         # This override only evaluates on first prompt. After cd, the preexec
         # handler re-evaluates before the next command.
         #
-        # BUG FIX: The upstream eval_after_arrow pattern defines the PWD hook
-        # inside fish_prompt and erases it in fish_preexec. But fish_preexec
-        # fires BEFORE cd runs, so the hook is gone when PWD actually changes.
-        # Fix: define the PWD hook ONCE (persistently) instead of recreating
-        # it every prompt. The hook stays alive across the preexec/cd boundary.
+        # BUG FIX: The upstream eval_after_arrow pattern (direnv 2.34+) defines
+        # the PWD hook inside fish_prompt and erases it in fish_preexec. But
+        # fish_preexec fires BEFORE cd runs, so the hook is gone when PWD
+        # actually changes. Fix: define the PWD hook ONCE (persistently) instead
+        # of recreating it every prompt. The hook stays alive across the
+        # preexec/cd boundary.
+        #
+        # NOTE: These overrides are inline in config.fish (not in functions/)
+        # because --on-event and --on-variable handlers must be sourced to
+        # register — Fish autoload won't register event handlers until explicit
+        # call. They must also be defined AFTER __cache_tool_init sources the
+        # cached upstream init so our definitions replace the upstream ones.
         #
         # Overrides __direnv_export_eval from `direnv hook fish` (direnv >=2.34).
         function __direnv_export_eval --on-event fish_prompt
@@ -293,9 +300,11 @@ if status is-interactive
         # PERF: Override mise's fish_prompt handler. The default runs `mise hook-env`
         # on every prompt (~45ms). This override only evaluates on first prompt.
         #
-        # BUG FIX: Same as direnv — the upstream eval_after_arrow pattern's PWD hook
-        # was erased by fish_preexec before cd could fire it. Fix: define the PWD
-        # hook once (persistently) outside the prompt handler.
+        # BUG FIX: Same as direnv — the upstream eval_after_arrow pattern's PWD
+        # hook was erased by fish_preexec before cd could fire it. Fix: define
+        # the PWD hook once (persistently) outside the prompt handler.
+        # See direnv section above for detailed explanation and justification
+        # for inline definition (event handlers require sourcing to register).
         #
         # Overrides __mise_env_eval from `mise activate fish` (mise >=2024.x).
         function __mise_env_eval --on-event fish_prompt
