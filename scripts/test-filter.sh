@@ -402,6 +402,9 @@ test_cd_perf() {
     # Preexec must NOT erase cd hooks (that was the bug)
     run_test "Direnv preexec does not erase cd hook" "! grep -A20 'function __direnv_export_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'functions --erase __direnv_cd_hook'"
     run_test "Mise preexec does not erase cd hook" "! grep -A20 'function __mise_env_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'functions --erase __mise_cd_hook'"
+    # CD hooks must be flag-only (no cd/PWD mutation = no reentrancy risk)
+    run_test "Direnv cd hook is flag-only (no reentrancy)" "grep -A3 'function __direnv_cd_hook' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'set -g __direnv_export_again' && ! grep -A3 'function __direnv_cd_hook' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -qE '(builtin cd|direnv export|source)'"
+    run_test "Mise cd hook is flag-only (no reentrancy)" "grep -A3 'function __mise_cd_hook' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'set -g __mise_env_again' && ! grep -A3 'function __mise_cd_hook' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -qE '(builtin cd|mise hook-env|source)'"
 
     # Diffview should cache positive socket results (avoid 52ms tmux IPC per cd)
     run_test "Diffview caches positive socket" "grep -q '__diffview_cached_socket' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
