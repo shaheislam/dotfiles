@@ -322,9 +322,10 @@ test_cd_perf() {
     run_test "z plugin PWD hook is disabled" "grep -q '# function __z_on_variable_pwd' '$DOTFILES_ROOT/.config/fish/conf.d/z.fish'"
     run_test "z plugin __z_add not called on cd" "! grep -qE '^[[:space:]]+__z_add' '$DOTFILES_ROOT/.config/fish/conf.d/z.fish'"
 
-    # Diffview hook should have negative caching
-    run_test "Diffview hook has negative cache" "grep -q '__diffview_no_socket_until' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
-    run_test "Diffview hook caches on tmux failure" "grep -q 'cache negative result' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    # Diffview hook should have negative caching (counter-based, no date subprocess)
+    run_test "Diffview hook has negative cache" "grep -q '__diffview_neg_remaining' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    run_test "Diffview hook uses async tmux probe" "grep -q '__diffview_probe_file' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    run_test "Diffview hook no date subprocess" "! grep -v '^#' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish' | grep -q 'date +%s'"
 
     # z.fish and diffview-follow.fish should have valid Fish syntax
     if command -v fish &>/dev/null; then

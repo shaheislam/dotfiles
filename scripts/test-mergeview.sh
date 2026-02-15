@@ -20,8 +20,16 @@ PASS=0
 FAIL=0
 TOTAL=0
 
-pass() { PASS=$((PASS + 1)); TOTAL=$((TOTAL + 1)); printf "  \033[32m✓\033[0m %s\n" "$1"; }
-fail() { FAIL=$((FAIL + 1)); TOTAL=$((TOTAL + 1)); printf "  \033[31m✗\033[0m %s\n" "$1"; }
+pass() {
+    PASS=$((PASS + 1))
+    TOTAL=$((TOTAL + 1))
+    printf "  \033[32m✓\033[0m %s\n" "$1"
+}
+fail() {
+    FAIL=$((FAIL + 1))
+    TOTAL=$((TOTAL + 1))
+    printf "  \033[31m✗\033[0m %s\n" "$1"
+}
 
 echo "=== Cross-Worktree Merge Detection Tests ==="
 echo ""
@@ -255,8 +263,8 @@ else
 fi
 
 # TermLeave and TermClose both use poll_with_retry
-if grep -A5 '"TermLeave"' "$git_lua" | grep -q "poll_with_retry" && \
-   grep -A5 '"TermClose"' "$git_lua" | grep -q "poll_with_retry"; then
+if grep -A5 '"TermLeave"' "$git_lua" | grep -q "poll_with_retry" &&
+    grep -A5 '"TermClose"' "$git_lua" | grep -q "poll_with_retry"; then
     pass "TermLeave/TermClose use poll_with_retry"
 else
     fail "Terminal events not using retry mechanism"
@@ -690,8 +698,8 @@ fi
 
 # Reentrancy guard: retarget_diffview sets and clears repo_switch_in_progress
 retarget_body=$(grep -A15 "function retarget_diffview" "$git_lua")
-if echo "$retarget_body" | grep -q "repo_switch_in_progress = true" && \
-   echo "$retarget_body" | grep -q "repo_switch_in_progress = false"; then
+if echo "$retarget_body" | grep -q "repo_switch_in_progress = true" &&
+    echo "$retarget_body" | grep -q "repo_switch_in_progress = false"; then
     pass "retarget_diffview sets+clears reentrancy guard on both success and failure"
 else
     fail "retarget_diffview missing reentrancy guard set/clear"
@@ -845,8 +853,8 @@ fi
 
 # Fish hook passes cwd to RPC (avoids tmux {last} pane ambiguity)
 # $PWD is escaped into $safe_pwd and embedded in the RPC call.
-if grep -q 'safe_pwd.*\$PWD\|string replace.*PWD' "$fish_hook" 2>/dev/null \
-    && grep -q 'diffview_check_pane.*safe_pwd' "$fish_hook" 2>/dev/null; then
+if grep -q 'safe_pwd.*\$PWD\|string replace.*PWD' "$fish_hook" 2>/dev/null &&
+    grep -q 'diffview_check_pane.*safe_pwd' "$fish_hook" 2>/dev/null; then
     pass "Fish hook passes escaped \$PWD to RPC (direct cwd, no tmux query needed)"
 else
     fail "Fish hook doesn't pass cwd — Neovim will query wrong tmux pane"
@@ -1037,7 +1045,7 @@ echo "--- Runtime: Forward-Declaration Scoping ---"
 if command -v nvim >/dev/null 2>&1; then
     # Test 1: Lua scoping proof — forward-declare + closure-capture + late-assign.
     _lua_test=$(mktemp /tmp/test-fwd-scope-XXXXXX.lua)
-    cat > "$_lua_test" << 'LUAEOF'
+    cat >"$_lua_test" <<'LUAEOF'
 local start_follow_timer
 local stop_follow_timer
 local follow_timer_refs = 0
@@ -1079,7 +1087,7 @@ LUAEOF
     # Test 2: Integration — load real Neovim config, force-load diffview plugin,
     # verify hooks are registered as callable functions in diffview's event emitter.
     _lua_integ=$(mktemp /tmp/test-diffview-hooks-XXXXXX.lua)
-    cat > "$_lua_integ" << 'LUAEOF'
+    cat >"$_lua_integ" <<'LUAEOF'
 -- Force-load the diffview plugin (it's lazy-loaded by cmd normally).
 local ok_lazy, lazy = pcall(require, "lazy")
 if not ok_lazy then
@@ -1162,6 +1170,73 @@ LUAEOF
     fi
 else
     pass "Runtime: skipped (nvim not found) — static checks cover scoping"
+fi
+
+# ─── Auto-Follow: Async Probe & Counter-Based Negative Cache ─────
+echo ""
+echo "--- Auto-Follow: Async Probe Performance ---"
+
+# Fish hook uses counter-based negative cache (no date subprocess)
+if grep -q "neg_remaining" "$fish_hook" 2>/dev/null; then
+    pass "Fish hook uses counter-based negative cache (no date subprocess)"
+else
+    fail "Fish hook missing counter-based negative cache"
+fi
+
+# Fish hook does NOT call date +%s synchronously
+if grep -q 'date +%s' "$fish_hook" 2>/dev/null; then
+    fail "Fish hook still calls date +%s (blocks shell ~58ms per cd)"
+else
+    pass "Fish hook eliminated date +%s subprocess from hot path"
+fi
+
+# Fish hook uses async tmux probe (backgrounded tmux show-environment)
+if grep -q '__diffview_probe_file' "$fish_hook" 2>/dev/null; then
+    pass "Fish hook uses async tmux probe (non-blocking discovery)"
+else
+    fail "Fish hook missing async tmux probe"
+fi
+
+# Async probe uses fixed temp path per PID (no mktemp subprocess)
+if grep -q 'diffview-probe-\$fish_pid' "$fish_hook" 2>/dev/null; then
+    pass "Async probe uses fixed temp path per PID (avoids mktemp)"
+else
+    fail "Async probe uses dynamic temp path (mktemp overhead)"
+fi
+
+# Async probe result consumed on next cd (lazy evaluation)
+if grep -q 'probe_result.*cat.*probe_file' "$fish_hook" 2>/dev/null; then
+    pass "Async probe result consumed on next cd"
+else
+    fail "Async probe result not consumed"
+fi
+
+# Async probe cleans up temp file after reading
+if grep -q 'rm -f.*probe_file' "$fish_hook" 2>/dev/null; then
+    pass "Async probe cleans up temp file after reading"
+else
+    fail "Async probe doesn't clean up temp file"
+fi
+
+# Negative cache counter initialized to 30 (covers ~60s at 1 cd/2s)
+if grep -q 'neg_remaining 30' "$fish_hook" 2>/dev/null; then
+    pass "Negative cache counter uses 30 cd threshold"
+else
+    fail "Negative cache counter missing or wrong threshold"
+fi
+
+# Stale socket cleanup is also backgrounded
+if grep -A1 'set-environment -u NVIM_DIFFVIEW_SOCKET' "$fish_hook" 2>/dev/null | grep -q '&'; then
+    pass "Stale socket tmux cleanup is backgrounded"
+else
+    fail "Stale socket tmux cleanup blocks shell"
+fi
+
+# Async probe backgrounds tmux command (command tmux ... &)
+if grep -q 'command tmux show-environment.*&' "$fish_hook" 2>/dev/null; then
+    pass "Async probe tmux query is backgrounded"
+else
+    fail "Async probe tmux query is synchronous (blocks shell)"
 fi
 
 echo ""
