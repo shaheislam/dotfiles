@@ -149,12 +149,12 @@ if status is-interactive
         # PERF: Override direnv's fish_prompt handler to skip re-evaluation when
         # the directory hasn't changed. The default handler runs `direnv export fish`
         # on EVERY prompt (~660ms with Nix flakes). This override only evaluates on
-        # first prompt or when __direnv_export_again is set (by the PWD cd hook).
-        # The preexec handler (__direnv_export_eval_2) handles the actual re-eval after cd.
+        # first prompt. After cd, the preexec handler re-evaluates before next command.
         function __direnv_export_eval --on-event fish_prompt
             if not set -q __direnv_initialized
                 set -g __direnv_initialized 1
                 /opt/homebrew/bin/direnv export fish | source
+                set -g __direnv_last_envrc "$DIRENV_FILE"
             end
             if test "$direnv_fish_mode" != disable_arrow
                 function __direnv_cd_hook --on-variable PWD
@@ -165,6 +165,36 @@ if status is-interactive
                     end
                 end
             end
+        end
+
+        # PERF: Override direnv's preexec handler to skip re-evaluation when
+        # we're still in the same .envrc scope. Direnv takes ~660ms per call
+        # due to Nix flake evaluation. By finding the nearest .envrc ourselves
+        # (pure Fish walk-up, no subprocess), we skip the expensive call for cd
+        # within the same project tree. Only re-evaluates when crossing .envrc
+        # boundaries (e.g., cd from one project to another).
+        function __direnv_export_eval_2 --on-event fish_preexec
+            if set -q __direnv_export_again
+                set -e __direnv_export_again
+                # Find nearest .envrc by walking up from PWD (no subprocess)
+                set -l dir "$PWD"
+                set -l found_envrc ""
+                while test "$dir" != /
+                    if test -f "$dir/.envrc"
+                        set found_envrc "$dir/.envrc"
+                        break
+                    end
+                    set dir (string replace -r '/[^/]+$' '' -- "$dir")
+                end
+                # Skip expensive direnv if same .envrc scope as last evaluation
+                if test "$found_envrc" = "$__direnv_last_envrc"
+                    : # Same scope — no re-evaluation needed
+                else
+                    /opt/homebrew/bin/direnv export fish | source
+                    set -g __direnv_last_envrc "$DIRENV_FILE"
+                end
+            end
+            functions --erase __direnv_cd_hook
         end
     end
 
