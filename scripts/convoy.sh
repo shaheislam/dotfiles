@@ -419,6 +419,48 @@ print(f\"  {status_color}{c['id']}\033[0m  {c['name']}  [{bar}] {completed}/{tot
     done <"$CONVOY_FILE"
 }
 
+cmd_find_or_create() {
+    local name="$1"
+
+    if [[ -z "$name" ]]; then
+        echo -e "${RED}Error: Convoy name required${NC}" >&2
+        exit 1
+    fi
+
+    ensure_file
+
+    # Look for an active convoy with this name
+    if [[ -s "$CONVOY_FILE" ]]; then
+        local existing_id
+        existing_id=$(python3 -c "
+import sys, json
+for line in open('$CONVOY_FILE'):
+    line = line.strip()
+    if not line: continue
+    c = json.loads(line)
+    if c['name'] == '$name':
+        total = len(c['status'])
+        completed = sum(1 for v in c['status'].values() if v in ('completed', 'failed'))
+        if total == 0 or completed < total:
+            print(c['id'])
+            break
+" 2>/dev/null)
+        if [[ -n "$existing_id" ]]; then
+            echo "$existing_id"
+            return 0
+        fi
+    fi
+
+    # No active convoy with this name — create one
+    local id ts
+    id="$(generate_id)"
+    ts="$(timestamp_now)"
+    local json="{\"id\":\"${id}\",\"name\":\"$(json_escape "$name")\",\"tickets\":[],\"status\":{},\"created\":\"${ts}\",\"updated\":\"${ts}\"}"
+    echo "$json" >>"$CONVOY_FILE"
+    echo -e "${GREEN}Created convoy${NC} ${BOLD}${id}${NC}: ${name}" >&2
+    echo "$id"
+}
+
 cmd_check() {
     local convoy_id="$1"
 
@@ -467,6 +509,7 @@ show_help() {
     echo "  status <convoy-id> [--json]             Show convoy progress"
     echo "  list [--active] [--json]                List convoys"
     echo "  check <convoy-id>                       Exit 0 if all complete"
+    echo "  find-or-create <name>                   Find active convoy by name or create new"
     echo ""
     echo "STORAGE:"
     echo "  ${CONVOY_FILE}"
@@ -488,6 +531,7 @@ fail) cmd_fail "$@" ;;
 status) cmd_status "$@" ;;
 list) cmd_list "$@" ;;
 check) cmd_check "$@" ;;
+find-or-create) cmd_find_or_create "$@" ;;
 help | --help | -h)
     show_help
     exit 0

@@ -380,7 +380,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --no-auto-cleanup    Disable auto-cleanup (keep worktree after merge)"
         echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
         echo "  --status             Show all agent states (shortcut for agent-state.sh --all)"
-        echo "  --convoy ID          Associate ticket with a convoy batch"
+        echo "  --convoy NAME|ID     Associate ticket with a convoy (creates if name doesn't exist)"
         echo "  --molecule [ID]      Create/attach molecule workflow (auto-creates from template steps)"
         echo "  --town               Enable town-level bead sync on completion (default: on)"
         echo "  --no-town            Disable town-level bead sync"
@@ -1078,6 +1078,19 @@ $prompt_suffix"
         tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" Enter
     end
 
+    # Resolve convoy name to ID before writing state file
+    if test -n "$convoy_id"
+        set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
+        if not test -x "$convoy_script"
+            set convoy_script "$HOME/dotfiles-gastown/scripts/convoy.sh"
+        end
+        if test -x "$convoy_script"
+            if not string match -qr '^c[0-9a-f]+$' "$convoy_id"
+                set convoy_id (bash "$convoy_script" find-or-create "$convoy_id" 2>/dev/null | tail -1)
+            end
+        end
+    end
+
     # Create state file for post-completion hook (directory already created for launch script)
     set -l state_file "$worktree_path/.claude/ticket-execute.local.md"
 
@@ -1154,7 +1167,7 @@ $prompt" >$state_file
         end
     end
 
-    # Add ticket to convoy if --convoy specified
+    # Add ticket to convoy (ID already resolved from name above)
     if test -n "$convoy_id"
         set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
         if not test -x "$convoy_script"
