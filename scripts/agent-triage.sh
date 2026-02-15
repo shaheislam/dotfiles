@@ -33,56 +33,75 @@ MAX_NUDGE_RETRIES=2
 MAX_WAKE_RETRIES=5
 
 # Idle threshold before WAKE action (seconds)
-IDLE_THRESHOLD="${IDLE_THRESHOLD:-300}"  # 5 minutes
+IDLE_THRESHOLD="${IDLE_THRESHOLD:-300}" # 5 minutes
 
 # Log file
 TRIAGE_LOG="${TRIAGE_LOG:-$HOME/.claude/triage-log.jsonl}"
 
 DRY_RUN=false
 JSON_OUTPUT=false
+ALL_MODE=false
+QUIET=false
+AI_TRIAGE=false
 WORKTREE_PATH=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        --json)
-            JSON_OUTPUT=true
-            shift
-            ;;
-        --help|-h)
-            echo "Usage: agent-triage.sh <worktree-path> [--dry-run] [--json]"
-            echo ""
-            echo "Intelligent agent restart decisions."
-            echo ""
-            echo "Options:"
-            echo "  --dry-run   Assess only, don't execute actions"
-            echo "  --json      Output decision as JSON"
-            echo "  --help      Show this help"
-            echo ""
-            echo "Actions:"
-            echo "  START    Restart dead agent (crash recovery)"
-            echo "  WAKE     Send keystroke to idle agent"
-            echo "  NUDGE    Kill and restart stuck agent"
-            echo "  NOTHING  No action needed"
-            exit 0
-            ;;
-        -*)
-            echo "Error: Unknown option $1" >&2
-            exit 1
-            ;;
-        *)
-            WORKTREE_PATH="$1"
-            shift
-            ;;
+    --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+    --json)
+        JSON_OUTPUT=true
+        shift
+        ;;
+    --all)
+        ALL_MODE=true
+        shift
+        ;;
+    --quiet)
+        QUIET=true
+        shift
+        ;;
+    --ai-triage)
+        AI_TRIAGE=true
+        shift
+        ;;
+    --help | -h)
+        echo "Usage: agent-triage.sh <worktree-path> [--dry-run] [--json]"
+        echo "       agent-triage.sh --all [--quiet] [--dry-run] [--json]"
+        echo ""
+        echo "Intelligent agent restart decisions."
+        echo ""
+        echo "Options:"
+        echo "  --dry-run     Assess only, don't execute actions"
+        echo "  --json        Output decision as JSON"
+        echo "  --all         Triage all active worktrees"
+        echo "  --quiet       Suppress output when action is NOTHING (useful for cron)"
+        echo "  --ai-triage   Use Claude AI for triage decisions instead of heuristics"
+        echo "  --help        Show this help"
+        echo ""
+        echo "Actions:"
+        echo "  START    Restart dead agent (crash recovery)"
+        echo "  WAKE     Send keystroke to idle agent"
+        echo "  NUDGE    Kill and restart stuck agent"
+        echo "  NOTHING  No action needed"
+        exit 0
+        ;;
+    -*)
+        echo "Error: Unknown option $1" >&2
+        exit 1
+        ;;
+    *)
+        WORKTREE_PATH="$1"
+        shift
+        ;;
     esac
 done
 
-if [[ -z "$WORKTREE_PATH" ]]; then
-    echo "Error: worktree-path required" >&2
+if [[ -z "$WORKTREE_PATH" ]] && ! $ALL_MODE; then
+    echo "Error: worktree-path required (or use --all)" >&2
     echo "Usage: agent-triage.sh <worktree-path> [--dry-run] [--json]" >&2
     exit 1
 fi
@@ -107,7 +126,7 @@ RETRY_FILE="$WORKTREE_PATH/.claude/triage-retries.json"
 # Extract a string value from JSON (lightweight, no jq dependency)
 json_val() {
     local key="$1" json="$2"
-    python3 -c "import sys,json; print(json.load(sys.stdin).get('$key',''))" <<< "$json" 2>/dev/null
+    python3 -c "import sys,json; print(json.load(sys.stdin).get('$key',''))" <<<"$json" 2>/dev/null
 }
 
 # Read retry counters (creates file if missing)
@@ -123,7 +142,7 @@ read_retries() {
 write_retries() {
     local json="$1"
     mkdir -p "$(dirname "$RETRY_FILE")"
-    echo "$json" > "$RETRY_FILE"
+    echo "$json" >"$RETRY_FILE"
 }
 
 # Increment a counter in the retry file
@@ -148,9 +167,9 @@ increment_retry() {
     last_iteration=$(json_val "last_iteration" "$retries")
 
     case "$counter" in
-        start_count) start_count=$new_val ;;
-        nudge_count) nudge_count=$new_val ;;
-        wake_count)  wake_count=$new_val ;;
+    start_count) start_count=$new_val ;;
+    nudge_count) nudge_count=$new_val ;;
+    wake_count) wake_count=$new_val ;;
     esac
 
     write_retries "{\"start_count\":${start_count:-0},\"nudge_count\":${nudge_count:-0},\"wake_count\":${wake_count:-0},\"last_action\":\"$now\",\"last_iteration\":\"$last_iteration\"}"
@@ -179,12 +198,16 @@ log_decision() {
     mkdir -p "$(dirname "$TRIAGE_LOG")"
     local now
     now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-    echo "{\"timestamp\":\"$now\",\"worktree\":\"$WORKTREE_PATH\",\"action\":\"$action\",\"reason\":\"$reason\",\"executed\":$executed}" >> "$TRIAGE_LOG"
+    echo "{\"timestamp\":\"$now\",\"worktree\":\"$WORKTREE_PATH\",\"action\":\"$action\",\"reason\":\"$reason\",\"executed\":$executed}" >>"$TRIAGE_LOG"
 }
 
 # Output the decision result
 output_result() {
     local action="$1" reason="$2" state="$3" executed="$4"
+    # --quiet suppresses NOTHING output entirely
+    if $QUIET && [[ "$action" == "NOTHING" ]]; then
+        return 0
+    fi
     if $JSON_OUTPUT; then
         echo "{\"action\":\"$action\",\"reason\":\"$reason\",\"worktree\":\"$WORKTREE_PATH\",\"state\":\"$state\",\"executed\":$executed}"
     elif [[ "$action" != "NOTHING" ]]; then
@@ -368,108 +391,108 @@ NUDGE_COUNT=${NUDGE_COUNT:-0}
 WAKE_COUNT=${WAKE_COUNT:-0}
 
 case "$STATE" in
-    dead)
-        REASON="agent dead: $(json_val "reason" "$STATE_JSON")"
+dead)
+    REASON="agent dead: $(json_val "reason" "$STATE_JSON")"
 
-        if [[ "$START_COUNT" -ge "$MAX_START_RETRIES" ]]; then
-            log_decision "START" "retry limit ($MAX_START_RETRIES) exceeded" false
-            output_result "START" "retry limit exceeded ($START_COUNT/$MAX_START_RETRIES)" "$STATE" false
-            exit 2
-        fi
+    if [[ "$START_COUNT" -ge "$MAX_START_RETRIES" ]]; then
+        log_decision "START" "retry limit ($MAX_START_RETRIES) exceeded" false
+        output_result "START" "retry limit exceeded ($START_COUNT/$MAX_START_RETRIES)" "$STATE" false
+        exit 2
+    fi
 
-        if $DRY_RUN; then
-            log_decision "START" "$REASON (dry-run)" false
-            output_result "START" "$REASON" "$STATE" false
+    if $DRY_RUN; then
+        log_decision "START" "$REASON (dry-run)" false
+        output_result "START" "$REASON" "$STATE" false
+    else
+        if action_start "$STATE_JSON"; then
+            log_decision "START" "$REASON" true
+            output_result "START" "$REASON" "$STATE" true
         else
-            if action_start "$STATE_JSON"; then
-                log_decision "START" "$REASON" true
-                output_result "START" "$REASON" "$STATE" true
+            output_result "START" "$REASON (action failed)" "$STATE" false
+        fi
+    fi
+    ;;
+
+idle)
+    # Check how long idle — we use the stuck_for field if available,
+    # otherwise approximate from the iteration tracking file
+    IDLE_FOR=""
+    ITERATION_FILE="/tmp/tmux-claude-state/ralph-iter-$(echo "$WORKTREE_PATH" | tr '/' '-')"
+    if [[ -f "$ITERATION_FILE" ]]; then
+        SAVED_TS=$(cut -d: -f2 "$ITERATION_FILE" 2>/dev/null) || SAVED_TS=""
+        if [[ -n "$SAVED_TS" ]]; then
+            NOW=$(date +%s)
+            IDLE_FOR=$((NOW - SAVED_TS))
+        fi
+    fi
+
+    if [[ -n "$IDLE_FOR" && "$IDLE_FOR" -gt "$IDLE_THRESHOLD" ]]; then
+        IDLE_MINUTES=$((IDLE_FOR / 60))
+        REASON="idle for ${IDLE_MINUTES}m (threshold: $((IDLE_THRESHOLD / 60))m)"
+
+        if [[ "$WAKE_COUNT" -ge "$MAX_WAKE_RETRIES" ]]; then
+            # Escalate to NUDGE after too many failed wakes
+            if [[ "$NUDGE_COUNT" -ge "$MAX_NUDGE_RETRIES" ]]; then
+                log_decision "NUDGE" "wake+nudge retry limits exceeded" false
+                output_result "NUDGE" "retry limits exceeded (wake: $WAKE_COUNT/$MAX_WAKE_RETRIES, nudge: $NUDGE_COUNT/$MAX_NUDGE_RETRIES)" "$STATE" false
+                exit 2
+            fi
+
+            REASON="idle for ${IDLE_MINUTES}m, wake failed $WAKE_COUNT times — escalating to NUDGE"
+            if $DRY_RUN; then
+                log_decision "NUDGE" "$REASON (dry-run)" false
+                output_result "NUDGE" "$REASON" "$STATE" false
             else
-                output_result "START" "$REASON (action failed)" "$STATE" false
-            fi
-        fi
-        ;;
-
-    idle)
-        # Check how long idle — we use the stuck_for field if available,
-        # otherwise approximate from the iteration tracking file
-        IDLE_FOR=""
-        ITERATION_FILE="/tmp/tmux-claude-state/ralph-iter-$(echo "$WORKTREE_PATH" | tr '/' '-')"
-        if [[ -f "$ITERATION_FILE" ]]; then
-            SAVED_TS=$(cut -d: -f2 "$ITERATION_FILE" 2>/dev/null) || SAVED_TS=""
-            if [[ -n "$SAVED_TS" ]]; then
-                NOW=$(date +%s)
-                IDLE_FOR=$(( NOW - SAVED_TS ))
-            fi
-        fi
-
-        if [[ -n "$IDLE_FOR" && "$IDLE_FOR" -gt "$IDLE_THRESHOLD" ]]; then
-            IDLE_MINUTES=$(( IDLE_FOR / 60 ))
-            REASON="idle for ${IDLE_MINUTES}m (threshold: $((IDLE_THRESHOLD / 60))m)"
-
-            if [[ "$WAKE_COUNT" -ge "$MAX_WAKE_RETRIES" ]]; then
-                # Escalate to NUDGE after too many failed wakes
-                if [[ "$NUDGE_COUNT" -ge "$MAX_NUDGE_RETRIES" ]]; then
-                    log_decision "NUDGE" "wake+nudge retry limits exceeded" false
-                    output_result "NUDGE" "retry limits exceeded (wake: $WAKE_COUNT/$MAX_WAKE_RETRIES, nudge: $NUDGE_COUNT/$MAX_NUDGE_RETRIES)" "$STATE" false
-                    exit 2
-                fi
-
-                REASON="idle for ${IDLE_MINUTES}m, wake failed $WAKE_COUNT times — escalating to NUDGE"
-                if $DRY_RUN; then
-                    log_decision "NUDGE" "$REASON (dry-run)" false
-                    output_result "NUDGE" "$REASON" "$STATE" false
+                if action_nudge "$STATE_JSON"; then
+                    log_decision "NUDGE" "$REASON" true
+                    output_result "NUDGE" "$REASON" "$STATE" true
                 else
-                    if action_nudge "$STATE_JSON"; then
-                        log_decision "NUDGE" "$REASON" true
-                        output_result "NUDGE" "$REASON" "$STATE" true
-                    else
-                        output_result "NUDGE" "$REASON (action failed)" "$STATE" false
-                    fi
+                    output_result "NUDGE" "$REASON (action failed)" "$STATE" false
                 fi
+            fi
+        else
+            if $DRY_RUN; then
+                log_decision "WAKE" "$REASON (dry-run)" false
+                output_result "WAKE" "$REASON" "$STATE" false
             else
-                if $DRY_RUN; then
-                    log_decision "WAKE" "$REASON (dry-run)" false
-                    output_result "WAKE" "$REASON" "$STATE" false
+                if action_wake "$STATE_JSON"; then
+                    log_decision "WAKE" "$REASON" true
+                    output_result "WAKE" "$REASON" "$STATE" true
                 else
-                    if action_wake "$STATE_JSON"; then
-                        log_decision "WAKE" "$REASON" true
-                        output_result "WAKE" "$REASON" "$STATE" true
-                    else
-                        output_result "WAKE" "$REASON (action failed)" "$STATE" false
-                    fi
+                    output_result "WAKE" "$REASON (action failed)" "$STATE" false
                 fi
             fi
+        fi
+    else
+        output_result "NOTHING" "idle but within threshold" "$STATE" false
+    fi
+    ;;
+
+stuck)
+    STUCK_FOR=$(json_val "stuck_for" "$STATE_JSON")
+    STUCK_MINUTES=$((${STUCK_FOR:-0} / 60))
+    REASON="stuck on iteration $ITERATION for ${STUCK_MINUTES}m"
+
+    if [[ "$NUDGE_COUNT" -ge "$MAX_NUDGE_RETRIES" ]]; then
+        log_decision "NUDGE" "retry limit ($MAX_NUDGE_RETRIES) exceeded" false
+        output_result "NUDGE" "retry limit exceeded ($NUDGE_COUNT/$MAX_NUDGE_RETRIES)" "$STATE" false
+        exit 2
+    fi
+
+    if $DRY_RUN; then
+        log_decision "NUDGE" "$REASON (dry-run)" false
+        output_result "NUDGE" "$REASON" "$STATE" false
+    else
+        if action_nudge "$STATE_JSON"; then
+            log_decision "NUDGE" "$REASON" true
+            output_result "NUDGE" "$REASON" "$STATE" true
         else
-            output_result "NOTHING" "idle but within threshold" "$STATE" false
+            output_result "NUDGE" "$REASON (action failed)" "$STATE" false
         fi
-        ;;
+    fi
+    ;;
 
-    stuck)
-        STUCK_FOR=$(json_val "stuck_for" "$STATE_JSON")
-        STUCK_MINUTES=$(( ${STUCK_FOR:-0} / 60 ))
-        REASON="stuck on iteration $ITERATION for ${STUCK_MINUTES}m"
-
-        if [[ "$NUDGE_COUNT" -ge "$MAX_NUDGE_RETRIES" ]]; then
-            log_decision "NUDGE" "retry limit ($MAX_NUDGE_RETRIES) exceeded" false
-            output_result "NUDGE" "retry limit exceeded ($NUDGE_COUNT/$MAX_NUDGE_RETRIES)" "$STATE" false
-            exit 2
-        fi
-
-        if $DRY_RUN; then
-            log_decision "NUDGE" "$REASON (dry-run)" false
-            output_result "NUDGE" "$REASON" "$STATE" false
-        else
-            if action_nudge "$STATE_JSON"; then
-                log_decision "NUDGE" "$REASON" true
-                output_result "NUDGE" "$REASON" "$STATE" true
-            else
-                output_result "NUDGE" "$REASON (action failed)" "$STATE" false
-            fi
-        fi
-        ;;
-
-    running|completed|none|*)
-        output_result "NOTHING" "state is $STATE" "$STATE" false
-        ;;
+running | completed | none | *)
+    output_result "NOTHING" "state is $STATE" "$STATE" false
+    ;;
 esac

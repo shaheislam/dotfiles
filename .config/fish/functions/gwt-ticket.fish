@@ -42,7 +42,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l show_help false
     set -l skip_next false
     set -l positional_index 0
-    set -l is_auto_generated false  # Track if issue key was auto-generated
+    set -l is_auto_generated false # Track if issue key was auto-generated
     set -l slash_command "/ralph-wiggum:ralph-loop"
     set -l prompt_template ""
     set -l prompt_prefix ""
@@ -63,6 +63,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l bridge_model ""
     set -l bridge_timeout ""
     set -l bridge_log ""
+    set -l auto_cleanup ""
+    set -l rebase_merge false
+    set -l convoy_id ""
+    set -l molecule_id ""
+    set -l town_sync false
+    set -l mayor_tracked false
 
     for i in (seq (count $argv))
         if $skip_next
@@ -166,7 +172,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             case --local
                 set use_local true
                 if test -z "$local_model"
-                    set local_model "qwen3-coder"
+                    set local_model qwen3-coder
                 end
             case --model
                 set -l next_i (math $i + 1)
@@ -258,6 +264,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --no-checkpoints
                 set no_checkpoints true
+            case --auto-cleanup
+                set auto_cleanup --auto-cleanup
+            case --no-auto-cleanup
+                set auto_cleanup --no-auto-cleanup
+            case --rebase
+                set rebase_merge true
             case --status
                 set show_status true
             case --json
@@ -280,6 +292,33 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --gate-dep requires worktree path"
                     return 1
                 end
+            case --convoy
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set convoy_id $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --convoy requires a convoy ID"
+                    return 1
+                end
+            case --molecule
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    # If next arg looks like a molecule ID (not a flag), use it
+                    if not string match -q -- '-*' $argv[$next_i]
+                        set molecule_id $argv[$next_i]
+                        set skip_next true
+                    else
+                        # No ID given, will create from template
+                        set molecule_id auto
+                    end
+                else
+                    set molecule_id auto
+                end
+            case --town
+                set town_sync true
+            case --mayor
+                set mayor_tracked true
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -332,8 +371,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge-model M     Model override for first provider in --bridge-providers order"
         echo "  --bridge-timeout S   Per-provider timeout in seconds (default: 120)"
         echo "  --bridge-log FILE    Log bridge reviews to file"
+        echo "  --rebase             Rebase onto main before merging (re-spawns on conflict)"
+        echo "  --auto-cleanup       Auto-remove worktree after successful merge (1hr grace period)"
+        echo "  --no-auto-cleanup    Disable auto-cleanup (keep worktree after merge)"
         echo "  --template, -t NAME  Workflow template (implement, bugfix, refactor, test)"
         echo "  --status             Show all agent states (shortcut for agent-state.sh --all)"
+        echo "  --convoy ID          Associate ticket with a convoy batch"
+        echo "  --molecule [ID]      Create/attach molecule workflow (auto-creates from template steps)"
+        echo "  --town               Enable town-level bead sync on completion"
+        echo "  --mayor              Register ticket with mayor for global tracking"
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency)"
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --help, -h           Show this help"
@@ -413,7 +459,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
         set title "$issue_key"
         # Auto-generate: use TASK as marker (slug used for branch/worktree names)
-        set issue_key "TASK"
+        set issue_key TASK
         set is_auto_generated true
     end
 
@@ -430,7 +476,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
 
     if test -z "$description"
-        set description "$title"  # Use title as description if not provided
+        set description "$title" # Use title as description if not provided
     end
 
     # Generate branch name
@@ -516,6 +562,18 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if test -n "$prompt_suffix"
         echo "Suffix:    (custom)"
     end
+    if test -n "$convoy_id"
+        echo "Convoy:    $convoy_id"
+    end
+    if test -n "$molecule_id"
+        echo "Molecule:  $molecule_id"
+    end
+    if $town_sync
+        echo "Town sync: enabled"
+    end
+    if $mayor_tracked
+        echo "Mayor:     tracked"
+    end
     if test -n "$gate_type"
         echo "Gate:      $gate_type"
         if test -n "$gate_dep_worktree"
@@ -523,6 +581,17 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
     echo ""
+
+    # Check inbox for pending instructions
+    set -l mail_script "$HOME/dotfiles/scripts/agent-mail.sh"
+    if test -x "$mail_script"
+        set -l unread_count (bash "$mail_script" count --for "$branch_name" 2>/dev/null)
+        if test -n "$unread_count" -a "$unread_count" != 0
+            echo "Mail: $unread_count unread message(s) for $branch_name"
+            bash "$mail_script" inbox --for "$branch_name" --unread 2>/dev/null
+            echo ""
+        end
+    end
 
     # Step 1: Create worktree via gwt-dev (reuses existing logic)
     echo "[1/4] Creating worktree..."
@@ -551,6 +620,60 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             pushd $worktree_path
             bd init --quiet 2>/dev/null; or true
             popd
+        end
+    end
+
+    # Init agent CV for this worktree
+    set -l cv_script "$HOME/dotfiles/scripts/agent-cv.sh"
+    if test -x "$cv_script"
+        set -l cv_args init "$worktree_path" --issue "$issue_key" --title "$title"
+        if test -n "$sub_profile"
+            set cv_args $cv_args --sub "$sub_profile"
+        end
+        if test -n "$local_model"
+            set cv_args $cv_args --model "$local_model"
+        end
+        bash $cv_script $cv_args 2>/dev/null; or true
+    end
+
+    # Create bead for this work item
+    if command -q bd
+        if test -d "$worktree_path/.beads"
+            pushd $worktree_path
+            bd create "$issue_key" --title "$title" --body "$description" 2>/dev/null; or true
+            popd
+        end
+    end
+
+    # Create molecule from template steps if --molecule auto and --template given
+    if test "$molecule_id" = auto -a -n "$workflow_template"
+        set -l mol_script "$HOME/dotfiles/scripts/molecule.sh"
+        if not test -x "$mol_script"
+            set mol_script "$HOME/dotfiles-gastown/scripts/molecule.sh"
+        end
+        if test -x "$mol_script"
+            set -l template_file "$HOME/dotfiles/templates/workflows/$workflow_template.toml"
+            if test -f "$template_file"
+                # Extract steps from template if present, otherwise use defaults
+                set -l steps (grep '^\[\[steps\]\]' "$template_file" | wc -l | string trim)
+                if test "$steps" -gt 0
+                    # Has [[steps]] sections - extract step names
+                    set -l step_names (grep '^name = ' "$template_file" | sed 's/^name = *//' | tr -d '"' | string join ',')
+                    set molecule_id (bash "$mol_script" create "$issue_key-$workflow_template" --steps "$step_names" 2>/dev/null | grep -o 'm[0-9a-f]*')
+                else
+                    # No steps defined, create single-step molecule
+                    set molecule_id (bash "$mol_script" create "$issue_key-$workflow_template" --steps "$workflow_template" 2>/dev/null | grep -o 'm[0-9a-f]*')
+                end
+            end
+        end
+    else if test "$molecule_id" = auto
+        # --molecule without --template: create simple implement molecule
+        set -l mol_script "$HOME/dotfiles/scripts/molecule.sh"
+        if not test -x "$mol_script"
+            set mol_script "$HOME/dotfiles-gastown/scripts/molecule.sh"
+        end
+        if test -x "$mol_script"
+            set molecule_id (bash "$mol_script" create "$issue_key" --steps "implement,test,review" 2>/dev/null | grep -o 'm[0-9a-f]*')
         end
     end
 
@@ -723,33 +846,33 @@ $prompt_suffix"
 
     # Write script using echo to avoid printf escape issues
     # When using devcon, this script runs INSIDE the container via devcontainer exec
-    echo '#!/usr/bin/env fish' > $launch_script
-    echo "set -l prompt $escaped_prompt" >> $launch_script
-    echo "" >> $launch_script
+    echo '#!/usr/bin/env fish' >$launch_script
+    echo "set -l prompt $escaped_prompt" >>$launch_script
+    echo "" >>$launch_script
 
     # Set CLAUDE_CONFIG_DIR if subscription profile specified
     if test -n "$sub_profile"
         if $use_devcon
-            echo "set -gx CLAUDE_CONFIG_DIR /home/node/.claude-$sub_profile" >> $launch_script
+            echo "set -gx CLAUDE_CONFIG_DIR /home/node/.claude-$sub_profile" >>$launch_script
         else
-            echo "set -gx CLAUDE_CONFIG_DIR $HOME/.claude-$sub_profile" >> $launch_script
+            echo "set -gx CLAUDE_CONFIG_DIR $HOME/.claude-$sub_profile" >>$launch_script
         end
-        echo "" >> $launch_script
+        echo "" >>$launch_script
     end
 
     # Set CROSS_PROVIDER_BRIDGE if bridge mode enabled
     if $bridge_mode
-        echo "set -gx CROSS_PROVIDER_BRIDGE 1" >> $launch_script
+        echo "set -gx CROSS_PROVIDER_BRIDGE 1" >>$launch_script
         if test -n "$bridge_iterations"
-            echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS $bridge_iterations" >> $launch_script
+            echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS $bridge_iterations" >>$launch_script
         else
-            echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS 3" >> $launch_script
+            echo "set -gx CROSS_PROVIDER_MAX_ITERATIONS 3" >>$launch_script
         end
         if test -n "$bridge_providers"
-            echo "set -gx CROSS_PROVIDER_ORDER $bridge_providers" >> $launch_script
+            echo "set -gx CROSS_PROVIDER_ORDER $bridge_providers" >>$launch_script
         end
         if $bridge_verbose
-            echo "set -gx CROSS_PROVIDER_VERBOSE 1" >> $launch_script
+            echo "set -gx CROSS_PROVIDER_VERBOSE 1" >>$launch_script
         end
         if test -n "$bridge_model"
             # Set model for the first provider in the order
@@ -757,63 +880,63 @@ $prompt_suffix"
             set -l first_provider (string split ',' -- (test -n "$bridge_providers"; and echo $bridge_providers; or echo "codex"))[1]
             switch $first_provider
                 case codex
-                    echo "set -gx CROSS_PROVIDER_CODEX_MODEL $bridge_model" >> $launch_script
+                    echo "set -gx CROSS_PROVIDER_CODEX_MODEL $bridge_model" >>$launch_script
                 case gemini
-                    echo "set -gx CROSS_PROVIDER_GEMINI_MODEL $bridge_model" >> $launch_script
+                    echo "set -gx CROSS_PROVIDER_GEMINI_MODEL $bridge_model" >>$launch_script
                 case ollama
-                    echo "set -gx CROSS_PROVIDER_OLLAMA_MODEL $bridge_model" >> $launch_script
+                    echo "set -gx CROSS_PROVIDER_OLLAMA_MODEL $bridge_model" >>$launch_script
                 case deepseek
-                    echo "set -gx CROSS_PROVIDER_DEEPSEEK_MODEL $bridge_model" >> $launch_script
+                    echo "set -gx CROSS_PROVIDER_DEEPSEEK_MODEL $bridge_model" >>$launch_script
                 case claude
-                    echo "set -gx CROSS_PROVIDER_CLAUDE_MODEL $bridge_model" >> $launch_script
+                    echo "set -gx CROSS_PROVIDER_CLAUDE_MODEL $bridge_model" >>$launch_script
                 case opencode
-                    echo "set -gx CROSS_PROVIDER_OPENCODE_MODEL $bridge_model" >> $launch_script
+                    echo "set -gx CROSS_PROVIDER_OPENCODE_MODEL $bridge_model" >>$launch_script
             end
         end
         if test -n "$bridge_timeout"
-            echo "set -gx CROSS_PROVIDER_TIMEOUT $bridge_timeout" >> $launch_script
+            echo "set -gx CROSS_PROVIDER_TIMEOUT $bridge_timeout" >>$launch_script
         end
         if test -n "$bridge_log"
-            echo "set -gx CROSS_PROVIDER_LOG $bridge_log" >> $launch_script
+            echo "set -gx CROSS_PROVIDER_LOG $bridge_log" >>$launch_script
         end
-        echo "" >> $launch_script
+        echo "" >>$launch_script
     end
 
     # If using local Ollama, add auto-start and env var bridge
     if $use_local
-        echo '# Ensure Ollama is running (auto-start)' >> $launch_script
-        echo 'if not curl -sf http://localhost:11434/api/tags >/dev/null 2>&1' >> $launch_script
-        echo '    echo "Starting Ollama..."' >> $launch_script
-        echo '    if test -d "/Applications/Ollama.app"' >> $launch_script
-        echo '        open -a Ollama' >> $launch_script
-        echo '    else' >> $launch_script
-        echo '        ollama serve &>/dev/null &' >> $launch_script
-        echo '    end' >> $launch_script
-        echo '    set -l attempts 0' >> $launch_script
-        echo '    while not curl -sf http://localhost:11434/api/tags >/dev/null 2>&1' >> $launch_script
-        echo '        sleep 1' >> $launch_script
-        echo '        set attempts (math $attempts + 1)' >> $launch_script
-        echo '        if test $attempts -ge 30' >> $launch_script
-        echo '            echo "Error: Ollama failed to start after 30s"' >> $launch_script
-        echo '            exit 1' >> $launch_script
-        echo '        end' >> $launch_script
-        echo '    end' >> $launch_script
-        echo '    echo "Ollama is running"' >> $launch_script
-        echo 'end' >> $launch_script
-        echo '' >> $launch_script
+        echo '# Ensure Ollama is running (auto-start)' >>$launch_script
+        echo 'if not curl -sf http://localhost:11434/api/tags >/dev/null 2>&1' >>$launch_script
+        echo '    echo "Starting Ollama..."' >>$launch_script
+        echo '    if test -d "/Applications/Ollama.app"' >>$launch_script
+        echo '        open -a Ollama' >>$launch_script
+        echo '    else' >>$launch_script
+        echo '        ollama serve &>/dev/null &' >>$launch_script
+        echo '    end' >>$launch_script
+        echo '    set -l attempts 0' >>$launch_script
+        echo '    while not curl -sf http://localhost:11434/api/tags >/dev/null 2>&1' >>$launch_script
+        echo '        sleep 1' >>$launch_script
+        echo '        set attempts (math $attempts + 1)' >>$launch_script
+        echo '        if test $attempts -ge 30' >>$launch_script
+        echo '            echo "Error: Ollama failed to start after 30s"' >>$launch_script
+        echo '            exit 1' >>$launch_script
+        echo '        end' >>$launch_script
+        echo '    end' >>$launch_script
+        echo '    echo "Ollama is running"' >>$launch_script
+        echo end >>$launch_script
+        echo '' >>$launch_script
         # Check if model is available, pull if needed
-        echo '# Ensure model is available' >> $launch_script
-        echo "if not ollama list 2>/dev/null | string match -q '*$local_model*'" >> $launch_script
-        echo "    echo 'Pulling model $local_model...'" >> $launch_script
-        echo "    ollama pull $local_model" >> $launch_script
-        echo 'end' >> $launch_script
-        echo '' >> $launch_script
+        echo '# Ensure model is available' >>$launch_script
+        echo "if not ollama list 2>/dev/null | string match -q '*$local_model*'" >>$launch_script
+        echo "    echo 'Pulling model $local_model...'" >>$launch_script
+        echo "    ollama pull $local_model" >>$launch_script
+        echo end >>$launch_script
+        echo '' >>$launch_script
         # Set bridge env vars
-        echo '# Bridge Claude Code to local Ollama' >> $launch_script
-        echo 'set -gx ANTHROPIC_BASE_URL http://localhost:11434' >> $launch_script
-        echo 'set -gx ANTHROPIC_API_KEY ollama' >> $launch_script
-        echo "set -gx ANTHROPIC_MODEL $local_model" >> $launch_script
-        echo '' >> $launch_script
+        echo '# Bridge Claude Code to local Ollama' >>$launch_script
+        echo 'set -gx ANTHROPIC_BASE_URL http://localhost:11434' >>$launch_script
+        echo 'set -gx ANTHROPIC_API_KEY ollama' >>$launch_script
+        echo "set -gx ANTHROPIC_MODEL $local_model" >>$launch_script
+        echo '' >>$launch_script
     end
 
     # Build the claude command based on slash_command
@@ -821,16 +944,16 @@ $prompt_suffix"
     # ralph-loop needs special args, others just get the prompt
     # -- separates flags from positional args (prompt starts with / which --add-dir would consume)
     if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >> $launch_script
+        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >>$launch_script
     else
         # For other commands, just pass the prompt as the argument
-        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\""' >> $launch_script
+        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\""' >>$launch_script
     end
 
     if not $use_devcon
         # Pane stays open for witness to use (conflict resolution, debugging)
-        echo "" >> $launch_script
-        echo "exec fish" >> $launch_script
+        echo "" >>$launch_script
+        echo "exec fish" >>$launch_script
     end
     chmod +x $launch_script
 
@@ -880,20 +1003,20 @@ $prompt_suffix"
         # 2. Post-completion runs on host after Claude exits (has git, gh, etc.)
         # 3. Falls back to interactive fish on failure so pane stays open for debugging
         set -l claude_pane_script "$worktree_path/.claude/start-claude-pane.fish"
-        echo '#!/usr/bin/env fish' > $claude_pane_script
-        echo "$exec_cmd fish $container_launch_script" >> $claude_pane_script
-        echo "set -l claude_exit \$status" >> $claude_pane_script
-        echo "" >> $claude_pane_script
-        echo "if test \$claude_exit -ne 0" >> $claude_pane_script
-        echo "    echo 'Claude Code devcontainer exec failed (exit '\$claude_exit')'" >> $claude_pane_script
-        echo "    echo 'Container: $instance_name'" >> $claude_pane_script
-        echo "    echo 'Exec cmd: $exec_cmd'" >> $claude_pane_script
-        echo "    echo 'Script: $container_launch_script'" >> $claude_pane_script
-        echo "    exec fish" >> $claude_pane_script
-        echo "end" >> $claude_pane_script
-        echo "" >> $claude_pane_script
-        echo "# Pane stays open for witness to use (conflict resolution, debugging)" >> $claude_pane_script
-        echo "exec fish" >> $claude_pane_script
+        echo '#!/usr/bin/env fish' >$claude_pane_script
+        echo "$exec_cmd fish $container_launch_script" >>$claude_pane_script
+        echo "set -l claude_exit \$status" >>$claude_pane_script
+        echo "" >>$claude_pane_script
+        echo "if test \$claude_exit -ne 0" >>$claude_pane_script
+        echo "    echo 'Claude Code devcontainer exec failed (exit '\$claude_exit')'" >>$claude_pane_script
+        echo "    echo 'Container: $instance_name'" >>$claude_pane_script
+        echo "    echo 'Exec cmd: $exec_cmd'" >>$claude_pane_script
+        echo "    echo 'Script: $container_launch_script'" >>$claude_pane_script
+        echo "    exec fish" >>$claude_pane_script
+        echo end >>$claude_pane_script
+        echo "" >>$claude_pane_script
+        echo "# Pane stays open for witness to use (conflict resolution, debugging)" >>$claude_pane_script
+        echo "exec fish" >>$claude_pane_script
         chmod +x $claude_pane_script
 
         # Hybrid layout: Claude in devcontainer, nvim + terminal on host
@@ -907,22 +1030,22 @@ $prompt_suffix"
         # Write setup script to avoid send-keys buffer corruption from direnv output
         # Must be fish (not bash) because devcon is a fish function
         set -l setup_script "$worktree_path/.claude/setup-panes.fish"
-        echo '#!/usr/bin/env fish' > $setup_script
-        echo "# Auto-generated by gwt-ticket - hybrid layout (Claude in devcon, nvim+terminal on host)" >> $setup_script
-        echo "$devcon_up_cmd" >> $setup_script
-        echo "or begin" >> $setup_script
-        echo "    echo 'Devcontainer failed to start'" >> $setup_script
+        echo '#!/usr/bin/env fish' >$setup_script
+        echo "# Auto-generated by gwt-ticket - hybrid layout (Claude in devcon, nvim+terminal on host)" >>$setup_script
+        echo "$devcon_up_cmd" >>$setup_script
+        echo "or begin" >>$setup_script
+        echo "    echo 'Devcontainer failed to start'" >>$setup_script
         # Revert sandbox relaxation on devcontainer failure
-        echo "    bash '$sandbox_script' default 2>/dev/null; or true" >> $setup_script
-        echo "    exit 1" >> $setup_script
-        echo "end" >> $setup_script
-        echo "sleep 2" >> $setup_script
-        echo "tmux split-window -hb -p 35 -c '$worktree_path' 'fish $claude_pane_script'" >> $setup_script
-        echo "tmux last-pane" >> $setup_script
-        echo "tmux split-window -v -p 30 -c '$worktree_path'" >> $setup_script
-        echo "tmux select-pane -U" >> $setup_script
-        echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" >> $setup_script
-        echo "exec fish" >> $setup_script
+        echo "    bash '$sandbox_script' default 2>/dev/null; or true" >>$setup_script
+        echo "    exit 1" >>$setup_script
+        echo end >>$setup_script
+        echo "sleep 2" >>$setup_script
+        echo "tmux split-window -hb -p 35 -c '$worktree_path' 'fish $claude_pane_script'" >>$setup_script
+        echo "tmux last-pane" >>$setup_script
+        echo "tmux split-window -v -p 30 -c '$worktree_path'" >>$setup_script
+        echo "tmux select-pane -U" >>$setup_script
+        echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" >>$setup_script
+        echo "exec fish" >>$setup_script
         chmod +x $setup_script
 
         # Short send-keys payload immune to direnv interference
@@ -953,9 +1076,9 @@ $prompt_suffix"
     set -l state_file "$worktree_path/.claude/ticket-execute.local.md"
 
     # Determine if ticket tracking should be skipped
-    set -l auto_generated_str "false"
+    set -l auto_generated_str false
     if $is_auto_generated
-        set auto_generated_str "true"
+        set auto_generated_str true
     end
 
     echo "---
@@ -972,6 +1095,10 @@ tmux_session: \"$session_name\"
 tmux_window: \"$window_name\"
 use_local: $use_local
 local_model: \"$local_model\"
+convoy_id: \"$convoy_id\"
+molecule_id: \"$molecule_id\"
+town_sync: $town_sync
+mayor_tracked: $mayor_tracked
 ---
 
 # Ticket Execution State
@@ -986,7 +1113,7 @@ the post-completion hook will:
 
 ## Prompt Given
 
-$prompt" > $state_file
+$prompt" >$state_file
 
     # Create phase gate if --gate was specified
     if test -n "$gate_type"
@@ -1009,6 +1136,29 @@ $prompt" > $state_file
         end
     end
 
+    # Register with mayor for global tracking if --mayor specified
+    if $mayor_tracked
+        set -l mayor_script "$HOME/dotfiles/scripts/gwt-mayor.sh"
+        if not test -x "$mayor_script"
+            set mayor_script "$HOME/dotfiles-gastown/scripts/gwt-mayor.sh"
+        end
+        if test -x "$mayor_script"
+            # Mayor logs the tracking registration
+            bash "$mayor_script" log-event ticket-registered "$issue_key" "$worktree_path" 2>/dev/null; or true
+        end
+    end
+
+    # Add ticket to convoy if --convoy specified
+    if test -n "$convoy_id"
+        set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
+        if not test -x "$convoy_script"
+            set convoy_script "$HOME/dotfiles-gastown/scripts/convoy.sh"
+        end
+        if test -x "$convoy_script"
+            bash "$convoy_script" add "$convoy_id" "$issue_key" 2>/dev/null; or true
+        end
+    end
+
     # Ensure merge-queue daemon is running (serializes merges across agents)
     set -l merge_queue_script ""
     for p in ~/dotfiles/scripts/merge-queue.sh ~/dotfiles-gastownbeads/scripts/merge-queue.sh
@@ -1025,7 +1175,11 @@ $prompt" > $state_file
             end
         end
         if not $daemon_running
-            bash "$merge_queue_script" daemon
+            set -l daemon_args daemon
+            if $rebase_merge
+                set daemon_args $daemon_args --rebase
+            end
+            bash "$merge_queue_script" $daemon_args
             echo "Started merge-queue daemon"
         end
     end
@@ -1037,7 +1191,11 @@ $prompt" > $state_file
         set witness_script "$HOME/dotfiles-gastownbeads/scripts/worktree-witness.sh"
     end
     if test -x "$witness_script"
-        bash "$witness_script" "$worktree_path" --poll-interval 30 --max-retries 3 &
+        set -l witness_args "$worktree_path" --poll-interval 30 --max-retries 3
+        if test -n "$auto_cleanup"
+            set witness_args $witness_args $auto_cleanup
+        end
+        bash "$witness_script" $witness_args &
         disown
     end
 
