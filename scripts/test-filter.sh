@@ -385,6 +385,8 @@ test_cd_perf() {
     run_test "Mise preexec has config scope check" "grep -q '__mise_last_config' '$DOTFILES_ROOT/.config/fish/config.fish'"
     run_test "Mise preexec is overridden" "grep -q 'function __mise_env_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish'"
     run_test "Mise preexec no stray echo" "! grep -A2 'mise hook-env.*source' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -qE '^[[:space:]]*echo;?\$'"
+    # Mise scope tracks mtime to detect in-place config edits (not just path)
+    run_test "Mise scope tracks mtime" "grep -A20 'function __mise_env_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'stat.*%m'"
 
     # denv should reset both direnv and mise scope caches
     run_test "denv resets mise scope cache" "grep -A15 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q '__mise_last_config'"
@@ -392,6 +394,8 @@ test_cd_perf() {
     # Diffview should cache positive socket results (avoid 52ms tmux IPC per cd)
     run_test "Diffview caches positive socket" "grep -q '__diffview_cached_socket' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
     run_test "Diffview socket self-heals on stale" "grep -q 'Socket gone.*clear cache' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    # Diffview cache invalidates on tmux server/session change
+    run_test "Diffview invalidates on TMUX change" "grep -q '__diffview_cached_tmux' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
 
     # All hooks must be inside non-interactive guard
     run_test "Hooks gated by is-interactive" "grep -q 'status is-interactive' '$DOTFILES_ROOT/.config/fish/config.fish'"
