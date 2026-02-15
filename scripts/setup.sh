@@ -29,7 +29,7 @@ SKIP_FONTS_APPS=false
 # ============================================================================
 
 show_help() {
-    cat << EOF
+    cat <<EOF
 Universal Dotfiles Setup - Cross-Platform Installation
 
 USAGE:
@@ -106,60 +106,60 @@ EOF
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --profile)
-                PROFILE="$2"
-                shift 2
-                ;;
-            --os)
-                OS="$2"
-                shift 2
-                ;;
-            --mode)
-                MODE="$2"
-                shift 2
-                ;;
-            --offline-package)
-                OFFLINE_PACKAGE="$2"
-                MODE="offline"
-                shift 2
-                ;;
-            --dry-run)
-                DRY_RUN=true
-                shift
-                ;;
-            --no-confirm)
-                NO_CONFIRM=true
-                shift
-                ;;
-            --verbose)
-                VERBOSE=true
-                shift
-                ;;
-            --skip-packages)
-                SKIP_PACKAGES=true
-                shift
-                ;;
-            --skip-dotfiles)
-                SKIP_DOTFILES=true
-                shift
-                ;;
-            --skip-shells)
-                SKIP_SHELLS=true
-                shift
-                ;;
-            --skip-fonts-apps)
-                SKIP_FONTS_APPS=true
-                shift
-                ;;
-            -h|--help)
-                show_help
-                exit 0
-                ;;
-            *)
-                echo "Unknown option: $1"
-                show_help
-                exit 1
-                ;;
+        --profile)
+            PROFILE="$2"
+            shift 2
+            ;;
+        --os)
+            OS="$2"
+            shift 2
+            ;;
+        --mode)
+            MODE="$2"
+            shift 2
+            ;;
+        --offline-package)
+            OFFLINE_PACKAGE="$2"
+            MODE="offline"
+            shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --no-confirm)
+            NO_CONFIRM=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        --skip-packages)
+            SKIP_PACKAGES=true
+            shift
+            ;;
+        --skip-dotfiles)
+            SKIP_DOTFILES=true
+            shift
+            ;;
+        --skip-shells)
+            SKIP_SHELLS=true
+            shift
+            ;;
+        --skip-fonts-apps)
+            SKIP_FONTS_APPS=true
+            shift
+            ;;
+        -h | --help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
         esac
     done
 
@@ -305,7 +305,7 @@ phase_2_cli_tools() {
         if curl -sL "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme" \
             -o "$(bat --config-dir)/themes/Catppuccin Mocha.tmTheme"; then
             bat cache --build >/dev/null 2>&1
-            echo '--theme="Catppuccin Mocha"' > "$(bat --config-dir)/config"
+            echo '--theme="Catppuccin Mocha"' >"$(bat --config-dir)/config"
             print_success "Bat configured with Catppuccin Mocha theme"
         else
             print_warning "Failed to download Catppuccin Mocha theme for bat"
@@ -313,7 +313,7 @@ phase_2_cli_tools() {
 
         # Rebuild bat cache for custom themes (handles version upgrades)
         if [[ -d "$DOTFILES_ROOT/.config/bat/themes" ]] || [[ -d "$(bat --config-dir)/themes" ]]; then
-            bat cache --build >/dev/null 2>&1 && \
+            bat cache --build >/dev/null 2>&1 &&
                 print_success "bat cache rebuilt for custom themes" || true
         fi
     fi
@@ -358,8 +358,8 @@ phase_3_development() {
             print_step "Installing Node.js global packages..."
             # Install prettierd and prettier-plugin-toml
             if command_exists bun; then
-                bun install -g @fsouza/prettierd prettier-plugin-toml >/dev/null 2>&1 || \
-                npm install -g @fsouza/prettierd prettier-plugin-toml >/dev/null 2>&1
+                bun install -g @fsouza/prettierd prettier-plugin-toml >/dev/null 2>&1 ||
+                    npm install -g @fsouza/prettierd prettier-plugin-toml >/dev/null 2>&1
             else
                 npm install -g @fsouza/prettierd prettier-plugin-toml >/dev/null 2>&1
             fi
@@ -435,23 +435,23 @@ phase_4_cloud_tools() {
     # Install or upgrade via Homebrew (the only supported method)
     if ! brew list --cask claude-code >/dev/null 2>&1; then
         print_step "Installing Claude Code via Homebrew..."
-        brew install --cask claude-code >/dev/null 2>&1 && \
-            print_success "Claude Code installed" || \
+        brew install --cask claude-code >/dev/null 2>&1 &&
+            print_success "Claude Code installed" ||
             print_warning "Failed to install Claude Code - install manually with: brew install --cask claude-code"
     else
         print_success "Claude Code CLI installed at: $(which claude)"
         # Upgrade to latest version
         print_step "Upgrading Claude Code to latest version..."
-        brew upgrade --cask claude-code >/dev/null 2>&1 && \
-            print_success "Claude Code upgraded to latest version" || \
+        brew upgrade --cask claude-code >/dev/null 2>&1 &&
+            print_success "Claude Code upgraded to latest version" ||
             print_success "Claude Code already at latest version"
     fi
 
     # Install recall (Claude Code conversation search/resume tool)
     if ! command_exists recall; then
         print_step "Installing recall (Claude conversation search)..."
-        brew install zippoxer/tap/recall >/dev/null 2>&1 && \
-            print_success "recall installed" || \
+        brew install zippoxer/tap/recall >/dev/null 2>&1 &&
+            print_success "recall installed" ||
             print_warning "Failed to install recall - install manually with: brew install zippoxer/tap/recall"
     else
         print_success "recall already installed at: $(which recall)"
@@ -460,8 +460,8 @@ phase_4_cloud_tools() {
     # Install beads CLI (agent memory / git-backed issue tracker)
     if ! command_exists bd; then
         print_step "Installing beads (agent memory)..."
-        brew install beads >/dev/null 2>&1 && \
-            print_success "beads installed" || \
+        brew install beads >/dev/null 2>&1 &&
+            print_success "beads installed" ||
             print_warning "Failed to install beads - install manually with: brew install beads"
     else
         print_success "beads CLI already installed at: $(which bd)"
@@ -469,8 +469,8 @@ phase_4_cloud_tools() {
 
     if command_exists bd; then
         print_step "Configuring beads Claude Code hooks..."
-        bd setup claude >/dev/null 2>&1 && \
-            print_success "Beads hooks installed" || \
+        bd setup claude >/dev/null 2>&1 &&
+            print_success "Beads hooks installed" ||
             log_verbose "Beads hook setup skipped"
     fi
 
@@ -478,12 +478,12 @@ phase_4_cloud_tools() {
     if ! command_exists ccr; then
         print_step "Installing Claude Code Router..."
         if command_exists bun; then
-            bun install -g @musistudio/claude-code-router >/dev/null 2>&1 && \
-                print_success "Claude Code Router installed" || \
+            bun install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
+                print_success "Claude Code Router installed" ||
                 print_warning "Failed to install Claude Code Router"
         elif command_exists npm; then
-            npm install -g @musistudio/claude-code-router >/dev/null 2>&1 && \
-                print_success "Claude Code Router installed" || \
+            npm install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
+                print_success "Claude Code Router installed" ||
                 print_warning "Failed to install Claude Code Router"
         fi
     else
@@ -507,8 +507,8 @@ phase_4_cloud_tools() {
     if ! command_exists codex; then
         print_step "Installing OpenAI Codex CLI..."
         if command_exists bun; then
-            bun add -g @openai/codex >/dev/null 2>&1 && \
-                print_success "OpenAI Codex CLI installed" || \
+            bun add -g @openai/codex >/dev/null 2>&1 &&
+                print_success "OpenAI Codex CLI installed" ||
                 log_verbose "OpenAI Codex CLI installation skipped (optional)"
         elif command_exists npm; then
             # Try global install first, fallback to user-local on Linux
@@ -516,9 +516,9 @@ phase_4_cloud_tools() {
                 print_success "OpenAI Codex CLI installed"
             else
                 # Fallback to user-local installation
-                npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 && \
-                    export PATH="$HOME/.local/node_modules/.bin:$PATH" && \
-                    print_success "OpenAI Codex CLI installed (user-local)" || \
+                npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 &&
+                    export PATH="$HOME/.local/node_modules/.bin:$PATH" &&
+                    print_success "OpenAI Codex CLI installed (user-local)" ||
                     log_verbose "OpenAI Codex CLI installation skipped (optional)"
             fi
         fi
@@ -529,8 +529,8 @@ phase_4_cloud_tools() {
     # OpenClaw gateway CLI (installed via Brewfile as openclaw-cli)
     if ! command_exists openclaw; then
         print_step "Installing OpenClaw gateway CLI..."
-        brew install openclaw-cli >/dev/null 2>&1 && \
-            print_success "OpenClaw CLI installed" || \
+        brew install openclaw-cli >/dev/null 2>&1 &&
+            print_success "OpenClaw CLI installed" ||
             log_verbose "OpenClaw CLI installation skipped (optional)"
     else
         print_success "OpenClaw CLI already installed at: $(which openclaw)"
@@ -549,7 +549,7 @@ phase_4_cloud_tools() {
             if [[ ! -f "$HOME/.openclaw/.env" ]]; then
                 local oc_token
                 oc_token=$(openssl rand -hex 32)
-                cat > "$HOME/.openclaw/.env" << OCEOF
+                cat >"$HOME/.openclaw/.env" <<OCEOF
 # OpenClaw Gateway Authentication
 # Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 OPENCLAW_GATEWAY_TOKEN=${oc_token}
@@ -588,9 +588,9 @@ OCEOF
             rm "$HOME/tools"
         fi
         mkdir -p "$HOME/tools"
-        git clone https://github.com/yctimlin/mcp_excalidraw.git "$HOME/tools/mcp_excalidraw" >/dev/null 2>&1 && \
-            (cd "$HOME/tools/mcp_excalidraw" && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1) && \
-            print_success "MCP Excalidraw installed" || \
+        git clone https://github.com/yctimlin/mcp_excalidraw.git "$HOME/tools/mcp_excalidraw" >/dev/null 2>&1 &&
+            (cd "$HOME/tools/mcp_excalidraw" && npm install >/dev/null 2>&1 && npm run build >/dev/null 2>&1) &&
+            print_success "MCP Excalidraw installed" ||
             print_warning "Failed to install MCP Excalidraw"
     else
         print_success "MCP Excalidraw already installed at: $HOME/tools/mcp_excalidraw"
@@ -617,7 +617,7 @@ OCEOF
         log_verbose "Verify with: claude mcp list"
 
         # Configure Claude Code global settings
-        claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 && \
+        claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 &&
             print_success "Claude Code notification channel set to terminal_bell" || true
 
         # Auto-compact: left enabled (default) since 2.1.21 fixed early triggering.
@@ -627,8 +627,8 @@ OCEOF
         # Re-enable auto-compact if previously disabled by older setup.sh
         if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
             if jq -e '.autoCompactEnabled == false' "$HOME/.claude.json" >/dev/null 2>&1; then
-                jq 'del(.autoCompactEnabled)' "$HOME/.claude.json" > "$HOME/.claude.json.tmp" && \
-                    mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" && \
+                jq 'del(.autoCompactEnabled)' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+                    mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
                     print_success "Claude Code auto-compact re-enabled (removed legacy override)" || true
             fi
         fi
@@ -639,8 +639,8 @@ OCEOF
         local global_settings="$HOME/.claude/settings.json"
         if command_exists jq && [[ -f "$global_settings" ]]; then
             jq '.env["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1" | .teammateMode = "tmux"' \
-                "$global_settings" > "$global_settings.tmp" && \
-                mv "$global_settings.tmp" "$global_settings" && \
+                "$global_settings" >"$global_settings.tmp" &&
+                mv "$global_settings.tmp" "$global_settings" &&
                 print_success "Claude Code Agent Teams enabled (tmux split-pane mode)" || true
         else
             log_verbose "Skipping Agent Teams config: jq or settings.json not found"
@@ -650,8 +650,8 @@ OCEOF
         # Reference: https://code.claude.com/docs/en/agent-teams
         # Also configured in .claude/settings.json env block for per-project enablement
         if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.teammateMode = "auto"' "$HOME/.claude.json" > "$HOME/.claude.json.tmp" && \
-                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" && \
+            jq '.teammateMode = "auto"' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
                 print_success "Claude Code agent teams teammate mode set to auto" || true
         fi
 
@@ -722,8 +722,8 @@ OCEOF
         rm -rf "$HOME/Library/helm/plugins/helm-diff" 2>/dev/null || true
         rm -rf "$HOME/.local/share/helm/plugins/helm-diff" 2>/dev/null || true
         # Use v3.8.1 for compatibility with Helm 3.15.x
-        helm plugin install https://github.com/databus23/helm-diff --version v3.8.1 >/dev/null 2>&1 && \
-            print_success "helm-diff plugin installed" || \
+        helm plugin install https://github.com/databus23/helm-diff --version v3.8.1 >/dev/null 2>&1 &&
+            print_success "helm-diff plugin installed" ||
             log_verbose "helm-diff plugin installation skipped"
     fi
 
@@ -732,14 +732,14 @@ OCEOF
         print_step "Installing kubectl krew plugins..."
         # get-all plugin for listing all namespace resources
         if ! kubectl krew list 2>/dev/null | grep -q "get-all"; then
-            kubectl krew install get-all >/dev/null 2>&1 && \
-                print_success "kubectl get-all plugin installed" || \
+            kubectl krew install get-all >/dev/null 2>&1 &&
+                print_success "kubectl get-all plugin installed" ||
                 log_verbose "get-all plugin installation skipped"
         fi
         # lineage plugin for resource ownership tree
         if ! kubectl krew list 2>/dev/null | grep -q "lineage"; then
-            kubectl krew install lineage >/dev/null 2>&1 && \
-                print_success "kubectl lineage plugin installed" || \
+            kubectl krew install lineage >/dev/null 2>&1 &&
+                print_success "kubectl lineage plugin installed" ||
                 log_verbose "lineage plugin installation skipped"
         fi
     fi
@@ -748,15 +748,15 @@ OCEOF
     if [[ "$DETECTED_OS" == "macos" ]] && command_exists go; then
         if ! command_exists kubectl-fzf-server; then
             print_step "Installing kubectl-fzf-server..."
-            go install github.com/bonnefoa/kubectl-fzf/v3/cmd/kubectl-fzf-server@main >/dev/null 2>&1 && \
-                print_success "kubectl-fzf-server installed" || \
+            go install github.com/bonnefoa/kubectl-fzf/v3/cmd/kubectl-fzf-server@main >/dev/null 2>&1 &&
+                print_success "kubectl-fzf-server installed" ||
                 log_verbose "kubectl-fzf-server installation skipped"
         fi
         # Load launchd plist for kubectl-fzf-server
         local kubectl_fzf_plist="$HOME/Library/LaunchAgents/com.kubectl-fzf-server.plist"
         if [[ -f "$kubectl_fzf_plist" ]] && ! launchctl list 2>/dev/null | grep -q "com.kubectl-fzf-server"; then
-            launchctl load "$kubectl_fzf_plist" 2>/dev/null && \
-                print_success "kubectl-fzf-server service started" || \
+            launchctl load "$kubectl_fzf_plist" 2>/dev/null &&
+                print_success "kubectl-fzf-server service started" ||
                 log_verbose "kubectl-fzf-server service start skipped"
         fi
     fi
@@ -808,15 +808,15 @@ phase_5_editors() {
     # Install Neovim plugins automatically
     if command_exists nvim; then
         print_step "Installing Neovim plugins via Lazy.nvim..."
-        nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1 && \
-            print_success "Neovim plugins installed successfully" || \
+        nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1 &&
+            print_success "Neovim plugins installed successfully" ||
             print_warning "Neovim plugin installation had issues (this is normal on first run)"
 
         # Install pynvim for Python support
         if command_exists python3; then
             print_step "Installing pynvim for Neovim Python support..."
-            python3 -m pip install --user pynvim >/dev/null 2>&1 && \
-                print_success "pynvim installed" || \
+            python3 -m pip install --user pynvim >/dev/null 2>&1 &&
+                print_success "pynvim installed" ||
                 log_verbose "pynvim installation completed with warnings"
         fi
     fi
@@ -877,29 +877,29 @@ phase_6_multiplexer() {
         # Build tmux-thumbs (requires Rust compilation with macOS SDK fix)
         if [[ -d "$plugins_dir/tmux-thumbs" ]] && command_exists cargo; then
             print_step "Building tmux-thumbs..."
-            (cd "$plugins_dir/tmux-thumbs" && \
-             SDKROOT=$(xcrun --sdk macosx --show-sdk-path) \
-             LIBRARY_PATH="$(xcrun --sdk macosx --show-sdk-path)/usr/lib" \
-             cargo build --release) >/dev/null 2>&1 && \
-                print_success "tmux-thumbs built" || \
+            (cd "$plugins_dir/tmux-thumbs" &&
+                SDKROOT=$(xcrun --sdk macosx --show-sdk-path) \
+                LIBRARY_PATH="$(xcrun --sdk macosx --show-sdk-path)/usr/lib" \
+                    cargo build --release) >/dev/null 2>&1 &&
+                print_success "tmux-thumbs built" ||
                 log_verbose "tmux-thumbs build failed (run manually: cd ~/.tmux/plugins/tmux-thumbs && SDKROOT=\$(xcrun --sdk macosx --show-sdk-path) cargo build --release)"
         fi
 
         # Update existing plugins and clean stale ones via TPM
         print_step "Updating tmux plugins and cleaning stale ones..."
-        "$HOME/.tmux/plugins/tpm/bin/update_plugins" all >/dev/null 2>&1 && \
-            log_verbose "Tmux plugins updated" || \
+        "$HOME/.tmux/plugins/tpm/bin/update_plugins" all >/dev/null 2>&1 &&
+            log_verbose "Tmux plugins updated" ||
             log_verbose "Tmux plugin update completed with warnings"
-        "$HOME/.tmux/plugins/tpm/bin/clean_plugins" >/dev/null 2>&1 && \
-            log_verbose "Stale tmux plugins cleaned" || \
+        "$HOME/.tmux/plugins/tpm/bin/clean_plugins" >/dev/null 2>&1 &&
+            log_verbose "Stale tmux plugins cleaned" ||
             log_verbose "Tmux plugin cleanup completed with warnings"
         print_success "Tmux plugins synchronized"
 
         # Reload tmux config if tmux server is running
         if tmux list-sessions >/dev/null 2>&1; then
             print_step "Reloading tmux configuration..."
-            tmux source-file "$HOME/.tmux.conf" 2>/dev/null && \
-                print_success "Tmux configuration reloaded" || \
+            tmux source-file "$HOME/.tmux.conf" 2>/dev/null &&
+                print_success "Tmux configuration reloaded" ||
                 log_verbose "Tmux config reload completed with warnings"
         fi
     fi
@@ -907,8 +907,8 @@ phase_6_multiplexer() {
     # Apply Dracula theme customizations
     if [[ -f "$DOTFILES_ROOT/scripts/setup-tmux-dracula.sh" ]]; then
         print_step "Applying Dracula theme customizations..."
-        bash "$DOTFILES_ROOT/scripts/setup-tmux-dracula.sh" >/dev/null 2>&1 && \
-            print_success "Dracula theme customizations applied" || \
+        bash "$DOTFILES_ROOT/scripts/setup-tmux-dracula.sh" >/dev/null 2>&1 &&
+            print_success "Dracula theme customizations applied" ||
             log_verbose "Dracula theme setup completed with warnings"
     fi
 
@@ -937,8 +937,8 @@ phase_7_shells() {
     # Setup Atuin shell history (import existing history)
     if command_exists atuin && [[ ! -f "$HOME/.local/share/atuin/key" ]]; then
         print_step "Setting up Atuin shell history..."
-        atuin import auto 2>/dev/null && \
-            print_success "Atuin history imported" || \
+        atuin import auto 2>/dev/null &&
+            print_success "Atuin history imported" ||
             log_verbose "Atuin import skipped (may need manual setup)"
     fi
 
@@ -947,8 +947,8 @@ phase_7_shells() {
         print_step "Configuring Jujutsu (jj)..."
         if [[ -f "$DOTFILES_ROOT/.config/jj/config.toml" ]]; then
             mkdir -p "$HOME/.config/jj"
-            ln -sf "$DOTFILES_ROOT/.config/jj/config.toml" "$HOME/.config/jj/config.toml" 2>/dev/null && \
-                print_success "Jujutsu configuration linked" || \
+            ln -sf "$DOTFILES_ROOT/.config/jj/config.toml" "$HOME/.config/jj/config.toml" 2>/dev/null &&
+                print_success "Jujutsu configuration linked" ||
                 log_verbose "Jujutsu config will be created by stow"
         else
             log_verbose "Jujutsu config will be created by stow"
@@ -979,7 +979,7 @@ phase_8_dotfiles() {
 
         # Setup for ~/work if it exists
         if [[ -d "$HOME/work" ]]; then
-            "$exclude_script" "$HOME/work" >/dev/null 2>&1 && \
+            "$exclude_script" "$HOME/work" >/dev/null 2>&1 &&
                 log_verbose "Local git excludes configured for ~/work"
         fi
 
@@ -996,7 +996,7 @@ phase_8_dotfiles() {
 
                 # Create exclude file if it doesn't exist
                 if [[ ! -f "$git_exclude" ]]; then
-                    cat > "$git_exclude" << 'EXCLUDE_EOF'
+                    cat >"$git_exclude" <<'EXCLUDE_EOF'
 # Local git excludes - patterns that won't be committed
 # This file is symlinked to .gitignore_local for easy editing
 
@@ -1029,8 +1029,8 @@ EXCLUDE_EOF
     # Setup kubectl abbreviations for Fish (universal variables, one-time setup)
     if command_exists fish && [[ -f "$HOME/.config/fish/setup/kubectl-abbr-setup.fish" ]]; then
         print_step "Setting up kubectl abbreviations for Fish..."
-        fish -c 'source ~/.config/fish/setup/kubectl-abbr-setup.fish' 2>/dev/null && \
-            print_success "kubectl abbreviations installed" || \
+        fish -c 'source ~/.config/fish/setup/kubectl-abbr-setup.fish' 2>/dev/null &&
+            print_success "kubectl abbreviations installed" ||
             log_verbose "kubectl abbreviations setup skipped"
     fi
 
@@ -1043,7 +1043,11 @@ phase_9_fonts_and_apps() {
 
     print_header "Phase 9: Fonts & Applications"
 
-    [[ "$SKIP_FONTS_APPS" == "true" ]] && { print_warning "Skipping fonts/apps (flag)"; mark_step_complete "fonts_and_apps"; return 0; }
+    [[ "$SKIP_FONTS_APPS" == "true" ]] && {
+        print_warning "Skipping fonts/apps (flag)"
+        mark_step_complete "fonts_and_apps"
+        return 0
+    }
 
     if [[ "$DRY_RUN" == "true" ]]; then
         print_warning "DRY RUN: Skipping font and GUI application installation"
@@ -1109,8 +1113,8 @@ phase_9_fonts_and_apps() {
         # Execute macOS defaults configuration
         if [[ -f "$DOTFILES_ROOT/scripts/setup/macos-defaults.sh" ]]; then
             print_step "Applying macOS system defaults..."
-            bash "$DOTFILES_ROOT/scripts/setup/macos-defaults.sh" >/dev/null 2>&1 && \
-                print_success "macOS defaults configured (Finder, Dock, developer settings)" || \
+            bash "$DOTFILES_ROOT/scripts/setup/macos-defaults.sh" >/dev/null 2>&1 &&
+                print_success "macOS defaults configured (Finder, Dock, developer settings)" ||
                 log_verbose "macOS defaults completed with warnings"
         fi
 
@@ -1125,8 +1129,8 @@ phase_9_fonts_and_apps() {
         fi
         if [[ -f "$ssh_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.user.ssh-add"; then
-                launchctl load "$ssh_plist" 2>/dev/null && \
-                    print_success "SSH key auto-loading enabled" || \
+                launchctl load "$ssh_plist" 2>/dev/null &&
+                    print_success "SSH key auto-loading enabled" ||
                     log_verbose "SSH LaunchAgent load skipped"
             fi
         fi
@@ -1136,8 +1140,8 @@ phase_9_fonts_and_apps() {
         local queue_plist="$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
         if [[ -f "$queue_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.ticket-queue"; then
-                launchctl bootstrap "gui/$(id -u)" "$queue_plist" 2>/dev/null && \
-                    print_success "Ticket queue daemon started" || \
+                launchctl bootstrap "gui/$(id -u)" "$queue_plist" 2>/dev/null &&
+                    print_success "Ticket queue daemon started" ||
                     log_verbose "Ticket queue daemon start skipped"
             else
                 log_verbose "Ticket queue daemon already running"
@@ -1149,8 +1153,8 @@ phase_9_fonts_and_apps() {
         local mayor_plist="$HOME/Library/LaunchAgents/com.dotfiles.gwt-mayor.plist"
         if [[ -f "$mayor_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.gwt-mayor"; then
-                launchctl bootstrap "gui/$(id -u)" "$mayor_plist" 2>/dev/null && \
-                    print_success "Mayor daemon started" || \
+                launchctl bootstrap "gui/$(id -u)" "$mayor_plist" 2>/dev/null &&
+                    print_success "Mayor daemon started" ||
                     log_verbose "Mayor daemon start skipped"
             else
                 log_verbose "Mayor daemon already running"
@@ -1162,8 +1166,8 @@ phase_9_fonts_and_apps() {
         if [[ -d "$DOTFILES_ROOT/.config/karabiner" ]]; then
             mkdir -p "$HOME/.config/karabiner"
             if [[ ! -f "$HOME/.config/karabiner/karabiner.json" ]]; then
-                ln -sf "$DOTFILES_ROOT/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json" 2>/dev/null && \
-                    print_success "Karabiner-Elements configuration linked" || \
+                ln -sf "$DOTFILES_ROOT/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json" 2>/dev/null &&
+                    print_success "Karabiner-Elements configuration linked" ||
                     log_verbose "Karabiner config link skipped"
             fi
         fi
@@ -1172,8 +1176,8 @@ phase_9_fonts_and_apps() {
         if command_exists copyq || [[ -d "/Applications/CopyQ.app" ]]; then
             print_step "Setting up CopyQ..."
             if [[ -f "$DOTFILES_ROOT/scripts/setup/setup-copyq.sh" ]]; then
-                bash "$DOTFILES_ROOT/scripts/setup/setup-copyq.sh" >/dev/null 2>&1 && \
-                    print_success "CopyQ configured" || \
+                bash "$DOTFILES_ROOT/scripts/setup/setup-copyq.sh" >/dev/null 2>&1 &&
+                    print_success "CopyQ configured" ||
                     log_verbose "CopyQ setup completed with warnings"
             fi
         fi
@@ -1206,8 +1210,8 @@ phase_10_advanced_features() {
 
         # Initialize kubelogin for Azure (if installed)
         if command_exists kubelogin; then
-            kubelogin convert-kubeconfig >/dev/null 2>&1 && \
-                print_success "Azure kubelogin initialized" || \
+            kubelogin convert-kubeconfig >/dev/null 2>&1 &&
+                print_success "Azure kubelogin initialized" ||
                 log_verbose "kubelogin initialization skipped"
         fi
         print_success "Kubernetes configuration initialized"
@@ -1216,8 +1220,8 @@ phase_10_advanced_features() {
     # Rust tools installation
     if command_exists cargo; then
         print_step "Installing Rust development tools..."
-        cargo install stylua s3grep >/dev/null 2>&1 && \
-            print_success "Rust tools installed (stylua, s3grep)" || \
+        cargo install stylua s3grep >/dev/null 2>&1 &&
+            print_success "Rust tools installed (stylua, s3grep)" ||
             log_verbose "Rust tools installation completed with warnings"
     fi
 
@@ -1228,8 +1232,8 @@ phase_10_advanced_features() {
         # Clone Obsidian vault (if configured)
         local obsidian_repo="${OBSIDIAN_REPO:-}"
         if [[ -n "$obsidian_repo" ]] && [[ ! -d "$HOME/obsidian" ]]; then
-            git clone "$obsidian_repo" "$HOME/obsidian" 2>/dev/null && \
-                print_success "Obsidian vault cloned" || \
+            git clone "$obsidian_repo" "$HOME/obsidian" 2>/dev/null &&
+                print_success "Obsidian vault cloned" ||
                 log_verbose "Obsidian vault clone skipped"
         fi
 
@@ -1237,8 +1241,8 @@ phase_10_advanced_features() {
         local nvim_repo="${NVIM_REPO:-}"
         if [[ -n "$nvim_repo" ]] && [[ ! -d "$HOME/neovim" ]]; then
             print_step "Cloning personal Neovim configuration..."
-            git clone "$nvim_repo" "$HOME/neovim" 2>/dev/null && \
-                print_success "Personal Neovim config cloned to ~/neovim" || \
+            git clone "$nvim_repo" "$HOME/neovim" 2>/dev/null &&
+                print_success "Personal Neovim config cloned to ~/neovim" ||
                 log_verbose "Neovim config clone skipped"
 
             # Create symlink in home directory (manual symlink, not managed by stow)
@@ -1250,15 +1254,15 @@ phase_10_advanced_features() {
 
                 # Trust mise configuration if mise is installed
                 if command -v mise &>/dev/null && [[ -f "$HOME/neovim/mise.toml" ]]; then
-                    mise trust "$HOME/neovim/mise.toml" &>/dev/null && \
-                        print_success "Trusted mise configuration for Neovim" || \
+                    mise trust "$HOME/neovim/mise.toml" &>/dev/null &&
+                        print_success "Trusted mise configuration for Neovim" ||
                         log_verbose "mise trust skipped"
                 fi
 
                 # Configure persistent mise settings (only needed once, not every shell startup)
                 if command -v mise &>/dev/null; then
-                    mise settings add idiomatic_version_file_enable_tools ruby 2>/dev/null && \
-                        print_success "Configured mise idiomatic version file for Ruby" || \
+                    mise settings add idiomatic_version_file_enable_tools ruby 2>/dev/null &&
+                        print_success "Configured mise idiomatic version file for Ruby" ||
                         log_verbose "mise settings already configured"
                 fi
             fi
@@ -1302,8 +1306,8 @@ phase_10_advanced_features() {
     # Install devcontainer.vim (universal Neovim for any devcontainer)
     if command_exists go && [[ ! -f "$HOME/go/bin/devcontainer.vim" ]]; then
         print_step "Installing devcontainer.vim..."
-        go install github.com/mikoto2000/devcontainer.vim@latest >/dev/null 2>&1 && \
-            print_success "devcontainer.vim installed" || \
+        go install github.com/mikoto2000/devcontainer.vim@latest >/dev/null 2>&1 &&
+            print_success "devcontainer.vim installed" ||
             print_warning "devcontainer.vim installation failed (requires Go)"
     elif [[ -f "$HOME/go/bin/devcontainer.vim" ]]; then
         log_verbose "devcontainer.vim already installed"
@@ -1363,7 +1367,7 @@ phase_11_optional_features() {
             if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm; then
                 print_success "Nix package manager installed"
                 # Source Nix for current session
-                [[ -f '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]] && \
+                [[ -f '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]] &&
                     source '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
             else
                 print_warning "Nix installation failed - install manually from https://nixos.org/download"
@@ -1377,7 +1381,7 @@ phase_11_optional_features() {
 
             # Create nix.conf with flakes and experimental features
             if [[ ! -f "$HOME/.config/nix/nix.conf" ]]; then
-                cat > "$HOME/.config/nix/nix.conf" << 'EOF'
+                cat >"$HOME/.config/nix/nix.conf" <<'EOF'
 # Enable experimental features
 experimental-features = nix-command flakes
 
@@ -1401,7 +1405,7 @@ EOF
             if [[ "$DETECTED_OS" == "macos" ]] && [[ -f "/etc/nix/nix.custom.conf" ]]; then
                 if ! sudo grep -q "^trusted-users.*@admin" /etc/nix/nix.custom.conf 2>/dev/null; then
                     print_step "Adding @admin to Nix trusted users..."
-                    echo "trusted-users = root @admin" | sudo tee -a /etc/nix/nix.custom.conf > /dev/null
+                    echo "trusted-users = root @admin" | sudo tee -a /etc/nix/nix.custom.conf >/dev/null
                     # Restart Nix daemon
                     if sudo launchctl list | grep -q "systems.determinate.nix-daemon"; then
                         sudo launchctl kickstart -k system/systems.determinate.nix-daemon
@@ -1437,19 +1441,19 @@ EOF
 
             # Install global LSPs
             if [[ -f "$DOTFILES_ROOT/scripts/install-lsps-global.sh" ]]; then
-                bash "$DOTFILES_ROOT/scripts/install-lsps-global.sh" >/dev/null 2>&1 && \
+                bash "$DOTFILES_ROOT/scripts/install-lsps-global.sh" >/dev/null 2>&1 &&
                     log_verbose "Global LSPs installed"
             fi
 
             # Activate hybrid mode
             if [[ -f "$DOTFILES_ROOT/scripts/activate-nix-lsps.sh" ]]; then
-                bash "$DOTFILES_ROOT/scripts/activate-nix-lsps.sh" hybrid >/dev/null 2>&1 && \
+                bash "$DOTFILES_ROOT/scripts/activate-nix-lsps.sh" hybrid >/dev/null 2>&1 &&
                     log_verbose "Nix LSP hybrid mode activated"
             fi
 
             # Check LSP status
             if [[ -f "$DOTFILES_ROOT/scripts/check-lsp-status.sh" ]]; then
-                bash "$DOTFILES_ROOT/scripts/check-lsp-status.sh" >/dev/null 2>&1 && \
+                bash "$DOTFILES_ROOT/scripts/check-lsp-status.sh" >/dev/null 2>&1 &&
                     print_success "Nix LSP hybrid setup complete"
             fi
         fi
@@ -1484,8 +1488,8 @@ EOF
 
                 if git clone https://github.com/viccon/pulse.git "$pulse_dir" 2>/dev/null; then
                     cd "$pulse_dir" || true
-                    if go build -o pulse-server ./cmd/server 2>/dev/null && \
-                       go build -o pulse-client ./cmd/client 2>/dev/null; then
+                    if go build -o pulse-server ./cmd/server 2>/dev/null &&
+                        go build -o pulse-client ./cmd/client 2>/dev/null; then
                         cp pulse-server "$HOME/bin/"
                         cp pulse-client "$HOME/bin/"
                         chmod +x "$HOME/bin/pulse-server" "$HOME/bin/pulse-client"
@@ -1510,7 +1514,7 @@ EOF
 
             # Create config.yaml if not exists
             if [[ ! -f "$HOME/.pulse/config.yaml" ]]; then
-                cat > "$HOME/.pulse/config.yaml" <<'EOF'
+                cat >"$HOME/.pulse/config.yaml" <<'EOF'
 server:
   name: "pulse-server"
   host: "127.0.0.1"
@@ -1550,7 +1554,7 @@ EOF
                     mkdir -p "$HOME/Library/LaunchAgents"
 
                     if [[ ! -f "$pulse_plist" ]]; then
-                        cat > "$pulse_plist" <<EOF
+                        cat >"$pulse_plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -1588,7 +1592,7 @@ EOF
                     mkdir -p "$HOME/.config/systemd/user"
                     local pulse_service="$HOME/.config/systemd/user/pulse-tracker.service"
 
-                    cat > "$pulse_service" <<EOF
+                    cat >"$pulse_service" <<EOF
 [Unit]
 Description=Pulse Coding Tracker
 After=network.target
@@ -1633,8 +1637,8 @@ EOF
                 # Start Colima if not running
                 if ! colima status &>/dev/null; then
                     print_step "Starting Colima..."
-                    colima start --cpu 2 --memory 2 --disk 10 --runtime docker 2>/dev/null && \
-                        print_success "Colima started" || \
+                    colima start --cpu 2 --memory 2 --disk 10 --runtime docker 2>/dev/null &&
+                        print_success "Colima started" ||
                         print_warning "Colima start failed - start manually with: colima start"
                 fi
 
@@ -1642,8 +1646,8 @@ EOF
                 if colima status &>/dev/null; then
                     local pihole_compose="$DOTFILES_ROOT/scripts/pihole/docker-compose.yml"
                     if [[ -f "$pihole_compose" ]]; then
-                        docker compose -f "$pihole_compose" up -d 2>/dev/null && \
-                            print_success "Pi-hole container started" || \
+                        docker compose -f "$pihole_compose" up -d 2>/dev/null &&
+                            print_success "Pi-hole container started" ||
                             print_warning "Pi-hole container start failed - run manually: ./scripts/pihole/setup-pihole.sh start"
 
                         print_success "Pi-hole DNS ad blocker configured"
@@ -1655,6 +1659,9 @@ EOF
                     fi
                 fi
             fi
+        fi
+    fi
+
     if [[ "${ENABLE_SELFHOST_LLM:-false}" == "true" ]]; then
         print_header "Phase 11: Optional Features - Self-Hosted LLM Stack"
 
