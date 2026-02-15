@@ -207,7 +207,10 @@ s189-teacher-services-cloud-production = "s189-prod"
 symbol = " "
 style = "fg:lavender"
 format = '[$symbol$context(\($namespace\))]($style) '
-disabled = false
+# PERF: Disabled by default — reads ~/.kube/config on every prompt (~110ms).
+# Enable per-project via: set -gx KUBECONFIG ~/.kube/config
+# or set [kubernetes] disabled = false in a project-local starship.toml
+disabled = true
 
 [terraform]
 symbol = " "

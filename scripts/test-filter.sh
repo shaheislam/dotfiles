@@ -340,6 +340,8 @@ test_cd_perf() {
     run_test "Starship skips repo truncation" "grep -q 'truncate_to_repo = false' '$DOTFILES_ROOT/.config/starship.toml'"
     run_test "Starship only_attached branch" "grep -q 'only_attached = true' '$DOTFILES_ROOT/.config/starship.toml'"
     run_test "Starship command_timeout <= 200ms" "grep -qE 'command_timeout = (1[0-9]{0,2}|200|[1-9][0-9]?)$' '$DOTFILES_ROOT/.config/starship.toml'"
+    # Kubernetes module disabled by default (reads ~/.kube/config, ~110ms per prompt)
+    run_test "Starship k8s disabled by default" "grep -A10 '^\[kubernetes\]' '$DOTFILES_ROOT/.config/starship.toml' | grep -q 'disabled = true'"
 
     # Direnv and mise should use deferred evaluation
     run_test "Direnv uses eval_after_arrow" "grep -q 'direnv_fish_mode eval_after_arrow' '$DOTFILES_ROOT/.config/fish/config.fish'"
@@ -381,11 +383,28 @@ test_cd_perf() {
     # Direnv reload helper should exist for manual .envrc refresh
     run_test "Direnv reload function (denv) exists" "grep -q 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
+    # Mise preexec should check config scope to skip re-evaluation within same project
+    run_test "Mise preexec has config scope check" "grep -q '__mise_last_config' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise preexec is overridden" "grep -q 'function __mise_env_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Mise preexec no stray echo" "! grep -A2 'mise hook-env.*source' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -qE '^[[:space:]]*echo;?\$'"
+    # Mise scope tracks mtime to detect in-place config edits (not just path)
+    run_test "Mise scope tracks mtime" "grep -A20 'function __mise_env_eval_2' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'stat.*%m'"
+
+    # denv should reset both direnv and mise scope caches
+    run_test "denv resets mise scope cache" "grep -A15 'function denv' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q '__mise_last_config'"
+
+    # Diffview should cache positive socket results (avoid 52ms tmux IPC per cd)
+    run_test "Diffview caches positive socket" "grep -q '__diffview_cached_socket' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    run_test "Diffview socket self-heals on stale" "grep -q 'Socket gone.*clear cache' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+    # Diffview cache invalidates on tmux server/session change
+    run_test "Diffview invalidates on TMUX change" "grep -q '__diffview_cached_tmux' '$DOTFILES_ROOT/.config/fish/conf.d/diffview-follow.fish'"
+
     # All hooks must be inside non-interactive guard
     run_test "Hooks gated by is-interactive" "grep -q 'status is-interactive' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
     # Scope cache must never use universal variables (set -U)
     run_test "No universal vars in scope cache" "! grep -qE '__direnv_(last_envrc|initialized|export_again).*set -U' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "No universal vars in mise scope cache" "! grep -qE '__mise_(last_config|initialized|env_again).*set -U' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
     # Escape delay should be low
     run_test "Fish escape delay <= 10ms" "grep -q 'fish_escape_delay_ms 10' '$DOTFILES_ROOT/.config/fish/config.fish'"

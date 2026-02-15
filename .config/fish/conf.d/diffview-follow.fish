@@ -4,9 +4,10 @@
 # Discovery: Neovim sets NVIM_DIFFVIEW_SOCKET in the tmux environment
 # when Diffview opens, and removes it when Diffview closes.
 #
-# PERF: Caches "no socket" state to avoid synchronous `tmux show-environment`
-# IPC on every cd (~5-15ms). Cache is invalidated when Neovim sets the socket
-# by Diffview's VimEnter/BufEnter hooks, or after 60 seconds (safety net).
+# PERF: Caches both positive and negative socket results to avoid synchronous
+# `tmux show-environment` IPC on every cd (~52ms). Positive cache (socket path)
+# lasts until the socket file disappears. Negative cache (no socket) expires
+# after 60 seconds (safety net for newly-opened Diffview sessions).
 function __diffview_follow_cd --on-variable PWD
     # Only act inside tmux
     set -q TMUX; or return
@@ -17,8 +18,31 @@ function __diffview_follow_cd --on-variable PWD
     end
     set -g __diffview_last_pwd "$PWD"
 
+    # PERF: Use cached socket path if we have one and it's still valid.
+    # Avoids the ~52ms `tmux show-environment` call on every cd when Diffview is open.
+    # Invalidate if $TMUX changed (server restart or session switch).
+    if set -q __diffview_cached_socket; and test -n "$__diffview_cached_socket"
+        if test "$TMUX" != "$__diffview_cached_tmux"
+            # tmux server/session changed — cached socket is from a different session
+            set -e __diffview_cached_socket
+            set -e __diffview_cached_tmux
+            set -e __diffview_no_socket_until
+        else if test -S "$__diffview_cached_socket"
+            # Socket still valid — fire RPC and return
+            set -l safe_pwd (string replace -a '\\' '\\\\' -- "$PWD" | string replace -a '"' '\\"')
+            command nvim --server "$__diffview_cached_socket" --remote-expr "v:lua.diffview_check_pane(\"$safe_pwd\")" &>/dev/null &
+            disown 2>/dev/null
+            return
+        else
+            # Socket gone — clear cache, will re-probe below
+            set -e __diffview_cached_socket
+            set -e __diffview_cached_tmux
+            tmux set-environment -u NVIM_DIFFVIEW_SOCKET 2>/dev/null
+        end
+    end
+
     # PERF: Skip tmux IPC when we recently confirmed no socket exists.
-    # The common case (no Diffview open) avoids the ~5-15ms tmux show-environment call.
+    # The common case (no Diffview open) avoids the ~52ms tmux show-environment call.
     # Cache expires after 60s to pick up newly-opened Diffview sessions.
     if set -q __diffview_no_socket_until
         if test (date +%s) -lt "$__diffview_no_socket_until"
@@ -52,6 +76,11 @@ function __diffview_follow_cd --on-variable PWD
         set -g __diffview_no_socket_until (math (date +%s) + 60)
         return
     end
+
+    # Cache the valid socket path and current $TMUX for future cd calls.
+    # $TMUX changes on server restart/session switch, invalidating the cache.
+    set -g __diffview_cached_socket "$socket"
+    set -g __diffview_cached_tmux "$TMUX"
 
     # Notify Neovim via RPC with the shell's actual $PWD (fire-and-forget).
     # Passing cwd directly avoids the tmux {last} pane ambiguity — Neovim

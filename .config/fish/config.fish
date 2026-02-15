@@ -231,6 +231,9 @@ if status is-interactive
                 end
                 set dir (string replace -r '/[^/]+$' '' -- "$dir")
             end
+            # Also reset mise scope cache so next preexec re-evaluates.
+            # Use empty string — won't match any "dir:mtime" value.
+            set -g __mise_last_config ""
         end
     end
 
@@ -295,6 +298,23 @@ if status is-interactive
             if not set -q __mise_initialized
                 set -g __mise_initialized 1
                 /opt/homebrew/bin/mise hook-env -s fish | source
+                # Track the nearest .mise.toml or .tool-versions by walking up from PWD.
+                # Used by __mise_env_eval_2 to skip redundant re-evaluation within the
+                # same project (saves ~63ms including 73KB PATH re-parse per cd).
+                # Stores "dir:mtime" to detect in-place config edits (~5ms stat).
+                set -g __mise_last_config ""
+                set -l dir "$PWD"
+                while test "$dir" != /
+                    for f in "$dir/.mise.toml" "$dir/.tool-versions"
+                        if test -f "$f"
+                            set -l mtime (command stat -f %m "$f" 2>/dev/null)
+                            set -g __mise_last_config "$dir:$mtime"
+                            break
+                        end
+                    end
+                    test -n "$__mise_last_config"; and break
+                    set dir (string replace -r '/[^/]+$' '' -- "$dir")
+                end
             end
             if test "$mise_fish_mode" != disable_arrow
                 function __mise_cd_hook --on-variable PWD
@@ -305,6 +325,46 @@ if status is-interactive
                     end
                 end
             end
+        end
+
+        # PERF: Override mise's preexec handler to skip re-evaluation when we're
+        # still in the same project scope. The cached version always runs
+        # `mise hook-env -s fish | source` (~63ms, outputs 73KB PATH) even when
+        # nothing changed. This override uses a walk-up check (pure Fish, ~1ms)
+        # plus mtime stat (~5ms) to detect if the nearest config has changed.
+        # Also removes the stray `echo` that outputs a blank line.
+        #
+        # Tracks "dir:mtime" so in-place config edits trigger re-evaluation.
+        # Project exit (found_config="" != stored "dir:mtime") also re-evaluates.
+        #
+        # Overrides __mise_env_eval_2 from `mise activate fish` (mise >=2024.x).
+        function __mise_env_eval_2 --on-event fish_preexec
+            if set -q __mise_env_again
+                set -e __mise_env_again
+                # Find nearest mise config by walking up from PWD (no subprocess)
+                set -l dir "$PWD"
+                set -l found_config ""
+                while test "$dir" != /
+                    for f in "$dir/.mise.toml" "$dir/.tool-versions"
+                        if test -f "$f"
+                            set -l mtime (command stat -f %m "$f" 2>/dev/null)
+                            set found_config "$dir:$mtime"
+                            break
+                        end
+                    end
+                    test -n "$found_config"; and break
+                    set dir (string replace -r '/[^/]+$' '' -- "$dir")
+                end
+                # Skip expensive mise if same config scope+mtime as last evaluation.
+                # Empty found_config (no config anywhere) vs stored value also triggers.
+                if test "$found_config" = "$__mise_last_config"
+                    : # Same scope and content — no re-evaluation needed
+                else
+                    /opt/homebrew/bin/mise hook-env -s fish | source
+                    set -g __mise_last_config "$found_config"
+                end
+            end
+            functions --erase __mise_cd_hook
         end
     end
 
