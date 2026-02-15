@@ -1144,6 +1144,19 @@ phase_9_fonts_and_apps() {
             fi
         fi
 
+        # Setup Mayor LaunchAgent (global coordinator daemon on login)
+        print_step "Setting up mayor daemon..."
+        local mayor_plist="$HOME/Library/LaunchAgents/com.dotfiles.gwt-mayor.plist"
+        if [[ -f "$mayor_plist" ]]; then
+            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.gwt-mayor"; then
+                launchctl bootstrap "gui/$(id -u)" "$mayor_plist" 2>/dev/null && \
+                    print_success "Mayor daemon started" || \
+                    log_verbose "Mayor daemon start skipped"
+            else
+                log_verbose "Mayor daemon already running"
+            fi
+        fi
+
         # Setup Karabiner-Elements (keyboard remapping)
         print_step "Setting up Karabiner-Elements..."
         if [[ -d "$DOTFILES_ROOT/.config/karabiner" ]]; then
