@@ -352,6 +352,11 @@ test_cd_perf() {
     # Direnv preexec should check .envrc scope to skip re-evaluation within same project
     run_test "Direnv preexec has envrc scope check" "grep -q '__direnv_last_envrc' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
+    # Scope tracker must use walk-up path, NOT $DIRENV_FILE (worktree-safe)
+    # In git worktrees, $DIRENV_FILE points to the main worktree's .envrc,
+    # which breaks the scope check and causes 660ms re-evaluation on every cd
+    run_test "Direnv scope uses walk-up not DIRENV_FILE" "! grep -q 'last_envrc.*DIRENV_FILE' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
     # Escape delay should be low
     run_test "Fish escape delay <= 10ms" "grep -q 'fish_escape_delay_ms 10' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
