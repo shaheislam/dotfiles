@@ -152,7 +152,6 @@ cmd_process() {
 
     if [[ "$idx" -eq -1 ]]; then
         release_lock
-        echo -e "${YELLOW}Queue empty, nothing to process${NC}"
         return 2
     fi
 

@@ -58,7 +58,7 @@ def main():
                 "suggested_command": suggested_command,
             }
 
-            # Load existing logs or create new list
+            # Load existing logs or create new list (cap at 100 entries)
             if log_file.exists():
                 with open(log_file, "r") as f:
                     logs = json.load(f)
@@ -66,6 +66,9 @@ def main():
                 logs = []
 
             logs.append(log_entry)
+            # PERF: Prevent unbounded log growth
+            if len(logs) > 100:
+                logs = logs[-100:]
 
             # Save logs
             with open(log_file, "w") as f:

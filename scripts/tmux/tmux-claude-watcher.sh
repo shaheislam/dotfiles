@@ -39,7 +39,7 @@ STUCK_THRESHOLD="${STUCK_THRESHOLD:-600}"
 TMUX_SOCKET="${TMUX%%,*}"
 PID_FILE="/tmp/tmux-claude-watcher.pid"
 STATE_DIR="/tmp/tmux-claude-state"
-POLL_INTERVAL=3
+POLL_INTERVAL=10
 
 start_daemon() {
     # Kill ALL existing watcher instances (not just PID file tracked one)
