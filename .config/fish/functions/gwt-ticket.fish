@@ -1067,7 +1067,7 @@ $prompt_suffix"
         echo "tmux last-pane" >>$setup_script
         echo "tmux split-window -v -p 30 -c '$worktree_path'" >>$setup_script
         echo "tmux select-pane -U" >>$setup_script
-        echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" >>$setup_script
+        echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" >>$setup_script
         echo "exec fish" >>$setup_script
         chmod +x $setup_script
 
@@ -1092,7 +1092,7 @@ $prompt_suffix"
         # Step 3: Launch nvim with diffview in the top-right pane (go up from bottom-right)
         # Combined cd+nvim in single send-keys to avoid buffer corruption from pane resize events
         tmux select-pane -t "$session_name:$window_name" -U
-        tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" Enter
+        tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
     end
 
     # Resolve convoy name to ID before writing state file
