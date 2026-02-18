@@ -59,20 +59,21 @@ else
 fi
 
 # Try to get latest checkpoint context (fast, local-only)
+# PERF: Added 5s timeout to prevent blocking SessionStart on slow git operations
 CKPT_SUMMARY=""
 if command -v ckpt >/dev/null 2>&1; then
-    CKPT_SUMMARY=$(ckpt context --commits 1 2>/dev/null | head -20) || true
+    CKPT_SUMMARY=$(timeout 5 ckpt context --commits 1 2>/dev/null | head -20) || true
 fi
 
 # Check for active molecule state
+# PERF: Added 5s timeout to prevent blocking SessionStart on slow molecule operations
 MOL_SUMMARY=""
 MOLECULE_ID=$(parse_yaml "molecule_id" "$TICKET_FILE" 2>/dev/null)
 if [[ -n "$MOLECULE_ID" ]]; then
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     MOL_SCRIPT="$HOME/dotfiles/scripts/molecule.sh"
     [[ -x "$MOL_SCRIPT" ]] || MOL_SCRIPT="$HOME/dotfiles-gastown/scripts/molecule.sh"
     if [[ -x "$MOL_SCRIPT" ]]; then
-        MOL_SUMMARY=$("$MOL_SCRIPT" resume "$MOLECULE_ID" 2>/dev/null | head -10) || true
+        MOL_SUMMARY=$(timeout 5 "$MOL_SCRIPT" resume "$MOLECULE_ID" 2>/dev/null | head -10) || true
     fi
 fi
 
