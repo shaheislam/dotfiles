@@ -145,10 +145,10 @@ fi
 # Work from main repo root
 cd "$REPO_ROOT"
 
-# Check for uncommitted changes in main repo
-if [[ -n "$(git status --porcelain)" ]]; then
+# Check for uncommitted changes in main repo (ignore untracked files)
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
     echo -e "${RED}Error: Uncommitted changes in main repo prevent merge${NC}" >&2
-    git status --short >&2
+    git status --short --untracked-files=no >&2
     exit 3
 fi
 
