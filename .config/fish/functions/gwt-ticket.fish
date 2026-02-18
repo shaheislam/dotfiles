@@ -1080,19 +1080,19 @@ $prompt_suffix"
         # │  Claude Code ├──────────────┤
         # │              │   terminal   │ ← bottom-right (30%)
         # └──────────────┴──────────────┘
-        # Step 1: cd to worktree
-        tmux send-keys -t "$session_name:$window_name" "cd $worktree_path" Enter
-        # Step 2: Split horizontally - Claude on left (50%), current pane stays right
-        # -hb = new pane before (left), -p 50 = 50% width
+        # Step 1: Split horizontally - Claude on left (35%), current pane stays right
+        # -hb = new pane before (left), -p 35 = 35% width
+        # Note: split-window -c sets working dir for new panes; original pane keeps its cwd
         tmux split-window -t "$session_name:$window_name" -hb -p 35 -c "$worktree_path" "fish $launch_script"
         # After split: pane layout is [Claude(left,active)] [shell(right)]
-        # Step 3: Switch to right pane and split it vertically for diffview + terminal
+        # Step 2: Switch to right pane and split it vertically for diffview + terminal
         tmux last-pane -t "$session_name:$window_name"
         tmux split-window -t "$session_name:$window_name" -v -p 30 -c "$worktree_path"
         # After split: right side has [original(top-right)] [new-terminal(bottom-right,active)]
-        # Step 4: Launch nvim with diffview in the top-right pane (go up from bottom-right)
+        # Step 3: Launch nvim with diffview in the top-right pane (go up from bottom-right)
+        # Combined cd+nvim in single send-keys to avoid buffer corruption from pane resize events
         tmux select-pane -t "$session_name:$window_name" -U
-        tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" Enter
+        tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' -c 'DiffviewOpen'" Enter
     end
 
     # Resolve convoy name to ID before writing state file
