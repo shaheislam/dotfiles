@@ -177,7 +177,7 @@ if status is-interactive
                 # keeps the scope check in the preexec handler consistent.
                 set -g __direnv_last_envrc ""
                 set -l dir "$PWD"
-                while test "$dir" != /
+                while test -n "$dir" -a "$dir" != /
                     if test -f "$dir/.envrc"
                         set -g __direnv_last_envrc "$dir/.envrc"
                         break
@@ -208,7 +208,7 @@ if status is-interactive
                 # Find nearest .envrc by walking up from PWD (no subprocess)
                 set -l dir "$PWD"
                 set -l found_envrc ""
-                while test "$dir" != /
+                while test -n "$dir" -a "$dir" != /
                     if test -f "$dir/.envrc"
                         set found_envrc "$dir/.envrc"
                         break
@@ -233,7 +233,7 @@ if status is-interactive
             /opt/homebrew/bin/direnv export fish | source
             set -g __direnv_last_envrc ""
             set -l dir "$PWD"
-            while test "$dir" != /
+            while test -n "$dir" -a "$dir" != /
                 if test -f "$dir/.envrc"
                     set -g __direnv_last_envrc "$dir/.envrc"
                     break
