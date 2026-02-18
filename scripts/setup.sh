@@ -832,6 +832,16 @@ phase_6_multiplexer() {
 
     install_packages_from_profile "$PROFILE" "multiplexer"
 
+    # Install 1Password CLI (required by tmux-1password plugin)
+    if ! command_exists op; then
+        print_step "Installing 1Password CLI (required by tmux-1password plugin)..."
+        brew install --cask 1password-cli >/dev/null 2>&1 &&
+            print_success "1Password CLI installed" ||
+            print_warning "Failed to install 1Password CLI - install manually with: brew install --cask 1password-cli"
+    else
+        print_success "1Password CLI already installed"
+    fi
+
     # Install TPM
     if command_exists tmux && [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
         print_step "Installing Tmux Plugin Manager..."
