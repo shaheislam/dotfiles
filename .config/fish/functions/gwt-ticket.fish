@@ -509,9 +509,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         # Auto-generated: just use the slug (e.g., fix-auth-bug)
         set branch_name $slug
     else
-        # Ticket: use key-slug (e.g., eng-123-fix-auth-bug)
+        # Ticket: use just the key (e.g., plat-177)
         set -l key_lower (string lower $issue_key)
-        set branch_name "$key_lower-$slug"
+        set branch_name "$key_lower"
     end
 
     # Get repository info (resolve to main repo root, not worktree root)
