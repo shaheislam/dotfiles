@@ -53,16 +53,6 @@
             "statusMessage": "Validating bash command..."
           }
         ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.py",
-            "statusMessage": "Checking file protection..."
-          }
-        ]
       }
     ],
     "PostToolUse": [

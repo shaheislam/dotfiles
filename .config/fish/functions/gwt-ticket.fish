@@ -503,7 +503,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
 
     # Generate branch name
-    set -l slug (string lower $title | string replace -ra '[^a-z0-9 ]' '' | string replace -a ' ' '-' | string sub -l 30 | string replace -r -- '-+$' '')
+    set -l slug (string replace -a \n ' ' -- $title | string lower | string replace -ra '[^a-z0-9 ]' '' | string replace -ra ' +' ' ' | string trim | string replace -a ' ' '-' | string sub -l 30 | string replace -r -- '-+$' '')
     set -l branch_name
     if $is_auto_generated
         # Auto-generated: just use the slug (e.g., fix-auth-bug)
