@@ -161,7 +161,9 @@
     "code-simplifier@claude-plugins-official": true,
     "security-guidance@claude-code-plugins": true,
     "terraform-skill@antonbabenko": true,
-    "beads@steveyegge/beads": true
+    "beads@steveyegge/beads": true,
+    "example-skills@anthropic-agent-skills": true,
+    "superpowers@superpowers-marketplace": true
   },
   "skipDangerousModePermissionPrompt": true
 }
