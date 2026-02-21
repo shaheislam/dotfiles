@@ -11,15 +11,18 @@
 # Environment variables:
 #   CROSS_PROVIDER_BRIDGE=1                     Enable the bridge (default: disabled)
 #   CROSS_PROVIDER_ORDER=codex,gemini,ollama    Provider priority/fallback order
-#   CROSS_PROVIDER_VERBOSE=1                    Verbose logging to stderr
+#   CROSS_PROVIDER_VERBOSE=1                    Verbose logging to stderr (level 1)
+#   CROSS_PROVIDER_VERBOSE=2                    Structured verbose with banners (level 2)
 #   CROSS_PROVIDER_MAX_CHARS=4000               Max context chars to send
 #   CROSS_PROVIDER_PROMPT=                      Custom review prompt (overrides mode)
 #   CROSS_PROVIDER_MODE=review                  Review mode: review|redteam|steelman|assumptions
 #   CROSS_PROVIDER_MAX_ITERATIONS=3             Max consensus iterations (1=single-shot)
 #   CROSS_PROVIDER_TIMEOUT=120                  Per-provider timeout in seconds
 #   CROSS_PROVIDER_LOG=                         Log file path for review history
+#   CROSS_PROVIDER_DRY_RUN=1                    Show config and availability without calling providers
+#   CROSS_PROVIDER_MODELS=codex=o3,gemini=2.5-pro  Per-provider model overrides (key=value pairs)
 #
-#   Provider-specific model overrides:
+#   Provider-specific model overrides (legacy, still supported):
 #   CROSS_PROVIDER_CODEX_MODEL=                 Codex model override
 #   CROSS_PROVIDER_GEMINI_MODEL=                Gemini model (default: CLI default)
 #   CROSS_PROVIDER_OLLAMA_MODEL=qwen3-coder     Ollama model for direct use
@@ -36,23 +39,53 @@ if [ "${CROSS_PROVIDER_BRIDGE:-}" != "1" ]; then
     exit 0
 fi
 
-# --- Default models (single source of truth for provider functions + dispatch) ---
-DEFAULT_OLLAMA_MODEL="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
-DEFAULT_DEEPSEEK_MODEL="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"
-DEFAULT_CLAUDE_MODEL="${CROSS_PROVIDER_CLAUDE_MODEL:-sonnet}"
-DEFAULT_OPENCODE_MODEL="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
-
 # --- Verbose logging ---
 VERBOSE="${CROSS_PROVIDER_VERBOSE:-0}"
 LOG_FILE="${CROSS_PROVIDER_LOG:-}"
+DRY_RUN="${CROSS_PROVIDER_DRY_RUN:-0}"
+
+# Colors for structured verbose output (level 2)
+if [ "$VERBOSE" = "2" ] && [ -t 2 ]; then
+    C_RESET=$'\033[0m'
+    C_BOLD=$'\033[1m'
+    C_DIM=$'\033[2m'
+    C_CYAN=$'\033[36m'
+    C_GREEN=$'\033[32m'
+    C_YELLOW=$'\033[33m'
+    C_RED=$'\033[31m'
+    C_MAGENTA=$'\033[35m'
+    C_BLUE=$'\033[34m'
+else
+    C_RESET="" C_BOLD="" C_DIM="" C_CYAN="" C_GREEN="" C_YELLOW="" C_RED="" C_MAGENTA="" C_BLUE=""
+fi
 
 log_verbose() {
-    if [ "$VERBOSE" = "1" ]; then
+    if [ "$VERBOSE" = "1" ] || [ "$VERBOSE" = "2" ]; then
         echo "[bridge] $*" >&2
     fi
     if [ -n "$LOG_FILE" ]; then
         mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [${session_id:-unknown}] $*" >> "$LOG_FILE"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [${session_id:-unknown}] $*" >>"$LOG_FILE"
+    fi
+}
+
+# Structured verbose banner (level 2 only)
+log_banner() {
+    if [ "$VERBOSE" = "2" ]; then
+        echo "${C_CYAN}${C_BOLD}═══ $1 ═══${C_RESET}" >&2
+    fi
+}
+
+log_kv() {
+    if [ "$VERBOSE" = "2" ]; then
+        printf "  ${C_DIM}%-18s${C_RESET} %s\n" "$1:" "$2" >&2
+    fi
+}
+
+log_status() {
+    local icon="$1" msg="$2"
+    if [ "$VERBOSE" = "2" ]; then
+        echo "  $icon $msg" >&2
     fi
 }
 
@@ -79,6 +112,42 @@ provider_timeout="${CROSS_PROVIDER_TIMEOUT:-120}"
 state_file=""
 current_iteration=0
 previous_review=""
+
+# --- Parse per-provider model map (CROSS_PROVIDER_MODELS=codex=o3,gemini=2.5-pro) ---
+# This overrides individual CROSS_PROVIDER_*_MODEL env vars when set
+parse_provider_models() {
+    local models_str="${CROSS_PROVIDER_MODELS:-}"
+    if [ -z "$models_str" ]; then
+        return
+    fi
+    IFS=',' read -ra pairs <<<"$models_str"
+    for pair in "${pairs[@]}"; do
+        local key="${pair%%=*}"
+        local val="${pair#*=}"
+        key="${key#"${key%%[![:space:]]*}"}" # trim
+        key="${key%"${key##*[![:space:]]}"}"
+        val="${val#"${val%%[![:space:]]*}"}"
+        val="${val%"${val##*[![:space:]]}"}"
+        case "$key" in
+        codex) export CROSS_PROVIDER_CODEX_MODEL="$val" ;;
+        gemini) export CROSS_PROVIDER_GEMINI_MODEL="$val" ;;
+        ollama) export CROSS_PROVIDER_OLLAMA_MODEL="$val" ;;
+        deepseek) export CROSS_PROVIDER_DEEPSEEK_MODEL="$val" ;;
+        claude) export CROSS_PROVIDER_CLAUDE_MODEL="$val" ;;
+        opencode) export CROSS_PROVIDER_OPENCODE_MODEL="$val" ;;
+        *) log_verbose "Unknown provider in CROSS_PROVIDER_MODELS: $key (skipping)" ;;
+        esac
+    done
+}
+parse_provider_models
+
+# --- Default models (single source of truth for provider functions + dispatch) ---
+DEFAULT_CODEX_MODEL="${CROSS_PROVIDER_CODEX_MODEL:-}"
+DEFAULT_GEMINI_MODEL="${CROSS_PROVIDER_GEMINI_MODEL:-}"
+DEFAULT_OLLAMA_MODEL="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
+DEFAULT_DEEPSEEK_MODEL="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"
+DEFAULT_CLAUDE_MODEL="${CROSS_PROVIDER_CLAUDE_MODEL:-sonnet}"
+DEFAULT_OPENCODE_MODEL="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
 
 if [ -n "$session_id" ]; then
     state_file="/tmp/cross-provider-bridge-${session_id}.json"
@@ -162,10 +231,12 @@ detect_consensus() {
     first_line=$(echo "$output" | head -1)
     # Primary: keyword prefix (case-insensitive)
     if echo "$first_line" | grep -qi '^CONSENSUS:'; then
+        log_verbose "Consensus detected: explicit CONSENSUS: prefix"
         return 0
     fi
     # Skip heuristic if reviewer explicitly flagged concerns
     if echo "$first_line" | grep -qi '^CONCERNS:'; then
+        log_verbose "No consensus: explicit CONCERNS: prefix"
         return 1
     fi
     # Heuristic fallback (only when no explicit prefix)
@@ -175,9 +246,66 @@ detect_consensus() {
         -e 'no further concerns' \
         -e 'reasoning is sound' \
         -e 'adequately addressed'; then
+        log_verbose "Consensus detected: heuristic keyword match"
         return 0
     fi
+    log_verbose "No consensus: no explicit prefix or heuristic match"
     return 1
+}
+
+# --- Provider availability checks ---
+
+check_provider_available() {
+    local provider="$1"
+    case "$provider" in
+    codex)
+        command -v codex &>/dev/null && return 0
+        ;;
+    gemini)
+        command -v gemini &>/dev/null && return 0
+        ;;
+    ollama)
+        command -v ollama &>/dev/null && curl -sf http://localhost:11434/api/tags &>/dev/null && return 0
+        ;;
+    deepseek)
+        command -v ollama &>/dev/null && curl -sf http://localhost:11434/api/tags &>/dev/null && return 0
+        ;;
+    claude)
+        command -v claude &>/dev/null && return 0
+        ;;
+    opencode)
+        command -v opencode &>/dev/null && return 0
+        ;;
+    esac
+    return 1
+}
+
+get_provider_model() {
+    local provider="$1"
+    case "$provider" in
+    codex) echo "${DEFAULT_CODEX_MODEL:-(CLI default)}" ;;
+    gemini) echo "${DEFAULT_GEMINI_MODEL:-(CLI default)}" ;;
+    ollama) echo "$DEFAULT_OLLAMA_MODEL" ;;
+    deepseek) echo "$DEFAULT_DEEPSEEK_MODEL" ;;
+    claude) echo "$DEFAULT_CLAUDE_MODEL" ;;
+    opencode) echo "$DEFAULT_OPENCODE_MODEL" ;;
+    *) echo "(unknown)" ;;
+    esac
+}
+
+get_provider_display_name() {
+    local provider="$1"
+    local model
+    model=$(get_provider_model "$provider")
+    case "$provider" in
+    codex) echo "Codex${DEFAULT_CODEX_MODEL:+ ($DEFAULT_CODEX_MODEL)}" ;;
+    gemini) echo "Gemini${DEFAULT_GEMINI_MODEL:+ ($DEFAULT_GEMINI_MODEL)}" ;;
+    ollama) echo "Ollama ($DEFAULT_OLLAMA_MODEL)" ;;
+    deepseek) echo "DeepSeek ($DEFAULT_DEEPSEEK_MODEL)" ;;
+    claude) echo "Claude ($DEFAULT_CLAUDE_MODEL)" ;;
+    opencode) echo "OpenCode ($DEFAULT_OPENCODE_MODEL)" ;;
+    *) echo "$provider" ;;
+    esac
 }
 
 # --- Provider implementations ---
@@ -192,8 +320,8 @@ provider_codex() {
         return 1
     fi
     local codex_cmd=(codex exec)
-    if [ -n "${CROSS_PROVIDER_CODEX_MODEL:-}" ]; then
-        codex_cmd+=(--model "${CROSS_PROVIDER_CODEX_MODEL}")
+    if [ -n "$DEFAULT_CODEX_MODEL" ]; then
+        codex_cmd+=(--model "$DEFAULT_CODEX_MODEL")
     fi
     log_verbose "Provider codex: running ${codex_cmd[*]}"
     local output
@@ -213,8 +341,8 @@ provider_gemini() {
         return 1
     fi
     local gemini_cmd=(gemini)
-    if [ -n "${CROSS_PROVIDER_GEMINI_MODEL:-}" ]; then
-        gemini_cmd+=(--model "${CROSS_PROVIDER_GEMINI_MODEL}")
+    if [ -n "$DEFAULT_GEMINI_MODEL" ]; then
+        gemini_cmd+=(--model "$DEFAULT_GEMINI_MODEL")
     fi
     log_verbose "Provider gemini: running ${gemini_cmd[*]}"
     local output
@@ -343,6 +471,67 @@ last_response="${last_response:0:$max_chars}"
 
 log_verbose "Extracted ${#last_response} chars from transcript (max: $max_chars)"
 
+# --- Structured verbose configuration display ---
+IFS=',' read -ra providers <<<"${CROSS_PROVIDER_ORDER:-codex,opencode}"
+bridge_mode="${CROSS_PROVIDER_MODE:-review}"
+
+if [ "$VERBOSE" = "2" ]; then
+    echo "" >&2
+    log_banner "Cross-Provider Bridge"
+    log_kv "Session" "${session_id:-unknown}"
+    log_kv "Iteration" "$((current_iteration + 1))/$max_iterations"
+    log_kv "Mode" "$bridge_mode"
+    log_kv "Timeout" "${provider_timeout}s per provider"
+    log_kv "Max chars" "$max_chars"
+    log_kv "Context size" "${#last_response} chars"
+    if [ -n "${CROSS_PROVIDER_MODELS:-}" ]; then
+        log_kv "Model map" "${CROSS_PROVIDER_MODELS}"
+    fi
+    if [ -n "$LOG_FILE" ]; then
+        log_kv "Log file" "$LOG_FILE"
+    fi
+    echo "" >&2
+
+    # Provider availability preflight
+    log_banner "Provider Availability"
+    for p in "${providers[@]}"; do
+        p="${p#"${p%%[![:space:]]*}"}"
+        p="${p%"${p##*[![:space:]]}"}"
+        local_model=$(get_provider_model "$p")
+        if check_provider_available "$p"; then
+            log_status "${C_GREEN}✓${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(model: $local_model)${C_RESET}"
+        else
+            log_status "${C_RED}✗${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(unavailable)${C_RESET}"
+        fi
+    done
+    echo "" >&2
+fi
+
+# --- Dry-run mode: show config and exit ---
+if [ "$DRY_RUN" = "1" ]; then
+    if [ "$VERBOSE" != "2" ]; then
+        # Print config even without VERBOSE=2 in dry-run mode
+        echo "[bridge] Dry-run mode — showing configuration" >&2
+        echo "[bridge] Providers: ${providers[*]}" >&2
+        echo "[bridge] Mode: $bridge_mode" >&2
+        echo "[bridge] Max iterations: $max_iterations" >&2
+        echo "[bridge] Timeout: ${provider_timeout}s" >&2
+        echo "[bridge] Context: ${#last_response} chars" >&2
+        for p in "${providers[@]}"; do
+            p="${p#"${p%%[![:space:]]*}"}"
+            p="${p%"${p##*[![:space:]]}"}"
+            if check_provider_available "$p"; then
+                echo "[bridge] Provider $p: available (model: $(get_provider_model "$p"))" >&2
+            else
+                echo "[bridge] Provider $p: unavailable" >&2
+            fi
+        done
+    else
+        log_banner "Dry Run Complete"
+    fi
+    exit 0
+fi
+
 # Build review prompt: initial vs follow-up
 if [ "$current_iteration" -gt 0 ] && [ -n "$previous_review" ]; then
     # Follow-up prompt: check if previous concerns were addressed
@@ -364,31 +553,36 @@ Check whether your previous concerns were adequately addressed.
 - If ALL concerns are resolved, start your response with \"CONSENSUS:\" followed by brief confirmation.
 - If concerns remain, start with \"CONCERNS:\" followed by specific actionable feedback.
 Focus only on whether previous concerns were addressed."
+    if [ "$VERBOSE" = "2" ]; then
+        log_banner "Follow-up Review (iteration $((current_iteration + 1)))"
+        log_kv "Previous concerns" "$(echo "$previous_review" | head -3 | tr '\n' ' ')..."
+    fi
 else
     # Initial review prompt - mode-based selection
     # Validate CROSS_PROVIDER_MODE (whitelist known values, reject unknown)
-    bridge_mode="${CROSS_PROVIDER_MODE:-review}"
     case "$bridge_mode" in
-        review|redteam|steelman|assumptions) ;; # valid
-        *) log_verbose "Unknown CROSS_PROVIDER_MODE='$bridge_mode', falling back to 'review'"
-           bridge_mode="review" ;;
+    review | redteam | steelman | assumptions) ;; # valid
+    *)
+        log_verbose "Unknown CROSS_PROVIDER_MODE='$bridge_mode', falling back to 'review'"
+        bridge_mode="review"
+        ;;
     esac
     if [ -n "${CROSS_PROVIDER_PROMPT:-}" ]; then
         review_prompt="$CROSS_PROVIDER_PROMPT"
     else
         case "$bridge_mode" in
-            redteam)
-                review_prompt="You are a hostile adversarial reviewer. Your job is to BREAK this plan. Find: 1) Fatal flaws that would cause project failure. 2) Hidden assumptions that are wrong. 3) Missing failure modes that aren't addressed. 4) Optimistic estimates that will slip. 5) Dependencies that will break. Be specific and ruthless. If you genuinely cannot find issues, start with \"CONSENSUS:\" — otherwise start with \"CONCERNS:\" and list them."
-                ;;
-            steelman)
-                review_prompt="You are an advocate for this approach. Build the STRONGEST possible case for why this reasoning is correct and this plan will succeed. Find: 1) Strengths that aren't explicitly stated. 2) Why potential concerns are manageable. 3) Evidence supporting the approach. 4) Advantages over alternatives. Start with \"CONSENSUS:\" and make the strongest case. If you find genuine fatal flaws you cannot steelman, start with \"CONCERNS:\"."
-                ;;
-            assumptions)
-                review_prompt="You are a first-principles analyst. Decompose the reasoning into its fundamental assumptions. For each assumption: 1) State it explicitly. 2) Grade confidence: high/medium/low. 3) How to verify it. 4) What changes if it's wrong. Do NOT accept any claim at face value. If all assumptions are well-grounded, start with \"CONSENSUS:\". If critical assumptions are unverified or wrong, start with \"CONCERNS:\" and list them."
-                ;;
-            *)
-                review_prompt="You are an independent AI reviewer checking another AI model's work for correlation bias. Review the reasoning below and: 1) Flag any logical errors, incorrect assumptions, or missed edge cases. 2) Suggest alternative approaches the original model may have overlooked. 3) Identify any security or correctness concerns. 4) Be concise and actionable - only raise genuine issues. If the reasoning is sound, start with \"CONSENSUS:\" and briefly confirm. If you have concerns, start with \"CONCERNS:\" and list them."
-                ;;
+        redteam)
+            review_prompt="You are a hostile adversarial reviewer. Your job is to BREAK this plan. Find: 1) Fatal flaws that would cause project failure. 2) Hidden assumptions that are wrong. 3) Missing failure modes that aren't addressed. 4) Optimistic estimates that will slip. 5) Dependencies that will break. Be specific and ruthless. If you genuinely cannot find issues, start with \"CONSENSUS:\" — otherwise start with \"CONCERNS:\" and list them."
+            ;;
+        steelman)
+            review_prompt="You are an advocate for this approach. Build the STRONGEST possible case for why this reasoning is correct and this plan will succeed. Find: 1) Strengths that aren't explicitly stated. 2) Why potential concerns are manageable. 3) Evidence supporting the approach. 4) Advantages over alternatives. Start with \"CONSENSUS:\" and make the strongest case. If you find genuine fatal flaws you cannot steelman, start with \"CONCERNS:\"."
+            ;;
+        assumptions)
+            review_prompt="You are a first-principles analyst. Decompose the reasoning into its fundamental assumptions. For each assumption: 1) State it explicitly. 2) Grade confidence: high/medium/low. 3) How to verify it. 4) What changes if it's wrong. Do NOT accept any claim at face value. If all assumptions are well-grounded, start with \"CONSENSUS:\". If critical assumptions are unverified or wrong, start with \"CONCERNS:\" and list them."
+            ;;
+        *)
+            review_prompt="You are an independent AI reviewer checking another AI model's work for correlation bias. Review the reasoning below and: 1) Flag any logical errors, incorrect assumptions, or missed edge cases. 2) Suggest alternative approaches the original model may have overlooked. 3) Identify any security or correctness concerns. 4) Be concise and actionable - only raise genuine issues. If the reasoning is sound, start with \"CONSENSUS:\" and briefly confirm. If you have concerns, start with \"CONCERNS:\" and list them."
+            ;;
         esac
     fi
 
@@ -398,69 +592,120 @@ else
 Reasoning to review:
 ${last_response}
 ---"
+    if [ "$VERBOSE" = "2" ]; then
+        log_banner "Initial Review"
+        log_kv "Mode" "$bridge_mode"
+        log_kv "Prompt" "$(echo "$review_prompt" | head -1 | cut -c1-80)..."
+    fi
 fi
 
 # Try providers in priority order
-IFS=',' read -ra providers <<< "${CROSS_PROVIDER_ORDER:-codex,opencode}"
-
 cross_provider_output=""
 provider_used=""
 
 log_verbose "Provider order: ${providers[*]}"
 
+if [ "$VERBOSE" = "2" ]; then
+    log_banner "Provider Dispatch"
+fi
+
 for provider in "${providers[@]}"; do
-    provider="${provider#"${provider%%[![:space:]]*}"}"  # trim leading
-    provider="${provider%"${provider##*[![:space:]]}"}"  # trim trailing
+    provider="${provider#"${provider%%[![:space:]]*}"}" # trim leading
+    provider="${provider%"${provider##*[![:space:]]}"}" # trim trailing
 
     log_verbose "Trying provider: $provider"
+    if [ "$VERBOSE" = "2" ]; then
+        printf "  ${C_YELLOW}→${C_RESET} ${C_BOLD}%s${C_RESET} " "$provider" >&2
+    fi
+
+    # Capture timing
+    local_start=$(date +%s)
 
     case "$provider" in
-        codex)
-            if cross_provider_output=$(provider_codex "$full_prompt"); then
-                provider_used="Codex"
-                break
+    codex)
+        if cross_provider_output=$(provider_codex "$full_prompt"); then
+            provider_used=$(get_provider_display_name codex)
+            local_end=$(date +%s)
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_GREEN}success${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
             fi
-            ;;
-        gemini)
-            if cross_provider_output=$(provider_gemini "$full_prompt"); then
-                provider_used="Gemini"
-                break
+            break
+        fi
+        ;;
+    gemini)
+        if cross_provider_output=$(provider_gemini "$full_prompt"); then
+            provider_used=$(get_provider_display_name gemini)
+            local_end=$(date +%s)
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_GREEN}success${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
             fi
-            ;;
-        ollama)
-            if cross_provider_output=$(provider_ollama "$full_prompt"); then
-                provider_used="Ollama ($DEFAULT_OLLAMA_MODEL)"
-                break
+            break
+        fi
+        ;;
+    ollama)
+        if cross_provider_output=$(provider_ollama "$full_prompt"); then
+            provider_used=$(get_provider_display_name ollama)
+            local_end=$(date +%s)
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_GREEN}success${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
             fi
-            ;;
-        deepseek)
-            if cross_provider_output=$(provider_deepseek "$full_prompt"); then
-                provider_used="DeepSeek ($DEFAULT_DEEPSEEK_MODEL)"
-                break
+            break
+        fi
+        ;;
+    deepseek)
+        if cross_provider_output=$(provider_deepseek "$full_prompt"); then
+            provider_used=$(get_provider_display_name deepseek)
+            local_end=$(date +%s)
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_GREEN}success${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
             fi
-            ;;
-        claude)
-            if cross_provider_output=$(provider_claude "$full_prompt"); then
-                provider_used="Claude ($DEFAULT_CLAUDE_MODEL)"
-                break
+            break
+        fi
+        ;;
+    claude)
+        if cross_provider_output=$(provider_claude "$full_prompt"); then
+            provider_used=$(get_provider_display_name claude)
+            local_end=$(date +%s)
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_GREEN}success${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
             fi
-            ;;
-        opencode)
-            if cross_provider_output=$(provider_opencode "$full_prompt"); then
-                provider_used="OpenCode ($DEFAULT_OPENCODE_MODEL)"
-                break
+            break
+        fi
+        ;;
+    opencode)
+        if cross_provider_output=$(provider_opencode "$full_prompt"); then
+            provider_used=$(get_provider_display_name opencode)
+            local_end=$(date +%s)
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_GREEN}success${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
             fi
-            ;;
-        *)
-            log_verbose "Unknown provider: $provider (skipping)"
-            continue
-            ;;
+            break
+        fi
+        ;;
+    *)
+        log_verbose "Unknown provider: $provider (skipping)"
+        if [ "$VERBOSE" = "2" ]; then
+            echo "${C_RED}unknown${C_RESET}" >&2
+        fi
+        continue
+        ;;
     esac
+
+    # If we got here, provider failed
+    local_end=$(date +%s)
+    if [ "$VERBOSE" = "2" ]; then
+        echo "${C_RED}failed${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
+    fi
 done
 
 # No provider succeeded - silently continue with Claude
 if [ -z "$cross_provider_output" ]; then
     log_verbose "All providers failed, allowing stop (silent fallback)"
+    if [ "$VERBOSE" = "2" ]; then
+        echo "" >&2
+        log_status "${C_RED}✗${C_RESET}" "All providers failed — allowing stop (silent fallback)"
+        echo "" >&2
+    fi
     rm -f "$state_file" 2>/dev/null
     exit 0
 fi
@@ -479,17 +724,33 @@ if [ -n "$LOG_FILE" ]; then
         echo "$cross_provider_output"
         echo "---"
         echo ""
-    } >> "$LOG_FILE"
+    } >>"$LOG_FILE"
 fi
 
 # Check for consensus
+if [ "$VERBOSE" = "2" ]; then
+    echo "" >&2
+    log_banner "Consensus Check"
+    log_kv "Provider" "$provider_used"
+    log_kv "Response size" "${#cross_provider_output} chars"
+    log_kv "First line" "$(echo "$cross_provider_output" | head -1 | cut -c1-80)"
+fi
+
 if detect_consensus "$cross_provider_output"; then
-    log_verbose "Consensus reached by $provider_used"
+    if [ "$VERBOSE" = "2" ]; then
+        log_status "${C_GREEN}✓${C_RESET}" "${C_GREEN}Consensus reached${C_RESET} — allowing stop"
+        echo "" >&2
+    fi
     rm -f "$state_file" 2>/dev/null
-    exit 0  # Allow stop — consensus reached
+    exit 0 # Allow stop — consensus reached
 fi
 
 log_verbose "No consensus — blocking for iteration $((current_iteration + 1))/$max_iterations"
+
+if [ "$VERBOSE" = "2" ]; then
+    log_status "${C_YELLOW}→${C_RESET}" "${C_YELLOW}No consensus${C_RESET} — blocking for next iteration ($((current_iteration + 1))/$max_iterations)"
+    echo "" >&2
+fi
 
 # No consensus — save state and block for next iteration
 new_iteration=$((current_iteration + 1))
@@ -497,19 +758,19 @@ if [ -n "$state_file" ]; then
     if [ -f "$state_file" ]; then
         # Append review to existing state (PID-unique temp file prevents race conditions)
         timeout 5 jq --arg review "$cross_provider_output" \
-           --arg provider "$provider_used" \
-           --argjson iter "$new_iteration" \
-           --argjson ts "$(date +%s)" \
-           '.iteration = $iter | .previous_reviews += [$review] | .providers_used += [$provider] | .last_updated = $ts' \
-           "$state_file" > "${state_file}.tmp.$$" && mv "${state_file}.tmp.$$" "$state_file"
+            --arg provider "$provider_used" \
+            --argjson iter "$new_iteration" \
+            --argjson ts "$(date +%s)" \
+            '.iteration = $iter | .previous_reviews += [$review] | .providers_used += [$provider] | .last_updated = $ts' \
+            "$state_file" >"${state_file}.tmp.$$" && mv "${state_file}.tmp.$$" "$state_file"
     else
         # Create new state file
         timeout 5 jq -n --arg review "$cross_provider_output" \
-              --arg provider "$provider_used" \
-              --argjson iter "$new_iteration" \
-              --argjson ts "$(date +%s)" \
-              '{iteration: $iter, previous_reviews: [$review], providers_used: [$provider], created_at: $ts, last_updated: $ts}' \
-              > "$state_file"
+            --arg provider "$provider_used" \
+            --argjson iter "$new_iteration" \
+            --argjson ts "$(date +%s)" \
+            '{iteration: $iter, previous_reviews: [$review], providers_used: [$provider], created_at: $ts, last_updated: $ts}' \
+            >"$state_file"
     fi
 fi
 
