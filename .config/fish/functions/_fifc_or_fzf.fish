@@ -25,6 +25,9 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
         else if test "$cmd[1]" = terraform; or test "$cmd[1]" = tf
             # Use terraform-specific fzf completion
             _terraform_fzf_tab_complete
+        else if contains -- "$cmd[1]" cd z pushd
+            # Zoxide fzf picker with scope switching (alt-l/g/s/p)
+            _cd_fzf_tab_complete
         else if test "$cmd[1]" = ssh
             # Use ssh host fzf picker
             _ssh_fzf_tab_complete
