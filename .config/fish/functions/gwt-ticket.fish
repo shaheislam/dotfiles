@@ -20,6 +20,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --devcon        Use devcontainer for isolation (default: local)
     #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
     #   --system S      Ticketing system: linear or jira
+    #   --quiet, -q     Suppress verbose output (writes to .claude/gwt-ticket.log)
     #   --help, -h      Show help
 
     # Check if we're in a git repository (skip for --status which works from anywhere)
@@ -91,6 +92,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l town_sync true
     set -l mayor_tracked false
     set -l swarm_epic_id "" # bd swarm: epic bead ID to create swarm from
+    set -l quiet_mode false
 
     for i in (seq (count $argv))
         if $skip_next
@@ -404,6 +406,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 set mayor_tracked true
             case --no-mayor
                 set mayor_tracked false
+            case --quiet -q
+                set quiet_mode true
             case --swarm-epic
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -487,6 +491,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency, bd-bead)"
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
+        echo "  --quiet, -q          Suppress verbose output (writes to .claude/gwt-ticket.log instead)"
         echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
@@ -615,127 +620,153 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         set window_name $slug
     end
 
-    echo "=== gwt-ticket ==="
-    if $is_auto_generated
-        echo "Task:      (autonomous, no ticket tracking)"
-    else
-        echo "Issue:     $issue_key"
-    end
-    echo "Title:     $title"
-    echo "Branch:    $branch_name"
-    echo "Window:    $window_name"
-    echo "Worktree:  $worktree_path"
-    echo "Instance:  $instance_name"
-    echo "Max iter:  $max_iterations"
-    echo "Session:   $session_name"
-    echo "Command:   $slash_command"
-    if $use_local
-        echo "Model:     $local_model (local Ollama)"
-    end
-    if test -n "$prompt_template"
-        echo "Template:  $prompt_template"
-    end
-    if test -n "$workflow_template"
-        echo "Workflow:  $workflow_template (~/dotfiles/templates/workflows/$workflow_template.toml)"
-    end
-    if test -n "$sub_profile"
-        echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
-    end
-    if $bridge_mode
-        set -l bridge_info "enabled (cross-provider review"
-        if test -n "$bridge_iterations"
-            set bridge_info "$bridge_info, max $bridge_iterations iterations"
+    # Log file path (set properly after worktree path resolution below)
+    set -l gwt_log_file ""
+
+    # --- Header block (verbose output) ---
+    if not $quiet_mode
+        echo "=== gwt-ticket ==="
+        if $is_auto_generated
+            echo "Task:      (autonomous, no ticket tracking)"
+        else
+            echo "Issue:     $issue_key"
         end
-        if test -n "$bridge_providers"
-            set bridge_info "$bridge_info, providers: $bridge_providers"
+        echo "Title:     $title"
+        echo "Branch:    $branch_name"
+        echo "Window:    $window_name"
+        echo "Worktree:  $worktree_path"
+        echo "Instance:  $instance_name"
+        echo "Max iter:  $max_iterations"
+        echo "Session:   $session_name"
+        echo "Command:   $slash_command"
+        if $use_local
+            echo "Model:     $local_model (local Ollama)"
         end
-        if test -n "$bridge_review_mode"
-            set bridge_info "$bridge_info, mode: $bridge_review_mode"
+        if test -n "$prompt_template"
+            echo "Template:  $prompt_template"
         end
-        if test -n "$bridge_model"
-            set bridge_info "$bridge_info, model: $bridge_model"
+        if test -n "$workflow_template"
+            echo "Workflow:  $workflow_template (~/dotfiles/templates/workflows/$workflow_template.toml)"
         end
-        if test -n "$bridge_models"
-            set bridge_info "$bridge_info, models: $bridge_models"
+        if test -n "$sub_profile"
+            echo "Sub:       $sub_profile (~/.claude-$sub_profile)"
         end
-        if test -n "$bridge_profiles"
-            set bridge_info "$bridge_info, claude-profiles: $bridge_profiles"
+        if $bridge_mode
+            set -l bridge_info "enabled (cross-provider review"
+            if test -n "$bridge_iterations"
+                set bridge_info "$bridge_info, max $bridge_iterations iterations"
+            end
+            if test -n "$bridge_providers"
+                set bridge_info "$bridge_info, providers: $bridge_providers"
+            end
+            if test -n "$bridge_review_mode"
+                set bridge_info "$bridge_info, mode: $bridge_review_mode"
+            end
+            if test -n "$bridge_model"
+                set bridge_info "$bridge_info, model: $bridge_model"
+            end
+            if test -n "$bridge_models"
+                set bridge_info "$bridge_info, models: $bridge_models"
+            end
+            if test -n "$bridge_profiles"
+                set bridge_info "$bridge_info, claude-profiles: $bridge_profiles"
+            end
+            if test -n "$bridge_codex_profiles"
+                set bridge_info "$bridge_info, codex-profiles: $bridge_codex_profiles"
+            end
+            if test -n "$bridge_cooldown"
+                set bridge_info "$bridge_info, cooldown: $bridge_cooldown""s"
+            end
+            set bridge_info "$bridge_info)"
+            echo "Bridge:    $bridge_info"
+            if $bridge_verbose
+                echo "           verbose mode on"
+            end
+            if test -n "$bridge_log"
+                echo "           log: $bridge_log"
+            end
+            if $bridge_dry_run
+                echo "           dry-run mode (will show config only)"
+            end
         end
-        if test -n "$bridge_codex_profiles"
-            set bridge_info "$bridge_info, codex-profiles: $bridge_codex_profiles"
+        if test -n "$prompt_prefix"
+            echo "Prefix:    (custom)"
         end
-        if test -n "$bridge_cooldown"
-            set bridge_info "$bridge_info, cooldown: $bridge_cooldown""s"
+        if test -n "$prompt_suffix"
+            echo "Suffix:    (custom)"
         end
-        set bridge_info "$bridge_info)"
-        echo "Bridge:    $bridge_info"
-        if $bridge_verbose
-            echo "           verbose mode on"
+        if test -n "$convoy_id"
+            echo "Convoy:    $convoy_id"
         end
-        if test -n "$bridge_log"
-            echo "           log: $bridge_log"
+        if test -n "$molecule_id"
+            echo "Molecule:  $molecule_id"
         end
-        if $bridge_dry_run
-            echo "           dry-run mode (will show config only)"
+        if $town_sync
+            echo "Town sync: enabled"
         end
+        if $mayor_tracked
+            echo "Mayor:     tracked"
+        end
+        if test -n "$gate_type"
+            echo "Gate:      $gate_type"
+            if test -n "$gate_dep_worktree"
+                echo "Gate dep:  $gate_dep_worktree"
+            end
+        end
+        echo ""
     end
-    if test -n "$prompt_prefix"
-        echo "Prefix:    (custom)"
-    end
-    if test -n "$prompt_suffix"
-        echo "Suffix:    (custom)"
-    end
-    if test -n "$convoy_id"
-        echo "Convoy:    $convoy_id"
-    end
-    if test -n "$molecule_id"
-        echo "Molecule:  $molecule_id"
-    end
-    if $town_sync
-        echo "Town sync: enabled"
-    end
-    if $mayor_tracked
-        echo "Mayor:     tracked"
-    end
-    if test -n "$gate_type"
-        echo "Gate:      $gate_type"
-        if test -n "$gate_dep_worktree"
-            echo "Gate dep:  $gate_dep_worktree"
-        end
-    end
-    echo ""
 
     # Check inbox for pending instructions
     set -l mail_script "$HOME/dotfiles/scripts/agent-mail.sh"
     if test -x "$mail_script"
         set -l unread_count (bash "$mail_script" count --for "$branch_name" 2>/dev/null)
         if test -n "$unread_count" -a "$unread_count" != 0
-            echo "Mail: $unread_count unread message(s) for $branch_name"
-            bash "$mail_script" inbox --for "$branch_name" --unread 2>/dev/null
-            echo ""
+            if not $quiet_mode
+                echo "Mail: $unread_count unread message(s) for $branch_name"
+                bash "$mail_script" inbox --for "$branch_name" --unread 2>/dev/null
+                echo ""
+            end
         end
     end
 
     # Step 1: Create worktree via gwt-dev (reuses existing logic)
-    echo "[1/4] Creating worktree..."
+    if not $quiet_mode
+        echo "[1/4] Creating worktree..."
+    end
     set -l gwt_args $branch_name --no-devcon --no-cd
     if not test -d "$worktree_path"
         # Check if branch exists
         if git show-ref --verify --quiet refs/heads/$branch_name
-            gwt-dev $gwt_args
+            if $quiet_mode
+                gwt-dev $gwt_args >/dev/null 2>&1
+            else
+                gwt-dev $gwt_args
+            end
         else
-            gwt-dev $branch_name --new --no-devcon --no-cd
+            if $quiet_mode
+                gwt-dev $branch_name --new --no-devcon --no-cd >/dev/null 2>&1
+            else
+                gwt-dev $branch_name --new --no-devcon --no-cd
+            end
         end
         if test $status -ne 0
             echo "Error: Failed to create worktree"
             return 1
         end
     else
-        echo "Worktree already exists, reusing..."
+        if not $quiet_mode
+            echo "Worktree already exists, reusing..."
+        end
     end
 
     # Resolve worktree path
     set worktree_path (realpath $worktree_path)
+
+    # Now that worktree path is resolved, set up quiet mode log file
+    if $quiet_mode
+        set gwt_log_file "$worktree_path/.claude/gwt-ticket.log"
+        mkdir -p "$worktree_path/.claude" 2>/dev/null
+    end
 
     # Auto-init beads agent memory for worktree
     if command -q bd
@@ -756,7 +787,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         if test -n "$local_model"
             set cv_args $cv_args --model "$local_model"
         end
-        bash $cv_script $cv_args 2>/dev/null; or true
+        if $quiet_mode
+            bash $cv_script $cv_args >/dev/null 2>&1; or true
+        else
+            bash $cv_script $cv_args 2>/dev/null; or true
+        end
     end
 
     # Create bead for this work item
@@ -785,9 +820,13 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         pushd $worktree_path
         set -l swarm_result (bd swarm create "$swarm_epic_id" 2>/dev/null)
         if test $status -eq 0
-            echo "Created bd swarm for epic $swarm_epic_id: $swarm_result"
+            if not $quiet_mode
+                echo "Created bd swarm for epic $swarm_epic_id: $swarm_result"
+            end
         else
-            echo "Warning: bd swarm create failed for $swarm_epic_id (continuing)"
+            if not $quiet_mode
+                echo "Warning: bd swarm create failed for $swarm_epic_id (continuing)"
+            end
         end
         popd
     end
@@ -828,7 +867,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if not $no_checkpoints
         if test -f ~/dotfiles/scripts/checkpoints.sh
             pushd $worktree_path
-            bash ~/dotfiles/scripts/checkpoints.sh enable 2>/dev/null; or true
+            if $quiet_mode
+                bash ~/dotfiles/scripts/checkpoints.sh enable >/dev/null 2>&1; or true
+            else
+                bash ~/dotfiles/scripts/checkpoints.sh enable 2>/dev/null; or true
+            end
             popd
         end
     end
@@ -847,20 +890,28 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
 
     # Step 2: Ensure tmux session exists
-    echo "[2/4] Setting up tmux session..."
+    if not $quiet_mode
+        echo "[2/4] Setting up tmux session..."
+    end
     set -l created_new_session false
     if not tmux has-session -t $session_name 2>/dev/null
         # Create session with the ticket window as the initial window
         # This avoids an extra default window (which would show reattach-to-user-namespace)
         tmux new-session -d -s $session_name -n $window_name -c $worktree_path
         set created_new_session true
-        echo "Created tmux session: $session_name"
+        if not $quiet_mode
+            echo "Created tmux session: $session_name"
+        end
     else
-        echo "Tmux session exists: $session_name"
+        if not $quiet_mode
+            echo "Tmux session exists: $session_name"
+        end
     end
 
     # Step 3: Create window for this ticket (only if session already existed)
-    echo "[3/4] Creating ticket window..."
+    if not $quiet_mode
+        echo "[3/4] Creating ticket window..."
+    end
 
     if test "$created_new_session" = false
         # Session existed, create a new window for this ticket
@@ -869,10 +920,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         # with that name exists in the current session.
         tmux new-window -t "$session_name:" -n $window_name -c $worktree_path
     end
-    echo "Created window: $window_name"
+    if not $quiet_mode
+        echo "Created window: $window_name"
+    end
 
     # Step 4: Build and launch Claude
-    echo "[4/4] Launching Claude with $slash_command..."
+    if not $quiet_mode
+        echo "[4/4] Launching Claude with $slash_command..."
+    end
 
     # Build the prompt
     set -l completion_promise "TICKET_"$issue_key"_COMPLETE"
@@ -1406,8 +1461,12 @@ $prompt" >$state_file
             if $rebase_merge
                 set daemon_args $daemon_args --rebase
             end
-            bash "$merge_queue_script" $daemon_args
-            echo "Started merge-queue daemon"
+            if $quiet_mode
+                bash "$merge_queue_script" $daemon_args >/dev/null 2>&1
+            else
+                bash "$merge_queue_script" $daemon_args
+                echo "Started merge-queue daemon"
+            end
         end
     end
 
@@ -1422,37 +1481,69 @@ $prompt" >$state_file
         if test -n "$auto_cleanup"
             set witness_args $witness_args $auto_cleanup
         end
-        bash "$witness_script" $witness_args &
+        if $quiet_mode
+            bash "$witness_script" $witness_args >/dev/null 2>&1 &
+        else
+            bash "$witness_script" $witness_args &
+        end
         disown
     end
 
-    echo ""
-    echo "=== Ticket execution started ==="
-    echo ""
-    if $is_auto_generated
-        echo "Task:      $issue_key (autonomous, no ticket tracking)"
+    if $quiet_mode
+        # Write full details to log file for optional review
+        echo "=== gwt-ticket ===" >$gwt_log_file
+        echo "Started: "(date '+%Y-%m-%d %H:%M:%S') >>$gwt_log_file
+        if $is_auto_generated
+            echo "Task:      $issue_key (autonomous, no ticket tracking)" >>$gwt_log_file
+        else
+            echo "Ticket:    $issue_key - $title" >>$gwt_log_file
+        end
+        echo "Title:     $title" >>$gwt_log_file
+        echo "Branch:    $branch_name" >>$gwt_log_file
+        echo "Worktree:  $worktree_path" >>$gwt_log_file
+        echo "Tmux:      $session_name:$window_name" >>$gwt_log_file
+        echo "Max iter:  $max_iterations" >>$gwt_log_file
+        echo "Command:   $slash_command" >>$gwt_log_file
+        echo "" >>$gwt_log_file
+        echo "Monitoring:" >>$gwt_log_file
+        echo "  tmux attach -t $session_name" >>$gwt_log_file
+        echo "  tmux select-window -t $session_name:$window_name" >>$gwt_log_file
+        echo "  worktree-witness.sh status $worktree_path" >>$gwt_log_file
+        echo "" >>$gwt_log_file
+        echo "Post-completion:" >>$gwt_log_file
+        echo "  ticket-execute --complete $worktree_path" >>$gwt_log_file
+        echo "State file: $state_file" >>$gwt_log_file
+        # Single-line summary to stdout
+        echo "gwtt: $window_name → $session_name:$window_name (log: $gwt_log_file)"
     else
-        echo "Ticket:    $issue_key - $title"
+        echo ""
+        echo "=== Ticket execution started ==="
+        echo ""
+        if $is_auto_generated
+            echo "Task:      $issue_key (autonomous, no ticket tracking)"
+        else
+            echo "Ticket:    $issue_key - $title"
+        end
+        echo "Title:     $title"
+        echo "Worktree:  $worktree_path"
+        echo "Tmux:      $session_name:$window_name"
+        echo "Max iter:  $max_iterations"
+        if $use_local
+            echo "Model:     $local_model (local Ollama)"
+        end
+        echo ""
+        echo "Monitoring:"
+        echo "  tmux attach -t $session_name"
+        echo "  tmux select-window -t $session_name:$window_name"
+        echo "  worktree-witness.sh status $worktree_path"
+        echo ""
+        echo "Post-completion:"
+        echo "  ticket-execute --complete $worktree_path"
+        echo "  - PR will be created automatically"
+        if not $is_auto_generated
+            echo "  - Ticket will transition to Review/Done"
+        end
+        echo ""
+        echo "State file: $state_file"
     end
-    echo "Title:     $title"
-    echo "Worktree:  $worktree_path"
-    echo "Tmux:      $session_name:$window_name"
-    echo "Max iter:  $max_iterations"
-    if $use_local
-        echo "Model:     $local_model (local Ollama)"
-    end
-    echo ""
-    echo "Monitoring:"
-    echo "  tmux attach -t $session_name"
-    echo "  tmux select-window -t $session_name:$window_name"
-    echo "  worktree-witness.sh status $worktree_path"
-    echo ""
-    echo "Post-completion:"
-    echo "  ticket-execute --complete $worktree_path"
-    echo "  - PR will be created automatically"
-    if not $is_auto_generated
-        echo "  - Ticket will transition to Review/Done"
-    end
-    echo ""
-    echo "State file: $state_file"
 end

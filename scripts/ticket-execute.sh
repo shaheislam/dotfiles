@@ -19,6 +19,7 @@
 #   --mount M            Additional mount (repeatable)
 #   --devcon          Use devcontainer for isolation (default: local)
 #   --dry-run            Show what would be executed without running
+#   --quiet, -q          Suppress verbose output
 #   --help               Show this help
 
 set -euo pipefail
@@ -31,7 +32,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 show_help() {
-    cat << 'EOF'
+    cat <<'EOF'
 ticket-execute.sh - Orchestrate autonomous ticket execution
 
 USAGE:
@@ -53,6 +54,7 @@ OPTIONS:
   --mount M            Additional mount directory (repeatable)
   --devcon          Use devcontainer for isolation (default: local)
   --dry-run            Show what would be executed without running
+  --quiet, -q          Suppress verbose output (writes to .claude/gwt-ticket.log)
   --help               Show this help
 
 EXAMPLES:
@@ -83,64 +85,69 @@ PROMPT_PREFIX=""
 PROMPT_SUFFIX=""
 USE_DEVCON=false
 DRY_RUN=false
+QUIET=false
 MOUNTS=()
 
 # Parse arguments
 POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --max)
-            MAX_ITERATIONS="$2"
-            shift 2
-            ;;
-        --session)
-            SESSION_NAME="$2"
-            shift 2
-            ;;
-        --system)
-            TICKETING_SYSTEM="$2"
-            shift 2
-            ;;
-        --command)
-            SLASH_COMMAND="$2"
-            shift 2
-            ;;
-        --prompt-template)
-            PROMPT_TEMPLATE="$2"
-            shift 2
-            ;;
-        --prompt-prefix)
-            PROMPT_PREFIX="$2"
-            shift 2
-            ;;
-        --prompt-suffix)
-            PROMPT_SUFFIX="$2"
-            shift 2
-            ;;
-        --mount|-m)
-            MOUNTS+=("$2")
-            shift 2
-            ;;
-        --devcon)
-            USE_DEVCON=true
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        --help|-h)
-            show_help
-            exit 0
-            ;;
-        -*)
-            echo -e "${RED}Error: Unknown option $1${NC}" >&2
-            exit 1
-            ;;
-        *)
-            POSITIONAL_ARGS+=("$1")
-            shift
-            ;;
+    --max)
+        MAX_ITERATIONS="$2"
+        shift 2
+        ;;
+    --session)
+        SESSION_NAME="$2"
+        shift 2
+        ;;
+    --system)
+        TICKETING_SYSTEM="$2"
+        shift 2
+        ;;
+    --command)
+        SLASH_COMMAND="$2"
+        shift 2
+        ;;
+    --prompt-template)
+        PROMPT_TEMPLATE="$2"
+        shift 2
+        ;;
+    --prompt-prefix)
+        PROMPT_PREFIX="$2"
+        shift 2
+        ;;
+    --prompt-suffix)
+        PROMPT_SUFFIX="$2"
+        shift 2
+        ;;
+    --mount | -m)
+        MOUNTS+=("$2")
+        shift 2
+        ;;
+    --devcon)
+        USE_DEVCON=true
+        shift
+        ;;
+    --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+    --quiet | -q)
+        QUIET=true
+        shift
+        ;;
+    --help | -h)
+        show_help
+        exit 0
+        ;;
+    -*)
+        echo -e "${RED}Error: Unknown option $1${NC}" >&2
+        exit 1
+        ;;
+    *)
+        POSITIONAL_ARGS+=("$1")
+        shift
+        ;;
     esac
 done
 
@@ -194,6 +201,10 @@ if [[ "$USE_DEVCON" == "true" ]]; then
     GWT_ARGS+=("--devcon")
 fi
 
+if [[ "$QUIET" == "true" ]]; then
+    GWT_ARGS+=("--quiet")
+fi
+
 for mount in "${MOUNTS[@]}"; do
     GWT_ARGS+=("--mount" "$mount")
 done
@@ -211,11 +222,13 @@ if $DRY_RUN; then
     exit 0
 fi
 
-echo -e "${BLUE}=== Ticket Execute ===${NC}"
-echo -e "Issue:     ${GREEN}$ISSUE_KEY${NC}"
-echo -e "Title:     $TITLE"
-echo -e "Max iter:  $MAX_ITERATIONS"
-echo ""
+if [[ "$QUIET" != "true" ]]; then
+    echo -e "${BLUE}=== Ticket Execute ===${NC}"
+    echo -e "Issue:     ${GREEN}$ISSUE_KEY${NC}"
+    echo -e "Title:     $TITLE"
+    echo -e "Max iter:  $MAX_ITERATIONS"
+    echo ""
+fi
 
 # Build gwt-ticket command with proper escaping
 GWT_CMD="gwt-ticket '$ISSUE_KEY' '$TITLE' '$DESCRIPTION' --max $MAX_ITERATIONS"
