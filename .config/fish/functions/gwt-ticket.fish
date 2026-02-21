@@ -980,13 +980,16 @@ $prompt_suffix"
     end
     chmod +x $launch_script
 
-    # Detect CLAUDE.md to auto-open in nvim buffer for AI guidance visibility
-    # Priority: worktree root CLAUDE.md > .claude/CLAUDE.md
-    set -l nvim_claude_md ""
-    if test -f "$worktree_path/CLAUDE.md"
-        set nvim_claude_md "$worktree_path/CLAUDE.md"
-    else if test -f "$worktree_path/.claude/CLAUDE.md"
-        set nvim_claude_md "$worktree_path/.claude/CLAUDE.md"
+    # Detect AI guidance files to auto-open in nvim buffers
+    # CLAUDE.md: AI rules/constraints. AGENTS.md: practical agent rules (editable per-worktree)
+    # Priority: worktree root > .claude/ subdirectory
+    set -l nvim_ai_files
+    for ai_file in CLAUDE.md AGENTS.md
+        if test -f "$worktree_path/$ai_file"
+            set -a nvim_ai_files "$worktree_path/$ai_file"
+        else if test -f "$worktree_path/.claude/$ai_file"
+            set -a nvim_ai_files "$worktree_path/.claude/$ai_file"
+        end
     end
 
     if $use_devcon
@@ -1076,8 +1079,8 @@ $prompt_suffix"
         echo "tmux last-pane" >>$setup_script
         echo "tmux split-window -v -p 30 -c '$worktree_path'" >>$setup_script
         echo "tmux select-pane -U" >>$setup_script
-        if test -n "$nvim_claude_md"
-            echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' '$nvim_claude_md'" >>$setup_script
+        if test (count $nvim_ai_files) -gt 0
+            echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" >>$setup_script
         else
             echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" >>$setup_script
         end
@@ -1105,8 +1108,8 @@ $prompt_suffix"
         # Step 3: Launch nvim in the top-right pane (opens CLAUDE.md if present, go up from bottom-right)
         # Combined cd+nvim in single send-keys to avoid buffer corruption from pane resize events
         tmux select-pane -t "$session_name:$window_name" -U
-        if test -n "$nvim_claude_md"
-            tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' '$nvim_claude_md'" Enter
+        if test (count $nvim_ai_files) -gt 0
+            tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" Enter
         else
             tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
         end
