@@ -256,8 +256,54 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 3. Add tests in `scripts/test-hooks.sh`
 4. Update `docs/claude-code-hooks.md`
 
+### Skills & Skill Sources
+
+Skills are the recommended extension mechanism (replacing `.claude/commands/`). See `docs/skills-reference.md` for the complete guide.
+
+**Best sources** (ranked by quality):
+1. **[anthropics/skills](https://github.com/anthropics/skills)** - Official Anthropic skills (document processing, design, development)
+2. **[obra/superpowers](https://github.com/obra/superpowers)** - Most mature community framework (20+ skills, dev methodology)
+3. **[VoltAgent/awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)** - 380+ skills from Vercel, Cloudflare, Trail of Bits, etc.
+4. **[daymade/claude-code-skills](https://github.com/daymade/claude-code-skills)** - 37 production-ready skills
+
+**Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`, Legacy `.claude/commands/`
+
+**Cross-tool standard**: [agentskills.io](https://agentskills.io/specification) - skills work in Claude Code, Codex, Gemini CLI, Cursor, Copilot.
+
 ### Claude Code Plugins
 14 plugins from 4 marketplaces (`anthropics/claude-code`, `kenryu42/cc-marketplace`, `antonbabenko/terraform-skill`, `steveyegge/beads`). Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
+
+Plugins are installed from four marketplaces:
+- `anthropics/claude-code` (alias: `claude-code-plugins`) - Official Anthropic plugins
+- `kenryu42/cc-marketplace` (alias: `cc-marketplace`) - Community safety plugins
+- `antonbabenko/terraform-skill` (alias: `antonbabenko`) - Terraform/OpenTofu development skill
+- `steveyegge/beads` - Git-backed agent memory and issue tracking
+
+**Recommended additional marketplaces** (install via `/plugin marketplace add`):
+- `anthropics/skills` - Official skills (document processing, design, mcp-builder)
+- `obra/superpowers-marketplace` - Superpowers dev methodology framework
+- `daymade/claude-code-skills` - 37 community skills
+
+**Installation**: Plugins stored in `~/.claude/settings.json`. For cross-device consistency, installation commands are in `scripts/setup.sh`.
+
+**Installed Plugins (14 total)**:
+
+| Plugin | Command | Purpose |
+|--------|---------|---------|
+| **code-review** | `/code-review` | Automated PR review with 4 parallel agents, 80+ confidence filtering |
+| **pr-review-toolkit** | Auto-triggered | 6 specialized reviewers (comments, tests, errors, types, quality, simplicity) |
+| **hookify** | `/hookify` | Create hooks via markdown (also `/hookify:list`, `/hookify:configure`) |
+| **feature-dev** | `/feature-dev` | 7-phase feature development workflow |
+| **frontend-design** | Auto-activated | Production-grade UI generation, anti-AI aesthetics |
+| **plugin-dev** | `/plugin-dev:create-plugin` | 7 skills + 8-phase plugin creation workflow |
+| **ralph-wiggum** | `/ralph-wiggum:ralph-loop` | Autonomous iteration loops (also `/ralph-wiggum:cancel-ralph`) |
+| **agent-sdk-dev** | `/new-sdk-app` | Claude Agent SDK project scaffolding |
+| **explanatory-output-style** | SessionStart hook | Educational insights on implementation choices |
+| **learning-output-style** | SessionStart hook | Interactive learning mode with code contribution prompts |
+| **code-simplifier** | Auto-triggered | Identifies over-engineering, suggests simpler implementations |
+| **security-guidance** | Auto-triggered | Security best practices, vulnerability detection, compliance guidance |
+| **terraform-skill** | Auto-activated | Terraform/OpenTofu module development, testing frameworks, CI/CD workflows |
+| **beads** | `/beads:ready`, `/beads:create` | Git-backed agent memory, in-repo issue tracking with DAG dependencies |
 
 **Managing**: `claude plugin install|disable|enable|uninstall plugin-name@marketplace`
 **Token Cost**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks. Disable when not needed.
@@ -341,6 +387,164 @@ Stop hook for correlation-bias mitigation — sends reasoning to independent AI 
 ### Decision Quality System (DQS)
 Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 
+<<<<<<< HEAD
 **Three paths**: Council (`cpipe --preset council`), Red Team (`CROSS_PROVIDER_MODE=redteam`), First Principles (`CROSS_PROVIDER_MODE=assumptions`).
 **Pipeline presets**: `--preset council` (opus→sonnet→opus), `--preset redteam` (opus→sonnet).
 **Plan template**: `templates/workflows/plan-review.toml`.
+||||||| 44c7583
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CROSS_PROVIDER_BRIDGE` | `0` | Enable/disable the bridge |
+| `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority/fallback order |
+| `CROSS_PROVIDER_VERBOSE` | `0` | Verbose logging to stderr |
+| `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars to send |
+| `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
+| `CROSS_PROVIDER_MAX_ITERATIONS` | `3` | Max consensus iterations (set `1` for single-shot) |
+| `CROSS_PROVIDER_TIMEOUT` | `120` | Per-provider timeout in seconds |
+| `CROSS_PROVIDER_LOG` | *(none)* | Log file path for review history |
+
+**Provider-specific model overrides**:
+| Variable | Default | Provider |
+|----------|---------|----------|
+| `CROSS_PROVIDER_CODEX_MODEL` | *(CLI default)* | Codex |
+| `CROSS_PROVIDER_GEMINI_MODEL` | *(CLI default)* | Gemini |
+| `CROSS_PROVIDER_OLLAMA_MODEL` | `qwen3-coder` | Ollama |
+| `CROSS_PROVIDER_DEEPSEEK_MODEL` | `deepseek-r1` | DeepSeek (via Ollama) |
+| `CROSS_PROVIDER_CLAUDE_MODEL` | `sonnet` | Claude |
+| `CROSS_PROVIDER_OPENCODE_MODEL` | `ollama/qwen3-coder` | OpenCode |
+
+**Architecture**: Uses `type: "command"` Stop hook (not `prompt`/`agent` which use Anthropic models — same-provider defeats the purpose).
+**Hook**: `.claude/hooks/cross-provider-bridge.sh` | **Testing**: `scripts/test-claude-pipeline.sh` (`--live` for E2E tests)
+
+**gwt-ticket bridge flags**:
+| Flag | Description |
+|------|-------------|
+| `--bridge [N]` | Enable bridge (N=max iterations, default: 3) |
+| `--bridge-providers P` | Comma-separated provider order (e.g., `gemini,codex,ollama`) |
+| `--bridge-verbose` | Verbose bridge logging |
+| `--bridge-model M` | Model override for primary provider |
+| `--bridge-timeout S` | Per-provider timeout in seconds |
+| `--bridge-log FILE` | Log bridge reviews to file |
+
+**Usage**:
+```bash
+# Autonomous ticket with cross-provider review
+gwtt ENG-123 --bridge
+
+# Choose providers and model
+gwtt ENG-123 --bridge --bridge-providers gemini,ollama --bridge-model gemini-2.5-pro
+
+# Verbose bridge with log file
+gwtt "Fix auth bug" "Details" --bridge --bridge-verbose --bridge-log /tmp/bridge.log
+
+# Manual interactive session with Gemini as reviewer
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=gemini claude
+
+# Use local Ollama for offline review
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=ollama CROSS_PROVIDER_OLLAMA_MODEL=qwen3-coder claude
+```
+
+### Recent Updates
+- **2026-02-12**: Added OpenClaw AI assistant platform integration (multi-channel inbox, security-hardened config, Fish functions, notification helpers, 42-test suite)
+- **2026-02-12**: Enhanced Cross-Provider Bridge with multi-provider support (Gemini, Ollama, DeepSeek, Claude), verbose mode, configurable timeout/logging, per-provider model overrides, gwt-ticket bridge flags
+- **2026-02-12**: Added comprehensive hooks integration (PreToolUse bun/bash validation, Notification desktop alerts/logging, PostToolUse DeepWiki context, test suite, docs)
+- **2026-02-11**: Added Checkpoints system (session context linked to git commits, orphan branch storage, ckpt CLI)
+- **2026-02-11**: Added gwt-doctor agent health check, activated Beads agent memory (phases 3-5)
+- **2026-02-09**: Added Gastown agent orchestration patterns (agent-state, witness, merge-queue, triage, phase-gates, workflow templates)
+- **2026-02-08**: Added Cross-Provider Reasoning Bridge (Stop hook for correlation-bias mitigation via Codex/OpenCode)
+- **2026-02-08**: Added Claude Pipeline multi-model reasoning chains (claude-pipeline/cpipe - opus→sonnet piping)
+- **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
+- **2026-02-07**: Added local coding agent integration (OpenCode + Claude Code via Ollama with qwen3-coder)
+- **2026-02-05**: Added Self-Hosted LLM infrastructure (Ollama + Open WebUI + Fish functions)
+- **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
+- **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
+- **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
+- **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
+- **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
+- **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
+- **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
+- **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
+- **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
+- **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)
+- **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
+- **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
+- **2025-10-05**: Added Kubernetes manifests directory with documentation requirements
+=======
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `CROSS_PROVIDER_BRIDGE` | `0` | Enable/disable the bridge |
+| `CROSS_PROVIDER_ORDER` | `codex,opencode` | Provider priority/fallback order |
+| `CROSS_PROVIDER_VERBOSE` | `0` | Verbose logging to stderr |
+| `CROSS_PROVIDER_MAX_CHARS` | `4000` | Max context chars to send |
+| `CROSS_PROVIDER_PROMPT` | *(built-in)* | Custom review prompt |
+| `CROSS_PROVIDER_MAX_ITERATIONS` | `3` | Max consensus iterations (set `1` for single-shot) |
+| `CROSS_PROVIDER_TIMEOUT` | `120` | Per-provider timeout in seconds |
+| `CROSS_PROVIDER_LOG` | *(none)* | Log file path for review history |
+
+**Provider-specific model overrides**:
+| Variable | Default | Provider |
+|----------|---------|----------|
+| `CROSS_PROVIDER_CODEX_MODEL` | *(CLI default)* | Codex |
+| `CROSS_PROVIDER_GEMINI_MODEL` | *(CLI default)* | Gemini |
+| `CROSS_PROVIDER_OLLAMA_MODEL` | `qwen3-coder` | Ollama |
+| `CROSS_PROVIDER_DEEPSEEK_MODEL` | `deepseek-r1` | DeepSeek (via Ollama) |
+| `CROSS_PROVIDER_CLAUDE_MODEL` | `sonnet` | Claude |
+| `CROSS_PROVIDER_OPENCODE_MODEL` | `ollama/qwen3-coder` | OpenCode |
+
+**Architecture**: Uses `type: "command"` Stop hook (not `prompt`/`agent` which use Anthropic models — same-provider defeats the purpose).
+**Hook**: `.claude/hooks/cross-provider-bridge.sh` | **Testing**: `scripts/test-claude-pipeline.sh` (`--live` for E2E tests)
+
+**gwt-ticket bridge flags**:
+| Flag | Description |
+|------|-------------|
+| `--bridge [N]` | Enable bridge (N=max iterations, default: 3) |
+| `--bridge-providers P` | Comma-separated provider order (e.g., `gemini,codex,ollama`) |
+| `--bridge-verbose` | Verbose bridge logging |
+| `--bridge-model M` | Model override for primary provider |
+| `--bridge-timeout S` | Per-provider timeout in seconds |
+| `--bridge-log FILE` | Log bridge reviews to file |
+
+**Usage**:
+```bash
+# Autonomous ticket with cross-provider review
+gwtt ENG-123 --bridge
+
+# Choose providers and model
+gwtt ENG-123 --bridge --bridge-providers gemini,ollama --bridge-model gemini-2.5-pro
+
+# Verbose bridge with log file
+gwtt "Fix auth bug" "Details" --bridge --bridge-verbose --bridge-log /tmp/bridge.log
+
+# Manual interactive session with Gemini as reviewer
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=gemini claude
+
+# Use local Ollama for offline review
+CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=ollama CROSS_PROVIDER_OLLAMA_MODEL=qwen3-coder claude
+```
+
+### Recent Updates
+- **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills
+- **2026-02-12**: Added OpenClaw AI assistant platform integration (multi-channel inbox, security-hardened config, Fish functions, notification helpers, 42-test suite)
+- **2026-02-12**: Enhanced Cross-Provider Bridge with multi-provider support (Gemini, Ollama, DeepSeek, Claude), verbose mode, configurable timeout/logging, per-provider model overrides, gwt-ticket bridge flags
+- **2026-02-12**: Added comprehensive hooks integration (PreToolUse bun/bash validation, Notification desktop alerts/logging, PostToolUse DeepWiki context, test suite, docs)
+- **2026-02-11**: Added Checkpoints system (session context linked to git commits, orphan branch storage, ckpt CLI)
+- **2026-02-11**: Added gwt-doctor agent health check, activated Beads agent memory (phases 3-5)
+- **2026-02-09**: Added Gastown agent orchestration patterns (agent-state, witness, merge-queue, triage, phase-gates, workflow templates)
+- **2026-02-08**: Added Cross-Provider Reasoning Bridge (Stop hook for correlation-bias mitigation via Codex/OpenCode)
+- **2026-02-08**: Added Claude Pipeline multi-model reasoning chains (claude-pipeline/cpipe - opus→sonnet piping)
+- **2026-02-08**: Added Beads agent memory integration (steveyegge/beads - git-backed issue tracker for AI agents)
+- **2026-02-07**: Added local coding agent integration (OpenCode + Claude Code via Ollama with qwen3-coder)
+- **2026-02-05**: Added Self-Hosted LLM infrastructure (Ollama + Open WebUI + Fish functions)
+- **2026-02-05**: Added Agentic Ticket Execution System (/todo, /ticket-execute, ralph-loop integration)
+- **2026-01-25**: Added Cloudflare DNS configuration to macos-defaults.sh (bypasses UK ISP DNS blocking)
+- **2026-01-25**: Added terraform-skill plugin from antonbabenko/terraform-skill for Terraform/OpenTofu development
+- **2026-01-23**: Added Clawdbot AI assistant integration for WhatsApp/Telegram interface to Claude
+- **2026-01-17**: Added Mobile Coding Setup script for remote development from mobile devices via Mosh + Tailscale
+- **2026-01-14**: Added `autoCompactEnabled: false` to setup.sh for automatic context compaction control
+- **2025-12-17**: Added 11 Claude Code plugins from anthropics/claude-code marketplace
+- **2025-11-01**: Configured Opencode with transparent background using system theme (inherits terminal transparency)
+- **2025-10-30**: Added Docker container testing framework for Linux compatibility validation
+- **2025-10-30**: Fixed BAT_PAGING error in Fish and Zsh configs (prevents FZF preview file descriptor errors)
+- **2025-01-26**: Aligned Fish and Zsh configurations for feature parity
+- **2025-01-26**: Removed Powerlevel10k configs in favor of Starship-only setup
+- **2025-10-05**: Added Kubernetes manifests directory with documentation requirements

@@ -638,6 +638,8 @@ OCEOF
         claude plugin marketplace add anthropics/claude-code >/dev/null 2>&1 || true
         claude plugin marketplace add kenryu42/cc-marketplace >/dev/null 2>&1 || true
         claude plugin marketplace add antonbabenko/terraform-skill >/dev/null 2>&1 || true
+        claude plugin marketplace add anthropics/skills >/dev/null 2>&1 || true
+        claude plugin marketplace add obra/superpowers-marketplace >/dev/null 2>&1 || true
 
         # Tier 1 - High value plugins
         claude plugin install code-review@claude-code-plugins >/dev/null 2>&1 || true
@@ -663,8 +665,14 @@ OCEOF
         claude plugin marketplace add steveyegge/beads >/dev/null 2>&1 || true
         claude plugin install beads@steveyegge/beads >/dev/null 2>&1 || true
 
-        print_success "Claude Code plugins installed (14 plugins)"
-        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads"
+        # Skills marketplaces - official skills and superpowers framework
+        # Alias: anthropic-agent-skills (contains example-skills which bundles skill-creator)
+        claude plugin install example-skills@anthropic-agent-skills >/dev/null 2>&1 || true
+        # Alias: superpowers-marketplace
+        claude plugin install superpowers@superpowers-marketplace >/dev/null 2>&1 || true
+
+        print_success "Claude Code plugins installed (16 plugins, 7 marketplaces)"
+        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads, example-skills, superpowers"
 
         # Fix hookify plugin import paths (upstream bug: versioned cache dir hookify/0.1.0/
         # breaks Python's 'from hookify.core...' imports - registers synthetic package via sys.modules)
