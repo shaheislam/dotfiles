@@ -25,6 +25,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/json-helpers.sh"
 AGENT_STATE="$SCRIPT_DIR/agent-state.sh"
 
 # Retry limits
@@ -122,12 +123,7 @@ fi
 RETRY_FILE="$WORKTREE_PATH/.claude/triage-retries.json"
 
 # --- Helper functions ---
-
-# Extract a string value from JSON (lightweight, no jq dependency)
-json_val() {
-    local key="$1" json="$2"
-    python3 -c "import sys,json; print(json.load(sys.stdin).get('$key',''))" <<<"$json" 2>/dev/null
-}
+# json_val is provided by lib/json-helpers.sh (jq-based, <5ms vs python3's 30-50ms)
 
 # Read retry counters (creates file if missing)
 read_retries() {

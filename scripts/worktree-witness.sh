@@ -48,6 +48,7 @@ WORKTREE_PATH=""
 COMMAND=""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/json-helpers.sh"
 AGENT_STATE="$SCRIPT_DIR/agent-state.sh"
 
 # Parse arguments
@@ -192,7 +193,8 @@ if [[ "$COMMAND" == "status" ]]; then
             local state_json
             state_json=$("$AGENT_STATE" "$WORKTREE_PATH" --json 2>/dev/null)
             local state
-            state=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('state','unknown'))" 2>/dev/null) || state="unknown"
+            state=$(json_val "state" "$state_json") || state="unknown"
+            [[ -z "$state" ]] && state="unknown"
             echo "Agent:    $state"
         fi
     else
@@ -290,24 +292,29 @@ monitor_loop() {
         state_json=$("$AGENT_STATE" "$WORKTREE_PATH" --json 2>/dev/null) || state_json='{"state":"unknown"}'
 
         local state
-        state=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('state','unknown'))" 2>/dev/null) || state="unknown"
+        state=$(json_val_default "state" "unknown" "$state_json")
 
         local iteration
-        iteration=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('iteration','0'))" 2>/dev/null) || iteration="0"
+        iteration=$(json_val_default "iteration" "0" "$state_json")
 
         # Track iteration progress
+        local now_ts
+        now_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         if [[ "$iteration" != "0" && "$iteration" != "$last_observed_iteration" ]]; then
             iterations_observed=$((iterations_observed + 1))
             last_observed_iteration="$iteration"
-            sed -i '' "s/^iterations_observed:.*/iterations_observed: $iterations_observed/" "$WITNESS_STATE" 2>/dev/null || true
-            sed -i '' "s/^last_iteration:.*/last_iteration: $iteration/" "$WITNESS_STATE" 2>/dev/null || true
             # Update progress file for gwt-status
-            echo "{\"iteration\":$iteration,\"max_iterations\":${max_iterations:-20},\"state\":\"$state\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" >"$WORKTREE_PATH/.claude/progress.json"
+            echo "{\"iteration\":$iteration,\"max_iterations\":${max_iterations:-20},\"state\":\"$state\",\"updated_at\":\"$now_ts\"}" >"$WORKTREE_PATH/.claude/progress.json"
         fi
 
-        # Update witness state
-        sed -i '' "s/^last_state:.*/last_state: \"$state\"/" "$WITNESS_STATE" 2>/dev/null || true
-        sed -i '' "s/^last_check:.*/last_check: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"/" "$WITNESS_STATE" 2>/dev/null || true
+        # Batch update witness state (single awk pass replaces 4 separate sed calls)
+        awk -v iobs="$iterations_observed" -v liter="$iteration" -v lstate="$state" -v lcheck="$now_ts" '
+            /^iterations_observed:/ { print "iterations_observed: " iobs; next }
+            /^last_iteration:/ { print "last_iteration: " liter; next }
+            /^last_state:/ { print "last_state: \"" lstate "\""; next }
+            /^last_check:/ { print "last_check: \"" lcheck "\""; next }
+            { print }
+        ' "$WITNESS_STATE" >"${WITNESS_STATE}.tmp" && mv "${WITNESS_STATE}.tmp" "$WITNESS_STATE" 2>/dev/null || true
 
         # State transitions
         case "$state" in
@@ -345,7 +352,7 @@ monitor_loop() {
             # Wait for 2 consecutive dead readings to confirm (avoids race with startup)
             if [[ "$consecutive_dead" -ge 2 ]]; then
                 local reason
-                reason=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('reason','unknown'))" 2>/dev/null) || reason="unknown"
+                reason=$(json_val_default "reason" "unknown" "$state_json")
                 log "Agent dead: $reason (retry $retries/$MAX_RETRIES)"
 
                 # Log CV crash event
@@ -399,7 +406,8 @@ monitor_loop() {
         stuck)
             if [[ "$last_state" != "stuck" ]]; then
                 local stuck_for
-                stuck_for=$(echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('stuck_for','?'))" 2>/dev/null) || stuck_for="?"
+                stuck_for=$(json_val "stuck_for" "$state_json")
+                [[ -z "$stuck_for" ]] && stuck_for="?"
                 local minutes=$((${stuck_for:-0} / 60))
                 log "Agent stuck on iteration $iteration for ${minutes}m"
                 notify "Agent Stuck" "$issue_key: Stuck on iteration $iteration for ${minutes}m"

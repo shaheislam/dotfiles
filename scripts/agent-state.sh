@@ -30,6 +30,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/json-helpers.sh"
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -39,7 +42,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # How long before we consider an agent stuck (seconds)
-STUCK_THRESHOLD="${STUCK_THRESHOLD:-600}"  # 10 minutes default
+STUCK_THRESHOLD="${STUCK_THRESHOLD:-600}" # 10 minutes default
 
 JSON_OUTPUT=false
 SHOW_ALL=false
@@ -48,36 +51,36 @@ TARGET=""
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --json)
-            JSON_OUTPUT=true
-            shift
-            ;;
-        --all)
-            SHOW_ALL=true
-            shift
-            ;;
-        --help|-h)
-            echo "Usage: agent-state.sh <worktree-path|session:window> [--json]"
-            echo "       agent-state.sh --all [--json]"
-            echo ""
-            echo "Derive agent state from tmux + git + ralph-loop state files."
-            echo ""
-            echo "States: running | idle | stuck | completed | dead | none"
-            echo ""
-            echo "Options:"
-            echo "  --json   Output as JSON"
-            echo "  --all    Show all active worktrees"
-            echo "  --help   Show this help"
-            exit 0
-            ;;
-        -*)
-            echo "Error: Unknown option $1" >&2
-            exit 1
-            ;;
-        *)
-            TARGET="$1"
-            shift
-            ;;
+    --json)
+        JSON_OUTPUT=true
+        shift
+        ;;
+    --all)
+        SHOW_ALL=true
+        shift
+        ;;
+    --help | -h)
+        echo "Usage: agent-state.sh <worktree-path|session:window> [--json]"
+        echo "       agent-state.sh --all [--json]"
+        echo ""
+        echo "Derive agent state from tmux + git + ralph-loop state files."
+        echo ""
+        echo "States: running | idle | stuck | completed | dead | none"
+        echo ""
+        echo "Options:"
+        echo "  --json   Output as JSON"
+        echo "  --all    Show all active worktrees"
+        echo "  --help   Show this help"
+        exit 0
+        ;;
+    -*)
+        echo "Error: Unknown option $1" >&2
+        exit 1
+        ;;
+    *)
+        TARGET="$1"
+        shift
+        ;;
     esac
 done
 
@@ -280,18 +283,18 @@ get_agent_state() {
             now=$(date +%s)
 
             if [[ "$iteration" == "$saved_iteration" ]]; then
-                local elapsed=$(( now - saved_timestamp ))
+                local elapsed=$((now - saved_timestamp))
                 if [[ "$elapsed" -gt "$STUCK_THRESHOLD" ]]; then
                     echo '{"state":"stuck","worktree":"'"$worktree_path"'","issue_key":"'"$issue_key"'","title":"'"$(echo "$title" | sed 's/"/\\"/g')"'","iteration":"'"$iteration"'","max_iterations":"'"${max_iterations:-0}"'","stuck_for":"'"$elapsed"'","tmux":"'"$tmux_target"'","pid":"'"$claude_pid"'"}'
                     return 0
                 fi
             else
                 # Iteration advanced, update tracking
-                echo "${iteration}:${now}" > "$iteration_file"
+                echo "${iteration}:${now}" >"$iteration_file"
             fi
         else
             # First time seeing this worktree, record current state
-            echo "${iteration}:$(date +%s)" > "$iteration_file"
+            echo "${iteration}:$(date +%s)" >"$iteration_file"
         fi
     fi
 
@@ -309,28 +312,50 @@ get_agent_state() {
 # Render state for human consumption
 render_state() {
     local json="$1"
-    local state worktree issue_key title iteration max_iterations
 
-    state=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('state',''))" 2>/dev/null) || state="unknown"
+    # Extract all fields in a single jq call (replaces 8 separate python3 spawns)
+    local fields
+    fields=$(printf '%s' "$json" | jq -r '[
+        (.state // ""),
+        (.worktree // ""),
+        (.issue_key // ""),
+        (.title // ""),
+        (.iteration // ""),
+        (.max_iterations // ""),
+        (.reason // ""),
+        (.stuck_for // "")
+    ] | join("\t")' 2>/dev/null) || return 0
 
-    if [[ "$state" == "none" ]]; then
+    local state worktree issue_key title iteration max_iterations reason stuck_for
+    IFS=$'\t' read -r state worktree issue_key title iteration max_iterations reason stuck_for <<<"$fields"
+
+    if [[ "$state" == "none" || -z "$state" ]]; then
         return 0
     fi
-
-    worktree=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('worktree',''))" 2>/dev/null)
-    issue_key=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('issue_key',''))" 2>/dev/null)
-    title=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('title',''))" 2>/dev/null)
-    iteration=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('iteration',''))" 2>/dev/null)
-    max_iterations=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('max_iterations',''))" 2>/dev/null)
 
     local color="$NC"
     local icon=""
     case "$state" in
-        running)   color="$GREEN"; icon="▶" ;;
-        idle)      color="$YELLOW"; icon="⏸" ;;
-        stuck)     color="$RED"; icon="⚠" ;;
-        completed) color="$CYAN"; icon="✓" ;;
-        dead)      color="$RED"; icon="✗" ;;
+    running)
+        color="$GREEN"
+        icon="▶"
+        ;;
+    idle)
+        color="$YELLOW"
+        icon="⏸"
+        ;;
+    stuck)
+        color="$RED"
+        icon="⚠"
+        ;;
+    completed)
+        color="$CYAN"
+        icon="✓"
+        ;;
+    dead)
+        color="$RED"
+        icon="✗"
+        ;;
     esac
 
     local iter_display=""
@@ -338,18 +363,14 @@ render_state() {
         iter_display=" [${iteration}/${max_iterations}]"
     fi
 
-    local reason=""
-    reason=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('reason',''))" 2>/dev/null)
     local reason_display=""
     if [[ -n "$reason" ]]; then
         reason_display=" ($reason)"
     fi
 
-    local stuck_for=""
-    stuck_for=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('stuck_for',''))" 2>/dev/null)
     local stuck_display=""
     if [[ -n "$stuck_for" ]]; then
-        local minutes=$(( stuck_for / 60 ))
+        local minutes=$((stuck_for / 60))
         stuck_display=" (${minutes}m)"
     fi
 
@@ -383,7 +404,7 @@ show_all() {
         local json
         json=$(get_agent_state "$worktree_path")
         local state
-        state=$(echo "$json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('state',''))" 2>/dev/null)
+        state=$(printf '%s' "$json" | jq -r '.state // ""' 2>/dev/null)
 
         if [[ "$state" != "none" ]]; then
             found=true

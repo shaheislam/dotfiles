@@ -41,6 +41,8 @@ TRIAGE_SCRIPT="$SCRIPT_DIR/agent-triage.sh"
 QUEUE_SCRIPT="$SCRIPT_DIR/../.config/fish/functions/gwt-queue.fish"
 MERGE_QUEUE="$SCRIPT_DIR/merge-queue.sh"
 
+source "$SCRIPT_DIR/lib/json-helpers.sh"
+
 timestamp_now() {
     date -u +%Y-%m-%dT%H:%M:%SZ
 }
@@ -81,46 +83,18 @@ decide_cycle() {
         agents_json="[]"
     fi
 
-    # Parse agent states
+    # Parse agent states into separate variables in one jq call
+    # Handle both list and dict formats
     local stuck_agents idle_agents running_agents dead_agents completed_agents
-    stuck_agents=$(echo "$agents_json" | python3 -c "
-import sys, json
-agents = json.loads(sys.stdin.read())
-if isinstance(agents, list):
-    for a in agents:
-        if a.get('state') == 'stuck':
-            print(a.get('worktree', a.get('path', '?')))
-elif isinstance(agents, dict):
-    for path, a in agents.items():
-        if a.get('state') == 'stuck':
-            print(path)
-" 2>/dev/null) || true
+    local state_lines
+    state_lines=$(echo "$agents_json" | jq -r '
+      (if type == "array" then . else [.[] | . as $v | $v] end)
+      | .[] | "\(.state // "unknown"):\(.worktree // .path // "?")"
+    ' 2>/dev/null) || state_lines=""
 
-    idle_agents=$(echo "$agents_json" | python3 -c "
-import sys, json
-agents = json.loads(sys.stdin.read())
-if isinstance(agents, list):
-    for a in agents:
-        if a.get('state') == 'idle':
-            print(a.get('worktree', a.get('path', '?')))
-elif isinstance(agents, dict):
-    for path, a in agents.items():
-        if a.get('state') == 'idle':
-            print(path)
-" 2>/dev/null) || true
-
-    dead_agents=$(echo "$agents_json" | python3 -c "
-import sys, json
-agents = json.loads(sys.stdin.read())
-if isinstance(agents, list):
-    for a in agents:
-        if a.get('state') == 'dead':
-            print(a.get('worktree', a.get('path', '?')))
-elif isinstance(agents, dict):
-    for path, a in agents.items():
-        if a.get('state') == 'dead':
-            print(path)
-" 2>/dev/null) || true
+    stuck_agents=$(echo "$state_lines" | grep "^stuck:" | cut -d: -f2-)
+    idle_agents=$(echo "$state_lines" | grep "^idle:" | cut -d: -f2-)
+    dead_agents=$(echo "$state_lines" | grep "^dead:" | cut -d: -f2-)
 
     # 2. Handle stuck agents
     if [[ -n "$stuck_agents" ]]; then
@@ -153,16 +127,13 @@ elif isinstance(agents, dict):
         local convoy_json
         convoy_json=$("$CONVOY_SCRIPT" list --json 2>/dev/null) || convoy_json="[]"
 
-        echo "$convoy_json" | python3 -c "
-import sys, json
-convoys = json.loads(sys.stdin.read())
-for c in convoys:
-    total = c.get('summary', {}).get('total', 0)
-    completed = c.get('summary', {}).get('completed', 0)
-    remaining = c.get('summary', {}).get('remaining', 0)
-    if total > 0 and remaining == 0 and completed == total:
-        print(f'COMPLETE:{c[\"id\"]}:{c[\"name\"]}')
-" 2>/dev/null | while IFS=: read -r status convoy_id convoy_name; do
+        echo "$convoy_json" | jq -r '
+          .[] | select(
+            (.summary.total // 0) > 0
+            and (.summary.remaining // 0) == 0
+            and (.summary.completed // 0) == (.summary.total // 0)
+          ) | "COMPLETE:\(.id):\(.name)"
+        ' 2>/dev/null | while IFS=: read -r status convoy_id convoy_name; do
             if [[ "$status" == "COMPLETE" ]]; then
                 log_decision "CONVOY_COMPLETE" "All tickets in convoy complete" "$convoy_id"
                 daemon_log "Decision: Convoy '$convoy_name' ($convoy_id) is complete"
@@ -182,12 +153,7 @@ for c in convoys:
         local queue_file="${HOME}/.claude/ticket-queue.json"
         if [[ -f "$queue_file" ]] && [[ -s "$queue_file" ]]; then
             local pending_tickets
-            pending_tickets=$(python3 -c "
-import json
-with open('$queue_file') as f:
-    q = json.load(f)
-tickets = [t for t in q.get('tickets', []) if t.get('status') == 'pending']
-print(len(tickets))" 2>/dev/null) || pending_tickets=0
+            pending_tickets=$(jq '[.tickets // [] | .[] | select(.status == "pending")] | length' "$queue_file" 2>/dev/null) || pending_tickets=0
 
             if [[ "$pending_tickets" -gt 0 ]]; then
                 log_decision "SUGGEST_DISPATCH" "$idle_count agents idle, $pending_tickets tickets queued" ""
@@ -211,27 +177,18 @@ print(len(tickets))" 2>/dev/null) || pending_tickets=0
     # 7. Detect repo conflicts (multiple agents on same repo)
     if [[ -n "$agents_json" && "$agents_json" != "[]" ]]; then
         local conflicts
-        conflicts=$(echo "$agents_json" | python3 -c "
-import sys, json, os
-from collections import Counter
-agents = json.loads(sys.stdin.read())
-repos = Counter()
-if isinstance(agents, list):
-    for a in agents:
-        if a.get('state') in ('running', 'idle'):
-            path = a.get('worktree', a.get('path', ''))
-            # Derive repo from git common dir pattern
-            repo = os.path.basename(os.path.dirname(path)) if path else ''
-            if repo: repos[repo] += 1
-elif isinstance(agents, dict):
-    for path, a in agents.items():
-        if a.get('state') in ('running', 'idle'):
-            repo = os.path.basename(os.path.dirname(path)) if path else ''
-            if repo: repos[repo] += 1
-for repo, count in repos.items():
-    if count > 1:
-        print(f'{repo}:{count}')
-" 2>/dev/null) || true
+        conflicts=$(echo "$agents_json" | jq -r '
+          # Normalize: handle both list and dict formats
+          (if type == "array" then . else [.[] | . as $v | $v] end)
+          # Filter to running/idle agents, extract repo from parent dir of path
+          | [.[] | select(.state == "running" or .state == "idle")
+             | (.worktree // .path // "") as $p
+             | ($p | split("/") | if length > 1 then .[-2] else "" end)
+             | select(. != "")]
+          # Group by repo name and count
+          | group_by(.) | map({repo: .[0], count: length})
+          | .[] | select(.count > 1) | "\(.repo):\(.count)"
+        ' 2>/dev/null) || true
 
         if [[ -n "$conflicts" ]]; then
             while IFS=: read -r repo count; do
@@ -368,20 +325,13 @@ cmd_status() {
 
     # Count states
     local state_counts
-    state_counts=$(echo "$agents_json" | python3 -c "
-import sys, json
-from collections import Counter
-agents = json.loads(sys.stdin.read())
-counts = Counter()
-if isinstance(agents, list):
-    for a in agents:
-        counts[a.get('state', 'unknown')] += 1
-elif isinstance(agents, dict):
-    for path, a in agents.items():
-        counts[a.get('state', 'unknown')] += 1
-for state, count in sorted(counts.items()):
-    print(f'{state}:{count}')
-" 2>/dev/null) || true
+    state_counts=$(echo "$agents_json" | jq -r '
+      # Normalize: handle both list and dict formats
+      (if type == "array" then . else [.[] | . as $v | $v] end)
+      | [.[] | .state // "unknown"]
+      | group_by(.) | map({state: .[0], count: length})
+      | sort_by(.state) | .[] | "\(.state):\(.count)"
+    ' 2>/dev/null) || true
 
     # Recent decisions
     local recent_count=0
@@ -392,24 +342,29 @@ for state, count in sorted(counts.items()):
     if $json_mode; then
         local running_str="false"
         $running && running_str="true"
-        python3 -c "
-import json
-status = {
-    'running': $running_str,
-    'pid': '${pid:-}',
-    'poll_interval': $POLL_INTERVAL,
-    'total_decisions': $recent_count,
-    'agents': $(echo "$agents_json"),
-}
-# Add state counts
-counts = {}
-for line in '''$state_counts'''.strip().split('\n'):
-    if ':' in line:
-        state, count = line.split(':')
-        counts[state] = int(count)
-status['state_counts'] = counts
-print(json.dumps(status, indent=2))
-" 2>/dev/null
+        # Build state_counts as JSON object from colon-separated lines
+        local counts_json="{}"
+        if [[ -n "$state_counts" ]]; then
+            counts_json=$(echo "$state_counts" | jq -Rn '
+              [inputs | select(length > 0) | split(":") | {(.[0]): (.[1] | tonumber)}]
+              | add // {}
+            ' 2>/dev/null) || counts_json="{}"
+        fi
+        jq -n \
+            --argjson running "$running_str" \
+            --arg pid "${pid:-}" \
+            --argjson poll_interval "$POLL_INTERVAL" \
+            --argjson total_decisions "$recent_count" \
+            --argjson agents "$agents_json" \
+            --argjson state_counts "$counts_json" \
+            '{
+              running: $running,
+              pid: $pid,
+              poll_interval: $poll_interval,
+              total_decisions: $total_decisions,
+              agents: $agents,
+              state_counts: $state_counts
+            }' 2>/dev/null
         return
     fi
 
@@ -477,11 +432,10 @@ cmd_report() {
     echo -e "${BOLD}Recent Decisions (last 10):${NC}"
     if [[ -f "$LOG_FILE" ]] && [[ -s "$LOG_FILE" ]]; then
         tail -10 "$LOG_FILE" | while IFS= read -r line; do
-            local action ts
-            action=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['action'])" 2>/dev/null) || continue
-            ts=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['timestamp'])" 2>/dev/null) || continue
-            local reason
-            reason=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['reason'])" 2>/dev/null) || reason=""
+            local action ts reason
+            action=$(echo "$line" | jq -r '.action // ""' 2>/dev/null) || continue
+            ts=$(echo "$line" | jq -r '.timestamp // ""' 2>/dev/null) || continue
+            reason=$(echo "$line" | jq -r '.reason // ""' 2>/dev/null) || reason=""
             echo -e "  ${DIM}${ts}${NC}  ${BOLD}${action}${NC}: ${reason}"
         done
     else
@@ -500,9 +454,9 @@ cmd_decide() {
         echo ""
         tail -"$decisions" "$LOG_FILE" | while IFS= read -r line; do
             local action reason target
-            action=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['action'])" 2>/dev/null) || continue
-            reason=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['reason'])" 2>/dev/null) || continue
-            target=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['target'])" 2>/dev/null) || target=""
+            action=$(echo "$line" | jq -r '.action // ""' 2>/dev/null) || continue
+            reason=$(echo "$line" | jq -r '.reason // ""' 2>/dev/null) || continue
+            target=$(echo "$line" | jq -r '.target // ""' 2>/dev/null) || target=""
             echo -e "  ${BOLD}${action}${NC}: ${reason}"
             [[ -n "$target" ]] && echo -e "    target: ${target}"
         done
@@ -521,10 +475,10 @@ cmd_log() {
     tail -"$count" "$LOG_FILE" | while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         local action ts reason target
-        action=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['action'])" 2>/dev/null) || continue
-        ts=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['timestamp'])" 2>/dev/null) || continue
-        reason=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['reason'])" 2>/dev/null) || reason=""
-        target=$(echo "$line" | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print(d.get('target',''))" 2>/dev/null) || target=""
+        action=$(echo "$line" | jq -r '.action // ""' 2>/dev/null) || continue
+        ts=$(echo "$line" | jq -r '.timestamp // ""' 2>/dev/null) || continue
+        reason=$(echo "$line" | jq -r '.reason // ""' 2>/dev/null) || reason=""
+        target=$(echo "$line" | jq -r '.target // ""' 2>/dev/null) || target=""
 
         local color="$NC"
         case "$action" in

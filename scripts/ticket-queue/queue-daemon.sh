@@ -23,6 +23,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/json-helpers.sh"
 USAGE_SCRIPT="$SCRIPT_DIR/claude-usage.sh"
 
 QUEUE_DIR="${HOME}/.claude"
@@ -31,10 +32,10 @@ PID_FILE="$QUEUE_DIR/ticket-queue.pid"
 LOG_FILE="$QUEUE_DIR/ticket-queue.log"
 
 # Daemon settings
-POLL_INTERVAL="${QUEUE_POLL_INTERVAL:-300}"  # 5 minutes default
-THRESHOLD="${QUEUE_THRESHOLD:-80}"           # Start dispatching below 80%
-COOLDOWN="${QUEUE_COOLDOWN:-600}"            # 10min between dispatches
-MAX_LOG_SIZE=1048576                         # 1MB log rotation
+POLL_INTERVAL="${QUEUE_POLL_INTERVAL:-300}" # 5 minutes default
+THRESHOLD="${QUEUE_THRESHOLD:-80}"          # Start dispatching below 80%
+COOLDOWN="${QUEUE_COOLDOWN:-600}"           # 10min between dispatches
+MAX_LOG_SIZE=1048576                        # 1MB log rotation
 
 # Colors
 RED='\033[0;31m'
@@ -45,7 +46,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 show_help() {
-    cat << 'EOF'
+    cat <<'EOF'
 queue-daemon.sh - Ticket queue daemon for Claude Code
 
 USAGE:
@@ -93,14 +94,14 @@ EOF
 ensure_queue() {
     mkdir -p "$QUEUE_DIR"
     if [[ ! -f "$QUEUE_FILE" ]]; then
-        echo '{"tickets":[],"completed":[],"failed":[]}' > "$QUEUE_FILE"
+        echo '{"tickets":[],"completed":[],"failed":[]}' >"$QUEUE_FILE"
     fi
 }
 
 # Log with timestamp
 log() {
     local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
-    echo "$msg" >> "$LOG_FILE"
+    echo "$msg" >>"$LOG_FILE"
     # Rotate log if too large
     if [[ -f "$LOG_FILE" ]] && [[ $(stat -f%z "$LOG_FILE" 2>/dev/null || stat --printf=%s "$LOG_FILE" 2>/dev/null || echo 0) -gt $MAX_LOG_SIZE ]]; then
         mv "$LOG_FILE" "$LOG_FILE.1"
@@ -136,37 +137,37 @@ cmd_add() {
         local next_i=$((i + 1))
 
         case "$arg" in
-            --repo)
-                repo_path="${!next_i}"
-                skip_next=true
-                ;;
-            --priority)
-                priority="${!next_i}"
-                skip_next=true
-                ;;
-            --sub)
-                sub_profile="${!next_i}"
-                skip_next=true
-                ;;
-            --max|--session|--system|--command|--prompt-template|--prompt-prefix|--prompt-suffix|--mount|-m)
-                gwt_args+=("$arg" "${!next_i}")
-                skip_next=true
-                ;;
-            --devcon|--help|-h)
-                gwt_args+=("$arg")
-                ;;
-            -*)
-                gwt_args+=("$arg")
-                ;;
-            *)
-                positional_index=$((positional_index + 1))
-                case $positional_index in
-                    1) issue_key="$arg" ;;
-                    2) title="$arg" ;;
-                    3) description="$arg" ;;
-                    *) description="$description $arg" ;;
-                esac
-                ;;
+        --repo)
+            repo_path="${!next_i}"
+            skip_next=true
+            ;;
+        --priority)
+            priority="${!next_i}"
+            skip_next=true
+            ;;
+        --sub)
+            sub_profile="${!next_i}"
+            skip_next=true
+            ;;
+        --max | --session | --system | --command | --prompt-template | --prompt-prefix | --prompt-suffix | --mount | -m)
+            gwt_args+=("$arg" "${!next_i}")
+            skip_next=true
+            ;;
+        --devcon | --help | -h)
+            gwt_args+=("$arg")
+            ;;
+        -*)
+            gwt_args+=("$arg")
+            ;;
+        *)
+            positional_index=$((positional_index + 1))
+            case $positional_index in
+            1) issue_key="$arg" ;;
+            2) title="$arg" ;;
+            3) description="$arg" ;;
+            *) description="$description $arg" ;;
+            esac
+            ;;
         esac
     done
 
@@ -199,59 +200,36 @@ cmd_add() {
     # Build the JSON entry safely via stdin (avoids shell injection)
     local gwt_args_json="[]"
     if [[ ${#gwt_args[@]} -gt 0 ]]; then
-        gwt_args_json=$(printf '%s\n' "${gwt_args[@]}" | python3 -c "
-import sys, json
-args = [line.strip() for line in sys.stdin]
-print(json.dumps(args))
-")
+        gwt_args_json=$(printf '%s\n' "${gwt_args[@]}" | jq -R . | jq -s .)
     fi
 
-    # Add to queue using env vars for safe JSON handling (avoids shell quoting issues)
+    # Add to queue using jq for safe JSON handling (avoids shell quoting issues)
+    local ticket_json
+    ticket_json=$(jq -n \
+        --arg id "$ticket_id" \
+        --arg ik "$issue_key" \
+        --arg title "$title" \
+        --arg desc "${description:-$title}" \
+        --arg rp "$repo_path" \
+        --argjson pri "$priority" \
+        --arg at "$added_at" \
+        --argjson ga "$gwt_args_json" \
+        --arg sub "$sub_profile" \
+        '{id:$id, issue_key:$ik, title:$title, description:$desc, repo_path:$rp, priority:$pri, status:"queued", added_at:$at, gwt_args:$ga, sub:$sub}')
+
+    # Add to queue and sort by priority
+    local tmp="${QUEUE_FILE}.tmp.$$"
+    jq --argjson ticket "$ticket_json" '
+        .tickets += [$ticket]
+        | .tickets |= sort_by(-.priority)
+    ' "$QUEUE_FILE" >"$tmp" && mv "$tmp" "$QUEUE_FILE"
+
+    # Get position
     local position total
-    read -r position total < <(_QUEUE_TITLE="$title" _QUEUE_DESC="${description:-$title}" _QUEUE_SUB="$sub_profile" python3 << PYEOF
-import json, sys, os
-
-# Read inputs safely
-ticket_id = "$ticket_id"
-issue_key = "$issue_key"
-repo_path = "$repo_path"
-priority = $priority
-added_at = "$added_at"
-gwt_args = json.loads('$gwt_args_json')
-
-# Read title/description from env to avoid shell quoting issues
-title = os.environ.get('_QUEUE_TITLE', '')
-description = os.environ.get('_QUEUE_DESC', title)
-sub = os.environ.get('_QUEUE_SUB', '')
-
-ticket = {
-    'id': ticket_id,
-    'issue_key': issue_key,
-    'title': title,
-    'description': description,
-    'repo_path': repo_path,
-    'priority': priority,
-    'status': 'queued',
-    'added_at': added_at,
-    'gwt_args': gwt_args,
-    'sub': sub
-}
-
-queue_file = "$QUEUE_FILE"
-with open(queue_file, 'r') as f:
-    queue = json.load(f)
-queue['tickets'].append(ticket)
-queue['tickets'].sort(key=lambda t: t.get('priority', 5), reverse=True)
-with open(queue_file, 'w') as f:
-    json.dump(queue, f, indent=2)
-
-# Find position
-for i, t in enumerate(queue['tickets']):
-    if t['id'] == ticket_id:
-        print(f"{i + 1} {len(queue['tickets'])}")
-        break
-PYEOF
-)
+    read -r position total < <(jq -r --arg id "$ticket_id" '
+        (.tickets | to_entries[] | select(.value.id == $id) | .key + 1) as $pos
+        | "\($pos) \(.tickets | length)"
+    ' "$QUEUE_FILE")
 
     local display_key="$issue_key"
     [[ "$issue_key" == "TASK" ]] && display_key="(auto)"
@@ -274,50 +252,51 @@ PYEOF
 cmd_list() {
     ensure_queue
 
-    _QUEUE_FILE="$QUEUE_FILE" python3 << 'PYEOF'
-import json, os
-
-with open(os.environ['_QUEUE_FILE']) as f:
-    data = json.load(f)
-tickets = data.get('tickets', [])
-completed = data.get('completed', [])
-failed = data.get('failed', [])
-
-if not tickets and not completed and not failed:
-    print('Queue is empty')
-else:
-    if tickets:
-        print(f'\033[0;34m=== Queued ({len(tickets)}) ===\033[0m')
-        for i, t in enumerate(tickets):
-            key = t.get('issue_key', 'TASK')
-            key_display = key if key != 'TASK' else '(auto)'
-            pri = t.get('priority', 5)
-            status = t.get('status', 'queued')
-            sub = t.get('sub', '')
-            sub_display = f' | Sub: {sub}' if sub else ' | Sub: auto'
-            print(f'  {i+1}. [{t["id"]}] {key_display} - {t["title"]}')
-            print(f'     Priority: {pri} | Repo: {t.get("repo_path", "?")}{sub_display} | Status: {status}')
-        print()
-
-    if completed:
-        print(f'\033[0;32m=== Completed ({len(completed)}) ===\033[0m')
-        for t in completed[-5:]:  # Show last 5
-            key = t.get('issue_key', 'TASK')
-            key_display = key if key != 'TASK' else '(auto)'
-            print(f'  [{t["id"]}] {key_display} - {t["title"]}')
-        print()
-
-    if failed:
-        print(f'\033[0;31m=== Failed ({len(failed)}) ===\033[0m')
-        for t in failed[-3:]:
-            key = t.get('issue_key', 'TASK')
-            key_display = key if key != 'TASK' else '(auto)'
-            error = t.get('error', 'unknown')
-            print(f'  [{t["id"]}] {key_display} - {t["title"]} ({error})')
-PYEOF
+    local data
+    data=$(jq '.' "$QUEUE_FILE" 2>/dev/null)
     if [[ $? -ne 0 ]]; then
         echo -e "${RED}Error reading queue file${NC}"
         return 1
+    fi
+
+    local ticket_count completed_count failed_count
+    ticket_count=$(echo "$data" | jq '.tickets | length')
+    completed_count=$(echo "$data" | jq '.completed | length')
+    failed_count=$(echo "$data" | jq '.failed | length')
+
+    if [[ "$ticket_count" -eq 0 && "$completed_count" -eq 0 && "$failed_count" -eq 0 ]]; then
+        echo 'Queue is empty'
+        return 0
+    fi
+
+    if [[ "$ticket_count" -gt 0 ]]; then
+        echo -e "${BLUE}=== Queued ($ticket_count) ===${NC}"
+        echo "$data" | jq -r '.tickets | to_entries[] | {i: (.key + 1), t: .value} |
+            (.t.issue_key // "TASK") as $key |
+            (if $key == "TASK" then "(auto)" else $key end) as $kd |
+            (.t.priority // 5) as $pri |
+            (.t.status // "queued") as $st |
+            (if (.t.sub // "") != "" then " | Sub: \(.t.sub)" else " | Sub: auto" end) as $sd |
+            "  \(.i). [\(.t.id)] \($kd) - \(.t.title)\n     Priority: \($pri) | Repo: \(.t.repo_path // "?")\($sd) | Status: \($st)"'
+        echo ""
+    fi
+
+    if [[ "$completed_count" -gt 0 ]]; then
+        echo -e "${GREEN}=== Completed ($completed_count) ===${NC}"
+        echo "$data" | jq -r '.completed | .[-5:][] |
+            (.issue_key // "TASK") as $key |
+            (if $key == "TASK" then "(auto)" else $key end) as $kd |
+            "  [\(.id)] \($kd) - \(.title)"'
+        echo ""
+    fi
+
+    if [[ "$failed_count" -gt 0 ]]; then
+        echo -e "${RED}=== Failed ($failed_count) ===${NC}"
+        echo "$data" | jq -r '.failed | .[-3:][] |
+            (.issue_key // "TASK") as $key |
+            (if $key == "TASK" then "(auto)" else $key end) as $kd |
+            (.error // "unknown") as $err |
+            "  [\(.id)] \($kd) - \(.title) (\($err))"'
     fi
 }
 
@@ -326,35 +305,33 @@ cmd_remove() {
     local ticket_id="$1"
     ensure_queue
 
-    python3 -c "
-import json, sys
-with open('$QUEUE_FILE', 'r') as f:
-    queue = json.load(f)
-original = len(queue['tickets'])
-queue['tickets'] = [t for t in queue['tickets'] if t['id'] != '$ticket_id']
-if len(queue['tickets']) == original:
-    print(f'Ticket $ticket_id not found in queue', file=sys.stderr)
-    sys.exit(1)
-with open('$QUEUE_FILE', 'w') as f:
-    json.dump(queue, f, indent=2)
-print(f'Removed ticket $ticket_id')
-"
+    local original
+    original=$(jq '.tickets | length' "$QUEUE_FILE")
+
+    local tmp="${QUEUE_FILE}.tmp.$$"
+    jq --arg id "$ticket_id" '.tickets |= map(select(.id != $id))' "$QUEUE_FILE" >"$tmp" && mv "$tmp" "$QUEUE_FILE"
+
+    local after
+    after=$(jq '.tickets | length' "$QUEUE_FILE")
+
+    if [[ "$original" -eq "$after" ]]; then
+        echo "Ticket $ticket_id not found in queue" >&2
+        return 1
+    fi
+    echo "Removed ticket $ticket_id"
     log "Removed ticket $ticket_id"
 }
 
 # Clear all queued tickets
 cmd_clear() {
     ensure_queue
-    python3 -c "
-import json
-with open('$QUEUE_FILE', 'r') as f:
-    queue = json.load(f)
-count = len(queue['tickets'])
-queue['tickets'] = []
-with open('$QUEUE_FILE', 'w') as f:
-    json.dump(queue, f, indent=2)
-print(f'Cleared {count} tickets from queue')
-"
+    local count
+    count=$(jq '.tickets | length' "$QUEUE_FILE")
+
+    local tmp="${QUEUE_FILE}.tmp.$$"
+    jq '.tickets = []' "$QUEUE_FILE" >"$tmp" && mv "$tmp" "$QUEUE_FILE"
+
+    echo "Cleared $count tickets from queue"
     log "Cleared queue"
 }
 
@@ -394,14 +371,11 @@ cmd_status() {
 
     # Queue stats
     local stats
-    stats=$(python3 -c "
-import json
-with open('$QUEUE_FILE') as f:
-    q = json.load(f)
-print(len(q.get('tickets', [])))
-print(len(q.get('completed', [])))
-print(len(q.get('failed', [])))
-")
+    stats=$(jq -r '[
+        (.tickets | length),
+        (.completed | length),
+        (.failed | length)
+    ] | join("\n")' "$QUEUE_FILE")
     local queued completed failed
     queued=$(echo "$stats" | sed -n '1p')
     completed=$(echo "$stats" | sed -n '2p')
@@ -425,32 +399,20 @@ dispatch_next() {
 
     # Get next ticket
     local ticket_json
-    ticket_json=$(python3 -c "
-import json, sys
-with open('$QUEUE_FILE') as f:
-    queue = json.load(f)
-tickets = [t for t in queue.get('tickets', []) if t.get('status') == 'queued']
-if not tickets:
-    sys.exit(1)
-print(json.dumps(tickets[0]))
-" 2>/dev/null) || return 1
+    ticket_json=$(jq -r '[.tickets[] | select(.status == "queued")] | if length == 0 then halt_error(1) else .[0] end' "$QUEUE_FILE" 2>/dev/null) || return 1
 
     local ticket_id issue_key title description repo_path
-    ticket_id=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-    issue_key=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['issue_key'])")
-    title=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['title'])")
-    description=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['description'])")
-    repo_path=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin)['repo_path'])")
+    ticket_id=$(echo "$ticket_json" | jq -r '.id')
+    issue_key=$(echo "$ticket_json" | jq -r '.issue_key')
+    title=$(echo "$ticket_json" | jq -r '.title')
+    description=$(echo "$ticket_json" | jq -r '.description')
+    repo_path=$(echo "$ticket_json" | jq -r '.repo_path')
 
     # Get extra gwt args and sub profile
     local gwt_extra_args
-    gwt_extra_args=$(echo "$ticket_json" | python3 -c "
-import json, sys
-args = json.load(sys.stdin).get('gwt_args', [])
-print(' '.join(args))
-")
+    gwt_extra_args=$(echo "$ticket_json" | jq -r '(.gwt_args // []) | join(" ")')
     local ticket_sub
-    ticket_sub=$(echo "$ticket_json" | python3 -c "import json,sys; print(json.load(sys.stdin).get('sub', ''))")
+    ticket_sub=$(echo "$ticket_json" | jq -r '.sub // ""')
 
     # If dispatch_sub was passed (from daemon loop), use it to override empty ticket sub
     local effective_sub="${ticket_sub:-${DISPATCH_SUB:-}}"
@@ -464,18 +426,12 @@ print(' '.join(args))
     echo -e "${GREEN}Dispatching:${NC} $display_key - $title$sub_display"
 
     # Mark as dispatching
-    python3 -c "
-import json
-with open('$QUEUE_FILE', 'r') as f:
-    queue = json.load(f)
-for t in queue['tickets']:
-    if t['id'] == '$ticket_id':
-        t['status'] = 'dispatching'
-        t['dispatched_at'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
-        break
-with open('$QUEUE_FILE', 'w') as f:
-    json.dump(queue, f, indent=2)
-"
+    local dispatched_at
+    dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    local tmp="${QUEUE_FILE}.tmp.$$"
+    jq --arg id "$ticket_id" --arg dat "$dispatched_at" '
+        .tickets |= map(if .id == $id then .status = "dispatching" | .dispatched_at = $dat else . end)
+    ' "$QUEUE_FILE" >"$tmp" && mv "$tmp" "$QUEUE_FILE"
 
     # Build gwt-ticket command
     local gwt_cmd="gwt-ticket"
@@ -499,27 +455,14 @@ with open('$QUEUE_FILE', 'w') as f:
 
     if [[ $dispatch_result -eq 0 ]]; then
         # Move to completed
-        python3 -c "
-import json
-with open('$QUEUE_FILE', 'r') as f:
-    queue = json.load(f)
-ticket = None
-queue['tickets'] = [t for t in queue['tickets'] if t['id'] != '$ticket_id' or (ticket := t) is None]
-if ticket is None:
-    # Find it (walrus didn't fire because of the filter logic)
-    import sys
-    sys.exit(0)
-for t in list(queue['tickets']):
-    if t['id'] == '$ticket_id':
-        ticket = t
-        queue['tickets'].remove(t)
-        break
-if ticket:
-    ticket['status'] = 'dispatched'
-    queue['completed'].append(ticket)
-with open('$QUEUE_FILE', 'w') as f:
-    json.dump(queue, f, indent=2)
-"
+        local tmp="${QUEUE_FILE}.tmp.$$"
+        jq --arg id "$ticket_id" '
+            (.tickets[] | select(.id == $id)) as $t |
+            if $t then
+                .completed += [$t | .status = "dispatched"]
+                | .tickets |= map(select(.id != $id))
+            else . end
+        ' "$QUEUE_FILE" >"$tmp" && mv "$tmp" "$QUEUE_FILE"
         log "Successfully dispatched ticket $ticket_id"
         echo -e "${GREEN}Dispatched successfully${NC}"
 
@@ -527,20 +470,14 @@ with open('$QUEUE_FILE', 'w') as f:
         send_notification "Ticket Dispatched" "$display_key: $title (from queue)"
     else
         # Move to failed
-        python3 -c "
-import json
-with open('$QUEUE_FILE', 'r') as f:
-    queue = json.load(f)
-for t in list(queue['tickets']):
-    if t['id'] == '$ticket_id':
-        queue['tickets'].remove(t)
-        t['status'] = 'failed'
-        t['error'] = 'gwt-ticket exit code $dispatch_result'
-        queue['failed'].append(t)
-        break
-with open('$QUEUE_FILE', 'w') as f:
-    json.dump(queue, f, indent=2)
-"
+        local tmp="${QUEUE_FILE}.tmp.$$"
+        jq --arg id "$ticket_id" --arg err "gwt-ticket exit code $dispatch_result" '
+            (.tickets[] | select(.id == $id)) as $t |
+            if $t then
+                .failed += [$t | .status = "failed" | .error = $err]
+                | .tickets |= map(select(.id != $id))
+            else . end
+        ' "$QUEUE_FILE" >"$tmp" && mv "$tmp" "$QUEUE_FILE"
         log "Failed to dispatch ticket $ticket_id (exit code: $dispatch_result)"
         echo -e "${RED}Dispatch failed (exit code: $dispatch_result)${NC}"
     fi
@@ -596,13 +533,9 @@ check_profile_usage() {
     usage_json=$("$USAGE_SCRIPT" "${json_args[@]}" 2>/dev/null) || return 2
 
     # Extract max utilization for ranking
-    PROFILE_UTILIZATION=$(echo "$usage_json" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-five = (data.get('five_hour') or {}).get('utilization', 0)
-seven = (data.get('seven_day') or {}).get('utilization', 0)
-print(max(five, seven))
-" 2>/dev/null || echo 100)
+    PROFILE_UTILIZATION=$(echo "$usage_json" | jq -r '
+        [(.five_hour // {}).utilization // 0, (.seven_day // {}).utilization // 0] | max
+    ' 2>/dev/null || echo 100)
 
     # Check against threshold
     "$USAGE_SCRIPT" "${usage_args[@]}" 2>/dev/null
@@ -622,7 +555,7 @@ find_available_profile() {
             if command -v bc &>/dev/null; then
                 is_lower=$(echo "$util < $best_util" | bc -l 2>/dev/null || echo 0)
             else
-                is_lower=$(python3 -c "print(1 if $util < $best_util else 0)" 2>/dev/null || echo 0)
+                is_lower=$(jq -n --argjson u "$util" --argjson b "$best_util" 'if $u < $b then 1 else 0 end' 2>/dev/null || echo 0)
             fi
             if [[ "$is_lower" == "1" ]] || [[ -z "$best_name" ]]; then
                 best_name="$name"
@@ -636,16 +569,7 @@ find_available_profile() {
 
 # Get the sub profile for the next queued ticket (empty = auto)
 get_next_ticket_sub() {
-    python3 -c "
-import json, sys
-with open('$QUEUE_FILE') as f:
-    queue = json.load(f)
-tickets = [t for t in queue.get('tickets', []) if t.get('status') == 'queued']
-if tickets:
-    print(tickets[0].get('sub', ''))
-else:
-    sys.exit(1)
-" 2>/dev/null
+    jq -r '[.tickets[] | select(.status == "queued")] | if length == 0 then halt_error(1) else .[0].sub // "" end' "$QUEUE_FILE" 2>/dev/null
 }
 
 # Show all subscription profiles with current usage
@@ -664,13 +588,11 @@ cmd_profiles() {
 
         local usage_json
         if usage_json=$("$USAGE_SCRIPT" "${json_args[@]}" 2>/dev/null); then
-            usage_display=$(echo "$usage_json" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-five = (data.get('five_hour') or {}).get('utilization', 0)
-seven = (data.get('seven_day') or {}).get('utilization', 0)
-print(f'5h: {five}% | 7d: {seven}%')
-" 2>/dev/null || echo "parse error")
+            usage_display=$(echo "$usage_json" | jq -r '
+                ((.five_hour // {}).utilization // 0) as $five |
+                ((.seven_day // {}).utilization // 0) as $seven |
+                "5h: \($five)% | 7d: \($seven)%"
+            ' 2>/dev/null || echo "parse error")
         else
             usage_display="not authenticated"
         fi
@@ -682,7 +604,7 @@ print(f'5h: {five}% | 7d: {seven}%')
 # Main daemon loop
 daemon_loop() {
     log "Daemon started (PID: $$, threshold: ${THRESHOLD}%, poll: ${POLL_INTERVAL}s, cooldown: ${COOLDOWN}s)"
-    echo $$ > "$PID_FILE"
+    echo $$ >"$PID_FILE"
 
     trap 'log "Daemon stopping (signal)"; rm -f "$PID_FILE"; exit 0' SIGTERM SIGINT
 
@@ -691,12 +613,7 @@ daemon_loop() {
     while true; do
         # Check if queue has tickets
         local queued_count
-        queued_count=$(python3 -c "
-import json
-with open('$QUEUE_FILE') as f:
-    q = json.load(f)
-print(len([t for t in q.get('tickets', []) if t.get('status') == 'queued']))
-" 2>/dev/null || echo 0)
+        queued_count=$(jq '[.tickets[] | select(.status == "queued")] | length' "$QUEUE_FILE" 2>/dev/null || echo 0)
 
         if [[ "$queued_count" -eq 0 ]]; then
             sleep "$POLL_INTERVAL"
@@ -716,7 +633,10 @@ print(len([t for t in q.get('tickets', []) if t.get('status') == 'queued']))
 
         # Get the next ticket's sub preference
         local ticket_sub
-        ticket_sub=$(get_next_ticket_sub 2>/dev/null) || { sleep "$POLL_INTERVAL"; continue; }
+        ticket_sub=$(get_next_ticket_sub 2>/dev/null) || {
+            sleep "$POLL_INTERVAL"
+            continue
+        }
 
         if [[ -n "$ticket_sub" ]]; then
             # Ticket has explicit sub - check only that profile
@@ -780,9 +700,9 @@ cmd_start() {
     echo -e "${GREEN}Starting ticket queue daemon...${NC}"
     local uid
     uid=$(id -u)
-    launchctl bootstrap "gui/$uid" "$plist" 2>/dev/null \
-        || launchctl kickstart -k "gui/$uid/com.dotfiles.ticket-queue" 2>/dev/null \
-        || true
+    launchctl bootstrap "gui/$uid" "$plist" 2>/dev/null ||
+        launchctl kickstart -k "gui/$uid/com.dotfiles.ticket-queue" 2>/dev/null ||
+        true
     sleep 1
     if is_running; then
         local pid
@@ -821,19 +741,29 @@ cmd_next() {
 
 # Main
 case "${1:-help}" in
-    start) cmd_start ;;
-    stop) cmd_stop ;;
-    status) cmd_status ;;
-    run) daemon_loop ;;
-    add) shift; cmd_add "$@" ;;
-    list) cmd_list ;;
-    remove|rm)
-        [[ -z "${2:-}" ]] && { echo "Usage: $0 remove <ticket-id>"; exit 1; }
-        cmd_remove "$2"
-        ;;
-    clear) cmd_clear ;;
-    next) cmd_next ;;
-    profiles) cmd_profiles ;;
-    help|--help|-h) show_help ;;
-    *) echo "Unknown command: $1"; show_help; exit 1 ;;
+start) cmd_start ;;
+stop) cmd_stop ;;
+status) cmd_status ;;
+run) daemon_loop ;;
+add)
+    shift
+    cmd_add "$@"
+    ;;
+list) cmd_list ;;
+remove | rm)
+    [[ -z "${2:-}" ]] && {
+        echo "Usage: $0 remove <ticket-id>"
+        exit 1
+    }
+    cmd_remove "$2"
+    ;;
+clear) cmd_clear ;;
+next) cmd_next ;;
+profiles) cmd_profiles ;;
+help | --help | -h) show_help ;;
+*)
+    echo "Unknown command: $1"
+    show_help
+    exit 1
+    ;;
 esac

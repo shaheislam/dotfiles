@@ -975,7 +975,12 @@ $prompt_suffix"
 
     if not $use_devcon
         # Pane stays open for witness to use (conflict resolution, debugging)
+        # Capture Claude exit status for troubleshooting random exits
         echo "" >>$launch_script
+        echo "set -l claude_exit \$status" >>$launch_script
+        echo "if test \$claude_exit -ne 0" >>$launch_script
+        echo "    echo 'Claude exited with code ' \$claude_exit" >>$launch_script
+        echo "end" >>$launch_script
         echo "exec fish" >>$launch_script
     end
     chmod +x $launch_script

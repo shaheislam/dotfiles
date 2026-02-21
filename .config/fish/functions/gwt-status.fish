@@ -161,9 +161,9 @@ function gwt-status --description "Show worktree + devcontainer status"
         if test -n "$agent_state_script"
             set -l agent_json ($agent_state_script $wt_path --json 2>/dev/null)
             if test -n "$agent_json"
-                set -l astate (echo $agent_json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('state','none'))" 2>/dev/null; or echo "none")
-                set -l aiter (echo $agent_json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('iteration',''))" 2>/dev/null; or echo "")
-                set -l amax (echo $agent_json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('max_iterations',''))" 2>/dev/null; or echo "")
+                set -l astate (echo $agent_json | jq -r '.state // "none"' 2>/dev/null; or echo "none")
+                set -l aiter (echo $agent_json | jq -r '.iteration // ""' 2>/dev/null; or echo "")
+                set -l amax (echo $agent_json | jq -r '.max_iterations // ""' 2>/dev/null; or echo "")
 
                 switch $astate
                     case running
@@ -263,68 +263,77 @@ function _gwt_status_convoy --description "Show agents grouped by convoy"
 
     echo ""
 
-    # Parse and display each convoy
-    printf '%s' "$convoys_json" | python3 -c "
-import sys, json, subprocess, os
+    # Parse and display each convoy using jq + Fish formatting
+    set -l convoy_count (printf '%s' "$convoys_json" | jq 'length' 2>/dev/null; or echo 0)
+    for ci in (seq 0 (math "$convoy_count - 1"))
+        set -l cname (printf '%s' "$convoys_json" | jq -r ".[$ci].name" 2>/dev/null)
+        set -l cid (printf '%s' "$convoys_json" | jq -r ".[$ci].id" 2>/dev/null)
+        set -l total (printf '%s' "$convoys_json" | jq -r ".[$ci].status | length" 2>/dev/null)
+        set -l completed (printf '%s' "$convoys_json" | jq -r "[.[$ci].status[] | select(. == \"completed\")] | length" 2>/dev/null)
+        set -l failed (printf '%s' "$convoys_json" | jq -r "[.[$ci].status[] | select(. == \"failed\")] | length" 2>/dev/null)
+        set -l running (printf '%s' "$convoys_json" | jq -r "[.[$ci].status[] | select(. == \"running\")] | length" 2>/dev/null)
+        set -l pending (printf '%s' "$convoys_json" | jq -r "[.[$ci].status[] | select(. == \"pending\")] | length" 2>/dev/null)
 
-convoys = json.load(sys.stdin)
-agent_state = '$agent_state_script'
+        # Progress bar
+        set -l bar_len 25
+        set -l filled 0
+        if test "$total" -gt 0
+            set filled (math "floor($completed / $total * $bar_len)")
+        end
+        set -l bar (string repeat -n $filled "█")(string repeat -n (math "$bar_len - $filled") "░")
 
-for c in convoys:
-    name = c['name']
-    cid = c['id']
-    status = c.get('status', {})
-    total = len(status)
-    completed = sum(1 for v in status.values() if v == 'completed')
-    failed = sum(1 for v in status.values() if v == 'failed')
-    running = sum(1 for v in status.values() if v == 'running')
-    pending = sum(1 for v in status.values() if v == 'pending')
+        printf "\033[1m%s\033[0m (%s)\n" $cname $cid
+        printf "  [%s] %s/%s complete" $bar $completed $total
+        set -l parts
+        test "$running" -gt 0; and set -a parts (printf "\033[0;32m%s running\033[0m" $running)
+        test "$pending" -gt 0; and set -a parts (printf "\033[2m%s pending\033[0m" $pending)
+        test "$failed" -gt 0; and set -a parts (printf "\033[0;31m%s failed\033[0m" $failed)
+        if test (count $parts) -gt 0
+            printf "  (%s)\n" (string join ", " $parts)
+        else
+            printf "\n"
+        end
 
-    # Progress bar
-    bar_len = 25
-    filled = int(completed / total * bar_len) if total > 0 else 0
-    bar = '█' * filled + '░' * (bar_len - filled)
-
-    print(f'\033[1m{name}\033[0m ({cid})')
-    print(f'  [{bar}] {completed}/{total} complete', end='')
-    parts = []
-    if running: parts.append(f'\033[0;32m{running} running\033[0m')
-    if pending: parts.append(f'\033[2m{pending} pending\033[0m')
-    if failed: parts.append(f'\033[0;31m{failed} failed\033[0m')
-    if parts:
-        print('  (' + ', '.join(parts) + ')')
-    else:
-        print()
-
-    # Show each ticket with agent state if available
-    for ticket, st in status.items():
-        icon = {'completed': '\033[0;32m✓\033[0m', 'failed': '\033[0;31m✗\033[0m', 'running': '\033[0;34m▶\033[0m', 'pending': '\033[2m·\033[0m'}.get(st, '?')
-        agent_info = ''
-        if agent_state and st == 'running':
-            # Try to find worktree matching this ticket
-            ticket_lower = ticket.lower().replace(' ', '-')
-            for d in os.listdir(os.path.expanduser('~')):
-                wt = os.path.expanduser(f'~/{d}')
-                state_file = os.path.join(wt, '.claude', 'gwt-ticket.local.md')
-                if os.path.isfile(state_file):
-                    try:
-                        with open(state_file) as f:
-                            content = f.read(500)
-                        if ticket_lower in content.lower() or ticket in content:
-                            result = subprocess.run([agent_state, wt, '--json'], capture_output=True, text=True, timeout=5)
-                            if result.returncode == 0:
-                                d = json.loads(result.stdout)
-                                state = d.get('state', '')
-                                iteration = d.get('iteration', '')
-                                max_iter = d.get('max_iterations', '')
-                                if iteration and max_iter:
-                                    agent_info = f' [{iteration}/{max_iter}]'
-                                break
-                    except Exception:
-                        pass
-        print(f'    {icon} {ticket}: {st}{agent_info}')
-    print()
-" 2>/dev/null
+        # Show each ticket with agent state
+        for ticket_line in (printf '%s' "$convoys_json" | jq -r ".[$ci].status | to_entries[] | \"\(.key)\t\(.value)\"" 2>/dev/null)
+            set -l ticket (echo $ticket_line | cut -f1)
+            set -l st (echo $ticket_line | cut -f2)
+            set -l icon "?"
+            switch $st
+                case completed
+                    set icon (printf "\033[0;32m✓\033[0m")
+                case failed
+                    set icon (printf "\033[0;31m✗\033[0m")
+                case running
+                    set icon (printf "\033[0;34m▶\033[0m")
+                case pending
+                    set icon (printf "\033[2m·\033[0m")
+            end
+            set -l agent_info ""
+            if test -n "$agent_state_script" -a "$st" = running
+                # Find worktree matching this ticket
+                set -l ticket_lower (echo $ticket | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+                for state_file in ~/*/. claude/gwt-ticket.local.md
+                    if test -f "$state_file"
+                        if grep -qi "$ticket_lower\|$ticket" "$state_file" 2>/dev/null
+                            set -l wt (dirname (dirname "$state_file"))
+                            set -l aj (bash "$agent_state_script" "$wt" --json 2>/dev/null)
+                            if test -n "$aj"
+                                set -l ai (echo $aj | jq -r '.iteration // ""' 2>/dev/null)
+                                set -l am (echo $aj | jq -r '.max_iterations // ""' 2>/dev/null)
+                                if test -n "$ai" -a -n "$am"
+                                    set agent_info " [$ai/$am]"
+                                end
+                            end
+                            break
+                        end
+                    end
+                end
+            end
+            printf "    %s %s: %s%s\n" $icon $ticket $st $agent_info
+        end
+        echo ""
+    end
 
     echo "Commands:"
     echo "  gwt-convoy status <id>     Detailed convoy view"

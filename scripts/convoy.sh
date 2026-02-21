@@ -33,6 +33,8 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/json-helpers.sh"
+
 ensure_file() {
     mkdir -p "$(dirname "$CONVOY_FILE")"
     touch "$CONVOY_FILE"
@@ -155,17 +157,13 @@ cmd_add() {
         exit 1
     fi
 
-    # Add ticket using python3 for reliable JSON manipulation
+    # Add ticket using jq for reliable JSON manipulation
     local updated
-    updated=$(echo "$line" | python3 -c "
-import sys, json
-c = json.loads(sys.stdin.read())
-tk = '$ticket_key'
-if tk not in c['tickets']:
-    c['tickets'].append(tk)
-    c['status'][tk] = 'pending'
-    c['updated'] = '$(timestamp_now)'
-print(json.dumps(c, separators=(',',':')))" 2>/dev/null)
+    updated=$(echo "$line" | jq -c --arg tk "$ticket_key" --arg ts "$(timestamp_now)" '
+      if (.tickets | index($tk)) == null then
+        .tickets += [$tk] | .status[$tk] = "pending" | .updated = $ts
+      else . end
+    ')
 
     if [[ -n "$updated" ]]; then
         update_convoy "$convoy_id" "$updated"
@@ -191,27 +189,20 @@ cmd_complete() {
     fi
 
     local updated
-    updated=$(echo "$line" | python3 -c "
-import sys, json
-c = json.loads(sys.stdin.read())
-c['status']['$ticket_key'] = 'completed'
-c['updated'] = '$(timestamp_now)'
-print(json.dumps(c, separators=(',',':')))" 2>/dev/null)
+    updated=$(echo "$line" | jq -c --arg tk "$ticket_key" --arg ts "$(timestamp_now)" '
+      .status[$tk] = "completed" | .updated = $ts
+    ')
 
     update_convoy "$convoy_id" "$updated"
     echo -e "${GREEN}Completed${NC} ${ticket_key} in convoy ${convoy_id}"
 
     # Check if all complete
     local all_done
-    all_done=$(echo "$updated" | python3 -c "
-import sys, json
-c = json.loads(sys.stdin.read())
-all_done = all(v == 'completed' for v in c['status'].values())
-print('true' if all_done else 'false')" 2>/dev/null)
+    all_done=$(echo "$updated" | jq -r '[.status[]] | all(. == "completed") | tostring')
 
     if [[ "$all_done" == "true" ]]; then
         local name
-        name=$(echo "$updated" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['name'])" 2>/dev/null)
+        name=$(echo "$updated" | jq -r '.name')
         echo -e "${GREEN}${BOLD}Convoy '${name}' is complete!${NC}"
 
         # Send notification via agent-mail if available
@@ -267,15 +258,10 @@ cmd_fail() {
     escaped_reason=$(json_escape "${reason:-unknown}")
 
     local updated
-    updated=$(echo "$line" | python3 -c "
-import sys, json
-c = json.loads(sys.stdin.read())
-c['status']['$ticket_key'] = 'failed'
-c['updated'] = '$(timestamp_now)'
-if 'failures' not in c:
-    c['failures'] = {}
-c['failures']['$ticket_key'] = '$escaped_reason'
-print(json.dumps(c, separators=(',',':')))" 2>/dev/null)
+    updated=$(echo "$line" | jq -c --arg tk "$ticket_key" --arg ts "$(timestamp_now)" --arg reason "$escaped_reason" '
+      .status[$tk] = "failed" | .updated = $ts |
+      .failures = (.failures // {}) | .failures[$tk] = $reason
+    ')
 
     update_convoy "$convoy_id" "$updated"
     echo -e "${RED}Failed${NC} ${ticket_key} in convoy ${convoy_id}: ${reason:-unknown}"
@@ -315,37 +301,50 @@ cmd_status() {
     fi
 
     if $json_mode; then
-        echo "$line" | python3 -c "
-import sys, json
-c = json.loads(sys.stdin.read())
-total = len(c['status'])
-completed = sum(1 for v in c['status'].values() if v == 'completed')
-failed = sum(1 for v in c['status'].values() if v == 'failed')
-c['summary'] = {'total': total, 'completed': completed, 'failed': failed, 'remaining': total - completed - failed}
-print(json.dumps(c, indent=2))" 2>/dev/null
+        echo "$line" | jq '{
+          id, name, tickets, status, created, updated,
+          summary: {
+            total: (.status | length),
+            completed: ([.status[] | select(. == "completed")] | length),
+            failed: ([.status[] | select(. == "failed")] | length),
+            remaining: ((.status | length) - ([.status[] | select(. == "completed")] | length) - ([.status[] | select(. == "failed")] | length))
+          }
+        } + (if .failures then {failures} else {} end)'
         return
     fi
 
-    echo "$line" | python3 -c "
-import sys, json
-c = json.loads(sys.stdin.read())
-total = len(c['status'])
-completed = sum(1 for v in c['status'].values() if v == 'completed')
-failed = sum(1 for v in c['status'].values() if v == 'failed')
-running = sum(1 for v in c['status'].values() if v == 'running')
-pending = sum(1 for v in c['status'].values() if v == 'pending')
+    # Extract data with jq, format in bash
+    local c_name c_id c_created total completed failed running pending ticket_lines
+    c_name=$(echo "$line" | jq -r '.name')
+    c_id=$(echo "$line" | jq -r '.id')
+    c_created=$(echo "$line" | jq -r '.created')
+    total=$(echo "$line" | jq '.status | length')
+    completed=$(echo "$line" | jq '[.status[] | select(. == "completed")] | length')
+    failed=$(echo "$line" | jq '[.status[] | select(. == "failed")] | length')
+    running=$(echo "$line" | jq '[.status[] | select(. == "running")] | length')
+    pending=$(echo "$line" | jq '[.status[] | select(. == "pending")] | length')
 
-print(f\"Convoy: {c['name']} ({c['id']})\")
-print(f\"Progress: {completed}/{total} complete\")
-if failed: print(f\"Failed: {failed}\")
-if running: print(f\"Running: {running}\")
-if pending: print(f\"Pending: {pending}\")
-print(f\"Created: {c['created']}\")
-print()
-for ticket, status in c['status'].items():
-    icon = {'completed': '\033[0;32m✓\033[0m', 'failed': '\033[0;31m✗\033[0m', 'running': '\033[0;34m→\033[0m', 'pending': '\033[2m·\033[0m'}.get(status, '?')
-    print(f'  {icon} {ticket}: {status}')
-" 2>/dev/null
+    echo "Convoy: ${c_name} (${c_id})"
+    echo "Progress: ${completed}/${total} complete"
+    [[ "$failed" -gt 0 ]] && echo "Failed: ${failed}"
+    [[ "$running" -gt 0 ]] && echo "Running: ${running}"
+    [[ "$pending" -gt 0 ]] && echo "Pending: ${pending}"
+    echo "Created: ${c_created}"
+    echo
+
+    ticket_lines=$(echo "$line" | jq -r '.status | to_entries[] | "\(.key)\t\(.value)"')
+    while IFS=$'\t' read -r ticket status; do
+        [[ -z "$ticket" ]] && continue
+        local icon
+        case "$status" in
+        completed) icon="${GREEN}✓${NC}" ;;
+        failed) icon="${RED}✗${NC}" ;;
+        running) icon="${BLUE}→${NC}" ;;
+        pending) icon="${DIM}·${NC}" ;;
+        *) icon="?" ;;
+        esac
+        echo -e "  ${icon} ${ticket}: ${status}"
+    done <<<"$ticket_lines"
 }
 
 cmd_list() {
@@ -377,45 +376,66 @@ cmd_list() {
     fi
 
     if $json_mode; then
-        python3 -c "
-import sys, json
-convoys = []
-for line in open('$CONVOY_FILE'):
-    line = line.strip()
-    if not line: continue
-    c = json.loads(line)
-    total = len(c['status'])
-    completed = sum(1 for v in c['status'].values() if v == 'completed')
-    failed = sum(1 for v in c['status'].values() if v == 'failed')
-    active_only = $([[ "$active_only" == "true" ]] && echo "True" || echo "False")
-    is_complete = (completed + failed) == total and total > 0
-    if active_only and is_complete:
-        continue
-    c['summary'] = {'total': total, 'completed': completed, 'failed': failed, 'remaining': total - completed - failed}
-    convoys.append(c)
-print(json.dumps(convoys, indent=2))" 2>/dev/null
+        local filter_expr
+        if $active_only; then
+            filter_expr='[.[] | . + {
+              summary: {
+                total: (.status | length),
+                completed: ([.status[] | select(. == "completed")] | length),
+                failed: ([.status[] | select(. == "failed")] | length),
+                remaining: ((.status | length) - ([.status[] | select(. == "completed")] | length) - ([.status[] | select(. == "failed")] | length))
+              }
+            } | select((.status | length) == 0 or ((.summary.completed + .summary.failed) < .summary.total))]'
+        else
+            filter_expr='[.[] | . + {
+              summary: {
+                total: (.status | length),
+                completed: ([.status[] | select(. == "completed")] | length),
+                failed: ([.status[] | select(. == "failed")] | length),
+                remaining: ((.status | length) - ([.status[] | select(. == "completed")] | length) - ([.status[] | select(. == "failed")] | length))
+              }
+            }]'
+        fi
+        jq -s "$filter_expr" "$CONVOY_FILE"
         return
     fi
 
     echo -e "${BLUE}=== Convoys ===${NC}"
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        python3 -c "
-import sys, json
-c = json.loads('$(echo "$line" | sed "s/'/\\\\'/g")')
-total = len(c['status'])
-completed = sum(1 for v in c['status'].values() if v == 'completed')
-failed = sum(1 for v in c['status'].values() if v == 'failed')
-active_only = $([[ "$active_only" == "true" ]] && echo "True" || echo "False")
-is_complete = (completed + failed) == total and total > 0
-if active_only and is_complete:
-    sys.exit(0)
-bar_len = 20
-filled = int(completed / total * bar_len) if total > 0 else 0
-bar = '█' * filled + '░' * (bar_len - filled)
-status_color = '\033[0;32m' if is_complete else '\033[0;34m'
-print(f\"  {status_color}{c['id']}\033[0m  {c['name']}  [{bar}] {completed}/{total}\")
-" 2>/dev/null || true
+        local c_id c_name total completed failed is_complete
+        c_id=$(echo "$line" | jq -r '.id')
+        c_name=$(echo "$line" | jq -r '.name')
+        total=$(echo "$line" | jq '.status | length')
+        completed=$(echo "$line" | jq '[.status[] | select(. == "completed")] | length')
+        failed=$(echo "$line" | jq '[.status[] | select(. == "failed")] | length')
+
+        is_complete=false
+        if [[ "$total" -gt 0 ]] && [[ $((completed + failed)) -eq "$total" ]]; then
+            is_complete=true
+        fi
+
+        if $active_only && $is_complete; then
+            continue
+        fi
+
+        # Build progress bar
+        local bar_len=20 filled=0
+        if [[ "$total" -gt 0 ]]; then
+            filled=$((completed * bar_len / total))
+        fi
+        local bar=""
+        local i
+        for ((i = 0; i < filled; i++)); do bar+="█"; done
+        for ((i = filled; i < bar_len; i++)); do bar+="░"; done
+
+        local status_color
+        if $is_complete; then
+            status_color="${GREEN}"
+        else
+            status_color="${BLUE}"
+        fi
+        echo -e "  ${status_color}${c_id}${NC}  ${c_name}  [${bar}] ${completed}/${total}"
     done <"$CONVOY_FILE"
 }
 
@@ -432,19 +452,11 @@ cmd_find_or_create() {
     # Look for an active convoy with this name
     if [[ -s "$CONVOY_FILE" ]]; then
         local existing_id
-        existing_id=$(python3 -c "
-import sys, json
-for line in open('$CONVOY_FILE'):
-    line = line.strip()
-    if not line: continue
-    c = json.loads(line)
-    if c['name'] == '$name':
-        total = len(c['status'])
-        completed = sum(1 for v in c['status'].values() if v in ('completed', 'failed'))
-        if total == 0 or completed < total:
-            print(c['id'])
-            break
-" 2>/dev/null)
+        existing_id=$(jq -r --arg name "$name" '
+          select(.name == $name) |
+          select((.status | length) == 0 or (([.status[] | select(. == "completed" or . == "failed")] | length) < (.status | length))) |
+          .id
+        ' "$CONVOY_FILE" 2>/dev/null | head -1)
         if [[ -n "$existing_id" ]]; then
             echo "$existing_id"
             return 0
@@ -479,12 +491,10 @@ cmd_check() {
     fi
 
     local all_done
-    all_done=$(echo "$line" | python3 -c "
-import sys, json
-c = json.loads(sys.stdin.read())
-total = len(c['status'])
-completed = sum(1 for v in c['status'].values() if v == 'completed')
-print('true' if completed == total and total > 0 else 'false')" 2>/dev/null)
+    all_done=$(echo "$line" | jq -r '
+      if (.status | length) > 0 and ([.status[] | select(. == "completed")] | length) == (.status | length)
+      then "true" else "false" end
+    ')
 
     if [[ "$all_done" == "true" ]]; then
         exit 0

@@ -31,6 +31,8 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/json-helpers.sh"
+
 ensure_dir() {
     mkdir -p "$MOLECULE_DIR"
 }
@@ -103,32 +105,19 @@ cmd_create() {
 
     # Build steps array
     local steps_json
-    steps_json=$(python3 -c "
-import json
-steps = [s.strip() for s in '$steps_str'.split(',') if s.strip()]
-print(json.dumps(steps))" 2>/dev/null)
+    steps_json=$(echo "$steps_str" | jq -R '[split(",") | .[] | gsub("^ +| +$"; "") | select(length > 0)]')
 
     local json
-    json=$(python3 -c "
-import json
-steps = json.loads('$steps_json')
-mol = {
-    'id': '$id',
-    'name': '$name',
-    'steps': steps,
-    'current_step': 0,
-    'step_status': 'pending',
-    'history': [],
-    'created': '$ts',
-    'updated': '$ts'
-}
-print(json.dumps(mol, indent=2))" 2>/dev/null)
+    json=$(jq -n --arg id "$id" --arg name "$name" --arg ts "$ts" --argjson steps "$steps_json" '{
+  id: $id, name: $name, steps: $steps, current_step: 0,
+  step_status: "pending", history: [], created: $ts, updated: $ts
+}')
 
     write_molecule "$id" "$json"
 
     echo -e "${GREEN}Created molecule${NC} ${BOLD}${id}${NC}: ${name}"
     echo "  Steps: $steps_str"
-    echo "  Current: step 0 ($(echo "$steps_json" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())[0])" 2>/dev/null))"
+    echo "  Current: step 0 ($(echo "$steps_json" | jq -r '.[0]'))"
     echo "$id"
 }
 
@@ -151,41 +140,23 @@ cmd_advance() {
     ts="$(timestamp_now)"
 
     local updated
-    updated=$(echo "$json" | python3 -c "
-import sys, json
-m = json.loads(sys.stdin.read())
-ts = '$ts'
-
-# Record completion of current step
-m['history'].append({
-    'step': m['current_step'],
-    'name': m['steps'][m['current_step']],
-    'status': 'completed',
-    'ended': ts
-})
-
-# Advance to next step
-m['current_step'] += 1
-m['updated'] = ts
-
-if m['current_step'] >= len(m['steps']):
-    m['step_status'] = 'complete'
-    print(json.dumps(m, indent=2))
-else:
-    m['step_status'] = 'pending'
-    print(json.dumps(m, indent=2))
-" 2>/dev/null)
+    updated=$(echo "$json" | jq --arg ts "$ts" '
+  .history += [{step: .current_step, name: .steps[.current_step], status: "completed", ended: $ts}]
+  | .current_step += 1
+  | .updated = $ts
+  | if .current_step >= (.steps | length) then .step_status = "complete" else .step_status = "pending" end
+')
 
     write_molecule "$molecule_id" "$updated"
 
     local current_step total_steps step_status
-    current_step=$(echo "$updated" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['current_step'])" 2>/dev/null)
-    total_steps=$(echo "$updated" | python3 -c "import sys,json; print(len(json.loads(sys.stdin.read())['steps']))" 2>/dev/null)
-    step_status=$(echo "$updated" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['step_status'])" 2>/dev/null)
+    current_step=$(echo "$updated" | jq -r '.current_step')
+    total_steps=$(echo "$updated" | jq -r '.steps | length')
+    step_status=$(echo "$updated" | jq -r '.step_status')
 
     if [[ "$step_status" == "complete" ]]; then
         local name
-        name=$(echo "$updated" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['name'])" 2>/dev/null)
+        name=$(echo "$updated" | jq -r '.name')
         echo -e "${GREEN}${BOLD}Molecule '${name}' complete!${NC} All ${total_steps} steps done."
 
         # Send mail notification
@@ -197,7 +168,7 @@ else:
         exit 2
     else
         local next_step_name
-        next_step_name=$(echo "$updated" | python3 -c "import sys,json; m=json.loads(sys.stdin.read()); print(m['steps'][m['current_step']])" 2>/dev/null)
+        next_step_name=$(echo "$updated" | jq -r '.steps[.current_step]')
         echo -e "${GREEN}Advanced${NC} to step ${current_step}/${total_steps}: ${next_step_name}"
     fi
 }
@@ -238,39 +209,47 @@ cmd_status() {
         return
     fi
 
-    echo "$json" | python3 -c "
-import sys, json
-m = json.loads(sys.stdin.read())
-total = len(m['steps'])
-current = m['current_step']
-status = m['step_status']
+    local mol_name mol_id mol_current mol_total mol_status mol_created
+    mol_name=$(echo "$json" | jq -r '.name')
+    mol_id=$(echo "$json" | jq -r '.id')
+    mol_current=$(echo "$json" | jq -r '.current_step')
+    mol_total=$(echo "$json" | jq -r '.steps | length')
+    mol_status=$(echo "$json" | jq -r '.step_status')
+    mol_created=$(echo "$json" | jq -r '.created')
 
-print(f\"Molecule: {m['name']} ({m['id']})\")
-print(f\"Progress: step {current}/{total} ({status})\")
-print(f\"Created:  {m['created']}\")
-print()
-for i, step in enumerate(m['steps']):
-    if i < current:
-        icon = '\033[0;32m✓\033[0m'
-        state = 'done'
-    elif i == current:
-        if status == 'failed':
-            icon = '\033[0;31m✗\033[0m'
-            state = 'FAILED'
-        elif status == 'running':
-            icon = '\033[0;34m→\033[0m'
-            state = 'running'
-        elif status == 'complete':
-            icon = '\033[0;32m✓\033[0m'
-            state = 'done'
-        else:
-            icon = '\033[1;33m◆\033[0m'
-            state = 'next'
-    else:
-        icon = '\033[2m·\033[0m'
-        state = 'pending'
-    print(f'  {icon} [{i}] {step} ({state})')
-" 2>/dev/null
+    echo "Molecule: ${mol_name} (${mol_id})"
+    echo "Progress: step ${mol_current}/${mol_total} (${mol_status})"
+    echo "Created:  ${mol_created}"
+    echo
+
+    local i=0
+    while [[ $i -lt $mol_total ]]; do
+        local step_name icon state
+        step_name=$(echo "$json" | jq -r --argjson idx "$i" '.steps[$idx]')
+        if [[ $i -lt $mol_current ]]; then
+            icon='\033[0;32m✓\033[0m'
+            state='done'
+        elif [[ $i -eq $mol_current ]]; then
+            if [[ "$mol_status" == "failed" ]]; then
+                icon='\033[0;31m✗\033[0m'
+                state='FAILED'
+            elif [[ "$mol_status" == "running" ]]; then
+                icon='\033[0;34m→\033[0m'
+                state='running'
+            elif [[ "$mol_status" == "complete" ]]; then
+                icon='\033[0;32m✓\033[0m'
+                state='done'
+            else
+                icon='\033[1;33m◆\033[0m'
+                state='next'
+            fi
+        else
+            icon='\033[2m·\033[0m'
+            state='pending'
+        fi
+        echo -e "  ${icon} [${i}] ${step_name} (${state})"
+        i=$((i + 1))
+    done
 }
 
 cmd_fail() {
@@ -314,19 +293,11 @@ cmd_fail() {
     local escaped_reason="${reason:-unknown}"
 
     local updated
-    updated=$(echo "$json" | python3 -c "
-import sys, json
-m = json.loads(sys.stdin.read())
-m['step_status'] = 'failed'
-m['updated'] = '$ts'
-m['history'].append({
-    'step': m['current_step'],
-    'name': m['steps'][m['current_step']],
-    'status': 'failed',
-    'reason': '''$escaped_reason''',
-    'ended': '$ts'
-})
-print(json.dumps(m, indent=2))" 2>/dev/null)
+    updated=$(echo "$json" | jq --arg ts "$ts" --arg reason "$escaped_reason" '
+  .step_status = "failed"
+  | .updated = $ts
+  | .history += [{step: .current_step, name: .steps[.current_step], status: "failed", reason: $reason, ended: $ts}]
+')
 
     write_molecule "$molecule_id" "$updated"
     echo -e "${RED}Failed${NC} step in molecule ${molecule_id}: ${reason:-unknown}"
@@ -351,15 +322,9 @@ cmd_retry() {
     ts="$(timestamp_now)"
 
     local updated
-    updated=$(echo "$json" | python3 -c "
-import sys, json
-m = json.loads(sys.stdin.read())
-if m['step_status'] != 'failed':
-    print(json.dumps(m, indent=2))
-    sys.exit(0)
-m['step_status'] = 'pending'
-m['updated'] = '$ts'
-print(json.dumps(m, indent=2))" 2>/dev/null)
+    updated=$(echo "$json" | jq --arg ts "$ts" '
+  if .step_status != "failed" then . else .step_status = "pending" | .updated = $ts end
+')
 
     write_molecule "$molecule_id" "$updated"
     echo -e "${GREEN}Retrying${NC} current step in molecule ${molecule_id}"
@@ -397,43 +362,74 @@ cmd_list() {
     fi
 
     if $json_mode; then
-        python3 -c "
-import os, json, glob
-molecules = []
-active_only = $([[ "$active_only" == "true" ]] && echo "True" || echo "False")
-for f in sorted(glob.glob('$MOLECULE_DIR/*.json')):
-    with open(f) as fh:
-        m = json.load(fh)
-    is_complete = m['step_status'] == 'complete'
-    if active_only and is_complete:
-        continue
-    molecules.append(m)
-print(json.dumps(molecules, indent=2))" 2>/dev/null
+        local result="[]"
+        for f in $MOLECULE_DIR/*.json; do
+            [[ -f "$f" ]] || continue
+            local mol
+            mol=$(jq '.' "$f")
+            local is_complete
+            is_complete=$(echo "$mol" | jq -r '.step_status')
+            if $active_only && [[ "$is_complete" == "complete" ]]; then
+                continue
+            fi
+            result=$(echo "$result" | jq --argjson mol "$mol" '. += [$mol]')
+        done
+        echo "$result" | jq '.'
         return
     fi
 
     echo -e "${BLUE}=== Molecules ===${NC}"
     for f in $MOLECULE_DIR/*.json; do
         [[ -f "$f" ]] || continue
-        python3 -c "
-import json
-with open('$f') as fh:
-    m = json.load(fh)
-total = len(m['steps'])
-current = m['current_step']
-status = m['step_status']
-active_only = $([[ "$active_only" == "true" ]] && echo "True" || echo "False")
-is_complete = status == 'complete'
-if active_only and is_complete:
-    import sys; sys.exit(0)
-bar_len = 20
-filled = int(current / total * bar_len) if total > 0 else 0
-if is_complete: filled = bar_len
-bar = '█' * filled + '░' * (bar_len - filled)
-color = '\033[0;32m' if is_complete else ('\033[0;31m' if status == 'failed' else '\033[0;34m')
-step_name = m['steps'][current] if current < total else 'done'
-print(f\"  {color}{m['id']}\033[0m  {m['name']}  [{bar}] {current}/{total} ({step_name})\")
-" 2>/dev/null || true
+        local mol_id mol_name mol_current mol_total mol_status mol_step_name
+        mol_id=$(jq -r '.id' "$f")
+        mol_name=$(jq -r '.name' "$f")
+        mol_current=$(jq -r '.current_step' "$f")
+        mol_total=$(jq -r '.steps | length' "$f")
+        mol_status=$(jq -r '.step_status' "$f")
+
+        if $active_only && [[ "$mol_status" == "complete" ]]; then
+            continue
+        fi
+
+        local bar_len=20 filled
+        if [[ "$mol_total" -gt 0 ]]; then
+            filled=$((mol_current * bar_len / mol_total))
+        else
+            filled=0
+        fi
+        if [[ "$mol_status" == "complete" ]]; then
+            filled=$bar_len
+        fi
+        local bar=""
+        local i=0
+        while [[ $i -lt $filled ]]; do
+            bar+="█"
+            i=$((i + 1))
+        done
+        i=0
+        local remaining=$((bar_len - filled))
+        while [[ $i -lt $remaining ]]; do
+            bar+="░"
+            i=$((i + 1))
+        done
+
+        local color
+        if [[ "$mol_status" == "complete" ]]; then
+            color='\033[0;32m'
+        elif [[ "$mol_status" == "failed" ]]; then
+            color='\033[0;31m'
+        else
+            color='\033[0;34m'
+        fi
+
+        if [[ "$mol_current" -lt "$mol_total" ]]; then
+            mol_step_name=$(jq -r --argjson idx "$mol_current" '.steps[$idx]' "$f")
+        else
+            mol_step_name="done"
+        fi
+
+        echo -e "  ${color}${mol_id}\033[0m  ${mol_name}  [${bar}] ${mol_current}/${mol_total} (${mol_step_name})"
     done
 }
 
@@ -453,28 +449,32 @@ cmd_resume() {
     fi
 
     # Output resume context for the current step
-    echo "$json" | python3 -c "
-import sys, json
-m = json.loads(sys.stdin.read())
-total = len(m['steps'])
-current = m['current_step']
+    local mol_name mol_current mol_total mol_status step_name
+    mol_name=$(echo "$json" | jq -r '.name')
+    mol_current=$(echo "$json" | jq -r '.current_step')
+    mol_total=$(echo "$json" | jq -r '.steps | length')
+    mol_status=$(echo "$json" | jq -r '.step_status')
 
-if current >= total:
-    print('Molecule complete. No more steps.')
-    sys.exit(0)
+    if [[ "$mol_current" -ge "$mol_total" ]]; then
+        echo "Molecule complete. No more steps."
+        return 0
+    fi
 
-step_name = m['steps'][current]
-completed_steps = [h['name'] for h in m['history'] if h['status'] == 'completed']
+    step_name=$(echo "$json" | jq -r '.steps[.current_step]')
+    local completed_steps
+    completed_steps=$(echo "$json" | jq -r '[.history[] | select(.status == "completed") | .name] | join(", ")')
+    local remaining_steps
+    remaining_steps=$(echo "$json" | jq -r '[.steps[(.current_step + 1):]] | join(", ")')
 
-print(f'MOLECULE RESUME: {m[\"name\"]} (step {current}/{total})')
-print(f'Current step: {step_name}')
-print(f'Status: {m[\"step_status\"]}')
-if completed_steps:
-    print(f'Completed: {\", \".join(completed_steps)}')
-remaining = m['steps'][current+1:]
-if remaining:
-    print(f'Remaining: {\", \".join(remaining)}')
-" 2>/dev/null
+    echo "MOLECULE RESUME: ${mol_name} (step ${mol_current}/${mol_total})"
+    echo "Current step: ${step_name}"
+    echo "Status: ${mol_status}"
+    if [[ -n "$completed_steps" ]]; then
+        echo "Completed: ${completed_steps}"
+    fi
+    if [[ -n "$remaining_steps" ]]; then
+        echo "Remaining: ${remaining_steps}"
+    fi
 }
 
 # --- Main ---
