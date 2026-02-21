@@ -236,12 +236,12 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 
 | Event | Hooks | Purpose |
 |-------|-------|---------|
-| **SessionStart** | `fix-hookify-imports.sh`, `bd prime` | Plugin fixes, Beads memory |
+| **SessionStart** | `fix-hookify-imports.sh`, `bd prime`, `lsp-status.sh` | Plugin fixes, Beads memory, LSP context |
 | **PreToolUse** (Bash) | `use_bun.py`, `validate-bash.py` | Bun enforcement, dangerous command blocking |
 | **PostToolUse** (Read) | `deepwiki-context.py` | Language-aware DeepWiki repo suggestions |
 | **PreCompact** | `bd sync` | Beads memory sync before compaction |
 | **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
-| **UserPromptSubmit** | `checkpoint-pre-prompt.sh` | Checkpoint pre-prompt state capture |
+| **UserPromptSubmit** | `checkpoint-pre-prompt.sh`, `nvim-bridge.sh` | Checkpoint capture, Neovim editor context |
 | **Stop** | `checkpoint-capture.sh`, `cross-provider-bridge.sh` | Checkpoint capture, cross-provider review |
 
 **Hook Types**: Command (shell scripts), Prompt (LLM yes/no), Agent (multi-turn with tools)
@@ -271,7 +271,7 @@ Skills are the recommended extension mechanism (replacing `.claude/commands/`). 
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification) - skills work in Claude Code, Codex, Gemini CLI, Cursor, Copilot.
 
 ### Claude Code Plugins
-14 plugins from 4 marketplaces (`anthropics/claude-code`, `kenryu42/cc-marketplace`, `antonbabenko/terraform-skill`, `steveyegge/beads`). Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
+14 plugins from 4 marketplaces + 9 LSP plugins from `boostvolt/claude-code-lsps`. Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
 
 Plugins are installed from four marketplaces:
 - `anthropics/claude-code` (alias: `claude-code-plugins`) - Official Anthropic plugins
@@ -309,6 +309,27 @@ Plugins are installed from four marketplaces:
 **Token Cost**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks. Disable when not needed.
 **Env vars**: `FORCE_AUTOUPDATE_PLUGINS=1`, `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` (set in `config.fish`).
 **Settings**: `teammateMode: "auto"` in `~/.claude.json`. Auto-Compact enabled (default).
+
+### Claude Code LSP Integration
+Native LSP servers for Claude Code — real-time diagnostics, go-to-definition, find-references without IDE dependency. Docs: `docs/claude-code-lsp.md`.
+
+**Marketplace**: `boostvolt/claude-code-lsps` (22 languages). Installed via `scripts/setup.sh`.
+**Installed plugins**: pyright (Python), typescript (TS/JS), gopls (Go), rust-analyzer (Rust), bash-lsp (Bash), yaml-lsp (YAML), terraform (HCL), lua-lsp (Lua), nix-lsp (Nix).
+**LSP binaries**: Reuses Nix global devShell binaries (`nix/global/`). Same binaries serve both Neovim and Claude Code.
+**Fish command**: `cc-lsp status|install|doctor` — check/manage LSP integration.
+**SessionStart hook**: `lsp-status.sh` injects available LSP servers into Claude's context.
+**LSP tool operations**: `goToDefinition`, `findReferences`, `hover`, `documentSymbol`, `workspaceSymbol`.
+**Tests**: `scripts/test-filter.sh lsp`
+
+### Neovim-Claude Code Bridge
+Event-driven bridge giving Claude Code awareness of Neovim editor state. Docs: `docs/nvim-claude-bridge.md`.
+
+**Architecture**: Neovim autocommands write to `/tmp/nvim-claude-bridge/<hash>/state.json`, Claude Code's `UserPromptSubmit` hook reads it before each prompt.
+**Sections**: diagnostics (errors/warnings), focus (file/line/filetype), git_hunks (gitsigns), tests (neotest results).
+**Staleness**: Per-section timestamps; sections >5 min old are omitted.
+**Files**: `~/neovim/lua/config/claude-bridge.lua` (writer), `.claude/hooks/nvim-bridge.sh` (reader), `.config/fish/functions/cc-bridge.fish` (management).
+**Fish command**: `cc-bridge status|cat|clean|help`.
+**Tests**: `scripts/test-filter.sh nvim-bridge`
 
 ### Claude Code Agent Teams (Experimental)
 Coordinate multiple Claude Code instances with shared tasks and messaging. Enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.

@@ -57,6 +57,8 @@ list_groups() {
     echo "  hooks         - Claude Code hooks"
     echo "  agents-md     - AGENTS.md file validation"
     echo "  cd-perf       - CD performance optimizations"
+    echo "  lsp           - Claude Code LSP integration"
+    echo "  nvim-bridge   - Neovim-Claude Code bridge"
     echo "  openclaw      - OpenClaw integration"
     echo "  all           - Run all groups"
 }
@@ -444,6 +446,92 @@ test_cd_perf() {
     run_test "tmux escape-time is 0" "grep -q 'escape-time 0' '$DOTFILES_ROOT/.tmux.conf'"
 }
 
+test_lsp() {
+    echo -e "${BLUE}--- Claude Code LSP Tests ---${NC}"
+
+    # LSP status hook exists and is executable
+    run_test "LSP hook lsp-status.sh exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' ]"
+    run_test "LSP hook lsp-status.sh executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' ]"
+
+    # LSP hook is wired in settings.json SessionStart
+    local settings="$DOTFILES_ROOT/.claude/settings.json"
+    run_test "LSP hook wired in SessionStart" "grep -q 'lsp-status.sh' '$settings'"
+
+    # LSP hook produces valid output (exits 0, output contains LSP or is empty)
+    run_test "LSP hook exits 0" "bash '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' >/dev/null 2>&1"
+
+    # Fish function exists
+    run_test "cc-lsp Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/cc-lsp.fish' ]"
+
+    # Setup script has LSP marketplace and plugin installs
+    run_test "setup.sh adds boostvolt LSP marketplace" "grep -q 'boostvolt/claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs pyright LSP" "grep -q 'pyright@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs typescript LSP" "grep -q 'typescript@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs bash-lsp" "grep -q 'bash-lsp@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs nix-lsp" "grep -q 'nix-lsp@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+
+    # LSP documentation exists
+    run_test "LSP docs exist" "[ -f '$DOTFILES_ROOT/docs/claude-code-lsp.md' ]"
+
+    # Check LSP binaries available (non-blocking - just informational)
+    for bin in pyright-langserver typescript-language-server gopls rust-analyzer bash-language-server yaml-language-server terraform-ls nil; do
+        if command -v "$bin" &>/dev/null; then
+            run_test "LSP binary in PATH: $bin" "true"
+        else
+            echo -e "${YELLOW}  SKIP${NC} LSP binary not in PATH: $bin (install via Nix or Homebrew)"
+        fi
+    done
+
+    # Validate lsp-status.sh has bash associative array syntax
+    run_test "lsp-status.sh uses bash (not sh)" "head -1 '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' | grep -q bash"
+}
+
+test_nvim_bridge() {
+    echo -e "${BLUE}--- Neovim-Claude Bridge Tests ---${NC}"
+
+    # Hook exists and is executable
+    run_test "nvim-bridge.sh exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' ]"
+    run_test "nvim-bridge.sh executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' ]"
+    run_test "nvim-bridge.sh uses bash" "head -1 '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' | grep -q bash"
+
+    # Hook wired in settings.json
+    run_test "nvim-bridge wired in UserPromptSubmit" "grep -q 'nvim-bridge.sh' '$DOTFILES_ROOT/.claude/settings.json'"
+
+    # Hook exits 0 with no state (graceful no-op)
+    run_test "nvim-bridge exits 0 (no state)" "bash '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' >/dev/null 2>&1"
+
+    # Hook outputs valid JSON when state exists
+    local test_dir="/tmp/nvim-claude-bridge-test-$$"
+    local test_hash
+    test_hash=$(echo -n "/tmp/test-project" | shasum -a 256 | cut -c1-8)
+    local test_state_dir="/tmp/nvim-claude-bridge/$test_hash"
+    mkdir -p "$test_state_dir"
+    local now
+    now=$(date +%s)
+    cat >"$test_state_dir/state.json" <<TESTEOF
+{"project":"/tmp/test-project","nvim_pid":$$,"diagnostics":{"timestamp":$now,"errors":[{"file":"src/main.py","line":42,"message":"Undefined var","source":"Pyright"}],"warnings":[],"error_count":1,"warning_count":0},"focus":{"timestamp":$now,"file":"src/main.py","line":42,"filetype":"python"}}
+TESTEOF
+
+    run_test "nvim-bridge outputs JSON with state" "CLAUDE_PROJECT_DIR=/tmp/test-project bash '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' 2>/dev/null | python3 -c 'import json,sys; json.load(sys.stdin)'"
+    run_test "nvim-bridge output has systemMessage" "CLAUDE_PROJECT_DIR=/tmp/test-project bash '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' 2>/dev/null | grep -q systemMessage"
+
+    # Staleness: old timestamps should be skipped
+    cat >"$test_state_dir/state.json" <<TESTEOF2
+{"project":"/tmp/test-project","nvim_pid":$$,"diagnostics":{"timestamp":1000000,"errors":[{"file":"old.py","line":1,"message":"stale","source":"x"}],"warnings":[],"error_count":1,"warning_count":0}}
+TESTEOF2
+
+    run_test "nvim-bridge skips stale sections" "[ -z \"\$(CLAUDE_PROJECT_DIR=/tmp/test-project bash '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' 2>/dev/null)\" ]"
+
+    # Cleanup test state
+    rm -rf "$test_state_dir" 2>/dev/null
+
+    # Fish function exists
+    run_test "cc-bridge Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/cc-bridge.fish' ]"
+
+    # Documentation
+    run_test "Bridge docs exist" "[ -f '$DOTFILES_ROOT/docs/nvim-claude-bridge.md' ]"
+}
+
 test_agents_md() {
     echo -e "${BLUE}--- AGENTS.md Validation ---${NC}"
     run_test "Root AGENTS.md exists" "[ -f '$DOTFILES_ROOT/AGENTS.md' ]"
@@ -483,6 +571,8 @@ tmux) test_tmux ;;
 hooks) test_hooks ;;
 agents-md) test_agents_md ;;
 cd-perf) test_cd_perf ;;
+lsp) test_lsp ;;
+nvim-bridge) test_nvim_bridge ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
@@ -495,6 +585,8 @@ all)
     test_hooks
     test_agents_md
     test_cd_perf
+    test_lsp
+    test_nvim_bridge
     # OpenClaw tests run from their own script (separate counters)
     echo ""
     source "$SCRIPT_DIR/openclaw/test-openclaw.sh"

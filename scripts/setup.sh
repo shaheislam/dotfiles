@@ -674,6 +674,31 @@ OCEOF
         print_success "Claude Code plugins installed (16 plugins, 7 marketplaces)"
         log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads, example-skills, superpowers"
 
+        # Claude Code LSP Server Integration
+        # LSP plugins give Claude Code native code intelligence (diagnostics, go-to-definition,
+        # find-references, hover, symbols) without IDE dependency.
+        # Requires: language server binaries in PATH (provided by Nix global devShell or Homebrew)
+        print_step "Installing Claude Code LSP plugins..."
+
+        # Add LSP plugin marketplace (boostvolt - broadest language coverage: 22 languages)
+        claude plugin marketplace add boostvolt/claude-code-lsps >/dev/null 2>&1 || true
+
+        # Install LSP plugins for languages used in this dotfiles/DevOps workflow
+        # Each plugin configures .lsp.json for Claude Code; the LSP binary must be in PATH separately
+        claude plugin install pyright@claude-code-lsps >/dev/null 2>&1 || true       # Python
+        claude plugin install typescript@claude-code-lsps >/dev/null 2>&1 || true    # TypeScript/JavaScript
+        claude plugin install gopls@claude-code-lsps >/dev/null 2>&1 || true         # Go
+        claude plugin install rust-analyzer@claude-code-lsps >/dev/null 2>&1 || true # Rust
+        claude plugin install bash-lsp@claude-code-lsps >/dev/null 2>&1 || true      # Bash/Shell
+        claude plugin install yaml-lsp@claude-code-lsps >/dev/null 2>&1 || true      # YAML
+        claude plugin install terraform@claude-code-lsps >/dev/null 2>&1 || true     # Terraform
+        claude plugin install lua-lsp@claude-code-lsps >/dev/null 2>&1 || true       # Lua (Neovim configs)
+        claude plugin install nix-lsp@claude-code-lsps >/dev/null 2>&1 || true       # Nix
+
+        print_success "Claude Code LSP plugins installed (9 language servers)"
+        log_verbose "LSP plugins: pyright, typescript, gopls, rust-analyzer, bash-lsp, yaml-lsp, terraform, lua-lsp, nix-lsp"
+        log_verbose "LSP binaries come from Nix global devShell (nix/global/) or Homebrew. See docs/claude-code-lsp.md"
+
         # Fix hookify plugin import paths (upstream bug: versioned cache dir hookify/0.1.0/
         # breaks Python's 'from hookify.core...' imports - registers synthetic package via sys.modules)
         if [[ -x "$DOTFILES_ROOT/scripts/fix-hookify-imports.sh" ]]; then
