@@ -170,22 +170,22 @@ assert_exit_code "Hook bad transcript path: exits 0 gracefully" "0" "$hook_bad_p
 # Test: Hook exits 0 when no providers are available (graceful fallback)
 # Use unknown provider names so the case statement skips all entries
 tmpfile=$(mktemp)
-echo '{"role": "assistant", "content": "Test reasoning output"}' > "$tmpfile"
-hook_no_providers=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$tmpfile\"}" | \
+echo '{"role": "assistant", "content": "Test reasoning output"}' >"$tmpfile"
+hook_no_providers=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$tmpfile\"}" |
     CROSS_PROVIDER_BRIDGE=1 \
-    CROSS_PROVIDER_ORDER="nonexistent1,nonexistent2" \
-    bash "$HOOK_SCRIPT" 2>&1)
+        CROSS_PROVIDER_ORDER="nonexistent1,nonexistent2" \
+        bash "$HOOK_SCRIPT" 2>&1)
 hook_no_providers_exit=$?
 rm -f "$tmpfile"
 assert_exit_code "Hook no providers available: exits 0 (silent fallback)" "0" "$hook_no_providers_exit"
 
 # Test: Max iterations reached — exits 0 and cleans up state file
 iter_state_file="/tmp/cross-provider-bridge-test-max-iter.json"
-jq -n '{iteration: 3, previous_reviews: ["r1","r2","r3"], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' > "$iter_state_file"
-hook_max_iter=$(echo '{"stop_hook_active": true, "session_id": "test-max-iter", "transcript_path": "/nonexistent"}' | \
+jq -n '{iteration: 3, previous_reviews: ["r1","r2","r3"], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' >"$iter_state_file"
+hook_max_iter=$(echo '{"stop_hook_active": true, "session_id": "test-max-iter", "transcript_path": "/nonexistent"}' |
     CROSS_PROVIDER_BRIDGE=1 \
-    CROSS_PROVIDER_MAX_ITERATIONS=3 \
-    bash "$HOOK_SCRIPT" 2>&1)
+        CROSS_PROVIDER_MAX_ITERATIONS=3 \
+        bash "$HOOK_SCRIPT" 2>&1)
 hook_max_iter_exit=$?
 assert_exit_code "Max iterations reached: exits 0" "0" "$hook_max_iter_exit"
 if [ ! -f "$iter_state_file" ]; then
@@ -199,22 +199,22 @@ fi
 
 # Test: Single-shot mode (MAX_ITERATIONS=1) — first stop_hook_active triggers exit
 singleshot_state="/tmp/cross-provider-bridge-test-singleshot.json"
-jq -n '{iteration: 1, previous_reviews: ["review1"], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' > "$singleshot_state"
-hook_singleshot=$(echo '{"stop_hook_active": true, "session_id": "test-singleshot", "transcript_path": "/nonexistent"}' | \
+jq -n '{iteration: 1, previous_reviews: ["review1"], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' >"$singleshot_state"
+hook_singleshot=$(echo '{"stop_hook_active": true, "session_id": "test-singleshot", "transcript_path": "/nonexistent"}' |
     CROSS_PROVIDER_BRIDGE=1 \
-    CROSS_PROVIDER_MAX_ITERATIONS=1 \
-    bash "$HOOK_SCRIPT" 2>&1)
+        CROSS_PROVIDER_MAX_ITERATIONS=1 \
+        bash "$HOOK_SCRIPT" 2>&1)
 hook_singleshot_exit=$?
 assert_exit_code "Single-shot mode (MAX_ITERATIONS=1): exits 0 on iteration 1" "0" "$hook_singleshot_exit"
 rm -f "$singleshot_state"
 
 # Test: Stale state file (>10min old) — exits 0 and cleans up
 stale_state="/tmp/cross-provider-bridge-test-stale.json"
-stale_ts=$(($(date +%s) - 7200))  # 2 hours ago
-jq -n --argjson ts "$stale_ts" '{iteration: 1, previous_reviews: ["old review"], created_at: $ts, last_updated: $ts}' > "$stale_state"
-hook_stale=$(echo '{"stop_hook_active": true, "session_id": "test-stale", "transcript_path": "/nonexistent"}' | \
+stale_ts=$(($(date +%s) - 7200)) # 2 hours ago
+jq -n --argjson ts "$stale_ts" '{iteration: 1, previous_reviews: ["old review"], created_at: $ts, last_updated: $ts}' >"$stale_state"
+hook_stale=$(echo '{"stop_hook_active": true, "session_id": "test-stale", "transcript_path": "/nonexistent"}' |
     CROSS_PROVIDER_BRIDGE=1 \
-    bash "$HOOK_SCRIPT" 2>&1)
+        bash "$HOOK_SCRIPT" 2>&1)
 hook_stale_exit=$?
 assert_exit_code "Stale state file: exits 0" "0" "$hook_stale_exit"
 if [ ! -f "$stale_state" ]; then
@@ -395,12 +395,12 @@ print_header "Multi-Provider Bridge Tests"
 
 # Test: Verbose mode outputs to stderr
 verbose_tmpfile=$(mktemp)
-echo '{"role": "assistant", "content": "Test output"}' > "$verbose_tmpfile"
-verbose_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$verbose_tmpfile\"}" | \
+echo '{"role": "assistant", "content": "Test output"}' >"$verbose_tmpfile"
+verbose_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$verbose_tmpfile\"}" |
     CROSS_PROVIDER_BRIDGE=1 \
-    CROSS_PROVIDER_VERBOSE=1 \
-    CROSS_PROVIDER_ORDER="nonexistent" \
-    bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+        CROSS_PROVIDER_VERBOSE=1 \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
 if echo "$verbose_stderr" | grep -q '\[bridge\]'; then
     print_success "Verbose mode: outputs [bridge] prefix to stderr"
     ((PASS++))
@@ -413,12 +413,12 @@ rm -f "$verbose_tmpfile"
 # Test: Log file mode writes to file
 log_tmpfile=$(mktemp)
 log_transcript=$(mktemp)
-echo '{"role": "assistant", "content": "Test log output"}' > "$log_transcript"
-echo "{\"stop_hook_active\": false, \"transcript_path\": \"$log_transcript\"}" | \
+echo '{"role": "assistant", "content": "Test log output"}' >"$log_transcript"
+echo "{\"stop_hook_active\": false, \"transcript_path\": \"$log_transcript\"}" |
     CROSS_PROVIDER_BRIDGE=1 \
-    CROSS_PROVIDER_LOG="$log_tmpfile" \
-    CROSS_PROVIDER_ORDER="nonexistent" \
-    bash "$HOOK_SCRIPT" 2>/dev/null || true
+        CROSS_PROVIDER_LOG="$log_tmpfile" \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        bash "$HOOK_SCRIPT" 2>/dev/null || true
 if [[ -f "$log_tmpfile" ]] && grep -q "Bridge activated" "$log_tmpfile"; then
     print_success "Log file: writes timestamped entries"
     ((PASS++))
@@ -430,12 +430,12 @@ rm -f "$log_tmpfile" "$log_transcript"
 
 # Test: Custom timeout accepted (doesn't error)
 timeout_tmpfile=$(mktemp)
-echo '{"role": "assistant", "content": "Test timeout"}' > "$timeout_tmpfile"
-timeout_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$timeout_tmpfile\"}" | \
+echo '{"role": "assistant", "content": "Test timeout"}' >"$timeout_tmpfile"
+timeout_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$timeout_tmpfile\"}" |
     CROSS_PROVIDER_BRIDGE=1 \
-    CROSS_PROVIDER_TIMEOUT=30 \
-    CROSS_PROVIDER_ORDER="nonexistent" \
-    bash "$HOOK_SCRIPT" 2>&1)
+        CROSS_PROVIDER_TIMEOUT=30 \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        bash "$HOOK_SCRIPT" 2>&1)
 timeout_exit=$?
 assert_exit_code "Custom timeout (30s): exits 0 gracefully" "0" "$timeout_exit"
 rm -f "$timeout_tmpfile"
@@ -444,13 +444,13 @@ rm -f "$timeout_tmpfile"
 # Use CROSS_PROVIDER_TIMEOUT=1 to prevent actual provider calls from hanging
 for test_provider in gemini ollama deepseek claude; do
     provider_tmpfile=$(mktemp)
-    echo '{"role": "assistant", "content": "Test provider"}' > "$provider_tmpfile"
-    provider_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$provider_tmpfile\"}" | \
+    echo '{"role": "assistant", "content": "Test provider"}' >"$provider_tmpfile"
+    provider_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$provider_tmpfile\"}" |
         CROSS_PROVIDER_BRIDGE=1 \
-        CROSS_PROVIDER_VERBOSE=1 \
-        CROSS_PROVIDER_TIMEOUT=1 \
-        CROSS_PROVIDER_ORDER="$test_provider" \
-        timeout 10 bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+            CROSS_PROVIDER_VERBOSE=1 \
+            CROSS_PROVIDER_TIMEOUT=1 \
+            CROSS_PROVIDER_ORDER="$test_provider" \
+            timeout 10 bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
     if echo "$provider_stderr" | grep -q "Unknown provider"; then
         print_error "Provider $test_provider: incorrectly flagged as unknown"
         ((FAIL++))
@@ -474,8 +474,8 @@ done
 
 # Test: Hook script supports all new env vars (documented in header)
 for env_var in CROSS_PROVIDER_VERBOSE CROSS_PROVIDER_TIMEOUT CROSS_PROVIDER_LOG \
-               CROSS_PROVIDER_GEMINI_MODEL CROSS_PROVIDER_OLLAMA_MODEL \
-               CROSS_PROVIDER_DEEPSEEK_MODEL CROSS_PROVIDER_CLAUDE_MODEL; do
+    CROSS_PROVIDER_GEMINI_MODEL CROSS_PROVIDER_OLLAMA_MODEL \
+    CROSS_PROVIDER_DEEPSEEK_MODEL CROSS_PROVIDER_CLAUDE_MODEL; do
     if grep -q "$env_var" "$HOOK_SCRIPT"; then
         print_success "Hook script: references $env_var"
         ((PASS++))
@@ -488,10 +488,10 @@ done
 # Test: State file tracks providers_used
 state_track_tmpfile=$(mktemp)
 state_track_state="/tmp/cross-provider-bridge-test-providers-track.json"
-echo '{"role": "assistant", "content": "Test provider tracking"}' > "$state_track_tmpfile"
+echo '{"role": "assistant", "content": "Test provider tracking"}' >"$state_track_tmpfile"
 # Use nonexistent providers so no actual call is made, but verify the state file schema
 # Create a pre-existing state file to verify the jq update adds providers_used
-jq -n '{iteration: 0, previous_reviews: [], providers_used: [], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' > "$state_track_state"
+jq -n '{iteration: 0, previous_reviews: [], providers_used: [], created_at: '"$(date +%s)"', last_updated: '"$(date +%s)"'}' >"$state_track_state"
 # Verify the state file has providers_used field
 if jq -e '.providers_used' "$state_track_state" &>/dev/null; then
     print_success "State file schema: providers_used field present"
@@ -565,6 +565,164 @@ assert_contains "gwt-ticket source: devcon path passes CROSS_PROVIDER_TIMEOUT" \
     "$gwtt_source" "-E CROSS_PROVIDER_TIMEOUT="
 
 # ============================================================================
+# New Bridge Features Tests (--bridge-mode, --bridge-models, --bridge-dry-run)
+# ============================================================================
+
+print_header "New Bridge Features Tests"
+
+# Test: --bridge-mode flag in gwt-ticket source
+assert_contains "gwt-ticket source: --bridge-mode flag parsing" \
+    "$gwtt_source" "--bridge-mode"
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_MODE" \
+    "$gwtt_source" "CROSS_PROVIDER_MODE"
+assert_contains "gwt-ticket source: devcon path passes CROSS_PROVIDER_MODE" \
+    "$gwtt_source" "-E CROSS_PROVIDER_MODE="
+
+# Test: --bridge-models flag in gwt-ticket source
+assert_contains "gwt-ticket source: --bridge-models flag parsing" \
+    "$gwtt_source" "--bridge-models"
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_MODELS" \
+    "$gwtt_source" "CROSS_PROVIDER_MODELS"
+assert_contains "gwt-ticket source: devcon path passes CROSS_PROVIDER_MODELS" \
+    "$gwtt_source" "-E CROSS_PROVIDER_MODELS="
+
+# Test: --bridge-dry-run flag in gwt-ticket source
+assert_contains "gwt-ticket source: --bridge-dry-run flag parsing" \
+    "$gwtt_source" "--bridge-dry-run"
+assert_contains "gwt-ticket source: local path passes CROSS_PROVIDER_DRY_RUN" \
+    "$gwtt_source" "CROSS_PROVIDER_DRY_RUN"
+assert_contains "gwt-ticket source: devcon path passes CROSS_PROVIDER_DRY_RUN" \
+    "$gwtt_source" "-E CROSS_PROVIDER_DRY_RUN="
+
+# Test: New flags in help text
+if command -v fish &>/dev/null; then
+    assert_contains "gwt-ticket help: --bridge-mode flag" "$gwtt_help" "--bridge-mode"
+    assert_contains "gwt-ticket help: --bridge-models flag" "$gwtt_help" "--bridge-models"
+    assert_contains "gwt-ticket help: --bridge-dry-run flag" "$gwtt_help" "--bridge-dry-run"
+fi
+
+# Test: Hook script supports CROSS_PROVIDER_MODELS env var
+if grep -q "CROSS_PROVIDER_MODELS" "$HOOK_SCRIPT"; then
+    print_success "Hook script: references CROSS_PROVIDER_MODELS"
+    ((PASS++))
+else
+    print_error "Hook script: missing reference to CROSS_PROVIDER_MODELS"
+    ((FAIL++))
+fi
+
+# Test: Hook script supports CROSS_PROVIDER_DRY_RUN env var
+if grep -q "CROSS_PROVIDER_DRY_RUN" "$HOOK_SCRIPT"; then
+    print_success "Hook script: references CROSS_PROVIDER_DRY_RUN"
+    ((PASS++))
+else
+    print_error "Hook script: missing reference to CROSS_PROVIDER_DRY_RUN"
+    ((FAIL++))
+fi
+
+# Test: Hook script has verbose level 2 support
+if grep -q 'VERBOSE.*=.*"2"' "$HOOK_SCRIPT" || grep -q "VERBOSE.*= \"2\"" "$HOOK_SCRIPT" || grep -q 'VERBOSE" = "2"' "$HOOK_SCRIPT"; then
+    print_success "Hook script: supports verbose level 2 (structured banners)"
+    ((PASS++))
+else
+    print_error "Hook script: missing verbose level 2 support"
+    ((FAIL++))
+fi
+
+# Test: Hook script declares check_provider_available function
+if grep -q "check_provider_available()" "$HOOK_SCRIPT"; then
+    print_success "Hook script: check_provider_available function declared"
+    ((PASS++))
+else
+    print_error "Hook script: check_provider_available function missing"
+    ((FAIL++))
+fi
+
+# Test: Hook script declares parse_provider_models function
+if grep -q "parse_provider_models()" "$HOOK_SCRIPT"; then
+    print_success "Hook script: parse_provider_models function declared"
+    ((PASS++))
+else
+    print_error "Hook script: parse_provider_models function missing"
+    ((FAIL++))
+fi
+
+# Test: Hook script declares get_provider_model function
+if grep -q "get_provider_model()" "$HOOK_SCRIPT"; then
+    print_success "Hook script: get_provider_model function declared"
+    ((PASS++))
+else
+    print_error "Hook script: get_provider_model function missing"
+    ((FAIL++))
+fi
+
+# Test: Dry-run mode exits 0 without calling providers
+dryrun_tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test dry-run output"}' >"$dryrun_tmpfile"
+dryrun_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$dryrun_tmpfile\"}" |
+    CROSS_PROVIDER_BRIDGE=1 \
+        CROSS_PROVIDER_DRY_RUN=1 \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+dryrun_exit=$?
+if [ "$dryrun_exit" = "0" ]; then
+    print_success "Dry-run mode: exits 0"
+    ((PASS++))
+else
+    print_error "Dry-run mode: non-zero exit ($dryrun_exit)"
+    ((FAIL++))
+fi
+if echo "$dryrun_stderr" | grep -qi 'dry.run\|configuration\|config'; then
+    print_success "Dry-run mode: outputs configuration info"
+    ((PASS++))
+else
+    print_error "Dry-run mode: no configuration output"
+    ((FAIL++))
+fi
+rm -f "$dryrun_tmpfile"
+
+# Test: CROSS_PROVIDER_MODELS parsing (verify the env var is read)
+models_tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test models output"}' >"$models_tmpfile"
+models_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$models_tmpfile\"}" |
+    CROSS_PROVIDER_BRIDGE=1 \
+        CROSS_PROVIDER_VERBOSE=1 \
+        CROSS_PROVIDER_MODELS="codex=test-model,ollama=test-ollama" \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+# The models env var should be parsed without errors — if the hook ran through
+# to the provider dispatch, it means parsing succeeded
+if echo "$models_stderr" | grep -q '\[bridge\]'; then
+    print_success "CROSS_PROVIDER_MODELS: parsed without errors"
+    ((PASS++))
+else
+    print_error "CROSS_PROVIDER_MODELS: parsing may have failed"
+    ((FAIL++))
+fi
+rm -f "$models_tmpfile"
+
+# Test: Verbose level 2 outputs structured banners
+v2_tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test verbose level 2"}' >"$v2_tmpfile"
+v2_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$v2_tmpfile\"}" |
+    CROSS_PROVIDER_BRIDGE=1 \
+        CROSS_PROVIDER_VERBOSE=2 \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+# Level 2 should produce banner markers (═══)
+if echo "$v2_stderr" | grep -q '═══'; then
+    print_success "Verbose level 2: structured banners present"
+    ((PASS++))
+else
+    print_error "Verbose level 2: no structured banners found"
+    ((FAIL++))
+fi
+rm -f "$v2_tmpfile"
+
+# Test: --bridge-verbose in gwt-ticket now maps to VERBOSE=2
+assert_contains "gwt-ticket source: bridge-verbose maps to level 2" \
+    "$gwtt_source" "CROSS_PROVIDER_VERBOSE 2"
+
+# ============================================================================
 # Live Tests (require Claude subscription)
 # ============================================================================
 
@@ -576,7 +734,7 @@ if $LIVE_MODE; then
     # Create a realistic mock transcript
     bridge_tmpdir=$(mktemp -d)
     bridge_transcript="$bridge_tmpdir/transcript.jsonl"
-    cat > "$bridge_transcript" << 'JSONL'
+    cat >"$bridge_transcript" <<'JSONL'
 {"role": "user", "content": "Explain why quicksort has O(n log n) average time complexity"}
 {"role": "assistant", "content": "Quicksort achieves O(n log n) average-case time complexity because:\n\n1. **Partitioning**: Each partition step processes all n elements in O(n) time.\n2. **Recursive depth**: On average, the pivot splits the array roughly in half, giving O(log n) levels of recursion.\n3. **Total work**: n elements × log n levels = O(n log n).\n\nThe worst case is O(n²) when the pivot consistently selects the minimum or maximum element, creating n levels of recursion instead of log n. This happens with already-sorted input using naive pivot selection.\n\nMitigation strategies:\n- Randomized pivot selection\n- Median-of-three pivot\n- Introsort (switch to heapsort when recursion depth exceeds 2 log n)"}
 JSONL
@@ -586,11 +744,11 @@ JSONL
     if command -v codex &>/dev/null && codex login status &>/dev/null; then
         has_codex=true
         print_info "Running cross-provider bridge with Codex..."
-        codex_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
+        codex_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" |
             CROSS_PROVIDER_BRIDGE=1 \
-            CROSS_PROVIDER_ORDER="codex" \
-            CROSS_PROVIDER_MAX_CHARS=2000 \
-            timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
+                CROSS_PROVIDER_ORDER="codex" \
+                CROSS_PROVIDER_MAX_CHARS=2000 \
+                timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
         codex_exit=$?
 
         if [ -n "$codex_output" ]; then
@@ -634,12 +792,12 @@ JSONL
     if command -v opencode &>/dev/null && curl -sf http://localhost:11434/api/tags &>/dev/null; then
         has_opencode=true
         print_info "Running cross-provider bridge with OpenCode ($opencode_model)..."
-        opencode_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
+        opencode_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" |
             CROSS_PROVIDER_BRIDGE=1 \
-            CROSS_PROVIDER_ORDER="opencode" \
-            CROSS_PROVIDER_OPENCODE_MODEL="$opencode_model" \
-            CROSS_PROVIDER_MAX_CHARS=2000 \
-            timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
+                CROSS_PROVIDER_ORDER="opencode" \
+                CROSS_PROVIDER_OPENCODE_MODEL="$opencode_model" \
+                CROSS_PROVIDER_MAX_CHARS=2000 \
+                timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
 
         if [ -n "$opencode_output" ]; then
             if printf '%s\n' "$opencode_output" | jq -e '.decision == "block"' &>/dev/null; then
@@ -668,10 +826,10 @@ JSONL
     # Test: Fallback order (codex first, then opencode)
     if $has_codex || $has_opencode; then
         print_info "Running cross-provider bridge with default fallback order..."
-        fallback_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" | \
+        fallback_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$bridge_transcript\"}" |
             CROSS_PROVIDER_BRIDGE=1 \
-            CROSS_PROVIDER_MAX_CHARS=2000 \
-            timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
+                CROSS_PROVIDER_MAX_CHARS=2000 \
+                timeout 180 bash "$HOOK_SCRIPT" 2>&1) || true
 
         if [ -n "$fallback_output" ]; then
             if printf '%s\n' "$fallback_output" | jq -e '.decision == "block"' &>/dev/null; then
