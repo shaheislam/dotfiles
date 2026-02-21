@@ -867,17 +867,55 @@ ${last_response}
     fi
 fi
 
-# Try providers in priority order
+# Pre-filter: remove providers where ALL profiles are already cooled down
+# This avoids wasting time on providers we know can't respond
+active_providers=()
+for _p in "${providers[@]}"; do
+    _p="${_p#"${_p%%[![:space:]]*}"}"
+    _p="${_p%"${_p##*[![:space:]]}"}"
+    if [ "$_p" = "claude" ] && [ -n "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ] && all_claude_profiles_cooled; then
+        log_verbose "Pre-filter: skipping $a_p (all Claude profiles cooled)"
+        if [ "$VERBOSE" -ge 1 ]; then
+            log_status "${C_YELLOW}⏭${C_RESET}" "${C_BOLD}$_p${C_RESET} ${C_DIM}(all profiles cooled — skipped)${C_RESET}"
+        fi
+        continue
+    elif [ "$_p" = "codex" ] && [ -n "${CROSS_PROVIDER_CODEX_PROFILES:-}" ] && all_codex_profiles_cooled; then
+        log_verbose "Pre-filter: skipping $_p (all Codex profiles cooled)"
+        if [ "$VERBOSE" -ge 1 ]; then
+            log_status "${C_YELLOW}⏭${C_RESET}" "${C_BOLD}$_p${C_RESET} ${C_DIM}(all profiles cooled — skipped)${C_RESET}"
+        fi
+        continue
+    elif is_provider_cooled_down "$_p"; then
+        log_verbose "Pre-filter: skipping $_p (cooled down)"
+        if [ "$VERBOSE" -ge 1 ]; then
+            local _rem
+            _rem=$(get_cooldown_remaining "$_p")
+            log_status "${C_YELLOW}⏭${C_RESET}" "${C_BOLD}$_p${C_RESET} ${C_DIM}(cooled down, ${_rem}s — skipped)${C_RESET}"
+        fi
+        continue
+    fi
+    active_providers+=("$_p")
+done
+
+if [ ${#active_providers[@]} -eq 0 ]; then
+    log_verbose "All providers are cooled down, allowing stop (silent fallback)"
+    if [ "$VERBOSE" -ge 1 ]; then
+        log_status "${C_RED}!${C_RESET}" "All providers cooled down — passing through"
+    fi
+    exit 0
+fi
+
+# Try providers in priority order (pre-filtered)
 cross_provider_output=""
 provider_used=""
 
-log_verbose "Provider order: ${providers[*]}"
+log_verbose "Active providers: ${active_providers[*]} (from: ${providers[*]})"
 
 if [ "$VERBOSE" = "2" ]; then
     log_banner "Provider Dispatch"
 fi
 
-for provider in "${providers[@]}"; do
+for provider in "${active_providers[@]}"; do
     provider="${provider#"${provider%%[![:space:]]*}"}" # trim leading
     provider="${provider%"${provider##*[![:space:]]}"}" # trim trailing
 

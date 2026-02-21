@@ -943,6 +943,26 @@ assert_contains "Hook source: auto-discover Codex profiles" \
 assert_contains "Hook source: auto-discover respects explicit profiles" \
     "$(cat "$HOOK_SCRIPT")" 'CROSS_PROVIDER_CLAUDE_PROFILES:-'
 
+# Test: Pre-filter removes cooled-down providers before dispatch
+assert_contains "Hook source: pre-filter active_providers array" \
+    "$(cat "$HOOK_SCRIPT")" 'active_providers'
+
+# Test: Pre-filter skips fully cooled Claude profiles
+assert_contains "Hook source: pre-filter skips cooled Claude" \
+    "$(cat "$HOOK_SCRIPT")" 'all Claude profiles cooled'
+
+# Test: Pre-filter skips fully cooled Codex profiles
+assert_contains "Hook source: pre-filter skips cooled Codex" \
+    "$(cat "$HOOK_SCRIPT")" 'all Codex profiles cooled'
+
+# Test: Pre-filter early exit when all providers cooled
+assert_contains "Hook source: pre-filter all-cooled fallback" \
+    "$(cat "$HOOK_SCRIPT")" 'All providers are cooled down'
+
+# Test: Dispatch loop uses active_providers
+assert_contains "Hook source: dispatch uses active_providers" \
+    "$(cat "$HOOK_SCRIPT")" 'for provider in "${active_providers'
+
 # ============================================================================
 # gwt-ticket Bridge Auto-Rotation Flags
 # ============================================================================
