@@ -236,7 +236,7 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 
 | Event | Hooks | Purpose |
 |-------|-------|---------|
-| **SessionStart** | `fix-hookify-imports.sh`, `bd prime` | Plugin fixes, Beads memory |
+| **SessionStart** | `fix-hookify-imports.sh`, `bd prime`, `lsp-status.sh` | Plugin fixes, Beads memory, LSP context |
 | **PreToolUse** (Bash) | `use_bun.py`, `validate-bash.py` | Bun enforcement, dangerous command blocking |
 | **PostToolUse** (Read) | `deepwiki-context.py` | Language-aware DeepWiki repo suggestions |
 | **PreCompact** | `bd sync` | Beads memory sync before compaction |
@@ -257,12 +257,23 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 4. Update `docs/claude-code-hooks.md`
 
 ### Claude Code Plugins
-14 plugins from 4 marketplaces (`anthropics/claude-code`, `kenryu42/cc-marketplace`, `antonbabenko/terraform-skill`, `steveyegge/beads`). Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
+14 plugins from 4 marketplaces + 9 LSP plugins from `boostvolt/claude-code-lsps`. Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
 
 **Managing**: `claude plugin install|disable|enable|uninstall plugin-name@marketplace`
 **Token Cost**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks. Disable when not needed.
 **Env vars**: `FORCE_AUTOUPDATE_PLUGINS=1`, `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` (set in `config.fish`).
 **Settings**: `teammateMode: "auto"` in `~/.claude.json`. Auto-Compact enabled (default).
+
+### Claude Code LSP Integration
+Native LSP servers for Claude Code — real-time diagnostics, go-to-definition, find-references without IDE dependency. Docs: `docs/claude-code-lsp.md`.
+
+**Marketplace**: `boostvolt/claude-code-lsps` (22 languages). Installed via `scripts/setup.sh`.
+**Installed plugins**: pyright (Python), typescript (TS/JS), gopls (Go), rust-analyzer (Rust), bash-lsp (Bash), yaml-lsp (YAML), terraform (HCL), lua-lsp (Lua), nix-lsp (Nix).
+**LSP binaries**: Reuses Nix global devShell binaries (`nix/global/`). Same binaries serve both Neovim and Claude Code.
+**Fish command**: `cc-lsp status|install|doctor` — check/manage LSP integration.
+**SessionStart hook**: `lsp-status.sh` injects available LSP servers into Claude's context.
+**LSP tool operations**: `goToDefinition`, `findReferences`, `hover`, `documentSymbol`, `workspaceSymbol`.
+**Tests**: `scripts/test-filter.sh lsp`
 
 ### Claude Code Agent Teams (Experimental)
 Coordinate multiple Claude Code instances with shared tasks and messaging. Enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.

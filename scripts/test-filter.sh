@@ -57,6 +57,7 @@ list_groups() {
     echo "  hooks         - Claude Code hooks"
     echo "  agents-md     - AGENTS.md file validation"
     echo "  cd-perf       - CD performance optimizations"
+    echo "  lsp           - Claude Code LSP integration"
     echo "  openclaw      - OpenClaw integration"
     echo "  all           - Run all groups"
 }
@@ -444,6 +445,46 @@ test_cd_perf() {
     run_test "tmux escape-time is 0" "grep -q 'escape-time 0' '$DOTFILES_ROOT/.tmux.conf'"
 }
 
+test_lsp() {
+    echo -e "${BLUE}--- Claude Code LSP Tests ---${NC}"
+
+    # LSP status hook exists and is executable
+    run_test "LSP hook lsp-status.sh exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' ]"
+    run_test "LSP hook lsp-status.sh executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' ]"
+
+    # LSP hook is wired in settings.json SessionStart
+    local settings="$DOTFILES_ROOT/.claude/settings.json"
+    run_test "LSP hook wired in SessionStart" "grep -q 'lsp-status.sh' '$settings'"
+
+    # LSP hook produces valid output (exits 0, output contains LSP or is empty)
+    run_test "LSP hook exits 0" "bash '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' >/dev/null 2>&1"
+
+    # Fish function exists
+    run_test "cc-lsp Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/cc-lsp.fish' ]"
+
+    # Setup script has LSP marketplace and plugin installs
+    run_test "setup.sh adds boostvolt LSP marketplace" "grep -q 'boostvolt/claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs pyright LSP" "grep -q 'pyright@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs typescript LSP" "grep -q 'typescript@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs bash-lsp" "grep -q 'bash-lsp@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs nix-lsp" "grep -q 'nix-lsp@claude-code-lsps' '$DOTFILES_ROOT/scripts/setup.sh'"
+
+    # LSP documentation exists
+    run_test "LSP docs exist" "[ -f '$DOTFILES_ROOT/docs/claude-code-lsp.md' ]"
+
+    # Check LSP binaries available (non-blocking - just informational)
+    for bin in pyright-langserver typescript-language-server gopls rust-analyzer bash-language-server yaml-language-server terraform-ls nil; do
+        if command -v "$bin" &>/dev/null; then
+            run_test "LSP binary in PATH: $bin" "true"
+        else
+            echo -e "${YELLOW}  SKIP${NC} LSP binary not in PATH: $bin (install via Nix or Homebrew)"
+        fi
+    done
+
+    # Validate lsp-status.sh has bash associative array syntax
+    run_test "lsp-status.sh uses bash (not sh)" "head -1 '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' | grep -q bash"
+}
+
 test_agents_md() {
     echo -e "${BLUE}--- AGENTS.md Validation ---${NC}"
     run_test "Root AGENTS.md exists" "[ -f '$DOTFILES_ROOT/AGENTS.md' ]"
@@ -483,6 +524,7 @@ tmux) test_tmux ;;
 hooks) test_hooks ;;
 agents-md) test_agents_md ;;
 cd-perf) test_cd_perf ;;
+lsp) test_lsp ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
@@ -495,6 +537,7 @@ all)
     test_hooks
     test_agents_md
     test_cd_perf
+    test_lsp
     # OpenClaw tests run from their own script (separate counters)
     echo ""
     source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
