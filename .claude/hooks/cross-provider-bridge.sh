@@ -25,11 +25,11 @@
 #   CROSS_PROVIDER_CLAUDE_PROFILES=work,personal  Claude subscription profiles for rotation
 #
 #   Provider-specific model overrides (legacy, still supported):
-#   CROSS_PROVIDER_CODEX_MODEL=                 Codex model override
+#   CROSS_PROVIDER_CODEX_MODEL=                 Codex model override (default: gpt-5.3-codex)
 #   CROSS_PROVIDER_GEMINI_MODEL=                Gemini model (default: CLI default)
 #   CROSS_PROVIDER_OLLAMA_MODEL=qwen3-coder     Ollama model for direct use
 #   CROSS_PROVIDER_DEEPSEEK_MODEL=deepseek-r1   DeepSeek model (via Ollama)
-#   CROSS_PROVIDER_CLAUDE_MODEL=sonnet           Claude model for cross-review
+#   CROSS_PROVIDER_CLAUDE_MODEL=                 Claude model override (default: claude-opus-4-6)
 #   CROSS_PROVIDER_OPENCODE_MODEL=ollama/qwen3-coder  OpenCode model
 set -uo pipefail
 
@@ -151,11 +151,11 @@ parse_provider_models() {
 parse_provider_models
 
 # --- Default models (single source of truth for provider functions + dispatch) ---
-DEFAULT_CODEX_MODEL="${CROSS_PROVIDER_CODEX_MODEL:-}"
+DEFAULT_CODEX_MODEL="${CROSS_PROVIDER_CODEX_MODEL:-gpt-5.3-codex}"
 DEFAULT_GEMINI_MODEL="${CROSS_PROVIDER_GEMINI_MODEL:-}"
 DEFAULT_OLLAMA_MODEL="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
 DEFAULT_DEEPSEEK_MODEL="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"
-DEFAULT_CLAUDE_MODEL="${CROSS_PROVIDER_CLAUDE_MODEL:-sonnet}"
+DEFAULT_CLAUDE_MODEL="${CROSS_PROVIDER_CLAUDE_MODEL:-claude-opus-4-6}"
 DEFAULT_OPENCODE_MODEL="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
 
 # --- Rate limit auto-rotation ---
