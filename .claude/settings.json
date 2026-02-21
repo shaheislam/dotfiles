@@ -29,6 +29,14 @@
         ]
       },
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true"
+          }
+        ]
+      },
+      {
         "matcher": "compact",
         "hooks": [
           {
