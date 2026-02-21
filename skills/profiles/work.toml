@@ -1,0 +1,11 @@
+[profile]
+name = "work"
+description = "Skills for work laptop"
+
+[skills]
+# Categories from the skills library to include
+include = ["shared", "work"]
+
+[skills.external]
+# Add work-specific external skills here
+# terraform = "~/.agents/skills/terraform"

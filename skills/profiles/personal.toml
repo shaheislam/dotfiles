@@ -1,0 +1,14 @@
+[profile]
+name = "personal"
+description = "Skills for personal MacBook"
+
+[skills]
+# Categories from the skills library to include
+include = ["shared", "personal"]
+
+[skills.external]
+# External skills from ~/.agents/skills/ (Agent Skills standard)
+vercel-react-best-practices = "~/.agents/skills/vercel-react-best-practices"
+vercel-composition-patterns = "~/.agents/skills/vercel-composition-patterns"
+vercel-react-native-skills = "~/.agents/skills/vercel-react-native-skills"
+web-design-guidelines = "~/.agents/skills/web-design-guidelines"

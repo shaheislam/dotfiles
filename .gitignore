@@ -116,6 +116,7 @@ scripts/tests/
 
 # Work directory (temporary worktree artifacts)
 work/
+!skills/work/
 
 # SSH keys and sensitive test data
 **/ssh_host_*_key

@@ -1,0 +1,12 @@
+[profile]
+name = "server"
+description = "Minimal skills for headless servers"
+
+[skills]
+# Only shared essentials on servers
+include = ["shared"]
+# Optionally exclude specific skills from included categories
+# exclude = ["diagram", "article"]
+
+[skills.external]
+# No external skills on servers
