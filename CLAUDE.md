@@ -380,6 +380,20 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 3. Add tests in `scripts/test-hooks.sh`
 4. Update `docs/claude-code-hooks.md`
 
+### Skills & Skill Sources
+
+Skills are the recommended extension mechanism (replacing `.claude/commands/`). See `docs/skills-reference.md` for the complete guide.
+
+**Best sources** (ranked by quality):
+1. **[anthropics/skills](https://github.com/anthropics/skills)** - Official Anthropic skills (document processing, design, development)
+2. **[obra/superpowers](https://github.com/obra/superpowers)** - Most mature community framework (20+ skills, dev methodology)
+3. **[VoltAgent/awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)** - 380+ skills from Vercel, Cloudflare, Trail of Bits, etc.
+4. **[daymade/claude-code-skills](https://github.com/daymade/claude-code-skills)** - 37 production-ready skills
+
+**Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`, Legacy `.claude/commands/`
+
+**Cross-tool standard**: [agentskills.io](https://agentskills.io/specification) - skills work in Claude Code, Codex, Gemini CLI, Cursor, Copilot.
+
 ### Claude Code Plugins
 
 Plugins are installed from four marketplaces:
@@ -387,6 +401,11 @@ Plugins are installed from four marketplaces:
 - `kenryu42/cc-marketplace` (alias: `cc-marketplace`) - Community safety plugins
 - `antonbabenko/terraform-skill` (alias: `antonbabenko`) - Terraform/OpenTofu development skill
 - `steveyegge/beads` - Git-backed agent memory and issue tracking
+
+**Recommended additional marketplaces** (install via `/plugin marketplace add`):
+- `anthropics/skills` - Official skills (document processing, design, mcp-builder)
+- `obra/superpowers-marketplace` - Superpowers dev methodology framework
+- `daymade/claude-code-skills` - 37 community skills
 
 **Installation**: Plugins stored in `~/.claude/settings.json`. For cross-device consistency, installation commands are in `scripts/setup.sh`.
 
@@ -656,6 +675,7 @@ CROSS_PROVIDER_BRIDGE=1 CROSS_PROVIDER_ORDER=ollama CROSS_PROVIDER_OLLAMA_MODEL=
 ```
 
 ### Recent Updates
+- **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills
 - **2026-02-12**: Added OpenClaw AI assistant platform integration (multi-channel inbox, security-hardened config, Fish functions, notification helpers, 42-test suite)
 - **2026-02-12**: Enhanced Cross-Provider Bridge with multi-provider support (Gemini, Ollama, DeepSeek, Claude), verbose mode, configurable timeout/logging, per-provider model overrides, gwt-ticket bridge flags
 - **2026-02-12**: Added comprehensive hooks integration (PreToolUse bun/bash validation, Notification desktop alerts/logging, PostToolUse DeepWiki context, test suite, docs)
