@@ -9,10 +9,22 @@ function _ssh_fzf_tab_complete -d "FZF-powered ssh host tab completion"
     end
 
     # If already past the host argument (e.g., ssh host command...), defer to fifc
-    # Count non-flag arguments: ssh [flags...] host [command...]
+    # SSH flags that take a separate argument (e.g., -p 22, -i ~/.ssh/id_rsa)
+    set -l flags_with_args b c D E e F I i J L l m O o p Q R S W w
+    set -l skip_next 0
     set -l non_flag_count 0
     for arg in $cmd[2..-1]
-        if not string match -q -- '-*' "$arg"
+        if test $skip_next -eq 1
+            set skip_next 0
+            continue
+        end
+        if string match -q -- '-*' "$arg"
+            # Check if this flag takes an argument
+            set -l flag_letter (string sub -s 2 -l 1 -- "$arg")
+            if test (string length -- "$arg") -eq 2; and contains -- "$flag_letter" $flags_with_args
+                set skip_next 1
+            end
+        else
             set non_flag_count (math $non_flag_count + 1)
         end
     end

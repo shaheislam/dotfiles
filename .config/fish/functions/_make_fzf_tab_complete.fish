@@ -7,8 +7,9 @@ function _make_fzf_tab_complete -d "FZF-powered make target tab completion"
         return
     end
 
-    # Find the Makefile (respect -f flag if present)
+    # Find the Makefile (respect -f and -C flags if present)
     set -l makefile ""
+    set -l makedir ""
     set -l cmd (commandline -opc)
     for i in (seq 2 (count $cmd))
         if test "$cmd[$i]" = -f; or test "$cmd[$i]" = --file
@@ -16,16 +17,22 @@ function _make_fzf_tab_complete -d "FZF-powered make target tab completion"
             if test $next -le (count $cmd)
                 set makefile "$cmd[$next]"
             end
+        else if test "$cmd[$i]" = -C; or test "$cmd[$i]" = --directory
+            set -l next (math $i + 1)
+            if test $next -le (count $cmd)
+                set makedir "$cmd[$next]"
+            end
         end
     end
 
     if test -z "$makefile"
-        if test -f GNUmakefile
-            set makefile GNUmakefile
-        else if test -f makefile
-            set makefile makefile
-        else if test -f Makefile
-            set makefile Makefile
+        set -l search_dir (test -n "$makedir"; and echo "$makedir"; or echo ".")
+        if test -f "$search_dir/GNUmakefile"
+            set makefile "$search_dir/GNUmakefile"
+        else if test -f "$search_dir/makefile"
+            set makefile "$search_dir/makefile"
+        else if test -f "$search_dir/Makefile"
+            set makefile "$search_dir/Makefile"
         end
     end
 
