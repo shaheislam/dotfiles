@@ -78,6 +78,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l bridge_model ""
     set -l bridge_timeout ""
     set -l bridge_log ""
+    set -l bridge_review_mode ""
+    set -l bridge_models ""
+    set -l bridge_dry_run false
     set -l auto_cleanup ""
     set -l rebase_merge false
     set -l convoy_id ""
@@ -277,6 +280,35 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --bridge-log requires a file path"
                     return 1
                 end
+            case --bridge-mode
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set -l bmode $argv[$next_i]
+                    if not contains -- $bmode review redteam steelman assumptions
+                        echo "Error: Unknown bridge mode '$bmode'"
+                        echo "Valid modes: review, redteam, steelman, assumptions"
+                        return 1
+                    end
+                    set bridge_review_mode $bmode
+                    set bridge_mode true
+                    set skip_next true
+                else
+                    echo "Error: --bridge-mode requires a mode (review|redteam|steelman|assumptions)"
+                    return 1
+                end
+            case --bridge-models
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set bridge_models $argv[$next_i]
+                    set bridge_mode true
+                    set skip_next true
+                else
+                    echo "Error: --bridge-models requires provider=model pairs (e.g., codex=o3,gemini=2.5-pro)"
+                    return 1
+                end
+            case --bridge-dry-run
+                set bridge_dry_run true
+                set bridge_mode true
             case --no-checkpoints
                 set no_checkpoints true
             case --auto-cleanup
@@ -386,10 +418,13 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --system S           Ticketing system: linear or jira"
         echo "  --bridge [N]         Enable cross-provider reasoning bridge (N=max iterations, default: 3)"
         echo "  --bridge-providers P Comma-separated provider order (codex,gemini,ollama,deepseek,claude,opencode)"
-        echo "  --bridge-verbose     Verbose bridge logging to stderr"
+        echo "  --bridge-mode MODE   Review mode: review (default), redteam, steelman, assumptions"
+        echo "  --bridge-verbose     Verbose bridge logging (level 1: prefix logs, use twice for level 2: banners)"
         echo "  --bridge-model M     Model override for first provider in --bridge-providers order"
+        echo "  --bridge-models MAP  Per-provider model map (e.g., codex=o3,gemini=2.5-pro,ollama=qwen3-coder)"
         echo "  --bridge-timeout S   Per-provider timeout in seconds (default: 120)"
         echo "  --bridge-log FILE    Log bridge reviews to file"
+        echo "  --bridge-dry-run     Show bridge config and provider availability without calling providers"
         echo "  --rebase             Rebase onto main before merging (re-spawns on conflict)"
         echo "  --auto-cleanup       Auto-remove worktree after successful merge (1hr grace period)"
         echo "  --no-auto-cleanup    Disable auto-cleanup (keep worktree after merge)"
@@ -567,8 +602,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         if test -n "$bridge_providers"
             set bridge_info "$bridge_info, providers: $bridge_providers"
         end
+        if test -n "$bridge_review_mode"
+            set bridge_info "$bridge_info, mode: $bridge_review_mode"
+        end
         if test -n "$bridge_model"
             set bridge_info "$bridge_info, model: $bridge_model"
+        end
+        if test -n "$bridge_models"
+            set bridge_info "$bridge_info, models: $bridge_models"
         end
         set bridge_info "$bridge_info)"
         echo "Bridge:    $bridge_info"
@@ -577,6 +618,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
         if test -n "$bridge_log"
             echo "           log: $bridge_log"
+        end
+        if $bridge_dry_run
+            echo "           dry-run mode (will show config only)"
         end
     end
     if test -n "$prompt_prefix"
@@ -895,11 +939,14 @@ $prompt_suffix"
             echo "set -gx CROSS_PROVIDER_ORDER $bridge_providers" >>$launch_script
         end
         if $bridge_verbose
-            echo "set -gx CROSS_PROVIDER_VERBOSE 1" >>$launch_script
+            echo "set -gx CROSS_PROVIDER_VERBOSE 2" >>$launch_script
+        end
+        if test -n "$bridge_review_mode"
+            echo "set -gx CROSS_PROVIDER_MODE $bridge_review_mode" >>$launch_script
         end
         if test -n "$bridge_model"
             # Set model for the first provider in the order
-            # This is a convenience flag — for fine-grained control use env vars directly
+            # This is a convenience flag — for fine-grained control use --bridge-models
             set -l first_provider (string split ',' -- (test -n "$bridge_providers"; and echo $bridge_providers; or echo "codex"))[1]
             switch $first_provider
                 case codex
@@ -916,11 +963,17 @@ $prompt_suffix"
                     echo "set -gx CROSS_PROVIDER_OPENCODE_MODEL $bridge_model" >>$launch_script
             end
         end
+        if test -n "$bridge_models"
+            echo "set -gx CROSS_PROVIDER_MODELS $bridge_models" >>$launch_script
+        end
         if test -n "$bridge_timeout"
             echo "set -gx CROSS_PROVIDER_TIMEOUT $bridge_timeout" >>$launch_script
         end
         if test -n "$bridge_log"
             echo "set -gx CROSS_PROVIDER_LOG $bridge_log" >>$launch_script
+        end
+        if $bridge_dry_run
+            echo "set -gx CROSS_PROVIDER_DRY_RUN 1" >>$launch_script
         end
         echo "" >>$launch_script
     end
@@ -999,13 +1052,22 @@ $prompt_suffix"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_ORDER=$bridge_providers"
             end
             if $bridge_verbose
-                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_VERBOSE=1"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_VERBOSE=2"
+            end
+            if test -n "$bridge_review_mode"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_MODE=$bridge_review_mode"
+            end
+            if test -n "$bridge_models"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_MODELS=$bridge_models"
             end
             if test -n "$bridge_timeout"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_TIMEOUT=$bridge_timeout"
             end
             if test -n "$bridge_log"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_LOG=$bridge_log"
+            end
+            if $bridge_dry_run
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_DRY_RUN=1"
             end
         end
         set devcon_up_cmd "$devcon_up_cmd $worktree_path $resolved_repo_root"
