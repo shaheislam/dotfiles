@@ -627,6 +627,29 @@ on_crash_retry() {
     local retry_num="$1"
     log "Crash recovery attempt $retry_num"
 
+    # Seance: capture predecessor session context before restart.
+    # Writes .claude/seance-crash.md which work-detect.sh reads on the new
+    # session's SessionStart, injects it as context, then deletes it (wisp).
+    local ckpt_script="$SCRIPT_DIR/checkpoints.sh"
+    local seance_file="$WORKTREE_PATH/.claude/seance-crash.md"
+    local seance_context=""
+    if [[ -x "$ckpt_script" ]]; then
+        local branch
+        branch=$(git -C "$WORKTREE_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null) || branch=""
+        local ckpt_args=(context --commits 3)
+        [[ -n "$branch" ]] && ckpt_args+=(--branch "$branch")
+        seance_context=$(cd "$WORKTREE_PATH" && "$ckpt_script" "${ckpt_args[@]}" 2>/dev/null) || seance_context=""
+    fi
+    if [[ -n "$seance_context" ]]; then
+        cat >"$seance_file" <<SEANCE
+SEANCE CONTEXT: Your previous session crashed (retry ${retry_num}/${MAX_RETRIES}).
+The following is what was accomplished before the crash. Resume the task from here.
+
+${seance_context}
+SEANCE
+        log "Seance context written for retry $retry_num ($(wc -l <"$seance_file") lines)"
+    fi
+
     # Get the launch script from ticket state
     local launch_script="$WORKTREE_PATH/.claude/ticket-execute.local.md"
     if [[ ! -f "$launch_script" ]]; then
