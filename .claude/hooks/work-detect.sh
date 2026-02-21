@@ -58,6 +58,15 @@ else
     [[ -n "$TITLE" ]] && ISSUE_STR="'${TITLE}'"
 fi
 
+# Seance: check for crash-recovery predecessor context (written by worktree-witness on_crash_retry)
+# If present, output it prominently and consume it (ephemeral wisp pattern).
+SEANCE_FILE="$PROJECT_DIR/.claude/seance-crash.md"
+if [[ -f "$SEANCE_FILE" ]]; then
+    cat "$SEANCE_FILE"
+    rm -f "$SEANCE_FILE"
+    exit 0 # Seance context is complete — skip normal work-detect output
+fi
+
 # Try to get latest checkpoint context (fast, local-only)
 # PERF: Added 5s timeout to prevent blocking SessionStart on slow git operations
 CKPT_SUMMARY=""

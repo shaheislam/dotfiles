@@ -112,7 +112,7 @@ find_tmux_target() {
         target=$(echo "$line" | cut -d: -f1-2)
         pane_path=$(echo "$line" | cut -d: -f3-)
         # Check if any pane in this window is in the worktree
-        if [[ "$pane_path" == "$worktree_path"* ]]; then
+        if [[ "$pane_path" == "$worktree_path" || "$pane_path" == "$worktree_path/"* ]]; then
             # Return session:window (strip pane index)
             echo "${target%.*}" | head -1
             return 0

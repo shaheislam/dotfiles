@@ -121,8 +121,11 @@ check_bd_gate_resolved() {
     local worktree="$1" gate_type="$2"
     has_beads "$worktree" || return 1
 
-    # For gh:run and gh:pr gates, use bd gate check to evaluate
-    (cd "$worktree" && bd gate check 2>/dev/null) || true
+    # For gh:run and gh:pr gates, use bd gate check and return its exit code
+    if (cd "$worktree" && bd gate check 2>/dev/null); then
+        return 0 # Gate resolved
+    fi
+    return 1
 }
 
 # Check a cross-rig bead gate (bd-bead gate type)

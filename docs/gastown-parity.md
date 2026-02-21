@@ -5,9 +5,10 @@
 
 ## Summary
 
-Our gwtt setup has **~90% parity** with Gastown/Beads. The core orchestration
-infrastructure is complete. The main gaps were in native Beads primitive integration
-(merge-slot, gate, swarm) and a few bugs. All gaps have been addressed.
+Our gwtt setup has **~95% parity** with Gastown/Beads. The core orchestration
+infrastructure is complete. Round 1 addressed native Beads primitive integration
+(merge-slot, gate, swarm) and fixed bugs. Round 2 (post-article analysis) added
+patrol exponential backoff, GUPP hook beads, and `gwt-nudge`.
 
 ## Parity Matrix
 
@@ -16,9 +17,9 @@ infrastructure is complete. The main gaps were in native Beads primitive integra
 | Gastown Concept | Our Equivalent | Status |
 |-----------------|----------------|--------|
 | Polecat (transient worker) | `gwt-ticket` | ✅ Full parity |
-| Witness (lifecycle monitor) | `worktree-witness.sh` | ✅ Full parity |
+| Witness (lifecycle monitor) | `worktree-witness.sh` | ✅ Full parity + backoff |
 | Refinery (merge queue) | `merge-queue.sh` | ✅ + bd merge-slot |
-| Mayor (global coordinator) | `gwt-mayor.sh` | ✅ Full parity |
+| Mayor (global coordinator) | `gwt-mayor.sh` | ✅ Full parity + backoff |
 | Deacon (health daemon) | `worktree-witness.sh` + `gwt-mayor.sh` | ✅ Distributed |
 | Convoy (work tracking) | `convoy.sh` | ✅ Full parity |
 | Rig (project container) | worktree + devcontainer | ✅ Full parity |
@@ -26,6 +27,10 @@ infrastructure is complete. The main gaps were in native Beads primitive integra
 | Crews (persistent workers) | Claude Code TUI sessions | ✅ Manual |
 | Agent registry | `claude-sub` profiles | ✅ Full parity |
 | Formula (reusable workflows) | `templates/workflows/*.toml` | ✅ Full parity |
+| Patrols (ephemeral loops) | Witness + Mayor loops | ✅ With exponential backoff |
+| GUPP Hook bead | gwt-ticket hook wisp | ✅ Ephemeral hook event |
+| gt nudge | `gwt-nudge` | ✅ Added |
+| Wisps (ephemeral beads) | `bd create --ephemeral` | ✅ Used in hook + nudge |
 
 ### Beads Core Features
 
@@ -51,6 +56,14 @@ infrastructure is complete. The main gaps were in native Beads primitive integra
 | `bd cook` (formulas) | ✅ Partial | Our TOML templates cover core use cases |
 | ZFC state derivation | ✅ `agent-state.sh` | Same pattern |
 | Propulsion principle | ✅ ralph-loop | Agents execute immediately |
+| GUPP Hook beads | ✅ gwt-ticket hook wisp | Ephemeral hook bead on startup |
+| gt nudge | ✅ `gwt-nudge` | Tmux WAKE + optional sling |
+| gt handoff | ❌ Not implemented | Future: /resume-based session handoff |
+| gt seance | ❌ Not implemented | Future: predecessor session querying |
+| Dogs/Boot the Dog | ❌ Not implemented | Future: Deacon helper pattern |
+| NDI (nondeterministic idempotence) | ✅ molecule.sh chains | Same guarantee pattern |
+| Mol Mall | ❌ Not implemented | Community formula marketplace |
+| Integration Tiers 0-3 | ✅ Informal | claude-sub + devcontainer covers all tiers |
 | Cross-provider bridge | ✅ Extension beyond Gastown | We add cross-provider review |
 | Checkpoints | ✅ Extension beyond Gastown | Session ↔ commit linking |
 | Multi-subscription | ✅ Extension beyond Gastown | Rate-limit-aware scheduling |
@@ -58,6 +71,31 @@ infrastructure is complete. The main gaps were in native Beads primitive integra
 | Dashboard | ✅ `agent-dashboard.sh` | Web UI at :8787 |
 
 ## Changes Made
+
+### Round 2 (Post-Article Analysis, v0.7.0)
+
+7. **worktree-witness.sh + gwt-mayor.sh**: Added patrol exponential backoff.
+   Gastown patrols back off when idle rather than using fixed polling intervals.
+   Both daemon loops now double their sleep when inactive (up to 300s cap),
+   resetting immediately when there's activity to process. Reduces idle CPU/noise.
+
+8. **gwt-ticket.fish**: Added GUPP Hook bead on startup. Per the Gastown Universal
+   Propulsion Principle ("If there is work on your hook, YOU MUST RUN IT"), each
+   polecat now creates an ephemeral hook bead (wisp) via `bd create --ephemeral`
+   when spawning. The wisp is labeled `gt:hook,gt:gupp` and uses the `agent.hooked`
+   event category, making the GUPP handoff visible in Beads.
+
+9. **gwt-nudge**: New `gwt-nudge` function (Gastown `gt nudge` equivalent).
+   Sends a WAKE keystroke to an idle agent's tmux pane via `agent-triage.sh`.
+   Optional `--sling` flag creates an ephemeral nudge event bead in Beads.
+   ```fish
+   gwt-nudge                        # Nudge agent in current worktree
+   gwt-nudge my-feature             # Nudge by worktree name
+   gwt-nudge --message "Check CI"   # Custom message
+   gwt-nudge --sling                # Nudge + sling hook event wisp
+   ```
+
+### Round 1 (Initial Parity)
 
 ### Bug Fixes
 
@@ -153,6 +191,19 @@ This serializes merges at the Beads level, visible to all agents in the rig.
 3. **Formal Tier 0-3 agent integration** — Gastown formalizes agent provider
    integration levels. We have this informally via claude-sub profiles + devcontainer
    auto-login.
+
+4. **`gt handoff`** — Graceful agent session refresh with work continuation.
+   Not implemented; `/resume` in ralph-loop is the closest analog.
+
+5. **`gt seance`** — Agents querying predecessor sessions (what was previously
+   decided). Gastown's `ckpt resume` equivalent but at agent-to-agent level.
+   Our checkpoints system does this for humans, not agents.
+
+6. **Dogs/Boot the Dog** — Deacon's maintenance helpers; Boot checks on Deacon
+   every 5 min. Not implemented; our Mayor serves the coordinator role without helpers.
+
+7. **Mol Mall** — Community formula marketplace. Not implemented; formulas live
+   locally in `templates/workflows/`.
 
 ## Architecture Notes
 
