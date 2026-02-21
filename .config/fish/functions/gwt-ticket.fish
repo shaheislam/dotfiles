@@ -1186,8 +1186,35 @@ $prompt_suffix"
     end
     chmod +x $launch_script
 
+    # Write gwt-ticket log early so it can be opened in nvim alongside AI files
+    if $quiet_mode
+        echo "=== gwt-ticket ===" >$gwt_log_file
+        echo "Started: "(date '+%Y-%m-%d %H:%M:%S') >>$gwt_log_file
+        if $is_auto_generated
+            echo "Task:      $issue_key (autonomous, no ticket tracking)" >>$gwt_log_file
+        else
+            echo "Ticket:    $issue_key - $title" >>$gwt_log_file
+        end
+        echo "Title:     $title" >>$gwt_log_file
+        echo "Branch:    $branch_name" >>$gwt_log_file
+        echo "Worktree:  $worktree_path" >>$gwt_log_file
+        echo "Tmux:      $session_name:$window_name" >>$gwt_log_file
+        echo "Max iter:  $max_iterations" >>$gwt_log_file
+        echo "Command:   $slash_command" >>$gwt_log_file
+        echo "" >>$gwt_log_file
+        echo "Monitoring:" >>$gwt_log_file
+        echo "  tmux attach -t $session_name" >>$gwt_log_file
+        echo "  tmux select-window -t $session_name:$window_name" >>$gwt_log_file
+        echo "  worktree-witness.sh status $worktree_path" >>$gwt_log_file
+        echo "" >>$gwt_log_file
+        echo "Post-completion:" >>$gwt_log_file
+        echo "  ticket-execute --complete $worktree_path" >>$gwt_log_file
+        echo "State file: $worktree_path/.claude/ticket-execute.local.md" >>$gwt_log_file
+    end
+
     # Detect AI guidance files to auto-open in nvim buffers
     # CLAUDE.md: AI rules/constraints. AGENTS.md: practical agent rules (editable per-worktree)
+    # gwt-ticket.log: execution details (quiet mode, not committed)
     # settings.local.json: per-worktree hook configuration (only in .claude/)
     # Priority: worktree root > .claude/ subdirectory
     set -l nvim_ai_files
@@ -1197,6 +1224,11 @@ $prompt_suffix"
         else if test -f "$worktree_path/.claude/$ai_file"
             set -a nvim_ai_files "$worktree_path/.claude/$ai_file"
         end
+    end
+
+    # Include gwt-ticket log in nvim buffers for optional review
+    if test -n "$gwt_log_file" -a -f "$gwt_log_file"
+        set -a nvim_ai_files "$gwt_log_file"
     end
 
     # Also open settings.local.json if present (hook configuration visibility)
@@ -1494,30 +1526,7 @@ $prompt" >$state_file
     end
 
     if $quiet_mode
-        # Write full details to log file for optional review
-        echo "=== gwt-ticket ===" >$gwt_log_file
-        echo "Started: "(date '+%Y-%m-%d %H:%M:%S') >>$gwt_log_file
-        if $is_auto_generated
-            echo "Task:      $issue_key (autonomous, no ticket tracking)" >>$gwt_log_file
-        else
-            echo "Ticket:    $issue_key - $title" >>$gwt_log_file
-        end
-        echo "Title:     $title" >>$gwt_log_file
-        echo "Branch:    $branch_name" >>$gwt_log_file
-        echo "Worktree:  $worktree_path" >>$gwt_log_file
-        echo "Tmux:      $session_name:$window_name" >>$gwt_log_file
-        echo "Max iter:  $max_iterations" >>$gwt_log_file
-        echo "Command:   $slash_command" >>$gwt_log_file
-        echo "" >>$gwt_log_file
-        echo "Monitoring:" >>$gwt_log_file
-        echo "  tmux attach -t $session_name" >>$gwt_log_file
-        echo "  tmux select-window -t $session_name:$window_name" >>$gwt_log_file
-        echo "  worktree-witness.sh status $worktree_path" >>$gwt_log_file
-        echo "" >>$gwt_log_file
-        echo "Post-completion:" >>$gwt_log_file
-        echo "  ticket-execute --complete $worktree_path" >>$gwt_log_file
-        echo "State file: $state_file" >>$gwt_log_file
-        # Single-line summary to stdout
+        # Log was already written before pane setup (for nvim buffer visibility)
         echo "gwtt: $window_name → $session_name:$window_name (log: $gwt_log_file)"
     else
         echo ""
