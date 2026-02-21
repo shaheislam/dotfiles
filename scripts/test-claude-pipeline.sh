@@ -1013,6 +1013,30 @@ assert_contains "Hook source: pre-filter all-cooled fallback" \
 assert_contains "Hook source: dispatch uses active_providers" \
     "$(cat "$HOOK_SCRIPT")" 'for provider in "${active_providers'
 
+# Test: Stale cooldown cleanup on startup
+assert_contains "Hook source: prunes expired cooldown entries" \
+    "$(cat "$HOOK_SCRIPT")" 'with_entries(select(.value > $now))'
+
+# Test: jq availability warning
+assert_contains "Hook source: jq availability check" \
+    "$(cat "$HOOK_SCRIPT")" 'jq not found'
+
+# Test: Atomic writes with flock
+assert_contains "Hook source: flock for atomic cooldown writes" \
+    "$(cat "$HOOK_SCRIPT")" 'flock'
+
+# Test: Claude auto-discovery validates credentials
+assert_contains "Hook source: Claude profile credential validation" \
+    "$(cat "$HOOK_SCRIPT")" 'credentials.json'
+
+# Test: Codex auto-discovery validates auth
+assert_contains "Hook source: Codex profile auth validation" \
+    "$(cat "$HOOK_SCRIPT")" 'auth.json'
+
+# Test: GNU date fallback for Linux
+assert_contains "Hook source: GNU date fallback" \
+    "$(cat "$HOOK_SCRIPT")" 'date -d'
+
 # ============================================================================
 # gwt-ticket Bridge Auto-Rotation Flags
 # ============================================================================

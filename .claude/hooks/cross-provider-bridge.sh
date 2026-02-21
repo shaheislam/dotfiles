@@ -165,8 +165,23 @@ COOLDOWN_SECONDS="${CROSS_PROVIDER_COOLDOWN:-1800}"
 PROVIDER_STDERR_FILE="/tmp/cross-provider-bridge-stderr.$$"
 trap 'rm -f "$PROVIDER_STDERR_FILE"' EXIT
 
+# Verify jq is available (required for cooldown tracking)
+if ! command -v jq &>/dev/null; then
+    log_verbose "WARNING: jq not found — cooldown tracking disabled (install jq for rate limit rotation)"
+fi
+
+# Prune expired entries from cooldown file on startup
+if [ -f "$COOLDOWN_FILE" ] && command -v jq &>/dev/null; then
+    _now=$(date +%s)
+    _pruned=$(timeout 2 jq --argjson now "$_now" 'with_entries(select(.value > $now))' "$COOLDOWN_FILE" 2>/dev/null) || true
+    if [ -n "$_pruned" ]; then
+        echo "$_pruned" >"${COOLDOWN_FILE}.tmp.$$" && mv "${COOLDOWN_FILE}.tmp.$$" "$COOLDOWN_FILE"
+    fi
+fi
+
 # Auto-discover profiles if not explicitly set
 # Scans for ~/.claude-*/ and ~/.codex-*/ directories
+# Only includes profiles with actual credential files
 if [ -z "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ]; then
     _auto_claude_profiles=""
     for d in "$HOME"/.claude-*/; do
@@ -174,6 +189,11 @@ if [ -z "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ]; then
         _name="${d%/}"               # strip trailing slash
         _name="${_name##*/.claude-}" # extract profile name
         [ -z "$_name" ] && continue
+        # Validate: must have credentials (OAuth or API key)
+        if [ ! -f "$d/credentials.json" ] && [ ! -f "$d/.credentials.json" ] && [ ! -f "$d/settings.json" ]; then
+            log_verbose "Auto-discover: skipping ~/.claude-$_name (no credentials)"
+            continue
+        fi
         [ -n "$_auto_claude_profiles" ] && _auto_claude_profiles="${_auto_claude_profiles},"
         _auto_claude_profiles="${_auto_claude_profiles}${_name}"
     done
@@ -189,6 +209,11 @@ if [ -z "${CROSS_PROVIDER_CODEX_PROFILES:-}" ]; then
         _name="${d%/}"
         _name="${_name##*/.codex-}"
         [ -z "$_name" ] && continue
+        # Validate: must have auth file or config
+        if [ ! -f "$d/auth.json" ] && [ ! -f "$d/config.toml" ]; then
+            log_verbose "Auto-discover: skipping ~/.codex-$_name (no auth)"
+            continue
+        fi
         [ -n "$_auto_codex_profiles" ] && _auto_codex_profiles="${_auto_codex_profiles},"
         _auto_codex_profiles="${_auto_codex_profiles}${_name}"
     done
@@ -265,10 +290,15 @@ extract_reset_seconds() {
         local reset_time
         reset_time=$(echo "$time_match" | grep -oi '[0-9:]*[ap]m' | head -1)
         if [ -n "$reset_time" ]; then
-            # Convert to epoch and calculate delta
             local reset_epoch now_epoch
-            reset_epoch=$(date -j -f "%I:%M%p" "$reset_time" +%s 2>/dev/null) ||
-                reset_epoch=$(date -j -f "%I%p" "$reset_time" +%s 2>/dev/null) || true
+            # macOS (BSD date)
+            if date -j -f "%I:%M%p" "12:00AM" +%s &>/dev/null; then
+                reset_epoch=$(date -j -f "%I:%M%p" "$reset_time" +%s 2>/dev/null) ||
+                    reset_epoch=$(date -j -f "%I%p" "$reset_time" +%s 2>/dev/null) || true
+            # Linux (GNU date)
+            elif date -d "12:00AM" +%s &>/dev/null; then
+                reset_epoch=$(date -d "$reset_time" +%s 2>/dev/null) || true
+            fi
             if [ -n "$reset_epoch" ]; then
                 now_epoch=$(date +%s)
                 local delta=$((reset_epoch - now_epoch))
@@ -299,6 +329,7 @@ is_provider_cooled_down() {
 # Usage: set_provider_cooldown <key> [error_output]
 # If error_output contains a parseable reset time, uses that.
 # Otherwise falls back to COOLDOWN_SECONDS.
+# Uses flock for atomic writes when multiple sessions share the cooldown file.
 set_provider_cooldown() {
     local provider_key="$1"
     local error_output="${2:-}"
@@ -317,14 +348,26 @@ set_provider_cooldown() {
     local now expiry
     now=$(date +%s)
     expiry=$((now + cooldown_duration))
-    if [ -f "$COOLDOWN_FILE" ]; then
-        timeout 2 jq --arg key "$provider_key" --argjson exp "$expiry" \
-            '.[$key] = $exp' "$COOLDOWN_FILE" >"${COOLDOWN_FILE}.tmp.$$" 2>/dev/null &&
-            mv "${COOLDOWN_FILE}.tmp.$$" "$COOLDOWN_FILE"
-    else
-        timeout 2 jq -n --arg key "$provider_key" --argjson exp "$expiry" \
-            '{($key): $exp}' >"$COOLDOWN_FILE" 2>/dev/null
-    fi
+
+    # Atomic write with flock (handles concurrent sessions)
+    local lockfile="${COOLDOWN_FILE}.lock"
+    (
+        # flock fd 9; timeout to avoid deadlock
+        if command -v flock &>/dev/null; then
+            flock -w 5 9 2>/dev/null || true
+        fi
+        # Re-read file inside lock to avoid lost updates
+        if [ -f "$COOLDOWN_FILE" ]; then
+            timeout 2 jq --arg key "$provider_key" --argjson exp "$expiry" \
+                '.[$key] = $exp' "$COOLDOWN_FILE" >"${COOLDOWN_FILE}.tmp.$$" 2>/dev/null &&
+                mv "${COOLDOWN_FILE}.tmp.$$" "$COOLDOWN_FILE"
+        else
+            timeout 2 jq -n --arg key "$provider_key" --argjson exp "$expiry" \
+                '{($key): $exp}' >"$COOLDOWN_FILE" 2>/dev/null
+        fi
+    ) 9>"$lockfile"
+    rm -f "$lockfile" 2>/dev/null
+
     log_verbose "Provider $provider_key cooled down for ${cooldown_duration}s"
 }
 
