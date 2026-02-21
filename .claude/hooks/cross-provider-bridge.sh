@@ -21,6 +21,8 @@
 #   CROSS_PROVIDER_LOG=                         Log file path for review history
 #   CROSS_PROVIDER_DRY_RUN=1                    Show config and availability without calling providers
 #   CROSS_PROVIDER_MODELS=codex=o3,gemini=2.5-pro  Per-provider model overrides (key=value pairs)
+#   CROSS_PROVIDER_COOLDOWN=300                  Cooldown seconds after rate limit (default: 300)
+#   CROSS_PROVIDER_CLAUDE_PROFILES=work,personal  Claude subscription profiles for rotation
 #
 #   Provider-specific model overrides (legacy, still supported):
 #   CROSS_PROVIDER_CODEX_MODEL=                 Codex model override
@@ -155,6 +157,92 @@ DEFAULT_OLLAMA_MODEL="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
 DEFAULT_DEEPSEEK_MODEL="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"
 DEFAULT_CLAUDE_MODEL="${CROSS_PROVIDER_CLAUDE_MODEL:-sonnet}"
 DEFAULT_OPENCODE_MODEL="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
+
+# --- Rate limit auto-rotation ---
+COOLDOWN_FILE="/tmp/cross-provider-cooldowns.json"
+COOLDOWN_SECONDS="${CROSS_PROVIDER_COOLDOWN:-300}"
+PROVIDER_STDERR_FILE="/tmp/cross-provider-bridge-stderr.$$"
+trap 'rm -f "$PROVIDER_STDERR_FILE"' EXIT
+
+# Detect rate limit indicators in provider output/stderr
+detect_rate_limit() {
+    local output="$1" stderr_output="${2:-}"
+    local combined="${output} ${stderr_output}"
+    if echo "$combined" | grep -qi \
+        -e 'rate.limit' \
+        -e 'rate_limit' \
+        -e '429' \
+        -e 'too many requests' \
+        -e 'quota.exceeded' \
+        -e 'RESOURCE_EXHAUSTED' \
+        -e 'overloaded_error' \
+        -e 'throttl' \
+        -e 'usage.limit' \
+        -e 'capacity.exceeded' \
+        -e 'try again later'; then
+        return 0
+    fi
+    return 1
+}
+
+# Check if a provider is in cooldown
+is_provider_cooled_down() {
+    local provider_key="$1"
+    [ -f "$COOLDOWN_FILE" ] || return 1
+    local expiry
+    expiry=$(timeout 2 jq -r --arg key "$provider_key" '.[$key] // 0' "$COOLDOWN_FILE" 2>/dev/null) || return 1
+    local now
+    now=$(date +%s)
+    [ "$expiry" -gt "$now" ] 2>/dev/null
+}
+
+# Record cooldown for a provider
+set_provider_cooldown() {
+    local provider_key="$1"
+    local now expiry
+    now=$(date +%s)
+    expiry=$((now + COOLDOWN_SECONDS))
+    if [ -f "$COOLDOWN_FILE" ]; then
+        timeout 2 jq --arg key "$provider_key" --argjson exp "$expiry" \
+            '.[$key] = $exp' "$COOLDOWN_FILE" >"${COOLDOWN_FILE}.tmp.$$" 2>/dev/null &&
+            mv "${COOLDOWN_FILE}.tmp.$$" "$COOLDOWN_FILE"
+    else
+        timeout 2 jq -n --arg key "$provider_key" --argjson exp "$expiry" \
+            '{($key): $exp}' >"$COOLDOWN_FILE" 2>/dev/null
+    fi
+    log_verbose "Provider $provider_key cooled down for ${COOLDOWN_SECONDS}s"
+}
+
+# Get remaining cooldown seconds (for display)
+get_cooldown_remaining() {
+    local provider_key="$1"
+    [ -f "$COOLDOWN_FILE" ] || {
+        echo "0"
+        return
+    }
+    local expiry
+    expiry=$(timeout 2 jq -r --arg key "$provider_key" '.[$key] // 0' "$COOLDOWN_FILE" 2>/dev/null) || {
+        echo "0"
+        return
+    }
+    local now remaining
+    now=$(date +%s)
+    remaining=$((expiry - now))
+    [ "$remaining" -gt 0 ] && echo "$remaining" || echo "0"
+}
+
+# Check if ALL claude profiles are cooled down
+all_claude_profiles_cooled() {
+    local profiles_str="${CROSS_PROVIDER_CLAUDE_PROFILES:-}"
+    [ -z "$profiles_str" ] && return 1
+    IFS=',' read -ra profs <<<"$profiles_str"
+    for prof in "${profs[@]}"; do
+        prof="${prof#"${prof%%[![:space:]]*}"}"
+        prof="${prof%"${prof##*[![:space:]]}"}"
+        is_provider_cooled_down "claude:$prof" || return 1
+    done
+    return 0
+}
 
 if [ -n "$session_id" ]; then
     state_file="/tmp/cross-provider-bridge-${session_id}.json"
@@ -332,7 +420,7 @@ provider_codex() {
     fi
     log_verbose "Provider codex: running ${codex_cmd[*]}"
     local output
-    output=$(echo "$prompt" | timeout "$provider_timeout" "${codex_cmd[@]}" - 2>/dev/null) || true
+    output=$(echo "$prompt" | timeout "$provider_timeout" "${codex_cmd[@]}" - 2>"$PROVIDER_STDERR_FILE") || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -354,7 +442,7 @@ provider_gemini() {
     log_verbose "Provider gemini: running ${gemini_cmd[*]}"
     local output
     # Gemini CLI: positional prompt for non-interactive one-shot mode
-    output=$(timeout "$provider_timeout" "${gemini_cmd[@]}" "$prompt" 2>/dev/null) || true
+    output=$(timeout "$provider_timeout" "${gemini_cmd[@]}" "$prompt" 2>"$PROVIDER_STDERR_FILE") || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -376,7 +464,7 @@ provider_ollama() {
     fi
     log_verbose "Provider ollama: running model=$DEFAULT_OLLAMA_MODEL"
     local output
-    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$DEFAULT_OLLAMA_MODEL" 2>/dev/null) || true
+    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$DEFAULT_OLLAMA_MODEL" 2>"$PROVIDER_STDERR_FILE") || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -398,7 +486,7 @@ provider_deepseek() {
     fi
     log_verbose "Provider deepseek: running model=$DEFAULT_DEEPSEEK_MODEL via ollama"
     local output
-    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$DEFAULT_DEEPSEEK_MODEL" 2>/dev/null) || true
+    output=$(echo "$prompt" | timeout "$provider_timeout" ollama run "$DEFAULT_DEEPSEEK_MODEL" 2>"$PROVIDER_STDERR_FILE") || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -413,9 +501,61 @@ provider_claude() {
         log_verbose "Provider claude: binary not found"
         return 1
     fi
+
+    # Profile rotation: try each profile, skipping cooled-down ones
+    local profiles_str="${CROSS_PROVIDER_CLAUDE_PROFILES:-}"
+    if [ -n "$profiles_str" ]; then
+        IFS=',' read -ra profiles <<<"$profiles_str"
+        for profile in "${profiles[@]}"; do
+            profile="${profile#"${profile%%[![:space:]]*}"}"
+            profile="${profile%"${profile##*[![:space:]]}"}"
+            local profile_key="claude:$profile"
+            local config_dir="$HOME/.claude-$profile"
+
+            if is_provider_cooled_down "$profile_key"; then
+                local remaining
+                remaining=$(get_cooldown_remaining "$profile_key")
+                log_verbose "Provider claude (profile=$profile): cooled down (${remaining}s remaining)"
+                if [ "$VERBOSE" = "2" ]; then
+                    log_status "${C_YELLOW}⏳${C_RESET}" "claude:$profile ${C_DIM}(cooled down, ${remaining}s)${C_RESET}"
+                fi
+                continue
+            fi
+
+            if [ ! -d "$config_dir" ]; then
+                log_verbose "Provider claude (profile=$profile): config dir not found ($config_dir)"
+                continue
+            fi
+
+            log_verbose "Provider claude (profile=$profile): running model=$DEFAULT_CLAUDE_MODEL"
+            local output stderr_content
+            output=$(echo "$prompt" | env CLAUDE_CONFIG_DIR="$config_dir" timeout "$provider_timeout" claude -p --model "$DEFAULT_CLAUDE_MODEL" 2>"$PROVIDER_STDERR_FILE") || true
+            stderr_content=""
+            [ -f "$PROVIDER_STDERR_FILE" ] && stderr_content=$(cat "$PROVIDER_STDERR_FILE" 2>/dev/null)
+
+            if [ -n "$output" ] && ! detect_rate_limit "$output" "$stderr_content"; then
+                echo "$output"
+                return 0
+            fi
+
+            # Rate limited or no output — check and set cooldown
+            if detect_rate_limit "${output:-}" "$stderr_content"; then
+                log_verbose "Provider claude (profile=$profile): rate limited, cooling down"
+                set_provider_cooldown "$profile_key"
+                if [ "$VERBOSE" = "2" ]; then
+                    log_status "${C_RED}⚡${C_RESET}" "claude:$profile ${C_DIM}(rate limited, cooling ${COOLDOWN_SECONDS}s)${C_RESET}"
+                fi
+            else
+                log_verbose "Provider claude (profile=$profile): no output"
+            fi
+        done
+        return 1
+    fi
+
+    # Single-profile (default) path — no profile rotation
     log_verbose "Provider claude: running model=$DEFAULT_CLAUDE_MODEL"
     local output
-    output=$(echo "$prompt" | timeout "$provider_timeout" claude -p --model "$DEFAULT_CLAUDE_MODEL" 2>/dev/null) || true
+    output=$(echo "$prompt" | timeout "$provider_timeout" claude -p --model "$DEFAULT_CLAUDE_MODEL" 2>"$PROVIDER_STDERR_FILE") || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -432,7 +572,7 @@ provider_opencode() {
     fi
     log_verbose "Provider opencode: running model=$DEFAULT_OPENCODE_MODEL"
     local output
-    output=$(timeout "$provider_timeout" opencode run --model "$DEFAULT_OPENCODE_MODEL" "$prompt" 2>/dev/null) || true
+    output=$(timeout "$provider_timeout" opencode run --model "$DEFAULT_OPENCODE_MODEL" "$prompt" 2>"$PROVIDER_STDERR_FILE") || true
     if [ -n "$output" ]; then
         echo "$output"
         return 0
@@ -506,7 +646,19 @@ if [ "$VERBOSE" = "2" ]; then
         p="${p%"${p##*[![:space:]]}"}"
         local_model=$(get_provider_model "$p")
         if check_provider_available "$p"; then
-            log_status "${C_GREEN}✓${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(model: $local_model)${C_RESET}"
+            # Check cooldown status
+            if [ "$p" = "claude" ] && [ -n "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ]; then
+                if all_claude_profiles_cooled; then
+                    log_status "${C_YELLOW}⏳${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(all profiles cooled down)${C_RESET}"
+                else
+                    log_status "${C_GREEN}✓${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(model: $local_model, profiles: ${CROSS_PROVIDER_CLAUDE_PROFILES})${C_RESET}"
+                fi
+            elif is_provider_cooled_down "$p"; then
+                local_remaining=$(get_cooldown_remaining "$p")
+                log_status "${C_YELLOW}⏳${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(cooled down, ${local_remaining}s)${C_RESET}"
+            else
+                log_status "${C_GREEN}✓${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(model: $local_model)${C_RESET}"
+            fi
         else
             log_status "${C_RED}✗${C_RESET}" "${C_BOLD}$p${C_RESET} ${C_DIM}(unavailable)${C_RESET}"
         fi
@@ -628,6 +780,27 @@ for provider in "${providers[@]}"; do
     # Capture timing
     local_start=$(date +%s)
 
+    # Clear stderr capture
+    : >"$PROVIDER_STDERR_FILE" 2>/dev/null
+
+    # Skip if provider is in cooldown
+    if [ "$provider" = "claude" ] && [ -n "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ]; then
+        if all_claude_profiles_cooled; then
+            log_verbose "Skipping $provider: all profiles cooled down"
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_YELLOW}all profiles cooled${C_RESET}" >&2
+            fi
+            continue
+        fi
+    elif is_provider_cooled_down "$provider"; then
+        local_remaining=$(get_cooldown_remaining "$provider")
+        log_verbose "Skipping $provider: cooled down (${local_remaining}s remaining)"
+        if [ "$VERBOSE" = "2" ]; then
+            echo "${C_YELLOW}cooled down${C_RESET} ${C_DIM}(${local_remaining}s)${C_RESET}" >&2
+        fi
+        continue
+    fi
+
     case "$provider" in
     codex)
         if cross_provider_output=$(provider_codex "$full_prompt"); then
@@ -700,6 +873,21 @@ for provider in "${providers[@]}"; do
 
     # If we got here, provider failed
     local_end=$(date +%s)
+
+    # Check if failure was rate limiting (Claude profile rotation handles this internally)
+    if [ "$provider" != "claude" ] || [ -z "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ]; then
+        local_stderr=""
+        [ -f "$PROVIDER_STDERR_FILE" ] && local_stderr=$(cat "$PROVIDER_STDERR_FILE" 2>/dev/null)
+        if detect_rate_limit "" "$local_stderr"; then
+            log_verbose "Provider $provider: rate limited, setting cooldown (${COOLDOWN_SECONDS}s)"
+            set_provider_cooldown "$provider"
+            if [ "$VERBOSE" = "2" ]; then
+                echo "${C_RED}rate limited${C_RESET} ${C_DIM}($((local_end - local_start))s, cooling ${COOLDOWN_SECONDS}s)${C_RESET}" >&2
+            fi
+            continue
+        fi
+    fi
+
     if [ "$VERBOSE" = "2" ]; then
         echo "${C_RED}failed${C_RESET} ${C_DIM}($((local_end - local_start))s)${C_RESET}" >&2
     fi

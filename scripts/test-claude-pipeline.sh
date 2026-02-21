@@ -799,6 +799,161 @@ if command -v fish &>/dev/null; then
 fi
 
 # ============================================================================
+# Rate Limit Auto-Rotation Tests
+# ============================================================================
+print_header "Rate Limit Auto-Rotation"
+
+HOOK_SCRIPT="${HOOK_SCRIPT:-$SCRIPT_DIR/../.claude/hooks/cross-provider-bridge.sh}"
+
+# Test: detect_rate_limit function exists in source
+assert_contains "Hook source: detect_rate_limit function" \
+    "$(cat "$HOOK_SCRIPT")" "detect_rate_limit()"
+
+# Test: is_provider_cooled_down function exists
+assert_contains "Hook source: is_provider_cooled_down function" \
+    "$(cat "$HOOK_SCRIPT")" "is_provider_cooled_down()"
+
+# Test: set_provider_cooldown function exists
+assert_contains "Hook source: set_provider_cooldown function" \
+    "$(cat "$HOOK_SCRIPT")" "set_provider_cooldown()"
+
+# Test: all_claude_profiles_cooled function exists
+assert_contains "Hook source: all_claude_profiles_cooled function" \
+    "$(cat "$HOOK_SCRIPT")" "all_claude_profiles_cooled()"
+
+# Test: CROSS_PROVIDER_COOLDOWN env var documented
+assert_contains "Hook source: CROSS_PROVIDER_COOLDOWN documented" \
+    "$(cat "$HOOK_SCRIPT")" "CROSS_PROVIDER_COOLDOWN"
+
+# Test: CROSS_PROVIDER_CLAUDE_PROFILES env var documented
+assert_contains "Hook source: CROSS_PROVIDER_CLAUDE_PROFILES documented" \
+    "$(cat "$HOOK_SCRIPT")" "CROSS_PROVIDER_CLAUDE_PROFILES"
+
+# Test: detect_rate_limit catches common patterns
+rate_limit_test_script='
+source <(sed -n "/^detect_rate_limit/,/^}/p" "'"$HOOK_SCRIPT"'")
+# Test various rate limit patterns
+detect_rate_limit "Error: rate limit exceeded" "" && echo "PASS:rate_limit"
+detect_rate_limit "" "HTTP 429 Too Many Requests" && echo "PASS:429"
+detect_rate_limit "quota exceeded for project" "" && echo "PASS:quota"
+detect_rate_limit "" "RESOURCE_EXHAUSTED" && echo "PASS:resource"
+detect_rate_limit "overloaded_error" "" && echo "PASS:overloaded"
+detect_rate_limit "request throttled" "" && echo "PASS:throttled"
+detect_rate_limit "usage limit reached" "" && echo "PASS:usage_limit"
+detect_rate_limit "please try again later" "" && echo "PASS:try_again"
+detect_rate_limit "normal response text" "" || echo "PASS:no_false_positive"
+'
+rate_limit_output=$(bash -c "$rate_limit_test_script" 2>/dev/null) || true
+for pattern in rate_limit 429 quota resource overloaded throttled usage_limit try_again no_false_positive; do
+    if echo "$rate_limit_output" | grep -q "PASS:$pattern"; then
+        print_success "detect_rate_limit: recognizes $pattern"
+        ((PASS++))
+    else
+        print_error "detect_rate_limit: failed to detect $pattern"
+        ((FAIL++))
+    fi
+done
+
+# Test: Cooldown file creation and checking
+cooldown_test_script='
+COOLDOWN_FILE="/tmp/test-bridge-cooldowns-$$.json"
+COOLDOWN_SECONDS=60
+trap "rm -f \"$COOLDOWN_FILE\"" EXIT
+
+source <(sed -n "/^is_provider_cooled_down/,/^}/p; /^set_provider_cooldown/,/^}/p; /^get_cooldown_remaining/,/^}/p" "'"$HOOK_SCRIPT"'")
+# Also need log_verbose stub
+log_verbose() { :; }
+
+# Not cooled down initially
+is_provider_cooled_down "codex" || echo "PASS:not_cooled"
+
+# Set cooldown
+set_provider_cooldown "codex"
+is_provider_cooled_down "codex" && echo "PASS:is_cooled"
+
+# Check remaining
+remaining=$(get_cooldown_remaining "codex")
+if [ "$remaining" -gt 0 ] && [ "$remaining" -le 60 ]; then
+    echo "PASS:remaining_ok"
+fi
+
+# Different provider not cooled
+is_provider_cooled_down "gemini" || echo "PASS:other_not_cooled"
+'
+cooldown_output=$(bash -c "$cooldown_test_script" 2>/dev/null) || true
+for pattern in not_cooled is_cooled remaining_ok other_not_cooled; do
+    if echo "$cooldown_output" | grep -q "PASS:$pattern"; then
+        print_success "Cooldown: $pattern"
+        ((PASS++))
+    else
+        print_error "Cooldown: $pattern"
+        ((FAIL++))
+    fi
+done
+
+# Test: Provider stderr capture (2>"$PROVIDER_STDERR_FILE" instead of 2>/dev/null)
+assert_contains "Hook source: codex captures stderr" \
+    "$(cat "$HOOK_SCRIPT")" 'PROVIDER_STDERR_FILE'
+
+# Test: Cooldown check in dispatch loop
+assert_contains "Hook source: cooldown check in dispatch loop" \
+    "$(cat "$HOOK_SCRIPT")" "is_provider_cooled_down"
+
+# Test: Rate limit detection in failure path
+assert_contains "Hook source: rate limit detection on failure" \
+    "$(cat "$HOOK_SCRIPT")" "detect_rate_limit"
+
+# Test: Claude profile rotation in provider_claude
+assert_contains "Hook source: profile rotation in provider_claude" \
+    "$(cat "$HOOK_SCRIPT")" "CLAUDE_CONFIG_DIR"
+
+# Test: Profile cooldown keys use claude:profile format
+assert_contains "Hook source: profile cooldown key format" \
+    "$(cat "$HOOK_SCRIPT")" 'claude:$profile'
+
+# ============================================================================
+# gwt-ticket Bridge Auto-Rotation Flags
+# ============================================================================
+print_header "gwt-ticket Bridge Auto-Rotation Flags"
+
+GWTT_FISH="$SCRIPT_DIR/../.config/fish/functions/gwt-ticket.fish"
+gwtt_source=$(cat "$GWTT_FISH")
+
+# Test: --bridge-cooldown flag parsing
+assert_contains "gwt-ticket source: --bridge-cooldown flag parsing" \
+    "$gwtt_source" "--bridge-cooldown"
+
+# Test: --bridge-profiles flag parsing
+assert_contains "gwt-ticket source: --bridge-profiles flag parsing" \
+    "$gwtt_source" "--bridge-profiles"
+
+# Test: CROSS_PROVIDER_COOLDOWN env var wiring (local path)
+assert_contains "gwt-ticket source: CROSS_PROVIDER_COOLDOWN env (local)" \
+    "$gwtt_source" "CROSS_PROVIDER_COOLDOWN"
+
+# Test: CROSS_PROVIDER_CLAUDE_PROFILES env var wiring (local path)
+assert_contains "gwt-ticket source: CROSS_PROVIDER_CLAUDE_PROFILES env (local)" \
+    "$gwtt_source" "CROSS_PROVIDER_CLAUDE_PROFILES"
+
+# Test: Help text mentions new flags
+if command -v fish &>/dev/null; then
+    gwtt_help=$(fish -c "source $GWTT_FISH; gwt-ticket --help" 2>/dev/null) || true
+    if [ -n "$gwtt_help" ]; then
+        assert_contains "gwt-ticket help: --bridge-cooldown flag" "$gwtt_help" "--bridge-cooldown"
+        assert_contains "gwt-ticket help: --bridge-profiles flag" "$gwtt_help" "--bridge-profiles"
+    fi
+fi
+
+# Test: bridge.fish shows cooldown status
+BRIDGE_FISH="$SCRIPT_DIR/../.config/fish/functions/bridge.fish"
+if [[ -f "$BRIDGE_FISH" ]]; then
+    assert_contains "bridge.fish: shows cooldown info" \
+        "$(cat "$BRIDGE_FISH")" "cross-provider-cooldowns.json"
+    assert_contains "bridge.fish: shows Claude profiles" \
+        "$(cat "$BRIDGE_FISH")" "CROSS_PROVIDER_CLAUDE_PROFILES"
+fi
+
+# ============================================================================
 # Live Tests (require Claude subscription)
 # ============================================================================
 

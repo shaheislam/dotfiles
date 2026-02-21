@@ -31,6 +31,29 @@ function bridge --description "Toggle cross-provider bridge on/off mid-session"
                 if test -n "$CROSS_PROVIDER_MODELS"
                     echo "  Models: $CROSS_PROVIDER_MODELS"
                 end
+                if test -n "$CROSS_PROVIDER_CLAUDE_PROFILES"
+                    echo "  Claude profiles: $CROSS_PROVIDER_CLAUDE_PROFILES"
+                end
+                if test -n "$CROSS_PROVIDER_COOLDOWN"
+                    echo "  Cooldown: $CROSS_PROVIDER_COOLDOWN""s"
+                end
+                # Show active cooldowns
+                if test -f /tmp/cross-provider-cooldowns.json
+                    set -l now (date +%s)
+                    set -l has_cooldowns false
+                    for entry in (jq -r 'to_entries[] | "\(.key)=\(.value)"' /tmp/cross-provider-cooldowns.json 2>/dev/null)
+                        set -l key (string split '=' -- $entry)[1]
+                        set -l expiry (string split '=' -- $entry)[2]
+                        set -l remaining (math $expiry - $now)
+                        if test $remaining -gt 0
+                            if not $has_cooldowns
+                                echo "  Active cooldowns:"
+                                set has_cooldowns true
+                            end
+                            echo "    $key: $remaining""s remaining"
+                        end
+                    end
+                end
             else
                 echo "Bridge: DISABLED (CROSS_PROVIDER_BRIDGE not set)"
             end
