@@ -891,6 +891,56 @@ for pattern in not_cooled is_cooled remaining_ok other_not_cooled; do
     fi
 done
 
+# Test: extract_reset_seconds function exists
+assert_contains "Hook source: extract_reset_seconds function" \
+    "$(cat "$HOOK_SCRIPT")" "extract_reset_seconds()"
+
+# Test: extract_reset_seconds parses real provider messages
+reset_test_script='
+source <(sed -n "/^extract_reset_seconds/,/^}/p" "'"$HOOK_SCRIPT"'")
+
+# Codex: "Try again in 3h 42m" → 13320s
+result=$(extract_reset_seconds "You'\''ve reached your limit. Try again in 3h 42m")
+[ "$result" = "13320" ] && echo "PASS:codex_hm"
+
+# Codex: hours only "Try again in 2h" → 7200s
+result=$(extract_reset_seconds "Try again in 2h")
+[ "$result" = "7200" ] && echo "PASS:codex_h"
+
+# Codex: minutes only "Try again in 45m" → 2700s
+result=$(extract_reset_seconds "Try again in 45m")
+[ "$result" = "2700" ] && echo "PASS:codex_m"
+
+# API: "try again in 1.152s" → 1s (integer)
+result=$(extract_reset_seconds "Please try again in 1.152s")
+[ -n "$result" ] && [ "$result" -ge 1 ] && echo "PASS:api_secs"
+
+# No match returns empty
+result=$(extract_reset_seconds "normal error text")
+[ -z "$result" ] && echo "PASS:no_match"
+
+# set_provider_cooldown uses parsed time
+source <(sed -n "/^set_provider_cooldown/,/^}/p; /^is_provider_cooled_down/,/^}/p; /^get_cooldown_remaining/,/^}/p" "'"$HOOK_SCRIPT"'")
+log_verbose() { :; }
+COOLDOWN_FILE="/tmp/test-bridge-reset-$$.json"
+COOLDOWN_SECONDS=60
+trap "rm -f \"$COOLDOWN_FILE\"" EXIT
+set_provider_cooldown "test-provider" "Try again in 1h 30m"
+remaining=$(get_cooldown_remaining "test-provider")
+# Should be ~5400s, not 60s
+[ "$remaining" -gt 1000 ] && echo "PASS:parsed_cooldown"
+'
+reset_output=$(bash -c "$reset_test_script" 2>/dev/null) || true
+for pattern in codex_hm codex_h codex_m api_secs no_match parsed_cooldown; do
+    if echo "$reset_output" | grep -q "PASS:$pattern"; then
+        print_success "extract_reset_seconds: $pattern"
+        ((PASS++))
+    else
+        print_error "extract_reset_seconds: $pattern"
+        ((FAIL++))
+    fi
+done
+
 # Test: Provider stderr capture (2>"$PROVIDER_STDERR_FILE" instead of 2>/dev/null)
 assert_contains "Hook source: codex captures stderr" \
     "$(cat "$HOOK_SCRIPT")" 'PROVIDER_STDERR_FILE'

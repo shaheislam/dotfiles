@@ -21,7 +21,7 @@
 #   CROSS_PROVIDER_LOG=                         Log file path for review history
 #   CROSS_PROVIDER_DRY_RUN=1                    Show config and availability without calling providers
 #   CROSS_PROVIDER_MODELS=codex=o3,gemini=2.5-pro  Per-provider model overrides (key=value pairs)
-#   CROSS_PROVIDER_COOLDOWN=300                  Cooldown seconds after rate limit (default: 300)
+#   CROSS_PROVIDER_COOLDOWN=1800                  Fallback cooldown seconds (default: 1800; auto-parsed from error when available)
 #   CROSS_PROVIDER_CLAUDE_PROFILES=work,personal  Claude profiles for rotation (auto-discovered from ~/.claude-*/)
 #   CROSS_PROVIDER_CODEX_PROFILES=work,personal   Codex profiles for rotation (auto-discovered from ~/.codex-*/)
 #
@@ -161,7 +161,7 @@ DEFAULT_OPENCODE_MODEL="${CROSS_PROVIDER_OPENCODE_MODEL:-ollama/qwen3-coder}"
 
 # --- Rate limit auto-rotation ---
 COOLDOWN_FILE="/tmp/cross-provider-cooldowns.json"
-COOLDOWN_SECONDS="${CROSS_PROVIDER_COOLDOWN:-300}"
+COOLDOWN_SECONDS="${CROSS_PROVIDER_COOLDOWN:-1800}"
 PROVIDER_STDERR_FILE="/tmp/cross-provider-bridge-stderr.$$"
 trap 'rm -f "$PROVIDER_STDERR_FILE"' EXIT
 
@@ -219,6 +219,71 @@ detect_rate_limit() {
     return 1
 }
 
+# Extract cooldown duration (in seconds) from rate limit error messages
+# Returns the parsed duration, or empty string if unparsable
+# Patterns handled:
+#   "Try again in 3h 42m"           → Codex
+#   "try again in 1.152s"           → OpenAI API
+#   "reset at 3pm"                  → Claude (absolute time)
+#   "reset at 3pm (America/New_York)" → Claude with timezone
+#   "Please retry after Xs"         → Generic retry-after
+extract_reset_seconds() {
+    local combined="$1"
+
+    # Pattern: "Try again in Xh Ym" or "try again in Xh" or "try again in Ym"
+    local hm_match
+    hm_match=$(echo "$combined" | grep -oi '[Tt]ry again in [0-9]*h *[0-9]*m\|[Tt]ry again in [0-9]*h\|[Tt]ry again in [0-9]*m' | head -1)
+    if [ -n "$hm_match" ]; then
+        local hours=0 minutes=0
+        hours=$(echo "$hm_match" | grep -o '[0-9]*h' | grep -o '[0-9]*') || true
+        minutes=$(echo "$hm_match" | grep -o '[0-9]*m' | grep -o '[0-9]*') || true
+        [ -z "$hours" ] && hours=0
+        [ -z "$minutes" ] && minutes=0
+        local total=$((hours * 3600 + minutes * 60))
+        if [ "$total" -gt 0 ]; then
+            echo "$total"
+            return
+        fi
+    fi
+
+    # Pattern: "try again in X.Xs" or "retry after Xs"
+    local sec_match
+    sec_match=$(echo "$combined" | grep -oi 'try again in [0-9.]*s\|retry after [0-9.]*s' | head -1)
+    if [ -n "$sec_match" ]; then
+        local secs
+        secs=$(echo "$sec_match" | grep -o '[0-9.]*s' | grep -o '[0-9]*' | head -1)
+        if [ -n "$secs" ] && [ "$secs" -gt 0 ] 2>/dev/null; then
+            echo "$secs"
+            return
+        fi
+    fi
+
+    # Pattern: "reset at Xpm" or "reset at Xam" or "reset at X:XXpm"
+    local time_match
+    time_match=$(echo "$combined" | grep -oi 'reset at [0-9:]*[ap]m' | head -1)
+    if [ -n "$time_match" ]; then
+        local reset_time
+        reset_time=$(echo "$time_match" | grep -oi '[0-9:]*[ap]m' | head -1)
+        if [ -n "$reset_time" ]; then
+            # Convert to epoch and calculate delta
+            local reset_epoch now_epoch
+            reset_epoch=$(date -j -f "%I:%M%p" "$reset_time" +%s 2>/dev/null) ||
+                reset_epoch=$(date -j -f "%I%p" "$reset_time" +%s 2>/dev/null) || true
+            if [ -n "$reset_epoch" ]; then
+                now_epoch=$(date +%s)
+                local delta=$((reset_epoch - now_epoch))
+                # If negative, it means tomorrow
+                [ "$delta" -le 0 ] && delta=$((delta + 86400))
+                echo "$delta"
+                return
+            fi
+        fi
+    fi
+
+    # No parseable reset time found
+    echo ""
+}
+
 # Check if a provider is in cooldown
 is_provider_cooled_down() {
     local provider_key="$1"
@@ -231,11 +296,27 @@ is_provider_cooled_down() {
 }
 
 # Record cooldown for a provider
+# Usage: set_provider_cooldown <key> [error_output]
+# If error_output contains a parseable reset time, uses that.
+# Otherwise falls back to COOLDOWN_SECONDS.
 set_provider_cooldown() {
     local provider_key="$1"
+    local error_output="${2:-}"
+    local cooldown_duration="$COOLDOWN_SECONDS"
+
+    # Try to extract actual reset time from error message
+    if [ -n "$error_output" ]; then
+        local parsed
+        parsed=$(extract_reset_seconds "$error_output")
+        if [ -n "$parsed" ] && [ "$parsed" -gt 0 ] 2>/dev/null; then
+            cooldown_duration="$parsed"
+            log_verbose "Provider $provider_key: parsed reset time ${cooldown_duration}s from error"
+        fi
+    fi
+
     local now expiry
     now=$(date +%s)
-    expiry=$((now + COOLDOWN_SECONDS))
+    expiry=$((now + cooldown_duration))
     if [ -f "$COOLDOWN_FILE" ]; then
         timeout 2 jq --arg key "$provider_key" --argjson exp "$expiry" \
             '.[$key] = $exp' "$COOLDOWN_FILE" >"${COOLDOWN_FILE}.tmp.$$" 2>/dev/null &&
@@ -244,7 +325,7 @@ set_provider_cooldown() {
         timeout 2 jq -n --arg key "$provider_key" --argjson exp "$expiry" \
             '{($key): $exp}' >"$COOLDOWN_FILE" 2>/dev/null
     fi
-    log_verbose "Provider $provider_key cooled down for ${COOLDOWN_SECONDS}s"
+    log_verbose "Provider $provider_key cooled down for ${cooldown_duration}s"
 }
 
 # Get remaining cooldown seconds (for display)
@@ -504,10 +585,13 @@ provider_codex() {
 
             # Rate limited or no output — check and set cooldown
             if detect_rate_limit "${output:-}" "$stderr_content"; then
-                log_verbose "Provider codex (profile=$profile): rate limited, cooling down"
-                set_provider_cooldown "$profile_key"
+                local _err_combined="${output:-} ${stderr_content}"
+                set_provider_cooldown "$profile_key" "$_err_combined"
+                local _cd_display
+                _cd_display=$(get_cooldown_remaining "$profile_key")
+                log_verbose "Provider codex (profile=$profile): rate limited, cooling down (${_cd_display}s)"
                 if [ "$VERBOSE" = "2" ]; then
-                    log_status "${C_RED}⚡${C_RESET}" "codex:$profile ${C_DIM}(rate limited, cooling ${COOLDOWN_SECONDS}s)${C_RESET}"
+                    log_status "${C_RED}⚡${C_RESET}" "codex:$profile ${C_DIM}(rate limited, cooling ${_cd_display}s)${C_RESET}"
                 fi
             else
                 log_verbose "Provider codex (profile=$profile): no output"
@@ -643,10 +727,13 @@ provider_claude() {
 
             # Rate limited or no output — check and set cooldown
             if detect_rate_limit "${output:-}" "$stderr_content"; then
-                log_verbose "Provider claude (profile=$profile): rate limited, cooling down"
-                set_provider_cooldown "$profile_key"
+                local _err_combined="${output:-} ${stderr_content}"
+                set_provider_cooldown "$profile_key" "$_err_combined"
+                local _cd_display
+                _cd_display=$(get_cooldown_remaining "$profile_key")
+                log_verbose "Provider claude (profile=$profile): rate limited, cooling down (${_cd_display}s)"
                 if [ "$VERBOSE" = "2" ]; then
-                    log_status "${C_RED}⚡${C_RESET}" "claude:$profile ${C_DIM}(rate limited, cooling ${COOLDOWN_SECONDS}s)${C_RESET}"
+                    log_status "${C_RED}⚡${C_RESET}" "claude:$profile ${C_DIM}(rate limited, cooling ${_cd_display}s)${C_RESET}"
                 fi
             else
                 log_verbose "Provider claude (profile=$profile): no output"
@@ -1037,10 +1124,12 @@ for provider in "${active_providers[@]}"; do
         local_stderr=""
         [ -f "$PROVIDER_STDERR_FILE" ] && local_stderr=$(cat "$PROVIDER_STDERR_FILE" 2>/dev/null)
         if detect_rate_limit "" "$local_stderr"; then
-            log_verbose "Provider $provider: rate limited, setting cooldown (${COOLDOWN_SECONDS}s)"
-            set_provider_cooldown "$provider"
+            set_provider_cooldown "$provider" "$local_stderr"
+            local _cd_rem
+            _cd_rem=$(get_cooldown_remaining "$provider")
+            log_verbose "Provider $provider: rate limited, setting cooldown (${_cd_rem}s)"
             if [ "$VERBOSE" = "2" ]; then
-                echo "${C_RED}rate limited${C_RESET} ${C_DIM}($((local_end - local_start))s, cooling ${COOLDOWN_SECONDS}s)${C_RESET}" >&2
+                echo "${C_RED}rate limited${C_RESET} ${C_DIM}($((local_end - local_start))s, cooling ${_cd_rem}s)${C_RESET}" >&2
             fi
             continue
         fi
