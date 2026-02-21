@@ -1,16 +1,25 @@
 function _cd_zoxide_tab_complete -d "Zoxide-powered cd tab completion"
     set -l token (commandline --current-token)
 
-    # If token has path separators or starts with dot, defer to fifc for path completion
-    if string match -q '*/*' -- "$token"; or string match -q '.*' -- "$token"
+    # Defer to fifc for: paths with /, dot-prefixed, flags (- or --)
+    if string match -q '*/*' -- "$token"
+        or string match -q '.*' -- "$token"
+        or string match -q -- '-*' "$token"
         _fifc
         return
     end
 
     set -l query (string trim -- "$token")
 
+    # Fallback to fifc if zoxide is unavailable
+    set -l zoxide_list (zoxide query --list 2>/dev/null)
+    if test $status -ne 0; or test -z "$zoxide_list"
+        _fifc
+        return
+    end
+
     # Query zoxide (frecency-ranked), display full paths so fzf preview works
-    set -l result (zoxide query --list 2>/dev/null \
+    set -l result (printf '%s\n' $zoxide_list \
         | fzf \
             --no-multi \
             --no-sort \
