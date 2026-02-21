@@ -131,6 +131,14 @@
             "command": "bash ~/dotfiles/scripts/hooks/checkpoint-pre-prompt.sh 2>/dev/null || true"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2>/dev/null || true"
+          }
+        ]
       }
     ],
     "Stop": [

@@ -241,7 +241,7 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 | **PostToolUse** (Read) | `deepwiki-context.py` | Language-aware DeepWiki repo suggestions |
 | **PreCompact** | `bd sync` | Beads memory sync before compaction |
 | **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
-| **UserPromptSubmit** | `checkpoint-pre-prompt.sh` | Checkpoint pre-prompt state capture |
+| **UserPromptSubmit** | `checkpoint-pre-prompt.sh`, `nvim-bridge.sh` | Checkpoint capture, Neovim editor context |
 | **Stop** | `checkpoint-capture.sh`, `cross-provider-bridge.sh` | Checkpoint capture, cross-provider review |
 
 **Hook Types**: Command (shell scripts), Prompt (LLM yes/no), Agent (multi-turn with tools)
@@ -274,6 +274,16 @@ Native LSP servers for Claude Code — real-time diagnostics, go-to-definition, 
 **SessionStart hook**: `lsp-status.sh` injects available LSP servers into Claude's context.
 **LSP tool operations**: `goToDefinition`, `findReferences`, `hover`, `documentSymbol`, `workspaceSymbol`.
 **Tests**: `scripts/test-filter.sh lsp`
+
+### Neovim-Claude Code Bridge
+Event-driven bridge giving Claude Code awareness of Neovim editor state. Docs: `docs/nvim-claude-bridge.md`.
+
+**Architecture**: Neovim autocommands write to `/tmp/nvim-claude-bridge/<hash>/state.json`, Claude Code's `UserPromptSubmit` hook reads it before each prompt.
+**Sections**: diagnostics (errors/warnings), focus (file/line/filetype), git_hunks (gitsigns), tests (neotest results).
+**Staleness**: Per-section timestamps; sections >5 min old are omitted.
+**Files**: `~/neovim/lua/config/claude-bridge.lua` (writer), `.claude/hooks/nvim-bridge.sh` (reader), `.config/fish/functions/cc-bridge.fish` (management).
+**Fish command**: `cc-bridge status|cat|clean|help`.
+**Tests**: `scripts/test-filter.sh nvim-bridge`
 
 ### Claude Code Agent Teams (Experimental)
 Coordinate multiple Claude Code instances with shared tasks and messaging. Enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
