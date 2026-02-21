@@ -22,8 +22,8 @@
 #   CROSS_PROVIDER_DRY_RUN=1                    Show config and availability without calling providers
 #   CROSS_PROVIDER_MODELS=codex=o3,gemini=2.5-pro  Per-provider model overrides (key=value pairs)
 #   CROSS_PROVIDER_COOLDOWN=300                  Cooldown seconds after rate limit (default: 300)
-#   CROSS_PROVIDER_CLAUDE_PROFILES=work,personal  Claude subscription profiles for rotation
-#   CROSS_PROVIDER_CODEX_PROFILES=work,personal   Codex profiles for rotation (uses ~/.codex-<name>)
+#   CROSS_PROVIDER_CLAUDE_PROFILES=work,personal  Claude profiles for rotation (auto-discovered from ~/.claude-*/)
+#   CROSS_PROVIDER_CODEX_PROFILES=work,personal   Codex profiles for rotation (auto-discovered from ~/.codex-*/)
 #
 #   Provider-specific model overrides (legacy, still supported):
 #   CROSS_PROVIDER_CODEX_MODEL=                 Codex model override (default: gpt-5.3-codex)
@@ -164,6 +164,39 @@ COOLDOWN_FILE="/tmp/cross-provider-cooldowns.json"
 COOLDOWN_SECONDS="${CROSS_PROVIDER_COOLDOWN:-300}"
 PROVIDER_STDERR_FILE="/tmp/cross-provider-bridge-stderr.$$"
 trap 'rm -f "$PROVIDER_STDERR_FILE"' EXIT
+
+# Auto-discover profiles if not explicitly set
+# Scans for ~/.claude-*/ and ~/.codex-*/ directories
+if [ -z "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ]; then
+    _auto_claude_profiles=""
+    for d in "$HOME"/.claude-*/; do
+        [ -d "$d" ] || continue
+        _name="${d%/}"               # strip trailing slash
+        _name="${_name##*/.claude-}" # extract profile name
+        [ -z "$_name" ] && continue
+        [ -n "$_auto_claude_profiles" ] && _auto_claude_profiles="${_auto_claude_profiles},"
+        _auto_claude_profiles="${_auto_claude_profiles}${_name}"
+    done
+    if [ -n "$_auto_claude_profiles" ]; then
+        export CROSS_PROVIDER_CLAUDE_PROFILES="$_auto_claude_profiles"
+        log_verbose "Auto-discovered Claude profiles: $CROSS_PROVIDER_CLAUDE_PROFILES"
+    fi
+fi
+if [ -z "${CROSS_PROVIDER_CODEX_PROFILES:-}" ]; then
+    _auto_codex_profiles=""
+    for d in "$HOME"/.codex-*/; do
+        [ -d "$d" ] || continue
+        _name="${d%/}"
+        _name="${_name##*/.codex-}"
+        [ -z "$_name" ] && continue
+        [ -n "$_auto_codex_profiles" ] && _auto_codex_profiles="${_auto_codex_profiles},"
+        _auto_codex_profiles="${_auto_codex_profiles}${_name}"
+    done
+    if [ -n "$_auto_codex_profiles" ]; then
+        export CROSS_PROVIDER_CODEX_PROFILES="$_auto_codex_profiles"
+        log_verbose "Auto-discovered Codex profiles: $CROSS_PROVIDER_CODEX_PROFILES"
+    fi
+fi
 
 # Detect rate limit indicators in provider output/stderr
 detect_rate_limit() {

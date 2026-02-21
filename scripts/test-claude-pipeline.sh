@@ -931,6 +931,18 @@ assert_contains "Hook source: CROSS_PROVIDER_CODEX_PROFILES in provider_codex" \
 assert_contains "Hook source: dispatch loop codex profile check" \
     "$(cat "$HOOK_SCRIPT")" 'all_codex_profiles_cooled'
 
+# Test: Auto-discovery of Claude profiles
+assert_contains "Hook source: auto-discover Claude profiles" \
+    "$(cat "$HOOK_SCRIPT")" '.claude-'
+
+# Test: Auto-discovery of Codex profiles
+assert_contains "Hook source: auto-discover Codex profiles" \
+    "$(cat "$HOOK_SCRIPT")" '.codex-'
+
+# Test: Auto-discovery only when not explicitly set
+assert_contains "Hook source: auto-discover respects explicit profiles" \
+    "$(cat "$HOOK_SCRIPT")" 'CROSS_PROVIDER_CLAUDE_PROFILES:-'
+
 # ============================================================================
 # gwt-ticket Bridge Auto-Rotation Flags
 # ============================================================================
