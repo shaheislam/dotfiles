@@ -982,6 +982,7 @@ $prompt_suffix"
 
     # Detect AI guidance files to auto-open in nvim buffers
     # CLAUDE.md: AI rules/constraints. AGENTS.md: practical agent rules (editable per-worktree)
+    # settings.local.json: per-worktree hook configuration (only in .claude/)
     # Priority: worktree root > .claude/ subdirectory
     set -l nvim_ai_files
     for ai_file in CLAUDE.md AGENTS.md
@@ -990,6 +991,11 @@ $prompt_suffix"
         else if test -f "$worktree_path/.claude/$ai_file"
             set -a nvim_ai_files "$worktree_path/.claude/$ai_file"
         end
+    end
+
+    # Also open settings.local.json if present (hook configuration visibility)
+    if test -f "$worktree_path/.claude/settings.local.json"
+        set -a nvim_ai_files "$worktree_path/.claude/settings.local.json"
     end
 
     if $use_devcon
