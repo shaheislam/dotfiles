@@ -19,7 +19,8 @@
 #   --mount M            Additional mount (repeatable)
 #   --devcon          Use devcontainer for isolation (default: local)
 #   --dry-run            Show what would be executed without running
-#   --quiet, -q          Suppress verbose output
+#   --quiet, -q          Suppress verbose output (default)
+#   --verbose, -v        Show full verbose output
 #   --help               Show this help
 
 set -euo pipefail
@@ -54,7 +55,8 @@ OPTIONS:
   --mount M            Additional mount directory (repeatable)
   --devcon          Use devcontainer for isolation (default: local)
   --dry-run            Show what would be executed without running
-  --quiet, -q          Suppress verbose output (writes to .claude/gwt-ticket.log)
+  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)
+  --verbose, -v        Show full verbose output (overrides default quiet mode)
   --help               Show this help
 
 EXAMPLES:
@@ -86,6 +88,7 @@ PROMPT_SUFFIX=""
 USE_DEVCON=false
 DRY_RUN=false
 QUIET=false
+VERBOSE=false
 MOUNTS=()
 
 # Parse arguments
@@ -134,6 +137,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     --quiet | -q)
         QUIET=true
+        shift
+        ;;
+    --verbose | -v)
+        VERBOSE=true
         shift
         ;;
     --help | -h)
@@ -203,6 +210,10 @@ fi
 
 if [[ "$QUIET" == "true" ]]; then
     GWT_ARGS+=("--quiet")
+fi
+
+if [[ "$VERBOSE" == "true" ]]; then
+    GWT_ARGS+=("--verbose")
 fi
 
 for mount in "${MOUNTS[@]}"; do

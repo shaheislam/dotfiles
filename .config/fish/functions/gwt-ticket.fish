@@ -20,7 +20,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --devcon        Use devcontainer for isolation (default: local)
     #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
     #   --system S      Ticketing system: linear or jira
-    #   --quiet, -q     Suppress verbose output (writes to .claude/gwt-ticket.log)
+    #   --quiet, -q     Suppress verbose output (default, writes to .claude/gwt-ticket.log)
+    #   --verbose, -v   Show full verbose output (overrides default quiet mode)
     #   --help, -h      Show help
 
     # Check if we're in a git repository (skip for --status which works from anywhere)
@@ -92,7 +93,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l town_sync true
     set -l mayor_tracked false
     set -l swarm_epic_id "" # bd swarm: epic bead ID to create swarm from
-    set -l quiet_mode false
+    set -l quiet_mode true
 
     for i in (seq (count $argv))
         if $skip_next
@@ -408,6 +409,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 set mayor_tracked false
             case --quiet -q
                 set quiet_mode true
+            case --verbose -v
+                set quiet_mode false
             case --swarm-epic
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -491,7 +494,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency, bd-bead)"
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
-        echo "  --quiet, -q          Suppress verbose output (writes to .claude/gwt-ticket.log instead)"
+        echo "  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)"
+        echo "  --verbose, -v        Show full verbose output (overrides default quiet mode)"
         echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
