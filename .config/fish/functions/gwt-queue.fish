@@ -184,6 +184,104 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
                 echo "No log file yet (daemon hasn't been started)"
             end
 
+        case bd-ready
+            # Import ready work from Beads (bd ready) into the ticket queue
+            # Usage: gwt-queue bd-ready [--sub NAME] [--priority N] [--limit N] [--dry-run] [--repo PATH]
+            if not command -q bd
+                echo "Error: 'bd' (Beads) not found. Install with: brew install beads"
+                return 1
+            end
+            set -l sub_name ""
+            set -l priority 5
+            set -l limit 10
+            set -l dry_run false
+            set -l repo_path (pwd)
+            set -l skip_next false
+            for i in (seq (count $rest))
+                if $skip_next
+                    set skip_next false
+                    continue
+                end
+                set -l arg $rest[$i]
+                switch $arg
+                    case --sub
+                        set -l ni (math $i + 1)
+                        if test $ni -le (count $rest)
+                            set sub_name $rest[$ni]
+                            set skip_next true
+                        end
+                    case --priority
+                        set -l ni (math $i + 1)
+                        if test $ni -le (count $rest)
+                            set priority $rest[$ni]
+                            set skip_next true
+                        end
+                    case --limit
+                        set -l ni (math $i + 1)
+                        if test $ni -le (count $rest)
+                            set limit $rest[$ni]
+                            set skip_next true
+                        end
+                    case --repo
+                        set -l ni (math $i + 1)
+                        if test $ni -le (count $rest)
+                            set repo_path $rest[$ni]
+                            set skip_next true
+                        end
+                    case --dry-run
+                        set dry_run true
+                end
+            end
+            # Find ready work from Beads
+            set -l bd_json (cd $repo_path && bd ready --json --limit $limit 2>/dev/null)
+            if test $status -ne 0 -o -z "$bd_json"
+                echo "No ready work found (run from a directory with a .beads database)"
+                return 0
+            end
+            set -l count (echo $bd_json | python3 -c "import json,sys; data=json.load(sys.stdin); print(len(data) if isinstance(data, list) else 0)")
+            if test "$count" -eq 0
+                echo "No unblocked beads ready to work on"
+                return 0
+            end
+            echo "Found $count ready bead(s):"
+            echo ""
+            # Queue each ready bead
+            echo $bd_json | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if not isinstance(data, list):
+    data = [data]
+for issue in data:
+    bead_id = issue.get('id', '')
+    title = issue.get('title', 'Untitled')
+    desc = issue.get('description', '') or issue.get('body', '') or ''
+    ext_ref = issue.get('external_ref', '')
+    key = ext_ref if ext_ref else bead_id
+    print(f'BEAD|{key}|{title}|{desc[:200]}')
+" | while read -l line
+                set -l parts (string split '|' $line)
+                set -l bead_key $parts[2]
+                set -l bead_title $parts[3]
+                set -l bead_desc $parts[4]
+                echo "  [$bead_key] $bead_title"
+                if not $dry_run
+                    set -l add_args $bead_key $bead_title $bead_desc --priority $priority
+                    if test -n "$sub_name"
+                        set add_args $add_args --sub $sub_name
+                    end
+                    set add_args $add_args --repo $repo_path
+                    bash $queue_daemon add $add_args 2>/dev/null
+                    or echo "    Warning: failed to queue $bead_key"
+                end
+            end
+            if $dry_run
+                echo ""
+                echo "(dry-run: no tickets queued)"
+            else
+                echo ""
+                echo "Queued $count bead(s). Run 'gwt-queue start' to begin dispatching."
+            end
+
         case help --help -h ''
             echo "gwt-queue - Rate-limit-aware ticket queue with multi-subscription support"
             echo ""
@@ -193,6 +291,7 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             echo "COMMANDS:"
             echo "  add [key] <title> [desc] [--opts]  Queue a ticket for later execution"
             echo "  add-plan <name> [specs] [--opts]    Queue all tasks from a plan"
+            echo "  bd-ready [--opts]                   Import ready beads into queue"
             echo "  list / ls                           List all queued tickets"
             echo "  remove / rm <id>                    Remove ticket from queue"
             echo "  clear                               Clear all queued tickets"
@@ -204,6 +303,13 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             echo "  profiles                            List subscription profiles + usage"
             echo "  log [N]                             Show last N log lines (default: 20)"
             echo "  help                                Show this help"
+            echo ""
+            echo "BD-READY OPTIONS:"
+            echo "  --repo PATH     Git repo with .beads (default: current dir)"
+            echo "  --limit N       Max beads to import (default: 10)"
+            echo "  --priority N    Queue priority 1-10 (default: 5)"
+            echo "  --sub NAME      Pin to subscription profile"
+            echo "  --dry-run       Show what would be queued without queuing"
             echo ""
             echo "SUBSCRIPTION PROFILES:"
             echo "  --sub NAME on 'add' pins a ticket to a specific subscription."

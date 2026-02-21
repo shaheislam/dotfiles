@@ -169,6 +169,25 @@ cmd_process() {
     echo -e "${BLUE}Processing: $branch ($worktree_path)${NC}"
     log_msg "PROCESSING branch=$branch path=$worktree_path"
 
+    # Use bd merge-slot for distributed locking when Beads is available
+    # This prevents "monkey knife fights" where multiple agents race to merge
+    local bd_slot_acquired=false
+    if command -v bd &>/dev/null && [[ -d "$worktree_path/.beads" ]]; then
+        # Ensure merge-slot bead exists (idempotent)
+        (cd "$worktree_path" && bd merge-slot create 2>/dev/null) || true
+        # Try to acquire the slot (60s timeout)
+        if (cd "$worktree_path" && timeout 60 bd merge-slot acquire 2>/dev/null); then
+            bd_slot_acquired=true
+            log_msg "BD_SLOT_ACQUIRED branch=$branch path=$worktree_path"
+        else
+            log_msg "BD_SLOT_ACQUIRE_FAILED branch=$branch path=$worktree_path (falling back to file lock)"
+        fi
+    fi
+    # Ensure slot is released on exit
+    if [[ "$bd_slot_acquired" == true ]]; then
+        trap '(cd "$worktree_path" && bd merge-slot release 2>/dev/null) || true' EXIT
+    fi
+
     # Derive repo root to fetch and push
     local repo_root
     if [[ -d "$worktree_path" ]]; then
@@ -238,6 +257,13 @@ cmd_process() {
         tmp=$(mktemp)
         jq "del(.[$idx])" "$QUEUE_FILE" >"$tmp" && mv "$tmp" "$QUEUE_FILE"
         release_lock
+        # Release bd merge-slot after successful merge
+        if [[ "$bd_slot_acquired" == true ]]; then
+            (cd "$worktree_path" && bd merge-slot release 2>/dev/null) || true
+            bd_slot_acquired=false
+            trap - EXIT
+            log_msg "BD_SLOT_RELEASED branch=$branch"
+        fi
         ;;
     2)
         # Non-additive conflicts

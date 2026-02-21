@@ -84,6 +84,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l molecule_id ""
     set -l town_sync true
     set -l mayor_tracked false
+    set -l swarm_epic_id "" # bd swarm: epic bead ID to create swarm from
 
     for i in (seq (count $argv))
         if $skip_next
@@ -338,6 +339,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 set mayor_tracked true
             case --no-mayor
                 set mayor_tracked false
+            case --swarm-epic
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set swarm_epic_id $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --swarm-epic requires a bead epic ID (e.g., bd-abc12)"
+                    return 1
+                end
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -403,8 +413,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --no-town            Disable town-level bead sync"
         echo "  --mayor              Register ticket with mayor for global tracking"
         echo "  --no-mayor           Disable mayor registration"
-        echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency)"
+        echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency, bd-bead)"
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
+        echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
         echo "  --help, -h           Show this help"
         echo ""
         echo "Examples:"
@@ -454,7 +465,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Show agent status
     if $show_status
         set -l agent_state_script ""
-        for p in ~/dotfiles/scripts/agent-state.sh ~/dotfiles-gastownbeads/scripts/agent-state.sh
+        for p in ~/dotfiles/scripts/agent-state.sh ~/dotfiles-gastown/scripts/agent-state.sh
             if test -x "$p"
                 set agent_state_script $p
                 break
@@ -660,12 +671,25 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
 
     # Create bead for this work item
+    # Use --external-ref to link the bead to the external ticket (Linear/Jira key)
     if command -q bd
         if test -d "$worktree_path/.beads"
             pushd $worktree_path
-            bd create "$issue_key" --title "$title" --body "$description" 2>/dev/null; or true
+            bd create "$title" --external-ref "$issue_key" --description "$description" --silent 2>/dev/null; or true
             popd
         end
+    end
+
+    # Create bd swarm molecule from epic if --swarm-epic was specified
+    if test -n "$swarm_epic_id" -a -d "$worktree_path/.beads"
+        pushd $worktree_path
+        set -l swarm_result (bd swarm create "$swarm_epic_id" 2>/dev/null)
+        if test $status -eq 0
+            echo "Created bd swarm for epic $swarm_epic_id: $swarm_result"
+        else
+            echo "Warning: bd swarm create failed for $swarm_epic_id (continuing)"
+        end
+        popd
     end
 
     # Create molecule from template steps if --molecule auto and --template given
@@ -980,7 +1004,7 @@ $prompt_suffix"
         echo "set -l claude_exit \$status" >>$launch_script
         echo "if test \$claude_exit -ne 0" >>$launch_script
         echo "    echo 'Claude exited with code ' \$claude_exit" >>$launch_script
-        echo "end" >>$launch_script
+        echo end >>$launch_script
         echo "exec fish" >>$launch_script
     end
     chmod +x $launch_script
@@ -1159,7 +1183,7 @@ $prompt" >$state_file
     # Create phase gate if --gate was specified
     if test -n "$gate_type"
         set -l gates_script ""
-        for p in ~/dotfiles/scripts/phase-gates.sh ~/dotfiles-gastownbeads/scripts/phase-gates.sh
+        for p in ~/dotfiles/scripts/phase-gates.sh ~/dotfiles-gastown/scripts/phase-gates.sh
             if test -x "$p"
                 set gates_script $p
                 break
@@ -1202,7 +1226,7 @@ $prompt" >$state_file
 
     # Ensure merge-queue daemon is running (serializes merges across agents)
     set -l merge_queue_script ""
-    for p in ~/dotfiles/scripts/merge-queue.sh ~/dotfiles-gastownbeads/scripts/merge-queue.sh
+    for p in ~/dotfiles/scripts/merge-queue.sh ~/dotfiles-gastown/scripts/merge-queue.sh
         if test -x "$p"
             set merge_queue_script $p
             break
@@ -1228,8 +1252,8 @@ $prompt" >$state_file
     # Spawn worktree witness (per-worktree lifecycle monitor)
     set -l witness_script "$HOME/dotfiles/scripts/worktree-witness.sh"
     if not test -x "$witness_script"
-        # Try gastownbeads path as fallback
-        set witness_script "$HOME/dotfiles-gastownbeads/scripts/worktree-witness.sh"
+        # Try gastown path as fallback
+        set witness_script "$HOME/dotfiles-gastown/scripts/worktree-witness.sh"
     end
     if test -x "$witness_script"
         set -l witness_args "$worktree_path" --poll-interval 30 --max-retries 3

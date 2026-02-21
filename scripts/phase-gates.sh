@@ -38,7 +38,7 @@ NC='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AGENT_STATE="$SCRIPT_DIR/agent-state.sh"
 
-VALID_GATE_TYPES=("ci-pipeline" "pr-review" "human-input" "dependency")
+VALID_GATE_TYPES=("ci-pipeline" "pr-review" "human-input" "dependency" "bd-bead")
 
 # --- Helpers ---
 
@@ -53,7 +53,7 @@ ensure_gates_file() {
     gf=$(gates_file "$worktree")
     mkdir -p "$(dirname "$gf")"
     if [[ ! -f "$gf" ]]; then
-        echo '[]' > "$gf"
+        echo '[]' >"$gf"
     fi
 }
 
@@ -88,6 +88,69 @@ require_dep() {
 
 timestamp_now() {
     date -u +%Y-%m-%dT%H:%M:%SZ
+}
+
+# --- Beads Gate Integration ---
+
+# Check if bd is available and the worktree has a beads database
+has_beads() {
+    local worktree="$1"
+    command -v bd &>/dev/null && [[ -d "$worktree/.beads" ]]
+}
+
+# Create a native bd gate (mirrors our local gate for Beads integration)
+# Beads gate types: human, gh:run (ci), gh:pr (pr-review)
+create_bd_gate() {
+    local gate_type="$1" worktree="$2"
+    has_beads "$worktree" || return 0
+
+    local bd_type=""
+    case "$gate_type" in
+    ci-pipeline) bd_type="gh:run" ;;
+    pr-review) bd_type="gh:pr" ;;
+    human-input) bd_type="human" ;;
+    *) return 0 ;; # No bd equivalent, skip
+    esac
+
+    local gate_title="gate: $gate_type for $(basename "$worktree")"
+    (cd "$worktree" && bd create "$gate_title" --type=gate --labels "gt:gate,$bd_type" --silent 2>/dev/null) || true
+}
+
+# Check if a bd gate has been resolved
+check_bd_gate_resolved() {
+    local worktree="$1" gate_type="$2"
+    has_beads "$worktree" || return 1
+
+    # For gh:run and gh:pr gates, use bd gate check to evaluate
+    (cd "$worktree" && bd gate check 2>/dev/null) || true
+}
+
+# Check a cross-rig bead gate (bd-bead gate type)
+# Env: BD_AWAIT_ID = "<rig>:<bead-id>" format
+check_bd_bead() {
+    local worktree="$1"
+    local await_id="${BD_AWAIT_ID:-}"
+
+    if [[ -z "$await_id" ]]; then
+        echo -e "${YELLOW}Warning: BD_AWAIT_ID not set for bd-bead gate${NC}" >&2
+        return 1
+    fi
+
+    # Parse rig:bead-id format
+    local rig bead_id
+    rig="${await_id%%:*}"
+    bead_id="${await_id#*:}"
+
+    if [[ -z "$rig" || -z "$bead_id" ]]; then
+        echo -e "${RED}Error: BD_AWAIT_ID must be in 'rig:bead-id' format (e.g. myproject:bd-abc12)${NC}" >&2
+        return 1
+    fi
+
+    # Check if the referenced bead is closed (completed)
+    local status
+    status=$(bd show "$bead_id" --rig "$rig" --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',''))" 2>/dev/null) || status=""
+
+    [[ "$status" == "closed" ]]
 }
 
 # --- Gate Check Implementations ---
@@ -185,14 +248,15 @@ check_gate() {
     local gate_type="$1" worktree="$2"
 
     case "$gate_type" in
-        ci-pipeline)  check_ci_pipeline "$worktree" ;;
-        pr-review)    check_pr_review "$worktree" ;;
-        human-input)  check_human_input "$worktree" ;;
-        dependency)   check_dependency "$worktree" ;;
-        *)
-            echo -e "${RED}Error: Unknown gate type '$gate_type'${NC}" >&2
-            return 1
-            ;;
+    ci-pipeline) check_ci_pipeline "$worktree" ;;
+    pr-review) check_pr_review "$worktree" ;;
+    human-input) check_human_input "$worktree" ;;
+    dependency) check_dependency "$worktree" ;;
+    bd-bead) check_bd_bead "$worktree" ;;
+    *)
+        echo -e "${RED}Error: Unknown gate type '$gate_type'${NC}" >&2
+        return 1
+        ;;
     esac
 }
 
@@ -207,7 +271,7 @@ mark_resolved() {
     tmp=$(mktemp)
     jq --arg type "$gate_type" --arg now "$(timestamp_now)" \
         '[.[] | if (.type == $type and .resolved == false) then .resolved = true | .resolved_at = $now else . end]' \
-        "$gf" > "$tmp" && mv "$tmp" "$gf"
+        "$gf" >"$tmp" && mv "$tmp" "$gf"
 }
 
 # --- Commands ---
@@ -246,7 +310,7 @@ cmd_wait() {
             exit 0
         fi
 
-        local elapsed=$(( $(date +%s) - start ))
+        local elapsed=$(($(date +%s) - start))
         if [[ "$elapsed" -ge "$timeout" ]]; then
             echo -e "${RED}Timeout waiting for gate: $gate_type (${timeout}s)${NC}"
             exit 2
@@ -279,23 +343,23 @@ cmd_create() {
     # Build metadata based on gate type
     local metadata='{}'
     case "$gate_type" in
-        ci-pipeline|pr-review)
-            local branch
-            branch=$(git -C "$worktree" branch --show-current 2>/dev/null || echo "")
-            metadata=$(jq -n --arg branch "$branch" '{"branch": $branch}')
-            ;;
-        human-input)
-            metadata='{"signal_file": ".claude/gate-signal"}'
-            ;;
-        dependency)
-            local dep_path="${DEP_WORKTREE:-}"
-            if [[ -z "$dep_path" ]]; then
-                echo -e "${RED}Error: Set DEP_WORKTREE env var for dependency gate${NC}" >&2
-                echo "Usage: DEP_WORKTREE=/path/to/other/worktree phase-gates.sh create dependency <worktree>" >&2
-                exit 1
-            fi
-            metadata=$(jq -n --arg dep "$dep_path" '{"dependency_worktree": $dep}')
-            ;;
+    ci-pipeline | pr-review)
+        local branch
+        branch=$(git -C "$worktree" branch --show-current 2>/dev/null || echo "")
+        metadata=$(jq -n --arg branch "$branch" '{"branch": $branch}')
+        ;;
+    human-input)
+        metadata='{"signal_file": ".claude/gate-signal"}'
+        ;;
+    dependency)
+        local dep_path="${DEP_WORKTREE:-}"
+        if [[ -z "$dep_path" ]]; then
+            echo -e "${RED}Error: Set DEP_WORKTREE env var for dependency gate${NC}" >&2
+            echo "Usage: DEP_WORKTREE=/path/to/other/worktree phase-gates.sh create dependency <worktree>" >&2
+            exit 1
+        fi
+        metadata=$(jq -n --arg dep "$dep_path" '{"dependency_worktree": $dep}')
+        ;;
     esac
 
     # Add gate entry
@@ -308,13 +372,20 @@ cmd_create() {
             "resolved": false,
             "resolved_at": null,
             "metadata": $meta
-        }]' "$gf" > "$tmp" && mv "$tmp" "$gf"
+        }]' "$gf" >"$tmp" && mv "$tmp" "$gf"
 
     echo -e "${GREEN}Gate created: $gate_type${NC}"
+
+    # Mirror to native Beads gate when available (enables bd gate check integration)
+    create_bd_gate "$gate_type" "$worktree"
 
     # For human-input, hint about how to signal
     if [[ "$gate_type" == "human-input" ]]; then
         echo -e "  Signal with: ${BLUE}phase-gates.sh signal $worktree${NC}"
+    fi
+    # For bd-bead, hint about the await_id
+    if [[ "$gate_type" == "bd-bead" ]]; then
+        echo -e "  Set ${BLUE}BD_AWAIT_ID=<rig>:<bead-id>${NC} when checking"
     fi
 }
 
@@ -324,7 +395,7 @@ cmd_signal() {
 
     local signal_file="$worktree/.claude/gate-signal"
     mkdir -p "$(dirname "$signal_file")"
-    echo "$(timestamp_now)" > "$signal_file"
+    echo "$(timestamp_now)" >"$signal_file"
 
     echo -e "${GREEN}Signal sent: human-input gate for $(basename "$worktree")${NC}"
 }
@@ -396,7 +467,7 @@ cmd_clear() {
     gf=$(gates_file "$worktree")
 
     if [[ -f "$gf" ]]; then
-        echo '[]' > "$gf"
+        echo '[]' >"$gf"
     fi
 
     # Also clean up any signal file
@@ -412,7 +483,7 @@ cmd_has_active() {
     gf=$(gates_file "$worktree")
 
     if [[ ! -f "$gf" ]]; then
-        exit 1  # no gates file = no active gates
+        exit 1 # no gates file = no active gates
     fi
 
     require_dep "jq" "gate management" || exit 1
@@ -421,15 +492,15 @@ cmd_has_active() {
     active=$(jq '[.[] | select(.resolved == false)] | length' "$gf" 2>/dev/null) || active=0
 
     if [[ "$active" -gt 0 ]]; then
-        exit 0  # has active gates
+        exit 0 # has active gates
     fi
-    exit 1  # no active gates
+    exit 1 # no active gates
 }
 
 # --- Main ---
 
 show_help() {
-    cat << 'EOF'
+    cat <<'EOF'
 phase-gates.sh - Pause/resume agent monitoring on external conditions
 
 USAGE:
@@ -442,10 +513,11 @@ USAGE:
   phase-gates.sh has-active <worktree-path>               Exit 0 if active gates exist
 
 GATE TYPES:
-  ci-pipeline    Wait for GitHub Actions CI to pass
-  pr-review      Wait for PR to be approved
-  human-input    Wait for human to signal (file-based)
+  ci-pipeline    Wait for GitHub Actions CI to pass (mirrors to bd gh:run gate)
+  pr-review      Wait for PR to be approved (mirrors to bd gh:pr gate)
+  human-input    Wait for human to signal (file-based, mirrors to bd human gate)
   dependency     Wait for another worktree's agent to complete
+  bd-bead        Wait for a cross-rig bead to close (set BD_AWAIT_ID=<rig>:<bead-id>)
 
 OPTIONS:
   --timeout N    Seconds to wait before timeout (default: 3600, wait command only)
@@ -474,6 +546,10 @@ EXAMPLES:
 
   # Dependency on another agent
   DEP_WORKTREE=/path/to/other phase-gates.sh create dependency /path/to/worktree
+
+  # Wait for a bead in another rig to close (Beads native cross-rig gate)
+  phase-gates.sh create bd-bead /path/to/worktree
+  BD_AWAIT_ID=myproject:bd-abc12 phase-gates.sh check bd-bead /path/to/worktree
 EOF
 }
 
@@ -481,86 +557,86 @@ COMMAND="${1:-}"
 shift || true
 
 case "$COMMAND" in
-    check)
-        if [[ $# -lt 2 ]]; then
-            echo -e "${RED}Error: gate-type and worktree-path required${NC}" >&2
-            echo "Usage: phase-gates.sh check <gate-type> <worktree-path>" >&2
-            exit 1
-        fi
-        cmd_check "$1" "$2"
-        ;;
-    wait)
-        if [[ $# -lt 2 ]]; then
-            echo -e "${RED}Error: gate-type and worktree-path required${NC}" >&2
-            echo "Usage: phase-gates.sh wait <gate-type> <worktree-path> [--timeout N]" >&2
-            exit 1
-        fi
-        gate_type="$1"
-        worktree="$2"
-        shift 2
-        timeout=3600
-        while [[ $# -gt 0 ]]; do
-            case $1 in
-                --timeout)
-                    timeout="$2"
-                    shift 2
-                    ;;
-                *)
-                    echo -e "${RED}Error: Unknown option $1${NC}" >&2
-                    exit 1
-                    ;;
-            esac
-        done
-        cmd_wait "$gate_type" "$worktree" "$timeout"
-        ;;
-    create)
-        if [[ $# -lt 2 ]]; then
-            echo -e "${RED}Error: gate-type and worktree-path required${NC}" >&2
-            echo "Usage: phase-gates.sh create <gate-type> <worktree-path>" >&2
-            exit 1
-        fi
-        cmd_create "$1" "$2"
-        ;;
-    signal)
-        if [[ $# -lt 1 ]]; then
-            echo -e "${RED}Error: worktree-path required${NC}" >&2
-            echo "Usage: phase-gates.sh signal <worktree-path>" >&2
-            exit 1
-        fi
-        cmd_signal "$1"
-        ;;
-    list)
-        if [[ $# -lt 1 ]]; then
-            echo -e "${RED}Error: worktree-path required${NC}" >&2
-            echo "Usage: phase-gates.sh list <worktree-path>" >&2
-            exit 1
-        fi
-        cmd_list "$1"
-        ;;
-    clear)
-        if [[ $# -lt 1 ]]; then
-            echo -e "${RED}Error: worktree-path required${NC}" >&2
-            echo "Usage: phase-gates.sh clear <worktree-path>" >&2
-            exit 1
-        fi
-        cmd_clear "$1"
-        ;;
-    has-active)
-        if [[ $# -lt 1 ]]; then
-            echo -e "${RED}Error: worktree-path required${NC}" >&2
-            exit 1
-        fi
-        cmd_has_active "$1"
-        ;;
-    --help|-h|help)
-        show_help
-        ;;
-    "")
-        show_help
-        ;;
-    *)
-        echo -e "${RED}Error: Unknown command '$COMMAND'${NC}" >&2
-        echo "Run 'phase-gates.sh --help' for usage" >&2
+check)
+    if [[ $# -lt 2 ]]; then
+        echo -e "${RED}Error: gate-type and worktree-path required${NC}" >&2
+        echo "Usage: phase-gates.sh check <gate-type> <worktree-path>" >&2
         exit 1
-        ;;
+    fi
+    cmd_check "$1" "$2"
+    ;;
+wait)
+    if [[ $# -lt 2 ]]; then
+        echo -e "${RED}Error: gate-type and worktree-path required${NC}" >&2
+        echo "Usage: phase-gates.sh wait <gate-type> <worktree-path> [--timeout N]" >&2
+        exit 1
+    fi
+    gate_type="$1"
+    worktree="$2"
+    shift 2
+    timeout=3600
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+        --timeout)
+            timeout="$2"
+            shift 2
+            ;;
+        *)
+            echo -e "${RED}Error: Unknown option $1${NC}" >&2
+            exit 1
+            ;;
+        esac
+    done
+    cmd_wait "$gate_type" "$worktree" "$timeout"
+    ;;
+create)
+    if [[ $# -lt 2 ]]; then
+        echo -e "${RED}Error: gate-type and worktree-path required${NC}" >&2
+        echo "Usage: phase-gates.sh create <gate-type> <worktree-path>" >&2
+        exit 1
+    fi
+    cmd_create "$1" "$2"
+    ;;
+signal)
+    if [[ $# -lt 1 ]]; then
+        echo -e "${RED}Error: worktree-path required${NC}" >&2
+        echo "Usage: phase-gates.sh signal <worktree-path>" >&2
+        exit 1
+    fi
+    cmd_signal "$1"
+    ;;
+list)
+    if [[ $# -lt 1 ]]; then
+        echo -e "${RED}Error: worktree-path required${NC}" >&2
+        echo "Usage: phase-gates.sh list <worktree-path>" >&2
+        exit 1
+    fi
+    cmd_list "$1"
+    ;;
+clear)
+    if [[ $# -lt 1 ]]; then
+        echo -e "${RED}Error: worktree-path required${NC}" >&2
+        echo "Usage: phase-gates.sh clear <worktree-path>" >&2
+        exit 1
+    fi
+    cmd_clear "$1"
+    ;;
+has-active)
+    if [[ $# -lt 1 ]]; then
+        echo -e "${RED}Error: worktree-path required${NC}" >&2
+        exit 1
+    fi
+    cmd_has_active "$1"
+    ;;
+--help | -h | help)
+    show_help
+    ;;
+"")
+    show_help
+    ;;
+*)
+    echo -e "${RED}Error: Unknown command '$COMMAND'${NC}" >&2
+    echo "Run 'phase-gates.sh --help' for usage" >&2
+    exit 1
+    ;;
 esac
