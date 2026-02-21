@@ -1,3 +1,10 @@
+<<<<<<< HEAD
 {"timestamp":"2026-02-21T13:57:22Z","event":"init","issue_key":"TASK","title":"gastown","sub":"","model":"","detail":"CV initialized"}
 {"timestamp":"2026-02-21T13:57:25Z","event":"completed","detail":"iteration=0 duration=0s","issue_key":"TASK"}
 {"timestamp":"2026-02-21T13:57:34Z","event":"merged","detail":"merge_exit=0","issue_key":"TASK"}
+||||||| 5f9040b
+=======
+{"timestamp":"2026-02-21T12:34:39Z","event":"init","issue_key":"TASK","title":"claudemd","sub":"","model":"","detail":"CV initialized"}
+{"timestamp":"2026-02-21T12:34:43Z","event":"completed","detail":"iteration=0 duration=0s","issue_key":"TASK"}
+{"timestamp":"2026-02-21T12:34:51Z","event":"merged","detail":"merge_exit=0","issue_key":"TASK"}
+>>>>>>> claudemd

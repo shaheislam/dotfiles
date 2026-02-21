@@ -1009,6 +1009,24 @@ $prompt_suffix"
     end
     chmod +x $launch_script
 
+    # Detect AI guidance files to auto-open in nvim buffers
+    # CLAUDE.md: AI rules/constraints. AGENTS.md: practical agent rules (editable per-worktree)
+    # settings.local.json: per-worktree hook configuration (only in .claude/)
+    # Priority: worktree root > .claude/ subdirectory
+    set -l nvim_ai_files
+    for ai_file in CLAUDE.md AGENTS.md
+        if test -f "$worktree_path/$ai_file"
+            set -a nvim_ai_files "$worktree_path/$ai_file"
+        else if test -f "$worktree_path/.claude/$ai_file"
+            set -a nvim_ai_files "$worktree_path/.claude/$ai_file"
+        end
+    end
+
+    # Also open settings.local.json if present (hook configuration visibility)
+    if test -f "$worktree_path/.claude/settings.local.json"
+        set -a nvim_ai_files "$worktree_path/.claude/settings.local.json"
+    end
+
     if $use_devcon
         # Build devcon up command - rebuild ensures fresh container with correct mounts
         # Without -r, devcontainer up reuses existing containers that may lack --mount binds
@@ -1075,7 +1093,7 @@ $prompt_suffix"
         # Only Claude Code needs isolation (runs --dangerously-skip-permissions).
         # Nvim and terminal stay on host for native config and full access.
         # ┌──────────────┬──────────────┐
-        # │              │ nvim diffview │ ← top-right (host)
+        # │              │ nvim CLAUDE.md│ ← top-right (host)
         # │  Claude Code ├──────────────┤
         # │  (devcon)    │   terminal   │ ← bottom-right (host)
         # └──────────────┴──────────────┘
@@ -1096,7 +1114,11 @@ $prompt_suffix"
         echo "tmux last-pane" >>$setup_script
         echo "tmux split-window -v -p 30 -c '$worktree_path'" >>$setup_script
         echo "tmux select-pane -U" >>$setup_script
-        echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" >>$setup_script
+        if test (count $nvim_ai_files) -gt 0
+            echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" >>$setup_script
+        else
+            echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" >>$setup_script
+        end
         echo "exec fish" >>$setup_script
         chmod +x $setup_script
 
@@ -1105,7 +1127,7 @@ $prompt_suffix"
     else
         # Run locally with 3-pane layout:
         # ┌──────────────┬──────────────┐
-        # │              │ nvim diffview │ ← top-right (70%)
+        # │              │ nvim CLAUDE.md│ ← top-right (70%)
         # │  Claude Code ├──────────────┤
         # │              │   terminal   │ ← bottom-right (30%)
         # └──────────────┴──────────────┘
@@ -1118,10 +1140,14 @@ $prompt_suffix"
         tmux last-pane -t "$session_name:$window_name"
         tmux split-window -t "$session_name:$window_name" -v -p 30 -c "$worktree_path"
         # After split: right side has [original(top-right)] [new-terminal(bottom-right,active)]
-        # Step 3: Launch nvim with diffview in the top-right pane (go up from bottom-right)
+        # Step 3: Launch nvim in the top-right pane (opens CLAUDE.md if present, go up from bottom-right)
         # Combined cd+nvim in single send-keys to avoid buffer corruption from pane resize events
         tmux select-pane -t "$session_name:$window_name" -U
-        tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
+        if test (count $nvim_ai_files) -gt 0
+            tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" Enter
+        else
+            tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
+        end
     end
 
     # Resolve convoy name to ID before writing state file
