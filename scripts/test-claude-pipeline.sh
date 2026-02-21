@@ -722,6 +722,82 @@ rm -f "$v2_tmpfile"
 assert_contains "gwt-ticket source: bridge-verbose maps to level 2" \
     "$gwtt_source" "CROSS_PROVIDER_VERBOSE 2"
 
+# Test: Pause file (mid-session toggle)
+pause_tmpfile=$(mktemp)
+echo '{"role": "assistant", "content": "Test pause file"}' >"$pause_tmpfile"
+pause_file=$(mktemp)
+# With pause file present, bridge should exit 0 immediately (no provider calls)
+pause_output=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$pause_tmpfile\"}" |
+    CROSS_PROVIDER_BRIDGE=1 \
+        CROSS_PROVIDER_VERBOSE=1 \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        CROSS_PROVIDER_PAUSE_FILE="$pause_file" \
+        bash "$HOOK_SCRIPT" 2>&1)
+pause_exit=$?
+if [ "$pause_exit" = "0" ]; then
+    print_success "Pause file: exits 0 when pause file exists"
+    ((PASS++))
+else
+    print_error "Pause file: non-zero exit ($pause_exit)"
+    ((FAIL++))
+fi
+# Should produce NO verbose output (exits before logging)
+if [ -z "$pause_output" ]; then
+    print_success "Pause file: no output (skipped entirely)"
+    ((PASS++))
+else
+    print_error "Pause file: unexpected output when paused"
+    ((FAIL++))
+fi
+rm -f "$pause_file"
+
+# Without pause file, bridge should proceed normally
+no_pause_stderr=$(echo "{\"stop_hook_active\": false, \"transcript_path\": \"$pause_tmpfile\"}" |
+    CROSS_PROVIDER_BRIDGE=1 \
+        CROSS_PROVIDER_VERBOSE=1 \
+        CROSS_PROVIDER_ORDER="nonexistent" \
+        CROSS_PROVIDER_PAUSE_FILE="/tmp/nonexistent-pause-file" \
+        bash "$HOOK_SCRIPT" 2>&1 1>/dev/null) || true
+if echo "$no_pause_stderr" | grep -q '\[bridge\]'; then
+    print_success "No pause file: bridge proceeds normally"
+    ((PASS++))
+else
+    print_error "No pause file: bridge did not proceed"
+    ((FAIL++))
+fi
+rm -f "$pause_tmpfile"
+
+# Test: Hook script references CROSS_PROVIDER_PAUSE_FILE
+if grep -q "CROSS_PROVIDER_PAUSE_FILE" "$HOOK_SCRIPT"; then
+    print_success "Hook script: references CROSS_PROVIDER_PAUSE_FILE"
+    ((PASS++))
+else
+    print_error "Hook script: missing reference to CROSS_PROVIDER_PAUSE_FILE"
+    ((FAIL++))
+fi
+
+# Test: bridge.fish function exists
+BRIDGE_FISH="$SCRIPT_DIR/../.config/fish/functions/bridge.fish"
+if [[ -f "$BRIDGE_FISH" ]]; then
+    print_success "bridge.fish function exists"
+    ((PASS++))
+else
+    print_error "bridge.fish function not found"
+    ((FAIL++))
+fi
+
+# Test: bridge.fish help output
+if command -v fish &>/dev/null; then
+    bridge_help=$(fish -c "source $BRIDGE_FISH; bridge help" 2>&1)
+    if echo "$bridge_help" | grep -q "bridge-paused"; then
+        print_success "bridge.fish help: mentions pause file"
+        ((PASS++))
+    else
+        print_error "bridge.fish help: missing pause file reference"
+        ((FAIL++))
+    fi
+fi
+
 # ============================================================================
 # Live Tests (require Claude subscription)
 # ============================================================================

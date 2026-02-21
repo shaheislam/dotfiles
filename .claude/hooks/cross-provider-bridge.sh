@@ -39,6 +39,13 @@ if [ "${CROSS_PROVIDER_BRIDGE:-}" != "1" ]; then
     exit 0
 fi
 
+# Gate: file-based pause (toggle mid-session without restart)
+# Touch ~/.claude/bridge-paused to disable, rm to re-enable
+PAUSE_FILE="${CROSS_PROVIDER_PAUSE_FILE:-$HOME/.claude/bridge-paused}"
+if [ -f "$PAUSE_FILE" ]; then
+    exit 0
+fi
+
 # --- Verbose logging ---
 VERBOSE="${CROSS_PROVIDER_VERBOSE:-0}"
 LOG_FILE="${CROSS_PROVIDER_LOG:-}"
