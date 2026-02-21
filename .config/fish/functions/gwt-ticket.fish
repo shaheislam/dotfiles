@@ -676,6 +676,17 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         if test -d "$worktree_path/.beads"
             pushd $worktree_path
             bd create "$title" --external-ref "$issue_key" --description "$description" --silent 2>/dev/null; or true
+
+            # GUPP Hook bead: create an ephemeral Hook bead representing work slung to this agent.
+            # Per the Gastown Universal Propulsion Principle: "If there is work on your hook, YOU MUST RUN IT."
+            # The hook bead is ephemeral (wisp) - it disappears once the agent processes it.
+            bd create "hook: $issue_key" \
+                --ephemeral \
+                --type event \
+                --event-category "agent.hooked" \
+                --event-target "$issue_key" \
+                --labels "gt:hook,gt:gupp" \
+                --silent 2>/dev/null; or true
             popd
         end
     end

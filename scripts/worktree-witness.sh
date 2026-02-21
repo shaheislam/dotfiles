@@ -272,6 +272,10 @@ monitor_loop() {
     local consecutive_dead=0
     local last_observed_iteration=0
     local iterations_observed=0
+    # Patrol exponential backoff: back off when idle, reset on activity
+    local patrol_sleep="$POLL_INTERVAL"
+    local patrol_max_sleep=300 # 5 min cap
+    local patrol_had_activity=false
 
     while true; do
         # Check for active gates — pause monitoring while gated
@@ -283,7 +287,9 @@ monitor_loop() {
             "$gates_script" check pr-review "$WORKTREE_PATH" 2>/dev/null || true
             "$gates_script" check dependency "$WORKTREE_PATH" 2>/dev/null || true
             # human-input gates resolve via signal command only
-            sleep "$POLL_INTERVAL"
+            # Exponential backoff while gated (up to max cap)
+            sleep "$patrol_sleep"
+            patrol_sleep=$((patrol_sleep * 2 > patrol_max_sleep ? patrol_max_sleep : patrol_sleep * 2))
             continue
         fi
 
@@ -303,6 +309,7 @@ monitor_loop() {
         if [[ "$iteration" != "0" && "$iteration" != "$last_observed_iteration" ]]; then
             iterations_observed=$((iterations_observed + 1))
             last_observed_iteration="$iteration"
+            patrol_had_activity=true
             # Update progress file for gwt-status
             echo "{\"iteration\":$iteration,\"max_iterations\":${max_iterations:-20},\"state\":\"$state\",\"updated_at\":\"$now_ts\"}" >"$WORKTREE_PATH/.claude/progress.json"
         fi
@@ -439,7 +446,15 @@ monitor_loop() {
         esac
 
         last_state="$state"
-        sleep "$POLL_INTERVAL"
+
+        # Patrol exponential backoff: reset on activity, back off when idle
+        if [[ "$patrol_had_activity" == true ]]; then
+            patrol_sleep="$POLL_INTERVAL"
+            patrol_had_activity=false
+        elif [[ "$state" == "idle" || "$state" == "unknown" ]]; then
+            patrol_sleep=$((patrol_sleep * 2 > patrol_max_sleep ? patrol_max_sleep : patrol_sleep * 2))
+        fi
+        sleep "$patrol_sleep"
     done
 }
 

@@ -235,13 +235,20 @@ cmd_start() {
         echo $BASHPID >"$PID_FILE"
         daemon_log "Mayor started (PID $BASHPID, poll ${POLL_INTERVAL}s)"
 
+        # Patrol exponential backoff: back off when idle, reset when busy
+        local patrol_sleep="$POLL_INTERVAL"
+        local patrol_max_sleep=300
         while true; do
             local decisions
             decisions=$(decide_cycle 2>/dev/null) || decisions=0
             if [[ "$decisions" -gt 0 ]]; then
                 daemon_log "Cycle complete: $decisions decisions"
+                patrol_sleep="$POLL_INTERVAL" # Reset on activity
+            else
+                # Back off when nothing to do
+                patrol_sleep=$((patrol_sleep * 2 > patrol_max_sleep ? patrol_max_sleep : patrol_sleep * 2))
             fi
-            sleep "$POLL_INTERVAL"
+            sleep "$patrol_sleep"
         done
     ) &
     disown
@@ -270,13 +277,19 @@ cmd_run() {
     echo $$ >"$PID_FILE"
     daemon_log "Mayor started foreground (PID $$, poll ${POLL_INTERVAL}s)"
 
+    # Patrol exponential backoff: back off when idle, reset when busy
+    local patrol_sleep="$POLL_INTERVAL"
+    local patrol_max_sleep=300
     while true; do
         local decisions
         decisions=$(decide_cycle 2>/dev/null) || decisions=0
         if [[ "$decisions" -gt 0 ]]; then
             daemon_log "Cycle complete: $decisions decisions"
+            patrol_sleep="$POLL_INTERVAL" # Reset on activity
+        else
+            patrol_sleep=$((patrol_sleep * 2 > patrol_max_sleep ? patrol_max_sleep : patrol_sleep * 2))
         fi
-        sleep "$POLL_INTERVAL"
+        sleep "$patrol_sleep"
     done
 }
 
