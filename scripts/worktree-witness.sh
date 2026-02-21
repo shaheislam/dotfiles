@@ -451,8 +451,10 @@ monitor_loop() {
         if [[ "$patrol_had_activity" == true ]]; then
             patrol_sleep="$POLL_INTERVAL"
             patrol_had_activity=false
-        elif [[ "$state" == "idle" || "$state" == "unknown" ]]; then
+        elif [[ "$state" == "idle" ]]; then
             patrol_sleep=$((patrol_sleep * 2 > patrol_max_sleep ? patrol_max_sleep : patrol_sleep * 2))
+        elif [[ "$state" == "unknown" ]]; then
+            patrol_sleep=$POLL_INTERVAL # Retry fast — script/data error, not idle
         fi
         sleep "$patrol_sleep"
     done
@@ -506,6 +508,8 @@ on_completion() {
                 if [[ -x "$mail_script_mol" ]]; then
                     "$mail_script_mol" send all -s "Molecule $molecule_id: next step" -m "Next: $next_step" --from "witness-$(basename "$WORKTREE_PATH")" 2>/dev/null || true
                 fi
+            elif [[ "$mol_exit" -eq 1 ]]; then
+                log "Molecule $molecule_id advance failed (exit 1) — will retry next cycle"
             fi
         fi
     fi

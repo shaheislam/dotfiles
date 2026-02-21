@@ -36,6 +36,9 @@ QUEUE_FILE="${HOME}/.claude/merge-queue.json"
 PID_FILE="/tmp/merge-queue-daemon.pid"
 LOG_FILE="${HOME}/.claude/merge-queue.log"
 LOCK_FILE="/tmp/merge-queue.lock"
+# Global state for bd slot cleanup — set in cmd_process, read by EXIT trap
+BD_SLOT_ACQUIRED=false
+BD_SLOT_WORKTREE=""
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AUTO_MERGE="${SCRIPT_DIR}/auto-merge.sh"
 POLL_INTERVAL=30
@@ -57,13 +60,14 @@ acquire_lock() {
         fi
         sleep 1
     done
-    # Clean up lock on exit
-    trap 'release_lock' EXIT
+    # Combined EXIT trap: file lock + bd slot if acquired (avoids trap override bug)
+    trap 'release_lock; [[ "$BD_SLOT_ACQUIRED" == true ]] && (cd "$BD_SLOT_WORKTREE" && bd merge-slot release 2>/dev/null) || true' EXIT
 }
 
 release_lock() {
     rmdir "$LOCK_FILE" 2>/dev/null || true
-    trap - EXIT
+    # Note: EXIT trap is intentionally NOT reset here — the combined trap above
+    # handles both the file lock and bd slot release; rmdir is idempotent.
 }
 
 # --- Queue helpers ---
@@ -183,9 +187,10 @@ cmd_process() {
             log_msg "BD_SLOT_ACQUIRE_FAILED branch=$branch path=$worktree_path (falling back to file lock)"
         fi
     fi
-    # Ensure slot is released on exit
+    # Register slot for cleanup via the unified EXIT trap (no trap override)
     if [[ "$bd_slot_acquired" == true ]]; then
-        trap '(cd "$worktree_path" && bd merge-slot release 2>/dev/null) || true' EXIT
+        BD_SLOT_ACQUIRED=true
+        BD_SLOT_WORKTREE="$worktree_path"
     fi
 
     # Derive repo root to fetch and push
@@ -261,7 +266,7 @@ cmd_process() {
         if [[ "$bd_slot_acquired" == true ]]; then
             (cd "$worktree_path" && bd merge-slot release 2>/dev/null) || true
             bd_slot_acquired=false
-            trap - EXIT
+            BD_SLOT_ACQUIRED=false # prevent double-release via EXIT trap
             log_msg "BD_SLOT_RELEASED branch=$branch"
         fi
         ;;

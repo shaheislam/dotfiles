@@ -241,8 +241,14 @@ cmd_start() {
         while true; do
             local decisions
             decisions=$(decide_cycle 2>/dev/null) || decisions=0
-            if [[ "$decisions" -gt 0 ]]; then
-                daemon_log "Cycle complete: $decisions decisions"
+            # Reset backoff when agents are actively working, even if no decisions needed
+            local active_worktrees=0
+            if [[ -x "$AGENT_STATE" ]]; then
+                active_worktrees=$("$AGENT_STATE" --all --json 2>/dev/null |
+                    jq '[.[] | select(.state != "completed" and .state != "none")] | length' 2>/dev/null) || active_worktrees=0
+            fi
+            if [[ "$decisions" -gt 0 || "$active_worktrees" -gt 0 ]]; then
+                daemon_log "Cycle complete: $decisions decisions, $active_worktrees active worktrees"
                 patrol_sleep="$POLL_INTERVAL" # Reset on activity
             else
                 # Back off when nothing to do
@@ -283,8 +289,14 @@ cmd_run() {
     while true; do
         local decisions
         decisions=$(decide_cycle 2>/dev/null) || decisions=0
-        if [[ "$decisions" -gt 0 ]]; then
-            daemon_log "Cycle complete: $decisions decisions"
+        # Reset backoff when agents are actively working, even if no decisions needed
+        local active_worktrees=0
+        if [[ -x "$AGENT_STATE" ]]; then
+            active_worktrees=$("$AGENT_STATE" --all --json 2>/dev/null |
+                jq '[.[] | select(.state != "completed" and .state != "none")] | length' 2>/dev/null) || active_worktrees=0
+        fi
+        if [[ "$decisions" -gt 0 || "$active_worktrees" -gt 0 ]]; then
+            daemon_log "Cycle complete: $decisions decisions, $active_worktrees active worktrees"
             patrol_sleep="$POLL_INTERVAL" # Reset on activity
         else
             patrol_sleep=$((patrol_sleep * 2 > patrol_max_sleep ? patrol_max_sleep : patrol_sleep * 2))

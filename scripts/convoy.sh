@@ -24,6 +24,7 @@
 set -euo pipefail
 
 CONVOY_FILE="${HOME}/.claude/convoys.jsonl"
+CONVOY_LOCK="${CONVOY_FILE}.lock"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -67,10 +68,13 @@ read_convoy() {
 update_convoy() {
     local id="$1" new_json="$2"
     local tmp="${CONVOY_FILE}.tmp.$$"
-    # Remove old entry, append new
-    grep -v "\"id\":\"${id}\"" "$CONVOY_FILE" >"$tmp" 2>/dev/null || true
-    echo "$new_json" >>"$tmp"
-    mv "$tmp" "$CONVOY_FILE"
+    # Atomic read-modify-write with exclusive lock to prevent concurrent corruption
+    (
+        flock -x 9
+        grep -v "\"id\":\"${id}\"" "$CONVOY_FILE" >"$tmp" 2>/dev/null || true
+        echo "$new_json" >>"$tmp"
+        mv "$tmp" "$CONVOY_FILE"
+    ) 9>>"$CONVOY_LOCK"
 }
 
 # --- Commands ---
@@ -131,7 +135,10 @@ cmd_create() {
     fi
 
     local json="{\"id\":\"${id}\",\"name\":\"$(json_escape "$name")\",\"tickets\":${ticket_arr},\"status\":${status_obj},\"created\":\"${ts}\",\"updated\":\"${ts}\"}"
-    echo "$json" >>"$CONVOY_FILE"
+    (
+        flock -x 9
+        echo "$json" >>"$CONVOY_FILE"
+    ) 9>>"$CONVOY_LOCK"
 
     echo -e "${GREEN}Created convoy${NC} ${BOLD}${id}${NC}: ${name}"
     if [[ -n "$tickets" ]]; then
@@ -468,7 +475,10 @@ cmd_find_or_create() {
     id="$(generate_id)"
     ts="$(timestamp_now)"
     local json="{\"id\":\"${id}\",\"name\":\"$(json_escape "$name")\",\"tickets\":[],\"status\":{},\"created\":\"${ts}\",\"updated\":\"${ts}\"}"
-    echo "$json" >>"$CONVOY_FILE"
+    (
+        flock -x 9
+        echo "$json" >>"$CONVOY_FILE"
+    ) 9>>"$CONVOY_LOCK"
     echo -e "${GREEN}Created convoy${NC} ${BOLD}${id}${NC}: ${name}" >&2
     echo "$id"
 }
