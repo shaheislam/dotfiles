@@ -35,6 +35,10 @@
 .claude/plugins/installed_plugins.json
 .claude/hooks/__pycache__/
 
+# Ralph-loop / gwt-ticket runtime state (per-worktree, never commit)
+.claude/progress.json
+.claude/worker-cv.jsonl
+
 # Checkpoint pending data (ephemeral, per-repo working dir)
 .checkpoints/
 
