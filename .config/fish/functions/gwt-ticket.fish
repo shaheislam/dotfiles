@@ -83,6 +83,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l bridge_dry_run false
     set -l bridge_cooldown ""
     set -l bridge_profiles ""
+    set -l bridge_codex_profiles ""
     set -l auto_cleanup ""
     set -l rebase_merge false
     set -l convoy_id ""
@@ -321,7 +322,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --bridge-cooldown requires seconds (e.g., 300)"
                     return 1
                 end
-            case --bridge-profiles
+            case --bridge-profiles --bridge-claude-profiles
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
                     set bridge_profiles $argv[$next_i]
@@ -329,6 +330,16 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set skip_next true
                 else
                     echo "Error: --bridge-profiles requires comma-separated profile names (e.g., work,personal)"
+                    return 1
+                end
+            case --bridge-codex-profiles
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set bridge_codex_profiles $argv[$next_i]
+                    set bridge_mode true
+                    set skip_next true
+                else
+                    echo "Error: --bridge-codex-profiles requires comma-separated profile names (e.g., work,personal)"
                     return 1
                 end
             case --no-checkpoints
@@ -449,6 +460,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge-dry-run     Show bridge config and provider availability without calling providers"
         echo "  --bridge-cooldown S  Cooldown seconds after rate limit (default: 300)"
         echo "  --bridge-profiles P  Claude subscription profiles for auto-rotation (e.g., work,personal)"
+        echo "  --bridge-codex-profiles P  Codex profiles for auto-rotation (uses ~/.codex-<name>)"
         echo "  --rebase             Rebase onto main before merging (re-spawns on conflict)"
         echo "  --auto-cleanup       Auto-remove worktree after successful merge (1hr grace period)"
         echo "  --no-auto-cleanup    Disable auto-cleanup (keep worktree after merge)"
@@ -636,7 +648,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             set bridge_info "$bridge_info, models: $bridge_models"
         end
         if test -n "$bridge_profiles"
-            set bridge_info "$bridge_info, profiles: $bridge_profiles"
+            set bridge_info "$bridge_info, claude-profiles: $bridge_profiles"
+        end
+        if test -n "$bridge_codex_profiles"
+            set bridge_info "$bridge_info, codex-profiles: $bridge_codex_profiles"
         end
         if test -n "$bridge_cooldown"
             set bridge_info "$bridge_info, cooldown: $bridge_cooldown""s"
@@ -1011,6 +1026,9 @@ $prompt_suffix"
         if test -n "$bridge_profiles"
             echo "set -gx CROSS_PROVIDER_CLAUDE_PROFILES $bridge_profiles" >>$launch_script
         end
+        if test -n "$bridge_codex_profiles"
+            echo "set -gx CROSS_PROVIDER_CODEX_PROFILES $bridge_codex_profiles" >>$launch_script
+        end
         echo "" >>$launch_script
     end
 
@@ -1110,6 +1128,9 @@ $prompt_suffix"
             end
             if test -n "$bridge_profiles"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_CLAUDE_PROFILES=$bridge_profiles"
+            end
+            if test -n "$bridge_codex_profiles"
+                set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_CODEX_PROFILES=$bridge_codex_profiles"
             end
         end
         set devcon_up_cmd "$devcon_up_cmd $worktree_path $resolved_repo_root"

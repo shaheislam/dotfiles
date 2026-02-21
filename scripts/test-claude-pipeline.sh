@@ -908,8 +908,28 @@ assert_contains "Hook source: profile rotation in provider_claude" \
     "$(cat "$HOOK_SCRIPT")" "CLAUDE_CONFIG_DIR"
 
 # Test: Profile cooldown keys use claude:profile format
-assert_contains "Hook source: profile cooldown key format" \
+assert_contains "Hook source: profile cooldown key format (claude)" \
     "$(cat "$HOOK_SCRIPT")" 'claude:$profile'
+
+# Test: Profile cooldown keys use codex:profile format
+assert_contains "Hook source: profile cooldown key format (codex)" \
+    "$(cat "$HOOK_SCRIPT")" 'codex:$profile'
+
+# Test: Codex profile rotation function exists
+assert_contains "Hook source: all_codex_profiles_cooled function" \
+    "$(cat "$HOOK_SCRIPT")" "all_codex_profiles_cooled"
+
+# Test: Codex CODEX_HOME rotation
+assert_contains "Hook source: CODEX_HOME profile rotation" \
+    "$(cat "$HOOK_SCRIPT")" 'CODEX_HOME="$codex_home"'
+
+# Test: Codex profile rotation in provider_codex
+assert_contains "Hook source: CROSS_PROVIDER_CODEX_PROFILES in provider_codex" \
+    "$(cat "$HOOK_SCRIPT")" 'CROSS_PROVIDER_CODEX_PROFILES'
+
+# Test: Dispatch loop checks codex profiles
+assert_contains "Hook source: dispatch loop codex profile check" \
+    "$(cat "$HOOK_SCRIPT")" 'all_codex_profiles_cooled'
 
 # ============================================================================
 # gwt-ticket Bridge Auto-Rotation Flags
@@ -935,12 +955,21 @@ assert_contains "gwt-ticket source: CROSS_PROVIDER_COOLDOWN env (local)" \
 assert_contains "gwt-ticket source: CROSS_PROVIDER_CLAUDE_PROFILES env (local)" \
     "$gwtt_source" "CROSS_PROVIDER_CLAUDE_PROFILES"
 
+# Test: --bridge-codex-profiles flag parsing
+assert_contains "gwt-ticket source: --bridge-codex-profiles flag parsing" \
+    "$gwtt_source" "--bridge-codex-profiles"
+
+# Test: CROSS_PROVIDER_CODEX_PROFILES env var wiring (local path)
+assert_contains "gwt-ticket source: CROSS_PROVIDER_CODEX_PROFILES env (local)" \
+    "$gwtt_source" "CROSS_PROVIDER_CODEX_PROFILES"
+
 # Test: Help text mentions new flags
 if command -v fish &>/dev/null; then
     gwtt_help=$(fish -c "source $GWTT_FISH; gwt-ticket --help" 2>/dev/null) || true
     if [ -n "$gwtt_help" ]; then
         assert_contains "gwt-ticket help: --bridge-cooldown flag" "$gwtt_help" "--bridge-cooldown"
         assert_contains "gwt-ticket help: --bridge-profiles flag" "$gwtt_help" "--bridge-profiles"
+        assert_contains "gwt-ticket help: --bridge-codex-profiles flag" "$gwtt_help" "--bridge-codex-profiles"
     fi
 fi
 
@@ -951,6 +980,8 @@ if [[ -f "$BRIDGE_FISH" ]]; then
         "$(cat "$BRIDGE_FISH")" "cross-provider-cooldowns.json"
     assert_contains "bridge.fish: shows Claude profiles" \
         "$(cat "$BRIDGE_FISH")" "CROSS_PROVIDER_CLAUDE_PROFILES"
+    assert_contains "bridge.fish: shows Codex profiles" \
+        "$(cat "$BRIDGE_FISH")" "CROSS_PROVIDER_CODEX_PROFILES"
 fi
 
 # ============================================================================

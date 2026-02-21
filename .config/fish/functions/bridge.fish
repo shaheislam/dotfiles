@@ -34,6 +34,9 @@ function bridge --description "Toggle cross-provider bridge on/off mid-session"
                 if test -n "$CROSS_PROVIDER_CLAUDE_PROFILES"
                     echo "  Claude profiles: $CROSS_PROVIDER_CLAUDE_PROFILES"
                 end
+                if test -n "$CROSS_PROVIDER_CODEX_PROFILES"
+                    echo "  Codex profiles: $CROSS_PROVIDER_CODEX_PROFILES"
+                end
                 if test -n "$CROSS_PROVIDER_COOLDOWN"
                     echo "  Cooldown: $CROSS_PROVIDER_COOLDOWN""s"
                 end
