@@ -1,0 +1,16 @@
+# Skill Manifest for dotfiles repo
+# Declares which skills from the dotfiles library this repo needs.
+# Run: skills-manifest sync  (to materialize symlinks into .claude/skills/)
+
+[manifest]
+description = "Dotfiles management skills"
+
+[sources]
+# Format: skill-name = "dotfiles:<category>/<skill-name>"
+#         skill-name = "path:<absolute-or-home-relative-path>"
+
+# Shared skills relevant to this repo
+dotfiles-sync = "dotfiles:shared/dotfiles-sync"
+fish-reload = "dotfiles:shared/fish-reload"
+mcp-restart = "dotfiles:shared/mcp-restart"
+git-config-fix = "dotfiles:shared/git-config-fix"
