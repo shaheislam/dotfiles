@@ -331,9 +331,11 @@ Local LLM stack (Ollama + Open WebUI) as resilience layer. Setup: `scripts/setup
 Stop hook for correlation-bias mitigation — sends reasoning to independent AI providers. Iterative consensus with graceful fallback chain.
 
 **Enable**: `CROSS_PROVIDER_BRIDGE=1 claude` | **Providers**: Codex, Gemini, Ollama, DeepSeek, Claude, OpenCode
-**Key env vars**: `CROSS_PROVIDER_ORDER` (default: `codex,opencode`), `CROSS_PROVIDER_MODE` (`review|redteam|steelman|assumptions`), `CROSS_PROVIDER_MAX_ITERATIONS` (default: 3).
+**Key env vars**: `CROSS_PROVIDER_ORDER` (default: `codex,opencode`), `CROSS_PROVIDER_MODE` (`review|redteam|steelman|assumptions`), `CROSS_PROVIDER_MAX_ITERATIONS` (default: 3), `CROSS_PROVIDER_MODELS` (per-provider model map: `codex=o3,gemini=2.5-pro`), `CROSS_PROVIDER_DRY_RUN=1` (show config only).
+**Verbose levels**: `CROSS_PROVIDER_VERBOSE=1` (prefix logs), `CROSS_PROVIDER_VERBOSE=2` (structured banners with provider availability, timing, consensus reasoning).
+**Auto-rotation**: `CROSS_PROVIDER_COOLDOWN=300` (cooldown seconds after rate limit), `CROSS_PROVIDER_CLAUDE_PROFILES=work,personal` (Claude subscription profile rotation). Rate-limited providers auto-skip with cooldown; Claude profiles rotate through `~/.claude-<name>/` dirs.
 **Hook**: `.claude/hooks/cross-provider-bridge.sh` (command type, not prompt/agent — same-provider defeats purpose)
-**gwt-ticket**: `--bridge [N]`, `--bridge-providers P`, `--bridge-verbose`, `--bridge-model M`, `--bridge-timeout S`, `--bridge-log FILE`
+**gwt-ticket**: `--bridge [N]`, `--bridge-providers P`, `--bridge-mode MODE`, `--bridge-verbose`, `--bridge-model M`, `--bridge-models MAP`, `--bridge-timeout S`, `--bridge-log FILE`, `--bridge-dry-run`, `--bridge-cooldown S`, `--bridge-profiles P`
 **Testing**: `scripts/test-claude-pipeline.sh` (`--live` for E2E)
 
 ### Decision Quality System (DQS)
