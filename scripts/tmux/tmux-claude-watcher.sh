@@ -388,6 +388,11 @@ check_all_windows() {
     local now
     now=$(date +%s)
 
+    # Get the ONE window the user is actually viewing (active window in attached client's session)
+    # list-clients works from background daemons; display-message -p does not track client changes
+    local viewed_window
+    viewed_window=$(tmux list-clients -F '#{session_name}:#{window_index}' 2>/dev/null | head -1)
+
     for entry in "${all_windows[@]}"; do
         session="${entry%%:*}"
         win_idx="${entry#*:}"
@@ -397,8 +402,8 @@ check_all_windows() {
         LAST_CLAUDE_STATUS="none"
         LAST_OPENCODE_STATUS="none"
 
-        # Skip if this is the active window in its session
-        [[ -n "${ACTIVE_SET[$entry]:-}" ]] && continue
+        # Skip only the window the user is actually viewing
+        [[ "$entry" == "$viewed_window" ]] && continue
 
         # Check for cache invalidation signal from mark_viewed
         if [[ -f "$STATE_DIR/invalidate-$state_key" ]]; then
