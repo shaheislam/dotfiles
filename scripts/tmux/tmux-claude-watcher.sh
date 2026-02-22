@@ -305,6 +305,36 @@ check_ralph_loop_state() {
     fi
 }
 
+# Update per-window @wname_style option for choose-tree color coding
+# Sets a #[fg=COLOR] style string that overrides the default white in the format
+# Derives state from existing state files — no extra ps calls
+# Priority: stuck > idle > running > none
+update_agent_state() {
+    local session="$1"
+    local win_idx="$2"
+    local state_key="${session}-${win_idx}"
+    local target="${session}:${win_idx}"
+
+    local style=""
+    if [[ -f "$STATE_DIR/ralph-stuck-$state_key" ]]; then
+        style="#[fg=#f7768e]" # red — stuck
+    elif [[ -f "$STATE_DIR/claude-notified-$state_key" ]] || [[ -f "$STATE_DIR/opencode-notified-$state_key" ]]; then
+        style="#[fg=#e0af68]" # yellow — idle
+    elif [[ "$LAST_CLAUDE_STATUS" == "idle" ]] || [[ "$LAST_OPENCODE_STATUS" == "idle" ]]; then
+        style="#[fg=#9ece6a]" # green — running
+    fi
+
+    # Read current value to avoid unnecessary tmux IPC
+    local current
+    current=$(tmux show-window-option -t "$target" -v @wname_style 2>/dev/null) || current=""
+
+    if [[ -z "$style" ]]; then
+        [[ -n "$current" ]] && tmux set-window-option -t "$target" -u @wname_style 2>/dev/null || true
+    elif [[ "$style" != "$current" ]]; then
+        tmux set-window-option -t "$target" @wname_style "$style" 2>/dev/null || true
+    fi
+}
+
 check_all_windows() {
     # Get active window per session (to know what user is currently viewing)
     local active_windows
@@ -319,6 +349,10 @@ check_all_windows() {
         local session="${entry%%:*}"
         local win_idx="${entry#*:}"
 
+        # Init status globals for update_agent_state
+        LAST_CLAUDE_STATUS="none"
+        LAST_OPENCODE_STATUS="none"
+
         # Skip if this is the active window in its session
         echo "$active_windows" | grep -q "^${session}:${win_idx}:" && continue
 
@@ -330,6 +364,9 @@ check_all_windows() {
 
         # Check for stuck ralph-loop agents
         check_ralph_loop_state "$session" "$win_idx"
+
+        # Update per-window agent state for choose-tree coloring
+        update_agent_state "$session" "$win_idx"
     done
 }
 
@@ -347,6 +384,13 @@ process_tool_state() {
     # get_tool_status detects work via stdout offset and sets worked_file
     local status
     status=$(get_tool_status "$session" "$win_idx" "$tool" "$pattern")
+
+    # Expose status via globals for update_agent_state
+    if [[ "$tool" == "claude" ]]; then
+        LAST_CLAUDE_STATUS="$status"
+    elif [[ "$tool" == "opencode" ]]; then
+        LAST_OPENCODE_STATUS="$status"
+    fi
 
     # Show indicator if tool is present and has worked since last view
     if [[ "$status" == "idle" ]]; then
@@ -528,6 +572,9 @@ mark_viewed() {
     rm -f "$STATE_DIR/opencode-pending-$state_key"
     rm -f "$STATE_DIR/ralph-stuck-$state_key"
     rm -f "$STATE_DIR/ralph-iteration-$state_key"
+
+    # Clear agent state color for choose-tree
+    tmux set-window-option -t "${session}:${win_idx}" -u @wname_style 2>/dev/null || true
 
     # Remove all indicators from window name
     update_window_indicators "$session" "$win_idx"
