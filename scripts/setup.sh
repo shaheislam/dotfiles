@@ -1200,6 +1200,42 @@ phase_9_fonts_and_apps() {
                     log_verbose "CopyQ setup completed with warnings"
             fi
         fi
+        # Install ClaudeUsage menu bar app (subscription usage tracker)
+        # https://github.com/linuxlewis/claude-usage
+        if [[ -d "/Applications/ClaudeUsage.app" ]]; then
+            print_success "ClaudeUsage already installed"
+        else
+            print_step "Installing ClaudeUsage menu bar app..."
+            local claude_usage_url
+            claude_usage_url=$(curl -sL "https://api.github.com/repos/linuxlewis/claude-usage/releases/latest" |
+                grep -o '"browser_download_url":\s*"[^"]*\.zip"' |
+                head -1 |
+                sed 's/"browser_download_url":\s*"//;s/"$//')
+
+            if [[ -n "$claude_usage_url" ]]; then
+                local claude_usage_tmp="/tmp/ClaudeUsage.zip"
+                if curl -sL "$claude_usage_url" -o "$claude_usage_tmp"; then
+                    unzip -q -o "$claude_usage_tmp" -d /tmp/ClaudeUsage 2>/dev/null
+                    local app_src="/tmp/ClaudeUsage/ClaudeUsage.app"
+                    if [[ ! -d "$app_src" ]]; then
+                        app_src=$(find /tmp/ClaudeUsage -name "ClaudeUsage.app" -maxdepth 2 -type d 2>/dev/null | head -1)
+                    fi
+                    if [[ -n "$app_src" && -d "$app_src" ]]; then
+                        xattr -cr "$app_src" 2>/dev/null
+                        codesign --force --deep --sign - "$app_src" 2>/dev/null
+                        mv "$app_src" /Applications/
+                        print_success "ClaudeUsage installed to /Applications/"
+                    else
+                        print_warning "ClaudeUsage.app not found in archive"
+                    fi
+                    rm -rf "$claude_usage_tmp" /tmp/ClaudeUsage
+                else
+                    print_warning "Failed to download ClaudeUsage"
+                fi
+            else
+                print_warning "Failed to fetch ClaudeUsage release URL"
+            fi
+        fi
     else
         # Linux/other OS
         echo "Font and GUI application installation is macOS-specific"
