@@ -20,6 +20,7 @@
 # - *-pending-N: offset snapshot when growth first detected (confirmation pending)
 # - *-worked-N: flag indicating tool produced confirmed output since last view
 # - *-notified-N: flag indicating indicator is currently shown
+# - *-lastoffset-N: stdout offset from previous poll (for active vs idle detection)
 # - ralph-iteration-N: last seen iteration:timestamp for stuck detection
 # - ralph-stuck-N: flag indicating ralph-loop is stuck
 #
@@ -500,8 +501,22 @@ get_tool_status() {
         stdout_offset=$(lsof -p "$tool_pid" 2>/dev/null | grep "1u.*tty" | awk '{print $7}' | sed 's/0t//')
         local baseline_file="$STATE_DIR/${tool}-baseline-$state_key"
         local worked_file="$STATE_DIR/${tool}-worked-$state_key"
+        local lastoffset_file="$STATE_DIR/${tool}-lastoffset-$state_key"
+
+        # Track whether stdout offset is changing between polls
+        # active = tool is producing output right now (orange in choose-tree)
+        # idle = tool exists but output stopped (green in choose-tree)
+        local offset_changing=false
 
         if [[ -n "$stdout_offset" ]]; then
+            # Compare with previous poll's offset for active/idle detection
+            if [[ -f "$lastoffset_file" ]]; then
+                local prev_offset
+                prev_offset=$(cat "$lastoffset_file")
+                [[ "$stdout_offset" != "$prev_offset" ]] && offset_changing=true
+            fi
+            echo "$stdout_offset" >"$lastoffset_file"
+
             local pending_file="$STATE_DIR/${tool}-pending-$state_key"
             if [[ -f "$baseline_file" ]]; then
                 local baseline
@@ -540,10 +555,15 @@ get_tool_status() {
                 echo "$stdout_offset" >"$baseline_file"
             fi
         fi
-        # Always return "idle" - the worked flag handles work detection
 
-        # Tool exists but not busy = idle
-        echo "idle"
+        # Return "active" when tool is producing output AND has confirmed work
+        # This enables orange color in choose-tree for running agents
+        # "idle" means tool exists but output stopped — triggers notification
+        if $offset_changing && [[ -f "$worked_file" ]]; then
+            echo "active"
+        else
+            echo "idle"
+        fi
         return 0
     done
 
@@ -638,10 +658,12 @@ mark_viewed() {
           "$STATE_DIR/claude-notified-$state_key" \
           "$STATE_DIR/claude-baseline-$state_key" \
           "$STATE_DIR/claude-pending-$state_key" \
+          "$STATE_DIR/claude-lastoffset-$state_key" \
           "$STATE_DIR/opencode-worked-$state_key" \
           "$STATE_DIR/opencode-notified-$state_key" \
           "$STATE_DIR/opencode-baseline-$state_key" \
           "$STATE_DIR/opencode-pending-$state_key" \
+          "$STATE_DIR/opencode-lastoffset-$state_key" \
           "$STATE_DIR/ralph-stuck-$state_key" \
           "$STATE_DIR/ralph-iteration-$state_key"
 
