@@ -1216,19 +1216,17 @@ phase_9_fonts_and_apps() {
                 local claude_usage_tmp="/tmp/ClaudeUsage.zip"
                 if curl -sL "$claude_usage_url" -o "$claude_usage_tmp"; then
                     unzip -q -o "$claude_usage_tmp" -d /tmp/ClaudeUsage 2>/dev/null
-                    if [[ -d "/tmp/ClaudeUsage/ClaudeUsage.app" ]]; then
-                        mv "/tmp/ClaudeUsage/ClaudeUsage.app" /Applications/
+                    local app_src="/tmp/ClaudeUsage/ClaudeUsage.app"
+                    if [[ ! -d "$app_src" ]]; then
+                        app_src=$(find /tmp/ClaudeUsage -name "ClaudeUsage.app" -maxdepth 2 -type d 2>/dev/null | head -1)
+                    fi
+                    if [[ -n "$app_src" && -d "$app_src" ]]; then
+                        xattr -cr "$app_src" 2>/dev/null
+                        codesign --force --deep --sign - "$app_src" 2>/dev/null
+                        mv "$app_src" /Applications/
                         print_success "ClaudeUsage installed to /Applications/"
                     else
-                        # Handle case where .app is directly in zip root
-                        local app_path
-                        app_path=$(find /tmp/ClaudeUsage -name "ClaudeUsage.app" -maxdepth 2 -type d 2>/dev/null | head -1)
-                        if [[ -n "$app_path" ]]; then
-                            mv "$app_path" /Applications/
-                            print_success "ClaudeUsage installed to /Applications/"
-                        else
-                            print_warning "ClaudeUsage.app not found in archive"
-                        fi
+                        print_warning "ClaudeUsage.app not found in archive"
                     fi
                     rm -rf "$claude_usage_tmp" /tmp/ClaudeUsage
                 else
