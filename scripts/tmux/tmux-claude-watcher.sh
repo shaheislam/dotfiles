@@ -316,7 +316,8 @@ check_ralph_loop_state() {
 
 # Update per-window @wname_style option for choose-tree color coding
 # Colors: stuck=red, running=orange, idle=green. Clears on mark_viewed.
-# Priority: stuck > idle > running > none
+# Follows same worked/viewed cycle as icons — no color until new work after viewing
+# Priority: stuck > idle > running (with work) > none
 update_agent_state() {
     local session="$1"
     local win_idx="$2"
@@ -328,8 +329,8 @@ update_agent_state() {
         style="#[fg=#f7768e]" # red — stuck (ralph-loop stalled)
     elif [[ -f "$STATE_DIR/claude-notified-$state_key" ]] || [[ -f "$STATE_DIR/opencode-notified-$state_key" ]]; then
         style="#[fg=#9ece6a]" # green — idle (agent waiting for input)
-    elif [[ "$LAST_CLAUDE_STATUS" == "idle" ]] || [[ "$LAST_OPENCODE_STATUS" == "idle" ]]; then
-        style="#[fg=#e0af68]" # orange — running (agent actively working)
+    elif [[ -f "$STATE_DIR/claude-worked-$state_key" ]] || [[ -f "$STATE_DIR/opencode-worked-$state_key" ]]; then
+        style="#[fg=#e0af68]" # orange — running (new output since last view)
     fi
 
     # Read from bash cache instead of tmux IPC
