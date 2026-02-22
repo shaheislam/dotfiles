@@ -41,6 +41,14 @@ PID_FILE="/tmp/tmux-claude-watcher.pid"
 STATE_DIR="/tmp/tmux-claude-state"
 POLL_INTERVAL=10
 
+# Per-poll-cycle caches (populated by check_all_windows)
+declare -A PANE_TTYS         # key=session:win_idx, val="pane_idx:tty pane_idx:tty ..."
+declare -A ACTIVE_SET        # key=session:win_idx, val=1 if active
+declare -A PANE_PATHS        # key=session:win_idx, val=pane_current_path of first pane
+declare -A WNAME_STYLE_CACHE # key=session:win_idx, val=current @wname_style value
+declare -A NO_TOOL_CACHE     # key=session:win_idx, val=epoch when "none" was cached
+NO_TOOL_TTL=60               # seconds before re-checking windows with no agents
+
 start_daemon() {
     # Kill ALL existing watcher instances (not just PID file tracked one)
     # This handles stale processes from old code, crashed restarts, etc.
@@ -197,8 +205,10 @@ update_window_indicators() {
 
     # Convoy progress suffix
     local convoy_suffix=""
-    local pane_path
-    pane_path=$(tmux display-message -t "${session}:${win_idx}.0" -p "#{pane_current_path}" 2>/dev/null)
+    local pane_path="${PANE_PATHS[${session}:${win_idx}]:-}"
+    if [[ -z "$pane_path" ]]; then
+        pane_path=$(tmux display-message -t "${session}:${win_idx}.0" -p "#{pane_current_path}" 2>/dev/null)
+    fi
     if [[ -n "$pane_path" ]]; then
         local progress
         progress=$(get_convoy_progress "$pane_path")
@@ -227,9 +237,8 @@ check_ralph_loop_state() {
     local stuck_file="$STATE_DIR/ralph-stuck-$state_key"
     local iter_file="$STATE_DIR/ralph-iteration-$state_key"
 
-    # Find pane current path to locate worktree
-    local pane_path
-    pane_path=$(tmux display-message -t "${session}:${win_idx}.0" -p "#{pane_current_path}" 2>/dev/null)
+    # Use pre-fetched pane path (from check_all_windows) or fall back to tmux
+    local pane_path="${3:-${PANE_PATHS[${session}:${win_idx}]:-}}"
     [[ -z "$pane_path" ]] && return
 
     local ralph_file="${pane_path}/.claude/ralph-loop.local.md"
@@ -324,37 +333,86 @@ update_agent_state() {
         style="#[fg=#9ece6a]" # green — running
     fi
 
-    # Read current value to avoid unnecessary tmux IPC
-    local current
-    current=$(tmux show-window-option -t "$target" -v @wname_style 2>/dev/null) || current=""
+    # Read from bash cache instead of tmux IPC
+    local current="${WNAME_STYLE_CACHE[$target]:-}"
 
     if [[ -z "$style" ]]; then
-        [[ -n "$current" ]] && tmux set-window-option -t "$target" -u @wname_style 2>/dev/null || true
+        if [[ -n "$current" ]]; then
+            tmux set-window-option -t "$target" -u @wname_style 2>/dev/null || true
+            unset "WNAME_STYLE_CACHE[$target]"
+        fi
     elif [[ "$style" != "$current" ]]; then
         tmux set-window-option -t "$target" @wname_style "$style" 2>/dev/null || true
+        WNAME_STYLE_CACHE[$target]="$style"
     fi
 }
 
 check_all_windows() {
-    # Get active window per session (to know what user is currently viewing)
-    local active_windows
-    active_windows=$(tmux list-windows -a -F "#{session_name}:#{window_index}:#{window_active}" 2>/dev/null | grep ':1$')
-    [[ -z "$active_windows" ]] && return
+    # Single tmux IPC call to get all pane data across all sessions
+    local pane_data
+    pane_data=$(tmux list-panes -a -F $'#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_tty}\t#{window_active}\t#{pane_current_path}' 2>/dev/null)
+    [[ -z "$pane_data" ]] && return
 
-    # All windows across all sessions
-    local windows
-    readarray -t windows < <(tmux list-windows -a -F "#{session_name}:#{window_index}" 2>/dev/null)
+    # Reset per-cycle lookup tables
+    PANE_TTYS=()
+    ACTIVE_SET=()
+    PANE_PATHS=()
 
-    for entry in "${windows[@]}"; do
-        local session="${entry%%:*}"
-        local win_idx="${entry#*:}"
+    # Build lookup tables from single query
+    declare -A seen_windows
+    local all_windows=()
+    local session win_idx pane_idx pane_tty win_active pane_path
+    while IFS=$'\t' read -r session win_idx pane_idx pane_tty win_active pane_path; do
+        [[ -z "$session" ]] && continue
+        local key="${session}:${win_idx}"
+
+        # Track unique windows for iteration
+        if [[ -z "${seen_windows[$key]:-}" ]]; then
+            seen_windows[$key]=1
+            all_windows+=("$key")
+        fi
+
+        # Accumulate TTYs per window (space-separated "pane_idx:tty" pairs)
+        if [[ -n "${PANE_TTYS[$key]:-}" ]]; then
+            PANE_TTYS[$key]+=" ${pane_idx}:${pane_tty}"
+        else
+            PANE_TTYS[$key]="${pane_idx}:${pane_tty}"
+        fi
+
+        # Record active windows
+        [[ "$win_active" == "1" ]] && ACTIVE_SET[$key]=1
+
+        # Store path of first pane (pane 0) for each window
+        [[ "$pane_idx" == "0" ]] && PANE_PATHS[$key]="$pane_path"
+    done <<< "$pane_data"
+
+    local now
+    now=$(date +%s)
+
+    for entry in "${all_windows[@]}"; do
+        session="${entry%%:*}"
+        win_idx="${entry#*:}"
+        local state_key="${session}-${win_idx}"
 
         # Init status globals for update_agent_state
         LAST_CLAUDE_STATUS="none"
         LAST_OPENCODE_STATUS="none"
 
         # Skip if this is the active window in its session
-        echo "$active_windows" | grep -q "^${session}:${win_idx}:" && continue
+        [[ -n "${ACTIVE_SET[$entry]:-}" ]] && continue
+
+        # Check for cache invalidation signal from mark_viewed
+        if [[ -f "$STATE_DIR/invalidate-$state_key" ]]; then
+            rm -f "$STATE_DIR/invalidate-$state_key"
+            unset "NO_TOOL_CACHE[$entry]"
+        fi
+
+        # No-tool cache: skip expensive ps/docker detection for non-agent windows
+        local cached_ts="${NO_TOOL_CACHE[$entry]:-0}"
+        if ((cached_ts > 0 && now - cached_ts < NO_TOOL_TTL)); then
+            update_agent_state "$session" "$win_idx"
+            continue
+        fi
 
         # Process each tool independently
         # Claude: matches /opt/homebrew/bin/claude (full path)
@@ -362,8 +420,15 @@ check_all_windows() {
         process_tool_state "$session" "$win_idx" "claude" '/claude( |$)'
         process_tool_state "$session" "$win_idx" "opencode" '(^| |/)opencode( |$)'
 
-        # Check for stuck ralph-loop agents
-        check_ralph_loop_state "$session" "$win_idx"
+        # Update no-tool cache: skip expensive detection next time
+        if [[ "$LAST_CLAUDE_STATUS" == "none" ]] && [[ "$LAST_OPENCODE_STATUS" == "none" ]]; then
+            NO_TOOL_CACHE[$entry]=$now
+        else
+            unset "NO_TOOL_CACHE[$entry]"
+        fi
+
+        # Check for stuck ralph-loop agents (pass pre-fetched path)
+        check_ralph_loop_state "$session" "$win_idx" "${PANE_PATHS[$entry]:-}"
 
         # Update per-window agent state for choose-tree coloring
         update_agent_state "$session" "$win_idx"
@@ -411,10 +476,12 @@ get_tool_status() {
 
     local state_key="${session}-${win_idx}"
 
-    # First: try local detection
-    for pane_idx in $(tmux list-panes -t "${session}:${win_idx}" -F "#{pane_index}" 2>/dev/null); do
-        local tty
-        tty=$(tmux display-message -t "${session}:${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null)
+    # First: try local detection using pre-fetched pane TTYs
+    local key="${session}:${win_idx}"
+    local tty_data="${PANE_TTYS[$key]:-}"
+    for tty_entry in $tty_data; do
+        local pane_idx="${tty_entry%%:*}"
+        local tty="${tty_entry#*:}"
         [[ -z "$tty" ]] && continue
 
         local tool_pid
@@ -562,16 +629,19 @@ mark_viewed() {
     # leaves this window. This prevents false indicators caused by idle UI
     # output (prompt redraws, status updates) that occurs while the user is
     # viewing the window.
-    rm -f "$STATE_DIR/claude-worked-$state_key"
-    rm -f "$STATE_DIR/claude-notified-$state_key"
-    rm -f "$STATE_DIR/claude-baseline-$state_key"
-    rm -f "$STATE_DIR/claude-pending-$state_key"
-    rm -f "$STATE_DIR/opencode-worked-$state_key"
-    rm -f "$STATE_DIR/opencode-notified-$state_key"
-    rm -f "$STATE_DIR/opencode-baseline-$state_key"
-    rm -f "$STATE_DIR/opencode-pending-$state_key"
-    rm -f "$STATE_DIR/ralph-stuck-$state_key"
-    rm -f "$STATE_DIR/ralph-iteration-$state_key"
+    rm -f "$STATE_DIR/claude-worked-$state_key" \
+          "$STATE_DIR/claude-notified-$state_key" \
+          "$STATE_DIR/claude-baseline-$state_key" \
+          "$STATE_DIR/claude-pending-$state_key" \
+          "$STATE_DIR/opencode-worked-$state_key" \
+          "$STATE_DIR/opencode-notified-$state_key" \
+          "$STATE_DIR/opencode-baseline-$state_key" \
+          "$STATE_DIR/opencode-pending-$state_key" \
+          "$STATE_DIR/ralph-stuck-$state_key" \
+          "$STATE_DIR/ralph-iteration-$state_key"
+
+    # Signal daemon to invalidate no-tool cache for this window
+    touch "$STATE_DIR/invalidate-$state_key"
 
     # Clear agent state color for choose-tree
     tmux set-window-option -t "${session}:${win_idx}" -u @wname_style 2>/dev/null || true
