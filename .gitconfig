@@ -1,9 +1,9 @@
 [core]
-	excludesfile = /Users/shaheislam/.gitignore_global
+	excludesfile = ~/.gitignore_global
 	pager = delta
 
 [init]
-	templateDir = /Users/shahe.islam/.config/git/templates
+	templateDir = ~/.config/git/templates
 
 [user]
 	name = Shahe Islam

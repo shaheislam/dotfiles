@@ -62,7 +62,7 @@ function _make_fzf_tab_complete -d "FZF-powered make target tab completion"
             --with-nth=1.. \
             --prompt='make ❯ ' \
             --header='Makefile targets' \
-            --preview="grep -A 5 '^{1}:' $makefile | head -10" \
+            --preview="grep -A 5 '^{1}:' \"$makefile\" | head -10" \
             --preview-window=right:40%:wrap \
             --query="$token" \
         | awk -F'\t' '{print $1}')

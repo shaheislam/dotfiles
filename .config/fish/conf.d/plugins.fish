@@ -39,8 +39,6 @@ set -g fish_history_search_case_sensitive 0
 # FZF integration for better tab completion (replaces fzf-tab)
 # PERF: FZF env vars are cheap to set unconditionally. Only the function definition
 # and bind call need interactive mode, avoiding type -q fzf (~25-45ms savings).
-set -g FZF_CTRL_T_OPTS "--preview 'bat --color=always --line-range=:50 {}'"
-set -g FZF_ALT_C_OPTS "--preview 'eza --tree --color=always {} | head -200'"
 
 if status is-interactive
     function fzf_select_history

@@ -132,8 +132,6 @@ if status is-interactive
     end
 
     if test -x $_brew/zoxide
-        # Disable zoxide doctor warnings
-        set -x _ZO_DOCTOR 0
         __cache_tool_init zoxide "zoxide init fish"
     end
 
@@ -643,7 +641,7 @@ if status is-interactive
         end
 
         # Helper function to manually colorize any command
-        function logs --description "Run any command with splash colorization"
+        function logcolor --description "Run any command with splash colorization"
             $argv | splash
         end
 
@@ -838,7 +836,7 @@ if status is-interactive
 
     # Monitoring & Performance
     alias mon="glances" # System monitoring
-    alias logs="lnav" # Log navigator
+    alias lognav="lnav" # Log navigator
     alias flame="flamegraph" # Performance visualization
 
     # Development Tools

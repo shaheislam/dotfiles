@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Post-Compact Context Re-injection Hook (SessionStart, matcher: compact)
 #
 # After auto-compact strips conversation history, re-inject critical rules

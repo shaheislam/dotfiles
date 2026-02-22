@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # SessionStart hook: Report available LSP servers to Claude Code context
 # This injects a system message so Claude knows which LSP capabilities are active.
 # Lightweight: only checks PATH for binaries, no network calls.

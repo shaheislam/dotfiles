@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # Notification Logging Hook
 # Logs Claude Code notifications for monitoring
 
@@ -20,7 +21,7 @@ NOTIFICATION_TYPE=$(echo "$INPUT" | python3 -c "import json, sys; print(json.loa
 MESSAGE=$(echo "$INPUT" | python3 -c "import json, sys; print(json.load(sys.stdin).get('message', '')[:100])" 2>/dev/null || echo "parse_error")
 
 # Log to file
-echo "[$TIMESTAMP] Type: $NOTIFICATION_TYPE | Message: $MESSAGE" >> "$LOG_FILE"
+echo "[$TIMESTAMP] Type: $NOTIFICATION_TYPE | Message: $MESSAGE" >>"$LOG_FILE"
 
 # Also output to stdout for immediate visibility
 echo "🔔 [Notification Hook] $NOTIFICATION_TYPE - $MESSAGE"
