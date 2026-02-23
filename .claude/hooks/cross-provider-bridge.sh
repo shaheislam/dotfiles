@@ -1018,7 +1018,6 @@ for _p in "${providers[@]}"; do
     elif is_provider_cooled_down "$_p"; then
         log_verbose "Pre-filter: skipping $_p (cooled down)"
         if [ "$VERBOSE" -ge 1 ]; then
-            local _rem
             _rem=$(get_cooldown_remaining "$_p")
             log_status "${C_YELLOW}⏭${C_RESET}" "${C_BOLD}$_p${C_RESET} ${C_DIM}(cooled down, ${_rem}s — skipped)${C_RESET}"
         fi
@@ -1160,7 +1159,7 @@ for provider in "${active_providers[@]}"; do
     local_end=$(date +%s)
 
     # Check if failure was rate limiting (profile rotation handles this internally for claude/codex)
-    local skip_rate_check=false
+    skip_rate_check=false
     if [ "$provider" = "claude" ] && [ -n "${CROSS_PROVIDER_CLAUDE_PROFILES:-}" ]; then skip_rate_check=true; fi
     if [ "$provider" = "codex" ] && [ -n "${CROSS_PROVIDER_CODEX_PROFILES:-}" ]; then skip_rate_check=true; fi
     if [ "$skip_rate_check" = "false" ]; then
@@ -1168,7 +1167,6 @@ for provider in "${active_providers[@]}"; do
         [ -f "$PROVIDER_STDERR_FILE" ] && local_stderr=$(cat "$PROVIDER_STDERR_FILE" 2>/dev/null)
         if detect_rate_limit "" "$local_stderr"; then
             set_provider_cooldown "$provider" "$local_stderr"
-            local _cd_rem
             _cd_rem=$(get_cooldown_remaining "$provider")
             log_verbose "Provider $provider: rate limited, setting cooldown (${_cd_rem}s)"
             if [ "$VERBOSE" = "2" ]; then
