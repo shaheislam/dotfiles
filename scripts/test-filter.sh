@@ -207,6 +207,8 @@ test_tmux() {
     # --skill flag: invoke skills at prompt start
     run_test "gwt-ticket supports --skill flag" \
         "grep -q 'case --skill' '$GWT_TICKET'"
+    run_test "gwt-ticket --skill consumes multiple args until next flag" \
+        "grep -q 'string match -q -- .--.*. \$argv' '$GWT_TICKET'"
     run_test "gwt-ticket --skill normalizes leading slash" \
         "grep -q \"string replace -r '\\^/' '' --\" '$GWT_TICKET'"
     run_test "gwt-ticket --skill injects skill invocations into prompt" \
