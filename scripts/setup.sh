@@ -403,6 +403,7 @@ phase_3_development() {
         pipx install mcp-server-sqlite >/dev/null 2>&1 || print_warning "Failed to install mcp-server-sqlite"
         pipx install diagrams >/dev/null 2>&1 || print_warning "Failed to install diagrams (for AWS diagram MCP)"
         pipx install hookify >/dev/null 2>&1 || print_warning "Failed to install hookify"
+        pip3 install websockets >/dev/null 2>&1 || print_warning "Failed to install websockets (optional for ClaudeCodeBrowser WebSocket mode)"
         print_success "Python MCP servers installation complete"
     fi
 
@@ -600,6 +601,82 @@ OCEOF
         claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
         claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
         claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse >/dev/null 2>&1 || true
+
+        # ClaudeCodeBrowser - Firefox browser automation for Claude Code
+        # See docs/claudecodebrowser-security-assessment.md for security details
+        CCB_DIR="$HOME/.claudecodebrowser"
+        if [ ! -d "$CCB_DIR" ]; then
+            print_step "Installing ClaudeCodeBrowser..."
+            git clone https://github.com/nanogenomic/ClaudeCodeBrowser.git "$CCB_DIR" >/dev/null 2>&1 || print_warning "Failed to clone ClaudeCodeBrowser"
+        else
+            print_step "Updating ClaudeCodeBrowser..."
+            (cd "$CCB_DIR" && git pull >/dev/null 2>&1) || print_warning "Failed to update ClaudeCodeBrowser"
+        fi
+
+        if [ -d "$CCB_DIR" ]; then
+            # CORS hardening - replace wildcard origin with dynamic moz-extension:// allowlist
+            # Rejects file://, http://, sandboxed iframe, and arbitrary web page origins
+            if [ -f "$CCB_DIR/mcp-server/server.py" ]; then
+                python3 - "$CCB_DIR/mcp-server/server.py" <<'CORSPATCH'
+import sys, re
+path = sys.argv[1]
+with open(path, 'r') as f:
+    content = f.read()
+# Add _get_cors_origin helper method after class definition line
+helper = '''
+    def _get_cors_origin(self):
+        """Return CORS origin only for moz-extension:// requests."""
+        origin = self.headers.get('Origin', '')
+        if origin.startswith('moz-extension://'):
+            return origin
+        return ''
+'''
+# Insert helper after log_message method
+content = re.sub(
+    r"(    def log_message\(self, format, \*args\):\n        logger\.info\(f\"HTTP: \{format % args\}\"\)\n)",
+    r"\1" + helper,
+    content
+)
+# Replace static CORS headers with dynamic calls
+content = content.replace(
+    "self.send_header('Access-Control-Allow-Origin', '*')",
+    "self.send_header('Access-Control-Allow-Origin', self._get_cors_origin())"
+)
+content = content.replace(
+    "self.send_header('Access-Control-Allow-Origin', 'null')",
+    "self.send_header('Access-Control-Allow-Origin', self._get_cors_origin())"
+)
+with open(path, 'w') as f:
+    f.write(content)
+print("CORS patched: moz-extension:// allowlist")
+CORSPATCH
+            fi
+
+            # Make scripts executable
+            chmod +x "$CCB_DIR"/native-host/*.py "$CCB_DIR"/mcp-server/*.py 2>/dev/null || true
+
+            # Register native messaging host (macOS)
+            NMH_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts"
+            mkdir -p "$NMH_DIR"
+            cat >"$NMH_DIR/claudecodebrowser.json" <<NMHEOF
+{
+  "name": "claudecodebrowser",
+  "description": "ClaudeCodeBrowser Native Messaging Host",
+  "path": "$CCB_DIR/native-host/claudecodebrowser_host.py",
+  "type": "stdio",
+  "allowed_extensions": ["claudecodebrowser@ligandal.com"]
+}
+NMHEOF
+
+            # Register MCP server with Claude Code CLI
+            claude mcp add --scope user claudecodebrowser \
+                --transport stdio \
+                -- python3 "$CCB_DIR/mcp-server/stdio_wrapper.py" >/dev/null 2>&1 || true
+
+            print_success "ClaudeCodeBrowser installed with CORS hardening"
+            echo "  Install Firefox extension from:"
+            echo "  https://addons.mozilla.org/en-US/firefox/addon/claudecodebrowser/"
+        fi
 
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"
