@@ -49,6 +49,10 @@ gmailclean centralize
 # Full cleanup: scan + unsubscribe + cleanup + organize + report
 gmailclean nuke
 gmailclean nuke --auto          # Non-interactive full cleanup
+ 
+# Permanently delete emails matching a query (irreversible)
+gmailclean purge --query "from:some@sender.com subject:promo" --dry-run
+gmailclean purge --query "hotel" --yes   # Executes after confirmation
 ```
 
 ### Options
@@ -116,3 +120,4 @@ Full cleanup pipeline: scan + unsubscribe + cleanup + organize + report. Use `--
 - The tool uses `gmail.modify` scope (read/write) and `gmail.settings.basic` (create filters)
 - No data is sent to third parties - all communication is directly with Gmail API
 - One-click unsubscribe sends only the RFC 8058 standard POST body to the newsletter's own unsubscribe endpoint
+ - Purge requests additional `https://mail.google.com/` scope on first use for permanent delete

@@ -14,6 +14,7 @@ Usage:
     gmailclean archive       - Bulk archive all inbox emails older than N days
     gmailclean centralize    - Set up forwarding rules to consolidate accounts
     gmailclean nuke          - Full cleanup: scan + unsubscribe + organize
+    gmailclean purge         - Permanently delete emails matching a query
     gmailclean extract       - Extract email insights into Obsidian notes
     gmailclean briefing      - Generate daily email briefing in Obsidian
     gmailclean contacts      - Build contact graph from email history
@@ -55,10 +56,14 @@ from rich.table import Table
 console = Console()
 
 # Gmail API scopes - we need modify to manage labels/filters and read messages
+# Base scopes for most operations
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.modify",
     "https://www.googleapis.com/auth/gmail.settings.basic",
 ]
+
+# Extra scope required for permanent deletes (purge)
+FULL_DELETE_SCOPE = "https://mail.google.com/"
 
 # Config directory
 CONFIG_DIR = Path.home() / ".config" / "gmailclean"
@@ -101,6 +106,7 @@ def configure_account(account: str | None) -> None:
 
     console.print(f"[dim]Using account: {account}[/dim]")
 
+
 # Labels for organization
 ORGANIZATION_LABELS = {
     "Newsletters": {"newsletters", "digest", "weekly", "monthly", "bulletin"},
@@ -112,19 +118,30 @@ ORGANIZATION_LABELS = {
 }
 
 
-def get_gmail_service() -> Any:
-    """Authenticate and return Gmail API service."""
+def get_gmail_service(override_scopes: list[str] | None = None, force_reauth: bool = False) -> Any:
+    """Authenticate and return Gmail API service.
+
+    If override_scopes is provided, request those scopes (supports incremental auth).
+    """
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    requested_scopes = override_scopes or SCOPES
     creds = None
 
-    if TOKEN_PATH.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), SCOPES)
+    if not force_reauth and TOKEN_PATH.exists():
+        try:
+            creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), requested_scopes)
+        except Exception:
+            creds = None
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+    # Obtain valid credentials (refresh or new auth)
+    if force_reauth or not creds or not creds.valid:
+        if creds and getattr(creds, "expired", False) and getattr(creds, "refresh_token", None):
             console.print("[yellow]Refreshing expired credentials...[/yellow]")
-            creds.refresh(Request())
-        else:
+            try:
+                creds.refresh(Request())
+            except Exception:
+                creds = None
+        if force_reauth or not creds or not creds.valid:
             if not CREDENTIALS_PATH.exists():
                 console.print(
                     Panel(
@@ -143,14 +160,28 @@ def get_gmail_service() -> Any:
                 )
                 sys.exit(1)
 
-            flow = InstalledAppFlow.from_client_secrets_file(
-                str(CREDENTIALS_PATH), SCOPES
-            )
-            creds = flow.run_local_server(port=0)
+            flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_PATH), requested_scopes)
+            creds = flow.run_local_server(port=0, access_type="offline")
 
-        # Save credentials for next run
-        TOKEN_PATH.write_text(creds.to_json())
-        console.print("[green]Credentials saved.[/green]")
+    # Ensure scopes include everything requested; if not, re-consent
+    def _scopes_ok(c) -> bool:
+        try:
+            if hasattr(c, "has_scopes"):
+                return bool(c.has_scopes(requested_scopes))
+        except Exception:
+            pass
+        granted = set((c.scopes or []))
+        return set(requested_scopes).issubset(granted)
+
+    have_scopes = _scopes_ok(creds)
+    if force_reauth or not have_scopes:
+        console.print("[yellow]Requesting additional Gmail permissions...[/yellow]")
+        flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_PATH), requested_scopes)
+        creds = flow.run_local_server(port=0, access_type="offline")
+
+    # Save credentials for next run
+    TOKEN_PATH.write_text(creds.to_json())
+    console.print("[green]Credentials saved.[/green]")
 
     return build("gmail", "v1", credentials=creds)
 
@@ -273,25 +304,14 @@ def fetch_email_body(service: Any, msg_id: str) -> dict[str, str]:
     Returns {"text": plain_text_content, "from": sender, "subject": subject, "date": date}.
     Prefers text/plain; falls back to html2text conversion of text/html.
     """
-    msg = (
-        service.users()
-        .messages()
-        .get(userId="me", id=msg_id, format="full")
-        .execute()
-    )
+    msg = service.users().messages().get(userId="me", id=msg_id, format="full").execute()
 
     payload = msg.get("payload", {})
     headers = payload.get("headers", [])
 
-    from_header = next(
-        (h["value"] for h in headers if h["name"].lower() == "from"), ""
-    )
-    subject = next(
-        (h["value"] for h in headers if h["name"].lower() == "subject"), ""
-    )
-    date_header = next(
-        (h["value"] for h in headers if h["name"].lower() == "date"), ""
-    )
+    from_header = next((h["value"] for h in headers if h["name"].lower() == "from"), "")
+    subject = next((h["value"] for h in headers if h["name"].lower() == "subject"), "")
+    date_header = next((h["value"] for h in headers if h["name"].lower() == "date"), "")
 
     mime_parts = extract_mime_parts(payload)
 
@@ -390,7 +410,7 @@ def scan_inbox(service: Any, max_results: int = 500) -> list[dict]:
                 if i % 50 == 0:
                     progress.update(
                         task,
-                        description=f"Analyzing message {i+1}/{len(all_message_ids)}...",
+                        description=f"Analyzing message {i + 1}/{len(all_message_ids)}...",
                     )
 
                 try:
@@ -420,27 +440,15 @@ def scan_inbox(service: Any, max_results: int = 500) -> list[dict]:
                         continue
 
                     from_header = next(
-                        (
-                            h["value"]
-                            for h in headers
-                            if h["name"].lower() == "from"
-                        ),
+                        (h["value"] for h in headers if h["name"].lower() == "from"),
                         "Unknown",
                     )
                     subject = next(
-                        (
-                            h["value"]
-                            for h in headers
-                            if h["name"].lower() == "subject"
-                        ),
+                        (h["value"] for h in headers if h["name"].lower() == "subject"),
                         "No Subject",
                     )
                     date = next(
-                        (
-                            h["value"]
-                            for h in headers
-                            if h["name"].lower() == "date"
-                        ),
+                        (h["value"] for h in headers if h["name"].lower() == "date"),
                         "",
                     )
 
@@ -488,9 +496,7 @@ def scan_inbox(service: Any, max_results: int = 500) -> list[dict]:
 
     # Cache results
     SCAN_CACHE_PATH.write_text(json.dumps(subscriptions, indent=2, default=str))
-    console.print(
-        f"[dim]Scan results cached to {SCAN_CACHE_PATH}[/dim]"
-    )
+    console.print(f"[dim]Scan results cached to {SCAN_CACHE_PATH}[/dim]")
 
     return subscriptions
 
@@ -660,12 +666,14 @@ def cmd_unsubscribe(args: argparse.Namespace) -> None:
             if sub.get("one_click") and sub.get("unsubscribe_url"):
                 if one_click_unsubscribe(sub["unsubscribe_url"]):
                     one_click_success += 1
-                    unsub_log["unsubscribed"].append({
-                        "domain": sub["domain"],
-                        "sender": sub["sender_name"],
-                        "method": "one_click",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    })
+                    unsub_log["unsubscribed"].append(
+                        {
+                            "domain": sub["domain"],
+                            "sender": sub["sender_name"],
+                            "method": "one_click",
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    )
                     # Small delay to avoid rate limiting
                     time.sleep(0.3)
                     continue
@@ -675,12 +683,14 @@ def cmd_unsubscribe(args: argparse.Namespace) -> None:
                 try:
                     webbrowser.open(sub["unsubscribe_url"])
                     browser_opened += 1
-                    unsub_log["unsubscribed"].append({
-                        "domain": sub["domain"],
-                        "sender": sub["sender_name"],
-                        "method": "browser",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    })
+                    unsub_log["unsubscribed"].append(
+                        {
+                            "domain": sub["domain"],
+                            "sender": sub["sender_name"],
+                            "method": "browser",
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    )
                     # Throttle browser opens to avoid overwhelming
                     time.sleep(0.5)
                 except Exception:
@@ -752,12 +762,7 @@ def cmd_organize(args: argparse.Namespace) -> None:
                     "labelListVisibility": "labelShow",
                     "messageListVisibility": "show",
                 }
-                result = (
-                    service.users()
-                    .labels()
-                    .create(userId="me", body=label_body)
-                    .execute()
-                )
+                result = service.users().labels().create(userId="me", body=label_body).execute()
                 created_labels[label_name] = result["id"]
                 console.print(f"  [green]Created label: {full_name}[/green]")
             except HttpError as e:
@@ -783,9 +788,7 @@ def cmd_organize(args: argparse.Namespace) -> None:
         }
 
         try:
-            service.users().settings().filters().create(
-                userId="me", body=filter_body
-            ).execute()
+            service.users().settings().filters().create(userId="me", body=filter_body).execute()
             console.print(f"  [green]Filter created for: AutoClean/{label_name}[/green]")
         except HttpError as e:
             if "Filter already exists" in str(e) or "already exists" in str(e).lower():
@@ -847,12 +850,7 @@ def cmd_report(args: argparse.Namespace) -> None:
 
         # Get inbox message count
         progress.update(task, description="Counting inbox messages...")
-        inbox = (
-            service.users()
-            .labels()
-            .get(userId="me", id="INBOX")
-            .execute()
-        )
+        inbox = service.users().labels().get(userId="me", id="INBOX").execute()
         total_messages = inbox.get("messagesTotal", 0)
         unread_messages = inbox.get("messagesUnread", 0)
 
@@ -904,11 +902,7 @@ def cmd_report(args: argparse.Namespace) -> None:
                         .execute()
                     )
                     from_header = next(
-                        (
-                            h["value"]
-                            for h in msg.get("payload", {}).get("headers", [])
-                            if h["name"].lower() == "from"
-                        ),
+                        (h["value"] for h in msg.get("payload", {}).get("headers", []) if h["name"].lower() == "from"),
                         "Unknown",
                     )
                     domain = extract_sender_domain(from_header)
@@ -962,15 +956,12 @@ def cmd_report(args: argparse.Namespace) -> None:
         recommendations.append("High promotions volume - run 'gmailclean unsubscribe' to clean up")
     if sender_counts and sender_counts.most_common(1)[0][1] > 10:
         top_domain = sender_counts.most_common(1)[0][0]
-        recommendations.append(
-            f"Top sender '{top_domain}' has many messages - consider unsubscribing"
-        )
+        recommendations.append(f"Top sender '{top_domain}' has many messages - consider unsubscribing")
 
     if recommendations:
         console.print(
             Panel(
-                "[bold]Recommendations[/bold]\n\n"
-                + "\n".join(f"  - {r}" for r in recommendations),
+                "[bold]Recommendations[/bold]\n\n" + "\n".join(f"  - {r}" for r in recommendations),
                 border_style="yellow",
             )
         )
@@ -982,9 +973,7 @@ def cmd_cleanup(args: argparse.Namespace) -> None:
 
     unsub_log = load_unsub_log()
     if not unsub_log.get("unsubscribed"):
-        console.print(
-            "[yellow]No unsubscribed senders found. Run 'gmailclean unsubscribe' first.[/yellow]"
-        )
+        console.print("[yellow]No unsubscribed senders found. Run 'gmailclean unsubscribe' first.[/yellow]")
         return
 
     service = get_gmail_service()
@@ -1057,9 +1046,7 @@ def cmd_archive(args: argparse.Namespace) -> None:
     dry_run = args.dry_run
     auto = getattr(args, "auto", False)
 
-    console.print(
-        Panel(f"[bold]Archiving inbox emails older than {days} days...[/bold]", border_style="blue")
-    )
+    console.print(Panel(f"[bold]Archiving inbox emails older than {days} days...[/bold]", border_style="blue"))
 
     service = get_gmail_service()
     query = f"label:inbox older_than:{days}d"
@@ -1075,10 +1062,7 @@ def cmd_archive(args: argparse.Namespace) -> None:
         task = progress.add_task("Searching for old emails...", total=None)
         while True:
             result = (
-                service.users()
-                .messages()
-                .list(userId="me", q=query, maxResults=500, pageToken=page_token)
-                .execute()
+                service.users().messages().list(userId="me", q=query, maxResults=500, pageToken=page_token).execute()
             )
             messages = result.get("messages", [])
             msg_ids.extend(m["id"] for m in messages)
@@ -1131,11 +1115,316 @@ def cmd_archive(args: argparse.Namespace) -> None:
 
     console.print(
         Panel(
-            f"[bold green]Archive Complete[/bold green]\n\n"
-            f"  Archived: {archived_count} emails older than {days} days",
+            f"[bold green]Archive Complete[/bold green]\n\n  Archived: {archived_count} emails older than {days} days",
             border_style="green",
         )
     )
+
+
+def cmd_purge_unsubscribed(args: argparse.Namespace) -> None:
+    """Purge emails from domains you've unsubscribed from.
+
+    Uses the unsubscribe log to find domains, then deletes or trashes all messages from them.
+    Default is safer: move to Trash (no extra scope). Use --hard-delete for permanent delete.
+    """
+    dry_run = getattr(args, "dry_run", False)
+    # Default to trash unless --hard-delete is explicitly set
+    to_trash = not getattr(args, "hard_delete", False)
+    auto = getattr(args, "auto", False)
+    older_than = getattr(args, "older_than", None)
+
+    unsub_log = load_unsub_log()
+    domains = [entry.get("domain", "") for entry in unsub_log.get("unsubscribed", []) if entry.get("domain")]
+    if not domains:
+        console.print("[yellow]No unsubscribed domains found. Run 'gmailclean unsubscribe' first.[/yellow]")
+        return
+
+    date_filter = f" older_than:{older_than}d" if older_than else ""
+
+    header = (
+        Panel(
+            f"[bold]Move to Trash[/bold]\n\n  Domains: {len(domains)}\n  Filter:{date_filter or ' none'}\n[dim]Safer: can be restored for ~30 days.[/dim]",
+            border_style="yellow",
+        )
+        if to_trash
+        else Panel(
+            f"[bold red]PERMANENT DELETE[/bold red]\n\n  Domains: {len(domains)}\n  Filter:{date_filter or ' none'}\n[bold red]This cannot be undone.[/bold red]",
+            border_style="red",
+        )
+    )
+    console.print(header)
+
+    # Auth
+    service = (
+        get_gmail_service()
+        if to_trash
+        else get_gmail_service(override_scopes=[*SCOPES, FULL_DELETE_SCOPE])
+    )
+
+    total_matched = 0
+    per_domain_counts: dict[str, int] = {}
+
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+        task = progress.add_task("Scanning domains...", total=len(domains))
+        for domain in domains:
+            progress.update(task, description=f"Finding mail from {domain}...", advance=1)
+            q = f"from:{domain}{date_filter}"
+            page_token = None
+            count = 0
+            while True:
+                result = (
+                    service.users()
+                    .messages()
+                    .list(userId="me", q=q, maxResults=500, pageToken=page_token)
+                    .execute()
+                )
+                messages = result.get("messages", [])
+                count += len(messages)
+                page_token = result.get("nextPageToken")
+                if not page_token:
+                    break
+            if count:
+                per_domain_counts[domain] = count
+                total_matched += count
+
+    if total_matched == 0:
+        console.print("[green]No emails found for unsubscribed domains.")
+        return
+
+    if dry_run:
+        details = ", ".join(f"{d}:{c}" for d, c in list(per_domain_counts.items())[:10])
+        if len(per_domain_counts) > 10:
+            details += f" +{len(per_domain_counts) - 10} more"
+        console.print(
+            Panel(
+                (
+                    f"[bold yellow]Dry Run[/bold yellow]\n\n  Would move to Trash: {total_matched} emails\n  Domains: {len(per_domain_counts)}\n  {details}"
+                    if to_trash
+                    else f"[bold yellow]Dry Run[/bold yellow]\n\n  Would delete: {total_matched} emails\n  Domains: {len(per_domain_counts)}\n  {details}"
+                ),
+                border_style="yellow",
+            )
+        )
+        return
+
+    if not auto:
+        if to_trash:
+            confirm = input(f"Move {total_matched} emails to Trash? Type 'TRASH' to confirm: ").strip()
+            if confirm != "TRASH":
+                console.print("[yellow]Aborted.[/yellow]")
+                return
+        else:
+            confirm = input(f"Permanently delete {total_matched} emails? Type 'DELETE' to confirm: ").strip()
+            if confirm != "DELETE":
+                console.print("[yellow]Aborted.[/yellow]")
+                return
+
+    affected = 0
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+        task = progress.add_task("Applying...", total=total_matched)
+        for domain, count in per_domain_counts.items():
+            q = f"from:{domain}{date_filter}"
+            page_token = None
+            ids: list[str] = []
+            while True:
+                result = (
+                    service.users()
+                    .messages()
+                    .list(userId="me", q=q, maxResults=500, pageToken=page_token)
+                    .execute()
+                )
+                ids.extend(m["id"] for m in result.get("messages", []))
+                page_token = result.get("nextPageToken")
+                if not page_token:
+                    break
+
+            for start in range(0, len(ids), 1000):
+                batch = ids[start : start + 1000]
+                if to_trash:
+                    service.users().messages().batchModify(
+                        userId="me",
+                        body={"ids": batch, "addLabelIds": ["TRASH"]},
+                    ).execute()
+                else:
+                    try:
+                        service.users().messages().batchDelete(userId="me", body={"ids": batch}).execute()
+                    except HttpError as e:
+                        if (
+                            getattr(e, "resp", None)
+                            and getattr(e.resp, "status", None) == 403
+                            and b"insufficientPermissions" in getattr(e, "content", b"")
+                        ):
+                            console.print("[yellow]Missing permission for permanent delete. Reauthorizing...[/yellow]")
+                            service = get_gmail_service(override_scopes=[*SCOPES, FULL_DELETE_SCOPE], force_reauth=True)
+                            service.users().messages().batchDelete(userId="me", body={"ids": batch}).execute()
+                        else:
+                            raise
+                affected += len(batch)
+                progress.update(task, advance=len(batch), description=(
+                    f"Trashed {affected}/{total_matched}..." if to_trash else f"Deleted {affected}/{total_matched}..."
+                ))
+
+    console.print(
+        Panel(
+            (
+                f"[bold green]Complete[/bold green]\n\n  Moved to Trash: {affected} emails from {len(per_domain_counts)} domains"
+                if to_trash
+                else f"[bold red]Complete[/bold red]\n\n  Permanently deleted: {affected} emails from {len(per_domain_counts)} domains"
+            ),
+            border_style=("green" if to_trash else "red"),
+        )
+    )
+
+
+def cmd_purge(args: argparse.Namespace) -> None:
+    """Purge command: delete emails matching a Gmail search query.
+
+    By default performs permanent delete (requires full Gmail scope).
+    When --to-trash is provided, moves to Trash instead (safer; uses modify scope).
+    """
+    query = args.query
+    dry_run = args.dry_run
+    auto = getattr(args, "auto", False)
+    to_trash = getattr(args, "to_trash", False)
+
+    if to_trash:
+        console.print(
+            Panel(
+                f"[bold]Move to Trash[/bold]\n\n  Query: [cyan]{query}[/cyan]\n\n[dim]Safer: can be restored from Trash for ~30 days.[/dim]",
+                border_style="yellow",
+            )
+        )
+        service = get_gmail_service()
+    else:
+        console.print(
+            Panel(
+                f"[bold red]PERMANENT DELETE[/bold red]\n\n"
+                f"  Query: [cyan]{query}[/cyan]\n\n"
+                "[bold red]WARNING: This bypasses Trash and cannot be undone![/bold red]",
+                border_style="red",
+            )
+        )
+        # Require full delete scope for purge
+        service = get_gmail_service(override_scopes=[*SCOPES, FULL_DELETE_SCOPE])
+
+    # Collect all matching message IDs via pagination
+    msg_ids: list[str] = []
+    page_token = None
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Searching...", total=None)
+        while True:
+            result = (
+                service.users().messages().list(userId="me", q=query, maxResults=500, pageToken=page_token).execute()
+            )
+            messages = result.get("messages", [])
+            msg_ids.extend(m["id"] for m in messages)
+            progress.update(task, description=f"Found {len(msg_ids)} emails so far...")
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                break
+
+    if not msg_ids:
+        console.print("[green]No matching emails found.[/green]")
+        return
+
+    if dry_run:
+        console.print(
+            Panel(
+                (
+                    f"[bold yellow]Dry Run[/bold yellow]\n\n  Would move to Trash: {len(msg_ids)} emails\n  Query: {query}\n[dim]Run without --dry-run to apply[/dim]"
+                    if to_trash
+                    else f"[bold yellow]Dry Run[/bold yellow]\n\n  Would delete: {len(msg_ids)} emails\n  Query: {query}\n[dim]Run without --dry-run to permanently delete[/dim]"
+                ),
+                border_style="yellow",
+            )
+        )
+        return
+
+    if not auto:
+        if to_trash:
+            console.print(f"\n[bold]About to move {len(msg_ids)} emails to Trash.[/bold]")
+            confirm = input("Type 'TRASH' to confirm: ").strip()
+            if confirm != "TRASH":
+                console.print("[yellow]Aborted.[/yellow]")
+                return
+        else:
+            console.print(f"\n[bold red]About to permanently delete {len(msg_ids)} emails.[/bold red]")
+            confirm = input("Type 'DELETE' to confirm: ").strip()
+            if confirm != "DELETE":
+                console.print("[yellow]Aborted.[/yellow]")
+                return
+
+    # Batch action in chunks of 1000 (API limit)
+    affected_count = 0
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Trashing..." if to_trash else "Deleting...", total=len(msg_ids))
+        if to_trash:
+            for batch_start in range(0, len(msg_ids), 1000):
+                batch = msg_ids[batch_start : batch_start + 1000]
+                service.users().messages().batchModify(
+                    userId="me",
+                    body={"ids": batch, "addLabelIds": ["TRASH"]},
+                ).execute()
+                affected_count += len(batch)
+                progress.update(
+                    task,
+                    advance=len(batch),
+                    description=f"Trashed {affected_count}/{len(msg_ids)}...",
+                )
+        else:
+            retried_auth = False
+            for batch_start in range(0, len(msg_ids), 1000):
+                batch = msg_ids[batch_start : batch_start + 1000]
+                try:
+                    service.users().messages().batchDelete(
+                        userId="me",
+                        body={"ids": batch},
+                    ).execute()
+                except HttpError as e:
+                    if (
+                        not retried_auth
+                        and getattr(e, "resp", None)
+                        and getattr(e.resp, "status", None) == 403
+                        and b"insufficientPermissions" in getattr(e, "content", b"")
+                    ):
+                        console.print("[yellow]Missing permission for permanent delete. Reauthorizing...[/yellow]")
+                        service = get_gmail_service(override_scopes=[*SCOPES, FULL_DELETE_SCOPE], force_reauth=True)
+                        retried_auth = True
+                        service.users().messages().batchDelete(
+                            userId="me",
+                            body={"ids": batch},
+                        ).execute()
+                    else:
+                        raise
+                affected_count += len(batch)
+                progress.update(
+                    task,
+                    advance=len(batch),
+                    description=f"Deleted {affected_count}/{len(msg_ids)}...",
+                )
+
+    if to_trash:
+        console.print(
+            Panel(
+                f"[bold green]Purge Complete[/bold green]\n\n  Moved to Trash: {affected_count} emails",
+                border_style="green",
+            )
+        )
+    else:
+        console.print(
+            Panel(
+                f"[bold red]Purge Complete[/bold red]\n\n  Permanently deleted: {affected_count} emails",
+                border_style="red",
+            )
+        )
 
 
 def cmd_centralize(args: argparse.Namespace) -> None:
@@ -1166,9 +1455,7 @@ def cmd_centralize(args: argparse.Namespace) -> None:
         # List send-as addresses (shows linked accounts)
         progress.update(task, description="Checking linked accounts...")
         try:
-            send_as_result = (
-                service.users().settings().sendAs().list(userId="me").execute()
-            )
+            send_as_result = service.users().settings().sendAs().list(userId="me").execute()
             send_as_addresses = send_as_result.get("sendAs", [])
         except HttpError:
             send_as_addresses = []
@@ -1176,13 +1463,7 @@ def cmd_centralize(args: argparse.Namespace) -> None:
         # List forwarding addresses
         progress.update(task, description="Checking forwarding rules...")
         try:
-            fwd_result = (
-                service.users()
-                .settings()
-                .forwardingAddresses()
-                .list(userId="me")
-                .execute()
-            )
+            fwd_result = service.users().settings().forwardingAddresses().list(userId="me").execute()
             forwarding_addresses = fwd_result.get("forwardingAddresses", [])
         except HttpError:
             forwarding_addresses = []
@@ -1190,9 +1471,7 @@ def cmd_centralize(args: argparse.Namespace) -> None:
         # List existing filters
         progress.update(task, description="Checking filters...")
         try:
-            filters_result = (
-                service.users().settings().filters().list(userId="me").execute()
-            )
+            filters_result = service.users().settings().filters().list(userId="me").execute()
             existing_filters = filters_result.get("filter", [])
         except HttpError:
             existing_filters = []
@@ -1314,9 +1593,7 @@ def cmd_nuke(args: argparse.Namespace) -> None:
     report_args = argparse.Namespace()
     cmd_report(report_args)
 
-    console.print(
-        Panel("[bold green]Cleanup complete![/bold green]", border_style="green")
-    )
+    console.print(Panel("[bold green]Cleanup complete![/bold green]", border_style="green"))
 
 
 def cmd_extract(args: argparse.Namespace) -> None:
@@ -1351,6 +1628,7 @@ def cmd_extract(args: argparse.Namespace) -> None:
         since_date = datetime.strptime(since, "%Y-%m-%d").date()
     else:
         from datetime import timedelta
+
         since_date = (datetime.now() - timedelta(days=1)).date()
 
     console.print(
@@ -1432,7 +1710,7 @@ def cmd_extract(args: argparse.Namespace) -> None:
         task = progress.add_task("Processing emails...", total=len(all_msg_ids))
 
         for i, msg_id in enumerate(all_msg_ids):
-            progress.update(task, description=f"Processing {i+1}/{len(all_msg_ids)}...", advance=1)
+            progress.update(task, description=f"Processing {i + 1}/{len(all_msg_ids)}...", advance=1)
 
             try:
                 body_data = fetch_email_body(service, msg_id)
@@ -1501,13 +1779,9 @@ def cmd_extract(args: argparse.Namespace) -> None:
                 data = extract_contact(text, from_header, model)
                 entry["data"] = data
                 if not dry_run:
-                    existing = find_relationship_file(
-                        vault, data.get("sender_name", ""), data.get("email", "")
-                    )
+                    existing = find_relationship_file(vault, data.get("sender_name", ""), data.get("email", ""))
                     if existing:
-                        update_relationship_file(
-                            existing, data.get("interaction_summary", "Email"), email_date
-                        )
+                        update_relationship_file(existing, data.get("interaction_summary", "Email"), email_date)
                         entry["obsidian_path"] = str(existing.relative_to(vault))
                     else:
                         path = write_relationship_note(vault, data, email_date)
@@ -1581,9 +1855,7 @@ def cmd_briefing(args: argparse.Namespace) -> None:
     if not quiet:
         console.print(
             Panel(
-                f"[bold]Daily Email Briefing[/bold]\n\n"
-                f"  Date: {briefing_date}\n"
-                f"  Vault: {vault}",
+                f"[bold]Daily Email Briefing[/bold]\n\n  Date: {briefing_date}\n  Vault: {vault}",
                 border_style="blue",
             )
         )
@@ -1607,30 +1879,42 @@ def cmd_briefing(args: argparse.Namespace) -> None:
         obsidian_path = entry.get("obsidian_path", "")
 
         if category == "newsletter":
-            briefing_data["newsletters"].append({
-                "source_name": obsidian_path.split("/")[-1].replace(".md", "").split("-", 3)[-1].replace("-", " ").title() if obsidian_path else "Newsletter",
-                "obsidian_path": obsidian_path,
-            })
+            briefing_data["newsletters"].append(
+                {
+                    "source_name": obsidian_path.split("/")[-1]
+                    .replace(".md", "")
+                    .split("-", 3)[-1]
+                    .replace("-", " ")
+                    .title()
+                    if obsidian_path
+                    else "Newsletter",
+                    "obsidian_path": obsidian_path,
+                }
+            )
         elif category == "receipt":
             # Try to extract merchant/amount from path
             parts = obsidian_path.split("/")[-1].replace(".md", "").split("-", 3) if obsidian_path else []
-            briefing_data["receipts"].append({
-                "merchant": parts[-1].replace("-", " ").title() if len(parts) > 3 else "Purchase",
-                "amount": 0,
-                "currency": "GBP",
-                "obsidian_path": obsidian_path,
-            })
+            briefing_data["receipts"].append(
+                {
+                    "merchant": parts[-1].replace("-", " ").title() if len(parts) > 3 else "Purchase",
+                    "amount": 0,
+                    "currency": "GBP",
+                    "obsidian_path": obsidian_path,
+                }
+            )
         elif category == "personal":
-            parts = obsidian_path.split("/")[-1].replace(".md", "").replace("-", " ").title() if obsidian_path else "Contact"
-            briefing_data["contacts"].append({
-                "sender_name": parts if isinstance(parts, str) else "Contact",
-            })
+            parts = (
+                obsidian_path.split("/")[-1].replace(".md", "").replace("-", " ").title()
+                if obsidian_path
+                else "Contact"
+            )
+            briefing_data["contacts"].append(
+                {
+                    "sender_name": parts if isinstance(parts, str) else "Contact",
+                }
+            )
 
-    total = (
-        len(briefing_data["newsletters"])
-        + len(briefing_data["receipts"])
-        + len(briefing_data["contacts"])
-    )
+    total = len(briefing_data["newsletters"]) + len(briefing_data["receipts"]) + len(briefing_data["contacts"])
 
     if total == 0:
         if not quiet:
@@ -1684,6 +1968,7 @@ def cmd_contacts(args: argparse.Namespace) -> None:
         since_date = datetime.strptime(since, "%Y-%m-%d").date()
     else:
         from datetime import timedelta
+
         since_date = (datetime.now() - timedelta(days=30)).date()
 
     console.print(
@@ -1698,10 +1983,7 @@ def cmd_contacts(args: argparse.Namespace) -> None:
     )
 
     if not ollama_available():
-        console.print(
-            "[red]Ollama is not running![/red]\n"
-            "[dim]Start Ollama with: ollama serve[/dim]"
-        )
+        console.print("[red]Ollama is not running![/red]\n[dim]Start Ollama with: ollama serve[/dim]")
         sys.exit(1)
 
     service = get_gmail_service()
@@ -1755,7 +2037,7 @@ def cmd_contacts(args: argparse.Namespace) -> None:
         task = progress.add_task("Analyzing contacts...", total=len(all_msg_ids))
 
         for i, msg_id in enumerate(all_msg_ids):
-            progress.update(task, description=f"Analyzing {i+1}/{len(all_msg_ids)}...", advance=1)
+            progress.update(task, description=f"Analyzing {i + 1}/{len(all_msg_ids)}...", advance=1)
 
             try:
                 body_data = fetch_email_body(service, msg_id)
@@ -1786,9 +2068,7 @@ def cmd_contacts(args: argparse.Namespace) -> None:
 
             if existing:
                 if update_existing and not dry_run:
-                    update_relationship_file(
-                        existing, data.get("interaction_summary", "Email"), email_date
-                    )
+                    update_relationship_file(existing, data.get("interaction_summary", "Email"), email_date)
                     updated += 1
                 elif not update_existing:
                     skipped += 1
@@ -1822,23 +2102,27 @@ def main() -> None:
         epilog=__doc__,
     )
     parser.add_argument(
-        "--account", type=str, default=None,
+        "--account",
+        type=str,
+        default=None,
         help="Account profile name (uses ~/.config/gmailclean/accounts/<name>/)",
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # scan command
     scan_parser = subparsers.add_parser("scan", help="Scan inbox for subscriptions")
-    scan_parser.add_argument(
-        "--max-results", type=int, default=500, help="Maximum messages to scan (default: 500)"
-    )
+    scan_parser.add_argument("--max-results", type=int, default=500, help="Maximum messages to scan (default: 500)")
 
     # unsubscribe command
     unsub_parser = subparsers.add_parser("unsubscribe", help="Unsubscribe from newsletters")
     unsub_parser.add_argument("--rescan", action="store_true", help="Force rescan instead of using cache")
     unsub_parser.add_argument("--max-results", type=int, default=500, help="Max messages to scan")
     unsub_parser.add_argument(
-        "--auto", "--yes", "-y", action="store_true", dest="auto",
+        "--auto",
+        "--yes",
+        "-y",
+        action="store_true",
+        dest="auto",
         help="Non-interactive: unsubscribe from all without prompting",
     )
 
@@ -1849,71 +2133,128 @@ def main() -> None:
     subparsers.add_parser("report", help="Generate inbox health report")
 
     # cleanup command
-    cleanup_parser = subparsers.add_parser(
-        "cleanup", help="Archive old emails from unsubscribed senders"
-    )
-    cleanup_parser.add_argument(
-        "--dry-run", action="store_true", help="Show what would be archived without doing it"
-    )
+    cleanup_parser = subparsers.add_parser("cleanup", help="Archive old emails from unsubscribed senders")
+    cleanup_parser.add_argument("--dry-run", action="store_true", help="Show what would be archived without doing it")
 
     # archive command
     archive_parser = subparsers.add_parser("archive", help="Bulk archive old inbox emails")
+    archive_parser.add_argument("--days", type=int, default=30, help="Archive emails older than N days (default: 30)")
+    archive_parser.add_argument("--dry-run", action="store_true", help="Show count without archiving")
     archive_parser.add_argument(
-        "--days", type=int, default=30, help="Archive emails older than N days (default: 30)"
+        "--auto",
+        "--yes",
+        "-y",
+        action="store_true",
+        dest="auto",
+        help="Skip confirmation prompt",
     )
-    archive_parser.add_argument(
-        "--dry-run", action="store_true", help="Show count without archiving"
+
+    # purge command
+    purge_parser = subparsers.add_parser(
+        "purge", help="Permanently delete emails matching a Gmail search query"
     )
-    archive_parser.add_argument(
-        "--auto", "--yes", "-y", action="store_true", dest="auto",
+    purge_parser.add_argument(
+        "--query", "-q", type=str, required=True, help="Gmail search query to match"
+    )
+    purge_parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be deleted"
+    )
+    purge_parser.add_argument(
+        "--to-trash",
+        action="store_true",
+        help="Move matching emails to Trash instead of permanent delete (safer, no extra scope)",
+    )
+    purge_parser.add_argument(
+        "--auto",
+        "--yes",
+        "-y",
+        action="store_true",
+        dest="auto",
+        help="Skip confirmation prompt",
+    )
+
+    # purge-unsubscribed command
+    punsub = subparsers.add_parser(
+        "purge-unsubscribed",
+        help="Delete or trash all emails from domains you've unsubscribed from",
+    )
+    punsub.add_argument("--dry-run", action="store_true", help="Preview without changing anything")
+    punsub.add_argument(
+        "--to-trash",
+        action="store_true",
+        help="Move to Trash (default if neither is set). Safer and needs no extra scope.",
+    )
+    punsub.add_argument(
+        "--hard-delete",
+        action="store_true",
+        help="Permanently delete instead of trash (irreversible; requires full Gmail scope)",
+    )
+    punsub.add_argument(
+        "--older-than",
+        type=int,
+        default=None,
+        help="Only affect emails older than N days (optional)",
+    )
+    punsub.add_argument(
+        "--auto",
+        "--yes",
+        "-y",
+        action="store_true",
+        dest="auto",
         help="Skip confirmation prompt",
     )
 
     # centralize command
-    subparsers.add_parser(
-        "centralize", help="Set up forwarding rules to consolidate email accounts"
-    )
+    subparsers.add_parser("centralize", help="Set up forwarding rules to consolidate email accounts")
 
     # nuke command
     nuke_parser = subparsers.add_parser("nuke", help="Full cleanup: scan + unsubscribe + organize")
     nuke_parser.add_argument("--max-results", type=int, default=500, help="Max messages to scan")
     nuke_parser.add_argument(
-        "--auto", "--yes", "-y", action="store_true", dest="auto",
+        "--auto",
+        "--yes",
+        "-y",
+        action="store_true",
+        dest="auto",
         help="Non-interactive: run full cleanup without prompting",
     )
 
     # extract command
-    extract_parser = subparsers.add_parser(
-        "extract", help="Extract insights from emails into Obsidian notes"
-    )
+    extract_parser = subparsers.add_parser("extract", help="Extract insights from emails into Obsidian notes")
     extract_parser.add_argument(
-        "--since", type=str, default=None,
+        "--since",
+        type=str,
+        default=None,
         help="Process emails since date (YYYY-MM-DD, default: yesterday)",
     )
     extract_parser.add_argument("--max-results", type=int, default=100, help="Max emails to process")
     extract_parser.add_argument(
-        "--categories", type=str, default="all",
+        "--categories",
+        type=str,
+        default="all",
         help="Filter: newsletter,receipt,personal,all (default: all)",
     )
     extract_parser.add_argument("--dry-run", action="store_true", help="Preview without writing files")
     extract_parser.add_argument("--vault", type=str, default=None, help="Obsidian vault path")
-    extract_parser.add_argument(
-        "--model", type=str, default="llama3.1:8b", help="Ollama model (default: llama3.1:8b)"
-    )
+    extract_parser.add_argument("--model", type=str, default="llama3.1:8b", help="Ollama model (default: llama3.1:8b)")
     extract_parser.add_argument(
         "--no-llm", action="store_true", help="Header-only classification, skip body extraction"
     )
     extract_parser.add_argument(
-        "--auto", "--yes", "-y", action="store_true", dest="auto",
+        "--auto",
+        "--yes",
+        "-y",
+        action="store_true",
+        dest="auto",
         help="Skip confirmation prompt",
     )
 
     # briefing command
-    briefing_parser = subparsers.add_parser(
-        "briefing", help="Generate daily email briefing in Obsidian"
-    )
+    briefing_parser = subparsers.add_parser("briefing", help="Generate daily email briefing in Obsidian")
     briefing_parser.add_argument(
-        "--date", type=str, default=None,
+        "--date",
+        type=str,
+        default=None,
         help="Date for briefing (YYYY-MM-DD, default: today)",
     )
     briefing_parser.add_argument("--vault", type=str, default=None, help="Obsidian vault path")
@@ -1921,18 +2262,19 @@ def main() -> None:
     briefing_parser.add_argument("--quiet", action="store_true", help="Suppress output (for cron)")
 
     # contacts command
-    contacts_parser = subparsers.add_parser(
-        "contacts", help="Build contact graph from email history"
-    )
+    contacts_parser = subparsers.add_parser("contacts", help="Build contact graph from email history")
     contacts_parser.add_argument(
-        "--since", type=str, default=None,
+        "--since",
+        type=str,
+        default=None,
         help="Analyze since date (YYYY-MM-DD, default: 30 days ago)",
     )
     contacts_parser.add_argument("--max-results", type=int, default=500, help="Max emails to analyze")
     contacts_parser.add_argument("--dry-run", action="store_true", help="Preview without writing")
     contacts_parser.add_argument("--vault", type=str, default=None, help="Obsidian vault path")
     contacts_parser.add_argument(
-        "--update-existing", action="store_true",
+        "--update-existing",
+        action="store_true",
         help="Update existing contact files (default: create-only)",
     )
 
@@ -1951,6 +2293,8 @@ def main() -> None:
         "report": cmd_report,
         "cleanup": cmd_cleanup,
         "archive": cmd_archive,
+        "purge": cmd_purge,
+        "purge-unsubscribed": cmd_purge_unsubscribed,
         "centralize": cmd_centralize,
         "nuke": cmd_nuke,
         "extract": cmd_extract,
