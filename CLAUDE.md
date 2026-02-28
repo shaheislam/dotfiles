@@ -258,7 +258,7 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 
 ### Skills & Skill Sources
 
-Skills are the recommended extension mechanism (replacing `.claude/commands/`). See `docs/skills-reference.md` for the complete guide.
+All custom commands have been migrated to `.claude/skills/` (24 skills). See `docs/skills-reference.md` for the complete guide.
 
 **Best sources** (ranked by quality):
 1. **[anthropics/skills](https://github.com/anthropics/skills)** - Official Anthropic skills (document processing, design, development)
@@ -266,7 +266,7 @@ Skills are the recommended extension mechanism (replacing `.claude/commands/`). 
 3. **[VoltAgent/awesome-agent-skills](https://github.com/VoltAgent/awesome-agent-skills)** - 380+ skills from Vercel, Cloudflare, Trail of Bits, etc.
 4. **[daymade/claude-code-skills](https://github.com/daymade/claude-code-skills)** - 37 production-ready skills
 
-**Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`, Legacy `.claude/commands/`
+**Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`
 
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification) - skills work in Claude Code, Codex, Gemini CLI, Cursor, Copilot.
 
