@@ -54,6 +54,9 @@ source $ZSH/oh-my-zsh.sh
 
 # Paths
 export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+
+# Homebrew auto-update: run `brew update` at most once per day when using any brew command
+export HOMEBREW_AUTO_UPDATE_SECS=86400
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
@@ -110,6 +113,16 @@ export FZF_DEFAULT_OPTS="--color=fg:${fg},bg:${bg},hl:${blue},fg+:${fg},bg+:${bg
 export FZF_DEFAULT_COMMAND="fd --hidden --strip-cwd-prefix --exclude .git"
 export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
 export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git"
+
+# Homebrew shortcuts
+alias bu="brew update"
+alias bup="brew upgrade"
+alias buc="brew cleanup"
+alias bud="brew doctor"
+alias bui="brew install"
+alias bus="brew search"
+alias buo="brew outdated"
+alias bubu="brew update && brew upgrade"
 
 # Aliases
 alias python=python3

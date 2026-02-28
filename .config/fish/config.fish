@@ -114,6 +114,10 @@ if status is-interactive
         sed -E '/^[[:space:]]*#/d; /^[[:space:]]*$/d; s/^export[[:space:]]+//; s/^([^=]+)=["'"'"']?([^"'"'"']*)["'"'"']?$/set -gx \1 "\2"/' ~/.env | source
     end
 
+    # ==================== Homebrew Auto-Update ====================
+    # Update Homebrew index daily when any brew command is run (default: 300s/5min)
+    set -gx HOMEBREW_AUTO_UPDATE_SECS 86400
+
     # ==================== Tool Initialization (Cached for Performance) ====================
     # Using __cache_tool_init for ~50-100ms startup improvement
     # Cache invalidates automatically when tool version changes
@@ -514,6 +518,16 @@ if status is-interactive
         alias la="ls -a"
         alias l="ls -lah"
     end
+
+    # Homebrew shortcuts
+    alias bu="brew update" # Update Homebrew index
+    alias bup="brew upgrade" # Upgrade all packages
+    alias buc="brew cleanup" # Remove old versions
+    alias bud="brew doctor" # Check for issues
+    alias bui="brew install" # Install a package
+    alias bus="brew search" # Search packages
+    alias buo="brew outdated" # List outdated packages
+    alias bubu="brew update && brew upgrade" # Update + upgrade in one
 
     alias k=kubectl
     alias vi=nvim
