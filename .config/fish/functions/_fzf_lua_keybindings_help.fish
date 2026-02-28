@@ -20,6 +20,7 @@ function _fzf_lua_keybindings_help --description "Show fzf-lua CLI keybindings h
     echo "║    Alt-L       Local scope             Ctrl-Y      Copy path     ║"
     echo "║    Alt-S       Git root scope          Enter       Open/Select   ║"
     echo "║    Alt-G       Global (home) scope     Esc         Cancel        ║"
+    echo "║    Alt-P       Parent directory scope                            ║"
     echo "╚══════════════════════════════════════════════════════════════════╝"
     echo ""
 end

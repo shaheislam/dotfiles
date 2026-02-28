@@ -4,7 +4,7 @@
 function _fzf_lua_grep_edit --description "Live grep - open result in nvim"
     set -l cwd (pwd)
     set -l query ""
-    set -l scope "Local"
+    set -l scope Local
 
     while true
         set -l result (_fzf_lua_cli live_grep cwd="$cwd" query="$query" prompt="Grep ($scope)❯ " $argv)
@@ -21,15 +21,18 @@ function _fzf_lua_grep_edit --description "Live grep - open result in nvim"
             set query $parts[4]
 
             switch $new_scope
-                case "local"
+                case local
                     set cwd (pwd)
-                    set scope "Local"
-                case "git"
+                    set scope Local
+                case git
                     set cwd (git rev-parse --show-toplevel 2>/dev/null; or pwd)
-                    set scope "Git"
-                case "global"
+                    set scope Git
+                case global
                     set cwd $HOME
-                    set scope "Global"
+                    set scope Global
+                case parent
+                    set cwd (path dirname "$cwd")
+                    set scope Parent
             end
             continue
         end
