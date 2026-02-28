@@ -6,7 +6,7 @@
 
 Skills are the primary extension mechanism for Claude Code (and other AI coding agents). A skill is a directory containing a `SKILL.md` file with YAML frontmatter and markdown instructions. Claude loads skill descriptions at startup and activates the full content when relevant or explicitly invoked via `/skill-name`.
 
-As of Claude Code v2.1.3, **slash commands merged into skills**. Files in `.claude/commands/` still work, but `.claude/skills/` is the recommended path forward — skills support directories of supporting files, subagent execution (`context: fork`), and the cross-tool Agent Skills standard.
+As of Claude Code v2.1.3, **slash commands merged into skills**. `.claude/skills/` is the recommended format — skills support directories of supporting files, subagent execution (`context: fork`), and the cross-tool Agent Skills standard. All custom commands in this repo have been migrated to skills.
 
 ### Skill Locations
 
@@ -15,7 +15,7 @@ As of Claude Code v2.1.3, **slash commands merged into skills**. Files in `.clau
 | `~/.claude/skills/<name>/SKILL.md` | Personal | Available in all projects |
 | `.claude/skills/<name>/SKILL.md` | Project | Checked into repo |
 | `<plugin>/skills/<name>/SKILL.md` | Plugin | Installed via marketplace |
-| `.claude/commands/<name>.md` | Legacy | Still works, not recommended for new skills |
+| `.claude/commands/<name>.md` | Legacy | Deprecated — migrate to skills format |
 
 ### SKILL.md Format
 
@@ -148,9 +148,9 @@ Claude Code extends the standard with: `disable-model-invocation`, `user-invocab
 
 ## Currently Installed (This Dotfiles)
 
-### Custom Skills (23 in .claude/commands/)
+### Custom Skills (24 in .claude/skills/)
 
-article, aws-profile, claude-cleanup, commit-mode, confluence, cross-ref, cv-generate, diagram, dotfiles-sync, fish-reload, git-config-fix, jfdi (+ extract, recall, sync, synthesis), jira (+ batch), mcp-restart, s3-search, s3-upload, ticket-execute, todo.
+article, aws-profile, best-practice, claude-cleanup, commit-mode, confluence, cross-ref, cv-generate, diagram, dotfiles-sync, fish-reload, git-config-fix, jfdi (+ extract, recall, sync, synthesis), jira (+ batch), mcp-restart, s3-search, s3-upload, ticket-execute, todo.
 
 ### Plugin Skills (14 plugins)
 
@@ -165,37 +165,13 @@ code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-de
 | `antonbabenko/terraform-skill` | `antonbabenko` |
 | `steveyegge/beads` | `steveyegge` |
 
-## Migration: Commands to Skills
+## Migration: Commands to Skills (Completed)
 
-To migrate a `.claude/commands/foo.md` to the skills format:
+All 24 custom commands have been migrated from `.claude/commands/` to `.claude/skills/`. The migration was a 1:1 move — frontmatter is identical between formats.
 
-```bash
-# 1. Create skill directory
-mkdir -p .claude/skills/foo
+**What changed**: `commands/foo.md` → `skills/foo/SKILL.md`
 
-# 2. Move and rename
-cp .claude/commands/foo.md .claude/skills/foo/SKILL.md
-
-# 3. Update frontmatter (add name field if missing, ensure description)
-# Old format (commands):
-# ---
-# description: "Does foo"
-# ---
-
-# New format (skills):
-# ---
-# name: foo
-# description: "Does foo"
-# user-invocable: true
-# ---
-
-# 4. Add supporting files if needed
-# .claude/skills/foo/references/  -- reference docs
-# .claude/skills/foo/scripts/     -- helper scripts
-# .claude/skills/foo/assets/      -- images, templates
-```
-
-**Key differences**:
+**Skills advantages over commands**:
 - Skills use `SKILL.md` in a directory (not a flat .md file)
 - Skills support `context: fork` for subagent execution
 - Skills support `scripts/`, `references/`, `assets/` subdirectories

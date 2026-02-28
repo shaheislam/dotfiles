@@ -60,7 +60,7 @@ work/**/CLAUDE.md
 # But allow specific directories to be tracked
 .claude/*
 !.claude/agents/
-!.claude/commands/
+!.claude/skills/
 !.claude/hooks/
 # Still ignore specific subdirectories
 .claude/ide/
