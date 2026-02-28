@@ -62,7 +62,10 @@ local function create_zoxide_scope_action(scope_name)
   end
 end
 
--- File picker actions (Alt-l/s/g for scope - Neovim parity)
+-- File picker actions (Alt-l/s/g/d/p for scope - Neovim parity)
+-- Note: Alt bindings work on all target terminals (Ghostty, WezTerm, iTerm2).
+-- Terminals that send Esc-prefix instead of real Alt are handled natively by
+-- fzf, which treats Esc+key and Alt+key identically (see `man fzf`).
 local file_actions = {
   ["enter"] = output_files,
   ["esc"] = quit,
@@ -71,11 +74,13 @@ local file_actions = {
   ["alt-l"] = create_scope_action("local"),
   ["alt-s"] = create_scope_action("git"),
   ["alt-g"] = create_scope_action("global"),
+  ["alt-d"] = create_scope_action("local"),   -- Buffer dir (same as local in CLI)
+  ["alt-p"] = create_scope_action("parent"),
 }
 
 -- Header hints (M = Alt/Meta)
-local file_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
-local grep_header = "C-y:copy | M-l:local M-s:git M-g:global | Tab:multi | C-/:preview"
+local file_header = "C-y:copy | M-l:local M-s:git M-g:global M-p:parent | Tab:multi | C-/:preview"
+local grep_header = "C-y:copy | M-l:local M-s:git M-g:global M-p:parent | Tab:multi | C-/:preview"
 local zoxide_header = "Enter:cd | M-l:local M-s:git M-g:global M-p:parents | C-/:preview"
 local git_header = "Enter:select | C-y:copy SHA | C-/:preview"
 
