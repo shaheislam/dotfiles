@@ -27,6 +27,12 @@
       "args": [
         "drawio-mcp-server"
       ]
+    },
+    "claudecodebrowser": {
+      "command": "python3",
+      "args": [
+        "~/.claudecodebrowser/mcp-server/stdio_wrapper.py"
+      ]
     }
   },
   "preferences": {
