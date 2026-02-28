@@ -58,6 +58,12 @@ The FZF search defaults to **global mode**, showing commands from all directorie
 - Atuin's built-in `secrets_filter` (enabled by default) prevents sensitive data like API keys from being stored in history
 - Use `history_filter` in `~/.config/atuin/config.toml` to exclude specific command patterns
 
+To change the default back to directory-only mode:
+```fish
+# In config.fish or conf.d:
+set -g ATUIN_FZF_MODE directory
+```
+
 ### Adjusting History Limit
 
 By default, the FZF search shows the last 5000 history entries. To change this:

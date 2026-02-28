@@ -17,15 +17,18 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     set -l atuin_format "{time}\t{exit}\t{duration}\t{directory}\t{command}"
 
     # Unified AWK: prepend exit indicator to command field, append dimmed directory
+    # Command is the LAST format field — rejoin $5..NF to handle tabs in commands
     set -l awk_format 'BEGIN {FS="\t"; OFS="\t"} {
+        cmd = $5; for (i=6; i<=NF; i++) cmd = cmd " " $i
         exit_icon = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
-        print $1, $2, $3, $4, exit_icon " " $5, "\033[2m" $4 "\033[0m"
+        print $1, $2, $3, $4, exit_icon " " cmd, "\033[2m" $4 "\033[0m"
     }'
 
     # AWK for failed-only mode
     set -l awk_failed 'BEGIN {FS="\t"; OFS="\t"} $2 != "0" {
+        cmd = $5; for (i=6; i<=NF; i++) cmd = cmd " " $i
         exit_icon = "\033[31m✗\033[0m"
-        print $1, $2, $3, $4, exit_icon " " $5, "\033[2m" $4 "\033[0m"
+        print $1, $2, $3, $4, exit_icon " " cmd, "\033[2m" $4 "\033[0m"
     }'
 
     # Preview script path
@@ -40,20 +43,29 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     set -l header_session "SESSION | C-d:dir C-g:global M-s:session | M-x:del C-y:copy C-e:failed C-o:edit | C-/:preview"
     set -l header_failed "FAILED | C-d:dir C-g:global M-s:session | M-x:del C-y:copy C-e:all C-o:edit | C-/:preview"
 
+    # Default mode: global (override with: set -g ATUIN_FZF_MODE directory)
+    set -l default_mode global
+    set -l default_header "$header_global"
+    set -l default_filter "--filter-mode global"
+    if set -q ATUIN_FZF_MODE; and test "$ATUIN_FZF_MODE" = directory
+        set default_mode directory
+        set default_header "$header_dir"
+        set default_filter "--cwd $current_dir"
+    end
+
     set -l tmpfile (mktemp)
 
-    # Run fzf with rich preview - default: GLOBAL mode showing all commands with directories
-    atuin search --format "$atuin_format" --filter-mode global 2>/dev/null | string replace -a "$HOME" "~" | awk "$awk_format" | fzf --ansi \
+    # Run fzf with rich preview
+    atuin search --format "$atuin_format" $default_filter 2>/dev/null | string replace -a "$HOME" "~" | awk "$awk_format" | fzf --ansi \
         --tac \
         --no-sort \
         --no-multi \
         --height=80% \
         --query="$cmd_buffer" \
-        --header="$header_global" \
+        --header="$default_header" \
         --expect="right" \
         --delimiter='\t' \
         --with-nth=5..6 \
-        --nth=5..6 \
         --preview="bash '$preview_script' {}" \
         --preview-window='right,50%,wrap' \
         --preview-label=' Details ' \

@@ -5,10 +5,11 @@ atuin-fzf-widget() {
     local selected
     local current_buffer="${LBUFFER}"
     local current_dir="${PWD}"
-    local atuin_fmt='{exit}\t{command}\t{directory}'
+    local atuin_fmt='{exit}\t{directory}\t{command}'
     local awk_fmt='BEGIN {FS="\t"; OFS="\t"} {
+        cmd = $3; for (i=4; i<=NF; i++) cmd = cmd " " $i
         icon = ($1 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
-        print icon " " $2, "\033[2m" $3 "\033[0m"
+        print icon " " cmd, "\033[2m" $2 "\033[0m"
     }'
 
     # Run atuin with fzf - default: GLOBAL mode showing directories
