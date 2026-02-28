@@ -1,0 +1,23 @@
+# Topgrade Configuration
+# Unified system updater - run `topgrade` to update everything at once
+
+[misc]
+# Assume yes to all prompts
+assume_yes = true
+# Don't ask to retry failed steps
+no_retry = true
+# Cleanup after updates
+cleanup = true
+# Skip these update steps
+disable = [
+    "node",       # Managed by mise/asdf, not global npm
+    "pip3",       # Managed by mise/asdf
+    "pipx",       # Run manually when needed
+    "gem",        # Not used
+    "containers", # Don't auto-update running containers
+    "vim",        # Using Neovim with LazyVim (self-updating)
+]
+
+[brew]
+# Update Homebrew casks too
+greedy_casks = true
