@@ -4,9 +4,9 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     set -l current_dir (pwd)
 
     # Detect clipboard command (macOS pbcopy vs Linux xclip/xsel)
-    set -l clip_cmd "true" # no-op fallback
+    set -l clip_cmd true # no-op fallback
     if command -v pbcopy >/dev/null
-        set clip_cmd "pbcopy"
+        set clip_cmd pbcopy
     else if command -v xclip >/dev/null
         set clip_cmd "xclip -selection clipboard"
     else if command -v xsel >/dev/null
@@ -16,16 +16,16 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     # Raw format: tab-separated fields
     set -l atuin_format "{time}\t{exit}\t{duration}\t{directory}\t{command}"
 
-    # Unified AWK: prepend exit indicator to command field
+    # Unified AWK: prepend exit indicator to command field, append dimmed directory
     set -l awk_format 'BEGIN {FS="\t"; OFS="\t"} {
         exit_icon = ($2 == "0") ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m"
-        print $1, $2, $3, $4, exit_icon " " $5
+        print $1, $2, $3, $4, exit_icon " " $5, "\033[2m" $4 "\033[0m"
     }'
 
     # AWK for failed-only mode
     set -l awk_failed 'BEGIN {FS="\t"; OFS="\t"} $2 != "0" {
         exit_icon = "\033[31m✗\033[0m"
-        print $1, $2, $3, $4, exit_icon " " $5
+        print $1, $2, $3, $4, exit_icon " " $5, "\033[2m" $4 "\033[0m"
     }'
 
     # Preview script path
@@ -42,32 +42,30 @@ function atuin_fzf_search --description "Search shell history using atuin with f
 
     set -l tmpfile (mktemp)
 
-    # Run fzf with rich preview
-    atuin search --format "$atuin_format" --cwd "$current_dir" 2>/dev/null | \
-        string replace -a "$HOME" "~" | \
-        awk "$awk_format" | \
-    fzf --ansi \
+    # Run fzf with rich preview - default: GLOBAL mode showing all commands with directories
+    atuin search --format "$atuin_format" --filter-mode global 2>/dev/null | string replace -a "$HOME" "~" | awk "$awk_format" | fzf --ansi \
         --tac \
         --no-sort \
+        --no-multi \
         --height=80% \
         --query="$cmd_buffer" \
-        --header="$header_dir" \
+        --header="$header_global" \
         --expect="right" \
         --delimiter='\t' \
-        --with-nth=5 \
+        --with-nth=5..6 \
+        --nth=5..6 \
         --preview="bash '$preview_script' {}" \
         --preview-window='right,50%,wrap' \
         --preview-label=' Details ' \
         $fzf_colors \
         --bind='ctrl-/:toggle-preview' \
-        --bind="alt-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')" \
+        --bind="alt-x:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | xargs -I{} atuin search --delete --cmd-only -- {})+reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')" \
         --bind="ctrl-d:reload(atuin search --format '$atuin_format' --cwd '$current_dir' 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_dir)" \
         --bind="ctrl-g:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_global)" \
         --bind="alt-s:reload(atuin search --format '$atuin_format' --filter-mode session 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_format')+change-header($header_session)" \
         --bind="ctrl-y:execute-silent(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- | $clip_cmd)" \
         --bind="ctrl-e:reload(atuin search --format '$atuin_format' --filter-mode global 2>/dev/null | sed 's|'\$HOME'|~|g' | awk '$awk_failed')+change-header($header_failed)" \
-        --bind="ctrl-o:execute(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" \
-        > $tmpfile
+        --bind="ctrl-o:execute(echo {5} | sed 's/\\x1b\\[[0-9;]*m//g' | cut -c3- > /tmp/atuin_edit_cmd && \${EDITOR:-nvim} /tmp/atuin_edit_cmd)+accept" >$tmpfile
 
     set -l fzf_exit_status $status
 

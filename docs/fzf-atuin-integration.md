@@ -5,9 +5,10 @@ This configuration provides FZF-based fuzzy search for Atuin shell history in bo
 ## Features
 
 - **Fuzzy Search**: Use FZF's excellent fuzzy matching algorithm to search through your shell history
-- **Multi-mode Support**: Switch between directory, global, and session history modes on the fly
+- **Directory Visibility**: Each command shows which directory it was run in, so the same command run in different directories appears as separate entries
+- **Multi-mode Support**: Switch between global, directory, and session history modes on the fly (defaults to global)
 - **Consistent Interface**: Same keybindings and behavior across Fish and Zsh shells
-- **Fast Performance**: Searches the last 5000 history entries by default (configurable)
+- **Rich Preview**: Fish version includes detailed preview with timestamp, duration, exit code, directory, and session context
 - **Keybinding Compatibility**: Preserves native Atuin search on Ctrl-E while adding FZF search on Ctrl-R
 
 ## Installation
@@ -27,7 +28,7 @@ The integration is automatically set up when using the dotfiles setup script. Ma
 
 ### Primary Keybindings
 
-- **Ctrl-R**: Open FZF-based Atuin history search (starts in directory mode)
+- **Ctrl-R**: Open FZF-based Atuin history search (starts in global mode, showing directories)
 - **Ctrl-E**: Open native Atuin search interface (for when you prefer the original)
 
 ### Within FZF Search
@@ -48,6 +49,14 @@ The Fish configuration also includes arrow key bindings for quick access to diff
 - **Right Arrow**: Global history
 
 ## Configuration
+
+### Default Mode: Global vs Directory
+
+The FZF search defaults to **global mode**, showing commands from all directories with the directory path displayed alongside each command. This means commands from all sessions and directories are visible.
+
+- **Ctrl-D** narrows to current directory only (use this to focus on project-specific history)
+- Atuin's built-in `secrets_filter` (enabled by default) prevents sensitive data like API keys from being stored in history
+- Use `history_filter` in `~/.config/atuin/config.toml` to exclude specific command patterns
 
 ### Adjusting History Limit
 
