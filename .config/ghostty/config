@@ -39,6 +39,8 @@ cursor-style-blink = true
 # CLIPBOARD
 # =============================================================================
 # Trim trailing whitespace when copying (helps with TUI copy-paste artifacts)
+# Tradeoff: may strip intentional trailing spaces (Makefile tabs, markdown
+# hard breaks "  \n"). Disable if you work heavily with those formats.
 clipboard-trim-trailing-spaces = true
 
 # =============================================================================
