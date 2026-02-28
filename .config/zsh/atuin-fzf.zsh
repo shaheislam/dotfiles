@@ -13,6 +13,8 @@ atuin-fzf-widget() {
     }'
 
     # Run atuin with fzf - default: GLOBAL mode showing directories
+    # Sorting: atuin outputs oldest-first; --tac reverses so index 0 = newest.
+    # --scheme=history scores by match tightness; --tiebreak=index prefers recent.
     selected=$(
         atuin search --format "${atuin_fmt}" --filter-mode global 2>/dev/null | \
         sed "s|${HOME}|~|g" | awk "${awk_fmt}" | \

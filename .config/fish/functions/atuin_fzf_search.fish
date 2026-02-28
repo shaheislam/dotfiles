@@ -56,6 +56,8 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     set -l tmpfile (mktemp)
 
     # Run fzf with rich preview
+    # Sorting: atuin outputs oldest-first; --tac reverses so index 0 = newest.
+    # --scheme=history scores by match tightness; --tiebreak=index prefers recent.
     atuin search --format "$atuin_format" $default_filter 2>/dev/null | string replace -a "$HOME" "~" | awk "$awk_format" | fzf --ansi \
         --tac \
         --scheme=history \
