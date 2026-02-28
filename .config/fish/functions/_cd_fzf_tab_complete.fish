@@ -7,6 +7,74 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
         return
     end
 
+    # Path-based completion for filesystem navigation
+    # Triggers when token contains '/' or starts with '.' (e.g., ../, ./, ../foo, /usr/, .config)
+    # These indicate filesystem paths rather than zoxide fuzzy queries
+    if string match -q -r '(/|^\.)' "$token"
+        set -l base_dir "$token"
+        set -l path_query ""
+
+        # Expand ~ for path resolution
+        set -l expanded (string replace -r '^~' "$HOME" -- "$token")
+
+        if test -d "$expanded"
+            # Full token is a directory — browse its contents
+            set base_dir "$token"
+            string match -q '*/' "$base_dir"; or set base_dir "$base_dir/"
+        else
+            # Split into directory base + trailing query fragment
+            set base_dir (string replace -r '[^/]*$' '' -- "$token")
+            set path_query (string replace -r '.*/' '' -- "$token")
+            set expanded (string replace -r '^~' "$HOME" -- "$base_dir")
+            if not test -d "$expanded"
+                _fifc
+                return
+            end
+        end
+
+        set -l expanded_base (string replace -r '^~' "$HOME" -- "$base_dir")
+        set -l resolved (realpath "$expanded_base" 2>/dev/null)
+        if test -z "$resolved"; or not test -d "$resolved"
+            _fifc
+            return
+        end
+
+        # Collect subdirectories (including hidden)
+        set -l dir_list
+        for d in $resolved/*/
+            test -d "$d"; and set -a dir_list (basename "$d")
+        end
+        for d in $resolved/.*/
+            set -l name (basename "$d")
+            test "$name" != "." -a "$name" != ".." -a -d "$d"; and set -a dir_list "$name"
+        end
+
+        if test (count $dir_list) -eq 0
+            _fifc
+            return
+        end
+
+        set -l result (printf '%s\n' $dir_list \
+            | fzf \
+                --no-multi \
+                --no-sort \
+                --scheme=path \
+                --print-query \
+                --prompt="cd ($base_dir) ❯ " \
+                --preview='eza --icons --color=always --group-directories-first -la "'$resolved'/{}" 2>/dev/null || ls -la "'$resolved'/{}"' \
+                --preview-window=right:40%:wrap \
+                --query="$path_query")
+
+        set -l lines (string split \n -- $result)
+        set -l selection $lines[3]
+
+        if test -n "$selection"
+            commandline --replace --current-token -- "$base_dir$selection"
+        end
+        commandline --function repaint
+        return
+    end
+
     set -l scope Global
     set -l query (string trim -- "$token")
     set -l git_root (git rev-parse --show-toplevel 2>/dev/null; or echo "")

@@ -74,9 +74,20 @@ test_fish() {
         run_test "Fish function $func exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/$func.fish' ]"
     done
 
+    # Check tab completion functions exist
+    for func in _cd_fzf_tab_complete _fifc_or_fzf _autopair_tab; do
+        run_test "Fish tab completion $func exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/$func.fish' ]"
+    done
+
     # Validate Fish syntax if fish is available
     if command -v fish &>/dev/null; then
         run_test "Fish config.fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/config.fish'"
+        # Validate tab completion function syntax
+        for func in _cd_fzf_tab_complete _fifc_or_fzf; do
+            run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
+        done
+        # Validate _cd_fzf_tab_complete loads and is queryable
+        run_test "Fish _cd_fzf_tab_complete loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/_cd_fzf_tab_complete.fish && functions -q _cd_fzf_tab_complete'"
     fi
 }
 
