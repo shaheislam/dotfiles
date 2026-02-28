@@ -31,6 +31,6 @@
   },
   "preferences": {
     "coworkScheduledTasksEnabled": false,
-    "sidebarMode": "chat"
+    "sidebarMode": "task"
   }
 }
