@@ -13,6 +13,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
     #   --prompt-suffix S    Text to append to prompt
+    #   --skill NAME [...]  Invoke skill(s) at prompt start
     #   --local         Use local Ollama model (default: qwen3-coder)
     #   --model MODEL   Use specific Ollama model (implies --local)
     #   --mount, -m     Additional mount (repeatable)
@@ -64,6 +65,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l prompt_template ""
     set -l prompt_prefix ""
     set -l prompt_suffix ""
+    set -l skills
+    set -l skills_skip_to 0
     set -l sub_profile ""
     set -l bridge_mode false
     set -l workflow_template ""
@@ -98,6 +101,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     for i in (seq (count $argv))
         if $skip_next
             set skip_next false
+            continue
+        end
+        # Skip args consumed by --skill's multi-arg parsing
+        if test $i -le $skills_skip_to
             continue
         end
 
@@ -176,6 +183,27 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set skip_next true
                 else
                     echo "Error: --prompt-suffix requires text"
+                    return 1
+                end
+            case --skill
+                # Consume all following non-flag arguments as skill names
+                set -l found_skill false
+                set -l j (math $i + 1)
+                while test $j -le (count $argv)
+                    # Stop at next flag
+                    if string match -q -- '--*' $argv[$j]
+                        break
+                    end
+                    set -l skill_name $argv[$j]
+                    # Normalize: strip leading / if present
+                    set skill_name (string replace -r '^/' '' -- $skill_name)
+                    set -a skills $skill_name
+                    set found_skill true
+                    set skills_skip_to $j
+                    set j (math $j + 1)
+                end
+                if not $found_skill
+                    echo "Error: --skill requires at least one skill name (e.g., --skill bestpractice tdd)"
                     return 1
                 end
             case --sub
@@ -459,6 +487,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --prompt-template F  Custom prompt template file"
         echo "  --prompt-prefix P    Text to prepend to prompt"
         echo "  --prompt-suffix S    Text to append to prompt"
+        echo "  --skill NAME [...]   Invoke skill(s) at start of prompt (e.g., --skill bestpractice tdd)"
         echo "  --sub NAME           Claude subscription profile (uses ~/.claude-NAME config dir)"
         echo "  --local              Use local Ollama model (default: qwen3-coder)"
         echo "  --model MODEL        Use specific Ollama model (implies --local)"
@@ -520,6 +549,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo ""
         echo "  # Add instructions before/after"
         echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --prompt-prefix \"IMPORTANT: No test changes\""
+        echo ""
+        echo "  # Invoke skill(s) before working on the ticket"
+        echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice"
+        echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice tdd"
         echo ""
         echo "Prompt Template Variables:"
         echo "  {{ISSUE_KEY}}          Issue key (ENG-123)"
@@ -698,6 +731,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
         if test -n "$prompt_suffix"
             echo "Suffix:    (custom)"
+        end
+        if test (count $skills) -gt 0
+            echo "Skills:    "(string join ', ' -- $skills)
         end
         if test -n "$convoy_id"
             echo "Convoy:    $convoy_id"
@@ -1003,10 +1039,25 @@ Do not ask questions - make reasonable decisions and iterate."
         end
     end
 
-    # Apply prefix and suffix
+    # Apply skills, prefix, and suffix
     set -l prompt ""
+
+    # Inject skill invocations at the very start of the prompt
+    if test (count $skills) -gt 0
+        set -l skill_lines
+        for skill in $skills
+            set -a skill_lines "/$skill"
+        end
+        set prompt "IMPORTANT: Before starting the task below, invoke these skills in order:
+"(string join \n -- $skill_lines)"
+
+After the skills complete, proceed with the task:
+
+"
+    end
+
     if test -n "$prompt_prefix"
-        set prompt "$prompt_prefix
+        set prompt "$prompt$prompt_prefix
 
 "
     end
@@ -1201,6 +1252,9 @@ $prompt_suffix"
         echo "Tmux:      $session_name:$window_name" >>$gwt_log_file
         echo "Max iter:  $max_iterations" >>$gwt_log_file
         echo "Command:   $slash_command" >>$gwt_log_file
+        if test (count $skills) -gt 0
+            echo "Skills:    "(string join ', ' -- $skills) >>$gwt_log_file
+        end
         echo "" >>$gwt_log_file
         echo "Monitoring:" >>$gwt_log_file
         echo "  tmux attach -t $session_name" >>$gwt_log_file
