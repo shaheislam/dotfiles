@@ -94,6 +94,10 @@ function ccb --description "Manage ClaudeCodeBrowser Firefox automation"
             if test -f "$ccb_dir/mcp-server/server.py"
                 if grep -q "Allow-Origin', '\\*'" "$ccb_dir/mcp-server/server.py"
                     echo "CORS: UNPATCHED (wildcard - vulnerable)"
+                else if grep -q _get_cors_origin "$ccb_dir/mcp-server/server.py"
+                    echo "CORS: patched (moz-extension:// allowlist)"
+                else if grep -q "Allow-Origin', 'null'" "$ccb_dir/mcp-server/server.py"
+                    echo "CORS: partially patched (null origin - upgrade recommended)"
                 else
                     echo "CORS: patched (hardened)"
                 end
@@ -125,11 +129,38 @@ function ccb --description "Manage ClaudeCodeBrowser Firefox automation"
             git pull
             cd -
 
-            # Re-apply CORS hardening
+            # Re-apply CORS hardening (moz-extension:// allowlist)
             if test -f "$ccb_dir/mcp-server/server.py"
-                sed -i '' "s/Access-Control-Allow-Origin', '\\*'/Access-Control-Allow-Origin', 'null'/" \
-                    "$ccb_dir/mcp-server/server.py" 2>/dev/null; or true
-                echo "CORS hardening re-applied"
+                if grep -q "Allow-Origin', '\\*'" "$ccb_dir/mcp-server/server.py"
+                    # Run the same Python patcher as setup.sh
+                    python3 -c '
+import sys, re
+path = sys.argv[1]
+with open(path, "r") as f:
+    content = f.read()
+helper = """
+    def _get_cors_origin(self):
+        origin = self.headers.get("Origin", "")
+        if origin.startswith("moz-extension://"):
+            return origin
+        return ""
+"""
+content = re.sub(
+    r"(    def log_message\(self, format, \*args\):\n        logger\.info\(f\"HTTP: \{format % args\}\"\)\n)",
+    r"\1" + helper,
+    content
+)
+content = content.replace(
+    "self.send_header('"'"'Access-Control-Allow-Origin'"'"', '"'"'*'"'"')",
+    "self.send_header('"'"'Access-Control-Allow-Origin'"'"', self._get_cors_origin())"
+)
+with open(path, "w") as f:
+    f.write(content)
+print("CORS patched: moz-extension:// allowlist")
+' "$ccb_dir/mcp-server/server.py" 2>/dev/null; or true
+                else
+                    echo "CORS already patched"
+                end
             end
 
             # Make scripts executable

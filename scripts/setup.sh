@@ -602,10 +602,42 @@ OCEOF
         fi
 
         if [ -d "$CCB_DIR" ]; then
-            # CORS hardening - replace wildcard origin with null (prevents drive-by browser control)
+            # CORS hardening - replace wildcard origin with dynamic moz-extension:// allowlist
+            # Rejects file://, http://, sandboxed iframe, and arbitrary web page origins
             if [ -f "$CCB_DIR/mcp-server/server.py" ]; then
-                sed -i '' "s/Access-Control-Allow-Origin', '\\*'/Access-Control-Allow-Origin', 'null'/" \
-                    "$CCB_DIR/mcp-server/server.py" 2>/dev/null || true
+                python3 - "$CCB_DIR/mcp-server/server.py" <<'CORSPATCH'
+import sys, re
+path = sys.argv[1]
+with open(path, 'r') as f:
+    content = f.read()
+# Add _get_cors_origin helper method after class definition line
+helper = '''
+    def _get_cors_origin(self):
+        """Return CORS origin only for moz-extension:// requests."""
+        origin = self.headers.get('Origin', '')
+        if origin.startswith('moz-extension://'):
+            return origin
+        return ''
+'''
+# Insert helper after log_message method
+content = re.sub(
+    r"(    def log_message\(self, format, \*args\):\n        logger\.info\(f\"HTTP: \{format % args\}\"\)\n)",
+    r"\1" + helper,
+    content
+)
+# Replace static CORS headers with dynamic calls
+content = content.replace(
+    "self.send_header('Access-Control-Allow-Origin', '*')",
+    "self.send_header('Access-Control-Allow-Origin', self._get_cors_origin())"
+)
+content = content.replace(
+    "self.send_header('Access-Control-Allow-Origin', 'null')",
+    "self.send_header('Access-Control-Allow-Origin', self._get_cors_origin())"
+)
+with open(path, 'w') as f:
+    f.write(content)
+print("CORS patched: moz-extension:// allowlist")
+CORSPATCH
             fi
 
             # Make scripts executable
