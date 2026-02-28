@@ -277,6 +277,18 @@ phase_1_core_packages() {
 
     install_packages_from_profile "$PROFILE" "core"
 
+    # Enable Homebrew background auto-updates (daily update + upgrade + cleanup)
+    if command_exists brew && brew tap | grep -q "domt4/autoupdate" 2>/dev/null; then
+        if [[ "$DRY_RUN" != "true" ]]; then
+            print_step "Enabling Homebrew background auto-updates..."
+            brew autoupdate start --upgrade --cleanup --immediate 2>/dev/null &&
+                print_success "Homebrew auto-update enabled (24h interval)" ||
+                log_verbose "Homebrew auto-update configuration skipped"
+        else
+            print_warning "DRY RUN: Would enable Homebrew background auto-updates"
+        fi
+    fi
+
     mark_step_complete "core_packages"
 }
 
