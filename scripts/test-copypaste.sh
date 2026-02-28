@@ -153,6 +153,16 @@ result=$(printf 'Introduction\ntext here.\n- item one\n- item two\n* bullet thre
 expected=$(printf 'Introduction text here.\n- item one\n- item two\n* bullet three')
 assert_eq "cfx -p: preserves list items" "$expected" "$result"
 
+# Test: Paragraph mode preserves fenced code blocks
+result=$(printf 'Some text\nthat wraps.\n```\ncode line 1\ncode line 2\n```\nAfter code\nalso wraps.' | fish -c "source $CFX_FUNC; cfx -p")
+expected=$(printf 'Some text that wraps.\n```\ncode line 1\ncode line 2\n```\nAfter code also wraps.')
+assert_eq "cfx -p: preserves fenced code blocks" "$expected" "$result"
+
+# Test: Paragraph mode fenced block with language tag
+result=$(printf 'Run this:\n```bash\necho hello\necho world\n```\nThen check.' | fish -c "source $CFX_FUNC; cfx -p")
+expected=$(printf 'Run this:\n```bash\necho hello\necho world\n```\nThen check.')
+assert_eq "cfx -p: fenced block with language tag" "$expected" "$result"
+
 # Test: Single line input (no-op)
 result=$(printf 'already one line' | fish -c "source $CFX_FUNC; cfx")
 assert_eq "join: single line unchanged" "already one line" "$result"
@@ -211,6 +221,24 @@ if ! grep -q 'C-y.*tmux-copy-cleanup' "$SCRIPT_DIR/../.tmux.conf"; then
     ((PASS++)) || true
 else
     echo -e "  ${RED}FAIL${NC} tmux: C-y still bound (collides with vi scroll-up)"
+    ((FAIL++)) || true
+fi
+
+# Test: tmux documents cfx -p vs smart difference
+if grep -q 'cfx -p' "$SCRIPT_DIR/../.tmux.conf"; then
+    echo -e "  ${GREEN}PASS${NC} tmux: cfx -p vs smart difference documented"
+    ((PASS++)) || true
+else
+    echo -e "  ${RED}FAIL${NC} tmux: cfx -p vs smart difference not documented"
+    ((FAIL++)) || true
+fi
+
+# Test: tmux documents M-y portability
+if grep -q 'Alt/Meta key support' "$SCRIPT_DIR/../.tmux.conf"; then
+    echo -e "  ${GREEN}PASS${NC} tmux: M-y portability note present"
+    ((PASS++)) || true
+else
+    echo -e "  ${RED}FAIL${NC} tmux: M-y portability note missing"
     ((FAIL++)) || true
 fi
 

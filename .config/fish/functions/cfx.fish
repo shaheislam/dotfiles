@@ -23,11 +23,13 @@ function cfx -d "Fix clipboard line breaks from terminal copy"
         echo "  cfx -t       Trim trailing whitespace only"
         echo "  cfx -v       Show before/after preview"
         echo "  cfx -n       Dry-run (preview only, don't modify clipboard)"
-        echo "  echo 'x' | cfx   Works with piped input"
+        echo "  echo 'x' | cfx   Also works with piped input"
         echo ""
         echo "Notes:"
+        echo "  Default mode overwrites clipboard (use -n to preview first)."
         echo "  Join mode preserves backslash line continuations."
-        echo "  Paragraph mode preserves indented lines and list items."
+        echo "  Paragraph mode preserves indented lines, list items,"
+        echo "  and fenced code blocks (triple backticks)."
         return 0
     end
 
@@ -59,16 +61,37 @@ function cfx -d "Fix clipboard line breaks from terminal copy"
         # Just trim trailing whitespace from each line
         sed 's/[[:space:]]*$//' <$input_file >$result_file
     else if set -q _flag_paragraphs
-        # Preserve paragraph breaks (empty lines), indented lines, and list items
-        # but join wrapped lines within paragraphs.
-        # Lines starting with whitespace, list markers, or numbered items
-        # begin new logical blocks.
+        # Preserve paragraph breaks (empty lines), indented lines, list items,
+        # and fenced code blocks (```) but join wrapped lines within paragraphs.
+        # Lines starting with whitespace, list markers, numbered items, or
+        # fenced code markers begin new logical blocks.
+        # Inside fenced blocks, all lines are preserved verbatim.
         # NOTE: Fish single quotes escape \\ → \, so awk needs \\\\ for literal \\
         awk '
-            BEGIN { para = ""; was_special = 0 }
+            BEGIN { para = ""; was_special = 0; in_fence = 0 }
             /^[[:space:]]*$/ {
-                if (para != "") { print para; print ""; para = "" }
-                was_special = 0
+                if (!in_fence) {
+                    if (para != "") { print para; print ""; para = "" }
+                    was_special = 0
+                } else {
+                    if (para != "") print para
+                    print ""
+                    para = ""
+                }
+                next
+            }
+            /^```/ {
+                if (para != "") print para
+                sub(/[[:space:]]+$/, "")
+                print $0
+                para = ""
+                in_fence = !in_fence
+                was_special = 1
+                next
+            }
+            in_fence {
+                sub(/[[:space:]]+$/, "")
+                print $0
                 next
             }
             /^[[:space:]]/ || /^[-*+>]/ || /^[0-9]+[.)]/ {
