@@ -59,6 +59,7 @@ list_groups() {
     echo "  cd-perf       - CD performance optimizations"
     echo "  lsp           - Claude Code LSP integration"
     echo "  nvim-bridge   - Neovim-Claude Code bridge"
+    echo "  remote-control - Claude Code Remote Control"
     echo "  openclaw      - OpenClaw integration"
     echo "  all           - Run all groups"
 }
@@ -497,6 +498,44 @@ test_lsp() {
     run_test "lsp-status.sh uses bash (not sh)" "head -1 '$DOTFILES_ROOT/.claude/hooks/lsp-status.sh' | grep -q bash"
 }
 
+test_remote_control() {
+    echo -e "${BLUE}--- Claude Code Remote Control Tests ---${NC}"
+
+    # Fish function exists
+    run_test "cc-rc Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish' ]"
+
+    # Fish function syntax valid
+    if command -v fish &>/dev/null; then
+        run_test "cc-rc Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+        run_test "cc-rc function loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/cc-rc.fish && functions -q cc-rc'"
+    fi
+
+    # Fish function has required subcommands
+    run_test "cc-rc has start command" "grep -q 'case start' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc has status command" "grep -q 'case status' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc has enable command" "grep -q 'case enable' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc has disable command" "grep -q 'case disable' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc has tmux command" "grep -q 'case tmux' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc has help command" "grep -q 'case help' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+
+    # Fish function uses claude remote-control command
+    run_test "cc-rc calls claude remote-control" "grep -q 'claude remote-control' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+
+    # Fish function supports --verbose and --sandbox flags
+    run_test "cc-rc supports --verbose flag" "grep -q '\-\-verbose' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc supports --sandbox flag" "grep -q '\-\-sandbox' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+
+    # Fish function reads enableRemoteControl from ~/.claude.json
+    run_test "cc-rc reads enableRemoteControl" "grep -q 'enableRemoteControl' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+
+    # Fish function uses jq for config manipulation
+    run_test "cc-rc uses jq" "grep -q 'jq' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+
+    # setup.sh enables remote control
+    run_test "setup.sh enables remote control" "grep -q 'enableRemoteControl' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh has remote control comment reference" "grep -q 'remote-control' '$DOTFILES_ROOT/scripts/setup.sh'"
+}
+
 test_nvim_bridge() {
     echo -e "${BLUE}--- Neovim-Claude Bridge Tests ---${NC}"
 
@@ -584,6 +623,7 @@ agents-md) test_agents_md ;;
 cd-perf) test_cd_perf ;;
 lsp) test_lsp ;;
 nvim-bridge) test_nvim_bridge ;;
+remote-control) test_remote_control ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
@@ -598,6 +638,7 @@ all)
     test_cd_perf
     test_lsp
     test_nvim_bridge
+    test_remote_control
     # OpenClaw tests run from their own script (separate counters)
     echo ""
     source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
