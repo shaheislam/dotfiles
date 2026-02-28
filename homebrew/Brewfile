@@ -32,6 +32,9 @@ tap "schpet/tap"
 # Tap for Graphite CLI (stacked PRs and merge queue)
 tap "withgraphite/tap"
 
+# Tap for Homebrew background auto-updates
+tap "DomT4/autoupdate"
+
 # System Maintenance
 brew "topgrade"  # Unified system updater - updates Homebrew, pip, cargo, npm, mas, etc. in one command
 
