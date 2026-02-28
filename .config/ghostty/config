@@ -36,6 +36,12 @@ cursor-style = block
 cursor-style-blink = true
 
 # =============================================================================
+# CLIPBOARD
+# =============================================================================
+# Trim trailing whitespace when copying (helps with TUI copy-paste artifacts)
+clipboard-trim-trailing-spaces = true
+
+# =============================================================================
 # SHELL & TERMINAL
 # =============================================================================
 command = /opt/homebrew/bin/fish -l
