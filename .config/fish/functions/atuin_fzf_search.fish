@@ -58,7 +58,8 @@ function atuin_fzf_search --description "Search shell history using atuin with f
     # Run fzf with rich preview
     atuin search --format "$atuin_format" $default_filter 2>/dev/null | string replace -a "$HOME" "~" | awk "$awk_format" | fzf --ansi \
         --tac \
-        --no-sort \
+        --scheme=history \
+        --tiebreak=index \
         --no-multi \
         --height=80% \
         --query="$cmd_buffer" \

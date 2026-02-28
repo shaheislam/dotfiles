@@ -17,7 +17,8 @@ atuin-fzf-widget() {
         atuin search --format "${atuin_fmt}" --filter-mode global 2>/dev/null | \
         sed "s|${HOME}|~|g" | awk "${awk_fmt}" | \
         fzf --ansi --tac \
-            --no-sort \
+            --scheme=history \
+            --tiebreak=index \
             --no-multi \
             --height=80% \
             --query="${current_buffer}" \
