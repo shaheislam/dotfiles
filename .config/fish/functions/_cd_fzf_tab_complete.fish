@@ -57,11 +57,23 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
                 set dirs (zoxide query --list 2>/dev/null | sed "s|$HOME|~|")
                 set preview_cmd 'd={}; d="${d/#\~/'$HOME'}"; eza --icons --color=always --group-directories-first -la "$d" 2>/dev/null || ls -la "$d"'
             case Local
-                set dirs (zoxide query --list 2>/dev/null | string match -r "^"(string escape --style=regex -- (pwd))"/.*" | sed "s|"(pwd)"/||")
+                # Filesystem immediate subdirs first, then zoxide deep paths
+                set -l fs_dirs (command ls -1Ap (pwd) 2>/dev/null | string match '*/' | string replace -r '/\z' '')
+                set -l zoxide_dirs (zoxide query --list 2>/dev/null | string match -r "^"(string escape --style=regex -- (pwd))"/.*" | sed "s|"(pwd)"/||")
+                set dirs $fs_dirs
+                for d in $zoxide_dirs
+                    contains -- "$d" $fs_dirs; or set -a dirs "$d"
+                end
                 set preview_cmd 'eza --icons --color=always --group-directories-first -la "'(pwd)'/{}" 2>/dev/null || ls -la "'(pwd)'/{}"'
             case Git
                 set -l root (test -n "$git_root"; and echo "$git_root"; or pwd)
-                set dirs (zoxide query --list 2>/dev/null | string match -r "^"(string escape --style=regex -- "$root")"/.*" | sed "s|$root/||")
+                # Filesystem immediate subdirs first, then zoxide deep paths
+                set -l fs_dirs (command ls -1Ap "$root" 2>/dev/null | string match '*/' | string replace -r '/\z' '')
+                set -l zoxide_dirs (zoxide query --list 2>/dev/null | string match -r "^"(string escape --style=regex -- "$root")"/.*" | sed "s|$root/||")
+                set dirs $fs_dirs
+                for d in $zoxide_dirs
+                    contains -- "$d" $fs_dirs; or set -a dirs "$d"
+                end
                 set preview_cmd 'eza --icons --color=always --group-directories-first -la "'$root'/{}" 2>/dev/null || ls -la "'$root'/{}"'
             case Parents
                 set -l current (pwd)
