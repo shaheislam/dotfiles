@@ -7,83 +7,57 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
         return
     end
 
-    # Path-based completion for filesystem navigation
-    # Triggers when token contains '/' or starts with '.' (e.g., ../, ./, ../foo, /usr/, .config)
-    # These indicate filesystem paths rather than zoxide fuzzy queries
-    if string match -q -r '(/|^\.)' "$token"
-        set -l base_dir "$token"
-        set -l path_query ""
+    set -l scope Global
+    set -l query (string trim -- "$token")
+    set -l git_root (git rev-parse --show-toplevel 2>/dev/null; or echo "")
 
-        # Expand ~ for path resolution
+    # Path-based token: resolve base directory and start in Path scope
+    # Triggers on tokens containing '/' or starting with '.' (e.g., ../, ./, ../foo, /usr/)
+    set -l path_base ""
+    if string match -q -r '(/|^\.)' "$token"
         set -l expanded (string replace -r '^~' "$HOME" -- "$token")
 
         if test -d "$expanded"
             # Full token is a directory — browse its contents
-            set base_dir "$token"
-            string match -q '*/' "$base_dir"; or set base_dir "$base_dir/"
+            set path_base "$token"
+            string match -q '*/' "$path_base"; or set path_base "$path_base/"
+            set query ""
         else
             # Split into directory base + trailing query fragment
-            set base_dir (string replace -r '[^/]*$' '' -- "$token")
-            set path_query (string replace -r '.*/' '' -- "$token")
-            set expanded (string replace -r '^~' "$HOME" -- "$base_dir")
-            if not test -d "$expanded"
-                _fifc
-                return
+            set -l base (string replace -r '[^/]*$' '' -- "$token")
+            set -l base_expanded (string replace -r '^~' "$HOME" -- "$base")
+            if test -d "$base_expanded"
+                set path_base "$base"
+                set query (string replace -r '.*/' '' -- "$token")
             end
         end
 
-        set -l expanded_base (string replace -r '^~' "$HOME" -- "$base_dir")
-        set -l resolved (realpath "$expanded_base" 2>/dev/null)
-        if test -z "$resolved"; or not test -d "$resolved"
-            _fifc
-            return
+        if test -n "$path_base"
+            set scope Path
         end
-
-        # Collect subdirectories (including hidden)
-        set -l dir_list
-        for d in $resolved/*/
-            test -d "$d"; and set -a dir_list (basename "$d")
-        end
-        for d in $resolved/.*/
-            set -l name (basename "$d")
-            test "$name" != "." -a "$name" != ".." -a -d "$d"; and set -a dir_list "$name"
-        end
-
-        if test (count $dir_list) -eq 0
-            _fifc
-            return
-        end
-
-        set -l result (printf '%s\n' $dir_list \
-            | fzf \
-                --no-multi \
-                --no-sort \
-                --scheme=path \
-                --print-query \
-                --prompt="cd ($base_dir) ❯ " \
-                --preview='eza --icons --color=always --group-directories-first -la "'$resolved'/{}" 2>/dev/null || ls -la "'$resolved'/{}"' \
-                --preview-window=right:40%:wrap \
-                --query="$path_query")
-
-        set -l lines (string split \n -- $result)
-        set -l selection $lines[3]
-
-        if test -n "$selection"
-            commandline --replace --current-token -- "$base_dir$selection"
-        end
-        commandline --function repaint
-        return
     end
-
-    set -l scope Global
-    set -l query (string trim -- "$token")
-    set -l git_root (git rev-parse --show-toplevel 2>/dev/null; or echo "")
 
     while true
         set -l dirs
         set -l preview_cmd
 
         switch $scope
+            case Path
+                set -l expanded_base (string replace -r '^~' "$HOME" -- "$path_base")
+                set -l resolved (realpath "$expanded_base" 2>/dev/null)
+                if test -z "$resolved"; or not test -d "$resolved"
+                    _fifc
+                    return
+                end
+                # List real filesystem directories (non-hidden + hidden)
+                for d in $resolved/*/
+                    test -d "$d"; and set -a dirs (basename "$d")
+                end
+                for d in $resolved/.*/
+                    set -l name (basename "$d")
+                    test "$name" != "." -a "$name" != ".." -a -d "$d"; and set -a dirs "$name"
+                end
+                set preview_cmd 'eza --icons --color=always --group-directories-first -la "'$resolved'/{}" 2>/dev/null || ls -la "'$resolved'/{}"'
             case Global
                 set dirs (zoxide query --list 2>/dev/null | sed "s|$HOME|~|")
                 set preview_cmd 'd={}; d="${d/#\~/'$HOME'}"; eza --icons --color=always --group-directories-first -la "$d" 2>/dev/null || ls -la "$d"'
@@ -109,6 +83,14 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
             return
         end
 
+        # Build header — include Path shortcut only when a path base was resolved
+        set -l header "alt-l:Local  alt-g:Git  alt-s:Global  alt-p:Parents"
+        set -l expect "alt-l,alt-g,alt-s,alt-p"
+        if test -n "$path_base"
+            set header "alt-d:Path  $header"
+            set expect "alt-d,$expect"
+        end
+
         set -l result (printf '%s\n' $dirs \
             | fzf \
                 --no-multi \
@@ -117,8 +99,8 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
                 --scheme=path \
                 --print-query \
                 --prompt="cd ($scope) ❯ " \
-                --header="alt-l:Local  alt-g:Git  alt-s:Global  alt-p:Parents" \
-                --expect=alt-l,alt-g,alt-s,alt-p \
+                --header="$header" \
+                --expect="$expect" \
                 --preview="$preview_cmd" \
                 --preview-window=right:40%:wrap \
                 --query="$query")
@@ -130,6 +112,12 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
 
         # Scope change — preserve query and re-run
         switch "$key"
+            case alt-d
+                if test -n "$path_base"
+                    set scope Path
+                    set query "$typed_query"
+                    continue
+                end
             case alt-l
                 set scope Local
                 set query "$typed_query"
@@ -151,6 +139,9 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
         # Selection made — restore full path based on scope
         if test -n "$selection"
             switch $scope
+                case Path
+                    # Preserve the original relative path prefix (e.g., ../, ../../)
+                    set selection "$path_base$selection"
                 case Local
                     set selection (pwd)"/$selection"
                 case Git
@@ -161,7 +152,12 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
                 case Parents
                     # Already full paths
             end
-            commandline --replace --current-token -- (string replace "$HOME" '~' -- "$selection")
+            # Path scope keeps relative notation; others use ~ shorthand
+            if test "$scope" = Path
+                commandline --replace --current-token -- "$selection"
+            else
+                commandline --replace --current-token -- (string replace "$HOME" '~' -- "$selection")
+            end
         end
         break
     end
