@@ -203,6 +203,20 @@ test_tmux() {
         "grep -q 'created_new_session.*false' '$GWT_TICKET'"
     run_test "gwt-ticket only creates extra window for existing sessions" \
         "grep -A2 'test.*created_new_session.*false' '$GWT_TICKET' | grep -q 'tmux new-window'"
+
+    # --skill flag: invoke skills at prompt start
+    run_test "gwt-ticket supports --skill flag" \
+        "grep -q 'case --skill' '$GWT_TICKET'"
+    run_test "gwt-ticket --skill normalizes leading slash" \
+        "grep -q \"string replace -r '\\^/' '' --\" '$GWT_TICKET'"
+    run_test "gwt-ticket --skill injects skill invocations into prompt" \
+        "grep -q 'IMPORTANT: Before starting the task below, invoke these skills' '$GWT_TICKET'"
+    run_test "gwt-ticket --skill shown in verbose output" \
+        "grep -q 'Skills:.*string join' '$GWT_TICKET'"
+    run_test "gwt-ticket --skill shown in help text" \
+        "grep -q '\\-\\-skill NAME' '$GWT_TICKET'"
+    run_test "gwt-ticket --skill documented in header comment" \
+        "grep -q '#.*--skill NAME' '$GWT_TICKET'"
 }
 
 test_hooks() {
