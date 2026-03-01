@@ -914,10 +914,25 @@ test_gitattributes() {
     # Verify JSON diff driver produces valid output
     run_test "JSON diff driver produces sorted output" "bash '$DOTFILES_ROOT/scripts/git-diff-json.sh' '$DOTFILES_ROOT/.config/vscode/settings.json' | head -1 | grep -q '{'"
 
-    # Verify setup.sh registers the drivers
+    # Verify merge drivers are assigned
+    run_test "Brewfile uses brewfile merge driver" "git -C '$DOTFILES_ROOT' check-attr merge -- homebrew/Brewfile | grep -q 'brewfile'"
+    run_test "settings.json uses json-merge driver" "git -C '$DOTFILES_ROOT' check-attr merge -- .claude/settings.json | grep -q 'json-merge'"
+    run_test "config.fish uses union-doc merge" "git -C '$DOTFILES_ROOT' check-attr merge -- .config/fish/config.fish | grep -q 'union-doc'"
+    run_test "test-filter.sh uses union-doc merge" "git -C '$DOTFILES_ROOT' check-attr merge -- scripts/test-filter.sh | grep -q 'union-doc'"
+    run_test "lazy-lock.json uses lockfile merge" "git -C '$DOTFILES_ROOT' check-attr merge -- .config/nvim/lazy-lock.json | grep -q 'lockfile'"
+
+    # Verify merge driver scripts exist and are executable
+    run_test "Brewfile merge driver exists" "[ -x '$DOTFILES_ROOT/scripts/merge-driver-brewfile.sh' ]"
+    run_test "JSON merge driver exists" "[ -x '$DOTFILES_ROOT/scripts/merge-driver-json.sh' ]"
+    run_test "Lockfile merge driver exists" "[ -x '$DOTFILES_ROOT/scripts/merge-driver-lockfile.sh' ]"
+
+    # Verify setup.sh registers all drivers
     run_test "setup.sh registers JSON diff driver" "grep -q 'diff.json.textconv' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh registers plist diff driver" "grep -q 'diff.plist.textconv' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh registers union-doc merge driver" "grep -q 'merge.union-doc.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers brewfile merge driver" "grep -q 'merge.brewfile.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers json-merge driver" "grep -q 'merge.json-merge.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers lockfile merge driver" "grep -q 'merge.lockfile.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
 }
 
 print_summary() {

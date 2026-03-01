@@ -2,7 +2,7 @@
 # Git Attributes for Dotfiles
 # =============================================================================
 # Custom drivers registered in git config via setup.sh.
-# See: scripts/merge-driver-union.sh, scripts/git-diff-json.sh
+# See: scripts/merge-driver-*.sh, scripts/git-diff-json.sh
 
 # -----------------------------------------------------------------------------
 # 1. Custom Merge Drivers
@@ -15,6 +15,37 @@
 #       driver = scripts/merge-driver-union.sh %A %O %B %L %P
 CLAUDE.md merge=union-doc
 AGENTS.md merge=union-doc
+
+# Union merge for Brewfile - both branches adding packages should keep both.
+# Deduplicates tap/brew/cask/mas lines after merge.
+#
+# Registered in git config via setup.sh:
+#   [merge "brewfile"]
+#       driver = scripts/merge-driver-brewfile.sh %A %O %B %L %P
+homebrew/Brewfile merge=brewfile
+
+# JSON deep-merge for Claude settings - merges permission arrays, hook
+# objects, and plugin maps without conflicts.
+#
+# Registered in git config via setup.sh:
+#   [merge "json-merge"]
+#       driver = scripts/merge-driver-json.sh %A %O %B %L %P
+.claude/settings.json merge=json-merge
+.claude/settings.local.json merge=json-merge
+
+# Union merge for additive config files modified across worktrees.
+# config.fish: completions/abbrs added from different branches
+# test-filter.sh: test groups added from different branches
+.config/fish/config.fish merge=union-doc
+scripts/test-filter.sh   merge=union-doc
+
+# "Keep ours" for lockfiles - auto-generated, regenerate after merge.
+# Avoids noisy conflicts on every plugin version bump.
+#
+# Registered in git config via setup.sh:
+#   [merge "lockfile"]
+#       driver = scripts/merge-driver-lockfile.sh %A %O %B %L %P
+.config/nvim/lazy-lock.json merge=lockfile
 
 # -----------------------------------------------------------------------------
 # 2. Line Ending Enforcement
