@@ -1,9 +1,103 @@
-# Union merge driver for documentation files that get appended to
-# by multiple worktrees. Instead of creating conflict markers when
-# both sides add content, keeps both sides' changes.
+# =============================================================================
+# Git Attributes for Dotfiles
+# =============================================================================
+# Custom drivers registered in git config via setup.sh.
+# See: scripts/merge-driver-union.sh, scripts/git-diff-json.sh
+
+# -----------------------------------------------------------------------------
+# 1. Custom Merge Drivers
+# -----------------------------------------------------------------------------
+# Union merge for documentation files modified by multiple worktrees.
+# Keeps both sides' changes instead of creating conflict markers.
 #
 # Registered in git config via setup.sh:
 #   [merge "union-doc"]
 #       driver = scripts/merge-driver-union.sh %A %O %B %L %P
 CLAUDE.md merge=union-doc
 AGENTS.md merge=union-doc
+
+# -----------------------------------------------------------------------------
+# 2. Line Ending Enforcement
+# -----------------------------------------------------------------------------
+# Shell scripts must use LF - shebang lines break with CRLF
+*.sh     text eol=lf
+*.fish   text eol=lf
+*.bash   text eol=lf
+*.zsh    text eol=lf
+.zshrc   text eol=lf
+
+# Config files - always LF for cross-platform consistency
+*.conf   text eol=lf
+*.toml   text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.nix    text eol=lf
+*.lua    text eol=lf
+*.envrc  text eol=lf
+Brewfile text eol=lf
+
+# Markdown and docs
+*.md     text eol=lf
+
+# Dockerfiles
+Dockerfile   text eol=lf
+*.Dockerfile text eol=lf
+
+# -----------------------------------------------------------------------------
+# 3. Binary Files
+# -----------------------------------------------------------------------------
+# Images - binary, no text diff
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+
+# Archives
+*.zip binary
+*.gz  binary
+*.tar binary
+
+# -----------------------------------------------------------------------------
+# 4. Custom Diff Drivers
+# -----------------------------------------------------------------------------
+# JSON: sorted-key diff to reduce noise from key reordering.
+# Registered in git config via setup.sh:
+#   [diff "json"]
+#       textconv = scripts/git-diff-json.sh
+*.json diff=json
+
+# Plist (XML): use xmllint for normalized diffs
+# Registered in git config via setup.sh:
+#   [diff "plist"]
+#       textconv = plutil -convert xml1 -o -
+*.plist diff=plist
+
+# -----------------------------------------------------------------------------
+# 5. Linguist Overrides (GitHub language classification)
+# -----------------------------------------------------------------------------
+# This is a dotfiles repo, not a Python/JavaScript project.
+# Override GitHub's language detection so the repo isn't misclassified.
+*.py       linguist-detectable=false
+*.js       linguist-detectable=false
+*.html     linguist-detectable=false
+*.tex      linguist-detectable=false
+*.fish     linguist-language=Shell
+*.nix      linguist-language=Nix
+
+# Vendor/generated directories - excluded from stats
+generated-diagrams/** linguist-generated
+anki-kcna/**          linguist-vendored
+devcontainer/**       linguist-vendored
+
+# -----------------------------------------------------------------------------
+# 6. Export Ignore (git archive exclusions)
+# -----------------------------------------------------------------------------
+# Dev/CI files excluded from archives
+.beads/**        export-ignore
+.claude/**       export-ignore
+.github/**       export-ignore
+scripts/docker/**  export-ignore
+scripts/test-*   export-ignore
+*.cast           export-ignore
+docs/**          export-ignore
