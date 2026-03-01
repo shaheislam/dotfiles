@@ -270,6 +270,38 @@ All custom commands have been migrated to `.claude/skills/` (24 skills). See `do
 
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification) - skills work in Claude Code, Codex, Gemini CLI, Cursor, Copilot.
 
+### Claude Code Subagents
+Custom subagents in `.claude/agents/` (Markdown files with YAML frontmatter). Loaded at session start; Claude auto-delegates based on descriptions.
+
+**12 Domain Specialists** (referenced in `.claude/AGENTS.md`):
+
+| Agent | Model | Tools | Purpose |
+|-------|-------|-------|---------|
+| `architect` | inherit | Read-only + Bash | System design reviews, architecture analysis |
+| `frontend` | inherit | Full | UI components, accessibility, responsive design |
+| `backend` | inherit | Full | API development, data integrity, reliability |
+| `security` | inherit | Read-only + Bash | Threat modeling, vulnerability detection |
+| `performance` | inherit | Read-only + Bash | Bottleneck analysis, optimization |
+| `analyzer` | inherit | Read-only + Edit | Root cause debugging, systematic investigation |
+| `qa` | inherit | Read-only + Bash | Test creation, validation, quality assurance |
+| `refactorer` | inherit | Full | Code cleanup, deduplication, modernization |
+| `devops` | inherit | Full | CI/CD, containerization, automation |
+| `devops-security-auditor` | inherit | Read-only + Bash | Infrastructure security, container hardening |
+| `mentor` | haiku | Read-only + Bash | Teaching, explanations, knowledge transfer |
+| `scribe` | inherit | Read + Write/Edit | Documentation, technical writing |
+
+**3 Project-Specific Agents**:
+
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| `shell-expert` | inherit | Fish/Bash specialist for this dotfiles project |
+| `test-runner` | haiku | Runs test suites and reports results (background) |
+| `dotfiles-doctor` | haiku | Health checks for stow, symlinks, themes, tools |
+
+**Key features**: `memory: project` on architect (persists decisions across sessions), `background: true` on test-runner (runs concurrently), haiku model for fast read-only agents.
+
+**Testing**: `scripts/test-filter.sh subagents` (137 tests: file existence, frontmatter validation, name matching, tool/model validity, AGENTS.md link integrity).
+
 ### Claude Code Plugins
 14 plugins from 4 marketplaces + 9 LSP plugins from `boostvolt/claude-code-lsps`. Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
 
@@ -424,6 +456,7 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 **Plan template**: `templates/workflows/plan-review.toml`.
 
 ### Recent Updates
+- **2026-03-01**: Added Claude Code subagents (15 agent files in .claude/agents/, 12 domain specialists + 3 project-specific, 137-test suite, AGENTS.md link resolution)
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills
