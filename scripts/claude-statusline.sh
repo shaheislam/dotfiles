@@ -9,10 +9,15 @@ INPUT=$(cat)
 MODEL=$(echo "$INPUT" | jq -r '.model.display_name // "?"')
 DIR=$(echo "$INPUT" | jq -r '.workspace.current_dir // "?"')
 FOLDER=$(basename "$DIR")
-COST=$(echo "$INPUT" | jq -r '.cost.total_cost_usd // 0')
+COST_RAW=$(echo "$INPUT" | jq -r '.cost.total_cost_usd // 0')
 PCT=$(echo "$INPUT" | jq -r '.context_window.used_percentage // 0')
 DURATION_MS=$(echo "$INPUT" | jq -r '.cost.total_duration_ms // 0')
 AGENT=$(echo "$INPUT" | jq -r '.agent.name // empty')
+LINES_ADDED=$(echo "$INPUT" | jq -r '.cost.total_lines_added // 0')
+LINES_REMOVED=$(echo "$INPUT" | jq -r '.cost.total_lines_removed // 0')
+
+# Format cost to 2 decimal places
+COST=$(printf "%.0f" "$COST_RAW")
 
 # Duration: ms → human readable
 DURATION_S=$((DURATION_MS / 1000))
@@ -77,6 +82,12 @@ STATUS+=" ${DIM}|${RESET} "
 STATUS+="${PCT_COLOR}ctx:${PCT_INT}%${RESET}"
 STATUS+=" ${DIM}|${RESET} "
 STATUS+="${DIM}\$${COST}${RESET}"
+
+if [ "$LINES_ADDED" -gt 0 ] || [ "$LINES_REMOVED" -gt 0 ]; then
+    STATUS+=" ${DIM}|${RESET} "
+    STATUS+="${GREEN}+${LINES_ADDED}${RESET}${DIM}/${RESET}${RED}-${LINES_REMOVED}${RESET}"
+fi
+
 STATUS+=" ${DIM}|${RESET} "
 STATUS+="${DIM}${DURATION}${RESET}"
 
