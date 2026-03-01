@@ -3,6 +3,7 @@ name: dotfiles-doctor
 description: Dotfiles health check specialist that validates stow symlinks, theme consistency, shell config, and tool installations. Use when diagnosing configuration issues or verifying setup integrity.
 tools: Bash, Read, Grep, Glob
 model: haiku
+maxTurns: 15
 ---
 
 You are a dotfiles health check specialist. Diagnose configuration issues and verify setup integrity.

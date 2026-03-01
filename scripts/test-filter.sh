@@ -648,8 +648,55 @@ test_subagents() {
             if grep -q '^tools:' "$agent_file"; then
                 run_test "Agent $name tools field valid" "grep '^tools:' '$agent_file' | grep -qE '(Read|Write|Edit|Bash|Grep|Glob)'"
             fi
+
+            # maxTurns field is a positive integer if present
+            if grep -q '^maxTurns:' "$agent_file"; then
+                run_test "Agent $name maxTurns is positive integer" "grep '^maxTurns:' '$agent_file' | grep -qE '^maxTurns: [0-9]+$'"
+            fi
+
+            # skills field references existing skills if present
+            if grep -q '^skills:' "$agent_file"; then
+                local skills_valid=true
+                for skill_name in $(grep '^skills:' "$agent_file" | sed 's/^skills: //' | tr ',' '\n' | sed 's/^ *//;s/ *$//'); do
+                    if [ ! -d "$DOTFILES_ROOT/.claude/skills/$skill_name" ]; then
+                        skills_valid=false
+                    fi
+                done
+                run_test "Agent $name skills reference existing skills" "$skills_valid"
+            fi
+
+            # mcpServers field is non-empty if present
+            if grep -q '^mcpServers:' "$agent_file"; then
+                run_test "Agent $name mcpServers non-empty" "grep '^mcpServers:' '$agent_file' | grep -qE '^mcpServers: .+'"
+            fi
+
+            # memory field is valid scope if present
+            if grep -q '^memory:' "$agent_file"; then
+                run_test "Agent $name memory scope valid" "grep '^memory:' '$agent_file' | grep -qE '(user|project|local)'"
+            fi
+
+            # background field is boolean if present
+            if grep -q '^background:' "$agent_file"; then
+                run_test "Agent $name background is boolean" "grep '^background:' '$agent_file' | grep -qE '(true|false)'"
+            fi
         fi
     done
+
+    # Specific agent enhancements from official docs
+    run_test "architect has memory: project" "grep -q '^memory: project' '$DOTFILES_ROOT/.claude/agents/architect.md'"
+    run_test "architect has mcpServers" "grep -q '^mcpServers:' '$DOTFILES_ROOT/.claude/agents/architect.md'"
+    run_test "test-runner has background: true" "grep -q '^background: true' '$DOTFILES_ROOT/.claude/agents/test-runner.md'"
+    run_test "test-runner has maxTurns" "grep -q '^maxTurns:' '$DOTFILES_ROOT/.claude/agents/test-runner.md'"
+    run_test "dotfiles-doctor has maxTurns" "grep -q '^maxTurns:' '$DOTFILES_ROOT/.claude/agents/dotfiles-doctor.md'"
+    run_test "mentor has maxTurns" "grep -q '^maxTurns:' '$DOTFILES_ROOT/.claude/agents/mentor.md'"
+    run_test "mentor has mcpServers" "grep -q '^mcpServers:' '$DOTFILES_ROOT/.claude/agents/mentor.md'"
+    run_test "shell-expert has skills" "grep -q '^skills:' '$DOTFILES_ROOT/.claude/agents/shell-expert.md'"
+
+    # SubagentStart/SubagentStop hooks in settings.json
+    if [ -f "$DOTFILES_ROOT/.claude/settings.json" ]; then
+        run_test "settings.json has SubagentStart hook" "grep -q 'SubagentStart' '$DOTFILES_ROOT/.claude/settings.json'"
+        run_test "settings.json has SubagentStop hook" "grep -q 'SubagentStop' '$DOTFILES_ROOT/.claude/settings.json'"
+    fi
 
     # AGENTS.md links should resolve to actual files
     if [ -f "$DOTFILES_ROOT/.claude/AGENTS.md" ]; then

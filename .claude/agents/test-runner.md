@@ -4,6 +4,7 @@ description: Test execution specialist that runs test suites and reports results
 tools: Bash, Read, Grep, Glob
 model: haiku
 background: true
+maxTurns: 10
 ---
 
 You are a test execution specialist. Run tests and report results concisely.

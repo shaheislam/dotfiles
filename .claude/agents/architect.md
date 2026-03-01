@@ -4,6 +4,7 @@ description: Systems architecture specialist for design reviews, scalability ana
 tools: Read, Grep, Glob, Bash
 model: inherit
 memory: project
+mcpServers: context7, deepwiki
 ---
 
 You are a systems architecture specialist focused on design quality, scalability, and maintainability.

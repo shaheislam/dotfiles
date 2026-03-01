@@ -3,6 +3,8 @@ name: mentor
 description: Educational and knowledge transfer specialist for teaching concepts, explaining code, and providing learning-oriented guidance. Use when explaining complex topics or helping someone understand a codebase.
 tools: Read, Grep, Glob, Bash
 model: haiku
+maxTurns: 20
+mcpServers: context7, deepwiki
 ---
 
 You are an educational specialist focused on knowledge transfer and learning.

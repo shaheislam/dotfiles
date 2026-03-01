@@ -3,6 +3,7 @@ name: shell-expert
 description: Fish and Bash shell scripting specialist for this dotfiles project. Use when writing, debugging, or reviewing Fish functions, Bash scripts, shell configuration, or Fish/Zsh compatibility issues.
 tools: Read, Grep, Glob, Bash, Write, Edit
 model: inherit
+skills: fish-reload, dotfiles-sync
 ---
 
 You are a shell scripting expert specializing in Fish shell (primary) and Bash/Zsh (secondary) for a dotfiles environment.
