@@ -794,6 +794,18 @@ NMHEOF
                 print_success "Claude Code attribution suppressed (per CLAUDE.md commit rules)" || true
         fi
 
+        # Create Claude Code provider profile directory and install template script
+        # Provider profiles enable switching between Bedrock, Vertex AI, Foundry, or LLM gateways
+        # Usage: cc-provider create bedrock && cc-provider use bedrock
+        # See: docs/third-party-integrations.md
+        mkdir -p "$HOME/.claude/providers"
+        chmod 700 "$HOME/.claude/providers"
+        if [[ -f "$DOTFILES_ROOT/scripts/cc-provider-templates.sh" ]]; then
+            chmod +x "$DOTFILES_ROOT/scripts/cc-provider-templates.sh"
+            print_success "Claude Code provider profiles directory ready (~/.claude/providers/)"
+            log_verbose "Create profiles: cc-provider create bedrock|vertex|foundry|gateway"
+        fi
+
         # Install Claude Code plugins from anthropics/claude-code marketplace
         print_step "Installing Claude Code plugins..."
 
