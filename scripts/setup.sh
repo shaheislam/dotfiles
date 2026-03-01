@@ -720,6 +720,19 @@ NMHEOF
                 print_success "Claude Code agent teams teammate mode set to auto" || true
         fi
 
+        # Enable Remote Control for all sessions
+        # Reference: https://code.claude.com/docs/en/remote-control
+        # Allows continuing local Claude Code sessions from phone, tablet, or any browser
+        # via claude.ai/code or the Claude mobile app. Session runs locally; remote is just a window.
+        # The /config toggle ("Enable Remote Control for all sessions") stores this in
+        # ~/.claude.json. We set it directly so all devices get this on first setup.
+        # Key name follows the convention of other /config toggles (autoCompactEnabled, etc.).
+        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
+            jq '.enableRemoteControl = true' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
+                print_success "Claude Code Remote Control enabled for all sessions" || true
+        fi
+
         # Install Claude Code plugins from anthropics/claude-code marketplace
         print_step "Installing Claude Code plugins..."
 

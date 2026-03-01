@@ -331,6 +331,17 @@ Event-driven bridge giving Claude Code awareness of Neovim editor state. Docs: `
 **Fish command**: `cc-bridge status|cat|clean|help`.
 **Tests**: `scripts/test-filter.sh nvim-bridge`
 
+### Claude Code Remote Control
+Continue local Claude Code sessions from phone, tablet, or any browser via claude.ai/code or the Claude mobile app. Session runs locally; remote interface is just a window into it.
+
+**Setup**: `scripts/setup.sh` enables `enableRemoteControl = true` in `~/.claude.json` (globally, all sessions).
+**Fish command**: `cc-rc start|status|enable|disable|tmux|help` — manage Remote Control sessions.
+**CLI**: `claude remote-control` (new session), `/remote-control` or `/rc` (from existing session).
+**Flags**: `--verbose` (detailed logs), `--sandbox`/`--no-sandbox` (filesystem/network isolation).
+**Requirements**: Max plan, authenticated via `/login`, workspace trust accepted.
+**Security**: Outbound HTTPS only, no inbound ports. All traffic via Anthropic API over TLS.
+**Tests**: `scripts/test-filter.sh remote-control`
+
 ### Claude Code Agent Teams (Experimental)
 Coordinate multiple Claude Code instances with shared tasks and messaging. Enabled via `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 
@@ -414,6 +425,7 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 
 ### Recent Updates
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
+- **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills
 - **2026-02-12**: Added OpenClaw AI assistant platform integration (multi-channel inbox, security-hardened config, Fish functions, notification helpers, 42-test suite)
 - **2026-02-12**: Enhanced Cross-Provider Bridge with multi-provider support (Gemini, Ollama, DeepSeek, Claude), verbose mode, configurable timeout/logging, per-provider model overrides, gwt-ticket bridge flags
