@@ -13,10 +13,10 @@ $kubernetes\
 $cmd_duration\
 """
 
-# PERF: Reduced from 500ms to 200ms. Language version detection (golang, python, rust,
-# nodejs, terraform) moved to disabled — they add latency to every prompt render and
-# are rarely needed. AWS and k8s context are kept as they affect command behavior.
-command_timeout = 200
+# PERF: Reduced from 500ms → 200ms → 100ms. With core.fsmonitor + untrackedCache
+# enabled in .gitconfig, git status is much faster and 100ms is sufficient.
+# Language version detection moved to disabled — rarely needed.
+command_timeout = 100
 palette = 'catppuccin_mocha'
 
 [palettes.catppuccin_mocha]

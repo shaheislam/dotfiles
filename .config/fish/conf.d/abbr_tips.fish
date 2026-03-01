@@ -87,17 +87,20 @@ function __abbr_tips --on-event fish_postexec -d "Abbreviation reminder for the 
     #  - command is already an abbreviation
     #  - command not found
     #  - or it's a function (alias)
+    # PERF: Reordered to avoid expensive `type -q`/`type -t` PATH scans (~50-90ms)
+    # when cheaper checks (abbr -q, functions -q) can short-circuit first.
     if test $__abbr_tips_used = 1
         set -g __abbr_tips_used 0
         return
     else if abbr -q "$cmd"
-        or not type -q "$command[1]"
         return
-    else if string match -q -- "alias $cmd *" (alias)
-        return
-    else if test (type -t "$command[1]") = function
-        and count $ABBR_TIPS_ALIAS_WHITELIST >/dev/null
-        and not contains "$command[1]" $ABBR_TIPS_ALIAS_WHITELIST
+    else if functions -q "$command[1]"
+        # Function/alias check using functions -q (no PATH scan, just hash lookup)
+        if count $ABBR_TIPS_ALIAS_WHITELIST >/dev/null
+            and not contains "$command[1]" $ABBR_TIPS_ALIAS_WHITELIST
+            return
+        end
+    else if not type -q "$command[1]"
         return
     end
 

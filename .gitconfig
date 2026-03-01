@@ -1,6 +1,14 @@
 [core]
 	excludesfile = ~/.gitignore_global
 	pager = delta
+	fsmonitor = true
+	untrackedCache = true
+
+[feature]
+	manyFiles = true
+
+[fetch]
+	writeCommitGraph = true
 
 [init]
 	templateDir = ~/.config/git/templates
