@@ -789,12 +789,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo ""
     end
 
-    # Check inbox for pending instructions
-    set -l mail_script "$HOME/dotfiles/scripts/agent-mail.sh"
-    if test -x "$mail_script"
-        set -l unread_count (bash "$mail_script" count --for "$branch_name" 2>/dev/null)
-        if test -n "$unread_count" -a "$unread_count" != 0
-            if not $quiet_mode
+    # Check inbox for pending instructions (skip in quiet mode — no output anyway)
+    if not $quiet_mode
+        set -l mail_script "$HOME/dotfiles/scripts/agent-mail.sh"
+        if test -x "$mail_script"
+            set -l unread_count (bash "$mail_script" count --for "$branch_name" 2>/dev/null)
+            if test -n "$unread_count" -a "$unread_count" != 0
                 echo "Mail: $unread_count unread message(s) for $branch_name"
                 bash "$mail_script" inbox --for "$branch_name" --unread 2>/dev/null
                 echo ""
@@ -915,26 +915,24 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
 
-    # Auto-enable checkpoints for worktree (via entire CLI)
+    # Auto-enable checkpoints for worktree (via entire CLI) — backgrounded
+    # Saves ~0.23s. Checkpoint hooks only needed when Claude makes its first commit
+    # (seconds to minutes after launch), so safe to race with tmux setup.
     if not $no_checkpoints
         if command -q entire
-            # Copy entire settings to worktree (gitignored, not inherited via git)
-            # Prevents telemetry consent prompt from hanging in non-interactive context
-            if test -f "$repo_root/.entire/settings.json"
-                mkdir -p "$worktree_path/.entire"
-                cp "$repo_root/.entire/settings.json" "$worktree_path/.entire/settings.json"
-            end
-            pushd $worktree_path
-            set -l entire_args enable
-            if test -n "$ckpt_agent"
-                set -a entire_args --agent $ckpt_agent
-            end
-            if $quiet_mode
+            begin
+                if test -f "$repo_root/.entire/settings.json"
+                    mkdir -p "$worktree_path/.entire"
+                    cp "$repo_root/.entire/settings.json" "$worktree_path/.entire/settings.json"
+                end
+                cd $worktree_path
+                set -l entire_args enable
+                if test -n "$ckpt_agent"
+                    set -a entire_args --agent $ckpt_agent
+                end
                 entire $entire_args >/dev/null 2>&1; or true
-            else
-                entire $entire_args 2>/dev/null; or true
-            end
-            popd
+            end &
+            disown 2>/dev/null
         end
     end
 
@@ -1506,155 +1504,10 @@ $prompt_suffix"
         disown
     end
 
-    # Resolve convoy name to ID before writing state file
-    if test -n "$convoy_id"
-        set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
-        if not test -x "$convoy_script"
-            set convoy_script "$HOME/dotfiles-gastown/scripts/convoy.sh"
-        end
-        if test -x "$convoy_script"
-            if not string match -qr '^c[0-9a-f]+$' "$convoy_id"
-                set convoy_id (bash "$convoy_script" find-or-create "$convoy_id" 2>/dev/null | tail -1)
-            end
-        end
-    end
-
-    # Create state file for post-completion hook (directory already created for launch script)
+    # State file path (used in output and background block)
     set -l state_file "$worktree_path/.claude/ticket-execute.local.md"
 
-    # Determine if ticket tracking should be skipped
-    set -l auto_generated_str false
-    if $is_auto_generated
-        set auto_generated_str true
-    end
-
-    echo "---
-active: true
-issue_key: \"$issue_key\"
-title: \"$title\"
-ticketing_system: \"$ticketing_system\"
-auto_generated: $auto_generated_str
-started_at: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
-max_iterations: $max_iterations
-completion_promise: \"TICKET_"$issue_key"_COMPLETE\"
-worktree_path: \"$worktree_path\"
-tmux_session: \"$session_name\"
-tmux_window: \"$window_name\"
-claude_pane_id: \"$claude_pane_id\"
-use_local: $use_local
-local_model: \"$local_model\"
-convoy_id: \"$convoy_id\"
-molecule_id: \"$molecule_id\"
-town_sync: $town_sync
-mayor_tracked: $mayor_tracked
----
-
-# Ticket Execution State
-
-This file tracks the autonomous execution of ticket $issue_key.
-
-When the ralph-loop completes (outputs the completion promise),
-the post-completion hook will:
-1. Create a PR
-2. Transition the ticket (skipped if auto_generated)
-3. Send notification
-
-## Prompt Given
-
-$prompt" >$state_file
-
-    # Create phase gate if --gate was specified
-    if test -n "$gate_type"
-        set -l gates_script ""
-        for p in ~/dotfiles/scripts/phase-gates.sh ~/dotfiles-gastown/scripts/phase-gates.sh
-            if test -x "$p"
-                set gates_script $p
-                break
-            end
-        end
-        if test -n "$gates_script"
-            set -l gate_env
-            if test "$gate_type" = dependency -a -n "$gate_dep_worktree"
-                set gate_env "DEP_WORKTREE=$gate_dep_worktree"
-            end
-            env $gate_env bash "$gates_script" create "$gate_type" "$worktree_path"
-            echo "Gate created: $gate_type"
-        else
-            echo "Warning: phase-gates.sh not found, skipping gate creation"
-        end
-    end
-
-    # Register with mayor for global tracking if --mayor specified
-    if $mayor_tracked
-        set -l mayor_script "$HOME/dotfiles/scripts/gwt-mayor.sh"
-        if not test -x "$mayor_script"
-            set mayor_script "$HOME/dotfiles-gastown/scripts/gwt-mayor.sh"
-        end
-        if test -x "$mayor_script"
-            # Mayor logs the tracking registration
-            bash "$mayor_script" log-event ticket-registered "$issue_key" "$worktree_path" 2>/dev/null; or true
-        end
-    end
-
-    # Add ticket to convoy (ID already resolved from name above)
-    if test -n "$convoy_id"
-        set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
-        if not test -x "$convoy_script"
-            set convoy_script "$HOME/dotfiles-gastown/scripts/convoy.sh"
-        end
-        if test -x "$convoy_script"
-            bash "$convoy_script" add "$convoy_id" "$issue_key" 2>/dev/null; or true
-        end
-    end
-
-    # Ensure merge-queue daemon is running (serializes merges across agents)
-    set -l merge_queue_script ""
-    for p in ~/dotfiles/scripts/merge-queue.sh ~/dotfiles-gastown/scripts/merge-queue.sh
-        if test -x "$p"
-            set merge_queue_script $p
-            break
-        end
-    end
-    if test -n "$merge_queue_script"
-        set -l daemon_running false
-        if test -f /tmp/merge-queue-daemon.pid
-            if kill -0 (cat /tmp/merge-queue-daemon.pid) 2>/dev/null
-                set daemon_running true
-            end
-        end
-        if not $daemon_running
-            set -l daemon_args daemon
-            if $rebase_merge
-                set daemon_args $daemon_args --rebase
-            end
-            if $quiet_mode
-                bash "$merge_queue_script" $daemon_args >/dev/null 2>&1
-            else
-                bash "$merge_queue_script" $daemon_args
-                echo "Started merge-queue daemon"
-            end
-        end
-    end
-
-    # Spawn worktree witness (per-worktree lifecycle monitor)
-    set -l witness_script "$HOME/dotfiles/scripts/worktree-witness.sh"
-    if not test -x "$witness_script"
-        # Try gastown path as fallback
-        set witness_script "$HOME/dotfiles-gastown/scripts/worktree-witness.sh"
-    end
-    if test -x "$witness_script"
-        set -l witness_args "$worktree_path" --poll-interval 30 --max-retries 3
-        if test -n "$auto_cleanup"
-            set witness_args $witness_args $auto_cleanup
-        end
-        if $quiet_mode
-            bash "$witness_script" $witness_args >/dev/null 2>&1 &
-        else
-            bash "$witness_script" $witness_args &
-        end
-        disown
-    end
-
+    # Print output immediately so user sees feedback before background ops
     if $quiet_mode
         # Log was already written before pane setup (for nvim buffer visibility)
         echo "gwtt: $window_name → $session_name:$window_name (log: $gwt_log_file)"
@@ -1689,4 +1542,142 @@ $prompt" >$state_file
         echo ""
         echo "State file: $state_file"
     end
+
+    # Post-launch orchestration — backgrounded since Claude is already active.
+    # State file, gates, mayor, convoy, merge-queue, and witness are metadata
+    # operations that don't affect Claude's execution. Saves ~1-2s.
+    begin
+        # Resolve convoy name to ID before writing state file
+        if test -n "$convoy_id"
+            set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
+            if not test -x "$convoy_script"
+                set convoy_script "$HOME/dotfiles-gastown/scripts/convoy.sh"
+            end
+            if test -x "$convoy_script"
+                if not string match -qr '^c[0-9a-f]+$' "$convoy_id"
+                    set convoy_id (bash "$convoy_script" find-or-create "$convoy_id" 2>/dev/null | tail -1)
+                end
+            end
+        end
+
+        # Write state file for post-completion hook
+        set -l auto_generated_str false
+        if $is_auto_generated
+            set auto_generated_str true
+        end
+
+        echo "---
+active: true
+issue_key: \"$issue_key\"
+title: \"$title\"
+ticketing_system: \"$ticketing_system\"
+auto_generated: $auto_generated_str
+started_at: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
+max_iterations: $max_iterations
+completion_promise: \"TICKET_"$issue_key"_COMPLETE\"
+worktree_path: \"$worktree_path\"
+tmux_session: \"$session_name\"
+tmux_window: \"$window_name\"
+claude_pane_id: \"$claude_pane_id\"
+use_local: $use_local
+local_model: \"$local_model\"
+convoy_id: \"$convoy_id\"
+molecule_id: \"$molecule_id\"
+town_sync: $town_sync
+mayor_tracked: $mayor_tracked
+---
+
+# Ticket Execution State
+
+This file tracks the autonomous execution of ticket $issue_key.
+
+When the ralph-loop completes (outputs the completion promise),
+the post-completion hook will:
+1. Create a PR
+2. Transition the ticket (skipped if auto_generated)
+3. Send notification
+
+## Prompt Given
+
+$prompt" >$state_file
+
+        # Create phase gate if --gate was specified
+        if test -n "$gate_type"
+            set -l gates_script ""
+            for p in ~/dotfiles/scripts/phase-gates.sh ~/dotfiles-gastown/scripts/phase-gates.sh
+                if test -x "$p"
+                    set gates_script $p
+                    break
+                end
+            end
+            if test -n "$gates_script"
+                set -l gate_env
+                if test "$gate_type" = dependency -a -n "$gate_dep_worktree"
+                    set gate_env "DEP_WORKTREE=$gate_dep_worktree"
+                end
+                env $gate_env bash "$gates_script" create "$gate_type" "$worktree_path" 2>/dev/null; or true
+            end
+        end
+
+        # Register with mayor for global tracking if --mayor specified
+        if $mayor_tracked
+            set -l mayor_script "$HOME/dotfiles/scripts/gwt-mayor.sh"
+            if not test -x "$mayor_script"
+                set mayor_script "$HOME/dotfiles-gastown/scripts/gwt-mayor.sh"
+            end
+            if test -x "$mayor_script"
+                bash "$mayor_script" log-event ticket-registered "$issue_key" "$worktree_path" 2>/dev/null; or true
+            end
+        end
+
+        # Add ticket to convoy
+        if test -n "$convoy_id"
+            set -l convoy_script "$HOME/dotfiles/scripts/convoy.sh"
+            if not test -x "$convoy_script"
+                set convoy_script "$HOME/dotfiles-gastown/scripts/convoy.sh"
+            end
+            if test -x "$convoy_script"
+                bash "$convoy_script" add "$convoy_id" "$issue_key" 2>/dev/null; or true
+            end
+        end
+
+        # Ensure merge-queue daemon is running
+        set -l merge_queue_script ""
+        for p in ~/dotfiles/scripts/merge-queue.sh ~/dotfiles-gastown/scripts/merge-queue.sh
+            if test -x "$p"
+                set merge_queue_script $p
+                break
+            end
+        end
+        if test -n "$merge_queue_script"
+            set -l daemon_running false
+            if test -f /tmp/merge-queue-daemon.pid
+                if kill -0 (cat /tmp/merge-queue-daemon.pid) 2>/dev/null
+                    set daemon_running true
+                end
+            end
+            if not $daemon_running
+                set -l daemon_args daemon
+                if $rebase_merge
+                    set daemon_args $daemon_args --rebase
+                end
+                bash "$merge_queue_script" $daemon_args >/dev/null 2>&1
+            end
+        end
+
+        # Spawn worktree witness (per-worktree lifecycle monitor)
+        set -l witness_script "$HOME/dotfiles/scripts/worktree-witness.sh"
+        if not test -x "$witness_script"
+            set witness_script "$HOME/dotfiles-gastown/scripts/worktree-witness.sh"
+        end
+        if test -x "$witness_script"
+            set -l witness_args "$worktree_path" --poll-interval 30 --max-retries 3
+            if test -n "$auto_cleanup"
+                set witness_args $witness_args $auto_cleanup
+            end
+            bash "$witness_script" $witness_args >/dev/null 2>&1 &
+            disown 2>/dev/null
+        end
+    end &
+    disown 2>/dev/null
 end
