@@ -726,12 +726,12 @@ NMHEOF
         claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 &&
             print_success "Claude Code notification channel set to terminal_bell" || true
 
-        # Set release channel to stable (receives updates ~1 week after latest, skips regressions)
+        # Set release channel to latest (immediate updates, avoids stable channel updater lag)
         # Reference: https://code.claude.com/docs/en/setup#configure-release-channel
         if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.autoUpdatesChannel = "stable" | .autoUpdates = true' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+            jq '.autoUpdatesChannel = "latest" | .autoUpdates = true' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
                 mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                print_success "Claude Code auto-updates enabled (stable channel)" || true
+                print_success "Claude Code auto-updates enabled (latest channel)" || true
         fi
 
         # Auto-compact: left enabled (default) since 2.1.21 fixed early triggering.
