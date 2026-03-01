@@ -10,10 +10,10 @@ function _claude_resume_fzf_tab_complete -d "FZF-powered claude --resume tab com
 
     # --model: show model aliases with full names
     if test (count $cmd) -ge 2; and test "$cmd[-1]" = --model
-        set -l entries \
-            "sonnet\tClaude Sonnet 4.6 (fast, balanced)" \
-            "opus\tClaude Opus 4.6 (most capable)" \
-            "haiku\tClaude Haiku 4.5 (fastest, lightweight)"
+        set -l entries
+        set -a entries (printf '%s\t%s' sonnet "Claude Sonnet 4.6 (fast, balanced)")
+        set -a entries (printf '%s\t%s' opus "Claude Opus 4.6 (most capable)")
+        set -a entries (printf '%s\t%s' haiku "Claude Haiku 4.5 (fastest, lightweight)")
         set -l result (printf '%s\n' $entries \
             | fzf \
                 --exit-0 \
