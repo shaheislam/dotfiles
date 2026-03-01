@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+<<<<<<< HEAD
   "permissions": {
     "allow": [
       "Bash(git status *)",
@@ -35,6 +36,13 @@
       "Bash(curl * | bash)",
       "Bash(wget * | bash)"
     ]
+  "attribution": {
+    "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
+    "pr": ""
+  },
+  "fileSuggestion": {
+    "type": "command",
+    "command": "fd --type f --hidden --exclude .git --exclude node_modules --exclude .claude/logs --exclude .claude/statsig"
   },
   "enabledPlugins": {
     "agent-sdk-dev@claude-code-plugins": true,
@@ -196,6 +204,26 @@
         "matcher": ""
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -236,5 +264,16 @@
       }
     ]
   },
+<<<<<<< HEAD
   "skipDangerousModePermissionPrompt": true
+||||||| 1208fb1
+  "skipDangerousModePermissionPrompt": true
+}
+=======
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/dotfiles/scripts/claude-statusline.sh"
+  }
+>>>>>>> overview
 }

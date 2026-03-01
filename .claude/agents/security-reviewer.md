@@ -3,6 +3,7 @@ name: security-reviewer
 description: Reviews code for security vulnerabilities, credential exposure, and injection risks
 tools: Read, Grep, Glob, Bash
 model: opus
+memory: user
 ---
 You are a senior security engineer reviewing dotfiles and shell scripts.
 

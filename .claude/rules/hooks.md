@@ -18,6 +18,8 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 | **PreCompact** | `bd sync` | Beads memory sync before compaction |
 | **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
 | **UserPromptSubmit** | `checkpoint-pre-prompt.sh`, `nvim-bridge.sh` | Checkpoint capture, Neovim editor context |
+| **SubagentStart** | `subagent-lifecycle.sh` | Log agent spawn events |
+| **SubagentStop** | `subagent-lifecycle.sh` | Log agent completion events |
 | **Stop** | `checkpoint-capture.sh`, `cross-provider-bridge.sh` | Checkpoint capture, cross-provider review |
 
 ## Hook Types

@@ -63,6 +63,7 @@ work/**/CLAUDE.md
 !.claude/rules/
 !.claude/skills/
 !.claude/hooks/
+!.claude/output-styles/
 # Still ignore specific subdirectories
 .claude/ide/
 .claude/todos/

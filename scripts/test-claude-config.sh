@@ -170,6 +170,120 @@ fi
 
 echo ""
 
+# --- settings.json Feature Keys ---
+echo "--- settings.json Feature Keys ---"
+
+if [ -f "$DOTFILES/.claude/settings.json" ]; then
+    for key in '$schema' attribution fileSuggestion statusLine; do
+        if python3 -c "import json; d=json.load(open('$DOTFILES/.claude/settings.json')); assert '$key' in d" 2>/dev/null; then
+            pass "settings.json: '$key' present"
+        else
+            fail "settings.json: '$key' missing"
+        fi
+    done
+fi
+
+echo ""
+
+# --- Statusline Script Tests ---
+echo "--- Statusline Script ---"
+
+STATUSLINE="$DOTFILES/scripts/claude-statusline.sh"
+if [ -f "$STATUSLINE" ]; then
+    pass "claude-statusline.sh exists"
+    if [ -x "$STATUSLINE" ]; then
+        pass "claude-statusline.sh is executable"
+    else
+        fail "claude-statusline.sh is not executable"
+    fi
+
+    # Test with mock JSON input
+    MOCK='{"model":{"display_name":"Test"},"workspace":{"current_dir":"/tmp"},"cost":{"total_cost_usd":0.01,"total_duration_ms":5000},"context_window":{"used_percentage":25}}'
+    OUTPUT=$(echo "$MOCK" | bash "$STATUSLINE" 2>/dev/null || true)
+    if echo "$OUTPUT" | grep -q "Test"; then
+        pass "Statusline renders model name from mock input"
+    else
+        fail "Statusline failed to render mock input"
+    fi
+else
+    fail "claude-statusline.sh missing"
+fi
+
+echo ""
+
+# --- Agent Memory/Permission Tests ---
+echo "--- Agent Memory & Permissions ---"
+
+if [ -d "$DOTFILES/.claude/agents" ]; then
+    for agent in security-reviewer config-explorer; do
+        if [ -f "$DOTFILES/.claude/agents/${agent}.md" ]; then
+            if grep -q 'memory:' "$DOTFILES/.claude/agents/${agent}.md"; then
+                pass "Agent ${agent}: has memory field"
+            else
+                warn "Agent ${agent}: missing memory field"
+            fi
+        fi
+    done
+
+    if [ -f "$DOTFILES/.claude/agents/shell-tester.md" ]; then
+        if grep -q 'permissionMode:' "$DOTFILES/.claude/agents/shell-tester.md"; then
+            pass "Agent shell-tester: has permissionMode field"
+        else
+            warn "Agent shell-tester: missing permissionMode field"
+        fi
+    fi
+fi
+
+echo ""
+
+# --- Output Styles Tests ---
+echo "--- Output Styles ---"
+
+if [ -d "$DOTFILES/.claude/output-styles" ]; then
+    style_count=$(find "$DOTFILES/.claude/output-styles" -name '*.md' | wc -l)
+    pass ".claude/output-styles/ directory exists (${style_count} styles)"
+
+    while IFS= read -r style; do
+        basename_style=$(basename "$style")
+        if head -1 "$style" | grep -q '^---'; then
+            pass "Style ${basename_style}: has frontmatter"
+        else
+            warn "Style ${basename_style}: missing frontmatter"
+        fi
+    done < <(find "$DOTFILES/.claude/output-styles" -name '*.md')
+else
+    warn ".claude/output-styles/ directory missing"
+fi
+
+echo ""
+
+# --- Subagent Lifecycle Hook Tests ---
+echo "--- Subagent Lifecycle Hooks ---"
+
+if [ -f "$DOTFILES/.claude/settings.json" ]; then
+    for event in SubagentStart SubagentStop; do
+        if python3 -c "import json; d=json.load(open('$DOTFILES/.claude/settings.json')); assert '$event' in d.get('hooks', {})" 2>/dev/null; then
+            pass "Hook event '$event' wired in settings.json"
+        else
+            fail "Hook event '$event' missing from settings.json"
+        fi
+    done
+fi
+
+LIFECYCLE_HOOK="$DOTFILES/.claude/hooks/subagent-lifecycle.sh"
+if [ -f "$LIFECYCLE_HOOK" ]; then
+    pass "subagent-lifecycle.sh exists"
+    if [ -x "$LIFECYCLE_HOOK" ]; then
+        pass "subagent-lifecycle.sh is executable"
+    else
+        fail "subagent-lifecycle.sh is not executable"
+    fi
+else
+    fail "subagent-lifecycle.sh missing"
+fi
+
+echo ""
+
 # --- Summary ---
 echo "=== Summary ==="
 echo "  Passed: $PASS"
