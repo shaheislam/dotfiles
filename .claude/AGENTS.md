@@ -1,17 +1,42 @@
 # AGENTS.md - Claude Code Agent System Reference
 
-Specialized agent system for Claude Code with 12 domain-specific behavioral patterns.
+Specialized agent system for Claude Code with 15 subagent files (12 domain specialists + 3 project-specific).
 
 ## Overview
 
-The agent system provides specialized AI behavior patterns optimized for specific domains. Each agent has unique decision frameworks, technical preferences, and command specializations.
+Each agent is a **Claude Code subagent file** (`.claude/agents/*.md`) with YAML frontmatter defining name, description, tool access, model, and optional features. Claude auto-delegates to subagents based on their description fields. Each subagent runs in its own context window with a custom system prompt.
 
 **Core Features**:
-- **Auto-Activation**: Multi-factor scoring with context awareness
-- **Decision Frameworks**: Context-sensitive with confidence scoring
-- **Cross-Agent Collaboration**: Dynamic integration and expertise sharing
+- **Subagent Files**: Markdown files with YAML frontmatter in `.claude/agents/`
+- **Auto-Delegation**: Claude uses description fields to decide when to delegate
+- **Tool Restrictions**: Each agent has specific tool access (read-only vs full)
+- **Model Selection**: `haiku` for fast read-only agents, `inherit` for full capability
+- **Persistent Memory**: `memory: project` on architect for cross-session learning
+- **Background Mode**: `background: true` on test-runner for concurrent execution
+- **Cost Control**: `maxTurns` on bounded agents (test-runner, dotfiles-doctor, mentor)
+- **Skill Preloading**: `skills` field injects skill content at startup (shell-expert)
+- **MCP Access**: `mcpServers: deepwiki` on architect and mentor for repo documentation
+- **Lifecycle Hooks**: SubagentStart/SubagentStop events in settings.json for logging
 - **Manual Override**: Use `--persona-[name]` flags for explicit control
 - **Flag Integration**: Works with all thinking flags, MCP servers, and command categories
+
+**Frontmatter Fields** (from [official docs](https://code.claude.com/docs/en/sub-agents)):
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Agent identifier (must match filename) |
+| `description` | Yes | When to delegate (Claude reads this) |
+| `tools` | No | Comma-separated allowed tools |
+| `disallowedTools` | No | Comma-separated blocked tools |
+| `model` | No | `sonnet`, `opus`, `haiku`, or `inherit` (default) |
+| `memory` | No | `user`, `project`, or `local` persistence scope |
+| `background` | No | `true` for concurrent execution |
+| `maxTurns` | No | Limit API round-trips (cost control) |
+| `skills` | No | Comma-separated skills to preload |
+| `mcpServers` | No | Comma-separated MCP servers to enable |
+| `hooks` | No | Agent-scoped hooks (PreToolUse, PostToolUse, Stop) |
+| `isolation` | No | `worktree` for isolated git worktree |
+| `permissionMode` | No | Permission level override |
 
 ## Available Agents
 
@@ -41,6 +66,14 @@ The agent system provides specialized AI behavior patterns optimized for specifi
 |-------|------|-------------|-------------------|
 | [mentor](agents/mentor.md) | `--persona-mentor` | Educational & knowledge transfer specialist | Teaching, documentation, explanations |
 | [scribe](agents/scribe.md) | `--persona-scribe=lang` | Documentation & localization specialist | Professional writing, documentation, translation |
+
+### Project-Specific Agents
+
+| Agent | Model | Extra Features | Primary Use Cases |
+|-------|-------|----------------|-------------------|
+| [shell-expert](agents/shell-expert.md) | inherit | `skills: fish-reload, dotfiles-sync` | Shell functions, scripts, Fish/Zsh parity |
+| [test-runner](agents/test-runner.md) | haiku | `background: true`, `maxTurns: 10` | Running test suites, reporting results |
+| [dotfiles-doctor](agents/dotfiles-doctor.md) | haiku | `maxTurns: 15` | Stow validation, tool checks, theme consistency |
 
 ## Agent Activation
 

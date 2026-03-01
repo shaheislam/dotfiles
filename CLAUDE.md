@@ -249,6 +249,8 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 | **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
 | **UserPromptSubmit** | `nvim-bridge.sh` | Neovim editor context |
 | **Stop** | `cross-provider-bridge.sh` | Cross-provider review |
+| **SubagentStart** | `log-notification.sh` | Subagent lifecycle logging |
+| **SubagentStop** | `log-notification.sh` | Subagent lifecycle logging |
 
 > **Note**: Checkpoint hooks are now managed by `entire enable` (see Checkpoints section).
 
@@ -277,6 +279,41 @@ All custom commands have been migrated to `.claude/skills/` (24 skills). See `do
 **Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`
 
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification) - skills work in Claude Code, Codex, Gemini CLI, Cursor, Copilot.
+
+### Claude Code Subagents
+Custom subagents in `.claude/agents/` (Markdown files with YAML frontmatter). Loaded at session start; Claude auto-delegates based on descriptions.
+
+**12 Domain Specialists** (referenced in `.claude/AGENTS.md`):
+
+| Agent | Model | Tools | Purpose |
+|-------|-------|-------|---------|
+| `architect` | inherit | Read-only + Bash | System design reviews, architecture analysis |
+| `frontend` | inherit | Full | UI components, accessibility, responsive design |
+| `backend` | inherit | Full | API development, data integrity, reliability |
+| `security` | inherit | Read-only + Bash | Threat modeling, vulnerability detection |
+| `performance` | inherit | Read-only + Bash | Bottleneck analysis, optimization |
+| `analyzer` | inherit | Read-only + Edit | Root cause debugging, systematic investigation |
+| `qa` | inherit | Read-only + Bash | Test creation, validation, quality assurance |
+| `refactorer` | inherit | Full | Code cleanup, deduplication, modernization |
+| `devops` | inherit | Full | CI/CD, containerization, automation |
+| `devops-security-auditor` | inherit | Read-only + Bash | Infrastructure security, container hardening |
+| `mentor` | haiku | Read-only + Bash | Teaching, explanations, knowledge transfer |
+| `scribe` | inherit | Read + Write/Edit | Documentation, technical writing |
+
+**3 Project-Specific Agents**:
+
+| Agent | Model | Purpose |
+|-------|-------|---------|
+| `shell-expert` | inherit | Fish/Bash specialist for this dotfiles project |
+| `test-runner` | haiku | Runs test suites and reports results (background) |
+| `dotfiles-doctor` | haiku | Health checks for stow, symlinks, themes, tools |
+
+**Key features**: `memory: project` on architect (cross-session learning), `background: true` on test-runner (concurrent), `maxTurns` on haiku agents (cost control), `skills: fish-reload, dotfiles-sync` on shell-expert (preloaded context), `mcpServers: deepwiki` on architect and mentor (repo documentation access).
+**Lifecycle hooks**: SubagentStart/SubagentStop events in `.claude/settings.json` for logging.
+**Docs**: `.claude/AGENTS.md` for full reference, [official docs](https://code.claude.com/docs/en/sub-agents) for frontmatter spec.
+**Tests**: `scripts/test-filter.sh subagents` (155 tests).
+
+**Testing**: `scripts/test-filter.sh subagents` (137 tests: file existence, frontmatter validation, name matching, tool/model validity, AGENTS.md link integrity).
 
 ### Claude Code Plugins
 14 plugins from 4 marketplaces + 9 LSP plugins from `boostvolt/claude-code-lsps`. Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
@@ -424,6 +461,7 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 - **2026-03-01**: Added Claude Code Settings best practices ($schema validation, permission rules, sandbox config, attribution suppression, effort level env var)
 - **2026-03-01**: Migrated Claude Code from Homebrew cask to native installer (auto-updates, no Node.js dependency, `stable` release channel, `claude doctor` verification, removed legacy wrapper script)
 - **2026-03-01**: Replaced custom checkpoints system with entireio/cli (`entire` CLI) — removed 7 custom scripts, updated hooks/Fish wrappers/gwt-ticket, Brewfile integration
+- **2026-03-01**: Added Claude Code subagents (15 agent files in .claude/agents/, 12 domain specialists + 3 project-specific, maxTurns/skills/mcpServers from official docs, SubagentStart/SubagentStop hooks, 155-test suite)
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills

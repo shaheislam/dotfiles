@@ -208,20 +208,22 @@
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
             "type": "command"
           }
-        ]
+        ],
+        "matcher": ""
       }
     ],
     "SubagentStop": [
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
             "type": "command"
           }
-        ]
+        ],
+        "matcher": ""
       }
     ],
     "Stop": [

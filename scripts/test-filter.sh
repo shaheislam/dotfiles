@@ -61,6 +61,7 @@ list_groups() {
     echo "  nvim-bridge   - Neovim-Claude Code bridge"
     echo "  remote-control - Claude Code Remote Control"
     echo "  openclaw      - OpenClaw integration"
+    echo "  subagents     - Claude Code subagent files"
     echo "  all           - Run all groups"
 }
 
@@ -688,6 +689,118 @@ test_entire() {
     run_test "CLAUDE.md mentions entire enable" "grep -q 'entire enable' '$DOTFILES_ROOT/CLAUDE.md'"
 }
 
+test_subagents() {
+    echo -e "${BLUE}--- Claude Code Subagent Tests ---${NC}"
+
+    # Agents directory exists
+    run_test "Agents directory exists" "[ -d '$DOTFILES_ROOT/.claude/agents' ]"
+
+    # All 12 AGENTS.md-referenced agents exist
+    for agent in architect frontend backend security performance analyzer qa refactorer devops devops-security-auditor mentor scribe; do
+        run_test "Agent file: $agent.md exists" "[ -f '$DOTFILES_ROOT/.claude/agents/$agent.md' ]"
+    done
+
+    # Project-specific agents exist
+    for agent in shell-expert test-runner dotfiles-doctor; do
+        run_test "Project agent: $agent.md exists" "[ -f '$DOTFILES_ROOT/.claude/agents/$agent.md' ]"
+    done
+
+    # Validate each agent file has required frontmatter fields
+    for agent_file in "$DOTFILES_ROOT"/.claude/agents/*.md; do
+        if [ -f "$agent_file" ]; then
+            local name
+            name=$(basename "$agent_file" .md)
+
+            # Has YAML frontmatter delimiters
+            run_test "Agent $name has frontmatter" "head -1 '$agent_file' | grep -q '^---$'"
+
+            # Has required 'name' field
+            run_test "Agent $name has name field" "grep -q '^name:' '$agent_file'"
+
+            # Has required 'description' field
+            run_test "Agent $name has description field" "grep -q '^description:' '$agent_file'"
+
+            # Name field matches filename
+            run_test "Agent $name name matches filename" "grep -q \"^name: $name\" '$agent_file'"
+
+            # Description is non-empty (at least 10 chars after 'description: ')
+            run_test "Agent $name description non-empty" "grep '^description:' '$agent_file' | sed 's/^description: //' | grep -qE '.{10,}'"
+
+            # Has a system prompt body (content after closing ---)
+            run_test "Agent $name has system prompt" "awk '/^---$/{c++}c==2{found=1;exit}END{exit !found}' '$agent_file'"
+
+            # Model field is valid if present
+            if grep -q '^model:' "$agent_file"; then
+                run_test "Agent $name model is valid" "grep '^model:' '$agent_file' | grep -qE '(inherit|sonnet|opus|haiku)'"
+            fi
+
+            # Tools field has valid tool names if present
+            if grep -q '^tools:' "$agent_file"; then
+                run_test "Agent $name tools field valid" "grep '^tools:' '$agent_file' | grep -qE '(Read|Write|Edit|Bash|Grep|Glob)'"
+            fi
+
+            # maxTurns field is a positive integer if present
+            if grep -q '^maxTurns:' "$agent_file"; then
+                run_test "Agent $name maxTurns is positive integer" "grep '^maxTurns:' '$agent_file' | grep -qE '^maxTurns: [0-9]+$'"
+            fi
+
+            # skills field references existing skills if present
+            if grep -q '^skills:' "$agent_file"; then
+                local skills_valid=true
+                for skill_name in $(grep '^skills:' "$agent_file" | sed 's/^skills: //' | tr ',' '\n' | sed 's/^ *//;s/ *$//'); do
+                    if [ ! -d "$DOTFILES_ROOT/.claude/skills/$skill_name" ]; then
+                        skills_valid=false
+                    fi
+                done
+                run_test "Agent $name skills reference existing skills" "$skills_valid"
+            fi
+
+            # mcpServers field is non-empty if present
+            if grep -q '^mcpServers:' "$agent_file"; then
+                run_test "Agent $name mcpServers non-empty" "grep '^mcpServers:' '$agent_file' | grep -qE '^mcpServers: .+'"
+            fi
+
+            # memory field is valid scope if present
+            if grep -q '^memory:' "$agent_file"; then
+                run_test "Agent $name memory scope valid" "grep '^memory:' '$agent_file' | grep -qE '(user|project|local)'"
+            fi
+
+            # background field is boolean if present
+            if grep -q '^background:' "$agent_file"; then
+                run_test "Agent $name background is boolean" "grep '^background:' '$agent_file' | grep -qE '(true|false)'"
+            fi
+        fi
+    done
+
+    # Specific agent enhancements from official docs
+    run_test "architect has memory: project" "grep -q '^memory: project' '$DOTFILES_ROOT/.claude/agents/architect.md'"
+    run_test "architect has mcpServers" "grep -q '^mcpServers:' '$DOTFILES_ROOT/.claude/agents/architect.md'"
+    run_test "test-runner has background: true" "grep -q '^background: true' '$DOTFILES_ROOT/.claude/agents/test-runner.md'"
+    run_test "test-runner has maxTurns" "grep -q '^maxTurns:' '$DOTFILES_ROOT/.claude/agents/test-runner.md'"
+    run_test "dotfiles-doctor has maxTurns" "grep -q '^maxTurns:' '$DOTFILES_ROOT/.claude/agents/dotfiles-doctor.md'"
+    run_test "mentor has maxTurns" "grep -q '^maxTurns:' '$DOTFILES_ROOT/.claude/agents/mentor.md'"
+    run_test "mentor has mcpServers" "grep -q '^mcpServers:' '$DOTFILES_ROOT/.claude/agents/mentor.md'"
+    run_test "shell-expert has skills" "grep -q '^skills:' '$DOTFILES_ROOT/.claude/agents/shell-expert.md'"
+
+    # SubagentStart/SubagentStop hooks in settings.json
+    if [ -f "$DOTFILES_ROOT/.claude/settings.json" ]; then
+        run_test "settings.json has SubagentStart hook" "grep -q 'SubagentStart' '$DOTFILES_ROOT/.claude/settings.json'"
+        run_test "settings.json has SubagentStop hook" "grep -q 'SubagentStop' '$DOTFILES_ROOT/.claude/settings.json'"
+    fi
+
+    # AGENTS.md links should resolve to actual files
+    if [ -f "$DOTFILES_ROOT/.claude/AGENTS.md" ]; then
+        local broken_links=0
+        while IFS= read -r link; do
+            local target="$DOTFILES_ROOT/.claude/$link"
+            if [ ! -f "$target" ]; then
+                broken_links=$((broken_links + 1))
+            fi
+        done < <(grep -oE 'agents/[a-z-]+\.md' "$DOTFILES_ROOT/.claude/AGENTS.md" | sort -u)
+        run_test "AGENTS.md has no broken agent links" "[ '$broken_links' -eq 0 ]"
+    fi
+}
+
 test_agents_md() {
     echo -e "${BLUE}--- AGENTS.md Validation ---${NC}"
     run_test "Root AGENTS.md exists" "[ -f '$DOTFILES_ROOT/AGENTS.md' ]"
@@ -726,6 +839,7 @@ mcp) test_mcp ;;
 tmux) test_tmux ;;
 hooks) test_hooks ;;
 agents-md) test_agents_md ;;
+subagents) test_subagents ;;
 cd-perf) test_cd_perf ;;
 lsp) test_lsp ;;
 nvim-bridge) test_nvim_bridge ;;
@@ -743,6 +857,7 @@ all)
     test_tmux
     test_hooks
     test_agents_md
+    test_subagents
     test_cd_perf
     test_lsp
     test_nvim_bridge
