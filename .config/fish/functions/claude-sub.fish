@@ -241,8 +241,8 @@ function _claude_sub_list --description "List all subscription profiles"
     echo ""
 
     # Always show default
-    printf "%-12s %-40s %s\n" "NAME" "DIRECTORY" "ORG / PLAN"
-    printf "%-12s %-40s %s\n" "----" "---------" "----------"
+    printf "%-12s %-40s %s\n" NAME DIRECTORY "ORG / PLAN"
+    printf "%-12s %-40s %s\n" ---- --------- ----------
 
     # Default profile
     set -l default_info (_claude_sub_get_info "$HOME/.claude")
@@ -283,22 +283,31 @@ try:
     with open('$config_file') as f:
         data = json.load(f)
     oauth = data.get('oauthAccount', {})
-    org_name = oauth.get('organizationName', '')
-    org_id = oauth.get('organizationId', '')
+    name = oauth.get('displayName', '')
     email = oauth.get('emailAddress', '')
-    plan = oauth.get('planDisplayName', oauth.get('memberRole', ''))
+    billing = oauth.get('billingType', '')
+
+    # Map billingType to readable label
+    billing_labels = {
+        'stripe_subscription': 'Pro',
+        'api_billing': 'API',
+    }
+    billing_label = billing_labels.get(billing, billing.replace('_', ' ')) if billing else ''
 
     parts = []
-    if org_name:
-        parts.append(org_name)
-    elif org_id:
-        parts.append(org_id[:12] + '...')
-    if plan:
-        parts.append(plan)
+    if name:
+        parts.append(name)
+    if billing_label:
+        parts.append(billing_label)
     if email:
         parts.append(email)
 
-    print(' | '.join(parts) if parts else 'authenticated')
+    if parts:
+        print(' | '.join(parts))
+    elif oauth:
+        print('authenticated')
+    else:
+        print('no account')
 except Exception:
     print('error reading config')
 " 2>/dev/null

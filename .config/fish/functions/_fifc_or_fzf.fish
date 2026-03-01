@@ -35,9 +35,11 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
             # Use claude session picker (only activates after --resume / -r)
             _claude_resume_fzf_tab_complete
         else if test "$cmd[1]" = gwt-ticket; or test "$cmd[1]" = gwtt
-            # --sub picker takes priority, then skill picker
+            # --sub picker, then --agent picker, then skill picker
             if test (count $cmd) -ge 2; and test "$cmd[-1]" = --sub
                 _claude_sub_fzf_tab_complete
+            else if test (count $cmd) -ge 2; and test "$cmd[-1]" = --agent
+                _claude_agent_fzf_tab_complete
             else
                 _gwt_ticket_fzf_tab_complete
             end
