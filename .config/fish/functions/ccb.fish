@@ -28,11 +28,22 @@ function ccb --description "Manage ClaudeCodeBrowser Firefox automation"
 
     switch $cmd
         case start
-            # Check if already running
+            # Check if already running via PID file
             if test -f "$pid_file"; and kill -0 (cat "$pid_file") 2>/dev/null
                 echo "MCP server already running (PID: "(cat "$pid_file")")"
                 return 0
             end
+
+            # Kill orphaned processes blocking our ports
+            for port in 8765 8766
+                set -l stale_pid (lsof -ti :$port 2>/dev/null)
+                if test -n "$stale_pid"
+                    echo "Killing orphaned process on port $port (PID: $stale_pid)"
+                    kill $stale_pid 2>/dev/null
+                    sleep 0.5
+                end
+            end
+            rm -f "$pid_file"
 
             mkdir -p "$log_dir"
             echo "Starting MCP server..."
@@ -52,17 +63,29 @@ function ccb --description "Manage ClaudeCodeBrowser Firefox automation"
             end
 
         case stop
+            set -l killed false
             if test -f "$pid_file"
                 set -l pid (cat "$pid_file")
                 if kill -0 $pid 2>/dev/null
                     kill $pid
                     echo "MCP server stopped (PID: $pid)"
-                else
-                    echo "MCP server not running (stale PID file)"
+                    set killed true
                 end
                 rm -f "$pid_file"
-            else
-                echo "MCP server not running (no PID file)"
+            end
+
+            # Also kill any orphaned processes on our ports
+            for port in 8765 8766
+                set -l stale_pid (lsof -ti :$port 2>/dev/null)
+                if test -n "$stale_pid"
+                    kill $stale_pid 2>/dev/null
+                    echo "Killed orphaned process on port $port (PID: $stale_pid)"
+                    set killed true
+                end
+            end
+
+            if test "$killed" = false
+                echo "MCP server not running"
             end
 
         case status
