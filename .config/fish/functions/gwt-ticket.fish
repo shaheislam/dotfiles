@@ -841,68 +841,47 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         mkdir -p "$worktree_path/.claude" 2>/dev/null
     end
 
-    # Auto-init beads agent memory for worktree
-    if command -q bd
-        if not test -d "$worktree_path/.beads"
-            pushd $worktree_path
-            bd init --quiet 2>/dev/null; or true
-            popd
+    # Background metadata operations (bd + agent-cv) — tracking only, not needed
+    # for Claude to start. Runs in subshell to avoid blocking tmux/Claude setup.
+    # Saves ~4.5s (bd init 2.2s + bd create 1.5s + hook bead 0.75s).
+    begin
+        # Beads agent memory: init → work bead → hook bead → swarm
+        if command -q bd
+            if not test -d "$worktree_path/.beads"
+                cd $worktree_path
+                bd init --quiet 2>/dev/null; or true
+            end
+            if test -d "$worktree_path/.beads"
+                cd $worktree_path
+                bd create "$title" --external-ref "$issue_key" --description "$description" --silent 2>/dev/null; or true
+                # GUPP Hook bead: ephemeral work-slung marker per Gastown Universal Propulsion Principle
+                bd create "hook: $issue_key" \
+                    --ephemeral \
+                    --type event \
+                    --event-category "agent.hooked" \
+                    --event-target "$issue_key" \
+                    --labels "gt:hook,gt:gupp" \
+                    --silent 2>/dev/null; or true
+                # Swarm molecule from epic (conditional)
+                if test -n "$swarm_epic_id"
+                    bd swarm create "$swarm_epic_id" 2>/dev/null; or true
+                end
+            end
         end
-    end
-
-    # Init agent CV for this worktree
-    set -l cv_script "$HOME/dotfiles/scripts/agent-cv.sh"
-    if test -x "$cv_script"
-        set -l cv_args init "$worktree_path" --issue "$issue_key" --title "$title"
-        if test -n "$sub_profile"
-            set cv_args $cv_args --sub "$sub_profile"
-        end
-        if test -n "$local_model"
-            set cv_args $cv_args --model "$local_model"
-        end
-        if $quiet_mode
+        # Agent CV
+        set -l cv_script "$HOME/dotfiles/scripts/agent-cv.sh"
+        if test -x "$cv_script"
+            set -l cv_args init "$worktree_path" --issue "$issue_key" --title "$title"
+            if test -n "$sub_profile"
+                set cv_args $cv_args --sub "$sub_profile"
+            end
+            if test -n "$local_model"
+                set cv_args $cv_args --model "$local_model"
+            end
             bash $cv_script $cv_args >/dev/null 2>&1; or true
-        else
-            bash $cv_script $cv_args 2>/dev/null; or true
         end
-    end
-
-    # Create bead for this work item
-    # Use --external-ref to link the bead to the external ticket (Linear/Jira key)
-    if command -q bd
-        if test -d "$worktree_path/.beads"
-            pushd $worktree_path
-            bd create "$title" --external-ref "$issue_key" --description "$description" --silent 2>/dev/null; or true
-
-            # GUPP Hook bead: create an ephemeral Hook bead representing work slung to this agent.
-            # Per the Gastown Universal Propulsion Principle: "If there is work on your hook, YOU MUST RUN IT."
-            # The hook bead is ephemeral (wisp) - it disappears once the agent processes it.
-            bd create "hook: $issue_key" \
-                --ephemeral \
-                --type event \
-                --event-category "agent.hooked" \
-                --event-target "$issue_key" \
-                --labels "gt:hook,gt:gupp" \
-                --silent 2>/dev/null; or true
-            popd
-        end
-    end
-
-    # Create bd swarm molecule from epic if --swarm-epic was specified
-    if test -n "$swarm_epic_id" -a -d "$worktree_path/.beads"
-        pushd $worktree_path
-        set -l swarm_result (bd swarm create "$swarm_epic_id" 2>/dev/null)
-        if test $status -eq 0
-            if not $quiet_mode
-                echo "Created bd swarm for epic $swarm_epic_id: $swarm_result"
-            end
-        else
-            if not $quiet_mode
-                echo "Warning: bd swarm create failed for $swarm_epic_id (continuing)"
-            end
-        end
-        popd
-    end
+    end &
+    disown 2>/dev/null
 
     # Create molecule from template steps if --molecule auto and --template given
     if test "$molecule_id" = auto -a -n "$workflow_template"
