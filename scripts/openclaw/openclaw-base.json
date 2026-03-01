@@ -10,7 +10,6 @@
       "resetOnExit": true
     }
   },
-
   "agents": {
     "defaults": {
       "model": {
@@ -28,15 +27,38 @@
       }
     }
   },
-
   "tools": {
     "profile": "coding",
-    "deny": ["browser", "canvas", "cron"],
+    "deny": [
+      "browser",
+      "canvas",
+      "cron"
+    ],
     "elevated": {
       "allowFrom": []
+    },
+    "exec": {
+      "approvals": {
+        "require": true,
+        "skillAutoAllow": false,
+        "defaultAllowlist": []
+      }
     }
   },
-
+  "skills": {
+    "load": {
+      "watch": true
+    }
+  },
+  "update": {
+    "auto": {
+      "enabled": false,
+      "channel": "stable"
+    }
+  },
+  "secrets": {
+    "mode": "env"
+  },
   "channels": {
     "telegram": {
       "dmPolicy": "pairing"
@@ -54,7 +76,6 @@
       "dmPolicy": "pairing"
     }
   },
-
   "sessions": {
     "ttl": 3600000,
     "pruning": {
@@ -62,11 +83,9 @@
       "interval": 60000
     }
   },
-
   "logging": {
     "redactSensitive": "tools"
   },
-
   "plugins": {
     "allow": []
   }

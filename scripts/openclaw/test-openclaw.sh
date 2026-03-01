@@ -21,7 +21,7 @@ run_test() {
     local name="$1"
     local cmd="$2"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if eval "$cmd" > /dev/null 2>&1; then
+    if eval "$cmd" >/dev/null 2>&1; then
         echo -e "${GREEN}  PASS${NC} $name"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -76,6 +76,20 @@ run_test "Nodes tool NOT denied (needed for bun/Node.js)" \
     "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert 'nodes' not in c['tools']['deny']\""
 run_test "Tool profile is coding" \
     "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['tools']['profile'] == 'coding'\""
+run_test "Exec approvals require=true" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['tools']['exec']['approvals']['require'] == True\""
+run_test "Exec approvals skillAutoAllow=false" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['tools']['exec']['approvals']['skillAutoAllow'] == False\""
+run_test "Exec approvals empty allowlist" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['tools']['exec']['approvals']['defaultAllowlist'] == []\""
+run_test "Skills watcher enabled" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['skills']['load']['watch'] == True\""
+run_test "Auto-updater disabled by default" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['update']['auto']['enabled'] == False\""
+run_test "Auto-updater channel is stable" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['update']['auto']['channel'] == 'stable'\""
+run_test "Secrets mode is env" \
+    "python3 -c \"import json; c=json.load(open('$DOTFILES_ROOT/scripts/openclaw/openclaw-base.json')); assert c['secrets']['mode'] == 'env'\""
 
 # --- Fish function tests ---
 echo -e "\n${BLUE}--- Fish Functions ---${NC}"
@@ -97,6 +111,16 @@ run_test "openclaw-notify.fish has urgency support" \
     "grep -q 'urgency' '$DOTFILES_ROOT/.config/fish/functions/openclaw-notify.fish'"
 run_test "openclaw-notify.fish has fallback notification" \
     "grep -q 'terminal-notifier' '$DOTFILES_ROOT/.config/fish/functions/openclaw-notify.fish'"
+run_test "openclaw.fish has secrets subcommand" \
+    "grep -q 'case secrets' '$DOTFILES_ROOT/.config/fish/functions/openclaw.fish'"
+run_test "openclaw.fish has approvals subcommand" \
+    "grep -q 'case approvals' '$DOTFILES_ROOT/.config/fish/functions/openclaw.fish'"
+run_test "openclaw.fish has node subcommand" \
+    "grep -q 'case node' '$DOTFILES_ROOT/.config/fish/functions/openclaw.fish'"
+run_test "openclaw.fish has update subcommand" \
+    "grep -q 'case update' '$DOTFILES_ROOT/.config/fish/functions/openclaw.fish'"
+run_test "openclaw.fish has skills subcommand" \
+    "grep -q 'case skills' '$DOTFILES_ROOT/.config/fish/functions/openclaw.fish'"
 
 # --- Script tests ---
 echo -e "\n${BLUE}--- Scripts ---${NC}"
@@ -122,6 +146,10 @@ run_test "openclaw-notify.fish supports strict mode" \
     "grep -q 'OPENCLAW_NOTIFY_STRICT' '$DOTFILES_ROOT/.config/fish/functions/openclaw-notify.fish'"
 run_test "notify.sh documents non-Fish rationale" \
     "grep -q 'non-Fish contexts' '$DOTFILES_ROOT/scripts/openclaw/notify.sh'"
+run_test "setup.sh generates exec-approvals.json" \
+    "grep -q 'exec-approvals.json' '$DOTFILES_ROOT/scripts/setup.sh'"
+run_test "setup.sh sets exec-approvals permissions to 600" \
+    "grep -q 'chmod 600.*exec-approvals' '$DOTFILES_ROOT/scripts/setup.sh'"
 
 # --- Sandbox profile tests ---
 echo -e "\n${BLUE}--- Sandbox Profile ---${NC}"
@@ -185,7 +213,7 @@ if command -v jq &>/dev/null; then
         td=$(mktemp -d)
         mkdir -p "$td"
         # Minimal config with custom initial values (not "none") to verify save/restore
-        cat > "$td/openclaw.json" << 'TESTEOF'
+        cat >"$td/openclaw.json" <<'TESTEOF'
 {"agents":{"defaults":{"sandbox":{"workspaceAccess":"ro","docker":{"network":"host"}}}}}
 TESTEOF
         chmod 600 "$td/openclaw.json"
