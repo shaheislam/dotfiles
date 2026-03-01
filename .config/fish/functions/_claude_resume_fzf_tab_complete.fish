@@ -2,6 +2,12 @@ function _claude_resume_fzf_tab_complete -d "FZF-powered claude --resume tab com
     set -l cmd (commandline -opc)
     set -l token (commandline --current-token)
 
+    # --agent delegation: hand off to agent picker
+    if test (count $cmd) -ge 2; and test "$cmd[-1]" = --agent
+        _claude_agent_fzf_tab_complete
+        return
+    end
+
     # Detect if previous token is --resume or -r
     set -l after_resume false
     if test (count $cmd) -ge 2

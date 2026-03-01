@@ -73,7 +73,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         set -l instance_name (basename $instance_dir)
 
         # Skip 'default' instance
-        if test "$instance_name" = "default"
+        if test "$instance_name" = default
             continue
         end
 
@@ -153,18 +153,49 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
 
     # Prune if requested
     if $do_prune
-        # Confirm unless --force
-        if not $do_force
-            read -P "Remove these "(count $stale_instances)" instance(s)? [y/N] " response
-            if test "$response" != "y"; and test "$response" != "Y"
-                echo "Cancelled"
+        set -l to_remove
+
+        if $do_force
+            # --force: remove all without picker
+            set to_remove $stale_instances
+        else
+            # FZF multiselect: build entries with size and workspace info
+            set -l fzf_entries
+            for instance in $stale_instances
+                set -l size ""
+                if command -q du
+                    set size (du -sh "$instance_base/$instance" 2>/dev/null | cut -f1)
+                end
+                set -l has_ws no
+                if contains $instance $stale_workspaces
+                    set has_ws yes
+                end
+                set -a fzf_entries (printf '%s\t%s\tworkspace:%s\t%s' "$instance" "$size" "$has_ws" "$instance_base/$instance")
+            end
+
+            set -l selected (printf '%s\n' $fzf_entries \
+                | fzf \
+                    --multi \
+                    --exit-0 \
+                    -d '\t' \
+                    --with-nth=1,2,3 \
+                    --prompt='prune instances ❯ ' \
+                    --header='TAB to toggle | name / size / workspace' \
+                    --preview='ls -la {4}' \
+                    --preview-window=bottom:30%:wrap \
+                    --bind='ctrl-/:toggle-preview' \
+                | cut -f1)
+
+            if test -z "$selected"
+                echo "No instances selected"
                 return 0
             end
+            set to_remove $selected
         end
 
         # Stop any running containers first
         if command -q docker
-            for instance in $stale_instances
+            for instance in $to_remove
                 set -l container_name "devcontainer-$instance"
                 if docker ps -q --filter "name=$container_name" 2>/dev/null | grep -q .
                     echo "Stopping container: $container_name"
@@ -173,8 +204,8 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
             end
         end
 
-        # Remove instances and workspaces
-        for instance in $stale_instances
+        # Remove selected instances and workspaces
+        for instance in $to_remove
             echo "Removing: $instance"
             rm -rf "$instance_base/$instance"
             if contains $instance $stale_workspaces
@@ -183,7 +214,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         end
 
         echo ""
-        echo "Removed "(count $stale_instances)" stale instance(s)"
+        echo "Removed "(count $to_remove)" stale instance(s)"
     else
         echo "Run with --prune to remove these instances"
     end

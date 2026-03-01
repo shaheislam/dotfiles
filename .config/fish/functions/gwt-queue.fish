@@ -93,6 +93,9 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             end
             _gwt_queue_add_plan $rest
 
+        case pick
+            _gwt_queue_pick $queue_daemon
+
         case list ls
             bash $queue_daemon list
 
@@ -289,6 +292,7 @@ for issue in data:
             echo "  gwt-queue <command> [args...]"
             echo ""
             echo "COMMANDS:"
+            echo "  pick                                Interactively select tickets to remove"
             echo "  add [key] <title> [desc] [--opts]  Queue a ticket for later execution"
             echo "  add-plan <name> [specs] [--opts]    Queue all tasks from a plan"
             echo "  bd-ready [--opts]                   Import ready beads into queue"
@@ -472,4 +476,74 @@ function _gwt_queue_add_plan --description "Queue a plan's tasks for rate-limit-
     echo "Queued $queued/$task_count tasks for convoy '$convoy_name'"
     echo "Start daemon: gwt-queue start"
     echo "Monitor:      gwt-queue status"
+end
+
+function _gwt_queue_pick --description "Interactive FZF picker to select and remove tickets from queue"
+    set -l queue_daemon $argv[1]
+    set -l queue_file "$HOME/.claude/ticket-queue.json"
+
+    if not test -f "$queue_file"
+        echo "No ticket queue found at $queue_file"
+        return 1
+    end
+
+    # Parse queue JSON into FZF entries: id<TAB>priority<TAB>issue_key<TAB>title<TAB>sub
+    set -l entries (python3 -c "
+import json, sys
+try:
+    with open('$queue_file') as f:
+        data = json.load(f)
+    tickets = data if isinstance(data, list) else data.get('tickets', data.get('queue', []))
+    for t in tickets:
+        if t.get('status', 'pending') != 'pending':
+            continue
+        tid = t.get('id', '?')
+        pri = str(t.get('priority', 5))
+        key = t.get('issue_key', t.get('key', '-'))
+        title = t.get('title', 'Untitled')
+        sub = t.get('sub', t.get('sub_profile', '-'))
+        # detail for preview (tab-separated 6th field)
+        desc = t.get('description', '') or ''
+        repo = t.get('repo', t.get('repo_path', '')) or ''
+        added = t.get('added', t.get('created_at', '')) or ''
+        detail = f'Title: {title}\nKey: {key}\nPriority: {pri}\nSub: {sub}\nRepo: {repo}\nAdded: {added}\n\nDescription:\n{desc}'
+        # Escape newlines for echo -e in preview
+        detail_escaped = detail.replace('\\\\', '\\\\\\\\').replace('\n', '\\\\n')
+        print(f'{tid}\t{pri}\t{key}\t{title}\t{sub}\t{detail_escaped}')
+except Exception as e:
+    print(f'ERROR\t0\t-\t{e}\t-\t-', file=sys.stderr)
+" 2>/dev/null)
+
+    if test (count $entries) -eq 0; or test -z "$entries"
+        echo "No pending tickets in queue"
+        return 0
+    end
+
+    # FZF multiselect — display columns 1-5, column 6 is detail for preview
+    set -l selected (printf '%s\n' $entries \
+        | fzf \
+            --multi \
+            --exit-0 \
+            -d '\t' \
+            --with-nth=1,2,3,4,5 \
+            --prompt='pick tickets to remove ❯ ' \
+            --header='TAB to toggle | id / pri / key / title / sub' \
+            --preview='echo -e {6}' \
+            --preview-window=bottom:40%:wrap \
+            --bind='ctrl-/:toggle-preview' \
+        | cut -f1)
+
+    if test -z "$selected"
+        echo "No tickets selected"
+        return 0
+    end
+
+    set -l removed 0
+    for tid in $selected
+        echo "Removing: $tid"
+        bash $queue_daemon remove "$tid" 2>/dev/null
+        and set removed (math $removed + 1)
+    end
+    echo ""
+    echo "Removed $removed ticket(s)"
 end
