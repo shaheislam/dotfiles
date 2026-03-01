@@ -61,6 +61,7 @@ list_groups() {
     echo "  nvim-bridge   - Neovim-Claude Code bridge"
     echo "  remote-control - Claude Code Remote Control"
     echo "  settings      - Claude Code settings validation"
+    echo "  gitattributes - Gitattributes and custom diff/merge drivers"
     echo "  merge-driver  - CLAUDE.md merge conflict auto-resolution"
     echo "  openclaw      - OpenClaw integration"
     echo "  subagents     - Claude Code subagent files"
@@ -896,6 +897,44 @@ test_integrations() {
     rm -f "$tmp_conf" 2>/dev/null
 }
 
+test_gitattributes() {
+    echo -e "${BLUE}--- Gitattributes Tests ---${NC}"
+    run_test ".gitattributes exists" "[ -f '$DOTFILES_ROOT/.gitattributes' ]"
+    run_test "JSON diff driver script exists" "[ -x '$DOTFILES_ROOT/scripts/git-diff-json.sh' ]"
+    run_test "Union merge driver script exists" "[ -x '$DOTFILES_ROOT/scripts/merge-driver-union.sh' ]"
+
+    # Verify key attributes are applied
+    run_test "CLAUDE.md has union-doc merge" "git -C '$DOTFILES_ROOT' check-attr merge -- CLAUDE.md | grep -q 'union-doc'"
+    run_test "Shell scripts enforce LF" "git -C '$DOTFILES_ROOT' check-attr eol -- scripts/setup.sh | grep -q 'lf'"
+    run_test "Fish files enforce LF" "git -C '$DOTFILES_ROOT' check-attr eol -- .config/fish/config.fish | grep -q 'lf'"
+    run_test "PNG files marked binary" "git -C '$DOTFILES_ROOT' check-attr binary -- generated-diagrams/diagram_335a360a.png | grep -q 'set'"
+    run_test "JSON files use json diff driver" "git -C '$DOTFILES_ROOT' check-attr diff -- .config/vscode/settings.json | grep -q 'json'"
+    run_test "Plist files use plist diff driver" "git -C '$DOTFILES_ROOT' check-attr diff -- Library/LaunchAgents/com.user.ssh-add.plist | grep -q 'plist'"
+
+    # Verify JSON diff driver produces valid output
+    run_test "JSON diff driver produces sorted output" "bash '$DOTFILES_ROOT/scripts/git-diff-json.sh' '$DOTFILES_ROOT/.config/vscode/settings.json' | head -1 | grep -q '{'"
+
+    # Verify merge drivers are assigned
+    run_test "Brewfile uses brewfile merge driver" "git -C '$DOTFILES_ROOT' check-attr merge -- homebrew/Brewfile | grep -q 'brewfile'"
+    run_test "settings.json uses json-merge driver" "git -C '$DOTFILES_ROOT' check-attr merge -- .claude/settings.json | grep -q 'json-merge'"
+    run_test "config.fish uses union-doc merge" "git -C '$DOTFILES_ROOT' check-attr merge -- .config/fish/config.fish | grep -q 'union-doc'"
+    run_test "test-filter.sh uses union-doc merge" "git -C '$DOTFILES_ROOT' check-attr merge -- scripts/test-filter.sh | grep -q 'union-doc'"
+    run_test "lazy-lock.json uses lockfile merge" "git -C '$DOTFILES_ROOT' check-attr merge -- .config/nvim/lazy-lock.json | grep -q 'lockfile'"
+
+    # Verify merge driver scripts exist and are executable
+    run_test "Brewfile merge driver exists" "[ -x '$DOTFILES_ROOT/scripts/merge-driver-brewfile.sh' ]"
+    run_test "JSON merge driver exists" "[ -x '$DOTFILES_ROOT/scripts/merge-driver-json.sh' ]"
+    run_test "Lockfile merge driver exists" "[ -x '$DOTFILES_ROOT/scripts/merge-driver-lockfile.sh' ]"
+
+    # Verify setup.sh registers all drivers
+    run_test "setup.sh registers JSON diff driver" "grep -q 'diff.json.textconv' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers plist diff driver" "grep -q 'diff.plist.textconv' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers union-doc merge driver" "grep -q 'merge.union-doc.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers brewfile merge driver" "grep -q 'merge.brewfile.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers json-merge driver" "grep -q 'merge.json-merge.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh registers lockfile merge driver" "grep -q 'merge.lockfile.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
+}
+
 print_summary() {
     echo ""
     echo -e "${BLUE}--- Summary ---${NC}"
@@ -929,6 +968,7 @@ nvim-bridge) test_nvim_bridge ;;
 remote-control) test_remote_control ;;
 settings) test_settings ;;
 entire) test_entire ;;
+gitattributes) test_gitattributes ;;
 merge-driver) bash "$SCRIPT_DIR/tests/test-merge-driver.sh" ;;
 openclaw) bash "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 integrations) test_integrations ;;
@@ -950,6 +990,7 @@ all)
     test_settings
     test_entire
     test_integrations
+    test_gitattributes
     # OpenClaw tests run from their own script (separate counters)
     # External test suites run as subprocesses (own set -e / counters)
     bash "$SCRIPT_DIR/tests/test-merge-driver.sh"

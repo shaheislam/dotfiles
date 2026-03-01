@@ -1183,6 +1183,29 @@ phase_8_dotfiles() {
         git config --global merge.union-doc.name "Union merge for documentation files"
         git config --global merge.union-doc.driver "$DOTFILES_ROOT/scripts/merge-driver-union.sh %A %O %B %L %P"
         log_verbose "Union-doc merge driver registered"
+
+        # Register Brewfile merge driver - union merge + dedup of tap/brew/cask/mas
+        git config --global merge.brewfile.name "Union merge for Brewfile"
+        git config --global merge.brewfile.driver "$DOTFILES_ROOT/scripts/merge-driver-brewfile.sh %A %O %B %L %P"
+        log_verbose "Brewfile merge driver registered"
+
+        # Register JSON deep-merge driver for settings files
+        git config --global merge.json-merge.name "Deep merge for JSON config files"
+        git config --global merge.json-merge.driver "$DOTFILES_ROOT/scripts/merge-driver-json.sh %A %O %B %L %P"
+        log_verbose "JSON merge driver registered"
+
+        # Register lockfile merge driver - keeps ours for auto-generated lockfiles
+        git config --global merge.lockfile.name "Keep ours for lockfiles"
+        git config --global merge.lockfile.driver "$DOTFILES_ROOT/scripts/merge-driver-lockfile.sh %A %O %B %L %P"
+        log_verbose "Lockfile merge driver registered"
+
+        # Register JSON diff driver - sorts keys for cleaner diffs
+        git config --global diff.json.textconv "$DOTFILES_ROOT/scripts/git-diff-json.sh"
+        log_verbose "JSON diff driver registered"
+
+        # Register plist diff driver - converts to XML for readable diffs
+        git config --global diff.plist.textconv "plutil -convert xml1 -o -"
+        log_verbose "Plist diff driver registered"
     fi
 
     # Setup local git excludes (.gitignore_local symlinks) for existing repos
