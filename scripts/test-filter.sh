@@ -552,6 +552,52 @@ test_remote_control() {
     run_test "setup.sh has remote control comment reference" "grep -q 'remote-control' '$DOTFILES_ROOT/scripts/setup.sh'"
 }
 
+test_settings() {
+    echo -e "${BLUE}--- Claude Code Settings Tests ---${NC}"
+
+    local SETTINGS="$DOTFILES_ROOT/.claude/settings.json"
+
+    # Schema validation
+    run_test "settings.json has \$schema" "grep -q 'json.schemastore.org/claude-code-settings' '$SETTINGS'"
+    run_test "settings.json valid JSON" "python3 -m json.tool '$SETTINGS' > /dev/null 2>&1"
+
+    # Permission rules exist
+    run_test "settings has permissions block" "python3 -c \"import json; d=json.load(open('$SETTINGS')); assert 'permissions' in d\""
+    run_test "settings has allow rules" "python3 -c \"import json; d=json.load(open('$SETTINGS')); assert len(d['permissions']['allow']) > 0\""
+    run_test "settings has deny rules" "python3 -c \"import json; d=json.load(open('$SETTINGS')); assert len(d['permissions']['deny']) > 0\""
+
+    # Deny rules protect sensitive files
+    run_test "deny .env files" "grep -q 'Read(./.env)' '$SETTINGS'"
+    run_test "deny SSH keys" "grep -q 'Read(~/.ssh/id_' '$SETTINGS'"
+    run_test "deny AWS credentials" "grep -q 'Read(~/.aws/credentials)' '$SETTINGS'"
+    run_test "deny destructive rm" "grep -q 'rm -rf /' '$SETTINGS'"
+    run_test "deny pipe-to-shell" "grep -q 'curl .* | bash' '$SETTINGS'"
+
+    # Allow rules for safe commands
+    run_test "allow git status" "grep -q 'Bash(git status' '$SETTINGS'"
+    run_test "allow bun run" "grep -q 'Bash(bun run' '$SETTINGS'"
+    run_test "allow --version" "grep -q '\-\-version' '$SETTINGS'"
+
+    # Sandbox config in setup.sh
+    run_test "setup.sh has sandbox config" "grep -q 'sandbox' '$DOTFILES_ROOT/scripts/setup.sh' && grep -q 'autoAllowBashIfSandboxed' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh excludes docker from sandbox" "grep -q 'excludedCommands.*docker' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh sandbox denies credential reads" "grep -q 'denyRead.*aws/credentials' '$DOTFILES_ROOT/scripts/setup.sh'"
+
+    # Attribution config in setup.sh
+    run_test "setup.sh suppresses attribution" "grep -q 'attribution.*commit.*pr' '$DOTFILES_ROOT/scripts/setup.sh'"
+
+    # Environment variables in Fish config
+    run_test "Fish has CLAUDE_CODE_EFFORT_LEVEL" "grep -q 'CLAUDE_CODE_EFFORT_LEVEL' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Fish has FORCE_AUTOUPDATE_PLUGINS" "grep -q 'FORCE_AUTOUPDATE_PLUGINS' '$DOTFILES_ROOT/.config/fish/config.fish'"
+    run_test "Fish has CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD" "grep -q 'CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD' '$DOTFILES_ROOT/.config/fish/config.fish'"
+
+    # CLAUDE.md documentation
+    run_test "CLAUDE.md documents settings section" "grep -q 'Claude Code Settings & Security' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md documents permission rules" "grep -q 'Permission Rules' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md documents sandbox config" "grep -q 'Sandbox Configuration' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md documents attribution" "grep -q 'attribution.commit' '$DOTFILES_ROOT/CLAUDE.md'"
+}
+
 test_nvim_bridge() {
     echo -e "${BLUE}--- Neovim-Claude Bridge Tests ---${NC}"
 
@@ -640,6 +686,7 @@ cd-perf) test_cd_perf ;;
 lsp) test_lsp ;;
 nvim-bridge) test_nvim_bridge ;;
 remote-control) test_remote_control ;;
+settings) test_settings ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
@@ -655,6 +702,7 @@ all)
     test_lsp
     test_nvim_bridge
     test_remote_control
+    test_settings
     # OpenClaw tests run from their own script (separate counters)
     echo ""
     source "$SCRIPT_DIR/openclaw/test-openclaw.sh"

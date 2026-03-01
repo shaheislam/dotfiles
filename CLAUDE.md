@@ -228,6 +228,46 @@ Local DNS ad blocking via Colima + Docker. Location: `scripts/pihole/`. Fish wra
 ### Keyboard Remapping
 Karabiner-Elements: `.config/karabiner/karabiner.json` (stow managed). Caps Lock ↔ Escape swap. Edit via GUI app.
 
+### Claude Code Settings & Security
+
+Multi-scope configuration following official best practices. Reference: https://code.claude.com/docs/en/settings
+
+**Settings Scope Hierarchy** (higher overrides lower):
+1. **Managed** (`managed-settings.json`) — organizational policy (not used for personal dotfiles)
+2. **Local** (`.claude/settings.local.json`) — per-project personal overrides
+3. **Project** (`.claude/settings.json`) — shared project config
+4. **User** (`~/.claude/settings.json` → symlinked from dotfiles) — global defaults
+
+**Schema Validation**: All `settings.json` files include `$schema` for IDE autocompletion and validation.
+
+**Permission Rules** (`~/.claude/settings.json`):
+- **Allow**: Common safe commands (git, bun, fish, stow, nix, brew, jq, `--version`, `--help`)
+- **Deny**: Sensitive files (`.env`, `secrets/`, SSH keys, AWS creds, GPG keys), destructive commands (`rm -rf /`, `chmod -R 777`, pipe-to-shell)
+- Rules use gitignore-style patterns: `//` absolute, `~/` home, `/` project root, `./` current dir
+- Evaluation order: deny → ask → allow (first match wins)
+
+**Sandbox Configuration** (`~/.claude.json`, set by `setup.sh`):
+- OS-level filesystem + network isolation for Bash commands (macOS Seatbelt)
+- `autoAllowBashIfSandboxed: true` — sandboxed commands skip permission prompts
+- `excludedCommands: ["docker", "colima"]` — tools incompatible with sandbox
+- `allowWrite: ["~/.kube", "//tmp", "~/.cache", "~/.local"]` — subprocess write paths
+- `denyRead: ["~/.aws/credentials", "~/.ssh/id_*", "~/.gnupg/private-keys-v1.d"]` — credential protection
+
+**Attribution** (`~/.claude.json`, set by `setup.sh`):
+- `attribution.commit: ""` and `attribution.pr: ""` — suppress default AI attribution trailers
+- Enforces CLAUDE.md rule: never reference AI assistants in commits
+
+**Model Configuration**:
+- Default: Opus 4.6 (Max plan), falls back to Sonnet on usage threshold
+- `CLAUDE_CODE_EFFORT_LEVEL=high` in Fish config — maximum adaptive reasoning
+- `/model opusplan` — Opus for planning, Sonnet for execution
+
+**Environment Variables** (`.config/fish/config.fish`):
+- `FORCE_AUTOUPDATE_PLUGINS=1` — auto-update plugins on session start
+- `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` — load CLAUDE.md from `--add-dir` paths
+- `CLAUDE_CODE_EFFORT_LEVEL=high` — Opus 4.6 adaptive reasoning effort
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` — multi-agent coordination (in `settings.json` env block)
+
 ### Claude Code Hooks
 
 Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/claude-code-hooks.md` for complete reference.
@@ -424,6 +464,7 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 **Plan template**: `templates/workflows/plan-review.toml`.
 
 ### Recent Updates
+- **2026-03-01**: Added Claude Code Settings best practices ($schema validation, permission rules, sandbox config, attribution suppression, effort level env var)
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills

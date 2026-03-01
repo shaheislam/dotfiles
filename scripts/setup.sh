@@ -733,6 +733,35 @@ NMHEOF
                 print_success "Claude Code Remote Control enabled for all sessions" || true
         fi
 
+        # Configure sandbox settings for defense-in-depth security
+        # Reference: https://code.claude.com/docs/en/sandboxing
+        # Sandbox provides OS-level filesystem and network isolation for Bash commands.
+        # allowWrite grants subprocess write access to paths outside the project directory.
+        # denyRead blocks subprocess access to sensitive credential files.
+        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
+            jq '.sandbox = {
+                "enabled": true,
+                "autoAllowBashIfSandboxed": true,
+                "excludedCommands": ["docker", "colima"],
+                "filesystem": {
+                    "allowWrite": ["~/.kube", "//tmp", "~/.cache", "~/.local"],
+                    "denyRead": ["~/.aws/credentials", "~/.ssh/id_*", "~/.gnupg/private-keys-v1.d"]
+                }
+            }' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
+                print_success "Claude Code sandbox configured (filesystem + network isolation)" || true
+        fi
+
+        # Configure attribution settings for git commits and PRs
+        # Reference: https://code.claude.com/docs/en/settings
+        # Empty strings suppress the default AI attribution trailer.
+        # CLAUDE.md already requires no AI references in commit messages.
+        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
+            jq '.attribution = {"commit": "", "pr": ""}' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
+                print_success "Claude Code attribution suppressed (per CLAUDE.md commit rules)" || true
+        fi
+
         # Install Claude Code plugins from anthropics/claude-code marketplace
         print_step "Installing Claude Code plugins..."
 
