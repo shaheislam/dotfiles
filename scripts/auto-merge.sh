@@ -40,8 +40,8 @@ open_diffview() {
     [[ -z "$OPEN_DIFFVIEW" ]] && return 0
     local target="$OPEN_DIFFVIEW"
     local nvim_pane
-    nvim_pane=$(tmux list-panes -t "$target" -F '#{pane_index} #{pane_current_command}' 2>/dev/null \
-        | grep -i nvim | head -1 | awk '{print $1}')
+    nvim_pane=$(tmux list-panes -t "$target" -F '#{pane_index} #{pane_current_command}' 2>/dev/null |
+        grep -i nvim | head -1 | awk '{print $1}')
 
     if [[ -n "$nvim_pane" ]]; then
         tmux send-keys -t "${target}.${nvim_pane}" Escape Enter
@@ -56,45 +56,45 @@ open_diffview() {
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --repo-root)
-            REPO_ROOT="$2"
-            shift 2
-            ;;
-        --dry-run)
-            DRY_RUN=true
-            shift
-            ;;
-        --open-diffview)
-            OPEN_DIFFVIEW="$2"
-            shift 2
-            ;;
-        --help|-h)
-            echo "Usage: auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run] [--open-diffview SESSION:WINDOW]"
-            echo ""
-            echo "Merges feature branch into main, auto-resolving additive-only conflicts."
-            echo "Non-additive conflicts are left in-progress for manual resolution."
-            echo ""
-            echo "Options:"
-            echo "  --repo-root DIR              Main repo checkout to merge into (default: derived from worktree)"
-            echo "  --dry-run                    Check if merge is possible without committing"
-            echo "  --open-diffview SESSION:WIN  Open DiffviewOpen in nvim pane on non-additive conflicts"
-            echo "  --help                       Show this help"
-            echo ""
-            echo "Exit codes:"
-            echo "  0 - Merge succeeded (or nothing to merge)"
-            echo "  1 - Error"
-            echo "  2 - Non-additive conflicts, merge left in-progress"
-            echo "  3 - Uncommitted changes"
-            exit 0
-            ;;
-        -*)
-            echo -e "${RED}Error: Unknown option $1${NC}" >&2
-            exit 1
-            ;;
-        *)
-            WORKTREE_PATH="$1"
-            shift
-            ;;
+    --repo-root)
+        REPO_ROOT="$2"
+        shift 2
+        ;;
+    --dry-run)
+        DRY_RUN=true
+        shift
+        ;;
+    --open-diffview)
+        OPEN_DIFFVIEW="$2"
+        shift 2
+        ;;
+    --help | -h)
+        echo "Usage: auto-merge.sh <WORKTREE_PATH> [--repo-root DIR] [--dry-run] [--open-diffview SESSION:WINDOW]"
+        echo ""
+        echo "Merges feature branch into main, auto-resolving additive-only conflicts."
+        echo "Non-additive conflicts are left in-progress for manual resolution."
+        echo ""
+        echo "Options:"
+        echo "  --repo-root DIR              Main repo checkout to merge into (default: derived from worktree)"
+        echo "  --dry-run                    Check if merge is possible without committing"
+        echo "  --open-diffview SESSION:WIN  Open DiffviewOpen in nvim pane on non-additive conflicts"
+        echo "  --help                       Show this help"
+        echo ""
+        echo "Exit codes:"
+        echo "  0 - Merge succeeded (or nothing to merge)"
+        echo "  1 - Error"
+        echo "  2 - Non-additive conflicts, merge left in-progress"
+        echo "  3 - Uncommitted changes"
+        exit 0
+        ;;
+    -*)
+        echo -e "${RED}Error: Unknown option $1${NC}" >&2
+        exit 1
+        ;;
+    *)
+        WORKTREE_PATH="$1"
+        shift
+        ;;
     esac
 done
 
@@ -221,19 +221,19 @@ while IFS= read -r file; do
     if [[ -z "$BASE_HASH" ]]; then
         # No base = new file on both sides (additive) -> take theirs (feature's work)
         echo -e "${GREEN}new file (additive) -> taking theirs (feature)${NC}"
-        git checkout --theirs -- "$file" 2>/dev/null || git show ":3:$file" > "$file"
+        git checkout --theirs -- "$file" 2>/dev/null || git show ":3:$file" >"$file"
         git add "$file"
         RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
     elif [[ "$BASE_HASH" == "$OURS_HASH" ]]; then
         # Main didn't change this file, only feature did -> take theirs
         echo -e "${GREEN}main unchanged (additive) -> taking theirs (feature)${NC}"
-        git checkout --theirs -- "$file" 2>/dev/null || git show ":3:$file" > "$file"
+        git checkout --theirs -- "$file" 2>/dev/null || git show ":3:$file" >"$file"
         git add "$file"
         RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
     elif [[ "$BASE_HASH" == "$THEIRS_HASH" ]]; then
         # Feature didn't change this file, only main did -> take ours
         echo -e "${GREEN}feature unchanged (additive) -> taking ours (main)${NC}"
-        git checkout --ours -- "$file" 2>/dev/null || git show ":2:$file" > "$file"
+        git checkout --ours -- "$file" 2>/dev/null || git show ":2:$file" >"$file"
         git add "$file"
         RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
     elif [[ -z "$OURS_HASH" ]] && [[ -n "$THEIRS_HASH" ]]; then
@@ -248,11 +248,44 @@ while IFS= read -r file; do
         NON_ADDITIVE_FILES+=("$file")
     else
         # Both sides modified existing content differently
-        echo -e "${RED}both sides modified (NOT additive)${NC}"
-        ALL_ADDITIVE=false
-        NON_ADDITIVE_FILES+=("$file")
+        # Try union merge for documentation files (CLAUDE.md, AGENTS.md)
+        if [[ "$file" =~ \.(md|MD)$ ]] || [[ "$file" == "CLAUDE.md" ]] || [[ "$file" == "AGENTS.md" ]]; then
+            echo -e "${YELLOW}both sides modified (trying union merge)${NC}"
+            # Extract all three versions to temp files
+            local tmp_ours tmp_base tmp_theirs
+            tmp_ours=$(mktemp)
+            tmp_base=$(mktemp)
+            tmp_theirs=$(mktemp)
+            git show ":2:$file" >"$tmp_ours" 2>/dev/null
+            git show ":1:$file" >"$tmp_base" 2>/dev/null
+            git show ":3:$file" >"$tmp_theirs" 2>/dev/null
+
+            # Try union merge (keeps both sides for conflicts)
+            if git merge-file --union "$tmp_ours" "$tmp_base" "$tmp_theirs" 2>/dev/null; then
+                # Clean union merge
+                cp "$tmp_ours" "$file"
+                git add "$file"
+                echo -e "    ${GREEN}-> union merge resolved${NC}"
+                RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
+            elif ! grep -q "^<<<<<<<\|^>>>>>>>" "$tmp_ours" 2>/dev/null; then
+                # merge-file returned non-zero but no conflict markers (content changes)
+                cp "$tmp_ours" "$file"
+                git add "$file"
+                echo -e "    ${GREEN}-> union merge resolved (with changes)${NC}"
+                RESOLVED_COUNT=$((RESOLVED_COUNT + 1))
+            else
+                echo -e "    ${RED}-> union merge failed, manual resolution needed${NC}"
+                ALL_ADDITIVE=false
+                NON_ADDITIVE_FILES+=("$file")
+            fi
+            rm -f "$tmp_ours" "$tmp_base" "$tmp_theirs"
+        else
+            echo -e "${RED}both sides modified (NOT additive)${NC}"
+            ALL_ADDITIVE=false
+            NON_ADDITIVE_FILES+=("$file")
+        fi
     fi
-done <<< "$CONFLICTED_FILES"
+done <<<"$CONFLICTED_FILES"
 
 if ! $ALL_ADDITIVE; then
     echo ""

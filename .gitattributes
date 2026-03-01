@@ -1,0 +1,9 @@
+# Union merge driver for documentation files that get appended to
+# by multiple worktrees. Instead of creating conflict markers when
+# both sides add content, keeps both sides' changes.
+#
+# Registered in git config via setup.sh:
+#   [merge "union-doc"]
+#       driver = scripts/merge-driver-union.sh %A %O %B %L %P
+CLAUDE.md merge=union-doc
+AGENTS.md merge=union-doc

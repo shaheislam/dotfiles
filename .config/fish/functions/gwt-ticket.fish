@@ -75,6 +75,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l gate_type ""
     set -l gate_dep_worktree ""
     set -l no_checkpoints false
+    set -l ckpt_agent ""
     set -l bridge_iterations ""
     set -l use_local false
     set -l local_model ""
@@ -376,6 +377,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --no-checkpoints
                 set no_checkpoints true
+            case --ckpt-agent
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set ckpt_agent $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --ckpt-agent requires agent name (claude-code, gemini, cursor, opencode)"
+                    return 1
+                end
             case --auto-cleanup
                 set auto_cleanup --auto-cleanup
             case --no-auto-cleanup
@@ -518,6 +528,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --molecule [ID]      Create/attach molecule workflow (auto-creates from template steps)"
         echo "  --town               Enable town-level bead sync on completion (default: on)"
         echo "  --no-town            Disable town-level bead sync"
+        echo "  --ckpt-agent NAME    Checkpoint agent type (claude-code, gemini, cursor, opencode)"
         echo "  --mayor              Register ticket with mayor for global tracking"
         echo "  --no-mayor           Disable mayor registration"
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency, bd-bead)"
@@ -907,10 +918,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if not $no_checkpoints
         if command -q entire
             pushd $worktree_path
+            set -l entire_args enable
+            if test -n "$ckpt_agent"
+                set -a entire_args --agent $ckpt_agent
+            end
             if $quiet_mode
-                entire enable >/dev/null 2>&1; or true
+                entire $entire_args >/dev/null 2>&1; or true
             else
-                entire enable 2>/dev/null; or true
+                entire $entire_args 2>/dev/null; or true
             end
             popd
         end
