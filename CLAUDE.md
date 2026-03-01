@@ -231,6 +231,7 @@ Multi-scope configuration following official best practices. Reference: https://
 - `CLAUDE_CODE_EFFORT_LEVEL=high` — Opus 4.6 adaptive reasoning effort
 - `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` — multi-agent coordination (in `settings.json` env block)
 
+<<<<<<< HEAD
 ### Claude Code Hooks
 
 Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/claude-code-hooks.md` for complete reference.
@@ -495,6 +496,9 @@ Local DNS ad blocking via Colima + Docker. Location: `scripts/pihole/`. Fish wra
 ### Keyboard Remapping
 Karabiner-Elements: `.config/karabiner/karabiner.json` (stow managed). Caps Lock ↔ Escape swap. Edit via GUI app.
 
+||||||| 48897be
+=======
+>>>>>>> settings
 ### Claude Code Hooks
 
 Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/claude-code-hooks.md` for complete reference.
@@ -681,7 +685,12 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 **Plan template**: `templates/workflows/plan-review.toml`.
 
 ### Recent Updates
+<<<<<<< HEAD
 - **2026-03-01**: Added Claude Code CLI Reference Guide (`docs/claude-code-cli-reference.md`) with complete CLI commands, flags, permissions, subagent config, and dotfiles integration map
+||||||| 48897be
+=======
+- **2026-03-01**: Added Claude Code Settings best practices ($schema validation, permission rules, sandbox config, attribution suppression, effort level env var)
+>>>>>>> settings
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills
