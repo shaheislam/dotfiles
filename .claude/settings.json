@@ -48,26 +48,44 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "Read",
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2\u003e/dev/null || true"
           }
-        ],
-        "matcher": "Read"
+        ]
       },
       {
+        "matcher": "Edit|Write",
         "hooks": [
           {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2\u003e/dev/null || true"
           },
           {
-            "command": "bash ~/.claude/hooks/file-modified.sh 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "bash ~/.claude/hooks/file-modified.sh 2\u003e/dev/null || true"
           }
-        ],
-        "matcher": "Edit|Write"
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code post-task"
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code post-todo"
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
@@ -102,81 +120,110 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash",
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/use_bun.py",
-            "statusMessage": "Checking package manager...",
-            "type": "command"
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/use_bun.py"
           },
           {
-            "command": "python3 ~/.claude/hooks/validate-bash.py",
-            "statusMessage": "Validating bash command...",
-            "type": "command"
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/validate-bash.py"
           }
-        ],
-        "matcher": "Bash"
+        ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code pre-task"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "entire hooks claude-code session-end"
+          }
+        ]
       }
     ],
     "SessionStart": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2\u003e/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "entire hooks claude-code session-start"
           }
         ]
       },
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bd prime 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "bd prime 2\u003e/dev/null || true"
           }
         ]
       },
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2\u003e/dev/null || true"
           }
         ]
       },
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/lsp-status.sh 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "bash ~/.claude/hooks/lsp-status.sh 2\u003e/dev/null || true"
           }
         ]
       },
       {
+        "matcher": "compact",
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2\u003e/dev/null || true"
           }
-        ],
-        "matcher": "compact"
+        ]
       },
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bd prime",
-            "type": "command"
+            "type": "command",
+            "command": "bd prime"
           }
-        ],
-        "matcher": ""
+        ]
       }
     ],
     "Stop": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/cross-provider-bridge.sh",
-            "statusMessage": "Cross-provider review...",
-            "timeout": 180,
-            "type": "command"
+            "type": "command",
+            "command": "bash ~/.claude/hooks/cross-provider-bridge.sh"
+          },
+          {
+            "type": "command",
+            "command": "entire hooks claude-code stop"
           }
         ]
       }
@@ -205,10 +252,15 @@
     ],
     "UserPromptSubmit": [
       {
+        "matcher": "",
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2\u003e/dev/null || true",
-            "type": "command"
+            "type": "command",
+            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2\u003e/dev/null || true"
+          },
+          {
+            "type": "command",
+            "command": "entire hooks claude-code user-prompt-submit"
           }
         ]
       }
@@ -247,7 +299,8 @@
       "Bash(rm -rf ~)",
       "Bash(chmod -R 777 *)",
       "Bash(curl * | bash)",
-      "Bash(wget * | bash)"
+      "Bash(wget * | bash)",
+      "Read(./.entire/metadata/**)"
     ]
   },
   "skipDangerousModePermissionPrompt": true,
