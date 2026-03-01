@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# gwt-rename-session.sh - Deliver prompt and rename Claude session
+# gwt-rename-session.sh - Wait for Claude TUI idle and deliver prompt
 #
 # Usage: gwt-rename-session.sh <pane_id> <session_name> [prompt_cmd_file]
 #
-# Sequence: wait for TUI → deliver prompt → wait for session file → /rename
-# Prompt goes first because /rename needs the session JSONL file,
-# which is created when the first prompt is processed.
+# Waits for the TUI to be ready (❯ prompt), then delivers the initial
+# prompt command. Session renaming is handled post-completion by
+# worktree-witness.sh (which waits for the agent to finish).
 #
 # Text and Enter MUST be separate send-keys calls — ink's TUI batches
 # combined calls and the Enter doesn't trigger submission.
@@ -52,11 +52,3 @@ if [ -n "$PROMPT_CMD_FILE" ] && [ -f "$PROMPT_CMD_FILE" ]; then
     sleep 0.2
     tmux send-keys -t "$PANE_ID" Enter
 fi
-
-# Step 2: Wait for session file to be created, then rename
-# The JSONL file is created when the first prompt is processed.
-# /rename needs this file to exist (otherwise ENOENT).
-sleep 5
-tmux send-keys -l -t "$PANE_ID" "/rename $SESSION_NAME"
-sleep 0.2
-tmux send-keys -t "$PANE_ID" Enter

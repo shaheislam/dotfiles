@@ -1561,6 +1561,7 @@ completion_promise: \"TICKET_"$issue_key"_COMPLETE\"
 worktree_path: \"$worktree_path\"
 tmux_session: \"$session_name\"
 tmux_window: \"$window_name\"
+claude_pane_id: \"$claude_pane_id\"
 use_local: $use_local
 local_model: \"$local_model\"
 convoy_id: \"$convoy_id\"
