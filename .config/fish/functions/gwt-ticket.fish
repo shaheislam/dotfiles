@@ -20,6 +20,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --session S     Tmux session name (default: repo name)
     #   --devcon        Use devcontainer for isolation (default: local)
     #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
+    #   --provider P    API provider profile (bedrock, vertex, foundry, gateway, or custom)
     #   --system S      Ticketing system: linear or jira
     #   --quiet, -q     Suppress verbose output (default, writes to .claude/gwt-ticket.log)
     #   --verbose, -v   Show full verbose output (overrides default quiet mode)
@@ -68,6 +69,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l skills
     set -l skills_skip_to 0
     set -l sub_profile ""
+    set -l provider_profile ""
     set -l bridge_mode false
     set -l workflow_template ""
     set -l show_status false
@@ -220,6 +222,21 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set skip_next true
                 else
                     echo "Error: --sub requires a profile name (e.g., work, personal)"
+                    return 1
+                end
+            case --provider
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set provider_profile $argv[$next_i]
+                    set -l conf_file "$HOME/.claude/providers/$provider_profile.conf"
+                    if not test -f "$conf_file"
+                        echo "Error: Provider '$provider_profile' not found ($conf_file)"
+                        echo "Create one: cc-provider create $provider_profile"
+                        return 1
+                    end
+                    set skip_next true
+                else
+                    echo "Error: --provider requires a name (bedrock, vertex, foundry, gateway)"
                     return 1
                 end
             case --local
@@ -489,6 +506,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --prompt-suffix S    Text to append to prompt"
         echo "  --skill NAME [...]   Invoke skill(s) at start of prompt (e.g., --skill bestpractice tdd)"
         echo "  --sub NAME           Claude subscription profile (uses ~/.claude-NAME config dir)"
+        echo "  --provider NAME      API provider profile (bedrock, vertex, foundry, gateway, or custom)"
         echo "  --local              Use local Ollama model (default: qwen3-coder)"
         echo "  --model MODEL        Use specific Ollama model (implies --local)"
         echo "  --mount, -m          Add directory mount (repeatable)"
@@ -533,6 +551,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo ""
         echo "  # Use a specific Claude subscription"
         echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --sub personal"
+        echo ""
+        echo "  # Use Bedrock instead of direct API"
+        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --provider bedrock"
+        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --provider vertex --sub work"
         echo ""
         echo "  # Use feature-dev instead of ralph-loop"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Description\" --command /feature-dev:feature-dev"
@@ -1117,6 +1139,28 @@ $prompt_suffix"
         echo "" >>$launch_script
     end
 
+    # Set provider env vars if --provider specified
+    if test -n "$provider_profile"
+        set -l conf_file "$HOME/.claude/providers/$provider_profile.conf"
+        echo "# Provider: $provider_profile" >>$launch_script
+        while read -l line
+            # Skip comments and blank lines
+            if string match -qr '^\s*#' "$line"; or string match -qr '^\s*$' "$line"
+                continue
+            end
+            # Parse KEY=VALUE (strip optional 'export ' prefix)
+            set -l kv (string replace -r '^\s*export\s+' '' "$line")
+            set -l key (string split -m1 '=' "$kv")[1]
+            set -l val (string split -m1 '=' "$kv")[2]
+            # Strip surrounding quotes from value
+            set val (string trim -c "'" (string trim -c '"' "$val"))
+            if test -n "$key" -a -n "$val"
+                echo "set -gx $key $val" >>$launch_script
+            end
+        end <"$conf_file"
+        echo "" >>$launch_script
+    end
+
     # Set CROSS_PROVIDER_BRIDGE if bridge mode enabled
     if $bridge_mode
         echo "set -gx CROSS_PROVIDER_BRIDGE 1" >>$launch_script
@@ -1297,6 +1341,22 @@ $prompt_suffix"
         # Pass CLAUDE_CONFIG_DIR env var into container for subscription profile
         if test -n "$sub_profile"
             set devcon_up_cmd "$devcon_up_cmd -E CLAUDE_CONFIG_DIR=/home/node/.claude-$sub_profile"
+        end
+        # Pass provider env vars into container
+        if test -n "$provider_profile"
+            set -l conf_file "$HOME/.claude/providers/$provider_profile.conf"
+            while read -l line
+                if string match -qr '^\s*#' "$line"; or string match -qr '^\s*$' "$line"
+                    continue
+                end
+                set -l kv (string replace -r '^\s*export\s+' '' "$line")
+                set -l key (string split -m1 '=' "$kv")[1]
+                set -l val (string split -m1 '=' "$kv")[2]
+                set val (string trim -c "'" (string trim -c '"' "$val"))
+                if test -n "$key" -a -n "$val"
+                    set devcon_up_cmd "$devcon_up_cmd -E $key=$val"
+                end
+            end <"$conf_file"
         end
         if $bridge_mode
             set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_BRIDGE=1"

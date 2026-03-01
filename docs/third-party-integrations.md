@@ -21,8 +21,12 @@ The `cc-provider` Fish function manages switching Claude Code between API provid
 ### Integration with Other Commands
 
 ```fish
-# Use provider in gwt-ticket (set CLAUDE_PROVIDER before launch)
-cc-provider use bedrock && gwt-ticket "Fix bug" "Details"
+# Use provider in gwt-ticket (recommended — passes env vars to spawned session)
+gwt-ticket ENG-123 "Fix bug" "Details" --provider bedrock
+gwt-ticket ENG-123 "Fix bug" "Details" --provider vertex --sub work
+
+# Activate provider for current shell
+cc-provider use bedrock && claude
 
 # One-off via env var
 CLAUDE_PROVIDER=bedrock claude

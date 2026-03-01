@@ -232,6 +232,7 @@ Karabiner-Elements: `.config/karabiner/karabiner.json` (stow managed). Caps Lock
 Switch Claude Code between API providers: direct (default), Amazon Bedrock, Google Vertex AI, Microsoft Foundry, or LLM gateways. Docs: `docs/third-party-integrations.md`.
 
 **Fish command**: `cc-provider use|off|status|list|create|edit|env|help`.
+**gwt-ticket flag**: `--provider NAME` passes provider env vars to spawned Claude session.
 **Profile directory**: `~/.claude/providers/` (`.conf` files with `KEY=VALUE` env vars).
 **Template script**: `scripts/cc-provider-templates.sh` (generates bedrock/vertex/foundry/gateway profiles).
 **Tests**: `scripts/test-filter.sh integrations`
@@ -444,7 +445,7 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 **Plan template**: `templates/workflows/plan-review.toml`.
 
 ### Recent Updates
-- **2026-03-01**: Added Third-Party Provider Integrations (cc-provider Fish function, Bedrock/Vertex/Foundry/Gateway profiles, enterprise network config, docs, 23-test suite)
+- **2026-03-01**: Added Third-Party Provider Integrations (cc-provider Fish function, gwt-ticket `--provider` flag, Bedrock/Vertex/Foundry/Gateway profiles, enterprise network config, docs, 23-test suite)
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills

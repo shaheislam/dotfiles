@@ -649,6 +649,12 @@ test_integrations() {
     # CLAUDE.md integration
     run_test "CLAUDE.md documents cc-provider" "grep -q 'cc-provider' '$DOTFILES_ROOT/CLAUDE.md'"
 
+    # gwt-ticket --provider integration
+    run_test "gwt-ticket has --provider flag" "grep -q '\-\-provider' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket --provider parses conf file" "grep -q 'provider_profile' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket --provider in help text" "grep -q 'provider.*bedrock.*vertex.*foundry' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket --provider in examples" "grep -q 'provider bedrock' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+
     rm -f "$tmp_conf" 2>/dev/null
 }
 
