@@ -16,30 +16,49 @@ PANE_ID="${1:?Usage: gwt-rename-session.sh <pane_id> <session_name> [prompt_cmd_
 WINDOW_NAME="${2:?Missing session name}"
 PROMPT_CMD_FILE="${3:-}"
 
-# Wait for Claude TUI to show the ❯ prompt indicator (fully initialized,
-# all SessionStart hooks complete, ready for input).
-# $1 = max wait seconds, $2 = required consecutive idle seconds (default: 2)
+# Wait for Claude TUI to show the ❯ prompt indicator.
+# Uses a sliding window: requires ❯ in at least $threshold out of
+# the last $window checks. This tolerates brief TUI redraws that
+# momentarily hide ❯ while still requiring sustained idle.
+# $1 = max wait seconds, $2 = window size, $3 = threshold hits needed
 wait_for_idle() {
     local max_wait="${1:-90}"
-    local required="${2:-2}"
+    local window="${2:-4}"
+    local threshold="${3:-3}"
     local wait_count=0
-    local consecutive=0
+
+    # Ring buffer: 0=not idle, 1=idle
+    local -a ring=()
+    local hits=0
+
     while [ $wait_count -lt "$max_wait" ]; do
+        local is_idle=0
         if tmux capture-pane -t "$PANE_ID" -p 2>/dev/null | grep -qF '❯'; then
-            consecutive=$((consecutive + 1))
-            if [ $consecutive -ge "$required" ]; then
-                return 0
-            fi
-        else
-            consecutive=0
+            is_idle=1
         fi
+
+        # Evict oldest entry if ring is full
+        if [ ${#ring[@]} -ge "$window" ]; then
+            hits=$((hits - ring[0]))
+            ring=("${ring[@]:1}")
+        fi
+
+        ring+=("$is_idle")
+        hits=$((hits + is_idle))
+
+        # Check threshold once window is full
+        if [ ${#ring[@]} -ge "$window" ] && [ $hits -ge "$threshold" ]; then
+            return 0
+        fi
+
         sleep 1
         wait_count=$((wait_count + 1))
     done
     return 1
 }
 
-if ! wait_for_idle 90 2; then
+# Initial startup: ❯ in 3 out of 4 checks (lenient, just needs to appear)
+if ! wait_for_idle 90 4 3; then
     echo "Warning: Claude TUI did not become idle within 90s, skipping" >&2
     exit 0
 fi
@@ -68,9 +87,10 @@ done
 
 # Now wait for the ralph-loop to finish (TUI returns to idle ❯)
 # Long timeout — ralph-loop can run for hours.
-# Require 15 consecutive seconds of idle to avoid false triggers from brief
-# pauses between ralph-loop iterations or during context compaction.
-if wait_for_idle 14400 15; then
+# Require ❯ in 10 out of 12 checks (~83%). This avoids false triggers from
+# brief inter-iteration pauses (1-3s = at most 3/12 = 25%) while tolerating
+# occasional TUI redraws that briefly hide ❯ during true idle.
+if wait_for_idle 14400 12 10; then
     sleep 1
     tmux send-keys -l -t "$PANE_ID" "/rename $WINDOW_NAME"
     sleep 0.2
