@@ -939,6 +939,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Auto-enable checkpoints for worktree (via entire CLI)
     if not $no_checkpoints
         if command -q entire
+            # Copy entire settings to worktree (gitignored, not inherited via git)
+            # Prevents telemetry consent prompt from hanging in non-interactive context
+            if test -f "$repo_root/.entire/settings.json"
+                mkdir -p "$worktree_path/.entire"
+                cp "$repo_root/.entire/settings.json" "$worktree_path/.entire/settings.json"
+            end
             pushd $worktree_path
             set -l entire_args enable
             if test -n "$ckpt_agent"
@@ -1269,19 +1275,19 @@ $prompt_suffix"
         echo '' >>$launch_script
     end
 
-    # Write prompt command to file — used as CLI argument for reliable prompt delivery
+    # Write prompt command to file as single line (for send-keys delivery via rename script)
+    # Newlines collapsed to spaces — Claude handles single-line instructions fine
     set -l prompt_cmd_file "$instance_env/prompt-cmd.txt"
+    set -l oneline_prompt (string replace -a \n ' ' -- "$prompt")
     if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-        printf '%s' "$slash_command \"$prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
+        printf '%s' "$slash_command \"$oneline_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
     else
-        printf '%s' "$slash_command \"$prompt\"" >$prompt_cmd_file
+        printf '%s' "$slash_command \"$oneline_prompt\"" >$prompt_cmd_file
     end
 
-    # Start Claude with the prompt as a CLI argument for reliable delivery
-    # (tmux paste-buffer -p is unreliable with Claude Code's ink-based TUI)
-    # Rename is handled separately by gwt-rename-session.sh in the background
-    echo 'set -l _gwt_prompt (string collect < "'$prompt_cmd_file'")' >>$launch_script
-    echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' "$_gwt_prompt"' >>$launch_script
+    # Start Claude without a prompt argument — prompt is delivered via send-keys
+    # in gwt-rename-session.sh (after /rename, so session name is set first)
+    echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path >>$launch_script
 
     if not $use_devcon
         # Pane stays open for witness to use (conflict resolution, debugging)
@@ -1474,7 +1480,7 @@ $prompt_suffix"
         if not test -x "$rename_script_devcon"
             set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
         end
-        echo "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' &" >>$setup_script
+        echo "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &" >>$setup_script
         echo disown >>$setup_script
         if test (count $nvim_ai_files) -gt 0
             echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" >>$setup_script
@@ -1517,7 +1523,7 @@ $prompt_suffix"
         if not test -x "$rename_script"
             set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
         end
-        bash "$rename_script" "$claude_pane_id" "$window_name" &
+        bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
         disown
     end
 
