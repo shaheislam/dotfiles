@@ -25,11 +25,11 @@
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/macos_notification.py 2\u003e/dev/null || true",
+            "command": "python3 ~/.claude/hooks/macos_notification.py 2>/dev/null || true",
             "type": "command"
           },
           {
-            "command": "bash ~/.claude/hooks/log-notification.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -40,7 +40,7 @@
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2\u003e/dev/null || true",
+            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -49,11 +49,11 @@
       {
         "hooks": [
           {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2\u003e/dev/null || true",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2>/dev/null || true",
             "type": "command"
           },
           {
-            "command": "bash ~/.claude/hooks/file-modified.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/file-modified.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -64,7 +64,7 @@
       {
         "hooks": [
           {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-failure.py 2\u003e/dev/null || true",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-failure.py 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -75,7 +75,7 @@
       {
         "hooks": [
           {
-            "command": "bd sync 2\u003e/dev/null || true",
+            "command": "bd sync 2>/dev/null || true",
             "type": "command"
           }
         ]
@@ -111,7 +111,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2\u003e/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2>/dev/null || true",
             "type": "command"
           }
         ]
@@ -119,7 +119,7 @@
       {
         "hooks": [
           {
-            "command": "bd prime 2\u003e/dev/null || true",
+            "command": "bd prime 2>/dev/null || true",
             "type": "command"
           }
         ]
@@ -127,7 +127,7 @@
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2\u003e/dev/null || true",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2>/dev/null || true",
             "type": "command"
           }
         ]
@@ -135,7 +135,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/lsp-status.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true",
             "type": "command"
           }
         ]
@@ -143,7 +143,7 @@
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2\u003e/dev/null || true",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -163,15 +163,6 @@
       {
         "hooks": [
           {
-            "command": "bash ~/dotfiles/scripts/hooks/checkpoint-capture.sh 2\u003e/dev/null || true",
-            "timeout": 10,
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
             "command": "bash ~/.claude/hooks/cross-provider-bridge.sh",
             "statusMessage": "Cross-provider review...",
             "timeout": 180,
@@ -184,15 +175,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/dotfiles/scripts/hooks/checkpoint-pre-prompt.sh 2\u003e/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2>/dev/null || true",
             "type": "command"
           }
         ]

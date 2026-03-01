@@ -5,10 +5,10 @@
 # Helper function to get git status files
 function __git_fzf_get_files
     set -l mode $argv[1]
-    if test "$mode" = "add"
+    if test "$mode" = add
         # Show untracked and modified files (not staged)
         git status --short | grep -E '^\?\?|^.[MD]' | awk '{print $2}'
-    else if test "$mode" = "reset"
+    else if test "$mode" = reset
         # Show staged files
         git diff --cached --name-only
     else
@@ -79,7 +79,7 @@ function _git_fzf_commit_actions
             --bind="alt-s:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --squash={} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-w:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --fixup=reword:{} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-v:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git revert < /dev/tty > /dev/tty)+abort" \
-            --bind="alt-k:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs bash $HOME/dotfiles/scripts/checkpoints.sh show 2>/dev/null || echo 'No checkpoint for this commit')" \
+            --bind="alt-k:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs entire explain 2>/dev/null || echo 'No checkpoint for this commit')" \
             --bind="ctrl-/:toggle-preview" \
             --bind="ctrl-y:preview-up" \
             --bind="ctrl-e:preview-down" \
@@ -258,8 +258,7 @@ end
 function _git_fzf_blame_file
     set -l file $argv[1]
 
-    git blame --color-by-age --color-lines $file 2>/dev/null | \
-    fzf --ansi \
+    git blame --color-by-age --color-lines $file 2>/dev/null | fzf --ansi \
         --border-label="🔍 Git Blame: $file" \
         --header="ENTER (show commit) | ALT-E (nvim) | ALT-C (checkout) | ALT-P (parent blame) | CTRL-/ (preview)" \
         --preview="echo {} | awk '{print \$1}' | sed 's/\\^//' | xargs git show --color=always 2>/dev/null" \
@@ -282,15 +281,15 @@ function _git_fzf_checkpoint_actions
         return 1
     end
 
-    if not git show-ref --quiet refs/heads/checkpoints/v1 2>/dev/null
-        echo "No checkpoints found (no checkpoints/v1 branch)"
+    if not git show-ref --quiet refs/heads/entire/checkpoints/v1 2>/dev/null
+        echo "No checkpoints found (no entire/checkpoints/v1 branch)"
         return 0
     end
 
-    # Get checkpoint SHAs from orphan branch
+    # Get checkpoint SHAs from entire's orphan branch
     set -l ckpt_shas
-    for meta in (git ls-tree -r --name-only checkpoints/v1 2>/dev/null | grep 'metadata.json$')
-        set -l sha (git show "checkpoints/v1:$meta" 2>/dev/null | jq -r '.commit_sha // empty' 2>/dev/null)
+    for meta in (git ls-tree -r --name-only entire/checkpoints/v1 2>/dev/null | grep 'metadata.json$')
+        set -l sha (git show "entire/checkpoints/v1:$meta" 2>/dev/null | jq -r '.commit_sha // .commit // empty' 2>/dev/null)
         if test -n "$sha"
             set -a ckpt_shas $sha
         end
@@ -309,9 +308,9 @@ function _git_fzf_checkpoint_actions
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="✦ Checkpoints" \
             --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-V (revert) | ALT-G (git show) | CTRL-/ (preview)" \
-            --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs bash $HOME/dotfiles/scripts/checkpoints.sh show 2>/dev/null || echo 'No checkpoint data'" \
+            --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs entire explain 2>/dev/null || echo 'No checkpoint data'" \
             --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
-            --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs bash $HOME/dotfiles/scripts/checkpoints.sh show 2>/dev/null | less -R < /dev/tty > /dev/tty)" \
+            --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs entire explain 2>/dev/null | less -R < /dev/tty > /dev/tty)" \
             --bind="alt-e:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show | nvim -c 'set ft=git' - < /dev/tty > /dev/tty)" \
             --bind="alt-g:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always)" \
             --bind="alt-c:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git checkout < /dev/tty > /dev/tty)+abort" \

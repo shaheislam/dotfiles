@@ -903,14 +903,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
 
-    # Auto-enable checkpoints for worktree
+    # Auto-enable checkpoints for worktree (via entire CLI)
     if not $no_checkpoints
-        if test -f ~/dotfiles/scripts/checkpoints.sh
+        if command -q entire
             pushd $worktree_path
             if $quiet_mode
-                bash ~/dotfiles/scripts/checkpoints.sh enable >/dev/null 2>&1; or true
+                entire enable >/dev/null 2>&1; or true
             else
-                bash ~/dotfiles/scripts/checkpoints.sh enable 2>/dev/null; or true
+                entire enable 2>/dev/null; or true
             end
             popd
         end
