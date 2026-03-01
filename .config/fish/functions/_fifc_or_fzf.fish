@@ -31,6 +31,9 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
         else if test "$cmd[1]" = ssh
             # Use ssh host fzf picker
             _ssh_fzf_tab_complete
+        else if test "$cmd[1]" = claude
+            # Use claude session picker (only activates after --resume / -r)
+            _claude_resume_fzf_tab_complete
         else if test "$cmd[1]" = gwt-ticket; or test "$cmd[1]" = gwtt
             # Use gwt-ticket skill multiselect picker (only activates after --skill)
             _gwt_ticket_fzf_tab_complete
