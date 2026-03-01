@@ -729,9 +729,9 @@ NMHEOF
         # Set release channel to stable (receives updates ~1 week after latest, skips regressions)
         # Reference: https://code.claude.com/docs/en/setup#configure-release-channel
         if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.autoUpdatesChannel = "stable"' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+            jq '.autoUpdatesChannel = "stable" | .autoUpdates = true' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
                 mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                print_success "Claude Code release channel set to stable" || true
+                print_success "Claude Code auto-updates enabled (stable channel)" || true
         fi
 
         # Auto-compact: left enabled (default) since 2.1.21 fixed early triggering.
