@@ -1120,6 +1120,12 @@ phase_8_dotfiles() {
     if command_exists git; then
         git config --global init.templateDir ~/.config/git/templates
         log_verbose "Git template directory configured"
+
+        # Register union-doc merge driver for documentation files (CLAUDE.md, AGENTS.md)
+        # Prevents merge conflicts when multiple worktrees append to the same doc files
+        git config --global merge.union-doc.name "Union merge for documentation files"
+        git config --global merge.union-doc.driver "$DOTFILES_ROOT/scripts/merge-driver-union.sh %A %O %B %L %P"
+        log_verbose "Union-doc merge driver registered"
     fi
 
     # Setup local git excludes (.gitignore_local symlinks) for existing repos

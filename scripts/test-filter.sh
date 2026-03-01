@@ -687,6 +687,7 @@ lsp) test_lsp ;;
 nvim-bridge) test_nvim_bridge ;;
 remote-control) test_remote_control ;;
 settings) test_settings ;;
+merge-driver) source "$SCRIPT_DIR/tests/test-merge-driver.sh" ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
