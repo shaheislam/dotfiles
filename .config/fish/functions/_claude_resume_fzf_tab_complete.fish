@@ -8,6 +8,30 @@ function _claude_resume_fzf_tab_complete -d "FZF-powered claude --resume tab com
         return
     end
 
+    # --model: show model aliases with full names
+    if test (count $cmd) -ge 2; and test "$cmd[-1]" = --model
+        set -l entries \
+            "sonnet\tClaude Sonnet 4.6 (fast, balanced)" \
+            "opus\tClaude Opus 4.6 (most capable)" \
+            "haiku\tClaude Haiku 4.5 (fastest, lightweight)"
+        set -l result (printf '%s\n' $entries \
+            | fzf \
+                --exit-0 \
+                --no-multi \
+                -d '\t' \
+                --with-nth=1.. \
+                --prompt='model ❯ ' \
+                --header='alias / description' \
+                --query="$token")
+        if test -n "$result"
+            set -l model (printf '%s' "$result" | cut -f1)
+            commandline --replace --current-token -- "$model"
+            commandline --insert ' '
+        end
+        commandline --function repaint
+        return
+    end
+
     # Detect if previous token is --resume or -r
     set -l after_resume false
     if test (count $cmd) -ge 2
