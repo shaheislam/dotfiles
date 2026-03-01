@@ -228,6 +228,26 @@ Local DNS ad blocking via Colima + Docker. Location: `scripts/pihole/`. Fish wra
 ### Keyboard Remapping
 Karabiner-Elements: `.config/karabiner/karabiner.json` (stow managed). Caps Lock ↔ Escape swap. Edit via GUI app.
 
+### Third-Party Provider Integrations
+Switch Claude Code between API providers: direct (default), Amazon Bedrock, Google Vertex AI, Microsoft Foundry, or LLM gateways. Docs: `docs/third-party-integrations.md`.
+
+**Fish command**: `cc-provider use|off|status|list|create|edit|env|help`.
+**Profile directory**: `~/.claude/providers/` (`.conf` files with `KEY=VALUE` env vars).
+**Template script**: `scripts/cc-provider-templates.sh` (generates bedrock/vertex/foundry/gateway profiles).
+**Tests**: `scripts/test-filter.sh integrations`
+
+| Provider | Enable Variable | Auth |
+|----------|----------------|------|
+| Direct (default) | None | claude.ai OAuth or `ANTHROPIC_API_KEY` |
+| Amazon Bedrock | `CLAUDE_CODE_USE_BEDROCK=1` | AWS credentials (CLI, SSO, env, API key) |
+| Google Vertex AI | `CLAUDE_CODE_USE_VERTEX=1` | GCP credentials (`gcloud auth`) |
+| Microsoft Foundry | `CLAUDE_CODE_USE_FOUNDRY=1` | Azure API key or Entra ID |
+| LLM Gateway | `ANTHROPIC_BASE_URL=<url>` | `ANTHROPIC_AUTH_TOKEN` or `apiKeyHelper` |
+
+**Model pinning**: Always set `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`, `ANTHROPIC_DEFAULT_HAIKU_MODEL` for cloud providers to prevent breakage on new model releases.
+
+**Enterprise network**: `HTTPS_PROXY` (proxy), `NODE_EXTRA_CA_CERTS` (custom CA), `CLAUDE_CODE_CLIENT_CERT` + `CLAUDE_CODE_CLIENT_KEY` (mTLS).
+
 ### Claude Code Hooks
 
 Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/claude-code-hooks.md` for complete reference.
@@ -424,6 +444,7 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 **Plan template**: `templates/workflows/plan-review.toml`.
 
 ### Recent Updates
+- **2026-03-01**: Added Third-Party Provider Integrations (cc-provider Fish function, Bedrock/Vertex/Foundry/Gateway profiles, enterprise network config, docs, 23-test suite)
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills

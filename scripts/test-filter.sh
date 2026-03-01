@@ -61,6 +61,7 @@ list_groups() {
     echo "  nvim-bridge   - Neovim-Claude Code bridge"
     echo "  remote-control - Claude Code Remote Control"
     echo "  openclaw      - OpenClaw integration"
+    echo "  integrations  - Third-party provider integrations"
     echo "  all           - Run all groups"
 }
 
@@ -610,6 +611,47 @@ test_agents_md() {
     fi
 }
 
+test_integrations() {
+    echo -e "${BLUE}--- Third-Party Integrations Tests ---${NC}"
+
+    # Fish function
+    run_test "cc-provider Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/cc-provider.fish' ]"
+    if command -v fish &>/dev/null; then
+        run_test "cc-provider Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/cc-provider.fish'"
+        run_test "cc-provider function loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/cc-provider.fish && functions -q cc-provider'"
+    fi
+
+    # Template script
+    run_test "Provider template script exists" "[ -f '$DOTFILES_ROOT/scripts/cc-provider-templates.sh' ]"
+    run_test "Provider template script executable" "[ -x '$DOTFILES_ROOT/scripts/cc-provider-templates.sh' ]"
+    run_test "Provider template script valid bash" "bash -n '$DOTFILES_ROOT/scripts/cc-provider-templates.sh'"
+
+    # Template generation
+    local tmp_conf="/tmp/test-cc-provider-$$.conf"
+    for provider in bedrock vertex foundry gateway; do
+        run_test "Template generates $provider profile" "'$DOTFILES_ROOT/scripts/cc-provider-templates.sh' $provider '$tmp_conf' && [ -s '$tmp_conf' ]"
+        run_test "$provider template has provider comment" "grep -q '# provider: $provider' '$tmp_conf'"
+        rm -f "$tmp_conf" 2>/dev/null
+    done
+
+    # Documentation
+    run_test "Third-party integrations doc exists" "[ -f '$DOTFILES_ROOT/docs/third-party-integrations.md' ]"
+    run_test "Doc covers Bedrock" "grep -q 'Amazon Bedrock' '$DOTFILES_ROOT/docs/third-party-integrations.md'"
+    run_test "Doc covers Vertex" "grep -q 'Google Vertex' '$DOTFILES_ROOT/docs/third-party-integrations.md'"
+    run_test "Doc covers Foundry" "grep -q 'Microsoft Foundry' '$DOTFILES_ROOT/docs/third-party-integrations.md'"
+    run_test "Doc covers LLM Gateway" "grep -q 'LLM Gateway' '$DOTFILES_ROOT/docs/third-party-integrations.md'"
+    run_test "Doc covers mTLS" "grep -q 'mTLS' '$DOTFILES_ROOT/docs/third-party-integrations.md'"
+
+    # Setup.sh integration
+    run_test "setup.sh references provider profiles" "grep -q 'cc-provider' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh creates providers directory" "grep -q 'providers' '$DOTFILES_ROOT/scripts/setup.sh'"
+
+    # CLAUDE.md integration
+    run_test "CLAUDE.md documents cc-provider" "grep -q 'cc-provider' '$DOTFILES_ROOT/CLAUDE.md'"
+
+    rm -f "$tmp_conf" 2>/dev/null
+}
+
 print_summary() {
     echo ""
     echo -e "${BLUE}--- Summary ---${NC}"
@@ -641,6 +683,7 @@ lsp) test_lsp ;;
 nvim-bridge) test_nvim_bridge ;;
 remote-control) test_remote_control ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
+integrations) test_integrations ;;
 all)
     test_fish
     test_stow
@@ -655,6 +698,7 @@ all)
     test_lsp
     test_nvim_bridge
     test_remote_control
+    test_integrations
     # OpenClaw tests run from their own script (separate counters)
     echo ""
     source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
