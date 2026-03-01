@@ -1,7 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-<<<<<<< HEAD
-<<<<<<< HEAD
   "permissions": {
     "allow": [
       "Bash(git status *)",
@@ -92,217 +90,218 @@
     "hookify@claude-code-plugins": true,
     "learning-output-style@claude-code-plugins": true,
     "plugin-dev@claude-code-plugins": true,
-    "pr-review-toolkit@claude-code-plugins": true,
-    "ralph-wiggum@claude-code-plugins": true,
-    "security-guidance@claude-code-plugins": true,
-    "superpowers@superpowers-marketplace": true,
-    "terraform-skill@antonbabenko": true
-  },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "hooks": {
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "command": "python3 ~/.claude/hooks/macos_notification.py 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": "Read"
-      },
-      {
-        "hooks": [
-          {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "bash ~/.claude/hooks/file-modified.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": "Edit|Write"
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "hooks": [
-          {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-failure.py 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "command": "bd sync 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "command": "python3 ~/.claude/hooks/use_bun.py",
-            "statusMessage": "Checking package manager...",
-            "type": "command"
-          },
-          {
-            "command": "python3 ~/.claude/hooks/validate-bash.py",
-            "statusMessage": "Validating bash command...",
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bd prime 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": "compact"
-      },
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "SubagentStart": [
-      {
-        "hooks": [
-          {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "command": "bash ~/dotfiles/scripts/hooks/checkpoint-capture.sh 2>/dev/null || true",
-            "timeout": 10,
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash ~/.claude/hooks/cross-provider-bridge.sh",
-            "statusMessage": "Cross-provider review...",
-            "timeout": 180,
-            "type": "command"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "command": "bash ~/dotfiles/scripts/hooks/checkpoint-pre-prompt.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      }
-    ]
-  },
-  "skipDangerousModePermissionPrompt": true,
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/dotfiles/scripts/claude-statusline.sh"
-  }
+   "pr-review-toolkit@claude-code-plugins": true,
+   "ralph-wiggum@claude-code-plugins": true,
+   "security-guidance@claude-code-plugins": true,
+   "superpowers@superpowers-marketplace": true,
+   "terraform-skill@antonbabenko": true
+ },
+ "env": {
+   "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+ },
+ "hooks": {
+   "Notification": [
+     {
+       "hooks": [
+         {
+           "command": "python3 ~/.claude/hooks/macos_notification.py 2>/dev/null || true",
+           "type": "command"
+         },
+         {
+           "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ],
+       "matcher": ""
+     }
+   ],
+   "PostToolUse": [
+     {
+       "hooks": [
+         {
+           "command": "python3 ~/.claude/hooks/deepwiki-context.py 2>/dev/null || true",
+           "type": "command"
+         }
+       ],
+       "matcher": "Read"
+     },
+     {
+       "hooks": [
+         {
+           "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2>/dev/null || true",
+           "type": "command"
+         },
+         {
+           "command": "bash ~/.claude/hooks/file-modified.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ],
+       "matcher": "Edit|Write"
+     }
+   ],
+   "PostToolUseFailure": [
+     {
+       "hooks": [
+         {
+           "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-failure.py 2>/dev/null || true",
+           "type": "command"
+         }
+       ],
+       "matcher": ""
+     }
+   ],
+   "PreCompact": [
+     {
+       "hooks": [
+         {
+           "command": "bd sync 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     },
+     {
+       "hooks": [
+         {
+           "command": "bd prime",
+           "type": "command"
+         }
+       ],
+       "matcher": ""
+     }
+   ],
+   "PreToolUse": [
+     {
+       "hooks": [
+         {
+           "command": "python3 ~/.claude/hooks/use_bun.py",
+           "statusMessage": "Checking package manager...",
+           "type": "command"
+         },
+         {
+           "command": "python3 ~/.claude/hooks/validate-bash.py",
+           "statusMessage": "Validating bash command...",
+           "type": "command"
+         }
+       ],
+       "matcher": "Bash"
+     }
+   ],
+   "SessionStart": [
+     {
+       "hooks": [
+         {
+           "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     },
+     {
+       "hooks": [
+         {
+           "command": "bd prime 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     },
+     {
+       "hooks": [
+         {
+           "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     },
+     {
+       "hooks": [
+         {
+           "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     },
+     {
+       "hooks": [
+         {
+           "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ],
+       "matcher": "compact"
+     },
+     {
+       "hooks": [
+         {
+           "command": "bd prime",
+           "type": "command"
+         }
+       ],
+       "matcher": ""
+     }
+   ],
+   "SubagentStart": [
+     {
+       "hooks": [
+         {
+           "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     }
+   ],
+   "SubagentStop": [
+     {
+       "hooks": [
+         {
+           "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     }
+   ],
+   "Stop": [
+     {
+       "hooks": [
+         {
+           "command": "bash ~/dotfiles/scripts/hooks/checkpoint-capture.sh 2>/dev/null || true",
+           "timeout": 10,
+           "type": "command"
+         }
+       ]
+     },
+     {
+       "hooks": [
+         {
+           "command": "bash ~/.claude/hooks/cross-provider-bridge.sh",
+           "statusMessage": "Cross-provider review...",
+           "timeout": 180,
+           "type": "command"
+         }
+       ]
+     }
+   ],
+   "UserPromptSubmit": [
+     {
+       "hooks": [
+         {
+           "command": "bash ~/dotfiles/scripts/hooks/checkpoint-pre-prompt.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     },
+     {
+       "hooks": [
+         {
+           "command": "bash ~/.claude/hooks/nvim-bridge.sh 2>/dev/null || true",
+           "type": "command"
+         }
+       ]
+     }
+   ]
+ },
+ "skipDangerousModePermissionPrompt": true,
+ "statusLine": {
+   "type": "command",
+   "command": "bash ~/dotfiles/scripts/claude-statusline.sh"
+ }
+ "skipDangerousModePermissionPrompt": true
 }

@@ -686,11 +686,16 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 
 ### Recent Updates
 <<<<<<< HEAD
+<<<<<<< HEAD
 - **2026-03-01**: Added Claude Code CLI Reference Guide (`docs/claude-code-cli-reference.md`) with complete CLI commands, flags, permissions, subagent config, and dotfiles integration map
 ||||||| 48897be
 =======
 - **2026-03-01**: Added Claude Code Settings best practices ($schema validation, permission rules, sandbox config, attribution suppression, effort level env var)
 >>>>>>> settings
+||||||| 48897be
+=======
+- **2026-03-01**: Migrated Claude Code from Homebrew cask to native installer (auto-updates, no Node.js dependency, `stable` release channel, `claude doctor` verification, removed legacy wrapper script)
+>>>>>>> setup
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills
