@@ -1087,9 +1087,6 @@ $prompt_suffix"
     # Write launch script to instance env dir (guaranteed mount inside container)
     set -l launch_script "$instance_env/launch-claude.fish"
 
-    # Build launch script with proper escaping
-    set -l escaped_prompt (string escape -- "$prompt")
-
     # Resolve main repo root for --add-dir (inherits CLAUDE.md into worktree sessions)
     set -l resolved_repo_root (realpath $repo_root)
 
@@ -1104,7 +1101,6 @@ $prompt_suffix"
     # Write script using echo to avoid printf escape issues
     # When using devcon, this script runs INSIDE the container via devcontainer exec
     echo '#!/usr/bin/env fish' >$launch_script
-    echo "set -l prompt $escaped_prompt" >>$launch_script
     echo "" >>$launch_script
 
     # Set CLAUDE_CONFIG_DIR if subscription profile specified
@@ -1214,16 +1210,17 @@ $prompt_suffix"
         echo '' >>$launch_script
     end
 
-    # Build the claude command based on slash_command
-    # --add-dir passes the main repo root so worktree sessions inherit its CLAUDE.md
-    # ralph-loop needs special args, others just get the prompt
-    # -- separates flags from positional args (prompt starts with / which --add-dir would consume)
+    # Write prompt command to file for deferred delivery via gwt-rename-session.sh
+    # This separates Claude startup from prompt delivery, allowing /rename to run first
+    set -l prompt_cmd_file "$instance_env/prompt-cmd.txt"
     if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\" --max-iterations '$max_iterations' --completion-promise '$completion_promise'"' >>$launch_script
+        printf '%s' "$slash_command \"$prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
     else
-        # For other commands, just pass the prompt as the argument
-        echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' -- "'$slash_command' \\"$prompt\\""' >>$launch_script
+        printf '%s' "$slash_command \"$prompt\"" >$prompt_cmd_file
     end
+
+    # Start Claude without a prompt — rename + prompt delivered by gwt-rename-session.sh
+    echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path >>$launch_script
 
     if not $use_devcon
         # Pane stays open for witness to use (conflict resolution, debugging)
@@ -1391,10 +1388,17 @@ $prompt_suffix"
         echo "    exit 1" >>$setup_script
         echo end >>$setup_script
         echo "sleep 2" >>$setup_script
-        echo "tmux split-window -hb -p 35 -c '$worktree_path' 'fish $claude_pane_script'" >>$setup_script
+        echo "set -l claude_pane_id (tmux split-window -hb -p 35 -c '$worktree_path' -P -F '#{pane_id}' 'fish $claude_pane_script')" >>$setup_script
         echo "tmux last-pane" >>$setup_script
         echo "tmux split-window -v -p 30 -c '$worktree_path'" >>$setup_script
         echo "tmux select-pane -U" >>$setup_script
+        # Background rename + prompt delivery for devcon path
+        set -l rename_script_devcon "$HOME/dotfiles/scripts/gwt-rename-session.sh"
+        if not test -x "$rename_script_devcon"
+            set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
+        end
+        echo "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &" >>$setup_script
+        echo disown >>$setup_script
         if test (count $nvim_ai_files) -gt 0
             echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" >>$setup_script
         else
@@ -1414,8 +1418,9 @@ $prompt_suffix"
         # └──────────────┴──────────────┘
         # Step 1: Split horizontally - Claude on left (35%), current pane stays right
         # -hb = new pane before (left), -p 35 = 35% width
+        # -P -F captures the new pane's ID for gwt-rename-session.sh targeting
         # Note: split-window -c sets working dir for new panes; original pane keeps its cwd
-        tmux split-window -t "$session_name:$window_name" -hb -p 35 -c "$worktree_path" "fish $launch_script"
+        set -l claude_pane_id (tmux split-window -t "$session_name:$window_name" -hb -p 35 -c "$worktree_path" -P -F '#{pane_id}' "fish $launch_script")
         # After split: pane layout is [Claude(left,active)] [shell(right)]
         # Step 2: Switch to right pane and split it vertically for diffview + terminal
         tmux last-pane -t "$session_name:$window_name"
@@ -1429,6 +1434,15 @@ $prompt_suffix"
         else
             tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
         end
+
+        # Step 4: Rename Claude session and deliver task prompt
+        # Runs in background: waits for Claude TUI to init, sends /rename, then pastes prompt
+        set -l rename_script "$HOME/dotfiles/scripts/gwt-rename-session.sh"
+        if not test -x "$rename_script"
+            set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
+        end
+        bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
+        disown
     end
 
     # Resolve convoy name to ID before writing state file
