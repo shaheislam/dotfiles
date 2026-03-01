@@ -431,33 +431,49 @@ phase_4_cloud_tools() {
         return 0
     fi
 
-    # Claude Code CLI - install via Homebrew cask ONLY (clean up other installation methods)
+    # Claude Code CLI - native installer (auto-updates, no Node.js dependency)
+    # Reference: https://code.claude.com/docs/en/setup
     print_step "Checking Claude Code CLI..."
 
-    # Clean up old Claude Code installations (npm, local) to avoid conflicts with Homebrew
-    if [[ -d "$HOME/.claude/local" ]] || [[ -f "$HOME/.local/bin/claude" ]]; then
-        print_step "Cleaning up old Claude Code installations..."
-        rm -rf "$HOME/.claude/local" 2>/dev/null || true
-        rm -f "$HOME/.local/bin/claude" 2>/dev/null || true
-        # Remove npm/bun global installs if they exist
-        npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
-        bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
-        print_success "Old Claude Code installations cleaned up"
+    # Migrate from Homebrew to native installer (one-time cleanup)
+    if brew list --cask claude-code >/dev/null 2>&1; then
+        print_step "Migrating Claude Code from Homebrew to native installer..."
+        brew uninstall --cask claude-code >/dev/null 2>&1 || true
+        print_success "Homebrew Claude Code removed (migrating to native)"
     fi
 
-    # Install or upgrade via Homebrew (the only supported method)
-    if ! brew list --cask claude-code >/dev/null 2>&1; then
-        print_step "Installing Claude Code via Homebrew..."
-        brew install --cask claude-code >/dev/null 2>&1 &&
-            print_success "Claude Code installed" ||
-            print_warning "Failed to install Claude Code - install manually with: brew install --cask claude-code"
+    # Clean up legacy installations (npm, bun, old local)
+    if [[ -d "$HOME/.claude/local" ]]; then
+        rm -rf "$HOME/.claude/local" 2>/dev/null || true
+    fi
+    npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+    bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+
+    # Remove legacy Node 20 wrapper script (native binary is self-contained)
+    if [[ -f "$DOTFILES_ROOT/scripts/bin/claude" ]]; then
+        rm -f "$DOTFILES_ROOT/scripts/bin/claude" 2>/dev/null || true
+    fi
+
+    # Install or update via native installer (places binary at ~/.local/bin/claude)
+    # Native installer auto-updates in the background; manual update via `claude update`
+    if ! command_exists claude; then
+        print_step "Installing Claude Code via native installer..."
+        curl -fsSL https://claude.ai/install.sh | bash -s stable 2>&1 &&
+            print_success "Claude Code installed (stable channel)" ||
+            print_warning "Failed to install Claude Code - install manually: curl -fsSL https://claude.ai/install.sh | bash"
     else
         print_success "Claude Code CLI installed at: $(which claude)"
-        # Upgrade to latest version
-        print_step "Upgrading Claude Code to latest version..."
-        brew upgrade --cask claude-code >/dev/null 2>&1 &&
-            print_success "Claude Code upgraded to latest version" ||
+        # Native installer auto-updates; force an immediate check
+        claude update >/dev/null 2>&1 &&
+            print_success "Claude Code updated to latest stable version" ||
             print_success "Claude Code already at latest version"
+    fi
+
+    # Verify installation health
+    if command_exists claude; then
+        claude doctor >/dev/null 2>&1 &&
+            print_success "Claude Code doctor check passed" ||
+            log_verbose "Claude Code doctor reported warnings (non-fatal)"
     fi
 
     # Install recall (Claude Code conversation search/resume tool)
@@ -511,10 +527,7 @@ phase_4_cloud_tools() {
         print_success "Claude Code Router configuration linked from dotfiles"
     fi
 
-    # Ensure claude wrapper is executable (runs Claude under Node 20 only)
-    if [[ -f "$DOTFILES_ROOT/scripts/bin/claude" ]]; then
-        chmod +x "$DOTFILES_ROOT/scripts/bin/claude" 2>/dev/null || true
-    fi
+    # Legacy wrapper removed: native Claude Code binary is self-contained (no Node.js needed)
 
     # Install OpenAI Codex CLI (with sudo fallback for Linux)
     if ! command_exists codex; then
@@ -684,6 +697,14 @@ NMHEOF
         # Configure Claude Code global settings
         claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 &&
             print_success "Claude Code notification channel set to terminal_bell" || true
+
+        # Set release channel to stable (receives updates ~1 week after latest, skips regressions)
+        # Reference: https://code.claude.com/docs/en/setup#configure-release-channel
+        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
+            jq '.autoUpdatesChannel = "stable"' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
+                print_success "Claude Code release channel set to stable" || true
+        fi
 
         # Auto-compact: left enabled (default) since 2.1.21 fixed early triggering.
         # Long ralph-loop sessions benefit from mid-session compaction.
