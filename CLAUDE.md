@@ -142,11 +142,14 @@ Git-backed agent memory that persists across sessions. Auto-initialized in workt
 - **Commands**: `/beads:ready` (prime context), `/beads:create` (create issue)
 
 ### Checkpoints (Session Context ↔ Git Commits)
-Links session transcript slices to commit SHAs on `checkpoints/v1` orphan branch. CLI: `ckpt` (Fish wrapper for `scripts/checkpoints.sh`). Run `ckpt --help` for commands.
+Managed by the upstream `entire` CLI ([entireio/cli](https://github.com/entireio/cli)). Session metadata stored on `entire/checkpoints/v1` orphan branch. Strategies: `manual-commit` (default, shadow branches) or `auto-commit`.
 
-- **Hooks**: UserPromptSubmit (pre-prompt state), Stop (capture transcript slice)
-- **Per-worktree**: `gwt-ticket` runs `checkpoints enable` automatically (`--no-checkpoints` to opt out)
-- **Key commands**: `ckpt enable`, `ckpt show <sha>`, `ckpt resume`, `ckpt context`, `ckpt search`, `ckpt doctor`
+- **Installation**: `brew tap entireio/tap && brew install entireio/tap/entire`
+- **Hooks**: `entire enable` installs 7 Claude Code hooks (SessionStart, SessionEnd, UserPromptSubmit, Stop, PreToolUse/Task, PostToolUse/Task, PostToolUse/TodoWrite)
+- **Per-worktree**: `gwt-ticket` runs `entire enable` automatically (`--no-checkpoints` to opt out)
+- **Key commands**: `entire enable`, `entire status`, `entire explain <sha>`, `entire resume`, `entire rewind`, `entire doctor`
+- **Fish alias**: `ckpt` wraps `entire` with backward-compatible command translation
+- **Worktree support**: Shadow branches per worktree (`entire/<base>-<worktree-hash>`)
 - **Coexistence**: Complements Beads (issue-level) — different granularity, no conflict.
 
 ### MCP Server Integration
@@ -241,8 +244,10 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 | **PostToolUse** (Read) | `deepwiki-context.py` | Language-aware DeepWiki repo suggestions |
 | **PreCompact** | `bd sync` | Beads memory sync before compaction |
 | **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
-| **UserPromptSubmit** | `checkpoint-pre-prompt.sh`, `nvim-bridge.sh` | Checkpoint capture, Neovim editor context |
-| **Stop** | `checkpoint-capture.sh`, `cross-provider-bridge.sh` | Checkpoint capture, cross-provider review |
+| **UserPromptSubmit** | `nvim-bridge.sh` | Neovim editor context |
+| **Stop** | `cross-provider-bridge.sh` | Cross-provider review |
+
+> **Note**: Checkpoint hooks are now managed by `entire enable` (see Checkpoints section).
 
 **Hook Types**: Command (shell scripts), Prompt (LLM yes/no), Agent (multi-turn with tools)
 
@@ -424,6 +429,7 @@ Multi-perspective plan evaluation. Docs: `docs/decision-quality-system.md`.
 **Plan template**: `templates/workflows/plan-review.toml`.
 
 ### Recent Updates
+- **2026-03-01**: Replaced custom checkpoints system with entireio/cli (`entire` CLI) — removed 7 custom scripts, updated hooks/Fish wrappers/gwt-ticket, Brewfile integration
 - **2026-02-28**: Added ClaudeCodeBrowser Firefox browser automation (MCP integration, CORS hardening, ccb Fish function, setup.sh automation)
 - **2026-02-28**: Added Claude Code Remote Control setup (enableRemoteControl in ~/.claude.json, cc-rc Fish function, 16-test suite)
 - **2026-02-21**: Added Skills Reference Guide (`docs/skills-reference.md`) with ranked marketplace sources, Agent Skills standard, migration guide from commands to skills

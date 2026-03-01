@@ -240,9 +240,9 @@ MCP tools follow pattern `mcp__<server>__<tool>`:
 | **SessionStart** | `bash ~/dotfiles/scripts/fix-hookify-imports.sh` | Fixes hookify plugin imports |
 | **SessionStart** | `bd prime` | Primes Beads agent memory |
 | **PreCompact** | `bd sync` | Syncs Beads memory before compaction |
-| **UserPromptSubmit** | `bash ~/dotfiles/scripts/hooks/checkpoint-pre-prompt.sh` | Captures pre-prompt state for checkpoints |
-| **Stop** | `bash ~/dotfiles/scripts/hooks/checkpoint-capture.sh` (10s) | Captures transcript slice for checkpoint |
 | **Stop** | `bash ~/.claude/hooks/cross-provider-bridge.sh` (180s) | Cross-provider review via Codex/OpenCode |
+
+> **Note**: Checkpoint hooks are now managed by the `entire` CLI (`entire enable`). See [entireio/cli](https://github.com/entireio/cli) for details.
 
 ### Hook Scripts Inventory (`.claude/hooks/`)
 
@@ -263,15 +263,11 @@ MCP tools follow pattern `mcp__<server>__<tool>`:
 | `jfdi/prompt-inject-context.py` | Python | UserPromptSubmit | Not wired |
 | `jfdi/session-end-extract.py` | Python | SessionEnd | Not wired |
 
-### Checkpoint Hooks (in `scripts/hooks/`)
+### Checkpoint Hooks (managed by `entire` CLI)
 
-| Script | Event | Purpose |
-|--------|-------|---------|
-| `checkpoint-pre-prompt.sh` | UserPromptSubmit | Capture offset, untracked files, timestamp |
-| `checkpoint-capture.sh` | Stop | Extract transcript slice, files modified, summary |
-| `checkpoint-commit-msg.sh` | Git prepare-commit-msg | Add checkpoint trailer to commits |
-| `checkpoint-post-commit.sh` | Git post-commit | Store metadata on orphan branch |
-| `checkpoint-pre-push.sh` | Git pre-push | Push checkpoint branch |
+Checkpoint hooks are now managed by the upstream `entire` CLI tool ([entireio/cli](https://github.com/entireio/cli)).
+Run `entire enable` in a repo to install session tracking hooks automatically.
+The custom `scripts/hooks/checkpoint-*.sh` scripts have been removed.
 
 ---
 
