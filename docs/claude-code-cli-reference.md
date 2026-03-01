@@ -2,7 +2,8 @@
 
 > Complete CLI reference for Claude Code, tailored to this dotfiles setup. Based on official documentation at
 > [code.claude.com/docs/en/cli-reference](https://code.claude.com/docs/en/cli-reference) and related pages.
-> Covers commands, flags, permission modes, subagent configuration, and how they map to our Fish functions and scripts.
+> Covers commands, flags, permission modes, subagent configuration, hooks, model config, MCP, agent teams,
+> common workflows, and how they map to our Fish functions and scripts.
 
 ## Table of Contents
 
@@ -15,6 +16,11 @@
 - [Settings Scopes & Precedence](#settings-scopes--precedence)
 - [Interactive Mode Reference](#interactive-mode-reference)
 - [Skills Configuration](#skills-configuration)
+- [Common Workflows](#common-workflows)
+- [Model Configuration](#model-configuration)
+- [Hooks Reference](#hooks-reference)
+- [MCP Configuration](#mcp-configuration)
+- [Agent Teams](#agent-teams)
 - [Our Dotfiles Integration](#our-dotfiles-integration)
 - [Environment Variables](#environment-variables)
 - [Patterns & Recipes](#patterns--recipes)
@@ -49,7 +55,7 @@
 |---------|-------------|---------|
 | `claude update` | Update to latest version | `claude update` |
 | `claude agents` | List all configured subagents by source | `claude agents` |
-| `claude mcp` | Configure MCP servers | See [MCP docs](https://code.claude.com/docs/en/mcp) |
+| `claude mcp` | Configure MCP servers | See [MCP Configuration](#mcp-configuration) |
 | `claude remote-control` | Start Remote Control session | `claude remote-control --verbose` |
 
 ---
@@ -424,6 +430,7 @@ Add to settings files for IDE autocomplete:
 | `/debug [desc]` | Session debugging |
 | `/doctor` | Installation health check |
 | `/export [file]` | Export conversation |
+| `/hooks` | Interactive hooks manager |
 | `/memory` | Edit CLAUDE.md files |
 | `/model` | Select/change model |
 | `/permissions` | View/manage permissions |
@@ -499,7 +506,595 @@ Use !`command` for dynamic context injection.
 | `$ARGUMENTS` | All args passed when invoking |
 | `$ARGUMENTS[N]` / `$N` | Specific arg by index |
 | `${CLAUDE_SESSION_ID}` | Current session ID |
-| `!`command`` | Dynamic shell command output (preprocessing) |
+| `` !`command` `` | Dynamic shell command output (preprocessing) |
+
+---
+
+## Common Workflows
+
+### Plan Mode
+
+Plan mode restricts Claude to read-only tools for analysis before implementation:
+
+| Method | Description |
+|--------|-------------|
+| `claude --permission-mode plan` | Start in plan mode |
+| `/plan` | Enter plan mode during session |
+| `Shift+Tab` | Toggle between modes interactively |
+
+In plan mode, Claude can read files, search, and analyze but cannot write, edit, or execute commands. Use it to understand a codebase before making changes.
+
+**Our usage**: Our `ORCHESTRATOR.md` auto-activates plan mode for complex analysis tasks.
+
+### Worktrees
+
+Start Claude in an isolated git worktree for parallel development:
+
+```bash
+claude --worktree feature-auth     # Named worktree
+claude -w                          # Auto-generated name (e.g. bold-oak-a3f2)
+```
+
+The worktree is created in `.claude/worktrees/` with a new branch based on HEAD. On exit, you're prompted to keep or remove it.
+
+**Our usage**: We use `gwt-*` Fish functions (`gwt-dev`, `gwt-claude`, `gwt-ticket`) which wrap worktree creation with devcontainer integration, subscription profiles, and ralph-loop orchestration. The native `--worktree` flag is a simpler alternative for quick isolated work.
+
+### Piping & Unix-Style Usage
+
+Claude integrates with Unix pipes for non-interactive automation:
+
+```bash
+# Pipe content for analysis
+cat error.log | claude -p "what went wrong?"
+git diff HEAD~5 | claude -p "summarize changes"
+
+# Chain with other tools
+claude -p --output-format json "list API endpoints" | jq '.result'
+
+# Multi-step pipelines
+cat spec.md | claude -p "generate test cases" | claude -p "implement these tests"
+```
+
+### Session Management
+
+Resume, continue, and fork sessions:
+
+| Action | Command | Notes |
+|--------|---------|-------|
+| Continue last | `claude -c` | Most recent conversation in current directory |
+| Resume by name | `claude -r "session-name"` | Session picker if no match |
+| Resume by ID | `claude -r abc123` | Exact session UUID |
+| Fork session | `claude -r abc123 --fork-session` | New ID, same history |
+| Rename | `/rename my-feature` | Inside interactive session |
+
+Sessions are scoped per directory. Use `--session-id` for deterministic IDs in automation.
+
+### Images
+
+Claude can process images in interactive mode:
+
+| Method | How |
+|--------|-----|
+| Drag and drop | Drag image file into terminal |
+| Clipboard | `Ctrl+V` to paste |
+| File path | Use `@` prefix: `@screenshot.png` |
+| Piped | `cat image.png \| claude -p "describe this"` |
+
+### @ File References
+
+Reference files and directories directly in prompts:
+
+```
+@src/auth/login.ts    # Single file
+@src/components/      # Entire directory
+@package.json         # Specific config
+```
+
+Tab completion works with `@` prefix for file discovery.
+
+### Notifications via Hooks
+
+Claude sends notifications at key points (permission prompts, idle state, auth). Use `Notification` hooks to route these to desktop alerts, Slack, or logging systems.
+
+**Our usage**: `.claude/hooks/macos_notification.py` sends macOS desktop alerts. `.claude/hooks/log-notification.sh` writes audit logs.
+
+### Extended Thinking
+
+Toggle extended thinking for deeper reasoning:
+
+| Control | Method |
+|---------|--------|
+| Toggle | `Option+T` during session |
+| Effort level | Settings: `"effortLevel": "low"`, `"medium"`, or `"high"` |
+| Env override | `CLAUDE_CODE_EFFORT_LEVEL=high` |
+| Budget | `MAX_THINKING_TOKENS` env var |
+| Disable adaptive | `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1` |
+
+Effort levels control how much reasoning Claude applies. `high` uses maximum thinking budget, `low` minimizes it. The default adapts based on task complexity.
+
+**Our usage**: Our `--think`, `--think-hard`, and `--ultrathink` flags in `FLAGS.md` map to increasing effort levels.
+
+---
+
+## Model Configuration
+
+### Model Aliases
+
+Use short aliases instead of full model names:
+
+| Alias | Resolves To | Notes |
+|-------|-------------|-------|
+| `default` | Current default model | Usually latest Sonnet |
+| `sonnet` | `claude-sonnet-4-6` | Latest Sonnet |
+| `opus` | `claude-opus-4-6` | Latest Opus |
+| `haiku` | `claude-haiku-4-5-20251001` | Latest Haiku |
+| `sonnet[1m]` | Sonnet with 1M context | Extended context window |
+| `opusplan` | Opus for planning, Sonnet for execution | Auto-switches per phase |
+
+```bash
+claude --model opus "complex analysis"
+claude --model sonnet "quick task"
+claude --model haiku "simple question"
+```
+
+### The `opusplan` Mode
+
+`opusplan` uses Opus during plan mode (read-only analysis) and automatically switches to Sonnet for execution. Access via `/model opusplan` in interactive mode.
+
+**Our usage**: `claude-pipeline.fish` implements a similar pattern with `--preset council` (opus -> sonnet -> opus).
+
+### Effort Levels
+
+Control reasoning depth via settings or environment:
+
+| Level | Behavior |
+|-------|----------|
+| `low` | Minimal thinking, fastest responses |
+| `medium` | Balanced reasoning (default) |
+| `high` | Maximum thinking budget, deepest analysis |
+
+Set in settings: `"effortLevel": "high"` or via `CLAUDE_CODE_EFFORT_LEVEL`.
+
+### 1M Context Window
+
+`sonnet[1m]` enables a 1,000,000-token context window for large codebases. Disable with `CLAUDE_CODE_DISABLE_1M_CONTEXT=1`.
+
+### Restrict Available Models
+
+Use `availableModels` in settings to limit which models users can select:
+
+```json
+{
+  "availableModels": ["claude-sonnet-4-6", "claude-haiku-4-5-20251001"]
+}
+```
+
+### Prompt Caching
+
+Control prompt caching with environment variables:
+
+| Variable | Effect |
+|----------|--------|
+| `DISABLE_PROMPT_CACHING` | Disable all caching |
+| `DISABLE_PROMPT_CACHING_HAIKU` | Disable for Haiku only |
+| `DISABLE_PROMPT_CACHING_SONNET` | Disable for Sonnet only |
+| `DISABLE_PROMPT_CACHING_OPUS` | Disable for Opus only |
+
+### Model Override Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `ANTHROPIC_DEFAULT_OPUS_MODEL` | Override which model "opus" resolves to |
+| `ANTHROPIC_DEFAULT_SONNET_MODEL` | Override which model "sonnet" resolves to |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Override which model "haiku" resolves to |
+| `CLAUDE_CODE_SUBAGENT_MODEL` | Force all subagents to use a specific model |
+
+---
+
+## Hooks Reference
+
+Hooks are lifecycle callbacks that run at specific points during Claude Code operation. They enable deterministic control over behavior without modifying Claude's AI instructions.
+
+### Hook Types
+
+| Type | Description | Blocking? |
+|------|-------------|-----------|
+| `command` | Shell command receiving JSON via stdin | Yes (exit code 2) |
+| `http` | HTTP POST to URL with JSON body | Yes (via JSON response) |
+| `prompt` | LLM evaluates with yes/no decision | Yes (`ok: false`) |
+| `agent` | Multi-turn subagent with tool access | Yes (`ok: false`) |
+
+### Hook Events
+
+17 events covering the full session lifecycle:
+
+| Event | Matcher | Can Block? | Description |
+|-------|---------|------------|-------------|
+| `SessionStart` | `startup\|resume\|clear\|compact` | No | Session begins or resumes |
+| `UserPromptSubmit` | — | Yes | User submits a prompt |
+| `PreToolUse` | Tool name | Yes | Before tool execution |
+| `PermissionRequest` | Tool name | Yes | Permission dialog shown |
+| `PostToolUse` | Tool name | No (feedback) | After successful tool execution |
+| `PostToolUseFailure` | Tool name | No (feedback) | After tool failure |
+| `Notification` | `permission_prompt\|idle_prompt\|auth_success\|elicitation_dialog` | No | Notification sent |
+| `SubagentStart` | Agent type | No (inject context) | Subagent spawned |
+| `SubagentStop` | Agent type | Yes | Subagent finished |
+| `Stop` | — | Yes | Main agent finished |
+| `TeammateIdle` | — | Yes (exit code 2) | Teammate about to idle |
+| `TaskCompleted` | — | Yes (exit code 2) | Task marked complete |
+| `ConfigChange` | `user_settings\|project_settings\|local_settings\|policy_settings\|skills` | Yes (except policy) | Config file changed |
+| `WorktreeCreate` | — | Yes (non-zero exit) | Worktree being created |
+| `WorktreeRemove` | — | No | Worktree being removed |
+| `PreCompact` | `manual\|auto` | No | Before compaction |
+| `SessionEnd` | Exit reason | No | Session ending |
+
+### Hook Configuration
+
+Hooks are defined in settings files under the `"hooks"` key:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/validate-bash.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Common Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `type` | Yes | `command`, `http`, `prompt`, or `agent` |
+| `timeout` | No | Seconds before timeout (default: 600 for command, 30 for prompt, 60 for agent) |
+| `statusMessage` | No | Message shown during execution |
+| `once` | No | If true, only runs once per session (useful for skills) |
+| `async` | No | If true, runs in background (command type only) |
+
+### Matcher Patterns
+
+Matchers use regex matching against the event-specific value:
+
+- **Tool events**: Match on tool name (`Bash`, `Write\|Edit`, `mcp__context7__.*`)
+- **SessionStart**: Match on source (`startup`, `resume`, `clear`, `compact`)
+- **Notification**: Match on type (`permission_prompt`, `idle_prompt`)
+- **ConfigChange**: Match on source (`user_settings`, `project_settings`)
+- **PreCompact**: Match on trigger (`manual`, `auto`)
+
+MCP tools use the format `mcp__<server>__<tool>` (e.g., `mcp__context7__get-library-docs`).
+
+### Exit Code Behavior
+
+| Exit Code | Meaning |
+|-----------|---------|
+| `0` | Success — action proceeds. Stdout parsed for JSON output |
+| `2` | Blocking error — action prevented. Stderr fed to Claude |
+| Other | Non-blocking error — logged, execution continues |
+
+### JSON Output Fields
+
+On exit 0, hooks can return JSON to stdout for fine-grained control:
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `continue` | `true` | `false` stops Claude entirely |
+| `stopReason` | — | Message to user when `continue` is false |
+| `suppressOutput` | `false` | Hide stdout from verbose mode |
+| `systemMessage` | — | Warning message shown to user |
+| `decision` | — | `"block"` to prevent action (PostToolUse, Stop, etc.) |
+| `reason` | — | Explanation when blocking |
+
+### PreToolUse Decision Control
+
+PreToolUse uses `hookSpecificOutput` for richer control:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow|deny|ask",
+    "permissionDecisionReason": "Explanation",
+    "updatedInput": { "field": "modified value" },
+    "additionalContext": "Extra context for Claude"
+  }
+}
+```
+
+### PermissionRequest Decision Control
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PermissionRequest",
+    "decision": {
+      "behavior": "allow|deny",
+      "updatedInput": { "command": "safer-command" },
+      "updatedPermissions": [{ "type": "toolAlwaysAllow", "tool": "Bash(npm *)" }],
+      "message": "Why denied (deny only)"
+    }
+  }
+}
+```
+
+### SessionStart Environment Variables
+
+SessionStart hooks can persist env vars via `CLAUDE_ENV_FILE`:
+
+```bash
+#!/bin/bash
+if [ -n "$CLAUDE_ENV_FILE" ]; then
+  echo 'export NODE_ENV=production' >> "$CLAUDE_ENV_FILE"
+fi
+exit 0
+```
+
+### Hook Scopes
+
+| Source | Location | Priority |
+|--------|----------|----------|
+| User | `~/.claude/settings.json` | Global |
+| Project | `.claude/settings.json` | Team-shared |
+| Local | `.claude/settings.local.json` | Machine-specific |
+| Plugin | `hooks/hooks.json` in plugin | Read-only |
+| Skill/Agent | YAML frontmatter `hooks:` | Component lifetime |
+
+### Hook Management
+
+- `/hooks` menu: View, add, delete hooks interactively
+- `disableAllHooks: true` in settings: Temporarily disable all hooks
+- Hooks snapshot at startup — mid-session changes require review in `/hooks`
+- `claude --debug "hooks"`: Debug hook execution
+
+### Prompt/Agent Hook Events
+
+Events supporting all 4 hook types (`command`, `http`, `prompt`, `agent`):
+`PermissionRequest`, `PostToolUse`, `PostToolUseFailure`, `PreToolUse`, `Stop`, `SubagentStop`, `TaskCompleted`, `UserPromptSubmit`
+
+Events supporting only `command` hooks:
+`ConfigChange`, `Notification`, `PreCompact`, `SessionEnd`, `SessionStart`, `SubagentStart`, `TeammateIdle`, `WorktreeCreate`, `WorktreeRemove`
+
+### Our Hooks Setup
+
+See [Claude Code Hooks Reference](claude-code-hooks.md) for our complete hook configuration. Key hooks:
+
+| Event | Hook | Purpose |
+|-------|------|---------|
+| SessionStart | `fix-hookify-imports.sh`, `bd prime`, `lsp-status.sh` | Plugin fixes, Beads memory, LSP context |
+| PreToolUse (Bash) | `use_bun.py`, `validate-bash.py` | Bun enforcement, dangerous command blocking |
+| PostToolUse (Read) | `deepwiki-context.py` | Language-aware DeepWiki suggestions |
+| PreCompact | `bd sync` | Beads memory sync |
+| Notification | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
+| UserPromptSubmit | `checkpoint-pre-prompt.sh`, `nvim-bridge.sh` | Checkpoints, Neovim state |
+| Stop | `checkpoint-capture.sh`, `cross-provider-bridge.sh` | Checkpoints, cross-provider review |
+
+---
+
+## MCP Configuration
+
+### MCP Server Scopes
+
+| Scope | Config Location | Shared? |
+|-------|----------------|---------|
+| **Local** (project) | `.mcp.json` in project root | Yes (committed) |
+| **Project** | `.claude/settings.json` → `mcpServers` | Yes |
+| **User** | `~/.claude/settings.json` → `mcpServers` | No |
+
+### Adding MCP Servers
+
+```bash
+# stdio transport (most common)
+claude mcp add --scope user context7 bunx @upstash/context7-mcp
+
+# SSE transport
+claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse
+
+# HTTP transport
+claude mcp add --scope user --transport http myserver https://api.example.com/mcp
+
+# Import from Claude Desktop
+claude mcp add-from-claude-desktop
+```
+
+### MCP Server Management
+
+| Command | Description |
+|---------|-------------|
+| `claude mcp add` | Add server (stdio/sse/http) |
+| `claude mcp remove` | Remove server |
+| `claude mcp list` | List configured servers |
+| `claude mcp add-from-claude-desktop` | Import Desktop config |
+| `claude mcp serve` | Run Claude Code as an MCP server |
+
+### OAuth 2.0 Authentication
+
+For MCP servers requiring OAuth:
+
+```bash
+claude mcp add --transport http myserver https://api.example.com/mcp \
+  --client-id "my-client-id" \
+  --client-secret "my-client-secret" \
+  --callback-port 8080
+```
+
+### `.mcp.json` Project Config
+
+Project-level MCP config with environment variable expansion:
+
+```json
+{
+  "mcpServers": {
+    "myserver": {
+      "command": "npx",
+      "args": ["-y", "my-mcp-server"],
+      "env": {
+        "API_KEY": "${API_KEY}",
+        "PORT": "${PORT:-3000}"
+      }
+    }
+  }
+}
+```
+
+Environment variables support `${VAR:-default}` syntax for fallback values.
+
+### Tool Search
+
+Control deferred tool loading for MCP servers with many tools:
+
+| Setting | Behavior |
+|---------|----------|
+| `ENABLE_TOOL_SEARCH=auto` | Auto-defer servers with >10 tools (default) |
+| `ENABLE_TOOL_SEARCH=auto:N` | Auto-defer at N tools threshold |
+| `ENABLE_TOOL_SEARCH=true` | Defer all MCP tools |
+| `ENABLE_TOOL_SEARCH=false` | Load all tools immediately |
+
+Deferred tools must be discovered via `ToolSearch` before use.
+
+### Managed MCP
+
+Enterprise-managed MCP servers via `managed-mcp.json`:
+
+| Platform | Location |
+|----------|----------|
+| macOS | `/Library/Application Support/ClaudeCode/managed-mcp.json` |
+| Linux | `/etc/claude-code/managed-mcp.json` |
+
+Managed servers cannot be overridden by user settings.
+
+### MCP Allowlists/Denylists
+
+Control which MCP servers are permitted:
+
+```json
+{
+  "allowedMcpServers": ["context7", "playwright"],
+  "deniedMcpServers": ["untrusted-server"]
+}
+```
+
+Matching works against `serverName`, `serverCommand`, and `serverUrl`.
+
+### Claude Code as MCP Server
+
+Expose Claude Code as an MCP server for other tools:
+
+```bash
+claude mcp serve
+```
+
+### MCP Resources & Prompts
+
+- **Resources**: Reference with `@server:protocol://path` syntax
+- **Prompts**: Invoke as `/mcp__servername__promptname`
+
+### MCP Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `MAX_MCP_OUTPUT_TOKENS` | Max tokens per MCP tool response | — |
+| `MCP_TIMEOUT` | Connection timeout for MCP servers | — |
+
+### Our MCP Setup
+
+See `scripts/setup.sh` Phase 4 for our MCP configuration:
+
+```bash
+claude mcp add --scope user context7 bunx @upstash/context7-mcp
+claude mcp add --scope user steampipe npx @turbot/steampipe-mcp
+claude mcp add --scope user playwright bunx @playwright/mcp@latest
+claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse
+```
+
+**Parity rule**: MCP servers must be configured in both Claude Desktop (`claude_desktop_config.json`) and Claude Code CLI (`setup.sh`). Verify with `claude mcp list`.
+
+---
+
+## Agent Teams
+
+### Enabling Agent Teams
+
+Agent Teams is experimental. Enable via environment variable:
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+### Display Modes
+
+| Mode | Setting | Description |
+|------|---------|-------------|
+| `in-process` | `--teammate-mode in-process` | All teammates in single terminal |
+| `tmux` | `--teammate-mode tmux` | Each teammate in tmux split pane |
+| `auto` | Default | Uses tmux if available, else in-process |
+
+Set globally: `"teammateMode": "auto"` in `~/.claude.json`.
+
+### Teammate Interactions
+
+| Action | Method |
+|--------|--------|
+| Spawn teammate | Ask Claude to create one, or use `Shift+Tab` to delegate |
+| Navigate teammates | `Shift+Up/Down` between panes |
+| View task list | `Ctrl+T` |
+| Kill background agents | `Ctrl+F` (press twice) |
+
+### Plan Approval for Teammates
+
+Teammates can be spawned with `plan_mode_required`, requiring the team lead to approve their implementation plan before they proceed.
+
+### Shared Task List
+
+Teams share a task list with file-locking for coordination. Each teammate can:
+- Create tasks (`TaskCreate`)
+- Claim tasks (`TaskUpdate` with `owner`)
+- Complete tasks (`TaskUpdate` with `status: completed`)
+- View all tasks (`TaskList`)
+
+Task list uses `CLAUDE_CODE_TASK_LIST_ID` for named shared lists.
+
+### Hook Events for Teams
+
+| Event | Purpose |
+|-------|---------|
+| `TeammateIdle` | Enforce quality gates before teammate stops |
+| `TaskCompleted` | Validate completion criteria before task closes |
+
+### Best Practices
+
+- **3-5 teammates** per team for optimal coordination
+- **5-6 tasks per teammate** to maintain focus
+- Assign **different files** per teammate to avoid conflicts
+- Provide **specific context** per teammate (no inherited conversation history)
+- Use teammates for **same-repo collaborative work**
+
+### Limitations
+
+- No session resumption with in-process teammates
+- One team per session
+- No nested teams
+- Split panes require tmux or iTerm2
+- Teammates don't inherit conversation history
+
+### Our Agent Teams Setup
+
+Our dotfiles configure `teammateMode: "auto"` in `~/.claude.json`. For different parallelism patterns:
+
+| Pattern | Tool | Use Case |
+|---------|------|----------|
+| Personas (single session) | `--persona-*` flags | Domain expertise within one session |
+| Agent Teams | `Shift+Tab` delegation | Same-repo parallel work |
+| Worktree isolation | `gwt-parallel` | Multi-branch independent work |
+| Autonomous execution | `gwt-ticket` + ralph-loop | Single-ticket background agent |
 
 ---
 
@@ -570,6 +1165,28 @@ These official flags are available but not yet integrated in our dotfiles:
 | `ANTHROPIC_BASE_URL` | Custom API endpoint | `claude-local.fish` (`http://localhost:11434`) |
 | `ANTHROPIC_MODEL` | Model override | `claude-local.fish` for Ollama models |
 
+### Model & Thinking Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `CLAUDE_CODE_EFFORT_LEVEL` | Reasoning effort: `low`, `medium`, `high` | Adaptive |
+| `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING` | Disable adaptive thinking | `0` |
+| `CLAUDE_CODE_DISABLE_1M_CONTEXT` | Disable 1M context window | `0` |
+| `MAX_THINKING_TOKENS` | Max extended thinking budget | — |
+| `CLAUDE_CODE_SUBAGENT_MODEL` | Force model for all subagents | — |
+| `ANTHROPIC_DEFAULT_OPUS_MODEL` | Override "opus" alias | — |
+| `ANTHROPIC_DEFAULT_SONNET_MODEL` | Override "sonnet" alias | — |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Override "haiku" alias | — |
+
+### Prompt Caching Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `DISABLE_PROMPT_CACHING` | Disable all prompt caching | Off |
+| `DISABLE_PROMPT_CACHING_HAIKU` | Disable caching for Haiku | Off |
+| `DISABLE_PROMPT_CACHING_SONNET` | Disable caching for Sonnet | Off |
+| `DISABLE_PROMPT_CACHING_OPUS` | Disable caching for Opus | Off |
+
 ### Feature Flags
 
 | Variable | Purpose | Default |
@@ -587,6 +1204,14 @@ These official flags are available but not yet integrated in our dotfiles:
 | `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD` | Load CLAUDE.md from `--add-dir` dirs | `1` (in our `config.fish`) |
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | Trigger compaction earlier (%) | 95 |
 | `SLASH_COMMAND_TOOL_CHAR_BUDGET` | Skill description budget | 2% of context |
+| `ENABLE_TOOL_SEARCH` | MCP tool search behavior | `auto` |
+
+### MCP Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `MAX_MCP_OUTPUT_TOKENS` | Max tokens per MCP response | — |
+| `MCP_TIMEOUT` | MCP server connection timeout | — |
 
 ### Bash Tool Variables
 
@@ -594,6 +1219,15 @@ These official flags are available but not yet integrated in our dotfiles:
 |----------|---------|---------|
 | `BASH_MAX_TIMEOUT_MS` | Max bash command timeout | 120000 |
 | `BASH_MAX_OUTPUT_LENGTH` | Max output length | 50000 |
+
+### Hook Environment Variables
+
+| Variable | Available In | Purpose |
+|----------|-------------|---------|
+| `CLAUDE_PROJECT_DIR` | All hooks | Project root directory |
+| `CLAUDE_PLUGIN_ROOT` | Plugin hooks | Plugin root directory |
+| `CLAUDE_ENV_FILE` | SessionStart only | Path to write persistent env vars |
+| `CLAUDE_CODE_REMOTE` | All hooks | `"true"` in remote web environments |
 
 ---
 
@@ -715,6 +1349,35 @@ claude --agents '{
 }
 ```
 
+### Hook-Based Workflows
+
+```bash
+# Stop hook to prevent premature completion (ralph-loop pattern)
+# Exit 2 to keep Claude working
+INPUT=$(cat)
+if echo "$INPUT" | jq -r '.last_assistant_message' | grep -q "TICKET_TASK_COMPLETE"; then
+  exit 0
+fi
+echo "Task not complete yet" >&2
+exit 2
+
+# Async PostToolUse hook to run tests after file changes
+# async: true runs in background without blocking Claude
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Write|Edit",
+      "hooks": [{
+        "type": "command",
+        "command": ".claude/hooks/run-tests-async.sh",
+        "async": true,
+        "timeout": 300
+      }]
+    }]
+  }
+}
+```
+
 ---
 
 ## Integration Opportunities
@@ -727,21 +1390,29 @@ Flags and features from official docs not yet leveraged in our setup:
 2. **`--fallback-model`** for `claude-pipeline` — graceful degradation when primary model is overloaded
 3. **`--append-system-prompt`** for `gwt-ticket` — inject ticket context without replacing system prompt
 4. **`--json-schema`** for automation scripts — structured output for `ticket-execute`, `agent-state`
+5. **OAuth MCP servers** — use `--client-id`/`--client-secret` for authenticated MCP integrations
+6. **`opusplan` mode** — native alternative to our `claude-pipeline --preset council` for plan/execute switching
 
 ### Medium Priority
 
-5. **`--agents` flag** for `gwt-parallel` — define task-specific subagents per worktree
-6. **`--strict-mcp-config`** for devcontainers — locked-down MCP in containerized environments
-7. **`--no-session-persistence`** for ephemeral CI/CD pipeline runs
-8. **Subagent `memory: user`** — persistent cross-session learning for our plugin agents
-9. **Subagent `isolation: worktree`** — native worktree isolation without our `gwt-*` wrapper
+7. **`--agents` flag** for `gwt-parallel` — define task-specific subagents per worktree
+8. **`--strict-mcp-config`** for devcontainers — locked-down MCP in containerized environments
+9. **`--no-session-persistence`** for ephemeral CI/CD pipeline runs
+10. **Subagent `memory: user`** — persistent cross-session learning for our plugin agents
+11. **Subagent `isolation: worktree`** — native worktree isolation without our `gwt-*` wrapper
+12. **Managed MCP** (`managed-mcp.json`) — enterprise deployment of standardized MCP servers
+13. **MCP allowlists/denylists** — restrict which MCP servers are permitted per project
+14. **`ConfigChange` hooks** — audit configuration changes for security compliance
+15. **Agent hooks** (`type: "agent"`) — multi-turn verification with tool access for quality gates
 
 ### Lower Priority
 
-10. **`--setting-sources`** — selective settings loading for testing
-11. **`--mcp-config`** — per-session MCP overrides for specialized tasks
-12. **`--from-pr`** — resume sessions linked to PRs for review workflows
-13. **Sandbox `network.allowedDomains`** — domain-level network restrictions for security
+16. **`--setting-sources`** — selective settings loading for testing
+17. **`--mcp-config`** — per-session MCP overrides for specialized tasks
+18. **`--from-pr`** — resume sessions linked to PRs for review workflows
+19. **Sandbox `network.allowedDomains`** — domain-level network restrictions for security
+20. **`CLAUDE_ENV_FILE`** in SessionStart — persist env vars without Fish config
+21. **`claude mcp serve`** — expose Claude Code as MCP server for other tools
 
 ---
 
@@ -753,6 +1424,11 @@ Flags and features from official docs not yet leveraged in our setup:
 - [Claude Pipeline](claude-pipeline.md) — multi-model reasoning chains
 - [Neovim-Claude Bridge](nvim-claude-bridge.md) — editor state awareness
 - [Official CLI Reference](https://code.claude.com/docs/en/cli-reference) — upstream source
+- [Official Hooks](https://code.claude.com/docs/en/hooks) — hook events and configuration
+- [Official Model Config](https://code.claude.com/docs/en/model-config) — model aliases and effort levels
+- [Official Common Workflows](https://code.claude.com/docs/en/common-workflows) — piping, sessions, images
+- [Official Agent Teams](https://code.claude.com/docs/en/agent-teams) — teammate coordination
+- [Official MCP](https://code.claude.com/docs/en/mcp) — MCP server configuration
 - [Official Settings](https://code.claude.com/docs/en/settings) — configuration reference
 - [Official Permissions](https://code.claude.com/docs/en/permissions) — permission system
 - [Official Subagents](https://code.claude.com/docs/en/sub-agents) — subagent documentation
