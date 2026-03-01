@@ -118,8 +118,10 @@ def list_sessions(project_filter=None):
     for s in sessions:
         age = format_age(s["mtime"])
         project = os.path.basename(s["cwd"]) if s["cwd"] != "?" else "?"
-        # Tab-delimited: id \t project_dir \t slug \t age \t branch \t project_name \t message
-        print(f"{s['id']}\t{s['project_dir']}\t{s['slug']}\t{age}\t{s['branch']}\t{project}\t{s['msg']}")
+        # Tab-delimited: id \t project_dir \t display (padded columns)
+        msg = s["msg"][:50] if len(s["msg"]) > 50 else s["msg"]
+        display = f"{s['slug']:<20s}  {age:<8s}  {s['branch']:<25s}  {project:<20s}  {msg}"
+        print(f"{s['id']}\t{s['project_dir']}\t{display}")
 
 
 def show_detail(project_dir_name, session_id):

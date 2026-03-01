@@ -509,7 +509,7 @@ try:
         detail = f'Title: {title}\nKey: {key}\nPriority: {pri}\nSub: {sub}\nRepo: {repo}\nAdded: {added}\n\nDescription:\n{desc}'
         # Escape newlines for echo -e in preview
         detail_escaped = detail.replace('\\\\', '\\\\\\\\').replace('\n', '\\\\n')
-        print(f'{tid}\t{pri}\t{key}\t{title}\t{sub}\t{detail_escaped}')
+        print(f'{tid:<8s}  {pri:<3s}  {key:<12s}  {title:<40s}  {sub}\t{detail_escaped}')
 except Exception as e:
     print(f'ERROR\t0\t-\t{e}\t-\t-', file=sys.stderr)
 " 2>/dev/null)
@@ -519,19 +519,22 @@ except Exception as e:
         return 0
     end
 
-    # FZF multiselect — display columns 1-5, column 6 is detail for preview
+    # FZF multiselect — display field 1 (padded columns), field 2 is detail for preview
     set -l selected (printf '%s\n' $entries \
         | fzf \
             --multi \
             --exit-0 \
+            --tabstop=1 \
             -d '\t' \
-            --with-nth=1,2,3,4,5 \
+            --with-nth=1 \
             --prompt='pick tickets to remove ❯ ' \
-            --header='TAB to toggle | id / pri / key / title / sub' \
-            --preview='echo -e {6}' \
+            --header='id        pri  key           title                                     sub' \
+            --preview='echo -e {2}' \
             --preview-window=bottom:40%:wrap \
             --bind='ctrl-/:toggle-preview' \
         | cut -f1)
+    # Extract ticket ID (first word) from padded line
+    set selected (for line in $selected; string match -r '^\S+' -- "$line"; end)
 
     if test -z "$selected"
         echo "No tickets selected"

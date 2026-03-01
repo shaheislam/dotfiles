@@ -170,21 +170,24 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
                 if contains $instance $stale_workspaces
                     set has_ws yes
                 end
-                set -a fzf_entries (printf '%s\t%s\tworkspace:%s\t%s' "$instance" "$size" "$has_ws" "$instance_base/$instance")
+                set -a fzf_entries (printf '%-40s  %-6s  %-14s\t%s' "$instance" "$size" "workspace:$has_ws" "$instance_base/$instance")
             end
 
             set -l selected (printf '%s\n' $fzf_entries \
                 | fzf \
                     --multi \
                     --exit-0 \
+                    --tabstop=1 \
                     -d '\t' \
-                    --with-nth=1,2,3 \
+                    --with-nth=1 \
                     --prompt='prune instances ❯ ' \
-                    --header='TAB to toggle | name / size / workspace' \
-                    --preview='ls -la {4}' \
+                    --header='name                                      size    workspace' \
+                    --preview='ls -la {2}' \
                     --preview-window=bottom:30%:wrap \
                     --bind='ctrl-/:toggle-preview' \
-                | cut -f1)
+                | cut -f1 | string trim)
+            # Extract instance name (first word) from padded selection
+            set selected (for line in $selected; string match -r '^\S+' -- "$line"; end)
 
             if test -z "$selected"
                 echo "No instances selected"

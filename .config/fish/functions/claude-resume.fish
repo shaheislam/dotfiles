@@ -81,15 +81,17 @@ function claude-resume --description "FZF picker for resuming Claude sessions"
         end
 
         # FZF with scope switching
+        # Format: SESSION_ID \t PROJECT_DIR \t display (padded: slug age branch project message)
         set -l result (printf '%s\n' $session_data \
             | fzf \
                 --exit-0 \
                 --no-multi \
+                --tabstop=1 \
                 -d '\t' \
-                --with-nth=3.. \
+                --with-nth=3 \
                 --print-query \
                 --prompt="resume ($scope) ❯ " \
-                --header='alt-l:Local  alt-g:Global                slug / age / branch / project / message' \
+                --header='alt-l:Local  alt-g:Global    slug                  age       branch                     project               message' \
                 --expect='alt-l,alt-g' \
                 --preview="python3 '$script_path' --detail {2} {1}" \
                 --preview-window=bottom:40%:wrap \

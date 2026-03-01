@@ -42,10 +42,12 @@ function _make_fzf_tab_complete -d "FZF-powered make target tab completion"
     end
 
     # Parse targets: "target: ## description" or plain "target:"
-    # Format as "target\tdescription" for fzf display
+    # Pad target names to fixed width for alignment
     set -l targets (grep -E '^[a-zA-Z_][a-zA-Z0-9_.-]*:' "$makefile" \
         | grep -v '^\.' \
         | sed 's/:.*##/\t/; s/:.*//' \
+        | string trim \
+        | awk -F'\t' '{printf "%-20s  %s\n", $1, $2}' \
         | string trim)
 
     if test -z "$targets"
@@ -58,14 +60,12 @@ function _make_fzf_tab_complete -d "FZF-powered make target tab completion"
             --no-multi \
             --select-1 \
             --exit-0 \
-            -d '\t' \
-            --with-nth=1.. \
             --prompt='make ❯ ' \
-            --header='Makefile targets' \
+            --header='target                description' \
             --preview="grep -A 5 '^{1}:' \"$makefile\" | head -10" \
             --preview-window=right:40%:wrap \
-            --query="$token" \
-        | awk -F'\t' '{print $1}')
+            --query="$token")
+    set result (string match -r '^\S+' -- "$result")
 
     if test -n "$result"
         commandline --replace --current-token -- "$result"
