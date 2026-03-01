@@ -21,4 +21,13 @@ if ! command -v bd >/dev/null 2>&1; then
     exit 0
 fi
 
-exec bd hook pre-commit "$@"
+# 3s timeout: JSONL export hangs ~30s when dolt has issues.
+# Export is nice-to-have, not worth blocking commits.
+if command -v gtimeout >/dev/null 2>&1; then
+    gtimeout 3 bd hook pre-commit "$@" 2>/dev/null || true
+else
+    bd hook pre-commit "$@" 2>/dev/null &
+    _pid=$!
+    ( sleep 3 && kill $_pid 2>/dev/null ) &
+    wait $_pid 2>/dev/null || true
+fi
