@@ -634,15 +634,10 @@ on_crash_retry() {
     # Seance: capture predecessor session context before restart.
     # Writes .claude/seance-crash.md which work-detect.sh reads on the new
     # session's SessionStart, injects it as context, then deletes it (wisp).
-    local ckpt_script="$SCRIPT_DIR/checkpoints.sh"
     local seance_file="$WORKTREE_PATH/.claude/seance-crash.md"
     local seance_context=""
-    if [[ -x "$ckpt_script" ]]; then
-        local branch
-        branch=$(git -C "$WORKTREE_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null) || branch=""
-        local ckpt_args=(context --commits 3)
-        [[ -n "$branch" ]] && ckpt_args+=(--branch "$branch")
-        seance_context=$(cd "$WORKTREE_PATH" && "$ckpt_script" "${ckpt_args[@]}" 2>/dev/null) || seance_context=""
+    if command -v entire >/dev/null 2>&1; then
+        seance_context=$(cd "$WORKTREE_PATH" && entire resume 2>/dev/null | head -50) || seance_context=""
     fi
     if [[ -n "$seance_context" ]]; then
         cat >"$seance_file" <<SEANCE

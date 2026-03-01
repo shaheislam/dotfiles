@@ -32,6 +32,9 @@ tap "schpet/tap"
 # Tap for Graphite CLI (stacked PRs and merge queue)
 tap "withgraphite/tap"
 
+# Tap for Entire CLI (AI agent session checkpoints)
+tap "entireio/tap"
+
 # Tap for Homebrew background auto-updates
 tap "DomT4/autoupdate"
 
@@ -183,6 +186,7 @@ brew "acli"  # Official Atlassian CLI for Jira, Confluence, Admin
 # Issue Tracking CLIs
 brew "schpet/tap/linear"  # Linear CLI for personal projects (agent-friendly)
 brew "beads"              # Git-backed agent memory / issue tracker (steveyegge/beads)
+brew "entireio/tap/entire"  # AI agent session checkpoints (replaces custom checkpoints.sh)
 brew "withgraphite/tap/graphite"  # Graphite CLI for stacked PRs and merge queue
 
 # DevOps/SRE Essentials

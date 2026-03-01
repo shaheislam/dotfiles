@@ -644,6 +644,50 @@ TESTEOF2
     run_test "Bridge docs exist" "[ -f '$DOTFILES_ROOT/docs/nvim-claude-bridge.md' ]"
 }
 
+test_entire() {
+    echo -e "${BLUE}--- Entire CLI Integration Tests ---${NC}"
+
+    # Brewfile has entire
+    run_test "Brewfile has entireio/tap tap" "grep -q 'entireio/tap' '$DOTFILES_ROOT/homebrew/Brewfile'"
+    run_test "Brewfile has entire formula" "grep -q 'entireio/tap/entire' '$DOTFILES_ROOT/homebrew/Brewfile'"
+
+    # Setup.sh has entire installation
+    run_test "setup.sh installs entire" "grep -q 'entireio/tap/entire' '$DOTFILES_ROOT/scripts/setup.sh'"
+
+    # Fish wrappers exist
+    run_test "checkpoints.fish wraps entire" "grep -q 'entire' '$DOTFILES_ROOT/.config/fish/functions/checkpoints.fish'"
+    run_test "ckpt.fish alias exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/ckpt.fish' ]"
+
+    # gwt-ticket uses entire enable
+    run_test "gwt-ticket uses entire enable" "grep -q 'entire enable' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket no old checkpoints.sh" "! grep -q 'checkpoints.sh enable' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+
+    # Old checkpoint scripts removed
+    run_test "No old checkpoints.sh" "[ ! -f '$DOTFILES_ROOT/scripts/checkpoints.sh' ]"
+    run_test "No old checkpoint-capture.sh" "[ ! -f '$DOTFILES_ROOT/scripts/hooks/checkpoint-capture.sh' ]"
+    run_test "No old checkpoint-pre-prompt.sh" "[ ! -f '$DOTFILES_ROOT/scripts/hooks/checkpoint-pre-prompt.sh' ]"
+
+    # Old hooks removed from settings.json
+    run_test "No checkpoint-pre-prompt in settings" "! grep -q 'checkpoint-pre-prompt' '$DOTFILES_ROOT/.claude/settings.json'"
+    run_test "No checkpoint-capture in settings" "! grep -q 'checkpoint-capture' '$DOTFILES_ROOT/.claude/settings.json'"
+
+    # .gitignore updated
+    run_test ".gitignore has .entire/" "grep -q '\.entire/' '$DOTFILES_ROOT/.gitignore'"
+    run_test ".gitignore no .checkpoints/" "! grep -q '\.checkpoints/' '$DOTFILES_ROOT/.gitignore'"
+
+    # git-fzf uses entire explain
+    run_test "git-fzf uses entire explain" "grep -q 'entire explain' '$DOTFILES_ROOT/.config/fish/functions/git-fzf-actions.fish'"
+    run_test "git-fzf no old checkpoints.sh show" "! grep -q 'checkpoints.sh show' '$DOTFILES_ROOT/.config/fish/functions/git-fzf-actions.fish'"
+
+    # worktree-witness uses entire
+    run_test "worktree-witness uses entire" "grep -q 'entire resume' '$DOTFILES_ROOT/scripts/worktree-witness.sh'"
+    run_test "worktree-witness no old checkpoints.sh" "! grep -q 'ckpt_script.*checkpoints.sh' '$DOTFILES_ROOT/scripts/worktree-witness.sh'"
+
+    # CLAUDE.md documentation updated
+    run_test "CLAUDE.md mentions entireio/cli" "grep -q 'entireio/cli' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md mentions entire enable" "grep -q 'entire enable' '$DOTFILES_ROOT/CLAUDE.md'"
+}
+
 test_agents_md() {
     echo -e "${BLUE}--- AGENTS.md Validation ---${NC}"
     run_test "Root AGENTS.md exists" "[ -f '$DOTFILES_ROOT/AGENTS.md' ]"
@@ -687,6 +731,7 @@ lsp) test_lsp ;;
 nvim-bridge) test_nvim_bridge ;;
 remote-control) test_remote_control ;;
 settings) test_settings ;;
+entire) test_entire ;;
 openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
@@ -703,6 +748,7 @@ all)
     test_nvim_bridge
     test_remote_control
     test_settings
+    test_entire
     # OpenClaw tests run from their own script (separate counters)
     echo ""
     source "$SCRIPT_DIR/openclaw/test-openclaw.sh"

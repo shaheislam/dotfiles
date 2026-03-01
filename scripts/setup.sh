@@ -503,6 +503,17 @@ phase_4_cloud_tools() {
             log_verbose "Beads hook setup skipped"
     fi
 
+    # Install entire CLI (AI agent session checkpoints - replaces custom checkpoints.sh)
+    if ! command_exists entire; then
+        print_step "Installing entire CLI (session checkpoints)..."
+        brew tap entireio/tap >/dev/null 2>&1 || true
+        brew install entireio/tap/entire >/dev/null 2>&1 &&
+            print_success "entire installed" ||
+            print_warning "Failed to install entire - install manually with: brew tap entireio/tap && brew install entireio/tap/entire"
+    else
+        print_success "entire CLI already installed at: $(which entire)"
+    fi
+
     # Install Claude Code Router
     if ! command_exists ccr; then
         print_step "Installing Claude Code Router..."

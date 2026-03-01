@@ -5,50 +5,50 @@
 # Only load in interactive mode
 if status is-interactive
     # ALT-G F - Git file actions (add/reset with operations)
-    bind -M default \egf '_git_fzf_file_actions'
-    bind -M insert \egf '_git_fzf_file_actions'
-    bind -M default \eg\cf '_git_fzf_file_actions'
-    bind -M insert \eg\cf '_git_fzf_file_actions'
+    bind -M default \egf _git_fzf_file_actions
+    bind -M insert \egf _git_fzf_file_actions
+    bind -M default \eg\cf _git_fzf_file_actions
+    bind -M insert \eg\cf _git_fzf_file_actions
 
     # ALT-G C - Git commit actions (checkout, reset, rebase, cherry-pick)
-    bind -M default \egc '_git_fzf_commit_actions'
-    bind -M insert \egc '_git_fzf_commit_actions'
-    bind -M default \eg\cc '_git_fzf_commit_actions'
-    bind -M insert \eg\cc '_git_fzf_commit_actions'
+    bind -M default \egc _git_fzf_commit_actions
+    bind -M insert \egc _git_fzf_commit_actions
+    bind -M default \eg\cc _git_fzf_commit_actions
+    bind -M insert \eg\cc _git_fzf_commit_actions
 
     # ALT-G B - Git branch actions (checkout, merge, rebase)
-    bind -M default \egb '_git_fzf_branch_actions'
-    bind -M insert \egb '_git_fzf_branch_actions'
-    bind -M default \eg\cb '_git_fzf_branch_actions'
-    bind -M insert \eg\cb '_git_fzf_branch_actions'
+    bind -M default \egb _git_fzf_branch_actions
+    bind -M insert \egb _git_fzf_branch_actions
+    bind -M default \eg\cb _git_fzf_branch_actions
+    bind -M insert \eg\cb _git_fzf_branch_actions
 
     # ALT-G U - Git clean/untracked file actions
-    bind -M default \egu '_git_fzf_clean_actions'
-    bind -M insert \egu '_git_fzf_clean_actions'
+    bind -M default \egu _git_fzf_clean_actions
+    bind -M insert \egu _git_fzf_clean_actions
 
     # ALT-G I - Gitignore generator
-    bind -M default \egi '_git_fzf_gitignore'
-    bind -M insert \egi '_git_fzf_gitignore'
+    bind -M default \egi _git_fzf_gitignore
+    bind -M insert \egi _git_fzf_gitignore
 
     # ALT-G A - Gitattributes generator
-    bind -M default \ega '_git_fzf_gitattributes'
-    bind -M insert \ega '_git_fzf_gitattributes'
+    bind -M default \ega _git_fzf_gitattributes
+    bind -M insert \ega _git_fzf_gitattributes
 
     # ALT-G S - Git stash push (select files to stash)
-    bind -M default \egs '_git_fzf_stash_push'
-    bind -M insert \egs '_git_fzf_stash_push'
+    bind -M default \egs _git_fzf_stash_push
+    bind -M insert \egs _git_fzf_stash_push
 
     # ALT-G L - Git blame viewer
-    bind -M default \egl '_git_fzf_blame'
-    bind -M insert \egl '_git_fzf_blame'
+    bind -M default \egl _git_fzf_blame
+    bind -M insert \egl _git_fzf_blame
 
     # ALT-G K - Git checkpoint browser
-    bind -M default \egk '_git_fzf_checkpoint_actions'
-    bind -M insert \egk '_git_fzf_checkpoint_actions'
+    bind -M default \egk _git_fzf_checkpoint_actions
+    bind -M insert \egk _git_fzf_checkpoint_actions
 
     # ALT-G ? - Show help for git fzf actions
-    bind -M default \eg\? '_git_fzf_actions_help'
-    bind -M insert \eg\? '_git_fzf_actions_help'
+    bind -M default \eg\? _git_fzf_actions_help
+    bind -M insert \eg\? _git_fzf_actions_help
 end
 
 # Help function for git fzf actions
@@ -104,7 +104,7 @@ function _git_fzf_actions_help
 │    ALT-S           Squash + autosquash (auto-rebase)                   │
 │    ALT-W           Reword + autosquash (auto-rebase)                   │
 │    ALT-V           Revert commit (create undo commit)                  │
-│    ALT-K           Toggle checkpoint preview (ckpt show)               │
+│    ALT-K           Toggle checkpoint preview (entire explain)           │
 │    CTRL-/          Toggle preview                                      │
 │    CTRL-Y/E        Scroll preview up/down                              │
 │    CTRL-U/D        Half-page preview scroll                            │

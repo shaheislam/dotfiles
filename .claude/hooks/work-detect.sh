@@ -67,11 +67,11 @@ if [[ -f "$SEANCE_FILE" ]]; then
     exit 0 # Seance context is complete — skip normal work-detect output
 fi
 
-# Try to get latest checkpoint context (fast, local-only)
+# Try to get latest checkpoint context via entire CLI (fast, local-only)
 # PERF: Added 5s timeout to prevent blocking SessionStart on slow git operations
 CKPT_SUMMARY=""
-if command -v ckpt >/dev/null 2>&1; then
-    CKPT_SUMMARY=$(timeout 5 ckpt context --commits 1 2>/dev/null | head -20) || true
+if command -v entire >/dev/null 2>&1; then
+    CKPT_SUMMARY=$(timeout 5 entire resume 2>/dev/null | head -20) || true
 fi
 
 # Check for active molecule state
