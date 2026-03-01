@@ -849,11 +849,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         if command -q bd
             if not test -d "$worktree_path/.beads"
                 cd $worktree_path
-                bd init --quiet 2>/dev/null; or true
+                bd init --quiet >/dev/null 2>&1; or true
             end
             if test -d "$worktree_path/.beads"
                 cd $worktree_path
-                bd create "$title" --external-ref "$issue_key" --description "$description" --silent 2>/dev/null; or true
+                bd create "$title" --external-ref "$issue_key" --description "$description" --silent >/dev/null 2>&1; or true
                 # GUPP Hook bead: ephemeral work-slung marker per Gastown Universal Propulsion Principle
                 bd create "hook: $issue_key" \
                     --ephemeral \
@@ -861,10 +861,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     --event-category "agent.hooked" \
                     --event-target "$issue_key" \
                     --labels "gt:hook,gt:gupp" \
-                    --silent 2>/dev/null; or true
+                    --silent >/dev/null 2>&1; or true
                 # Swarm molecule from epic (conditional)
                 if test -n "$swarm_epic_id"
-                    bd swarm create "$swarm_epic_id" 2>/dev/null; or true
+                    bd swarm create "$swarm_epic_id" >/dev/null 2>&1; or true
                 end
             end
         end
