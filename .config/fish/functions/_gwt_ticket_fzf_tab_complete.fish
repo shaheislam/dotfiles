@@ -28,7 +28,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
     end
 
     # Discover skills from all sources
-    # Each entry: "skill-name<TAB>(source) description<TAB>/path/to/SKILL.md"
+    # Each entry: "padded-name  (source)  description\t/path/to/SKILL.md"
     set -l skill_entries
     set -l skill_names
 
@@ -40,7 +40,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
             if test -f "$skill_file"
                 set -l name (basename $skill_dir)
                 set -l desc (_gwt_skill_description "$skill_file")
-                set -a skill_entries (printf '%s\t(project) %s\t%s' "$name" "$desc" "$skill_file")
+                set -a skill_entries (printf '%-30s  %-9s  %s\t%s' "$name" "(project)" "$desc" "$skill_file")
                 set -a skill_names $name
             end
         end
@@ -54,7 +54,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
             # Skip duplicates (project skills take precedence)
             if not contains -- $name $skill_names
                 set -l desc (_gwt_skill_description "$skill_file")
-                set -a skill_entries (printf '%s\t(user) %s\t%s' "$name" "$desc" "$skill_file")
+                set -a skill_entries (printf '%-30s  %-9s  %s\t%s' "$name" "(user)" "$desc" "$skill_file")
                 set -a skill_names $name
             end
         end
@@ -71,7 +71,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
                         set -l plugin_name (basename $plugin_dir)
                         set -l qualified "$plugin_name:$name"
                         set -l desc (_gwt_skill_description "$skill_file")
-                        set -a skill_entries (printf '%s\t(plugin) %s\t%s' "$qualified" "$desc" "$skill_file")
+                        set -a skill_entries (printf '%-30s  %-9s  %s\t%s' "$qualified" "(plugin)" "$desc" "$skill_file")
                         set -a skill_names $qualified
                     end
                 end
@@ -101,7 +101,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
     # Filter out already-selected skills
     set -l filtered_entries
     for entry in $skill_entries
-        set -l entry_name (printf '%s' "$entry" | cut -f1)
+        set -l entry_name (string match -r '^\S+' -- "$entry")
         if not contains -- "$entry_name" $already_selected
             set -a filtered_entries "$entry"
         end
@@ -113,15 +113,18 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
     end
 
     # Launch FZF with multiselect, preview, and scope filtering
+    # Tab delimiter separates display (field 1) from filepath (field 2)
+    # --tabstop=1 so the tab between display and hidden path takes minimal space
     set -l results (printf '%s\n' $filtered_entries \
         | fzf \
             --multi \
             --exit-0 \
+            --tabstop=1 \
             -d '\t' \
-            --with-nth=1..2 \
+            --with-nth=1 \
             --prompt='skill ❯ ' \
             --header='TAB:toggle  C-/:preview  C-a:all  C-p:project  C-u:user  C-l:plugin' \
-            --preview='bat --style=plain --color=always {3} 2>/dev/null || cat {3}' \
+            --preview='bat --style=plain --color=always {2} 2>/dev/null || cat {2}' \
             --preview-window='right:50%:wrap:hidden' \
             --bind='ctrl-/:toggle-preview' \
             --bind='ctrl-a:change-query()' \
@@ -132,8 +135,12 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
         | cut -f1)
 
     if test -n "$results"
-        # Join selected skills with spaces and insert
-        set -l selected (string join ' ' -- $results)
+        # Extract first word (skill name) from each selected line
+        set -l names
+        for line in $results
+            set -a names (string match -r '^\S+' -- "$line")
+        end
+        set -l selected (string join ' ' -- $names)
         commandline --replace --current-token -- "$selected"
         # Add trailing space so user can continue typing
         commandline --insert ' '
