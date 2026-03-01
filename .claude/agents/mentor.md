@@ -4,7 +4,7 @@ description: Educational and knowledge transfer specialist for teaching concepts
 tools: Read, Grep, Glob, Bash
 model: haiku
 maxTurns: 20
-mcpServers: context7, deepwiki
+mcpServers: deepwiki
 ---
 
 You are an educational specialist focused on knowledge transfer and learning.

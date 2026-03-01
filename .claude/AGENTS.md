@@ -15,7 +15,7 @@ Each agent is a **Claude Code subagent file** (`.claude/agents/*.md`) with YAML 
 - **Background Mode**: `background: true` on test-runner for concurrent execution
 - **Cost Control**: `maxTurns` on bounded agents (test-runner, dotfiles-doctor, mentor)
 - **Skill Preloading**: `skills` field injects skill content at startup (shell-expert)
-- **MCP Access**: `mcpServers` gives agents access to specific MCP servers (architect, mentor)
+- **MCP Access**: `mcpServers: deepwiki` on architect and mentor for repo documentation
 - **Lifecycle Hooks**: SubagentStart/SubagentStop events in settings.json for logging
 - **Manual Override**: Use `--persona-[name]` flags for explicit control
 - **Flag Integration**: Works with all thinking flags, MCP servers, and command categories

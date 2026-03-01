@@ -300,7 +300,7 @@ Custom subagents in `.claude/agents/` (Markdown files with YAML frontmatter). Lo
 | `test-runner` | haiku | Runs test suites and reports results (background) |
 | `dotfiles-doctor` | haiku | Health checks for stow, symlinks, themes, tools |
 
-**Key features**: `memory: project` on architect (cross-session learning), `background: true` on test-runner (concurrent), `maxTurns` on haiku agents (cost control), `skills: fish-reload, dotfiles-sync` on shell-expert (preloaded context), `mcpServers: context7, deepwiki` on architect and mentor (documentation access).
+**Key features**: `memory: project` on architect (cross-session learning), `background: true` on test-runner (concurrent), `maxTurns` on haiku agents (cost control), `skills: fish-reload, dotfiles-sync` on shell-expert (preloaded context), `mcpServers: deepwiki` on architect and mentor (repo documentation access).
 **Lifecycle hooks**: SubagentStart/SubagentStop events in `.claude/settings.json` for logging.
 **Docs**: `.claude/AGENTS.md` for full reference, [official docs](https://code.claude.com/docs/en/sub-agents) for frontmatter spec.
 **Tests**: `scripts/test-filter.sh subagents` (155 tests).
