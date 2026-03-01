@@ -60,6 +60,8 @@ list_groups() {
     echo "  lsp           - Claude Code LSP integration"
     echo "  nvim-bridge   - Neovim-Claude Code bridge"
     echo "  remote-control - Claude Code Remote Control"
+    echo "  settings      - Claude Code settings validation"
+    echo "  merge-driver  - CLAUDE.md merge conflict auto-resolution"
     echo "  openclaw      - OpenClaw integration"
     echo "  all           - Run all groups"
 }
@@ -687,8 +689,8 @@ lsp) test_lsp ;;
 nvim-bridge) test_nvim_bridge ;;
 remote-control) test_remote_control ;;
 settings) test_settings ;;
-merge-driver) source "$SCRIPT_DIR/tests/test-merge-driver.sh" ;;
-openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
+merge-driver) bash "$SCRIPT_DIR/tests/test-merge-driver.sh" ;;
+openclaw) bash "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 all)
     test_fish
     test_stow
@@ -704,9 +706,10 @@ all)
     test_nvim_bridge
     test_remote_control
     test_settings
-    # OpenClaw tests run from their own script (separate counters)
+    # External test suites run as subprocesses (own set -e / counters)
+    bash "$SCRIPT_DIR/tests/test-merge-driver.sh"
     echo ""
-    source "$SCRIPT_DIR/openclaw/test-openclaw.sh"
+    bash "$SCRIPT_DIR/openclaw/test-openclaw.sh"
     ;;
 *)
     echo "Unknown test group: $GROUP"
