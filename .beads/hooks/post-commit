@@ -1,4 +1,6 @@
 #!/bin/sh
 # Entire CLI hooks
 # Post-commit hook: condense session data if commit has Entire-Checkpoint trailer
-entire hooks git post-commit 2>/dev/null || true
+# Backgrounded — post-commit exit status is ignored by git anyway, and entire's
+# session condensing takes 5-6s with many active sessions.
+(entire hooks git post-commit 2>/dev/null || true) &
