@@ -168,6 +168,26 @@
         "matcher": ""
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/subagent-lifecycle.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
