@@ -1,33 +1,4 @@
 #!/usr/bin/env sh
-# bd-shim v1
-# bd-hooks-version: 0.52.0
-#
-# bd (beads) pre-commit hook - thin shim
-#
-# This shim delegates to 'bd hook pre-commit' which contains
-# the actual hook logic. This pattern ensures hook behavior is always
-# in sync with the installed bd version - no manual updates needed.
-#
-# The 'bd hook' command (singular) supports:
-# - Per-worktree export state tracking
-# - Dolt branch-then-merge pattern for cell-level conflict resolution
-# - Hook chaining configuration
-
-# Check if bd is available
-if ! command -v bd >/dev/null 2>&1; then
-    echo "Warning: bd command not found in PATH, skipping pre-commit hook" >&2
-    echo "  Install bd: brew install beads" >&2
-    echo "  Or add bd to your PATH" >&2
-    exit 0
-fi
-
-# 3s timeout: JSONL export hangs ~30s when dolt has issues.
-# Export is nice-to-have, not worth blocking commits.
-if command -v gtimeout >/dev/null 2>&1; then
-    gtimeout 3 bd hook pre-commit "$@" 2>/dev/null || true
-else
-    bd hook pre-commit "$@" 2>/dev/null &
-    _pid=$!
-    ( sleep 3 && kill $_pid 2>/dev/null ) &
-    wait $_pid 2>/dev/null || true
-fi
+# bd pre-commit hook disabled — JSONL export is broken (hangs 30s, fails)
+# and adds no value. bd data still works; use 'bd export' manually if needed.
+exit 0
