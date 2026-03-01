@@ -45,6 +45,35 @@ else
     BRANCH=$(cat "$CACHE")
 fi
 
+# --- Subscription usage (cached 60s, background refresh) ---
+USAGE_CACHE="/tmp/claude-statusline-usage"
+USAGE_SCRIPT="$HOME/dotfiles/scripts/ticket-queue/claude-usage.sh"
+USAGE_TTL=60
+USAGE_PCT=""
+
+if [ -f "$USAGE_CACHE" ]; then
+    USAGE_CACHE_AGE=$((NOW - $(stat -f %m "$USAGE_CACHE" 2>/dev/null || echo 0)))
+    USAGE_PCT=$(cat "$USAGE_CACHE" 2>/dev/null || echo "")
+
+    # Background refresh if stale
+    if [ "$USAGE_CACHE_AGE" -gt "$USAGE_TTL" ] && [ -x "$USAGE_SCRIPT" ]; then
+        (
+            json=$("$USAGE_SCRIPT" --json 2>/dev/null) || exit 0
+            pct=$(echo "$json" | jq -r '.five_hour.utilization // empty' 2>/dev/null) || exit 0
+            [ -n "$pct" ] && printf '%.0f' "$pct" >"$USAGE_CACHE"
+        ) &
+        disown 2>/dev/null
+    fi
+elif [ -x "$USAGE_SCRIPT" ]; then
+    # First call: seed cache in background
+    (
+        json=$("$USAGE_SCRIPT" --json 2>/dev/null) || exit 0
+        pct=$(echo "$json" | jq -r '.five_hour.utilization // empty' 2>/dev/null) || exit 0
+        [ -n "$pct" ] && printf '%.0f' "$pct" >"$USAGE_CACHE"
+    ) &
+    disown 2>/dev/null
+fi
+
 # Tokyo Night ANSI colors
 BLUE='\033[38;2;122;162;247m'   # #7aa2f7
 GREEN='\033[38;2;158;206;106m'  # #9ece6a
@@ -64,6 +93,20 @@ else
     PCT_COLOR="$RED"
 fi
 
+# Usage color based on percentage
+USAGE_COLOR="$DIM"
+if [ -n "$USAGE_PCT" ]; then
+    if [ "$USAGE_PCT" -lt 50 ] 2>/dev/null; then
+        USAGE_COLOR="$GREEN"
+    elif [ "$USAGE_PCT" -lt 75 ] 2>/dev/null; then
+        USAGE_COLOR="$YELLOW"
+    elif [ "$USAGE_PCT" -lt 90 ] 2>/dev/null; then
+        USAGE_COLOR="$RED"
+    else
+        USAGE_COLOR="$RED"
+    fi
+fi
+
 # Build status line
 STATUS=""
 STATUS+="${BLUE}${MODEL}${RESET}"
@@ -80,6 +123,12 @@ fi
 
 STATUS+=" ${DIM}|${RESET} "
 STATUS+="${PCT_COLOR}ctx:${PCT_INT}%${RESET}"
+
+if [ -n "$USAGE_PCT" ]; then
+    STATUS+=" ${DIM}|${RESET} "
+    STATUS+="${USAGE_COLOR}5h:${USAGE_PCT}%${RESET}"
+fi
+
 STATUS+=" ${DIM}|${RESET} "
 STATUS+="${DIM}\$${COST}${RESET}"
 
