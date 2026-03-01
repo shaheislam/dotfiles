@@ -47,32 +47,32 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
                 set -l token (commandline --current-token)
                 set -l entries
                 # Claude
-                set -a entries (printf '%s\t%s' sonnet "(claude) Sonnet 4.6 — fast, balanced")
-                set -a entries (printf '%s\t%s' opus "(claude) Opus 4.6 — most capable")
-                set -a entries (printf '%s\t%s' haiku "(claude) Haiku 4.5 — fastest, lightweight")
+                set -a entries (printf '%-18s  %-10s  %s' sonnet "(claude)" "Sonnet 4.6 — fast, balanced")
+                set -a entries (printf '%-18s  %-10s  %s' opus "(claude)" "Opus 4.6 — most capable")
+                set -a entries (printf '%-18s  %-10s  %s' haiku "(claude)" "Haiku 4.5 — fastest, lightweight")
                 # Codex / OpenAI
-                set -a entries (printf '%s\t%s' o3 "(codex) OpenAI o3 — reasoning")
-                set -a entries (printf '%s\t%s' o4-mini "(codex) OpenAI o4-mini — fast reasoning")
-                set -a entries (printf '%s\t%s' gpt-4.1 "(codex) GPT-4.1 — flagship")
+                set -a entries (printf '%-18s  %-10s  %s' o3 "(codex)" "OpenAI o3 — reasoning")
+                set -a entries (printf '%-18s  %-10s  %s' o4-mini "(codex)" "OpenAI o4-mini — fast reasoning")
+                set -a entries (printf '%-18s  %-10s  %s' gpt-4.1 "(codex)" "GPT-4.1 — flagship")
                 # Gemini
-                set -a entries (printf '%s\t%s' gemini-2.5-pro "(gemini) Gemini 2.5 Pro — thinking")
-                set -a entries (printf '%s\t%s' gemini-2.5-flash "(gemini) Gemini 2.5 Flash — fast")
+                set -a entries (printf '%-18s  %-10s  %s' gemini-2.5-pro "(gemini)" "Gemini 2.5 Pro — thinking")
+                set -a entries (printf '%-18s  %-10s  %s' gemini-2.5-flash "(gemini)" "Gemini 2.5 Flash — fast")
                 # DeepSeek
-                set -a entries (printf '%s\t%s' deepseek-r1 "(deepseek) R1 — reasoning")
-                set -a entries (printf '%s\t%s' deepseek-v3 "(deepseek) V3 — general")
+                set -a entries (printf '%-18s  %-10s  %s' deepseek-r1 "(deepseek)" "R1 — reasoning")
+                set -a entries (printf '%-18s  %-10s  %s' deepseek-v3 "(deepseek)" "V3 — general")
                 # Ollama (dynamic from local install)
                 if command -q ollama
                     for m in (ollama list 2>/dev/null | tail -n +2 | string replace -r '\s+.*' '')
-                        set -a entries (printf '%s\t%s' "$m" "(ollama) local")
+                        set -a entries (printf '%-18s  %-10s  %s' "$m" "(ollama)" "local")
                     end
                 end
                 set -l result (printf '%s\n' $entries \
-                    | fzf --exit-0 --no-multi -d '\t' --with-nth=1.. \
+                    | fzf --exit-0 --no-multi \
                         --prompt='model ❯ ' \
-                        --header='provider / model' --query="$token" \
-                    | cut -f1)
+                        --header='model              provider    description' --query="$token")
                 if test -n "$result"
-                    commandline --replace --current-token -- "$result"
+                    set -l model (string match -r '^\S+' -- "$result")
+                    commandline --replace --current-token -- "$model"
                     commandline --insert ' '
                 end
                 commandline --function repaint

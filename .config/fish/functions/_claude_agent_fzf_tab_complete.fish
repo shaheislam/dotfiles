@@ -1,7 +1,7 @@
 function _claude_agent_fzf_tab_complete -d "FZF-powered --agent tab completion with preview"
     set -l token (commandline --current-token)
 
-    # Collect agents: name<TAB>model<TAB>description<TAB>filepath
+    # Collect agents: padded-name<TAB>padded-model<TAB>description<TAB>filepath
     set -l entries
     set -l seen_names
 
@@ -15,7 +15,7 @@ function _claude_agent_fzf_tab_complete -d "FZF-powered --agent tab completion w
                 set -l model $parsed[2]
                 set -l desc $parsed[3]
                 if test -n "$name"; and not contains -- "$name" $seen_names
-                    set -a entries (printf '%s\t%s\t%s\t%s' "$name" "$model" "$desc" "$agent_file")
+                    set -a entries (printf '%-25s\t%-8s\t%s\t%s' "$name" "$model" "$desc" "$agent_file")
                     set -a seen_names $name
                 end
             end
@@ -30,7 +30,7 @@ function _claude_agent_fzf_tab_complete -d "FZF-powered --agent tab completion w
             set -l model $parsed[2]
             set -l desc $parsed[3]
             if test -n "$name"; and not contains -- "$name" $seen_names
-                set -a entries (printf '%s\t%s\t%s\t%s' "$name" "$model" "$desc" "$agent_file")
+                set -a entries (printf '%-25s\t%-8s\t%s\t%s' "$name" "$model" "$desc" "$agent_file")
                 set -a seen_names $name
             end
         end
@@ -42,20 +42,22 @@ function _claude_agent_fzf_tab_complete -d "FZF-powered --agent tab completion w
     end
 
     # FZF with preview of the agent .md file
+    # --tabstop=1 so padded fields align (printf handles column widths, tab = 1 space)
     # Display columns 1-3 (name, model, description); column 4 is the file path for preview
     set -l result (printf '%s\n' $entries \
         | fzf \
             --exit-0 \
             --no-multi \
+            --tabstop=1 \
             -d '\t' \
             --with-nth=1,2,3 \
             --prompt='agent ❯ ' \
-            --header='name / model / description' \
+            --header='name                       model     description' \
             --preview='cat {4}' \
             --preview-window=right:50%:wrap \
             --bind='ctrl-/:toggle-preview' \
             --query="$token" \
-        | cut -f1)
+        | cut -f1 | string trim)
 
     if test -n "$result"
         commandline --replace --current-token -- "$result"
