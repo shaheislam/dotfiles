@@ -28,7 +28,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
     end
 
     # Discover skills from all sources
-    # Each entry: "skill-name<TAB>(source) description"
+    # Each entry: "skill-name<TAB>(source) description<TAB>/path/to/SKILL.md"
     set -l skill_entries
     set -l skill_names
 
@@ -40,7 +40,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
             if test -f "$skill_file"
                 set -l name (basename $skill_dir)
                 set -l desc (_gwt_skill_description "$skill_file")
-                set -a skill_entries (printf '%s\t(project) %s' "$name" "$desc")
+                set -a skill_entries (printf '%s\t(project) %s\t%s' "$name" "$desc" "$skill_file")
                 set -a skill_names $name
             end
         end
@@ -54,7 +54,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
             # Skip duplicates (project skills take precedence)
             if not contains -- $name $skill_names
                 set -l desc (_gwt_skill_description "$skill_file")
-                set -a skill_entries (printf '%s\t(user) %s' "$name" "$desc")
+                set -a skill_entries (printf '%s\t(user) %s\t%s' "$name" "$desc" "$skill_file")
                 set -a skill_names $name
             end
         end
@@ -71,7 +71,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
                         set -l plugin_name (basename $plugin_dir)
                         set -l qualified "$plugin_name:$name"
                         set -l desc (_gwt_skill_description "$skill_file")
-                        set -a skill_entries (printf '%s\t(plugin) %s' "$qualified" "$desc")
+                        set -a skill_entries (printf '%s\t(plugin) %s\t%s' "$qualified" "$desc" "$skill_file")
                         set -a skill_names $qualified
                     end
                 end
@@ -112,16 +112,22 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
         return
     end
 
-    # Launch FZF with multiselect
+    # Launch FZF with multiselect, preview, and scope filtering
     set -l results (printf '%s\n' $filtered_entries \
         | fzf \
             --multi \
             --exit-0 \
             -d '\t' \
-            --with-nth=1.. \
+            --with-nth=1..2 \
             --prompt='skill ❯ ' \
-            --header='Select skills (TAB to toggle, Enter to confirm)' \
-            --preview-window=right:50%:wrap \
+            --header='TAB:toggle  C-/:preview  C-a:all  C-p:project  C-u:user  C-l:plugin' \
+            --preview='bat --style=plain --color=always {3} 2>/dev/null || cat {3}' \
+            --preview-window='right:50%:wrap:hidden' \
+            --bind='ctrl-/:toggle-preview' \
+            --bind='ctrl-a:change-query()' \
+            --bind='ctrl-p:change-query((project))' \
+            --bind='ctrl-u:change-query((user))' \
+            --bind='ctrl-l:change-query((plugin))' \
             --query="$token" \
         | cut -f1)
 
