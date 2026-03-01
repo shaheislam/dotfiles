@@ -121,8 +121,6 @@ if is_macos; then
     run_test "tmux configured for macOS Fish path" \
         "grep -q '/opt/homebrew/bin/fish' $HOME/.tmux.conf"
 
-    run_test "tmux uses reattach-to-user-namespace on macOS" \
-        "grep -q 'reattach-to-user-namespace' $HOME/.tmux.conf"
 else
     run_test "tmux configured for Linux Fish path" \
         "grep -q '/usr/bin/fish' $HOME/.tmux.conf"

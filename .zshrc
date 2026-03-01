@@ -95,7 +95,6 @@ fi
 
 # FZF configuration
 source <(fzf --zsh)
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 # FZF theme - Tokyo Night
 fg="#c0caf5"

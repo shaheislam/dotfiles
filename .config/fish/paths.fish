@@ -30,7 +30,7 @@ fish_add_path $HOME/.rd/bin # Rancher Desktop
 # Python (OS-aware)
 if test "$_os" = Darwin
     fish_add_path $HOME/Library/Python/3.9/bin # macOS Python user packages
-    set -x PYTHONPATH /opt/homebrew/lib/python3.12/site-packages
+    set -x PYTHONPATH /opt/homebrew/lib/python3.11/site-packages
 else
     # Linux Python path - use glob with fallback to avoid errors when no match
     for pypath in $HOME/.local/lib/python3.*/site-packages
