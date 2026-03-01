@@ -6,9 +6,11 @@
 set -l _os (uname -s)
 
 # OS-specific core paths
+# PERF: --move ensures Homebrew comes before /usr/bin (from /etc/paths).
+# Without this, macOS system git (2.39.5, ~1.2s git status) is used
+# instead of Homebrew git (2.49+, ~45ms git status).
 if test "$_os" = Darwin
-    # macOS Homebrew paths
-    fish_add_path /opt/homebrew/bin # Homebrew on Apple Silicon
+    fish_add_path --move /opt/homebrew/bin # Homebrew on Apple Silicon — MUST be before /usr/bin
     fish_add_path /usr/local/bin # Traditional Unix local binaries
 else
     # Linux paths
@@ -49,4 +51,18 @@ end
 # Add Cursor bin to PATH if it exists
 if test -d "/Applications/Cursor.app/Contents/Resources/app/bin"
     fish_add_path "/Applications/Cursor.app/Contents/Resources/app/bin"
+end
+
+# Clean leaked container paths from fish_user_paths (devcontainer sessions
+# can persist /home/node/* paths into universal variables)
+if set -q fish_user_paths
+    set -l cleaned
+    for p in $fish_user_paths
+        if not string match -q '/home/node/*' $p
+            set -a cleaned $p
+        end
+    end
+    if test (count $cleaned) -ne (count $fish_user_paths)
+        set -U fish_user_paths $cleaned
+    end
 end
