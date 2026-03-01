@@ -35,8 +35,26 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
             # Use claude session picker (only activates after --resume / -r)
             _claude_resume_fzf_tab_complete
         else if test "$cmd[1]" = gwt-ticket; or test "$cmd[1]" = gwtt
-            # Use gwt-ticket skill multiselect picker (only activates after --skill)
-            _gwt_ticket_fzf_tab_complete
+            # --sub picker takes priority, then skill picker
+            if test (count $cmd) -ge 2; and test "$cmd[-1]" = --sub
+                _claude_sub_fzf_tab_complete
+            else
+                _gwt_ticket_fzf_tab_complete
+            end
+        else if contains -- "$cmd[1]" gwt-claude gwtc
+            # --sub picker, else fifc
+            if test (count $cmd) -ge 2; and test "$cmd[-1]" = --sub
+                _claude_sub_fzf_tab_complete
+            else
+                _fifc
+            end
+        else if contains -- "$cmd[1]" gwt-queue gwtq
+            # --sub picker, else fifc
+            if test (count $cmd) -ge 2; and test "$cmd[-1]" = --sub
+                _claude_sub_fzf_tab_complete
+            else
+                _fifc
+            end
         else if test "$cmd[1]" = make; or test "$cmd[1]" = gmake
             # Use Makefile target fzf picker
             _make_fzf_tab_complete
