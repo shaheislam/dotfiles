@@ -894,6 +894,7 @@ if status is-interactive
     alias gwtq="gwt-queue" # Ticket queue management
     alias gwtdoc="gwt-doctor" # Agent orchestration health check
     alias csub="claude-sub" # Claude subscription profiles
+    alias cr="claude-resume" # FZF session picker for claude --resume
 
     # Ticket execution aliases
     alias tex="ticket-execute" # Execute ticket autonomously
