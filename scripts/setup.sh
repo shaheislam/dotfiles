@@ -598,6 +598,23 @@ OCEOF
             print_success "OpenClaw configuration already exists"
         fi
 
+        # Generate exec-approvals.json with secure defaults
+        if [[ ! -f "$HOME/.openclaw/exec-approvals.json" ]]; then
+            print_step "Creating exec-approvals.json with secure defaults..."
+            cat >"$HOME/.openclaw/exec-approvals.json" <<'EAEOF'
+{
+  "defaults": {
+    "require": true,
+    "skillAutoAllow": false,
+    "allowlist": []
+  },
+  "agents": {}
+}
+EAEOF
+            chmod 600 "$HOME/.openclaw/exec-approvals.json"
+            print_success "Exec approvals configured (require=true, no auto-allow)"
+        fi
+
         # Install launchd service on macOS
         if [[ "$DETECTED_OS" == "macos" ]]; then
             openclaw gateway install >/dev/null 2>&1 || log_verbose "OpenClaw launchd service setup skipped"

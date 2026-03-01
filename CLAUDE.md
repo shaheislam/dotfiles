@@ -183,10 +183,15 @@ WhatsApp/Telegram interface to Claude. Installed via `scripts/setup-mobile-codin
 ### OpenClaw AI Assistant Platform
 Self-hosted multi-channel AI inbox (Telegram, Slack, Discord, WhatsApp, Signal, WebChat). Docs: `docs/openclaw-setup.md`.
 
-**Commands**: `openclaw start|stop|status|doctor|send|audit|pair|agent` (alias: `claw`). Fish: `.config/fish/functions/openclaw.fish`.
-**Security**: Loopback binding, token auth, DM pairing, sandbox for non-main sessions. Config: `scripts/openclaw/openclaw-base.json`.
+**Commands**: `openclaw start|stop|status|doctor|send|audit|pair|agent|secrets|approvals|node|update|skills` (alias: `claw`). Fish: `.config/fish/functions/openclaw.fish`.
+**Security**: Loopback binding, token auth, DM pairing, sandbox for non-main sessions, exec approvals (`~/.openclaw/exec-approvals.json`). Config: `scripts/openclaw/openclaw-base.json`.
+**Exec Approvals**: Per-agent allowlists, skill auto-allow toggle, chat channel forwarding with `/approve`. CLI: `claw approvals`.
+**Secrets**: External secrets management via `claw secrets` (audit/configure/apply/reload). Mode: env-var references by default.
+**Skills**: Watcher auto-reloads on SKILL.md changes. CLI: `claw skills` (list/install).
+**Nodes**: Headless node host (`claw node start`), device capabilities, macOS skill execution via nodes.
+**Auto-updater**: Disabled by default (`update.auto.enabled: false`, channel: stable). Enable via `claw config`.
 **Notifications**: `oc_notify()` in `scripts/openclaw/notify.sh` for gwt-ticket, ralph-loop, merge-queue integration.
-**Runtime state**: `~/.openclaw/` (NOT in git). Tests: `scripts/test-filter.sh openclaw`.
+**Runtime state**: `~/.openclaw/` (NOT in git). Tests: `scripts/test-filter.sh openclaw` (100 tests).
 
 ### DNS Configuration
 Cloudflare DNS (1.1.1.1, 1.0.0.1) configured in `scripts/setup/macos-defaults.sh` to bypass UK ISP DNS blocking.
@@ -473,6 +478,7 @@ Custom git merge driver for CLAUDE.md and AGENTS.md that prevents conflicts when
 **Tests**: `scripts/test-filter.sh merge-driver`
 
 ### Recent Updates
+- **2026-03-01**: Updated OpenClaw integration with upstream features (exec approvals, secrets management, skills watcher, node host, auto-updater config, 5 new Fish subcommands, 100-test suite)
 - **2026-03-01**: Added Claude Code CLI Reference Guide (`docs/claude-code-cli-reference.md`) with complete CLI commands, flags, permissions, subagent config, and dotfiles integration map
 - **2026-03-01**: Added Claude Code Settings best practices ($schema validation, permission rules, sandbox config, attribution suppression, effort level env var)
 - **2026-03-01**: Migrated Claude Code from Homebrew cask to native installer (auto-updates, no Node.js dependency, `stable` release channel, `claude doctor` verification, removed legacy wrapper script)
