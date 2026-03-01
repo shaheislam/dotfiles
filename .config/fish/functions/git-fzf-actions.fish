@@ -66,7 +66,7 @@ function _git_fzf_commit_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="🍡 Git Commits" \
-            --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-F/S/W (fixup/squash/reword) | ALT-V (revert) | ALT-K (checkpoint) | CTRL-/ (preview)" \
+            --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-F/S/W (fixup/squash/reword) | ALT-V (revert) | ALT-K (checkpoint) | ALT-A (attribution) | CTRL-/ (preview)" \
             --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always" \
             --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always | less -R < /dev/tty > /dev/tty)" \
@@ -80,6 +80,7 @@ function _git_fzf_commit_actions
             --bind="alt-w:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git commit --fixup=reword:{} && GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash {}^' < /dev/tty > /dev/tty)+abort" \
             --bind="alt-v:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git revert < /dev/tty > /dev/tty)+abort" \
             --bind="alt-k:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs entire explain 2>/dev/null || echo 'No checkpoint for this commit')" \
+            --bind="alt-a:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'SHA=\$(git rev-parse {} 2>/dev/null) && for meta in \$(git ls-tree -r --name-only entire/checkpoints/v1 2>/dev/null | grep metadata.json); do MSHA=\$(git show \"entire/checkpoints/v1:\$meta\" 2>/dev/null | jq -r \".commit_sha // .commit // empty\" 2>/dev/null); case \"\$MSHA\" in \"\$SHA\"*|\"\${SHA}\"*) git show \"entire/checkpoints/v1:\$meta\" 2>/dev/null | jq -r \"if .initial_attribution then \\\"Agent: \\(.initial_attribution.agent // \\\"unknown\\\")\\\", \\\"Lines added: \\(.initial_attribution.lines_added // \\\"N/A\\\")\\\", \\\"Lines removed: \\(.initial_attribution.lines_removed // \\\"N/A\\\")\\\", \\\"Files changed: \\(.initial_attribution.files_changed // \\\"N/A\\\")\\\" elif .agent then \\\"Agent: \\(.agent)\\\", \\\"(No detailed attribution)\\\" else \\\"(No attribution data)\\\" end\" 2>/dev/null; exit 0;; esac; done; echo \"No checkpoint for this commit\"')" \
             --bind="ctrl-/:toggle-preview" \
             --bind="ctrl-y:preview-up" \
             --bind="ctrl-e:preview-down" \
@@ -286,12 +287,25 @@ function _git_fzf_checkpoint_actions
         return 0
     end
 
-    # Get checkpoint SHAs from entire's orphan branch
+    # Get checkpoint SHAs — prefer `entire rewind --list` for richer data, fallback to git ls-tree
     set -l ckpt_shas
-    for meta in (git ls-tree -r --name-only entire/checkpoints/v1 2>/dev/null | grep 'metadata.json$')
-        set -l sha (git show "entire/checkpoints/v1:$meta" 2>/dev/null | jq -r '.commit_sha // .commit // empty' 2>/dev/null)
-        if test -n "$sha"
-            set -a ckpt_shas $sha
+    set -l rewind_json (entire rewind --list 2>/dev/null)
+    if test -n "$rewind_json"
+        # Parse structured JSON from entire rewind --list
+        for sha in (echo "$rewind_json" | jq -r '.[].commit_sha // .[].commit // empty' 2>/dev/null)
+            if test -n "$sha"
+                set -a ckpt_shas $sha
+            end
+        end
+    end
+
+    # Fallback: parse metadata from orphan branch directly
+    if test (count $ckpt_shas) -eq 0
+        for meta in (git ls-tree -r --name-only entire/checkpoints/v1 2>/dev/null | grep 'metadata.json$')
+            set -l sha (git show "entire/checkpoints/v1:$meta" 2>/dev/null | jq -r '.commit_sha // .commit // empty' 2>/dev/null)
+            if test -n "$sha"
+                set -a ckpt_shas $sha
+            end
         end
     end
 
@@ -307,12 +321,13 @@ function _git_fzf_checkpoint_actions
             --multi \
             --bind 'tab:toggle+down,shift-tab:toggle+up' \
             --border-label="✦ Checkpoints" \
-            --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-V (revert) | ALT-G (git show) | CTRL-/ (preview)" \
+            --header="ENTER (show) | ALT-E (nvim) | ALT-C (checkout) | ALT-R (reset) | ALT-I (rebase) | ALT-P (pick) | ALT-V (revert) | ALT-G (git show) | ALT-A (attribution) | CTRL-/ (preview)" \
             --preview="echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs entire explain 2>/dev/null || echo 'No checkpoint data'" \
             --preview-window="right:70%:wrap,<120(right,50%,wrap)" \
             --bind="enter:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs entire explain 2>/dev/null | less -R < /dev/tty > /dev/tty)" \
             --bind="alt-e:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show | nvim -c 'set ft=git' - < /dev/tty > /dev/tty)" \
             --bind="alt-g:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git show --color=always)" \
+            --bind="alt-a:change-preview(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'SHA=\$(git rev-parse {} 2>/dev/null) && for meta in \$(git ls-tree -r --name-only entire/checkpoints/v1 2>/dev/null | grep metadata.json); do MSHA=\$(git show \"entire/checkpoints/v1:\$meta\" 2>/dev/null | jq -r \".commit_sha // .commit // empty\" 2>/dev/null); case \"\$MSHA\" in \"\$SHA\"*|\"\${SHA}\"*) git show \"entire/checkpoints/v1:\$meta\" 2>/dev/null | jq -r \"if .initial_attribution then \\\"Agent: \\(.initial_attribution.agent // \\\"unknown\\\")\\\", \\\"Lines added: \\(.initial_attribution.lines_added // \\\"N/A\\\")\\\", \\\"Lines removed: \\(.initial_attribution.lines_removed // \\\"N/A\\\")\\\", \\\"Files changed: \\(.initial_attribution.files_changed // \\\"N/A\\\")\\\" elif .agent then \\\"Agent: \\(.agent)\\\", \\\"(No detailed attribution)\\\" else \\\"(No attribution data)\\\" end\" 2>/dev/null; exit 0;; esac; done; echo \"No checkpoint for this commit\"')" \
             --bind="alt-c:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git checkout < /dev/tty > /dev/tty)+abort" \
             --bind="alt-r:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs git reset --hard < /dev/tty > /dev/tty)+abort" \
             --bind="alt-i:execute(echo {} | grep -o '[a-f0-9]\{7,\}' | head -n1 | xargs -I{} sh -c 'git rebase -i {}^' < /dev/tty > /dev/tty)+abort" \
