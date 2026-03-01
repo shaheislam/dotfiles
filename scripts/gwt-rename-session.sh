@@ -3,10 +3,9 @@
 #
 # Usage: gwt-rename-session.sh <pane_id> <window_name> [prompt_cmd_file]
 #
-# Waits for the TUI to be ready (❯ prompt), enables Remote Control so the
-# session is accessible from phone/web, delivers the initial prompt command,
-# then waits for the ralph-loop to complete and sends /rename so the Claude
-# session is named after the tmux window (ticket key or slug).
+# Waits for the TUI to be ready (❯ prompt), names the session via /rename,
+# enables Remote Control (/rc) so the session is accessible from phone/web,
+# delivers the initial prompt command, then waits for the ralph-loop to complete.
 #
 # Text and Enter MUST be separate send-keys calls — ink's TUI batches
 # combined calls and the Enter doesn't trigger submission.
@@ -67,7 +66,17 @@ fi
 # Extra stabilization
 sleep 1
 
-# Step 0: Enable Remote Control so session is accessible from phone/web.
+# Step 0a: Name the session before anything else, so /rc and phone show the right name.
+tmux send-keys -l -t "$PANE_ID" "/rename $WINDOW_NAME"
+sleep 0.2
+tmux send-keys -t "$PANE_ID" Enter
+
+if ! wait_for_idle 10 4 3; then
+    echo "Warning: /rename did not return to idle within 10s, continuing" >&2
+fi
+sleep 0.3
+
+# Step 0b: Enable Remote Control so session is accessible from phone/web.
 # /rc registers with the Anthropic API (~1-3s) and returns to ❯.
 # If it fails (auth, plan limits), we continue — prompt delivery is critical.
 tmux send-keys -l -t "$PANE_ID" "/rc"
@@ -105,9 +114,5 @@ done
 # Require ❯ in 10 out of 12 checks (~83%). This avoids false triggers from
 # brief inter-iteration pauses (1-3s = at most 3/12 = 25%) while tolerating
 # occasional TUI redraws that briefly hide ❯ during true idle.
-if wait_for_idle 14400 12 10; then
-    sleep 1
-    tmux send-keys -l -t "$PANE_ID" "/rename $WINDOW_NAME"
-    sleep 0.2
-    tmux send-keys -t "$PANE_ID" Enter
-fi
+# Wait for ralph-loop to finish. /rename was already sent in Step 0a.
+wait_for_idle 14400 12 10
