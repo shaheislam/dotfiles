@@ -11,20 +11,18 @@ function _claude_resume_fzf_tab_complete -d "FZF-powered claude --resume tab com
     # --model: show model aliases with full names
     if test (count $cmd) -ge 2; and test "$cmd[-1]" = --model
         set -l entries
-        set -a entries (printf '%s\t%s' sonnet "Claude Sonnet 4.6 (fast, balanced)")
-        set -a entries (printf '%s\t%s' opus "Claude Opus 4.6 (most capable)")
-        set -a entries (printf '%s\t%s' haiku "Claude Haiku 4.5 (fastest, lightweight)")
+        set -a entries (printf '%-8s  %s' sonnet "Claude Sonnet 4.6 (fast, balanced)")
+        set -a entries (printf '%-8s  %s' opus "Claude Opus 4.6 (most capable)")
+        set -a entries (printf '%-8s  %s' haiku "Claude Haiku 4.5 (fastest, lightweight)")
         set -l result (printf '%s\n' $entries \
             | fzf \
                 --exit-0 \
                 --no-multi \
-                -d '\t' \
-                --with-nth=1.. \
                 --prompt='model ❯ ' \
-                --header='alias / description' \
+                --header='alias     description' \
                 --query="$token")
         if test -n "$result"
-            set -l model (printf '%s' "$result" | cut -f1)
+            set -l model (string match -r '^\S+' -- "$result")
             commandline --replace --current-token -- "$model"
             commandline --insert ' '
         end

@@ -6,7 +6,7 @@ function _claude_sub_fzf_tab_complete -d "FZF-powered --sub tab completion for s
 
     # Default profile (~/.claude/)
     set -l default_info (_claude_sub_get_info "$HOME/.claude")
-    set -a entries (printf '%s\t%s' "default" "$default_info")
+    set -a entries (printf '%-12s  %s' "default" "$default_info")
 
     # Named profiles (~/.claude-*/)
     for dir in $HOME/.claude-*/
@@ -16,7 +16,7 @@ function _claude_sub_fzf_tab_complete -d "FZF-powered --sub tab completion for s
         set -l dir_name (basename "$dir")
         set -l name (string replace '.claude-' '' "$dir_name")
         set -l info (_claude_sub_get_info "$dir")
-        set -a entries (printf '%s\t%s' "$name" "$info")
+        set -a entries (printf '%-12s  %s' "$name" "$info")
     end
 
     if test (count $entries) -eq 0
@@ -28,12 +28,10 @@ function _claude_sub_fzf_tab_complete -d "FZF-powered --sub tab completion for s
         | fzf \
             --exit-0 \
             --no-multi \
-            -d '\t' \
-            --with-nth=1.. \
             --prompt='sub ❯ ' \
-            --header='name / org | plan | email' \
-            --query="$token" \
-        | cut -f1)
+            --header='name          org | plan | email' \
+            --query="$token")
+    set result (string match -r '^\S+' -- "$result")
 
     if test -n "$result"
         commandline --replace --current-token -- "$result"
