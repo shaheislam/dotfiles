@@ -448,25 +448,21 @@ phase_4_cloud_tools() {
     fi
     npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
     bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+    rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code 2>/dev/null || true
+    rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
 
     # Remove legacy Node 20 wrapper script (native binary is self-contained)
     if [[ -f "$DOTFILES_ROOT/scripts/bin/claude" ]]; then
         rm -f "$DOTFILES_ROOT/scripts/bin/claude" 2>/dev/null || true
     fi
 
-    # Install or update via native installer (places binary at ~/.local/bin/claude)
-    # Native installer auto-updates in the background; manual update via `claude update`
-    if ! command_exists claude; then
-        print_step "Installing Claude Code via native installer..."
-        curl -fsSL https://claude.ai/install.sh | bash -s stable 2>&1 &&
-            print_success "Claude Code installed (stable channel)" ||
-            print_warning "Failed to install Claude Code - install manually: curl -fsSL https://claude.ai/install.sh | bash"
+    # Always install/upgrade via native installer on latest channel
+    # The installer is idempotent — safe to run every time
+    print_step "Installing/updating Claude Code (latest channel)..."
+    if curl -fsSL https://claude.ai/install.sh | bash -s -- latest 2>&1; then
+        print_success "Claude Code installed (latest channel): $(claude --version 2>/dev/null || echo 'version check failed')"
     else
-        print_success "Claude Code CLI installed at: $(which claude)"
-        # Native installer auto-updates; force an immediate check
-        claude update >/dev/null 2>&1 &&
-            print_success "Claude Code updated to latest stable version" ||
-            print_success "Claude Code already at latest version"
+        print_warning "Failed to install Claude Code - install manually: curl -fsSL https://claude.ai/install.sh | sh -s -- latest"
     fi
 
     # Verify installation health
