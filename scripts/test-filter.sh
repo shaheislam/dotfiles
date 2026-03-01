@@ -662,7 +662,7 @@ test_entire() {
     run_test "ckpt.fish alias exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/ckpt.fish' ]"
 
     # gwt-ticket uses entire enable
-    run_test "gwt-ticket uses entire enable" "grep -q 'entire enable' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket uses entire enable" "grep -q 'entire_args enable' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     run_test "gwt-ticket no old checkpoints.sh" "! grep -q 'checkpoints.sh enable' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
 
     # Old checkpoint scripts removed
@@ -689,6 +689,33 @@ test_entire() {
     # CLAUDE.md documentation updated
     run_test "CLAUDE.md mentions entireio/cli" "grep -q 'entireio/cli' '$DOTFILES_ROOT/CLAUDE.md'"
     run_test "CLAUDE.md mentions entire enable" "grep -q 'entire enable' '$DOTFILES_ROOT/CLAUDE.md'"
+
+    # Phase 1: Project configuration
+    run_test ".entire/settings.json exists" "[ -f '$DOTFILES_ROOT/.entire/settings.json' ]"
+    run_test ".entire/settings.json has enabled key" "jq -e '.enabled' '$DOTFILES_ROOT/.entire/settings.json' >/dev/null 2>&1"
+    run_test ".entire/settings.json has commit_linking" "jq -e '.commit_linking' '$DOTFILES_ROOT/.entire/settings.json' >/dev/null 2>&1"
+    run_test ".entire/settings.json has telemetry=false" "[ \"\$(jq -r '.telemetry' '$DOTFILES_ROOT/.entire/settings.json')\" = 'false' ]"
+    run_test ".gitignore carve-out for settings.json" "grep -q '!\.entire/settings\.json' '$DOTFILES_ROOT/.gitignore'"
+
+    # Phase 2: Enhanced checkpoints.fish subcommands
+    run_test "checkpoints.fish has attribution case" "grep -q 'case attribution' '$DOTFILES_ROOT/.config/fish/functions/checkpoints.fish'"
+    run_test "checkpoints.fish has generate case" "grep -q 'case generate' '$DOTFILES_ROOT/.config/fish/functions/checkpoints.fish'"
+    run_test "checkpoints.fish has explain case" "grep -q 'case explain' '$DOTFILES_ROOT/.config/fish/functions/checkpoints.fish'"
+
+    # Phase 3: Attribution bindings in FZF browsers
+    run_test "Commit browser has ALT-A attribution" "grep -q 'alt-a:change-preview' '$DOTFILES_ROOT/.config/fish/functions/git-fzf-actions.fish'"
+    run_test "Checkpoint browser has ALT-A attribution" "grep -c 'alt-a:change-preview' '$DOTFILES_ROOT/.config/fish/functions/git-fzf-actions.fish' | grep -q '2'"
+
+    # Phase 4: Multi-agent support in gwt-ticket
+    run_test "gwt-ticket supports --ckpt-agent" "grep -q 'ckpt-agent' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket passes --agent to entire" "grep -q '\-\-agent.*ckpt_agent' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+
+    # Phase 5: Checkpoint browser uses entire rewind --list
+    run_test "Checkpoint browser tries entire rewind --list" "grep -q 'entire rewind --list' '$DOTFILES_ROOT/.config/fish/functions/git-fzf-actions.fish'"
+
+    # Phase 6: Documentation
+    run_test "CLAUDE.md documents ckpt-agent flag" "grep -q 'ckpt-agent' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md documents attribution subcommand" "grep -q 'attribution' '$DOTFILES_ROOT/CLAUDE.md'"
 }
 
 test_subagents() {
@@ -848,13 +875,8 @@ nvim-bridge) test_nvim_bridge ;;
 remote-control) test_remote_control ;;
 settings) test_settings ;;
 entire) test_entire ;;
-openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
-||||||| c16409d
-openclaw) source "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
-=======
 merge-driver) bash "$SCRIPT_DIR/tests/test-merge-driver.sh" ;;
 openclaw) bash "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
->>>>>>> mergeconflict
 all)
     test_fish
     test_stow

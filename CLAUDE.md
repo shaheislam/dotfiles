@@ -110,8 +110,11 @@ Managed by the upstream `entire` CLI ([entireio/cli](https://github.com/entireio
 - **Installation**: `brew tap entireio/tap && brew install entireio/tap/entire`
 - **Hooks**: `entire enable` installs 7 Claude Code hooks (SessionStart, SessionEnd, UserPromptSubmit, Stop, PreToolUse/Task, PostToolUse/Task, PostToolUse/TodoWrite)
 - **Per-worktree**: `gwt-ticket` runs `entire enable` automatically (`--no-checkpoints` to opt out)
+- **Multi-agent**: `entire enable --agent gemini|cursor|opencode` for non-Claude agents; `gwt-ticket --ckpt-agent NAME`
 - **Key commands**: `entire enable`, `entire status`, `entire explain <sha>`, `entire resume`, `entire rewind`, `entire doctor`
 - **Fish alias**: `ckpt` wraps `entire` with backward-compatible command translation
+- **Enhanced subcommands**: `ckpt attribution [sha]` (agent vs. human contribution), `ckpt generate [id]` (on-demand AI summary), `ckpt explain <sha> --short|--full|--raw` (output modes)
+- **Project config**: `.entire/settings.json` (tracked via gitignore carve-out) — `push_sessions: false`, `commit_linking: "always"`, `telemetry: false`
 - **Worktree support**: Shadow branches per worktree (`entire/<base>-<worktree-hash>`)
 - **Coexistence**: Complements Beads (issue-level) — different granularity, no conflict.
 
