@@ -15,6 +15,7 @@
 #       driver = scripts/merge-driver-union.sh %A %O %B %L %P
 CLAUDE.md merge=union-doc
 AGENTS.md merge=union-doc
+TODO.md   merge=union-doc
 
 # Union merge for Brewfile - both branches adding packages should keep both.
 # Deduplicates tap/brew/cask/mas lines after merge.
