@@ -464,28 +464,8 @@ monitor_loop() {
 on_completion() {
     log "Running post-completion actions"
 
-    # Rename Claude session to match branch/window name
-    local claude_pane
-    claude_pane=$(parse_yaml "claude_pane_id" "$TICKET_STATE")
-    if [[ -z "$claude_pane" && -n "$tmux_session" && -n "$tmux_window" ]]; then
-        # Fallback: find pane running claude in the target window
-        claude_pane=$(tmux list-panes -t "${tmux_session}:${tmux_window}" -F '#{pane_id} #{pane_current_command}' 2>/dev/null | grep -i claude | head -1 | awk '{print $1}')
-    fi
-    if [[ -n "$claude_pane" ]]; then
-        local rename_wait=0
-        while [[ $rename_wait -lt 60 ]]; do
-            if tmux capture-pane -t "$claude_pane" -p 2>/dev/null | grep -qF '❯'; then
-                sleep 1
-                tmux send-keys -l -t "$claude_pane" "/rename $tmux_window"
-                sleep 0.2
-                tmux send-keys -t "$claude_pane" Enter
-                log "Sent /rename $tmux_window to pane $claude_pane"
-                break
-            fi
-            sleep 2
-            rename_wait=$((rename_wait + 2))
-        done
-    fi
+    # /rename is handled by gwt-rename-session.sh (waits for ralph-loop
+    # completion, then sends /rename before witness reaches on_completion)
 
     # Sync beads agent memory before merge and close the bead
     if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then

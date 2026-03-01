@@ -34,20 +34,17 @@ check "gwt-rename-session.sh is executable" "$(test -x "$RENAME_SCRIPT" && echo 
 output=$(bash "$RENAME_SCRIPT" 2>&1 || true)
 check "Fails without arguments" "$(echo "$output" | grep -q "Usage" && echo 0 || echo 1)"
 
-# Test 3: Script validates prompt file exists
-tmpfile=$(mktemp)
-rm "$tmpfile"
-output=$(bash "$RENAME_SCRIPT" "%0" "test-name" "$tmpfile" 2>&1 || true)
-check "Fails with missing prompt file" "$(echo "$output" | grep -q "not found" && echo 0 || echo 1)"
+# Test 3: Script uses /rename command after completion
+check "Uses /rename command" "$(grep -q '/rename \$WINDOW_NAME' "$RENAME_SCRIPT" && echo 0 || echo 1)"
 
-# Test 4: Script uses /rename command
-check "Uses /rename command" "$(grep -q '/rename \$SESSION_NAME' "$RENAME_SCRIPT" && echo 0 || echo 1)"
+# Test 4: Script uses send-keys for prompt delivery
+check "Uses send-keys for prompt" "$(grep -q 'tmux send-keys -l' "$RENAME_SCRIPT" && echo 0 || echo 1)"
 
-# Test 5: Script uses tmux paste-buffer for prompt delivery
-check "Uses tmux paste-buffer" "$(grep -q 'tmux paste-buffer' "$RENAME_SCRIPT" && echo 0 || echo 1)"
+# Test 5: Script waits for TUI idle (❯ prompt)
+check "Waits for TUI idle" "$(grep -q 'wait_for_idle' "$RENAME_SCRIPT" && echo 0 || echo 1)"
 
-# Test 6: Script waits for Claude to start
-check "Waits for claude process" "$(grep -q 'pane_current_command' "$RENAME_SCRIPT" && echo 0 || echo 1)"
+# Test 6: Script waits for agent to go busy before waiting for completion
+check "Detects busy state" "$(grep -q 'busy_wait' "$RENAME_SCRIPT" && echo 0 || echo 1)"
 
 echo ""
 echo "=== gwt-ticket.fish integration tests ==="
