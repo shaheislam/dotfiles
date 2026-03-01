@@ -18,14 +18,16 @@ PROMPT_CMD_FILE="${3:-}"
 
 # Wait for Claude TUI to show the ❯ prompt indicator (fully initialized,
 # all SessionStart hooks complete, ready for input).
+# $1 = max wait seconds, $2 = required consecutive idle seconds (default: 2)
 wait_for_idle() {
     local max_wait="${1:-90}"
+    local required="${2:-2}"
     local wait_count=0
     local consecutive=0
     while [ $wait_count -lt "$max_wait" ]; do
         if tmux capture-pane -t "$PANE_ID" -p 2>/dev/null | grep -qF '❯'; then
             consecutive=$((consecutive + 1))
-            if [ $consecutive -ge 2 ]; then
+            if [ $consecutive -ge "$required" ]; then
                 return 0
             fi
         else
@@ -37,7 +39,7 @@ wait_for_idle() {
     return 1
 }
 
-if ! wait_for_idle 90; then
+if ! wait_for_idle 90 2; then
     echo "Warning: Claude TUI did not become idle within 90s, skipping" >&2
     exit 0
 fi
@@ -65,8 +67,10 @@ while [ $busy_wait -lt 30 ]; do
 done
 
 # Now wait for the ralph-loop to finish (TUI returns to idle ❯)
-# Long timeout — ralph-loop can run for hours
-if wait_for_idle 14400; then
+# Long timeout — ralph-loop can run for hours.
+# Require 15 consecutive seconds of idle to avoid false triggers from brief
+# pauses between ralph-loop iterations or during context compaction.
+if wait_for_idle 14400 15; then
     sleep 1
     tmux send-keys -l -t "$PANE_ID" "/rename $WINDOW_NAME"
     sleep 0.2
