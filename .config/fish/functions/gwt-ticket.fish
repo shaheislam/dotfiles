@@ -1269,8 +1269,7 @@ $prompt_suffix"
         echo '' >>$launch_script
     end
 
-    # Write prompt command to file for deferred delivery via gwt-rename-session.sh
-    # This separates Claude startup from prompt delivery, allowing /rename to run first
+    # Write prompt command to file — used as CLI argument for reliable prompt delivery
     set -l prompt_cmd_file "$instance_env/prompt-cmd.txt"
     if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
         printf '%s' "$slash_command \"$prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
@@ -1278,8 +1277,11 @@ $prompt_suffix"
         printf '%s' "$slash_command \"$prompt\"" >$prompt_cmd_file
     end
 
-    # Start Claude without a prompt — rename + prompt delivered by gwt-rename-session.sh
-    echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path >>$launch_script
+    # Start Claude with the prompt as a CLI argument for reliable delivery
+    # (tmux paste-buffer -p is unreliable with Claude Code's ink-based TUI)
+    # Rename is handled separately by gwt-rename-session.sh in the background
+    echo 'set -l _gwt_prompt (string collect < "'$prompt_cmd_file'")' >>$launch_script
+    echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path' "$_gwt_prompt"' >>$launch_script
 
     if not $use_devcon
         # Pane stays open for witness to use (conflict resolution, debugging)
@@ -1467,12 +1469,12 @@ $prompt_suffix"
         echo "tmux last-pane" >>$setup_script
         echo "tmux split-window -v -p 30 -c '$worktree_path'" >>$setup_script
         echo "tmux select-pane -U" >>$setup_script
-        # Background rename + prompt delivery for devcon path
+        # Background rename for devcon path (prompt delivered via CLI argument in launch script)
         set -l rename_script_devcon "$HOME/dotfiles/scripts/gwt-rename-session.sh"
         if not test -x "$rename_script_devcon"
             set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
         end
-        echo "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &" >>$setup_script
+        echo "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' &" >>$setup_script
         echo disown >>$setup_script
         if test (count $nvim_ai_files) -gt 0
             echo "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" >>$setup_script
@@ -1510,13 +1512,12 @@ $prompt_suffix"
             tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
         end
 
-        # Step 4: Rename Claude session and deliver task prompt
-        # Runs in background: waits for Claude TUI to init, sends /rename, then pastes prompt
+        # Step 4: Rename Claude session (prompt delivered via CLI argument in launch script)
         set -l rename_script "$HOME/dotfiles/scripts/gwt-rename-session.sh"
         if not test -x "$rename_script"
             set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
         end
-        bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
+        bash "$rename_script" "$claude_pane_id" "$window_name" &
         disown
     end
 

@@ -1,18 +1,31 @@
 #!/usr/bin/env bash
 # gwt-rename-session.sh - Rename Claude Code session to ticket/task name
 #
-# Usage: gwt-rename-session.sh <pane_id> <session_name> <prompt_cmd_file>
+# Usage: gwt-rename-session.sh <pane_id> <session_name>
+#
+# Prompt delivery is handled by the launch script (CLI argument),
+# not by this script. This script only renames the session.
 
 set -euo pipefail
 
-PANE_ID="${1:?Usage: gwt-rename-session.sh <pane_id> <session_name> <prompt_cmd_file>}"
+PANE_ID="${1:?Usage: gwt-rename-session.sh <pane_id> <session_name>}"
 SESSION_NAME="${2:?Missing session name}"
-PROMPT_CMD_FILE="${3:?Missing prompt command file}"
 
-if [ ! -f "$PROMPT_CMD_FILE" ]; then
-    echo "Error: prompt command file not found: $PROMPT_CMD_FILE" >&2
-    exit 1
-fi
+# Wait for Claude TUI to be fully idle (shows input prompt indicator).
+# The ❯ character appears when Claude is initialized and ready for input,
+# after all SessionStart hooks have completed.
+wait_for_idle() {
+    local max_wait="${1:-45}"
+    local wait_count=0
+    while [ $wait_count -lt "$max_wait" ]; do
+        if tmux capture-pane -t "$PANE_ID" -p 2>/dev/null | grep -qF '❯'; then
+            return 0
+        fi
+        sleep 1
+        wait_count=$((wait_count + 1))
+    done
+    return 1
+}
 
 # Wait for Claude to be the foreground process (up to 60 seconds)
 attempts=0
@@ -30,23 +43,10 @@ if [ $attempts -ge 60 ]; then
     exit 0
 fi
 
-# Extra wait for TUI initialization
-sleep 2
+# Wait for TUI to be fully initialized (hooks complete, input area ready)
+if ! wait_for_idle 45; then
+    echo "Warning: Claude TUI did not become idle within 45s, attempting anyway" >&2
+fi
 
 # Send /rename command (instant TUI command, no AI processing)
 tmux send-keys -t "$PANE_ID" "/rename $SESSION_NAME" Enter
-
-# Wait for rename to complete before delivering prompt
-sleep 1
-
-# Deliver the task prompt via tmux paste-buffer
-# -p enables bracketed paste mode so newlines don't trigger premature submission
-tmux load-buffer -b gwt-prompt "$PROMPT_CMD_FILE"
-tmux paste-buffer -t "$PANE_ID" -b gwt-prompt -p -d 2>/dev/null || {
-    # Fallback: older tmux without -p (bracketed paste)
-    tmux load-buffer -b gwt-prompt "$PROMPT_CMD_FILE"
-    tmux paste-buffer -t "$PANE_ID" -b gwt-prompt -d
-}
-
-# Submit the prompt
-tmux send-keys -t "$PANE_ID" Enter
