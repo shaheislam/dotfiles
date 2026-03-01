@@ -40,7 +40,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
             if test -f "$skill_file"
                 set -l name (basename $skill_dir)
                 set -l desc (_gwt_skill_description "$skill_file")
-                set -a skill_entries (printf '%s\t(project) %s' "$name" "$desc")
+                set -a skill_entries (printf '%-30s  %-9s  %s' "$name" "(project)" "$desc")
                 set -a skill_names $name
             end
         end
@@ -54,7 +54,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
             # Skip duplicates (project skills take precedence)
             if not contains -- $name $skill_names
                 set -l desc (_gwt_skill_description "$skill_file")
-                set -a skill_entries (printf '%s\t(user) %s' "$name" "$desc")
+                set -a skill_entries (printf '%-30s  %-9s  %s' "$name" "(user)" "$desc")
                 set -a skill_names $name
             end
         end
@@ -71,7 +71,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
                         set -l plugin_name (basename $plugin_dir)
                         set -l qualified "$plugin_name:$name"
                         set -l desc (_gwt_skill_description "$skill_file")
-                        set -a skill_entries (printf '%s\t(plugin) %s' "$qualified" "$desc")
+                        set -a skill_entries (printf '%-30s  %-9s  %s' "$qualified" "(plugin)" "$desc")
                         set -a skill_names $qualified
                     end
                 end
@@ -101,7 +101,7 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
     # Filter out already-selected skills
     set -l filtered_entries
     for entry in $skill_entries
-        set -l entry_name (printf '%s' "$entry" | cut -f1)
+        set -l entry_name (string match -r '^\S+' -- "$entry")
         if not contains -- "$entry_name" $already_selected
             set -a filtered_entries "$entry"
         end
@@ -117,17 +117,18 @@ function _gwt_ticket_fzf_tab_complete -d "FZF-powered gwt-ticket tab completion 
         | fzf \
             --multi \
             --exit-0 \
-            -d '\t' \
-            --with-nth=1.. \
             --prompt='skill ❯ ' \
-            --header='Select skills (TAB to toggle, Enter to confirm)' \
+            --header='skill                           source     description' \
             --preview-window=right:50%:wrap \
-            --query="$token" \
-        | cut -f1)
+            --query="$token")
 
     if test -n "$results"
-        # Join selected skills with spaces and insert
-        set -l selected (string join ' ' -- $results)
+        # Extract first word (skill name) from each selected line
+        set -l names
+        for line in $results
+            set -a names (string match -r '^\S+' -- "$line")
+        end
+        set -l selected (string join ' ' -- $names)
         commandline --replace --current-token -- "$selected"
         # Add trailing space so user can continue typing
         commandline --insert ' '
