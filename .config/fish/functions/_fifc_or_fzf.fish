@@ -40,21 +40,37 @@ function _fifc_or_fzf -d "Wrapper to route TAB completion between git/docker/kub
                 _claude_sub_fzf_tab_complete
             else if test (count $cmd) -ge 2; and test "$cmd[-1]" = --agent
                 _claude_agent_fzf_tab_complete
-            else if test (count $cmd) -ge 2; and test "$cmd[-1]" = --bridge-providers
+            else if test (count $cmd) -ge 2; and test "$cmd[-1]" = --bridge
                 _bridge_provider_fzf_tab_complete
             else if test (count $cmd) -ge 2; and test "$cmd[-1]" = --model
-                # Ollama model picker for gwt-ticket --model
+                # Cross-provider model picker
                 set -l token (commandline --current-token)
-                set -l models
+                set -l entries
+                # Claude
+                set -a entries (printf '%s\t%s' sonnet "(claude) Sonnet 4.6 — fast, balanced")
+                set -a entries (printf '%s\t%s' opus "(claude) Opus 4.6 — most capable")
+                set -a entries (printf '%s\t%s' haiku "(claude) Haiku 4.5 — fastest, lightweight")
+                # Codex / OpenAI
+                set -a entries (printf '%s\t%s' o3 "(codex) OpenAI o3 — reasoning")
+                set -a entries (printf '%s\t%s' o4-mini "(codex) OpenAI o4-mini — fast reasoning")
+                set -a entries (printf '%s\t%s' gpt-4.1 "(codex) GPT-4.1 — flagship")
+                # Gemini
+                set -a entries (printf '%s\t%s' gemini-2.5-pro "(gemini) Gemini 2.5 Pro — thinking")
+                set -a entries (printf '%s\t%s' gemini-2.5-flash "(gemini) Gemini 2.5 Flash — fast")
+                # DeepSeek
+                set -a entries (printf '%s\t%s' deepseek-r1 "(deepseek) R1 — reasoning")
+                set -a entries (printf '%s\t%s' deepseek-v3 "(deepseek) V3 — general")
+                # Ollama (dynamic from local install)
                 if command -q ollama
-                    set models (ollama list 2>/dev/null | tail -n +2 | string replace -r '\s+.*' '')
+                    for m in (ollama list 2>/dev/null | tail -n +2 | string replace -r '\s+.*' '')
+                        set -a entries (printf '%s\t%s' "$m" "(ollama) local")
+                    end
                 end
-                if test (count $models) -eq 0
-                    set models qwen2.5-coder:7b qwen2.5-coder:1.5b llama3.2:latest
-                end
-                set -l result (printf '%s\n' $models \
-                    | fzf --exit-0 --no-multi --prompt='ollama model ❯ ' \
-                        --header='Installed Ollama models' --query="$token")
+                set -l result (printf '%s\n' $entries \
+                    | fzf --exit-0 --no-multi -d '\t' --with-nth=1.. \
+                        --prompt='model ❯ ' \
+                        --header='provider / model' --query="$token" \
+                    | cut -f1)
                 if test -n "$result"
                     commandline --replace --current-token -- "$result"
                     commandline --insert ' '

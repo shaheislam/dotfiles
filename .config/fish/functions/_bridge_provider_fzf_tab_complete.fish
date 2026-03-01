@@ -1,14 +1,14 @@
-function _bridge_provider_fzf_tab_complete -d "FZF multiselect picker for --bridge-providers"
+function _bridge_provider_fzf_tab_complete -d "FZF multiselect picker for bridge providers"
     set -l token (commandline --current-token)
 
-    # Known providers with descriptions
-    set -l entries \
-        "codex\tOpenAI Codex CLI (default first provider)" \
-        "gemini\tGoogle Gemini" \
-        "ollama\tLocal Ollama models" \
-        "deepseek\tDeepSeek API" \
-        "claude\tClaude via subscription rotation" \
-        "opencode\tOpenCode CLI"
+    # Known providers with descriptions (tab-separated via printf)
+    set -l entries
+    set -a entries (printf '%s\t%s' codex "OpenAI Codex CLI (default first provider)")
+    set -a entries (printf '%s\t%s' gemini "Google Gemini")
+    set -a entries (printf '%s\t%s' ollama "Local Ollama models")
+    set -a entries (printf '%s\t%s' deepseek "DeepSeek API")
+    set -a entries (printf '%s\t%s' claude "Claude via subscription rotation")
+    set -a entries (printf '%s\t%s' opencode "OpenCode CLI")
 
     set -l results (printf '%s\n' $entries \
         | fzf \
@@ -22,9 +22,9 @@ function _bridge_provider_fzf_tab_complete -d "FZF multiselect picker for --brid
         | cut -f1)
 
     if test -n "$results"
-        # Join with commas for --bridge-providers format
         set -l selected (string join ',' -- $results)
-        commandline --replace --current-token -- "$selected"
+        # Insert --bridge-providers flag+value (--bridge is already on the command line)
+        commandline --replace --current-token -- "--bridge-providers $selected"
         commandline --insert ' '
     end
     commandline --function repaint
