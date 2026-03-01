@@ -267,7 +267,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 # Optional: --bridge N sets max consensus iterations
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
-                    if string match -qr '^[0-9]+$' $argv[$next_i]
+                    if string match -qr '^[0-9]+$' -- $argv[$next_i]
                         set bridge_iterations $argv[$next_i]
                         set skip_next true
                     end

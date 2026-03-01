@@ -220,6 +220,12 @@ test_tmux() {
         "grep -q '\\-\\-skill NAME' '$GWT_TICKET'"
     run_test "gwt-ticket --skill documented in header comment" \
         "grep -q '#.*--skill NAME' '$GWT_TICKET'"
+
+    # --bridge optional arg uses -- to prevent flag injection into string match
+    run_test "gwt-ticket --bridge string match uses -- separator" \
+        "grep -q 'string match -qr.*\\^\\[0-9\\].*-- \\\$argv' '$GWT_TICKET'"
+    run_test "gwt-ticket --bridge --skill combination safe (no string match error)" \
+        "fish -c 'string match -qr \"^[0-9]+\\\$\" -- \"--skill\"; or true'"
 }
 
 test_hooks() {
