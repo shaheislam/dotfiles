@@ -60,25 +60,53 @@ install_package_group() {
     print_step "Installing $group_name packages..."
     echo ""
 
-    local failed=()
-    local installed=()
+    local to_install=()
     local skipped=()
 
+    # First pass: check what's already installed
     for package in "${packages[@]}"; do
         if pm_is_installed "$package"; then
             skipped+=("$package")
             print_success "Already installed: $package"
-            continue
-        fi
-
-        if pm_install "$package"; then
-            installed+=("$package")
-            print_success "Installed: $package"
         else
-            failed+=("$package")
-            print_warning "Failed to install: $package"
+            to_install+=("$package")
         fi
     done
+
+    local installed=()
+    local failed=()
+
+    # Batch install missing packages (single brew invocation resolves deps once)
+    if [[ ${#to_install[@]} -gt 0 ]] && declare -f pm_install_batch >/dev/null 2>&1; then
+        if pm_install_batch "${to_install[@]}"; then
+            installed=("${to_install[@]}")
+            for pkg in "${to_install[@]}"; do
+                print_success "Installed: $pkg"
+            done
+        else
+            # Batch failed — fall back to individual installs for granular error reporting
+            for package in "${to_install[@]}"; do
+                if pm_install "$package"; then
+                    installed+=("$package")
+                    print_success "Installed: $package"
+                else
+                    failed+=("$package")
+                    print_warning "Failed to install: $package"
+                fi
+            done
+        fi
+    else
+        # No batch function available — install individually
+        for package in "${to_install[@]}"; do
+            if pm_install "$package"; then
+                installed+=("$package")
+                print_success "Installed: $package"
+            else
+                failed+=("$package")
+                print_warning "Failed to install: $package"
+            fi
+        done
+    fi
 
     # Phase summary
     echo ""
@@ -169,7 +197,7 @@ get_package_list_from_profile() {
                 packages+=("$key")
             fi
         fi
-    done < "$profile_file"
+    done <"$profile_file"
 
     # Return packages as space-separated string
     echo "${packages[*]}"

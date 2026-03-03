@@ -395,15 +395,16 @@ phase_3_development() {
         fi
     fi
 
-    # Install Python MCP servers via pipx
+    # Install Python MCP servers via pipx (parallel — each creates an isolated venv)
     if command_exists pipx; then
-        print_step "Installing Python-based MCP servers..."
-        pipx install mcp-server-git >/dev/null 2>&1 || print_warning "Failed to install mcp-server-git"
-        pipx install mcp-server-fetch >/dev/null 2>&1 || print_warning "Failed to install mcp-server-fetch"
-        pipx install mcp-server-sqlite >/dev/null 2>&1 || print_warning "Failed to install mcp-server-sqlite"
-        pipx install diagrams >/dev/null 2>&1 || print_warning "Failed to install diagrams (for AWS diagram MCP)"
-        pipx install hookify >/dev/null 2>&1 || print_warning "Failed to install hookify"
-        pip3 install websockets >/dev/null 2>&1 || print_warning "Failed to install websockets (optional for ClaudeCodeBrowser WebSocket mode)"
+        print_step "Installing Python-based MCP servers (parallel)..."
+        pipx install mcp-server-git >/dev/null 2>&1 &
+        pipx install mcp-server-fetch >/dev/null 2>&1 &
+        pipx install mcp-server-sqlite >/dev/null 2>&1 &
+        pipx install diagrams >/dev/null 2>&1 &
+        pipx install hookify >/dev/null 2>&1 &
+        pip3 install websockets >/dev/null 2>&1 &
+        wait
         print_success "Python MCP servers installation complete"
     fi
 
@@ -472,58 +473,95 @@ phase_4_cloud_tools() {
             log_verbose "Claude Code doctor reported warnings (non-fatal)"
     fi
 
-    # Install recall (Claude Code conversation search/resume tool)
-    if ! command_exists recall; then
-        print_step "Installing recall (Claude conversation search)..."
-        brew install zippoxer/tap/recall >/dev/null 2>&1 &&
-            print_success "recall installed" ||
-            print_warning "Failed to install recall - install manually with: brew install zippoxer/tap/recall"
-    else
-        print_success "recall already installed at: $(which recall)"
-    fi
+    # Install independent CLI tools in parallel
+    # Each tool installs to a separate location — no shared state
+    print_step "Installing CLI tools (parallel)..."
 
-    # Install beads CLI (agent memory / git-backed issue tracker)
-    if ! command_exists bd; then
-        print_step "Installing beads (agent memory)..."
-        brew install beads >/dev/null 2>&1 &&
-            print_success "beads installed" ||
-            print_warning "Failed to install beads - install manually with: brew install beads"
-    else
-        print_success "beads CLI already installed at: $(which bd)"
-    fi
+    _install_recall() {
+        if ! command_exists recall; then
+            brew install zippoxer/tap/recall >/dev/null 2>&1 &&
+                print_success "recall installed" ||
+                print_warning "Failed to install recall"
+        else
+            print_success "recall already installed"
+        fi
+    }
 
+    _install_beads() {
+        if ! command_exists bd; then
+            brew install beads >/dev/null 2>&1 &&
+                print_success "beads installed" ||
+                print_warning "Failed to install beads"
+        else
+            print_success "beads CLI already installed"
+        fi
+    }
+
+    _install_entire() {
+        if ! command_exists entire; then
+            brew tap entireio/tap >/dev/null 2>&1 || true
+            brew install entireio/tap/entire >/dev/null 2>&1 &&
+                print_success "entire installed" ||
+                print_warning "Failed to install entire"
+        else
+            print_success "entire CLI already installed"
+        fi
+    }
+
+    _install_ccr() {
+        if ! command_exists ccr; then
+            if command_exists bun; then
+                bun install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
+                    print_success "Claude Code Router installed" ||
+                    print_warning "Failed to install Claude Code Router"
+            elif command_exists npm; then
+                npm install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
+                    print_success "Claude Code Router installed" ||
+                    print_warning "Failed to install Claude Code Router"
+            fi
+        else
+            print_success "Claude Code Router already installed"
+        fi
+    }
+
+    _install_codex() {
+        if ! command_exists codex; then
+            if command_exists bun; then
+                bun add -g @openai/codex >/dev/null 2>&1 ||
+                    log_verbose "OpenAI Codex CLI installation skipped (optional)"
+            elif command_exists npm; then
+                if npm install -g @openai/codex >/dev/null 2>&1; then
+                    true
+                else
+                    npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 ||
+                        log_verbose "OpenAI Codex CLI installation skipped (optional)"
+                fi
+            fi
+        fi
+    }
+
+    _install_openclaw() {
+        if ! command_exists openclaw; then
+            brew install openclaw-cli >/dev/null 2>&1 ||
+                log_verbose "OpenClaw CLI installation skipped (optional)"
+        fi
+    }
+
+    # Run all tool installs in parallel
+    _install_recall &
+    _install_beads &
+    _install_entire &
+    _install_ccr &
+    _install_codex &
+    _install_openclaw &
+    wait
+
+    # Post-install: beads hooks (depends on beads being installed)
     if command_exists bd; then
         print_step "Configuring beads Claude Code hooks..."
         bd setup claude >/dev/null 2>&1 &&
             print_success "Beads hooks installed" ||
             log_verbose "Beads hook setup skipped"
-    fi
-
-    # Install entire CLI (AI agent session checkpoints - replaces custom checkpoints.sh)
-    if ! command_exists entire; then
-        print_step "Installing entire CLI (session checkpoints)..."
-        brew tap entireio/tap >/dev/null 2>&1 || true
-        brew install entireio/tap/entire >/dev/null 2>&1 &&
-            print_success "entire installed" ||
-            print_warning "Failed to install entire - install manually with: brew tap entireio/tap && brew install entireio/tap/entire"
-    else
-        print_success "entire CLI already installed at: $(which entire)"
-    fi
-
-    # Install Claude Code Router
-    if ! command_exists ccr; then
-        print_step "Installing Claude Code Router..."
-        if command_exists bun; then
-            bun install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
-                print_success "Claude Code Router installed" ||
-                print_warning "Failed to install Claude Code Router"
-        elif command_exists npm; then
-            npm install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
-                print_success "Claude Code Router installed" ||
-                print_warning "Failed to install Claude Code Router"
-        fi
-    else
-        print_success "Claude Code Router already installed at: $(which ccr)"
     fi
 
     # Setup Claude Code Router configuration
@@ -532,41 +570,6 @@ phase_4_cloud_tools() {
         mkdir -p "$HOME/.claude-code-router"
         ln -sf "$DOTFILES_ROOT/.config/claude-code-router/config.json" "$HOME/.claude-code-router/config.json"
         print_success "Claude Code Router configuration linked from dotfiles"
-    fi
-
-    # Legacy wrapper removed: native Claude Code binary is self-contained (no Node.js needed)
-
-    # Install OpenAI Codex CLI (with sudo fallback for Linux)
-    if ! command_exists codex; then
-        print_step "Installing OpenAI Codex CLI..."
-        if command_exists bun; then
-            bun add -g @openai/codex >/dev/null 2>&1 &&
-                print_success "OpenAI Codex CLI installed" ||
-                log_verbose "OpenAI Codex CLI installation skipped (optional)"
-        elif command_exists npm; then
-            # Try global install first, fallback to user-local on Linux
-            if npm install -g @openai/codex >/dev/null 2>&1; then
-                print_success "OpenAI Codex CLI installed"
-            else
-                # Fallback to user-local installation
-                npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 &&
-                    export PATH="$HOME/.local/node_modules/.bin:$PATH" &&
-                    print_success "OpenAI Codex CLI installed (user-local)" ||
-                    log_verbose "OpenAI Codex CLI installation skipped (optional)"
-            fi
-        fi
-    else
-        print_success "OpenAI Codex CLI already installed at: $(which codex)"
-    fi
-
-    # OpenClaw gateway CLI (installed via Brewfile as openclaw-cli)
-    if ! command_exists openclaw; then
-        print_step "Installing OpenClaw gateway CLI..."
-        brew install openclaw-cli >/dev/null 2>&1 &&
-            print_success "OpenClaw CLI installed" ||
-            log_verbose "OpenClaw CLI installation skipped (optional)"
-    else
-        print_success "OpenClaw CLI already installed at: $(which openclaw)"
     fi
 
     # Configure OpenClaw with security-hardened defaults
@@ -633,7 +636,7 @@ EAEOF
     if command_exists claude; then
         print_step "Configuring Claude Code MCP servers..."
 
-        # Core MCP servers
+        # Core MCP servers (sequential — all write to shared settings.json)
         claude mcp add --scope user context7 bunx @upstash/context7-mcp >/dev/null 2>&1 || true
         claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
         claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
@@ -822,14 +825,15 @@ NMHEOF
         # Install Claude Code plugins from anthropics/claude-code marketplace
         print_step "Installing Claude Code plugins..."
 
-        # Add marketplaces (idempotent - will skip if already added)
+        # Add marketplaces (idempotent — will skip if already added)
         claude plugin marketplace add anthropics/claude-code >/dev/null 2>&1 || true
         claude plugin marketplace add kenryu42/cc-marketplace >/dev/null 2>&1 || true
         claude plugin marketplace add antonbabenko/terraform-skill >/dev/null 2>&1 || true
         claude plugin marketplace add anthropics/skills >/dev/null 2>&1 || true
         claude plugin marketplace add obra/superpowers-marketplace >/dev/null 2>&1 || true
+        claude plugin marketplace add steveyegge/beads >/dev/null 2>&1 || true
 
-        # Tier 1 - High value plugins
+        # Install plugins (sequential — all write to shared settings.json)
         claude plugin install code-review@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install pr-review-toolkit@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install hookify@claude-code-plugins >/dev/null 2>&1 || true
@@ -837,26 +841,14 @@ NMHEOF
         claude plugin install frontend-design@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install plugin-dev@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install ralph-wiggum@claude-code-plugins >/dev/null 2>&1 || true
-
-        # Tier 2 - Situational plugins
         claude plugin install agent-sdk-dev@claude-code-plugins >/dev/null 2>&1 || true
-        # claude-opus-4-5-migration removed: Opus 4.6 is current, plugin is stale
         claude plugin install explanatory-output-style@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install learning-output-style@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install code-simplifier@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install security-guidance@claude-code-plugins >/dev/null 2>&1 || true
-
-        # Infrastructure/Terraform skill
         claude plugin install terraform-skill@antonbabenko >/dev/null 2>&1 || true
-
-        # Agent memory / issue tracking
-        claude plugin marketplace add steveyegge/beads >/dev/null 2>&1 || true
         claude plugin install beads@steveyegge/beads >/dev/null 2>&1 || true
-
-        # Skills marketplaces - official skills and superpowers framework
-        # Alias: anthropic-agent-skills (contains example-skills which bundles skill-creator)
         claude plugin install example-skills@anthropic-agent-skills >/dev/null 2>&1 || true
-        # Alias: superpowers-marketplace
         claude plugin install superpowers@superpowers-marketplace >/dev/null 2>&1 || true
 
         print_success "Claude Code plugins installed (16 plugins, 7 marketplaces)"
@@ -871,8 +863,7 @@ NMHEOF
         # Add LSP plugin marketplace (boostvolt - broadest language coverage: 22 languages)
         claude plugin marketplace add boostvolt/claude-code-lsps >/dev/null 2>&1 || true
 
-        # Install LSP plugins for languages used in this dotfiles/DevOps workflow
-        # Each plugin configures .lsp.json for Claude Code; the LSP binary must be in PATH separately
+        # Install LSP plugins (sequential — all write to shared settings.json)
         claude plugin install pyright@claude-code-lsps >/dev/null 2>&1 || true       # Python
         claude plugin install typescript@claude-code-lsps >/dev/null 2>&1 || true    # TypeScript/JavaScript
         claude plugin install gopls@claude-code-lsps >/dev/null 2>&1 || true         # Go
@@ -1071,25 +1062,36 @@ phase_6_multiplexer() {
             "fabioluciano/tmux-powerkit"     # Status bar powerline theme
         )
 
+        # Clone missing plugins in parallel
+        local clone_pids=()
         for plugin in "${tmux_plugins[@]}"; do
             local plugin_name="${plugin##*/}"
             if [[ ! -d "$plugins_dir/$plugin_name" ]]; then
                 log_verbose "Installing $plugin_name..."
-                git clone "https://github.com/$plugin.git" "$plugins_dir/$plugin_name" 2>/dev/null || true
+                git clone "https://github.com/$plugin.git" "$plugins_dir/$plugin_name" 2>/dev/null &
+                clone_pids+=($!)
             fi
+        done
+        # Wait for all parallel clones to finish
+        for pid in "${clone_pids[@]}"; do
+            wait "$pid" 2>/dev/null || true
         done
 
         print_success "Tmux plugins installed"
 
-        # Build tmux-thumbs (requires Rust compilation with macOS SDK fix)
+        # Build tmux-thumbs only if binary doesn't exist (skip expensive Rust compilation)
         if [[ -d "$plugins_dir/tmux-thumbs" ]] && command_exists cargo; then
-            print_step "Building tmux-thumbs..."
-            (cd "$plugins_dir/tmux-thumbs" &&
-                SDKROOT=$(xcrun --sdk macosx --show-sdk-path) \
-                LIBRARY_PATH="$(xcrun --sdk macosx --show-sdk-path)/usr/lib" \
-                    cargo build --release) >/dev/null 2>&1 &&
-                print_success "tmux-thumbs built" ||
-                log_verbose "tmux-thumbs build failed (run manually: cd ~/.tmux/plugins/tmux-thumbs && SDKROOT=\$(xcrun --sdk macosx --show-sdk-path) cargo build --release)"
+            if [[ ! -f "$plugins_dir/tmux-thumbs/target/release/tmux-thumbs" ]]; then
+                print_step "Building tmux-thumbs..."
+                (cd "$plugins_dir/tmux-thumbs" &&
+                    SDKROOT=$(xcrun --sdk macosx --show-sdk-path) \
+                    LIBRARY_PATH="$(xcrun --sdk macosx --show-sdk-path)/usr/lib" \
+                        cargo build --release) >/dev/null 2>&1 &&
+                    print_success "tmux-thumbs built" ||
+                    log_verbose "tmux-thumbs build failed (run manually: cd ~/.tmux/plugins/tmux-thumbs && SDKROOT=\$(xcrun --sdk macosx --show-sdk-path) cargo build --release)"
+            else
+                print_success "tmux-thumbs already built"
+            fi
         fi
 
         # Update existing plugins and clean stale ones via TPM
@@ -1293,7 +1295,7 @@ phase_9_fonts_and_apps() {
 
     # macOS-specific installations
     if [[ "$DETECTED_OS" == "macos" ]]; then
-        # Install Nerd Fonts
+        # Install Nerd Fonts (batch — single brew invocation)
         print_step "Installing Nerd Fonts..."
         local fonts=(
             "font-iosevka-nerd-font"
@@ -1301,17 +1303,19 @@ phase_9_fonts_and_apps() {
             "font-fira-code-nerd-font"
             "font-hack-nerd-font"
         )
+        local fonts_to_install=()
         for font in "${fonts[@]}"; do
             if pm_is_installed "$font"; then
                 print_success "$font already installed"
             else
-                if brew install --cask "$font" >/dev/null 2>&1; then
-                    print_success "$font installed"
-                else
-                    print_warning "Failed to install $font"
-                fi
+                fonts_to_install+=("$font")
             fi
         done
+        if [[ ${#fonts_to_install[@]} -gt 0 ]]; then
+            brew install --cask "${fonts_to_install[@]}" >/dev/null 2>&1 &&
+                print_success "Installed ${#fonts_to_install[@]} fonts" ||
+                print_warning "Some fonts failed to install"
+        fi
 
         # Check for DankMono Nerd Font
         if fc-list 2>/dev/null | grep -qi "DankMono"; then
@@ -1322,7 +1326,7 @@ phase_9_fonts_and_apps() {
             echo "  Then: cp /tmp/my-fonts/DankMono\\ Nerd\\ Font/*.otf ~/Library/Fonts/"
         fi
 
-        # Install GUI Applications
+        # Install GUI Applications (batch — single brew invocation)
         print_step "Installing GUI Applications..."
         local gui_apps=(
             "raycast"
@@ -1332,19 +1336,20 @@ phase_9_fonts_and_apps() {
             "ngrok"
             "altair-graphql-client"
         )
-
+        local apps_to_install=()
         for app in "${gui_apps[@]}"; do
             local app_name="${app##*/}"
             if pm_is_installed "$app_name"; then
                 print_success "$app_name already installed"
             else
-                if brew install --cask "$app" >/dev/null 2>&1; then
-                    print_success "$app_name installed"
-                else
-                    log_verbose "Failed to install $app_name (may not be available)"
-                fi
+                apps_to_install+=("$app")
             fi
         done
+        if [[ ${#apps_to_install[@]} -gt 0 ]]; then
+            brew install --cask "${apps_to_install[@]}" >/dev/null 2>&1 &&
+                print_success "Installed ${#apps_to_install[@]} GUI applications" ||
+                log_verbose "Some GUI applications failed to install"
+        fi
 
         # Execute macOS defaults configuration
         if [[ -f "$DOTFILES_ROOT/scripts/setup/macos-defaults.sh" ]]; then
@@ -1489,12 +1494,20 @@ phase_10_advanced_features() {
         print_success "Kubernetes configuration initialized"
     fi
 
-    # Rust tools installation
+    # Rust tools installation (skip if binaries already exist)
     if command_exists cargo; then
-        print_step "Installing Rust development tools..."
-        cargo install stylua s3grep >/dev/null 2>&1 &&
-            print_success "Rust tools installed (stylua, s3grep)" ||
-            log_verbose "Rust tools installation completed with warnings"
+        local cargo_to_install=()
+        command_exists stylua || cargo_to_install+=(stylua)
+        command_exists s3grep || cargo_to_install+=(s3grep)
+
+        if [[ ${#cargo_to_install[@]} -gt 0 ]]; then
+            print_step "Installing Rust development tools: ${cargo_to_install[*]}..."
+            cargo install "${cargo_to_install[@]}" >/dev/null 2>&1 &&
+                print_success "Rust tools installed (${cargo_to_install[*]})" ||
+                log_verbose "Rust tools installation completed with warnings"
+        else
+            print_success "Rust tools already installed (stylua, s3grep)"
+        fi
     fi
 
     # Personal repositories (optional - check for SSH key)
@@ -1963,16 +1976,26 @@ main() {
     show_summary
 
     # Run installation phases
+    # Phases 1-4: sequential (each may depend on packages from earlier phases)
     phase_1_core_packages
     phase_2_cli_tools
     phase_3_development
     phase_4_cloud_tools
-    phase_5_editors
-    phase_6_multiplexer
+
+    # Phases 5-6: parallel (editors and multiplexer are independent)
+    phase_5_editors &
+    phase_6_multiplexer &
+    wait
+
+    # Phases 7-8: sequential (shells setup writes to ~/.config/fish which stow also manages)
     phase_7_shells
     phase_8_dotfiles
-    phase_9_fonts_and_apps
-    phase_10_advanced_features
+
+    # Phase 9-10: parallel (fonts/apps and advanced features are independent)
+    phase_9_fonts_and_apps &
+    phase_10_advanced_features &
+    wait
+
     phase_11_optional_features
 
     # Success
