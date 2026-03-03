@@ -62,6 +62,10 @@ start_daemon() {
 
     mkdir -p "$STATE_DIR"
 
+    # Fully detach the daemon so parent `wait` never blocks on it.
+    # </dev/null severs stdin; >/dev/null 2>&1 prevents tty output;
+    # the outer subshell + disown ensures the daemon is not a child
+    # of the calling shell's process group.
     (
         trap "rm -f '$PID_FILE'" EXIT
 
@@ -76,7 +80,8 @@ start_daemon() {
             check_all_windows
             sleep "$POLL_INTERVAL"
         done
-    ) &
+    ) </dev/null >/dev/null 2>&1 &
+    disown
 
     echo $! >"$PID_FILE"
     echo "Watcher started (PID $!)"

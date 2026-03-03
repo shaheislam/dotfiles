@@ -1086,7 +1086,7 @@ phase_6_multiplexer() {
         print_step "Resetting Claude activity watcher..."
         rm -rf /tmp/tmux-claude-state/* 2>/dev/null
         "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" stop 2>/dev/null
-        "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" start 2>/dev/null
+        "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" start </dev/null 2>/dev/null
         print_success "Claude watcher restarted"
     fi
 
