@@ -41,11 +41,9 @@ setup_fish() {
         "jhillyerd/plugin-git"
     )
 
+    # Batch install all plugins in a single Fisher invocation (one Fish process instead of 9)
     print_step "Installing Fish plugins..."
-    for plugin in "${plugins[@]}"; do
-        log_verbose "Installing $plugin..."
-        fish -c "fisher install $plugin" 2>/dev/null || true
-    done
+    fish -c "fisher install ${plugins[*]}" 2>/dev/null || true
 
     print_success "Fish shell configured with ${#plugins[@]} plugins"
 }
@@ -98,16 +96,22 @@ setup_zsh() {
         "zsh-syntax-highlighting:zsh-users/zsh-syntax-highlighting"
     )
 
+    # Clone missing plugins in parallel
+    local zsh_pids=()
     for plugin_def in "${plugins[@]}"; do
         local plugin_name="${plugin_def%%:*}"
         local plugin_repo="${plugin_def##*:}"
 
         if [[ ! -d "$zsh_custom/plugins/$plugin_name" ]]; then
             log_verbose "Installing $plugin_name..."
-            git clone "https://github.com/$plugin_repo.git" "$zsh_custom/plugins/$plugin_name" 2>/dev/null || true
+            git clone "https://github.com/$plugin_repo.git" "$zsh_custom/plugins/$plugin_name" 2>/dev/null &
+            zsh_pids+=($!)
         else
             log_verbose "$plugin_name already installed"
         fi
+    done
+    for pid in "${zsh_pids[@]}"; do
+        wait "$pid" 2>/dev/null || true
     done
 
     print_success "Zsh shell configured with Powerlevel10k and ${#plugins[@]} plugins"
@@ -136,15 +140,15 @@ setup_starship() {
     local fish_config="$HOME/.config/fish/config.fish"
 
     if [[ -f "$bashrc" ]] && ! grep -q "starship init" "$bashrc"; then
-        echo 'eval "$(starship init bash)"' >> "$bashrc"
+        echo 'eval "$(starship init bash)"' >>"$bashrc"
     fi
 
     if [[ -f "$zshrc" ]] && ! grep -q "starship init" "$zshrc"; then
-        echo 'eval "$(starship init zsh)"' >> "$zshrc"
+        echo 'eval "$(starship init zsh)"' >>"$zshrc"
     fi
 
     if [[ -f "$fish_config" ]] && ! grep -q "starship init" "$fish_config"; then
-        echo 'starship init fish | source' >> "$fish_config"
+        echo 'starship init fish | source' >>"$fish_config"
     fi
 
     print_success "Starship configured"

@@ -359,7 +359,7 @@ phase_3_development() {
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
         else
             print_step "Installing Node.js via nvm..."
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash </dev/null
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm install 22
@@ -390,7 +390,7 @@ phase_3_development() {
             source "$HOME/.cargo/env" 2>/dev/null || true
         else
             print_step "Installing Rust via rustup..."
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y </dev/null
             source "$HOME/.cargo/env"
         fi
     fi
@@ -443,24 +443,25 @@ phase_4_cloud_tools() {
         print_success "Homebrew Claude Code removed (migrating to native)"
     fi
 
-    # Clean up legacy installations (npm, bun, old local)
+    # Clean up legacy installations (only if remnants exist — skip slow npm/bun scans otherwise)
     if [[ -d "$HOME/.claude/local" ]]; then
         rm -rf "$HOME/.claude/local" 2>/dev/null || true
     fi
-    npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
-    bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
-    rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code 2>/dev/null || true
-    rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
-
-    # Remove legacy Node 20 wrapper script (native binary is self-contained)
-    if [[ -f "$DOTFILES_ROOT/scripts/bin/claude" ]]; then
-        rm -f "$DOTFILES_ROOT/scripts/bin/claude" 2>/dev/null || true
+    if [[ -d "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code" ]]; then
+        npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+        rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code 2>/dev/null || true
     fi
+    if command_exists bun && bun pm ls -g 2>/dev/null | grep -q "@anthropic-ai/claude-code"; then
+        bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+    fi
+    rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
+    rm -f "$DOTFILES_ROOT/scripts/bin/claude" 2>/dev/null || true
 
     # Always install/upgrade via native installer on latest channel
     # The installer is idempotent — safe to run every time
     print_step "Installing/updating Claude Code (latest channel)..."
-    if curl -fsSL https://claude.ai/install.sh | bash -s -- latest 2>&1; then
+    # Close stdin (</dev/null) so the piped bash can't consume the parent script's input stream
+    if curl -fsSL https://claude.ai/install.sh | bash -s -- latest </dev/null 2>&1; then
         print_success "Claude Code installed (latest channel): $(claude --version 2>/dev/null || echo 'version check failed')"
     else
         print_warning "Failed to install Claude Code - install manually: curl -fsSL https://claude.ai/install.sh | sh -s -- latest"
@@ -623,7 +624,7 @@ EAEOF
     # Install iximiuz labctl CLI
     if ! command_exists labctl; then
         print_step "Installing iximiuz labctl CLI..."
-        if curl -sf https://labs.iximiuz.com/cli/install.sh | sh >/dev/null 2>&1; then
+        if curl -sf https://labs.iximiuz.com/cli/install.sh | sh </dev/null >/dev/null 2>&1; then
             print_success "iximiuz labctl CLI installed"
         else
             log_verbose "iximiuz labctl installation skipped (optional)"
@@ -725,30 +726,36 @@ NMHEOF
         claude config set --global preferredNotifChannel terminal_bell >/dev/null 2>&1 &&
             print_success "Claude Code notification channel set to terminal_bell" || true
 
-        # Set release channel to latest (immediate updates, avoids stable channel updater lag)
-        # Reference: https://code.claude.com/docs/en/setup#configure-release-channel
+        # Apply all ~/.claude.json settings in a single jq pass (avoids 7 separate read-modify-write cycles)
         if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.autoUpdatesChannel = "latest" | .autoUpdates = true' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
+            jq '
+                # Auto-updates on latest channel
+                .autoUpdatesChannel = "latest" | .autoUpdates = true |
+                # Remove legacy auto-compact override if present
+                if .autoCompactEnabled == false then del(.autoCompactEnabled) else . end |
+                # Agent teams teammate mode
+                .teammateMode = "auto" |
+                # Remote control for all sessions
+                .enableRemoteControl = true |
+                # Sandbox settings (filesystem + network isolation)
+                .sandbox = {
+                    "enabled": true,
+                    "autoAllowBashIfSandboxed": true,
+                    "excludedCommands": ["docker", "colima"],
+                    "filesystem": {
+                        "allowWrite": ["~/.kube", "//tmp", "~/.cache", "~/.local"],
+                        "denyRead": ["~/.aws/credentials", "~/.ssh/id_*", "~/.gnupg/private-keys-v1.d"]
+                    }
+                } |
+                # Suppress AI attribution in commits/PRs (per CLAUDE.md rules)
+                .attribution = {"commit": "", "pr": ""}
+            ' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
                 mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                print_success "Claude Code auto-updates enabled (latest channel)" || true
+                print_success "Claude Code settings configured (updates, sandbox, teams, remote control, attribution)" || true
         fi
 
-        # Auto-compact: left enabled (default) since 2.1.21 fixed early triggering.
-        # Long ralph-loop sessions benefit from mid-session compaction.
-        # Previously disabled via jq hack (issue #6689) - no longer needed.
-
-        # Re-enable auto-compact if previously disabled by older setup.sh
-        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            if jq -e '.autoCompactEnabled == false' "$HOME/.claude.json" >/dev/null 2>&1; then
-                jq 'del(.autoCompactEnabled)' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
-                    mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                    print_success "Claude Code auto-compact re-enabled (removed legacy override)" || true
-            fi
-        fi
-
-        # Enable Agent Teams (experimental) with tmux split-pane mode
+        # Enable Agent Teams (experimental) with tmux split-pane mode in settings.json
         # Reference: https://code.claude.com/docs/en/agent-teams
-        # Settings go into ~/.claude/settings.json (env var + teammateMode)
         local global_settings="$HOME/.claude/settings.json"
         if command_exists jq && [[ -f "$global_settings" ]]; then
             jq '.env["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1" | .teammateMode = "tmux"' \
@@ -757,57 +764,6 @@ NMHEOF
                 print_success "Claude Code Agent Teams enabled (tmux split-pane mode)" || true
         else
             log_verbose "Skipping Agent Teams config: jq or settings.json not found"
-        fi
-
-        # Enable experimental agent teams (multi-session coordination)
-        # Reference: https://code.claude.com/docs/en/agent-teams
-        # Also configured in .claude/settings.json env block for per-project enablement
-        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.teammateMode = "auto"' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
-                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                print_success "Claude Code agent teams teammate mode set to auto" || true
-        fi
-
-        # Enable Remote Control for all sessions
-        # Reference: https://code.claude.com/docs/en/remote-control
-        # Allows continuing local Claude Code sessions from phone, tablet, or any browser
-        # via claude.ai/code or the Claude mobile app. Session runs locally; remote is just a window.
-        # The /config toggle ("Enable Remote Control for all sessions") stores this in
-        # ~/.claude.json. We set it directly so all devices get this on first setup.
-        # Key name follows the convention of other /config toggles (autoCompactEnabled, etc.).
-        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.enableRemoteControl = true' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
-                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                print_success "Claude Code Remote Control enabled for all sessions" || true
-        fi
-
-        # Configure sandbox settings for defense-in-depth security
-        # Reference: https://code.claude.com/docs/en/sandboxing
-        # Sandbox provides OS-level filesystem and network isolation for Bash commands.
-        # allowWrite grants subprocess write access to paths outside the project directory.
-        # denyRead blocks subprocess access to sensitive credential files.
-        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.sandbox = {
-                "enabled": true,
-                "autoAllowBashIfSandboxed": true,
-                "excludedCommands": ["docker", "colima"],
-                "filesystem": {
-                    "allowWrite": ["~/.kube", "//tmp", "~/.cache", "~/.local"],
-                    "denyRead": ["~/.aws/credentials", "~/.ssh/id_*", "~/.gnupg/private-keys-v1.d"]
-                }
-            }' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
-                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                print_success "Claude Code sandbox configured (filesystem + network isolation)" || true
-        fi
-
-        # Configure attribution settings for git commits and PRs
-        # Reference: https://code.claude.com/docs/en/settings
-        # Empty strings suppress the default AI attribution trailer.
-        # CLAUDE.md already requires no AI references in commit messages.
-        if [[ -f "$HOME/.claude.json" ]] && command_exists jq; then
-            jq '.attribution = {"commit": "", "pr": ""}' "$HOME/.claude.json" >"$HOME/.claude.json.tmp" &&
-                mv "$HOME/.claude.json.tmp" "$HOME/.claude.json" &&
-                print_success "Claude Code attribution suppressed (per CLAUDE.md commit rules)" || true
         fi
 
         # Create Claude Code provider profile directory and install template script
@@ -1094,11 +1050,15 @@ phase_6_multiplexer() {
             fi
         fi
 
-        # Update existing plugins and clean stale ones via TPM
-        print_step "Updating tmux plugins and cleaning stale ones..."
-        "$HOME/.tmux/plugins/tpm/bin/update_plugins" all >/dev/null 2>&1 &&
-            log_verbose "Tmux plugins updated" ||
-            log_verbose "Tmux plugin update completed with warnings"
+        # Update plugins and clean stale ones via TPM (skip update if we just cloned fresh)
+        if [[ ${#clone_pids[@]} -eq 0 ]]; then
+            print_step "Updating tmux plugins..."
+            "$HOME/.tmux/plugins/tpm/bin/update_plugins" all >/dev/null 2>&1 &&
+                log_verbose "Tmux plugins updated" ||
+                log_verbose "Tmux plugin update completed with warnings"
+        else
+            log_verbose "Skipping plugin update (just cloned fresh)"
+        fi
         "$HOME/.tmux/plugins/tpm/bin/clean_plugins" >/dev/null 2>&1 &&
             log_verbose "Stale tmux plugins cleaned" ||
             log_verbose "Tmux plugin cleanup completed with warnings"
@@ -1649,7 +1609,7 @@ phase_11_optional_features() {
         if ! command_exists nix; then
             print_step "Installing Nix package manager (Determinate Systems installer)..."
             # Use Determinate Systems installer for better macOS support
-            if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm; then
+            if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm </dev/null; then
                 print_success "Nix package manager installed"
                 # Source Nix for current session
                 [[ -f '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]] &&

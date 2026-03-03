@@ -46,7 +46,8 @@ pm_update() {
         return 0
     fi
     print_step "Updating Homebrew..."
-    brew update
+    # Tolerate partial failures (e.g., network errors fetching metadata)
+    brew update 2>&1 || log_verbose "Homebrew update completed with warnings"
 }
 
 pm_install() {
@@ -68,14 +69,21 @@ pm_install_batch() {
     local mapped=()
 
     for pkg in "${packages[@]}"; do
-        mapped+=($(pm_map_package_name "$pkg"))
+        local name
+        name=$(pm_map_package_name "$pkg")
+        # Skip packages that map to empty (not available on this OS)
+        [[ -n "$name" ]] && mapped+=("$name")
     done
+
+    if [[ ${#mapped[@]} -eq 0 ]]; then
+        return 0
+    fi
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         print_warning "DRY RUN: Would install batch via brew: ${mapped[*]}"
         return 0
     fi
-    brew install "${mapped[@]}"
+    brew install "${mapped[@]}" 2>&1 | grep -v "already installed" || return 0
 }
 
 pm_is_installed() {
@@ -108,43 +116,43 @@ pm_map_package_name() {
     local generic=$1
 
     case "$generic" in
-        # Core tools
-        build-essential) echo "" ;; # Not needed on macOS
-        development-tools) echo "" ;;
+    # Core tools
+    build-essential) echo "" ;; # Not needed on macOS
+    development-tools) echo "" ;;
 
-        # CLI tools - most have same names
-        ripgrep|fd|fzf|bat|jq|htop|curl|wget|git|stow|tmux) echo "$generic" ;;
+    # CLI tools - most have same names
+    ripgrep | fd | fzf | bat | jq | htop | curl | wget | git | stow | tmux) echo "$generic" ;;
 
-        # Modern CLI tools
-        eza) echo "eza" ;;
-        zoxide) echo "zoxide" ;;
-        starship) echo "starship" ;;
-        direnv) echo "direnv" ;;
+    # Modern CLI tools
+    eza) echo "eza" ;;
+    zoxide) echo "zoxide" ;;
+    starship) echo "starship" ;;
+    direnv) echo "direnv" ;;
 
-        # Shells
-        fish) echo "fish" ;;
-        zsh) echo "zsh" ;; # Built-in but brew version newer
+    # Shells
+    fish) echo "fish" ;;
+    zsh) echo "zsh" ;; # Built-in but brew version newer
 
-        # Editors
-        neovim) echo "neovim" ;;
+    # Editors
+    neovim) echo "neovim" ;;
 
-        # Development
-        nodejs) echo "node" ;;
-        python) echo "python@3.11" ;;
-        golang) echo "go" ;;
-        rust) echo "rust" ;;
+    # Development
+    nodejs) echo "node" ;;
+    python) echo "python@3.11" ;;
+    golang) echo "go" ;;
+    rust) echo "rust" ;;
 
-        # Cloud tools
-        awscli) echo "awscli" ;;
-        kubectl) echo "kubectl" ;;
-        helm) echo "helm" ;;
-        terraform) echo "terraform" ;;
+    # Cloud tools
+    awscli) echo "awscli" ;;
+    kubectl) echo "kubectl" ;;
+    helm) echo "helm" ;;
+    terraform) echo "terraform" ;;
 
-        # Casks (require --cask flag)
-        ollama) echo "--cask ollama" ;;
+    # Casks (require --cask flag)
+    ollama) echo "--cask ollama" ;;
 
-        # Default: return as-is
-        *) echo "$generic" ;;
+    # Default: return as-is
+    *) echo "$generic" ;;
     esac
 }
 
