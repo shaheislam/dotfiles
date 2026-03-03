@@ -258,9 +258,8 @@ show_summary() {
         echo ""
     fi
 
-    if [[ "$NO_CONFIRM" != "true" ]]; then
-        confirm "Proceed with installation?" || exit 0
-    fi
+    # Auto-proceed — no interactive confirmation needed
+
 }
 
 # ============================================================================
