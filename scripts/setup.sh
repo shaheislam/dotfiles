@@ -459,8 +459,8 @@ phase_4_cloud_tools() {
     # Always install/upgrade via native installer on latest channel
     # The installer is idempotent — safe to run every time
     print_step "Installing/updating Claude Code (latest channel)..."
-    # Close stdin (</dev/null) so the piped bash can't consume the parent script's input stream
-    if curl -fsSL https://claude.ai/install.sh | bash -s -- latest </dev/null 2>&1; then
+    # Wrap in a group with </dev/null so the entire pipeline (curl + bash) cannot consume parent stdin
+    if { curl -fsSL https://claude.ai/install.sh | bash -s -- latest 2>&1; } </dev/null; then
         print_success "Claude Code installed (latest channel): $(claude --version 2>/dev/null || echo 'version check failed')"
     else
         print_warning "Failed to install Claude Code - install manually: curl -fsSL https://claude.ai/install.sh | sh -s -- latest"
