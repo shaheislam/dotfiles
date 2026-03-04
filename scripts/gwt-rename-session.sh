@@ -25,6 +25,7 @@ wait_for_idle() {
     local max_wait="${1:-90}"
     local window="${2:-4}"
     local threshold="${3:-3}"
+    local sleep_interval="${4:-1}"
     local wait_count=0
 
     # Ring buffer: 0=not idle, 1=idle
@@ -51,7 +52,7 @@ wait_for_idle() {
             return 0
         fi
 
-        sleep 1
+        sleep "$sleep_interval"
         wait_count=$((wait_count + 1))
     done
     return 1
@@ -63,9 +64,6 @@ if ! wait_for_idle 90 4 3; then
     exit 0
 fi
 
-# Extra stabilization
-sleep 1
-
 # Step 0a: Name the session before anything else, so /rc and phone show the right name.
 tmux send-keys -l -t "$PANE_ID" "/rename $WINDOW_NAME"
 sleep 0.2
@@ -74,7 +72,6 @@ tmux send-keys -t "$PANE_ID" Enter
 if ! wait_for_idle 10 4 3; then
     echo "Warning: /rename did not return to idle within 10s, continuing" >&2
 fi
-sleep 0.3
 
 # Step 0b: Enable Remote Control so session is accessible from phone/web.
 # /rc registers with the Anthropic API (~1-3s) and returns to ❯.
@@ -88,11 +85,10 @@ tmux send-keys -t "$PANE_ID" Enter
 if ! wait_for_idle 15 4 3; then
     echo "Warning: /rc did not return to idle within 15s, continuing" >&2
 fi
-sleep 0.5
 
 # Step 1: Deliver prompt (this creates the session JSONL file)
 if [ -n "$PROMPT_CMD_FILE" ] && [ -f "$PROMPT_CMD_FILE" ]; then
-    PROMPT_CMD=$(cat "$PROMPT_CMD_FILE")
+    PROMPT_CMD=$(<"$PROMPT_CMD_FILE")
     tmux send-keys -l -t "$PANE_ID" "$PROMPT_CMD"
     sleep 0.2
     tmux send-keys -t "$PANE_ID" Enter
@@ -115,4 +111,4 @@ done
 # brief inter-iteration pauses (1-3s = at most 3/12 = 25%) while tolerating
 # occasional TUI redraws that briefly hide ❯ during true idle.
 # Wait for ralph-loop to finish. /rename was already sent in Step 0a.
-wait_for_idle 14400 12 10
+wait_for_idle 14400 12 10 2
