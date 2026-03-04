@@ -34,7 +34,8 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/json-helpers.sh"
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+source "$SCRIPT_DIR/lib/json-helpers.sh"
 
 ensure_file() {
     mkdir -p "$(dirname "$CONVOY_FILE")"
@@ -214,7 +215,7 @@ cmd_complete() {
 
         # Send notification via agent-mail if available
         local mail_script
-        mail_script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/agent-mail.sh"
+        mail_script="$SCRIPT_DIR/agent-mail.sh"
         if [[ -x "$mail_script" ]]; then
             "$mail_script" send all -s "Convoy Complete: ${name}" -m "All tickets in convoy ${convoy_id} (${name}) have completed." --from "convoy" 2>/dev/null || true
         fi
@@ -456,8 +457,8 @@ cmd_find_or_create() {
 
     ensure_file
 
-    # Look for an active convoy with this name
-    if [[ -s "$CONVOY_FILE" ]]; then
+    # Look for an active convoy with this name (grep pre-filter avoids full jq parse)
+    if [[ -s "$CONVOY_FILE" ]] && grep -qF "\"$name\"" "$CONVOY_FILE" 2>/dev/null; then
         local existing_id
         existing_id=$(jq -r --arg name "$name" '
           select(.name == $name) |
