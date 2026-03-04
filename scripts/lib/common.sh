@@ -58,12 +58,12 @@ log_verbose() {
     if [[ "${VERBOSE:-false}" == "true" ]]; then
         echo -e "${MAGENTA}[VERBOSE] $1${NC}" | tee -a "$LOG_FILE"
     else
-        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >>"$LOG_FILE"
     fi
 }
 
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$LOG_FILE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$LOG_FILE"
 }
 
 # ============================================================================
@@ -74,23 +74,23 @@ detect_os() {
     local os_type=$(uname -s)
 
     case "$os_type" in
-        Darwin*)
-            echo "macos"
-            ;;
-        Linux*)
-            # Check for WSL (Windows Subsystem for Linux)
-            if grep -qi "microsoft" /proc/version 2>/dev/null; then
-                echo "wsl"
-            else
-                echo "linux"
-            fi
-            ;;
-        MINGW*|MSYS*|CYGWIN*)
-            echo "windows"
-            ;;
-        *)
-            echo "unknown"
-            ;;
+    Darwin*)
+        echo "macos"
+        ;;
+    Linux*)
+        # Check for WSL (Windows Subsystem for Linux)
+        if grep -qi "microsoft" /proc/version 2>/dev/null; then
+            echo "wsl"
+        else
+            echo "linux"
+        fi
+        ;;
+    MINGW* | MSYS* | CYGWIN*)
+        echo "windows"
+        ;;
+    *)
+        echo "unknown"
+        ;;
     esac
 }
 
@@ -149,20 +149,20 @@ detect_os_version() {
     local os=$(detect_os)
 
     case "$os" in
-        macos)
-            sw_vers -productVersion
-            ;;
-        linux)
-            if [[ -f /etc/os-release ]]; then
-                . /etc/os-release
-                echo "$VERSION_ID"
-            else
-                echo "unknown"
-            fi
-            ;;
-        *)
+    macos)
+        sw_vers -productVersion
+        ;;
+    linux)
+        if [[ -f /etc/os-release ]]; then
+            . /etc/os-release
+            echo "$VERSION_ID"
+        else
             echo "unknown"
-            ;;
+        fi
+        ;;
+    *)
+        echo "unknown"
+        ;;
     esac
 }
 
@@ -174,18 +174,18 @@ detect_arch() {
     local arch=$(uname -m)
 
     case "$arch" in
-        x86_64|amd64)
-            echo "x86_64"
-            ;;
-        aarch64|arm64)
-            echo "arm64"
-            ;;
-        armv7l)
-            echo "armv7"
-            ;;
-        *)
-            echo "$arch"
-            ;;
+    x86_64 | amd64)
+        echo "x86_64"
+        ;;
+    aarch64 | arm64)
+        echo "arm64"
+        ;;
+    armv7l)
+        echo "armv7"
+        ;;
+    *)
+        echo "$arch"
+        ;;
     esac
 }
 
@@ -194,19 +194,19 @@ get_arch_suffix() {
     local os=$(detect_os)
 
     case "$os" in
-        macos)
-            case "$arch" in
-                x86_64) echo "x86_64-apple-darwin" ;;
-                arm64) echo "aarch64-apple-darwin" ;;
-            esac
-            ;;
-        linux)
-            case "$arch" in
-                x86_64) echo "x86_64-unknown-linux-gnu" ;;
-                arm64) echo "aarch64-unknown-linux-gnu" ;;
-                armv7) echo "armv7-unknown-linux-gnueabihf" ;;
-            esac
-            ;;
+    macos)
+        case "$arch" in
+        x86_64) echo "x86_64-apple-darwin" ;;
+        arm64) echo "aarch64-apple-darwin" ;;
+        esac
+        ;;
+    linux)
+        case "$arch" in
+        x86_64) echo "x86_64-unknown-linux-gnu" ;;
+        arm64) echo "aarch64-unknown-linux-gnu" ;;
+        armv7) echo "armv7-unknown-linux-gnueabihf" ;;
+        esac
+        ;;
     esac
 }
 
@@ -215,8 +215,8 @@ get_arch_suffix() {
 # ============================================================================
 
 check_internet() {
-    if ping -c 1 -W 2 8.8.8.8 &>/dev/null || \
-       ping -c 1 -W 2 1.1.1.1 &>/dev/null; then
+    if ping -c 1 -W 2 8.8.8.8 &>/dev/null ||
+        ping -c 1 -W 2 1.1.1.1 &>/dev/null; then
         return 0
     else
         return 1
@@ -270,15 +270,15 @@ get_cpu_cores() {
     local os=$(detect_os)
 
     case "$os" in
-        macos)
-            sysctl -n hw.ncpu
-            ;;
-        linux)
-            nproc
-            ;;
-        *)
-            echo "1"
-            ;;
+    macos)
+        sysctl -n hw.ncpu
+        ;;
+    linux)
+        nproc
+        ;;
+    *)
+        echo "1"
+        ;;
     esac
 }
 
@@ -361,9 +361,9 @@ add_to_path() {
 
     # Add to shell config
     if [[ -f "$shell_config" ]] && ! grep -q "$path_dir" "$shell_config"; then
-        echo "" >> "$shell_config"
-        echo "# Added by dotfiles setup" >> "$shell_config"
-        echo "export PATH=\"$path_dir:\$PATH\"" >> "$shell_config"
+        echo "" >>"$shell_config"
+        echo "# Added by dotfiles setup" >>"$shell_config"
+        echo "export PATH=\"$path_dir:\$PATH\"" >>"$shell_config"
         print_success "Added $path_dir to PATH in $shell_config"
     fi
 }
@@ -444,22 +444,22 @@ extract_archive() {
     local dest_dir=$2
 
     case "$archive" in
-        *.tar.gz|*.tgz)
-            tar xzf "$archive" -C "$dest_dir"
-            ;;
-        *.tar.bz2|*.tbz2)
-            tar xjf "$archive" -C "$dest_dir"
-            ;;
-        *.tar.xz|*.txz)
-            tar xJf "$archive" -C "$dest_dir"
-            ;;
-        *.zip)
-            unzip -q "$archive" -d "$dest_dir"
-            ;;
-        *)
-            print_error "Unknown archive format: $archive"
-            return 1
-            ;;
+    *.tar.gz | *.tgz)
+        tar xzf "$archive" -C "$dest_dir"
+        ;;
+    *.tar.bz2 | *.tbz2)
+        tar xjf "$archive" -C "$dest_dir"
+        ;;
+    *.tar.xz | *.txz)
+        tar xJf "$archive" -C "$dest_dir"
+        ;;
+    *.zip)
+        unzip -q "$archive" -d "$dest_dir"
+        ;;
+    *)
+        print_error "Unknown archive format: $archive"
+        return 1
+        ;;
     esac
 
     log_verbose "Extracted: $archive -> $dest_dir"
@@ -477,7 +477,11 @@ mark_step_complete() {
 
 is_step_complete() {
     local step_name=$1
-    [[ -f "$STATE_DIR/${step_name}.complete" ]]
+    if [[ -f "$STATE_DIR/${step_name}.complete" ]]; then
+        echo "true"
+    else
+        echo "false"
+    fi
 }
 
 clear_state() {
@@ -534,12 +538,12 @@ confirm() {
     read -p "$(echo -e "${YELLOW}${prompt} [y/N]${NC} ")" yn
 
     case "$yn" in
-        [Yy]*)
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
+    [Yy]*)
+        return 0
+        ;;
+    *)
+        return 1
+        ;;
     esac
 }
 

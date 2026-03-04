@@ -79,7 +79,7 @@ EXAMPLES:
     $0 --profile minimal --no-confirm
 
     # Enable optional features (Nix, Pulse, Pi-Hole, Self-Hosted LLM)
-    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true $0 ENABLE_SELFHOST_LLM=true $0 --profile comprehensive
+    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true ENABLE_SELFHOST_LLM=true $0 --profile comprehensive
 
     # Clone personal repositories (set environment variables)
     OBSIDIAN_REPO=git@github.com:user/obsidian.git \\
@@ -164,7 +164,7 @@ parse_args() {
     done
 
     # Export for child modules
-    export PROFILE DRY_RUN NO_CONFIRM VERBOSE SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS
+    export PROFILE DRY_RUN NO_CONFIRM VERBOSE SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
     export DOTFILES_ROOT SCRIPT_DIR
 }
 
@@ -402,7 +402,7 @@ phase_3_development() {
         pipx install mcp-server-sqlite >/dev/null 2>&1 &
         pipx install diagrams >/dev/null 2>&1 &
         pipx install hookify >/dev/null 2>&1 &
-        pip3 install websockets >/dev/null 2>&1 &
+        pipx install websockets >/dev/null 2>&1 &
         wait
         print_success "Python MCP servers installation complete"
     fi
@@ -547,14 +547,13 @@ phase_4_cloud_tools() {
         fi
     }
 
-    # Run all tool installs in parallel
-    _install_recall &
-    _install_beads &
-    _install_entire &
-    _install_ccr &
-    _install_codex &
-    _install_openclaw &
-    wait
+    # Run tool installs sequentially (brew doesn't support parallel operations)
+    _install_recall
+    _install_beads
+    _install_entire
+    _install_ccr
+    _install_codex
+    _install_openclaw
 
     # Post-install: beads hooks (depends on beads being installed)
     if command_exists bd; then
@@ -1946,18 +1945,28 @@ main() {
     phase_4_cloud_tools
 
     # Phases 5-6: parallel (editors and multiplexer are independent)
+    local phase_fail=0
     phase_5_editors &
+    local pid_5=$!
     phase_6_multiplexer &
-    wait
+    local pid_6=$!
+    wait "$pid_5" || phase_fail=1
+    wait "$pid_6" || phase_fail=1
+    [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (5-6) had errors — check log for details"
 
     # Phases 7-8: sequential (shells setup writes to ~/.config/fish which stow also manages)
     phase_7_shells
     phase_8_dotfiles
 
     # Phase 9-10: parallel (fonts/apps and advanced features are independent)
+    phase_fail=0
     phase_9_fonts_and_apps &
+    local pid_9=$!
     phase_10_advanced_features &
-    wait
+    local pid_10=$!
+    wait "$pid_9" || phase_fail=1
+    wait "$pid_10" || phase_fail=1
+    [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (9-10) had errors — check log for details"
 
     phase_11_optional_features
 
@@ -1970,13 +1979,13 @@ main() {
     echo "  Mode: $DETECTED_MODE"
     echo ""
     echo "Next Steps:"
-    echo "  1. Restart your shell or run: source ~/.bashrc"
+    echo "  1. Restart your shell (or run: exec fish / source ~/.bashrc)"
     echo "  2. If using tmux: Start tmux and press Ctrl-s + I to install plugins"
     echo "  3. If using Neovim: Run 'nvim' to complete plugin installation"
     echo ""
     echo "Log file: $LOG_FILE"
     echo ""
-    print_success "Enjoy your configured environment! 🚀"
+    print_success "Setup complete"
 }
 
 # Run main
