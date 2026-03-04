@@ -808,19 +808,17 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
     set -l gwt_args $branch_name --no-devcon --no-cd
     if not test -d "$worktree_path"
-        # Check if branch exists
-        if git show-ref --verify --quiet refs/heads/$branch_name
-            if $quiet_mode
-                gwt-dev $gwt_args >/dev/null 2>&1
-            else
-                gwt-dev $gwt_args
-            end
+        # Auto-generated tasks always need a new branch (skip show-ref check: saves ~20ms)
+        # Real tickets may reuse an existing branch, so check first
+        if $is_auto_generated
+            set gwt_args $gwt_args --new
+        else if not git show-ref --verify --quiet refs/heads/$branch_name
+            set gwt_args $gwt_args --new
+        end
+        if $quiet_mode
+            gwt-dev $gwt_args >/dev/null 2>&1
         else
-            if $quiet_mode
-                gwt-dev $branch_name --new --no-devcon --no-cd >/dev/null 2>&1
-            else
-                gwt-dev $branch_name --new --no-devcon --no-cd
-            end
+            gwt-dev $gwt_args
         end
         if test $status -ne 0
             echo "Error: Failed to create worktree"
@@ -1108,20 +1106,16 @@ $prompt_suffix"
     # The instance env dir is a static mount in devcontainer.json (/devcontainer/env),
     # unlike --mount flags which don't apply to existing containers.
     set -l instance_env "$HOME/.devcontainer/instances/$instance_name/env"
-    mkdir -p "$instance_env"
-    mkdir -p "$HOME/.devcontainer/instances/$instance_name/work"
-    mkdir -p "$worktree_path/.claude"
+    mkdir -p "$instance_env" "$HOME/.devcontainer/instances/$instance_name/work" "$worktree_path/.claude"
 
     # Write launch script to instance env dir (guaranteed mount inside container)
     set -l launch_script "$instance_env/launch-claude.fish"
 
-    # Resolve main repo root for --add-dir (inherits CLAUDE.md into worktree sessions)
-    set -l resolved_repo_root (realpath $repo_root)
-
+    # repo_root is already resolved via realpath at line 676 — reuse directly
     # Compute paths: container-internal when using devcon, host paths otherwise
-    set -l add_dir_path $resolved_repo_root
+    set -l add_dir_path $repo_root
     set -l worktree_basename (basename $worktree_path)
-    set -l repo_basename (basename $resolved_repo_root)
+    set -l repo_basename $repo
     if $use_devcon
         set add_dir_path "/mounts/$repo_basename"
     end
@@ -1380,7 +1374,7 @@ $prompt_suffix"
                 set devcon_up_cmd "$devcon_up_cmd -E CROSS_PROVIDER_CODEX_PROFILES=$bridge_codex_profiles"
             end
         end
-        set devcon_up_cmd "$devcon_up_cmd $worktree_path $resolved_repo_root"
+        set devcon_up_cmd "$devcon_up_cmd $worktree_path $repo_root"
         for mount in $mounts
             set devcon_up_cmd "$devcon_up_cmd $mount"
         end
