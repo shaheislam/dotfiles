@@ -78,7 +78,9 @@ json_escape() {
 append_entry() {
     local cv_file="$1"
     local json="$2"
-    mkdir -p "$(dirname "$cv_file")"
+    local cv_dir
+    cv_dir="$(dirname "$cv_file")"
+    [[ -d "$cv_dir" ]] || mkdir -p "$cv_dir"
     echo "$json" >>"$cv_file"
 }
 
@@ -127,7 +129,9 @@ cmd_init() {
     fi
 
     # Resolve to absolute path
-    worktree="$(cd "$worktree" 2>/dev/null && pwd || echo "$worktree")"
+    if [[ -d "$worktree" ]]; then
+        worktree="$(realpath "$worktree")"
+    fi
 
     local cv_file
     cv_file="$(cv_path "$worktree")"
@@ -192,7 +196,9 @@ cmd_log() {
 
     validate_event "$event"
 
-    worktree="$(cd "$worktree" 2>/dev/null && pwd || echo "$worktree")"
+    if [[ -d "$worktree" ]]; then
+        worktree="$(realpath "$worktree")"
+    fi
 
     local cv_file
     cv_file="$(cv_path "$worktree")"
