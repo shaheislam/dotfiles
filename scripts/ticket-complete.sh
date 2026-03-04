@@ -21,7 +21,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 show_help() {
-    cat << 'EOF'
+    cat <<'EOF'
 ticket-complete.sh - Post-completion hook for ticket execution
 
 USAGE:
@@ -59,26 +59,26 @@ WORKTREE_PATH=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --watch)
-            WATCH_MODE=true
-            shift
-            ;;
-        --status)
-            STATUS_MODE=true
-            shift
-            ;;
-        --help|-h)
-            show_help
-            exit 0
-            ;;
-        -*)
-            echo -e "${RED}Error: Unknown option $1${NC}" >&2
-            exit 1
-            ;;
-        *)
-            WORKTREE_PATH="$1"
-            shift
-            ;;
+    --watch)
+        WATCH_MODE=true
+        shift
+        ;;
+    --status)
+        STATUS_MODE=true
+        shift
+        ;;
+    --help | -h)
+        show_help
+        exit 0
+        ;;
+    -*)
+        echo -e "${RED}Error: Unknown option $1${NC}" >&2
+        exit 1
+        ;;
+    *)
+        WORKTREE_PATH="$1"
+        shift
+        ;;
     esac
 done
 
@@ -199,12 +199,6 @@ echo ""
 
 cd "$WORKTREE_PATH"
 
-# Sync beads agent memory before PR creation
-if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
-    echo -e "${BLUE}Syncing beads agent memory...${NC}"
-    (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
-fi
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Step 1: Check for uncommitted changes
@@ -232,9 +226,9 @@ elif [[ -x "$AUTO_MERGE" ]]; then
     MERGE_EXIT=0
     "$AUTO_MERGE" "$WORKTREE_PATH" || MERGE_EXIT=$?
     case $MERGE_EXIT in
-        0) echo -e "${GREEN}Merge completed${NC}" ;;
-        2) echo -e "${YELLOW}Non-additive conflicts - manual resolution needed${NC}" ;;
-        *) echo -e "${YELLOW}Merge returned exit $MERGE_EXIT${NC}" ;;
+    0) echo -e "${GREEN}Merge completed${NC}" ;;
+    2) echo -e "${YELLOW}Non-additive conflicts - manual resolution needed${NC}" ;;
+    *) echo -e "${YELLOW}Merge returned exit $MERGE_EXIT${NC}" ;;
     esac
 else
     echo -e "${YELLOW}auto-merge.sh not found, skipping merge${NC}"
@@ -338,9 +332,9 @@ elif [[ "$TICKETING_SYSTEM" == "jira" ]]; then
     # Jira: transition to Review/Done
     if command -v acli &>/dev/null; then
         # Try to transition to "In Review" or "Done"
-        acli jira workitem transition "$ISSUE_KEY" --status "In Review" 2>/dev/null || \
-        acli jira workitem transition "$ISSUE_KEY" --status "Review" 2>/dev/null || \
-        acli jira workitem transition "$ISSUE_KEY" --status "Done" 2>/dev/null || {
+        acli jira workitem transition "$ISSUE_KEY" --status "In Review" 2>/dev/null ||
+            acli jira workitem transition "$ISSUE_KEY" --status "Review" 2>/dev/null ||
+            acli jira workitem transition "$ISSUE_KEY" --status "Done" 2>/dev/null || {
             echo -e "${YELLOW}Could not transition Jira ticket (may need manual transition)${NC}"
         }
         echo -e "${GREEN}Jira ticket updated${NC}"
@@ -372,8 +366,8 @@ fi
 if [[ -f "$STATE_FILE" ]]; then
     # Update state file to mark complete
     sed -i '' 's/^active: true/active: false/' "$STATE_FILE" 2>/dev/null || true
-    echo "completed_at: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> "$STATE_FILE"
-    echo "pr_url: \"$PR_URL\"" >> "$STATE_FILE"
+    echo "completed_at: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >>"$STATE_FILE"
+    echo "pr_url: \"$PR_URL\"" >>"$STATE_FILE"
 fi
 
 echo ""

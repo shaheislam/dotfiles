@@ -314,14 +314,20 @@ monitor_loop() {
             echo "{\"iteration\":$iteration,\"max_iterations\":${max_iterations:-20},\"state\":\"$state\",\"updated_at\":\"$now_ts\"}" >"$WORKTREE_PATH/.claude/progress.json"
         fi
 
-        # Batch update witness state (single awk pass replaces 4 separate sed calls)
-        awk -v iobs="$iterations_observed" -v liter="$iteration" -v lstate="$state" -v lcheck="$now_ts" '
-            /^iterations_observed:/ { print "iterations_observed: " iobs; next }
-            /^last_iteration:/ { print "last_iteration: " liter; next }
-            /^last_state:/ { print "last_state: \"" lstate "\""; next }
-            /^last_check:/ { print "last_check: \"" lcheck "\""; next }
-            { print }
-        ' "$WITNESS_STATE" >"${WITNESS_STATE}.tmp" && mv "${WITNESS_STATE}.tmp" "$WITNESS_STATE" 2>/dev/null || true
+        # Batch update witness state — skip write if nothing changed (reduces I/O per poll)
+        if [[ "$iterations_observed" != "${_prev_iobs:-}" || "$iteration" != "${_prev_iter:-}" || "$state" != "${_prev_state:-}" ]]; then
+            _prev_iobs="$iterations_observed"
+            _prev_iter="$iteration"
+            _prev_state="$state"
+            awk -v iobs="$iterations_observed" -v liter="$iteration" -v lstate="$state" -v lcheck="$now_ts" -v retries="$retries" '
+                /^iterations_observed:/ { print "iterations_observed: " iobs; next }
+                /^last_iteration:/ { print "last_iteration: " liter; next }
+                /^last_state:/ { print "last_state: \"" lstate "\""; next }
+                /^last_check:/ { print "last_check: \"" lcheck "\""; next }
+                /^retries:/ { print "retries: " retries; next }
+                { print }
+            ' "$WITNESS_STATE" >"${WITNESS_STATE}.tmp" && mv "${WITNESS_STATE}.tmp" "$WITNESS_STATE" 2>/dev/null || true
+        fi
 
         # State transitions
         case "$state" in
@@ -370,7 +376,7 @@ monitor_loop() {
 
                 if [[ "$retries" -lt "$MAX_RETRIES" ]]; then
                     retries=$((retries + 1))
-                    sed -i '' "s/^retries:.*/retries: $retries/" "$WITNESS_STATE" 2>/dev/null || true
+                    # retries field updated by the main awk pass on next poll cycle
                     notify "Agent Crashed" "$issue_key: Attempting retry $retries/$MAX_RETRIES"
                     on_crash_retry "$retries"
                     consecutive_dead=0
@@ -404,7 +410,9 @@ monitor_loop() {
                     if [[ -x "$mail_script" ]]; then
                         "$mail_script" send all -s "Agent Failed: $issue_key" -m "$title failed after $MAX_RETRIES retries" --from "witness-$(basename "$WORKTREE_PATH")" 2>/dev/null || true
                     fi
-                    sed -i '' 's/^active: true/active: false/' "$WITNESS_STATE" 2>/dev/null || true
+                    # Mark witness inactive via awk (consistent with main batch update)
+                    awk '/^active: true/ { print "active: false"; next } { print }' \
+                        "$WITNESS_STATE" >"${WITNESS_STATE}.tmp" && mv "${WITNESS_STATE}.tmp" "$WITNESS_STATE" 2>/dev/null || true
                     exit 2
                 fi
             fi
@@ -467,11 +475,8 @@ on_completion() {
     # /rename is handled by gwt-rename-session.sh (waits for ralph-loop
     # completion, then sends /rename before witness reaches on_completion)
 
-    # Sync beads agent memory before merge and close the bead
+    # Close the bead for this issue (bd sync removed — no-op costs ~300ms)
     if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
-        log "Syncing beads state"
-        (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
-        # Close the bead for this issue
         if [[ -n "$issue_key" ]]; then
             (cd "$WORKTREE_PATH" && bd close "$issue_key" 2>/dev/null) || true
         fi
@@ -580,8 +585,9 @@ on_completion() {
         fi
     fi
 
-    # Mark witness as done
-    sed -i '' 's/^active: true/active: false/' "$WITNESS_STATE" 2>/dev/null || true
+    # Mark witness as done (awk replaces sed -i for consistency)
+    awk '/^active: true/ { print "active: false"; next } { print }' \
+        "$WITNESS_STATE" >"${WITNESS_STATE}.tmp" && mv "${WITNESS_STATE}.tmp" "$WITNESS_STATE" 2>/dev/null || true
 
     # Self-nuke: remove worktree after grace period if auto-cleanup enabled
     if $AUTO_CLEANUP; then

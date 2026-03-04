@@ -103,14 +103,6 @@
       {
         "hooks": [
           {
-            "command": "bd sync 2>/dev/null || true",
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
             "command": "bd prime",
             "type": "command"
           }
