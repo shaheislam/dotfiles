@@ -76,7 +76,7 @@ setup_zsh() {
     # Install Powerlevel10k theme
     if [[ ! -d "$zsh_custom/themes/powerlevel10k" ]]; then
         print_step "Installing Powerlevel10k theme..."
-        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$zsh_custom/themes/powerlevel10k" 2>/dev/null || true
+        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$zsh_custom/themes/powerlevel10k" </dev/null 2>/dev/null || true
     else
         log_verbose "Powerlevel10k already installed"
     fi
@@ -104,7 +104,7 @@ setup_zsh() {
 
         if [[ ! -d "$zsh_custom/plugins/$plugin_name" ]]; then
             log_verbose "Installing $plugin_name..."
-            git clone "https://github.com/$plugin_repo.git" "$zsh_custom/plugins/$plugin_name" 2>/dev/null &
+            git clone "https://github.com/$plugin_repo.git" "$zsh_custom/plugins/$plugin_name" </dev/null 2>/dev/null &
             zsh_pids+=($!)
         else
             log_verbose "$plugin_name already installed"
@@ -173,7 +173,7 @@ setup_fzf_git() {
 
     local fzf_git_dir="$HOME/fzf-git.sh"
     if [[ ! -d "$fzf_git_dir" ]]; then
-        git clone https://github.com/junegunn/fzf-git.sh.git "$fzf_git_dir" 2>/dev/null
+        git clone https://github.com/junegunn/fzf-git.sh.git "$fzf_git_dir" </dev/null 2>/dev/null
         print_success "FZF Git integration installed"
     else
         log_verbose "FZF Git integration already installed"

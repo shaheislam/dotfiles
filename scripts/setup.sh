@@ -49,6 +49,7 @@ OPTIONS:
     --skip-dotfiles            Skip dotfiles symlinking
     --skip-shells              Skip shell configuration
     --skip-fonts-apps          Skip fonts and GUI applications (macOS)
+    --clean                    Clear completion state to re-run all phases
 
     -h, --help                 Show this help message
 
@@ -107,18 +108,34 @@ parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
         --profile)
+            [[ -z "${2:-}" ]] && {
+                echo "Error: --profile requires a value"
+                exit 1
+            }
             PROFILE="$2"
             shift 2
             ;;
         --os)
+            [[ -z "${2:-}" ]] && {
+                echo "Error: --os requires a value"
+                exit 1
+            }
             OS="$2"
             shift 2
             ;;
         --mode)
+            [[ -z "${2:-}" ]] && {
+                echo "Error: --mode requires a value"
+                exit 1
+            }
             MODE="$2"
             shift 2
             ;;
         --offline-package)
+            [[ -z "${2:-}" ]] && {
+                echo "Error: --offline-package requires a value"
+                exit 1
+            }
             OFFLINE_PACKAGE="$2"
             MODE="offline"
             shift 2
@@ -151,6 +168,10 @@ parse_args() {
             SKIP_FONTS_APPS=true
             shift
             ;;
+        --clean)
+            CLEAN_STATE=true
+            shift
+            ;;
         -h | --help)
             show_help
             exit 0
@@ -162,6 +183,28 @@ parse_args() {
             ;;
         esac
     done
+
+    # Validate --os value
+    if [[ "$OS" != "auto" ]]; then
+        case "$OS" in
+        macos | linux | wsl) ;;
+        *)
+            echo "Error: Invalid --os value '$OS'. Must be: auto, macos, linux, wsl"
+            exit 1
+            ;;
+        esac
+    fi
+
+    # Validate --mode value
+    if [[ "$MODE" != "auto" ]]; then
+        case "$MODE" in
+        online | offline) ;;
+        *)
+            echo "Error: Invalid --mode value '$MODE'. Must be: auto, online, offline"
+            exit 1
+            ;;
+        esac
+    fi
 
     # Export for child modules
     export PROFILE DRY_RUN NO_CONFIRM VERBOSE SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
@@ -198,6 +241,13 @@ load_modules() {
 
 preflight_checks() {
     print_header "Preflight Checks"
+
+    # Clear state if --clean was passed
+    if [[ "${CLEAN_STATE:-false}" == "true" ]]; then
+        print_step "Clearing completion state (--clean)..."
+        clear_state
+        print_success "State cleared — all phases will re-run"
+    fi
 
     # Check disk space
     if ! check_disk_space 500; then
@@ -645,10 +695,10 @@ EAEOF
         CCB_DIR="$HOME/.claudecodebrowser"
         if [ ! -d "$CCB_DIR" ]; then
             print_step "Installing ClaudeCodeBrowser..."
-            git clone https://github.com/nanogenomic/ClaudeCodeBrowser.git "$CCB_DIR" >/dev/null 2>&1 || print_warning "Failed to clone ClaudeCodeBrowser"
+            git clone https://github.com/nanogenomic/ClaudeCodeBrowser.git "$CCB_DIR" </dev/null >/dev/null 2>&1 || print_warning "Failed to clone ClaudeCodeBrowser"
         else
             print_step "Updating ClaudeCodeBrowser..."
-            (cd "$CCB_DIR" && git pull >/dev/null 2>&1) || print_warning "Failed to update ClaudeCodeBrowser"
+            (cd "$CCB_DIR" && git pull </dev/null >/dev/null 2>&1) || print_warning "Failed to update ClaudeCodeBrowser"
         fi
 
         if [ -d "$CCB_DIR" ]; then
@@ -841,8 +891,8 @@ NMHEOF
         # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
         if [[ ! -d "$HOME/ralph-claude-code" ]]; then
             print_step "Installing frankbria Ralph (autonomous loop tool)..."
-            git clone https://github.com/frankbria/ralph-claude-code.git "$HOME/ralph-claude-code" >/dev/null 2>&1
-            (cd "$HOME/ralph-claude-code" && ./install.sh >/dev/null 2>&1)
+            git clone https://github.com/frankbria/ralph-claude-code.git "$HOME/ralph-claude-code" </dev/null >/dev/null 2>&1
+            (cd "$HOME/ralph-claude-code" && ./install.sh </dev/null >/dev/null 2>&1)
             print_success "frankbria Ralph installed (ralph, ralph-monitor, ralph-setup)"
         else
             log_verbose "frankbria Ralph already installed"
@@ -908,25 +958,25 @@ NMHEOF
     if ! command_exists consul-template; then
         print_step "Installing consul-template..."
         local consul_template_version="0.41.3"
-        local consul_template_arch
         local consul_os="linux"
         local consul_cpu="amd64"
         [[ "$DETECTED_OS" == "macos" ]] && consul_os="darwin"
         [[ "$DETECTED_ARCH" == "arm64" ]] && consul_cpu="arm64"
-        consul_template_arch="${consul_os}_${consul_cpu}"
+        local consul_template_arch="${consul_os}_${consul_cpu}"
         local consul_template_url="https://releases.hashicorp.com/consul-template/${consul_template_version}/consul-template_${consul_template_version}_${consul_template_arch}.zip"
-        local consul_template_tmp="/tmp/consul-template.zip"
+        local consul_tmpdir
+        consul_tmpdir="$(mktemp -d)"
 
-        if curl -sL "$consul_template_url" -o "$consul_template_tmp"; then
+        if curl -sL "$consul_template_url" -o "$consul_tmpdir/consul-template.zip"; then
             mkdir -p "$HOME/bin"
-            unzip -q -o "$consul_template_tmp" -d /tmp
-            mv /tmp/consul-template "$HOME/bin/"
+            unzip -q -o "$consul_tmpdir/consul-template.zip" -d "$consul_tmpdir"
+            mv "$consul_tmpdir/consul-template" "$HOME/bin/"
             chmod +x "$HOME/bin/consul-template"
-            rm -f "$consul_template_tmp"
             print_success "consul-template installed to ~/bin/"
         else
             print_warning "Failed to download consul-template"
         fi
+        rm -rf "$consul_tmpdir"
     else
         log_verbose "consul-template already installed"
     fi
@@ -988,7 +1038,7 @@ phase_6_multiplexer() {
     # Install TPM
     if command_exists tmux && [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
         print_step "Installing Tmux Plugin Manager..."
-        git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+        git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm" </dev/null 2>&1
     fi
 
     # Manually install tmux plugins (ensures immediate availability)
@@ -1398,12 +1448,13 @@ phase_9_fonts_and_apps() {
                 sed 's/"browser_download_url":\s*"//;s/"$//')
 
             if [[ -n "$claude_usage_url" ]]; then
-                local claude_usage_tmp="/tmp/ClaudeUsage.zip"
-                if curl -sL "$claude_usage_url" -o "$claude_usage_tmp"; then
-                    unzip -q -o "$claude_usage_tmp" -d /tmp/ClaudeUsage 2>/dev/null
-                    local app_src="/tmp/ClaudeUsage/ClaudeUsage.app"
+                local claude_usage_tmpdir
+                claude_usage_tmpdir="$(mktemp -d)"
+                if curl -sL "$claude_usage_url" -o "$claude_usage_tmpdir/ClaudeUsage.zip"; then
+                    unzip -q -o "$claude_usage_tmpdir/ClaudeUsage.zip" -d "$claude_usage_tmpdir/extracted" 2>/dev/null
+                    local app_src="$claude_usage_tmpdir/extracted/ClaudeUsage.app"
                     if [[ ! -d "$app_src" ]]; then
-                        app_src=$(find /tmp/ClaudeUsage -name "ClaudeUsage.app" -maxdepth 2 -type d 2>/dev/null | head -1)
+                        app_src=$(find "$claude_usage_tmpdir/extracted" -name "ClaudeUsage.app" -maxdepth 2 -type d 2>/dev/null | head -1)
                     fi
                     if [[ -n "$app_src" && -d "$app_src" ]]; then
                         xattr -cr "$app_src" 2>/dev/null
@@ -1413,10 +1464,10 @@ phase_9_fonts_and_apps() {
                     else
                         print_warning "ClaudeUsage.app not found in archive"
                     fi
-                    rm -rf "$claude_usage_tmp" /tmp/ClaudeUsage
                 else
                     print_warning "Failed to download ClaudeUsage"
                 fi
+                rm -rf "$claude_usage_tmpdir"
             else
                 print_warning "Failed to fetch ClaudeUsage release URL"
             fi
@@ -1480,7 +1531,7 @@ phase_10_advanced_features() {
         # Clone Obsidian vault (if configured)
         local obsidian_repo="${OBSIDIAN_REPO:-}"
         if [[ -n "$obsidian_repo" ]] && [[ ! -d "$HOME/obsidian" ]]; then
-            git clone "$obsidian_repo" "$HOME/obsidian" 2>/dev/null &&
+            git clone "$obsidian_repo" "$HOME/obsidian" </dev/null 2>/dev/null &&
                 print_success "Obsidian vault cloned" ||
                 log_verbose "Obsidian vault clone skipped"
         fi
@@ -1489,7 +1540,7 @@ phase_10_advanced_features() {
         local nvim_repo="${NVIM_REPO:-}"
         if [[ -n "$nvim_repo" ]] && [[ ! -d "$HOME/neovim" ]]; then
             print_step "Cloning personal Neovim configuration..."
-            git clone "$nvim_repo" "$HOME/neovim" 2>/dev/null &&
+            git clone "$nvim_repo" "$HOME/neovim" </dev/null 2>/dev/null &&
                 print_success "Personal Neovim config cloned to ~/neovim" ||
                 log_verbose "Neovim config clone skipped"
 
@@ -1734,18 +1785,17 @@ EOF
                 rm -rf "$pulse_dir"
                 mkdir -p "$HOME/bin"
 
-                if git clone https://github.com/viccon/pulse.git "$pulse_dir" 2>/dev/null; then
-                    cd "$pulse_dir" || true
-                    if go build -o pulse-server ./cmd/server 2>/dev/null &&
-                        go build -o pulse-client ./cmd/client 2>/dev/null; then
-                        cp pulse-server "$HOME/bin/"
-                        cp pulse-client "$HOME/bin/"
+                if git clone https://github.com/viccon/pulse.git "$pulse_dir" </dev/null 2>/dev/null; then
+                    if (cd "$pulse_dir" &&
+                        go build -o pulse-server ./cmd/server 2>/dev/null &&
+                        go build -o pulse-client ./cmd/client 2>/dev/null); then
+                        cp "$pulse_dir/pulse-server" "$HOME/bin/"
+                        cp "$pulse_dir/pulse-client" "$HOME/bin/"
                         chmod +x "$HOME/bin/pulse-server" "$HOME/bin/pulse-client"
                         print_success "Pulse binaries installed to ~/bin/"
                     else
                         print_warning "Failed to build Pulse binaries"
                     fi
-                    cd - >/dev/null || true
                     rm -rf "$pulse_dir"
                 else
                     print_warning "Failed to clone Pulse repository"
@@ -1933,6 +1983,7 @@ EOF
 # ============================================================================
 
 main() {
+    local start_time=$SECONDS
     parse_args "$@"
     load_modules
     preflight_checks
@@ -1945,39 +1996,33 @@ main() {
     phase_3_development
     phase_4_cloud_tools
 
-    # Phases 5-6: parallel (editors and multiplexer are independent)
-    local phase_fail=0
-    phase_5_editors &
-    local pid_5=$!
-    phase_6_multiplexer &
-    local pid_6=$!
-    wait "$pid_5" || phase_fail=1
-    wait "$pid_6" || phase_fail=1
-    [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (5-6) had errors — check log for details"
+    # Phases 5-6: sequential (both use brew which doesn't support concurrent operations)
+    phase_5_editors
+    phase_6_multiplexer
 
     # Phases 7-8: sequential (shells setup writes to ~/.config/fish which stow also manages)
     phase_7_shells
     phase_8_dotfiles
 
-    # Phase 9-10: parallel (fonts/apps and advanced features are independent)
-    phase_fail=0
-    phase_9_fonts_and_apps &
-    local pid_9=$!
-    phase_10_advanced_features &
-    local pid_10=$!
-    wait "$pid_9" || phase_fail=1
-    wait "$pid_10" || phase_fail=1
-    [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (9-10) had errors — check log for details"
+    # Phase 9: fonts/apps (uses brew casks)
+    phase_9_fonts_and_apps
+
+    # Phase 10: advanced features (cargo, go installs — independent of brew)
+    phase_10_advanced_features
 
     phase_11_optional_features
 
     # Success
+    local elapsed=$((SECONDS - start_time))
+    local mins=$((elapsed / 60))
+    local secs=$((elapsed % 60))
     print_header "Setup Complete!"
 
     echo "Installation Summary:"
     echo "  OS: $DETECTED_OS"
     echo "  Profile: $PROFILE"
     echo "  Mode: $DETECTED_MODE"
+    echo "  Duration: ${mins}m ${secs}s"
     echo ""
     echo "Next Steps:"
     echo "  1. Restart your shell (or run: exec fish / source ~/.bashrc)"
@@ -1986,7 +2031,7 @@ main() {
     echo ""
     echo "Log file: $LOG_FILE"
     echo ""
-    print_success "Setup complete"
+    print_success "Setup complete (${mins}m ${secs}s)"
 }
 
 # Run main
