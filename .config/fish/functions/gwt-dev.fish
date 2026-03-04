@@ -15,12 +15,6 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     #   --no-cd         Don't cd into the worktree (useful when called from other functions)
     #   --help, -h      Show this help
 
-    # Check if we're in a git repository
-    if not git rev-parse --git-dir >/dev/null 2>&1
-        echo "Error: Not in a git repository"
-        return 1
-    end
-
     # Parse arguments
     set -l branch ""
     set -l do_exec false
@@ -76,7 +70,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
                 if test $next_i -le (count $argv)
                     set -l mount_path $argv[$next_i]
                     # Expand path and validate
-                    set -l expanded_path (eval echo $mount_path)
+                    set -l expanded_path (string replace -r '^\~' "$HOME" $mount_path)
                     if test -d "$expanded_path"
                         set -a mounts (realpath $expanded_path)
                     else
@@ -145,7 +139,12 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     end
 
     # Get repository name and construct worktree path (resolve to main repo, not worktree)
-    set -l git_common_dir (git rev-parse --git-common-dir)
+    # Also serves as git-repo validation (replaces removed guard at top)
+    set -l git_common_dir (git rev-parse --git-common-dir 2>/dev/null)
+    or begin
+        echo "Error: Not in a git repository"
+        return 1
+    end
     set -l repo_root (realpath "$git_common_dir/..")
     set -l repo (basename $repo_root)
     set -l worktree_name "$repo-$branch"
@@ -177,23 +176,25 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
         end
     end
 
+    # Cache realpath once for reuse below
+    set -l abs_wt (realpath $worktree_path)
+
+    # Skip devcontainer if requested (moved before mise trust — not needed without devcon)
+    if $do_no_devcon
+        echo "Worktree created: $worktree_path"
+        if not $do_no_cd
+            cd $abs_wt
+            echo "   Switched to: "(pwd)
+        end
+        return 0
+    end
+
     # Trust mise config if present (inspired by DHH's worktree setup)
     if command -q mise
-        set -l abs_wt (realpath $worktree_path)
         if test -f "$abs_wt/mise.toml"; or test -f "$abs_wt/.mise.toml"
             mise trust "$abs_wt" 2>/dev/null
             echo "   mise trusted: $abs_wt"
         end
-    end
-
-    # Skip devcontainer if requested
-    if $do_no_devcon
-        echo "Worktree created: $worktree_path"
-        if not $do_no_cd
-            cd (realpath $worktree_path)
-            echo "   Switched to: "(pwd)
-        end
-        return 0
     end
 
     # Always use the built-in devcon claude sandbox for isolation.
@@ -205,26 +206,26 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     gwt-setup $worktree_path
 
     # Build devcon arguments
-    set -l devcon_args "claude" "-i" $instance_name
+    set -l devcon_args claude -i $instance_name
 
     # Add features
     for feature in $features
-        set -a devcon_args "-F" $feature
+        set -a devcon_args -F $feature
     end
 
     # Add flags
     if $do_rebuild
-        set -a devcon_args "--rebuild"
+        set -a devcon_args --rebuild
     end
     if $do_fast
-        set -a devcon_args "--fast"
+        set -a devcon_args --fast
     end
     if $do_exec
-        set -a devcon_args "--exec"
+        set -a devcon_args --exec
     end
 
-    # Mount the worktree as additional mount
-    set -a devcon_args (realpath $worktree_path)
+    # Mount the worktree as additional mount (reuse cached realpath)
+    set -a devcon_args $abs_wt
 
     # Add additional mounts
     for mount in $mounts
