@@ -84,11 +84,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Parse YAML frontmatter value from a state file
+# Parse YAML frontmatter value from a state file (single awk replaces grep|head|sed|tr)
 parse_yaml_value() {
-    local key="$1"
-    local file="$2"
-    grep "^${key}:" "$file" 2>/dev/null | head -1 | sed "s/^${key}: *//" | tr -d '"'
+    local key="$1" file="$2"
+    awk -v key="$key" 'BEGIN{p="^"key": *"} $0~p{sub(p,"");gsub(/"/,"");print;exit}' "$file" 2>/dev/null
 }
 
 # Find the tmux session:window for a worktree path
@@ -108,13 +107,13 @@ find_tmux_target() {
 
     # Fallback: search tmux panes for matching current path
     while IFS= read -r line; do
-        local target pane_path
-        target=$(echo "$line" | cut -d: -f1-2)
-        pane_path=$(echo "$line" | cut -d: -f3-)
+        # Format: session:window.pane:/absolute/path — split on :/ boundary
+        local target="${line%%:/*}"
+        local pane_path="${line#"$target":}"
         # Check if any pane in this window is in the worktree
         if [[ "$pane_path" == "$worktree_path" || "$pane_path" == "$worktree_path/"* ]]; then
             # Return session:window (strip pane index)
-            echo "${target%.*}" | head -1
+            echo "${target%.*}"
             return 0
         fi
     done < <(tmux list-panes -a -F "#{session_name}:#{window_index}.#{pane_index}:#{pane_current_path}" 2>/dev/null)
@@ -159,12 +158,17 @@ find_claude_pid() {
         tty=$(tmux display-message -t "${session}:${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null) || continue
         [[ -z "$tty" ]] && continue
 
-        local pid
-        pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E '/claude( |$)' | head -1 | awk '{print $1}')
-        if [[ -n "$pid" ]]; then
-            echo "$pid"
-            return 0
-        fi
+        # Capture ps output once, use bash to find claude (avoids grep|head|awk pipeline)
+        local ps_output
+        ps_output=$(ps -o pid=,args= -t "$tty" 2>/dev/null) || continue
+        local pid args
+        while read -r pid args; do
+            [[ -z "$pid" ]] && continue
+            if [[ "$args" =~ /claude($|[[:space:]]) ]]; then
+                echo "$pid"
+                return 0
+            fi
+        done <<<"$ps_output"
     done
 
     return 1
