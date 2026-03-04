@@ -16,6 +16,13 @@
 # Run with: tmux-claude-watcher.sh start
 # Stop with: tmux-claude-watcher.sh stop
 
+# Always run from the canonical dotfiles location, not worktree copies.
+CANONICAL="$HOME/dotfiles/scripts/tmux/tmux-claude-watcher.sh"
+SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+if [[ "$SELF" != "$CANONICAL" && -x "$CANONICAL" ]]; then
+    exec "$CANONICAL" "$@"
+fi
+
 TMUX_SOCKET="${TMUX%%,*}"
 PID_FILE="/tmp/tmux-claude-watcher.pid"
 POLL_INTERVAL=10
@@ -102,15 +109,17 @@ check_all_windows() {
             if ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)(claude|opencode)( |$)'; then
                 agent_found=true
 
-                # Detect state from the bottom of the pane (status area only).
-                # Only check last 8 lines to avoid false positives from
-                # conversation content that may contain the same patterns.
+                # Detect state from the bottom of the pane.
+                # Use last 20 lines to capture the spinner even when
+                # tip text / status lines sit between it and the bottom.
+                # Layout: spinner → [tip 2-3 lines] → separator → ❯ prompt
+                #   → separator → model info → permissions → [remote ctrl]
                 # "… (" = spinner with timing = actively working
                 #   e.g. "✽ Pontificating… (41s · ↓ 681 tokens)"
                 # COMPLETE or _DONE = task finished
                 # Otherwise = idle/waiting for input
                 local pane_bottom
-                pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 8)
+                pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 20)
                 if echo "$pane_bottom" | grep -q '… ('; then
                     agent_working=true
                 elif echo "$pane_bottom" | grep -q 'COMPLETE\|_DONE'; then
