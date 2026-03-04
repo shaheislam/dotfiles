@@ -486,7 +486,18 @@ phase_4_cloud_tools() {
         fi
     }
 
+    _install_dolt() {
+        if ! command_exists dolt; then
+            brew install dolt >/dev/null 2>&1 &&
+                print_success "dolt installed" ||
+                print_warning "Failed to install dolt"
+        else
+            print_success "dolt already installed"
+        fi
+    }
+
     _install_beads() {
+        _install_dolt # beads requires dolt as database backend
         if ! command_exists bd; then
             brew install beads >/dev/null 2>&1 &&
                 print_success "beads installed" ||
