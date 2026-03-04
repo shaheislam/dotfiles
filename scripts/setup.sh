@@ -79,7 +79,7 @@ EXAMPLES:
     $0 --profile minimal --no-confirm
 
     # Enable optional features (Nix, Pulse, Pi-Hole, Self-Hosted LLM)
-    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true $0 ENABLE_SELFHOST_LLM=true $0 --profile comprehensive
+    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true ENABLE_SELFHOST_LLM=true $0 --profile comprehensive
 
     # Clone personal repositories (set environment variables)
     OBSIDIAN_REPO=git@github.com:user/obsidian.git \\
@@ -164,7 +164,7 @@ parse_args() {
     done
 
     # Export for child modules
-    export PROFILE DRY_RUN NO_CONFIRM VERBOSE SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS
+    export PROFILE DRY_RUN NO_CONFIRM VERBOSE SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
     export DOTFILES_ROOT SCRIPT_DIR
 }
 
@@ -402,7 +402,7 @@ phase_3_development() {
         pipx install mcp-server-sqlite >/dev/null 2>&1 &
         pipx install diagrams >/dev/null 2>&1 &
         pipx install hookify >/dev/null 2>&1 &
-        pip3 install websockets >/dev/null 2>&1 &
+        pipx install websockets >/dev/null 2>&1 &
         wait
         print_success "Python MCP servers installation complete"
     fi
@@ -473,9 +473,8 @@ phase_4_cloud_tools() {
             log_verbose "Claude Code doctor reported warnings (non-fatal)"
     fi
 
-    # Install independent CLI tools in parallel
-    # Each tool installs to a separate location — no shared state
-    print_step "Installing CLI tools (parallel)..."
+    # Install independent CLI tools
+    print_step "Installing CLI tools..."
 
     _install_recall() {
         if ! command_exists recall; then
@@ -547,14 +546,13 @@ phase_4_cloud_tools() {
         fi
     }
 
-    # Run all tool installs in parallel
-    _install_recall &
-    _install_beads &
-    _install_entire &
-    _install_ccr &
-    _install_codex &
-    _install_openclaw &
-    wait
+    # Run tool installs sequentially (brew doesn't support parallel operations)
+    _install_recall
+    _install_beads
+    _install_entire
+    _install_ccr
+    _install_codex
+    _install_openclaw
 
     # Post-install: beads hooks (depends on beads being installed)
     if command_exists bd; then
@@ -656,7 +654,8 @@ EAEOF
         if [ -d "$CCB_DIR" ]; then
             # CORS hardening - replace wildcard origin with dynamic moz-extension:// allowlist
             # Rejects file://, http://, sandboxed iframe, and arbitrary web page origins
-            if [ -f "$CCB_DIR/mcp-server/server.py" ]; then
+            # Only patch if not already patched (idempotent)
+            if [ -f "$CCB_DIR/mcp-server/server.py" ] && ! grep -q "_get_cors_origin" "$CCB_DIR/mcp-server/server.py"; then
                 python3 - "$CCB_DIR/mcp-server/server.py" <<'CORSPATCH'
 import sys, re
 path = sys.argv[1]
@@ -860,14 +859,15 @@ NMHEOF
 
     # Install Kubernetes/Helm plugins
     if command_exists helm; then
-        print_step "Installing helm-diff plugin..."
-        # Remove any corrupted installation first
-        rm -rf "$HOME/Library/helm/plugins/helm-diff" 2>/dev/null || true
-        rm -rf "$HOME/.local/share/helm/plugins/helm-diff" 2>/dev/null || true
-        # Use v3.8.1 for compatibility with Helm 3.15.x
-        helm plugin install https://github.com/databus23/helm-diff --version v3.8.1 >/dev/null 2>&1 &&
-            print_success "helm-diff plugin installed" ||
-            log_verbose "helm-diff plugin installation skipped"
+        if ! helm plugin list 2>/dev/null | grep -q "^diff"; then
+            print_step "Installing helm-diff plugin..."
+            # Use v3.8.1 for compatibility with Helm 3.15.x
+            helm plugin install https://github.com/databus23/helm-diff --version v3.8.1 >/dev/null 2>&1 &&
+                print_success "helm-diff plugin installed" ||
+                log_verbose "helm-diff plugin installation skipped"
+        else
+            log_verbose "helm-diff plugin already installed"
+        fi
     fi
 
     # Install krew kubectl plugins
@@ -898,7 +898,7 @@ NMHEOF
         # Load launchd plist for kubectl-fzf-server
         local kubectl_fzf_plist="$HOME/Library/LaunchAgents/com.kubectl-fzf-server.plist"
         if [[ -f "$kubectl_fzf_plist" ]] && ! launchctl list 2>/dev/null | grep -q "com.kubectl-fzf-server"; then
-            launchctl load "$kubectl_fzf_plist" 2>/dev/null &&
+            launchctl bootstrap "gui/$(id -u)" "$kubectl_fzf_plist" 2>/dev/null &&
                 print_success "kubectl-fzf-server service started" ||
                 log_verbose "kubectl-fzf-server service start skipped"
         fi
@@ -909,11 +909,11 @@ NMHEOF
         print_step "Installing consul-template..."
         local consul_template_version="0.41.3"
         local consul_template_arch
-        if [[ "$DETECTED_OS" == "macos" ]]; then
-            consul_template_arch="darwin_arm64"
-        else
-            consul_template_arch="linux_amd64"
-        fi
+        local consul_os="linux"
+        local consul_cpu="amd64"
+        [[ "$DETECTED_OS" == "macos" ]] && consul_os="darwin"
+        [[ "$DETECTED_ARCH" == "arm64" ]] && consul_cpu="arm64"
+        consul_template_arch="${consul_os}_${consul_cpu}"
         local consul_template_url="https://releases.hashicorp.com/consul-template/${consul_template_version}/consul-template_${consul_template_version}_${consul_template_arch}.zip"
         local consul_template_tmp="/tmp/consul-template.zip"
 
@@ -1333,7 +1333,7 @@ phase_9_fonts_and_apps() {
         fi
         if [[ -f "$ssh_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.user.ssh-add"; then
-                launchctl load "$ssh_plist" 2>/dev/null &&
+                launchctl bootstrap "gui/$(id -u)" "$ssh_plist" 2>/dev/null &&
                     print_success "SSH key auto-loading enabled" ||
                     log_verbose "SSH LaunchAgent load skipped"
             fi
@@ -1829,7 +1829,7 @@ EOF
 </dict>
 </plist>
 EOF
-                        launchctl load "$pulse_plist" 2>/dev/null || true
+                        launchctl bootstrap "gui/$(id -u)" "$pulse_plist" 2>/dev/null || true
                         print_success "Pulse daemon configured and started"
                     else
                         log_verbose "Pulse daemon already configured"
@@ -1946,18 +1946,28 @@ main() {
     phase_4_cloud_tools
 
     # Phases 5-6: parallel (editors and multiplexer are independent)
+    local phase_fail=0
     phase_5_editors &
+    local pid_5=$!
     phase_6_multiplexer &
-    wait
+    local pid_6=$!
+    wait "$pid_5" || phase_fail=1
+    wait "$pid_6" || phase_fail=1
+    [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (5-6) had errors — check log for details"
 
     # Phases 7-8: sequential (shells setup writes to ~/.config/fish which stow also manages)
     phase_7_shells
     phase_8_dotfiles
 
     # Phase 9-10: parallel (fonts/apps and advanced features are independent)
+    phase_fail=0
     phase_9_fonts_and_apps &
+    local pid_9=$!
     phase_10_advanced_features &
-    wait
+    local pid_10=$!
+    wait "$pid_9" || phase_fail=1
+    wait "$pid_10" || phase_fail=1
+    [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (9-10) had errors — check log for details"
 
     phase_11_optional_features
 
@@ -1970,13 +1980,13 @@ main() {
     echo "  Mode: $DETECTED_MODE"
     echo ""
     echo "Next Steps:"
-    echo "  1. Restart your shell or run: source ~/.bashrc"
+    echo "  1. Restart your shell (or run: exec fish / source ~/.bashrc)"
     echo "  2. If using tmux: Start tmux and press Ctrl-s + I to install plugins"
     echo "  3. If using Neovim: Run 'nvim' to complete plugin installation"
     echo ""
     echo "Log file: $LOG_FILE"
     echo ""
-    print_success "Enjoy your configured environment! 🚀"
+    print_success "Setup complete"
 }
 
 # Run main
