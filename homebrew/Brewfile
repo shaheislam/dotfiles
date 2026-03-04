@@ -186,6 +186,7 @@ brew "acli"  # Official Atlassian CLI for Jira, Confluence, Admin
 # Issue Tracking CLIs
 brew "schpet/tap/linear"  # Linear CLI for personal projects (agent-friendly)
 brew "beads"              # Git-backed agent memory / issue tracker (steveyegge/beads)
+brew "dolt"               # Version-controlled SQL database (beads backend)
 brew "entireio/tap/entire"  # AI agent session checkpoints (replaces custom checkpoints.sh)
 brew "withgraphite/tap/graphite"  # Graphite CLI for stacked PRs and merge queue
 
