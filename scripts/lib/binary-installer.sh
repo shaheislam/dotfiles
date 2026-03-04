@@ -91,7 +91,7 @@ get_binary_download_url() {
     duf)
         local latest_tag=$(get_latest_release_tag "muesli/duf")
         [[ -z "$latest_tag" ]] && return 1
-        echo "https://github.com/muesli/duf/releases/download/${latest_tag}/duf_${latest_tag#v}_${os}_${arch_suffix}.tar.gz"
+        echo "https://github.com/muesli/duf/releases/download/${latest_tag}/duf_${latest_tag#v}_${os}_$(uname -m).tar.gz"
         ;;
 
     # Kubernetes Tools
@@ -205,8 +205,18 @@ install_binary() {
     local tool=$1
     local install_dir="${2:-$HOME/.local/bin}"
 
+    # Map tool names to actual command names (when they differ)
+    local check_cmd="$tool"
+    local install_name="$tool"
+    case "$tool" in
+    git-delta)
+        check_cmd="delta"
+        install_name="delta"
+        ;;
+    esac
+
     # Check if already installed
-    if command_exists "$tool"; then
+    if command_exists "$check_cmd"; then
         log_verbose "$tool already installed"
         return 0
     fi
@@ -230,31 +240,54 @@ install_binary() {
     local temp_dir=$(mktemp -d)
     trap "rm -rf '$temp_dir'" RETURN
 
+    # Derive archive filename from URL extension for correct extraction
+    local archive_name="archive"
+    case "$url" in
+    *.tar.gz | *.tgz) archive_name="archive.tar.gz" ;;
+    *.tar.bz2 | *.tbz | *.tbz2) archive_name="archive.tar.bz2" ;;
+    *.zip) archive_name="archive.zip" ;;
+    *) archive_name="archive.tar.gz" ;; # default fallback
+    esac
+
     # Download and extract
-    if ! download_file "$url" "$temp_dir/archive.tar.gz"; then
+    if ! download_file "$url" "$temp_dir/$archive_name"; then
         print_warning "Failed to download $tool"
         return 1
     fi
 
+    # Handle direct binary downloads (no archive extension)
+    if [[ "$archive_name" == "archive.tar.gz" ]] && file "$temp_dir/$archive_name" 2>/dev/null | grep -q "executable\|ELF"; then
+        mkdir -p "$install_dir"
+        cp "$temp_dir/$archive_name" "$install_dir/$install_name"
+        chmod +x "$install_dir/$install_name"
+        print_success "Installed: $tool"
+        return 0
+    fi
+
     # Extract
     mkdir -p "$temp_dir/extracted"
-    if ! extract_archive "$temp_dir/archive.tar.gz" "$temp_dir/extracted"; then
+    if ! extract_archive "$temp_dir/$archive_name" "$temp_dir/extracted"; then
         print_warning "Failed to extract $tool"
         return 1
     fi
 
     # Find and install binary
-    local binary=$(find "$temp_dir/extracted" -type f -name "$tool" -perm +111 | head -1)
+    local binary=$(find "$temp_dir/extracted" -type f -name "$check_cmd" -perm +111 | head -1)
+
+    if [[ -z "$binary" ]]; then
+        # Try the tool name too (for packages where binary matches tool name)
+        binary=$(find "$temp_dir/extracted" -type f -name "$tool" -perm +111 | head -1)
+    fi
 
     if [[ -z "$binary" ]]; then
         # Try common patterns
-        binary=$(find "$temp_dir/extracted" -type f -perm +111 | grep -E "/$tool$|/${tool}-[^/]+$" | head -1)
+        binary=$(find "$temp_dir/extracted" -type f -perm +111 | grep -E "/$check_cmd$|/$tool$|/${tool}-[^/]+$" | head -1)
     fi
 
     if [[ -n "$binary" ]]; then
         mkdir -p "$install_dir"
-        cp "$binary" "$install_dir/$tool"
-        chmod +x "$install_dir/$tool"
+        cp "$binary" "$install_dir/$install_name"
+        chmod +x "$install_dir/$install_name"
         print_success "Installed: $tool"
         return 0
     else

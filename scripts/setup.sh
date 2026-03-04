@@ -367,7 +367,8 @@ phase_3_development() {
             curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${nvm_version}/install.sh" | bash </dev/null
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install 22
+            nvm install --lts
+            nvm alias default node
         fi
 
         # Install Node.js global packages

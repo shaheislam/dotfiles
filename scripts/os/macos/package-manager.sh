@@ -61,34 +61,51 @@ pm_install() {
         print_warning "DRY RUN: Would install $package via brew"
         return 0
     fi
-    brew install "$package" 2>&1 | grep -v "already installed" || return 0
+    # Handle --cask packages (unquoted so flag is separate from name)
+    if [[ "$package" == --cask\ * ]]; then
+        # shellcheck disable=SC2086
+        brew install $package 2>&1 | grep -v "already installed" || return 0
+    else
+        brew install "$package" 2>&1 | grep -v "already installed" || return 0
+    fi
 }
 
 pm_install_batch() {
     local packages=("$@")
     local mapped=()
+    local casks=()
 
     for pkg in "${packages[@]}"; do
         local name
         name=$(pm_map_package_name "$pkg")
         # Skip packages that map to empty (not available on this OS)
-        [[ -n "$name" ]] && mapped+=("$name")
+        if [[ -z "$name" ]]; then
+            continue
+        elif [[ "$name" == --cask\ * ]]; then
+            casks+=("${name#--cask }")
+        else
+            mapped+=("$name")
+        fi
     done
 
-    if [[ ${#mapped[@]} -eq 0 ]]; then
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        [[ ${#mapped[@]} -gt 0 ]] && print_warning "DRY RUN: Would install batch via brew: ${mapped[*]}"
+        [[ ${#casks[@]} -gt 0 ]] && print_warning "DRY RUN: Would install casks via brew: ${casks[*]}"
         return 0
     fi
 
-    if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        print_warning "DRY RUN: Would install batch via brew: ${mapped[*]}"
-        return 0
-    fi
-    brew install "${mapped[@]}" 2>&1 | grep -v "already installed" || return 0
+    [[ ${#mapped[@]} -gt 0 ]] && { brew install "${mapped[@]}" 2>&1 | grep -v "already installed" || true; }
+    [[ ${#casks[@]} -gt 0 ]] && { brew install --cask "${casks[@]}" 2>&1 | grep -v "already installed" || true; }
 }
 
 pm_is_installed() {
     local package=$(pm_map_package_name "$1")
-    brew list "$package" &>/dev/null
+    # Handle --cask packages
+    if [[ "$package" == --cask\ * ]]; then
+        brew list --cask "${package#--cask }" &>/dev/null
+    else
+        brew list "$package" &>/dev/null
+    fi
 }
 
 pm_search() {

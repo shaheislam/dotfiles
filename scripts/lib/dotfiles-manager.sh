@@ -109,10 +109,11 @@ stow_dotfiles() {
         print_step "Running stow after resolving conflicts..."
     fi
 
-    if stow . --verbose 2>&1 | tee /tmp/stow-output.log; then
+    local stow_log="${LOG_DIR:-/tmp}/stow-output-$$.log"
+    if stow . --verbose 2>&1 | tee "$stow_log"; then
         print_success "Dotfiles symlinked with stow"
     else
-        print_warning "Stow encountered issues, see /tmp/stow-output.log"
+        print_warning "Stow encountered issues, see $stow_log"
         return 1
     fi
 

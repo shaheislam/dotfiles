@@ -13,8 +13,8 @@
 # Source Base Linux Implementation
 # ============================================================================
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../linux/package-manager.sh"
+_WSL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$_WSL_DIR/../linux/package-manager.sh"
 
 # ============================================================================
 # WSL Detection
