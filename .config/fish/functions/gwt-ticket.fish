@@ -880,7 +880,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             end
             bash $cv_script $cv_args >/dev/null 2>&1; or true
         end
-    end &
+    end </dev/null &
     disown 2>/dev/null
 
     # Create molecule from template steps if --molecule auto and --template given
@@ -931,7 +931,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set -a entire_args --agent $ckpt_agent
                 end
                 entire $entire_args >/dev/null 2>&1; or true
-            end &
+            end </dev/null &
             disown 2>/dev/null
         end
     end
@@ -957,7 +957,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if not tmux has-session -t $session_name 2>/dev/null
         # Create session with the ticket window as the initial window
         # This avoids an extra default window (which would show reattach-to-user-namespace)
-        tmux new-session -d -s $session_name -n $window_name -c $worktree_path
+        tmux new-session -d -s $session_name -n $window_name
+        or begin
+            echo "Error: Failed to create tmux session '$session_name'" >&2
+            return 1
+        end
         set created_new_session true
         if not $quiet_mode
             echo "Created tmux session: $session_name"
@@ -978,7 +982,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         # Trailing colon forces session-level targeting — without it, tmux
         # resolves bare "dotfiles" as window main:dotfiles when a window
         # with that name exists in the current session.
-        tmux new-window -t "$session_name:" -n $window_name -c $worktree_path
+        tmux new-window -t "$session_name:" -n $window_name
+        or begin
+            echo "Error: Failed to create tmux window '$window_name' in session '$session_name'" >&2
+            return 1
+        end
     end
     if not $quiet_mode
         echo "Created window: $window_name"
@@ -1264,6 +1272,9 @@ $prompt_suffix"
 
     # Start Claude without a prompt argument — prompt is delivered via send-keys
     # in gwt-rename-session.sh (after /rename, so session name is set first)
+    # cd first so Claude runs in the worktree (launch script is non-interactive,
+    # so config.fish's interactive block is skipped — no direnv, no starship)
+    echo "cd $worktree_path" >>$launch_script
     echo 'claude --dangerously-skip-permissions --add-dir '$add_dir_path >>$launch_script
 
     if not $use_devcon
@@ -1412,6 +1423,7 @@ $prompt_suffix"
         # 3. Falls back to interactive fish on failure so pane stays open for debugging
         set -l claude_pane_script "$worktree_path/.claude/start-claude-pane.fish"
         echo '#!/usr/bin/env fish' >$claude_pane_script
+        echo "cd $worktree_path" >>$claude_pane_script
         echo "$exec_cmd fish $container_launch_script" >>$claude_pane_script
         echo "set -l claude_exit \$status" >>$claude_pane_script
         echo "" >>$claude_pane_script
@@ -1448,9 +1460,10 @@ $prompt_suffix"
         echo "    exit 1" >>$setup_script
         echo end >>$setup_script
         echo "sleep 2" >>$setup_script
-        echo "set -l claude_pane_id (tmux split-window -hb -p 35 -c '$worktree_path' -P -F '#{pane_id}' 'fish $claude_pane_script')" >>$setup_script
+        echo "set -l claude_pane_id (tmux split-window -hb -p 35 -P -F '#{pane_id}' 'fish $claude_pane_script')" >>$setup_script
         echo "tmux last-pane" >>$setup_script
-        echo "tmux split-window -v -p 30 -c '$worktree_path'" >>$setup_script
+        echo "tmux split-window -v -p 30" >>$setup_script
+        echo "tmux send-keys 'cd $worktree_path' Enter" >>$setup_script
         echo "tmux select-pane -U" >>$setup_script
         # Background rename for devcon path (prompt delivered via CLI argument in launch script)
         set -l rename_script_devcon "$HOME/dotfiles/scripts/gwt-rename-session.sh"
@@ -1479,12 +1492,18 @@ $prompt_suffix"
         # Step 1: Split horizontally - Claude on left (35%), current pane stays right
         # -hb = new pane before (left), -p 35 = 35% width
         # -P -F captures the new pane's ID for gwt-rename-session.sh targeting
-        # Note: split-window -c sets working dir for new panes; original pane keeps its cwd
-        set -l claude_pane_id (tmux split-window -t "$session_name:$window_name" -hb -p 35 -c "$worktree_path" -P -F '#{pane_id}' "fish $launch_script")
+        # Launch script handles cd internally (non-interactive, no direnv trigger)
+        set -l claude_pane_id (tmux split-window -t "$session_name:$window_name" -hb -p 35 -P -F '#{pane_id}' "fish $launch_script")
+        if test -z "$claude_pane_id"
+            echo "Error: Failed to create Claude pane in $session_name:$window_name" >&2
+            return 1
+        end
         # After split: pane layout is [Claude(left,active)] [shell(right)]
         # Step 2: Switch to right pane and split it vertically for diffview + terminal
         tmux last-pane -t "$session_name:$window_name"
-        tmux split-window -t "$session_name:$window_name" -v -p 30 -c "$worktree_path"
+        tmux split-window -t "$session_name:$window_name" -v -p 30
+        or echo "Warning: Failed to create terminal pane (Claude is already running)" >&2
+        tmux send-keys -t "$session_name:$window_name" "cd $worktree_path" Enter
         # After split: right side has [original(top-right)] [new-terminal(bottom-right,active)]
         # Step 3: Launch nvim in the top-right pane (opens CLAUDE.md if present, go up from bottom-right)
         # Combined cd+nvim in single send-keys to avoid buffer corruption from pane resize events
@@ -1678,6 +1697,6 @@ $prompt" >$state_file
             bash "$witness_script" $witness_args >/dev/null 2>&1 &
             disown 2>/dev/null
         end
-    end &
+    end </dev/null &
     disown 2>/dev/null
 end

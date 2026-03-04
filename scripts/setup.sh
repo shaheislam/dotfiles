@@ -1080,10 +1080,9 @@ phase_6_multiplexer() {
             log_verbose "Dracula theme setup completed with warnings"
     fi
 
-    # Reset Claude activity watcher daemon (clear stale state)
+    # Reset Claude activity watcher daemon
     if [[ -f "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" ]]; then
         print_step "Resetting Claude activity watcher..."
-        rm -rf /tmp/tmux-claude-state/* 2>/dev/null
         "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" stop 2>/dev/null
         "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" start </dev/null 2>/dev/null
         print_success "Claude watcher restarted"
