@@ -269,7 +269,8 @@ init_package_manager() {
     return 0
 }
 
-# Auto-initialize if sourced
-if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+# Auto-initialize if sourced (once only — prevents double Homebrew init)
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]] && [[ "${_PACKAGE_MANAGER_SH_LOADED:-}" != "true" ]]; then
+    export _PACKAGE_MANAGER_SH_LOADED=true
     init_package_manager
 fi

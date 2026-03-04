@@ -15,7 +15,7 @@ ensure_homebrew() {
 
     print_step "Installing Homebrew..."
 
-    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+    if NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null; then
         # Add brew to PATH for Apple Silicon
         if [[ $(detect_arch) == "arm64" ]]; then
             eval "$(/opt/homebrew/bin/brew shellenv)"

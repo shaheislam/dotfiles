@@ -573,7 +573,8 @@ init_common() {
     log "Sudo: ${HAS_SUDO:-false}"
 }
 
-# Auto-initialize if sourced
-if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+# Auto-initialize if sourced (once only — prevents redundant network checks)
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]] && [[ "${_COMMON_SH_LOADED:-}" != "true" ]]; then
+    export _COMMON_SH_LOADED=true
     init_common
 fi

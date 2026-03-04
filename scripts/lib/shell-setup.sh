@@ -68,7 +68,7 @@ setup_zsh() {
     # Install Oh My Zsh
     if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
         print_step "Installing Oh My Zsh..."
-        RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+        RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" </dev/null
     fi
 
     local zsh_custom="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"

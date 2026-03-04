@@ -23,6 +23,7 @@ SKIP_PACKAGES=false
 SKIP_DOTFILES=false
 SKIP_SHELLS=false
 SKIP_FONTS_APPS=false
+RESET_STATE=false
 
 # ============================================================================
 # Help
@@ -49,6 +50,7 @@ OPTIONS:
     --skip-dotfiles            Skip dotfiles symlinking
     --skip-shells              Skip shell configuration
     --skip-fonts-apps          Skip fonts and GUI applications (macOS)
+    --reset-state              Clear completion state (re-run all phases)
 
     -h, --help                 Show this help message
 
@@ -149,6 +151,10 @@ parse_args() {
             ;;
         --skip-fonts-apps)
             SKIP_FONTS_APPS=true
+            shift
+            ;;
+        --reset-state)
+            RESET_STATE=true
             shift
             ;;
         -h | --help)
@@ -394,16 +400,13 @@ phase_3_development() {
         fi
     fi
 
-    # Install Python MCP servers via pipx (parallel — each creates an isolated venv)
+    # Install Python MCP servers via pipx (sequential — pipx shares ~/.local/pipx state)
     if command_exists pipx; then
-        print_step "Installing Python-based MCP servers (parallel)..."
-        pipx install mcp-server-git >/dev/null 2>&1 &
-        pipx install mcp-server-fetch >/dev/null 2>&1 &
-        pipx install mcp-server-sqlite >/dev/null 2>&1 &
-        pipx install diagrams >/dev/null 2>&1 &
-        pipx install hookify >/dev/null 2>&1 &
-        pipx install websockets >/dev/null 2>&1 &
-        wait
+        print_step "Installing Python-based MCP servers..."
+        local pipx_pkgs=(mcp-server-git mcp-server-fetch mcp-server-sqlite diagrams hookify websockets)
+        for pkg in "${pipx_pkgs[@]}"; do
+            pipx install "$pkg" >/dev/null 2>&1 || log_verbose "pipx install $pkg skipped (may already exist)"
+        done
         print_success "Python MCP servers installation complete"
     fi
 
@@ -529,12 +532,8 @@ phase_4_cloud_tools() {
                 bun add -g @openai/codex >/dev/null 2>&1 ||
                     log_verbose "OpenAI Codex CLI installation skipped (optional)"
             elif command_exists npm; then
-                if npm install -g @openai/codex >/dev/null 2>&1; then
-                    true
-                else
-                    npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 ||
-                        log_verbose "OpenAI Codex CLI installation skipped (optional)"
-                fi
+                npm install -g @openai/codex >/dev/null 2>&1 ||
+                    log_verbose "OpenAI Codex CLI installation skipped (optional)"
             fi
         fi
     }
@@ -907,25 +906,28 @@ NMHEOF
     # Install consul-template (HashiCorp templating tool)
     if ! command_exists consul-template; then
         print_step "Installing consul-template..."
-        local consul_template_version="0.41.3"
-        local consul_template_arch
-        local consul_os="linux"
-        local consul_cpu="amd64"
-        [[ "$DETECTED_OS" == "macos" ]] && consul_os="darwin"
-        [[ "$DETECTED_ARCH" == "arm64" ]] && consul_cpu="arm64"
-        consul_template_arch="${consul_os}_${consul_cpu}"
-        local consul_template_url="https://releases.hashicorp.com/consul-template/${consul_template_version}/consul-template_${consul_template_version}_${consul_template_arch}.zip"
-        local consul_template_tmp="/tmp/consul-template.zip"
-
-        if curl -sL "$consul_template_url" -o "$consul_template_tmp"; then
-            mkdir -p "$HOME/bin"
-            unzip -q -o "$consul_template_tmp" -d /tmp
-            mv /tmp/consul-template "$HOME/bin/"
-            chmod +x "$HOME/bin/consul-template"
-            rm -f "$consul_template_tmp"
-            print_success "consul-template installed to ~/bin/"
+        if command_exists brew; then
+            brew install consul-template >/dev/null 2>&1 &&
+                print_success "consul-template installed via Homebrew" ||
+                print_warning "Failed to install consul-template"
         else
-            print_warning "Failed to download consul-template"
+            local consul_template_version="0.41.3"
+            local consul_os="linux"
+            local consul_cpu="amd64"
+            [[ "$DETECTED_OS" == "macos" ]] && consul_os="darwin"
+            [[ "$DETECTED_ARCH" == "arm64" ]] && consul_cpu="arm64"
+            local consul_template_url="https://releases.hashicorp.com/consul-template/${consul_template_version}/consul-template_${consul_template_version}_${consul_os}_${consul_cpu}.zip"
+
+            if curl -sL "$consul_template_url" -o /tmp/consul-template.zip; then
+                mkdir -p "$HOME/.local/bin"
+                unzip -q -o /tmp/consul-template.zip -d /tmp
+                mv /tmp/consul-template "$HOME/.local/bin/"
+                chmod +x "$HOME/.local/bin/consul-template"
+                rm -f /tmp/consul-template.zip
+                print_success "consul-template installed to ~/.local/bin/"
+            else
+                print_warning "Failed to download consul-template"
+            fi
         fi
     else
         log_verbose "consul-template already installed"
@@ -1935,6 +1937,13 @@ EOF
 main() {
     parse_args "$@"
     load_modules
+
+    # Clear completion state if requested (after modules load STATE_DIR)
+    if [[ "${RESET_STATE:-false}" == "true" ]]; then
+        print_warning "Clearing completion state — all phases will re-run"
+        clear_state
+    fi
+
     preflight_checks
     show_summary
 
@@ -1946,13 +1955,16 @@ main() {
     phase_4_cloud_tools
 
     # Phases 5-6: parallel (editors and multiplexer are independent)
+    # Buffer output per phase to prevent interleaved terminal output
     local phase_fail=0
-    phase_5_editors &
+    phase_5_editors >"$LOG_DIR/phase5.out" 2>&1 &
     local pid_5=$!
-    phase_6_multiplexer &
+    phase_6_multiplexer >"$LOG_DIR/phase6.out" 2>&1 &
     local pid_6=$!
     wait "$pid_5" || phase_fail=1
     wait "$pid_6" || phase_fail=1
+    cat "$LOG_DIR/phase5.out" | tee -a "$LOG_FILE"
+    cat "$LOG_DIR/phase6.out" | tee -a "$LOG_FILE"
     [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (5-6) had errors — check log for details"
 
     # Phases 7-8: sequential (shells setup writes to ~/.config/fish which stow also manages)
@@ -1961,12 +1973,14 @@ main() {
 
     # Phase 9-10: parallel (fonts/apps and advanced features are independent)
     phase_fail=0
-    phase_9_fonts_and_apps &
+    phase_9_fonts_and_apps >"$LOG_DIR/phase9.out" 2>&1 &
     local pid_9=$!
-    phase_10_advanced_features &
+    phase_10_advanced_features >"$LOG_DIR/phase10.out" 2>&1 &
     local pid_10=$!
     wait "$pid_9" || phase_fail=1
     wait "$pid_10" || phase_fail=1
+    cat "$LOG_DIR/phase9.out" | tee -a "$LOG_FILE"
+    cat "$LOG_DIR/phase10.out" | tee -a "$LOG_FILE"
     [[ $phase_fail -ne 0 ]] && print_warning "Some parallel phases (9-10) had errors — check log for details"
 
     phase_11_optional_features
