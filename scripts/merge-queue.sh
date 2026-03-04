@@ -409,15 +409,12 @@ cmd_list() {
     echo -e "${BLUE}=== Merge Queue ($count items) ===${NC}"
     echo ""
 
-    local i=0
-    while [[ $i -lt $count ]]; do
-        local status branch path submitted retries last_error
-        status=$(jq -r ".[$i].status" "$QUEUE_FILE")
-        branch=$(jq -r ".[$i].branch" "$QUEUE_FILE")
-        path=$(jq -r ".[$i].worktree_path" "$QUEUE_FILE")
-        submitted=$(jq -r ".[$i].submitted_at" "$QUEUE_FILE")
-        retries=$(jq -r ".[$i].retries" "$QUEUE_FILE")
-        last_error=$(jq -r ".[$i].last_error" "$QUEUE_FILE")
+    # Single jq call extracts all items as TSV (replaces 6 jq calls per item)
+    local items
+    items=$(jq -r '.[] | [.status, .branch, .worktree_path, .submitted_at, (.retries | tostring), (.last_error // "")] | @tsv' "$QUEUE_FILE")
+
+    while IFS=$'\t' read -r status branch path submitted retries last_error; do
+        [[ -z "$status" ]] && continue
 
         local color
         case "$status" in
@@ -441,9 +438,7 @@ cmd_list() {
             echo -e "    Error:     $last_error"
         fi
         echo ""
-
-        i=$((i + 1))
-    done
+    done <<<"$items"
 }
 
 cmd_daemon() {
@@ -475,12 +470,8 @@ cmd_daemon() {
         trap cleanup_daemon EXIT TERM INT
 
         while true; do
-            # Process next pending item (ignore exit 2 = empty queue)
-            if [[ "$REBASE_MODE" == true ]]; then
-                "$0" --rebase process 2>/dev/null || true
-            else
-                "$0" process 2>/dev/null || true
-            fi
+            # Process next pending item as direct function call (avoids subprocess overhead)
+            cmd_process 2>/dev/null || true
             sleep "$POLL_INTERVAL"
         done
     ) &
@@ -530,16 +521,20 @@ cmd_status() {
         echo -e "Daemon:  ${YELLOW}stopped${NC}"
     fi
 
-    # Queue summary
+    # Queue summary (single jq call replaces 7 separate invocations)
     ensure_queue
     local total pending processing conflict failed respawned rejected
-    total=$(jq 'length' "$QUEUE_FILE")
-    pending=$(jq '[.[] | select(.status == "pending")] | length' "$QUEUE_FILE")
-    processing=$(jq '[.[] | select(.status == "processing")] | length' "$QUEUE_FILE")
-    conflict=$(jq '[.[] | select(.status == "conflict")] | length' "$QUEUE_FILE")
-    failed=$(jq '[.[] | select(.status == "failed")] | length' "$QUEUE_FILE")
-    respawned=$(jq '[.[] | select(.status == "respawned")] | length' "$QUEUE_FILE")
-    rejected=$(jq '[.[] | select(.status == "rejected")] | length' "$QUEUE_FILE")
+    local counts
+    counts=$(jq -r '[
+        length,
+        ([.[] | select(.status == "pending")] | length),
+        ([.[] | select(.status == "processing")] | length),
+        ([.[] | select(.status == "conflict")] | length),
+        ([.[] | select(.status == "failed")] | length),
+        ([.[] | select(.status == "respawned")] | length),
+        ([.[] | select(.status == "rejected")] | length)
+    ] | @tsv' "$QUEUE_FILE")
+    IFS=$'\t' read -r total pending processing conflict failed respawned rejected <<<"$counts"
 
     echo -e "Queue:   $total total, ${GREEN}$pending pending${NC}, ${BLUE}$processing processing${NC}, ${RED}$conflict conflicts${NC}, ${RED}$failed failed${NC}, ${YELLOW}$respawned respawned${NC}, ${RED}$rejected rejected${NC}"
     echo -e "Log:     $LOG_FILE"
