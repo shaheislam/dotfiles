@@ -1164,6 +1164,11 @@ phase_8_dotfiles() {
         git config --global diff.json.textconv "$DOTFILES_ROOT/scripts/git-diff-json.sh"
         log_verbose "JSON diff driver registered"
 
+        # Register JSON clean filter - normalizes key order on commit
+        # Prevents phantom diffs from tools that re-serialize JSON (e.g., Claude Code)
+        git config --global filter.json-normalize.clean "$DOTFILES_ROOT/scripts/git-clean-json.sh"
+        log_verbose "JSON normalize filter registered"
+
         # Register plist diff driver - converts to XML for readable diffs
         git config --global diff.plist.textconv "plutil -convert xml1 -o -"
         log_verbose "Plist diff driver registered"

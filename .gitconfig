@@ -49,3 +49,5 @@
 
 [alias]
 	mergetool = "!nvim -c DiffviewOpen"
+[filter "json-normalize"]
+	clean = /Users/shahe.islam/dotfiles/scripts/git-clean-json.sh

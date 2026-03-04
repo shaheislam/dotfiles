@@ -31,7 +31,7 @@ homebrew/Brewfile merge=brewfile
 # Registered in git config via setup.sh:
 #   [merge "json-merge"]
 #       driver = scripts/merge-driver-json.sh %A %O %B %L %P
-.claude/settings.json merge=json-merge
+.claude/settings.json merge=json-merge filter=json-normalize
 .claude/settings.local.json merge=json-merge
 
 # Union merge for additive config files modified across worktrees.

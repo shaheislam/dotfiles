@@ -126,6 +126,9 @@ work/
 **/sshd.pid
 **/sshd_config
 
+# Codex CLI (machine-specific sessions and trust config)
+.codex/
+
 # Version control
 .jj/
 
