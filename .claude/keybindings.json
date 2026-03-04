@@ -6,7 +6,7 @@
       "context": "Chat",
       "bindings": {
         "ctrl+e": "chat:externalEditor",
-        "ctrl+p": "chat:modelPicker"
+        "alt+z": "chat:stash"
       }
     },
     {
