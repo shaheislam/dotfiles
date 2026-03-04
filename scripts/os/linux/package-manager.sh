@@ -307,7 +307,7 @@ pm_map_package_name() {
         dive | ctop | gping | hyperfine | oha | glances | lnav)
             echo "BINARY_INSTALL:$generic"
             ;;
-        curlie | xh | skopeo | flamegraph | wrk | watchexec | entr)
+        curlie | xh | skopeo | wrk | watchexec | entr)
             echo "BINARY_INSTALL:$generic"
             ;;
         sd | tokei | ncdu | commitizen)
@@ -341,9 +341,12 @@ pm_map_package_name() {
         # Observability tools not in standard repos
         e1s) echo "BINARY_INSTALL:e1s" ;;
 
-        # Special cases
-        zsh-vi-mode) echo "" ;;  # Oh My Zsh plugin, not package
-        tmux-fingers) echo "" ;; # Tmux plugin, not package
+        # Special cases — not system packages
+        zsh-vi-mode) echo "" ;;          # Oh My Zsh plugin, not package
+        tmux-fingers) echo "" ;;         # tmux plugin, not package
+        choose | extract_url) echo "" ;; # macOS-only tools
+        ollama) echo "" ;;               # Has its own installer (setup-selfhost-llm.sh)
+        flamegraph) echo "" ;;           # Perl script, install via cargo/cpan
         atuin) echo "BINARY_INSTALL:atuin" ;;
         carapace) echo "BINARY_INSTALL:carapace" ;;
         ueberzugpp) echo "BINARY_INSTALL:ueberzugpp" ;;
@@ -422,10 +425,21 @@ pm_map_package_name() {
         luarocks) echo "luarocks" ;;
 
         # System tools
-        thefuck | asciinema | gitleaks | cosign | hadolick | stern)
+        thefuck | asciinema | gitleaks | cosign | hadolint | stern)
             echo "BINARY_INSTALL:$generic"
             ;;
         imagemagick) echo "ImageMagick" ;;
+
+        # Special cases — not system packages
+        zsh-vi-mode) echo "" ;;          # Oh My Zsh plugin, not package
+        tmux-fingers) echo "" ;;         # tmux plugin, not package
+        choose | extract_url) echo "" ;; # macOS-only tools
+        ollama) echo "" ;;               # Has its own installer (setup-selfhost-llm.sh)
+        flamegraph) echo "" ;;           # Perl script, install via cargo/cpan
+        colima) echo "" ;;               # macOS-specific
+        ueberzugpp) echo "BINARY_INSTALL:ueberzugpp" ;;
+        atuin) echo "BINARY_INSTALL:atuin" ;;
+        carapace) echo "BINARY_INSTALL:carapace" ;;
 
         # Default
         *) echo "$generic" ;;
@@ -489,6 +503,17 @@ pm_map_package_name() {
         isort) echo "python-isort" ;;
         thefuck) echo "thefuck" ;;
         asciinema) echo "asciinema" ;;
+
+        # Special cases — not system packages
+        zsh-vi-mode) echo "" ;;          # Oh My Zsh plugin, not package
+        tmux-fingers) echo "" ;;         # tmux plugin, not package
+        choose | extract_url) echo "" ;; # macOS-only tools
+        ollama) echo "" ;;               # Has its own installer (setup-selfhost-llm.sh)
+        flamegraph) echo "" ;;           # Perl script, install via cargo/cpan
+        colima) echo "" ;;               # macOS-specific
+        ueberzugpp) echo "ueberzugpp" ;; # Available in Arch repos
+        atuin) echo "BINARY_INSTALL:atuin" ;;
+        carapace) echo "BINARY_INSTALL:carapace" ;;
 
         # Default
         *) echo "$generic" ;;

@@ -228,7 +228,7 @@ install_binary() {
 
     # Create temp directory
     local temp_dir=$(mktemp -d)
-    trap "rm -rf '$temp_dir'" RETURN EXIT
+    trap "rm -rf '$temp_dir'" RETURN
 
     # Download and extract
     if ! download_file "$url" "$temp_dir/archive.tar.gz"; then

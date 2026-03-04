@@ -98,7 +98,7 @@ configure_wsl_conf() {
 
     print_step "Creating /etc/wsl.conf..."
 
-    sudo tee "$wsl_conf" > /dev/null << 'EOF'
+    sudo tee "$wsl_conf" >/dev/null <<'EOF'
 # WSL Configuration
 # Documentation: https://docs.microsoft.com/en-us/windows/wsl/wsl-config
 
@@ -220,13 +220,13 @@ configure_git_credential_manager() {
 # ============================================================================
 
 # Override pm_init to add WSL-specific setup
-_linux_pm_init() {
-    # Store original function
-    pm_init
-}
+# Save the original Linux pm_init before overriding it.
+# Using eval + declare -f renames the existing function so bash doesn't
+# resolve pm_init to the (not yet defined) WSL override at call time.
+eval "$(declare -f pm_init | sed '1s/pm_init/_linux_pm_init/')"
 
 pm_init() {
-    # Call original Linux pm_init
+    # Call original Linux pm_init (saved above)
     _linux_pm_init
 
     # Add WSL-specific initialization
@@ -336,19 +336,19 @@ _wsl_map_package() {
     local generic=$1
 
     case "$generic" in
-        # These tools can use Windows versions via interop
-        docker)
-            # Use Docker Desktop from Windows if available
-            if [[ -S "/mnt/wsl/docker-desktop/docker.sock" ]]; then
-                echo "SKIP:docker (using Docker Desktop)"
-                return 0
-            fi
-            echo "docker.io"
-            ;;
-        *)
-            # Fall through to Linux mapping
-            pm_map_package_name "$generic"
-            ;;
+    # These tools can use Windows versions via interop
+    docker)
+        # Use Docker Desktop from Windows if available
+        if [[ -S "/mnt/wsl/docker-desktop/docker.sock" ]]; then
+            echo "SKIP:docker (using Docker Desktop)"
+            return 0
+        fi
+        echo "docker.io"
+        ;;
+    *)
+        # Fall through to Linux mapping
+        pm_map_package_name "$generic"
+        ;;
     esac
 }
 

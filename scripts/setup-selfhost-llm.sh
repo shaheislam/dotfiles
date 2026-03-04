@@ -39,19 +39,19 @@ MODELS_ONLY=false
 # Default models to pull (coding-focused + general purpose)
 # These are selected for a balance of capability and resource usage
 CODING_MODELS=(
-    "qwen2.5-coder:7b"    # Strong coding model, reasonable size
+    "qwen2.5-coder:7b"      # Strong coding model, reasonable size
     "deepseek-coder-v2:16b" # Deep reasoning for complex code tasks
-    "qwen3-coder"          # Agentic coding model, 256K context (OpenCode/Claude Code)
+    "qwen3-coder"           # Agentic coding model, 256K context (OpenCode/Claude Code)
 )
 
 GENERAL_MODELS=(
-    "llama3.1:8b"          # Meta's general-purpose model, fast
-    "mistral:7b"           # Good all-rounder, low resource usage
+    "llama3.1:8b" # Meta's general-purpose model, fast
+    "mistral:7b"  # Good all-rounder, low resource usage
 )
 
 LARGE_MODELS=(
-    "qwen2.5-coder:32b"    # Premium coding - needs 32GB+ RAM
-    "llama3.1:70b"          # Premium general - needs 64GB+ RAM
+    "qwen2.5-coder:32b" # Premium coding - needs 32GB+ RAM
+    "llama3.1:70b"      # Premium general - needs 64GB+ RAM
 )
 
 # Open WebUI configuration
@@ -62,7 +62,7 @@ OPEN_WEBUI_PORT="${OPEN_WEBUI_PORT:-8080}"
 # ============================================================================
 
 show_help() {
-    cat << EOF
+    cat <<EOF
 Self-Hosted LLM Setup - Local AI resilience layer
 
 USAGE:
@@ -116,16 +116,31 @@ PULL_LARGE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --verbose)     VERBOSE=true; shift ;;
-        --uninstall)   UNINSTALL=true; shift ;;
-        --models-only) MODELS_ONLY=true; shift ;;
-        --large-models) PULL_LARGE=true; shift ;;
-        --help|-h)     show_help; exit 0 ;;
-        *)
-            print_error "Unknown option: $1"
-            show_help
-            exit 1
-            ;;
+    --verbose)
+        VERBOSE=true
+        shift
+        ;;
+    --uninstall)
+        UNINSTALL=true
+        shift
+        ;;
+    --models-only)
+        MODELS_ONLY=true
+        shift
+        ;;
+    --large-models)
+        PULL_LARGE=true
+        shift
+        ;;
+    --help | -h)
+        show_help
+        exit 0
+        ;;
+    *)
+        print_error "Unknown option: $1"
+        show_help
+        exit 1
+        ;;
     esac
 done
 
@@ -192,24 +207,24 @@ install_ollama() {
     os_type=$(detect_os)
 
     case "$os_type" in
-        macos)
-            if command -v brew &>/dev/null; then
-                brew install --cask ollama
-                print_success "Ollama installed via Homebrew"
-            else
-                print_error "Homebrew required for macOS installation"
-                return 1
-            fi
-            ;;
-        linux)
-            # Official Ollama install script
-            curl -fsSL https://ollama.com/install.sh | sh
-            print_success "Ollama installed via official script"
-            ;;
-        *)
-            print_error "Unsupported OS: $os_type"
+    macos)
+        if command -v brew &>/dev/null; then
+            brew install --cask ollama
+            print_success "Ollama installed via Homebrew"
+        else
+            print_error "Homebrew required for macOS installation"
             return 1
-            ;;
+        fi
+        ;;
+    linux)
+        # Official Ollama install script
+        curl -fsSL https://ollama.com/install.sh | sh </dev/null
+        print_success "Ollama installed via official script"
+        ;;
+    *)
+        print_error "Unsupported OS: $os_type"
+        return 1
+        ;;
     esac
 }
 
@@ -227,23 +242,23 @@ start_ollama() {
     os_type=$(detect_os)
 
     case "$os_type" in
-        macos)
-            # On macOS, Ollama.app manages its own server
-            if [[ -d "/Applications/Ollama.app" ]]; then
-                open -a Ollama
-                print_step "Starting Ollama.app..."
-            else
-                ollama serve &>/dev/null &
-                print_step "Starting ollama serve..."
-            fi
-            ;;
-        linux)
-            if systemctl is-enabled ollama &>/dev/null; then
-                sudo systemctl start ollama
-            else
-                ollama serve &>/dev/null &
-            fi
-            ;;
+    macos)
+        # On macOS, Ollama.app manages its own server
+        if [[ -d "/Applications/Ollama.app" ]]; then
+            open -a Ollama
+            print_step "Starting Ollama.app..."
+        else
+            ollama serve &>/dev/null &
+            print_step "Starting ollama serve..."
+        fi
+        ;;
+    linux)
+        if systemctl is-enabled ollama &>/dev/null; then
+            sudo systemctl start ollama
+        else
+            ollama serve &>/dev/null &
+        fi
+        ;;
     esac
 
     # Wait for Ollama to be ready
@@ -326,21 +341,21 @@ configure_autostart() {
     os_type=$(detect_os)
 
     case "$os_type" in
-        macos)
-            # On macOS, Ollama.app auto-starts itself when installed as a cask
-            # We just need to ensure it's in Login Items
-            if [[ -d "/Applications/Ollama.app" ]]; then
-                print_success "Ollama.app manages auto-start via Login Items"
-                print_step "If not auto-starting: System Settings > General > Login Items > Add Ollama"
-            fi
-            ;;
-        linux)
-            # Enable systemd service if available
-            if systemctl list-unit-files | grep -q ollama; then
-                sudo systemctl enable ollama
-                print_success "Ollama systemd service enabled"
-            fi
-            ;;
+    macos)
+        # On macOS, Ollama.app auto-starts itself when installed as a cask
+        # We just need to ensure it's in Login Items
+        if [[ -d "/Applications/Ollama.app" ]]; then
+            print_success "Ollama.app manages auto-start via Login Items"
+            print_step "If not auto-starting: System Settings > General > Login Items > Add Ollama"
+        fi
+        ;;
+    linux)
+        # Enable systemd service if available
+        if systemctl list-unit-files | grep -q ollama; then
+            sudo systemctl enable ollama
+            print_success "Ollama systemd service enabled"
+        fi
+        ;;
     esac
 }
 

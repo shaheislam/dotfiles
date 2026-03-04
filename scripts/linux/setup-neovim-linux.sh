@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-NEOVIM_VERSION="stable"  # or "nightly" or specific version like "v0.9.5"
+NEOVIM_VERSION="stable" # or "nightly" or specific version like "v0.9.5"
 NEOVIM_BUILD_DIR="$HOME/.local/src/neovim"
 NEOVIM_INSTALL_PREFIX="$HOME/.local"
 NEOVIM_CONFIG_REPO="https://github.com/shaheislam/neovim.git"
@@ -24,7 +24,7 @@ NEOVIM_CONFIG_DIR="$HOME/.config/nvim"
 # ============================================================================
 
 check_neovim_version() {
-    if ! command -v nvim &> /dev/null; then
+    if ! command -v nvim &>/dev/null; then
         echo -e "${YELLOW}Neovim not found${NC}"
         return 1
     fi
@@ -54,16 +54,16 @@ build_neovim_from_source() {
     # Check for build dependencies
     local missing_deps=()
 
-    if ! command -v git &> /dev/null; then
+    if ! command -v git &>/dev/null; then
         missing_deps+=("git")
     fi
-    if ! command -v make &> /dev/null; then
+    if ! command -v make &>/dev/null; then
         missing_deps+=("make")
     fi
-    if ! command -v cmake &> /dev/null; then
+    if ! command -v cmake &>/dev/null; then
         missing_deps+=("cmake")
     fi
-    if ! command -v gcc &> /dev/null; then
+    if ! command -v gcc &>/dev/null; then
         missing_deps+=("gcc")
     fi
 
@@ -99,13 +99,13 @@ build_neovim_from_source() {
     make install
 
     # Verify installation
-    if command -v "$NEOVIM_INSTALL_PREFIX/bin/nvim" &> /dev/null; then
+    if command -v "$NEOVIM_INSTALL_PREFIX/bin/nvim" &>/dev/null; then
         echo -e "${GREEN}Neovim built and installed successfully${NC}"
 
         # Add to PATH if not already there
         if [[ ":$PATH:" != *":$NEOVIM_INSTALL_PREFIX/bin:"* ]]; then
             echo -e "${YELLOW}Add $NEOVIM_INSTALL_PREFIX/bin to your PATH${NC}"
-            echo "export PATH=\"$NEOVIM_INSTALL_PREFIX/bin:\$PATH\"" >> ~/.bashrc
+            echo "export PATH=\"$NEOVIM_INSTALL_PREFIX/bin:\$PATH\"" >>~/.bashrc
         fi
         return 0
     else
@@ -143,7 +143,7 @@ clone_neovim_config() {
     else
         echo -e "${YELLOW}Neovim configuration directory already exists${NC}"
         cd "$NEOVIM_CONFIG_DIR"
-        if git rev-parse --git-dir > /dev/null 2>&1; then
+        if git rev-parse --git-dir >/dev/null 2>&1; then
             echo -e "${BLUE}Updating existing configuration...${NC}"
             git pull
         fi
@@ -160,10 +160,13 @@ install_neovim_dependencies() {
     echo -e "${BLUE}Installing Neovim dependencies...${NC}"
 
     # Node.js (required for many LSP servers and plugins)
-    if ! command -v node &> /dev/null; then
+    if ! command -v node &>/dev/null; then
         echo -e "${YELLOW}Node.js not found, installing via nvm...${NC}"
-        if ! command -v nvm &> /dev/null; then
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        if ! command -v nvm &>/dev/null; then
+            local nvm_version
+            nvm_version=$(curl -sL https://api.github.com/repos/nvm-sh/nvm/releases/latest 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+            nvm_version=${nvm_version:-v0.40.1}
+            curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${nvm_version}/install.sh" | bash </dev/null
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
         fi
@@ -171,19 +174,19 @@ install_neovim_dependencies() {
     fi
 
     # Python provider (optional but recommended)
-    if command -v pip3 &> /dev/null; then
+    if command -v pip3 &>/dev/null; then
         echo -e "${BLUE}Installing Python Neovim provider...${NC}"
         pip3 install --user --upgrade pynvim
     fi
 
     # Ruby provider (optional)
-    if command -v gem &> /dev/null; then
+    if command -v gem &>/dev/null; then
         echo -e "${BLUE}Installing Ruby Neovim provider...${NC}"
         gem install --user-install neovim
     fi
 
     # Clipboard support (xclip or xsel on Linux)
-    if ! command -v xclip &> /dev/null && ! command -v xsel &> /dev/null; then
+    if ! command -v xclip &>/dev/null && ! command -v xsel &>/dev/null; then
         echo -e "${YELLOW}No clipboard tool found, install xclip or xsel for clipboard support${NC}"
     fi
 }
@@ -216,26 +219,26 @@ install_lsp_servers() {
     echo -e "${BLUE}Installing common LSP servers...${NC}"
 
     # TypeScript/JavaScript
-    if command -v npm &> /dev/null; then
+    if command -v npm &>/dev/null; then
         npm install -g typescript typescript-language-server
-        npm install -g vscode-langservers-extracted  # HTML, CSS, JSON, ESLint
+        npm install -g vscode-langservers-extracted # HTML, CSS, JSON, ESLint
         npm install -g bash-language-server
         npm install -g yaml-language-server
     fi
 
     # Python
-    if command -v pip3 &> /dev/null; then
+    if command -v pip3 &>/dev/null; then
         pip3 install --user python-lsp-server
-        pip3 install --user black isort ruff  # Formatters and linters
+        pip3 install --user black isort ruff # Formatters and linters
     fi
 
     # Go (if Go is installed)
-    if command -v go &> /dev/null; then
+    if command -v go &>/dev/null; then
         go install golang.org/x/tools/gopls@latest
     fi
 
     # Lua (for Neovim config editing)
-    if command -v cargo &> /dev/null; then
+    if command -v cargo &>/dev/null; then
         cargo install stylua
     fi
 

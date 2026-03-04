@@ -73,7 +73,7 @@ log_verbose() {
 # ============================================================================
 
 show_help() {
-    cat << EOF
+    cat <<EOF
 AWS Linux Workspace Setup Script
 
 USAGE:
@@ -117,39 +117,39 @@ EOF
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --dry-run)
-                DRY_RUN=true
-                shift
-                ;;
-            --minimal)
-                MINIMAL=true
-                shift
-                ;;
-            --skip-neovim)
-                SKIP_NEOVIM=true
-                shift
-                ;;
-            --skip-shells)
-                SKIP_SHELLS=true
-                shift
-                ;;
-            --skip-stow)
-                SKIP_STOW=true
-                shift
-                ;;
-            --verbose)
-                VERBOSE=true
-                shift
-                ;;
-            -h|--help)
-                show_help
-                exit 0
-                ;;
-            *)
-                echo -e "${RED}Unknown option: $1${NC}"
-                show_help
-                exit 1
-                ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --minimal)
+            MINIMAL=true
+            shift
+            ;;
+        --skip-neovim)
+            SKIP_NEOVIM=true
+            shift
+            ;;
+        --skip-shells)
+            SKIP_SHELLS=true
+            shift
+            ;;
+        --skip-stow)
+            SKIP_STOW=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        -h | --help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            show_help
+            exit 1
+            ;;
         esac
     done
 }
@@ -225,7 +225,7 @@ install_cli_utilities() {
 }
 
 install_eza() {
-    if command -v eza &> /dev/null; then
+    if command -v eza &>/dev/null; then
         log_verbose "eza already installed"
         return
     fi
@@ -234,18 +234,18 @@ install_eza() {
 
     if [[ $HAS_SUDO == true ]]; then
         case $PACKAGE_MANAGER in
-            apt)
-                # eza is available in Ubuntu 24.04+ repos
-                if install_package "eza" 2>/dev/null; then
-                    print_success "eza installed from repository"
-                else
-                    # Install from GitHub releases
-                    install_eza_from_binary
-                fi
-                ;;
-            *)
+        apt)
+            # eza is available in Ubuntu 24.04+ repos
+            if install_package "eza" 2>/dev/null; then
+                print_success "eza installed from repository"
+            else
+                # Install from GitHub releases
                 install_eza_from_binary
-                ;;
+            fi
+            ;;
+        *)
+            install_eza_from_binary
+            ;;
         esac
     else
         install_eza_from_binary
@@ -267,7 +267,7 @@ install_eza_from_binary() {
 }
 
 install_zoxide() {
-    if command -v zoxide &> /dev/null; then
+    if command -v zoxide &>/dev/null; then
         log_verbose "zoxide already installed"
         return
     fi
@@ -277,7 +277,7 @@ install_zoxide() {
 }
 
 install_starship() {
-    if command -v starship &> /dev/null; then
+    if command -v starship &>/dev/null; then
         log_verbose "starship already installed"
         return
     fi
@@ -287,7 +287,7 @@ install_starship() {
 }
 
 install_direnv() {
-    if command -v direnv &> /dev/null; then
+    if command -v direnv &>/dev/null; then
         log_verbose "direnv already installed"
         return
     fi
@@ -339,7 +339,7 @@ install_development_tools() {
 }
 
 install_nodejs() {
-    if command -v node &> /dev/null; then
+    if command -v node &>/dev/null; then
         log_verbose "Node.js already installed: $(node --version)"
         return
     fi
@@ -348,7 +348,10 @@ install_nodejs() {
 
     # Install nvm
     if [[ ! -d "$HOME/.nvm" ]]; then
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        local nvm_version
+        nvm_version=$(curl -sL https://api.github.com/repos/nvm-sh/nvm/releases/latest 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        nvm_version=${nvm_version:-v0.40.1}
+        curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${nvm_version}/install.sh" | bash </dev/null
 
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -361,7 +364,7 @@ install_nodejs() {
     print_success "Node.js installed: $(node --version)"
 
     # Install pnpm
-    if ! command -v pnpm &> /dev/null; then
+    if ! command -v pnpm &>/dev/null; then
         npm install -g pnpm
         print_success "pnpm installed"
     fi
@@ -370,7 +373,7 @@ install_nodejs() {
 install_python_tools() {
     print_step "Installing Python tools..."
 
-    if command -v pip3 &> /dev/null; then
+    if command -v pip3 &>/dev/null; then
         pip3 install --user --upgrade pip
         pip3 install --user pipx
         pip3 install --user black isort ruff
@@ -381,7 +384,7 @@ install_python_tools() {
 }
 
 install_golang() {
-    if command -v go &> /dev/null; then
+    if command -v go &>/dev/null; then
         log_verbose "Go already installed: $(go version)"
         return
     fi
@@ -399,7 +402,7 @@ install_golang() {
 
         # Add to PATH
         if [[ ":$PATH:" != *":/usr/local/go/bin:"* ]]; then
-            echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+            echo 'export PATH=$PATH:/usr/local/go/bin' >>~/.bashrc
         fi
 
         print_success "Go installed from binary"
@@ -407,7 +410,7 @@ install_golang() {
 }
 
 install_rust() {
-    if command -v rustc &> /dev/null; then
+    if command -v rustc &>/dev/null; then
         log_verbose "Rust already installed: $(rustc --version)"
         return
     fi
@@ -452,7 +455,7 @@ install_aws_k8s_tools() {
 }
 
 install_awscli() {
-    if command -v aws &> /dev/null; then
+    if command -v aws &>/dev/null; then
         log_verbose "AWS CLI already installed: $(aws --version)"
         return
     fi
@@ -472,7 +475,7 @@ install_awscli() {
 }
 
 install_kubectl() {
-    if command -v kubectl &> /dev/null; then
+    if command -v kubectl &>/dev/null; then
         log_verbose "kubectl already installed: $(kubectl version --client --short 2>/dev/null)"
         return
     fi
@@ -491,7 +494,7 @@ install_kubectl() {
 }
 
 install_helm() {
-    if command -v helm &> /dev/null; then
+    if command -v helm &>/dev/null; then
         log_verbose "helm already installed: $(helm version --short)"
         return
     fi
@@ -535,7 +538,7 @@ setup_shells() {
 }
 
 setup_fish_shell() {
-    if ! command -v fish &> /dev/null; then
+    if ! command -v fish &>/dev/null; then
         print_warning "Fish not installed, skipping Fish setup"
         return
     fi
@@ -566,7 +569,7 @@ setup_fish_shell() {
 }
 
 setup_zsh_shell() {
-    if ! command -v zsh &> /dev/null; then
+    if ! command -v zsh &>/dev/null; then
         print_warning "Zsh not installed, skipping Zsh setup"
         return
     fi
@@ -641,7 +644,7 @@ setup_tmux() {
     fi
 
     # Install tmux
-    if ! command -v tmux &> /dev/null; then
+    if ! command -v tmux &>/dev/null; then
         print_step "Installing tmux..."
         install_package "tmux"
     fi
@@ -676,7 +679,7 @@ setup_dotfiles() {
     fi
 
     # Check if stow is installed
-    if ! command -v stow &> /dev/null; then
+    if ! command -v stow &>/dev/null; then
         print_error "stow not installed"
         return 1
     fi
@@ -740,7 +743,7 @@ install_nerd_fonts() {
         rm /tmp/JetBrainsMono.zip
 
         # Update font cache
-        if command -v fc-cache &> /dev/null; then
+        if command -v fc-cache &>/dev/null; then
             fc-cache -f "$fonts_dir"
         fi
 
@@ -751,7 +754,7 @@ install_nerd_fonts() {
 }
 
 set_default_shell() {
-    if ! command -v fish &> /dev/null; then
+    if ! command -v fish &>/dev/null; then
         print_warning "Fish not installed, cannot set as default shell"
         return
     fi
@@ -786,9 +789,9 @@ ensure_local_bin_in_path() {
 
     if [[ -f "$bashrc" ]] && ! grep -q '.local/bin' "$bashrc"; then
         print_step "Adding ~/.local/bin to PATH..."
-        echo '' >> "$bashrc"
-        echo '# Add local bin to PATH' >> "$bashrc"
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$bashrc"
+        echo '' >>"$bashrc"
+        echo '# Add local bin to PATH' >>"$bashrc"
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >>"$bashrc"
         print_success "Added ~/.local/bin to PATH in ~/.bashrc"
     fi
 }

@@ -42,7 +42,7 @@ UNINSTALL=false
 # ============================================================================
 
 show_help() {
-    cat << EOF
+    cat <<EOF
 Mobile Coding Setup - Configure remote development from mobile devices
 
 USAGE:
@@ -87,23 +87,23 @@ EOF
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --verbose)
-                VERBOSE=true
-                shift
-                ;;
-            --uninstall)
-                UNINSTALL=true
-                shift
-                ;;
-            --help|-h)
-                show_help
-                exit 0
-                ;;
-            *)
-                print_error "Unknown option: $1"
-                show_help
-                exit 1
-                ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        --uninstall)
+            UNINSTALL=true
+            shift
+            ;;
+        --help | -h)
+            show_help
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
         esac
     done
 }
@@ -150,18 +150,18 @@ uninstall_all() {
     print_step "Removing Mosh..."
     if command_exists mosh; then
         case "$os" in
-            macos)
-                brew uninstall mosh 2>/dev/null || true
-                ;;
-            linux)
-                if command_exists apt; then
-                    sudo apt remove -y mosh 2>/dev/null || true
-                elif command_exists dnf; then
-                    sudo dnf remove -y mosh 2>/dev/null || true
-                elif command_exists pacman; then
-                    sudo pacman -R --noconfirm mosh 2>/dev/null || true
-                fi
-                ;;
+        macos)
+            brew uninstall mosh 2>/dev/null || true
+            ;;
+        linux)
+            if command_exists apt; then
+                sudo apt remove -y mosh 2>/dev/null || true
+            elif command_exists dnf; then
+                sudo dnf remove -y mosh 2>/dev/null || true
+            elif command_exists pacman; then
+                sudo pacman -R --noconfirm mosh 2>/dev/null || true
+            fi
+            ;;
         esac
         print_success "Mosh removed"
     else
@@ -172,16 +172,16 @@ uninstall_all() {
     print_step "Removing Tailscale..."
     if command_exists tailscale; then
         case "$os" in
-            macos)
-                brew uninstall --cask tailscale 2>/dev/null || true
-                ;;
-            linux)
-                if command_exists apt; then
-                    sudo apt remove -y tailscale 2>/dev/null || true
-                elif command_exists dnf; then
-                    sudo dnf remove -y tailscale 2>/dev/null || true
-                fi
-                ;;
+        macos)
+            brew uninstall --cask tailscale 2>/dev/null || true
+            ;;
+        linux)
+            if command_exists apt; then
+                sudo apt remove -y tailscale 2>/dev/null || true
+            elif command_exists dnf; then
+                sudo dnf remove -y tailscale 2>/dev/null || true
+            fi
+            ;;
         esac
         print_success "Tailscale removed"
     else
@@ -191,14 +191,14 @@ uninstall_all() {
     # Re-enable sleep
     print_step "Re-enabling system sleep..."
     case "$os" in
-        macos)
-            sudo pmset -a sleep 10 disksleep 10 2>/dev/null || true
-            print_success "Sleep re-enabled (10 minutes)"
-            ;;
-        linux)
-            sudo systemctl unmask sleep.target suspend.target hibernate.target 2>/dev/null || true
-            print_success "Sleep targets unmasked"
-            ;;
+    macos)
+        sudo pmset -a sleep 10 disksleep 10 2>/dev/null || true
+        print_success "Sleep re-enabled (10 minutes)"
+        ;;
+    linux)
+        sudo systemctl unmask sleep.target suspend.target hibernate.target 2>/dev/null || true
+        print_success "Sleep targets unmasked"
+        ;;
     esac
 
     # Restore SSH password auth (optional)
@@ -251,21 +251,21 @@ install_mosh() {
     else
         print_step "Installing Mosh..."
         case "$os" in
-            macos)
-                brew install mosh
-                ;;
-            linux)
-                if command_exists apt; then
-                    sudo apt update && sudo apt install -y mosh
-                elif command_exists dnf; then
-                    sudo dnf install -y mosh
-                elif command_exists pacman; then
-                    sudo pacman -S --noconfirm mosh
-                else
-                    print_error "Unsupported package manager. Install mosh manually."
-                    return 1
-                fi
-                ;;
+        macos)
+            brew install mosh
+            ;;
+        linux)
+            if command_exists apt; then
+                sudo apt update && sudo apt install -y mosh
+            elif command_exists dnf; then
+                sudo dnf install -y mosh
+            elif command_exists pacman; then
+                sudo pacman -S --noconfirm mosh
+            else
+                print_error "Unsupported package manager. Install mosh manually."
+                return 1
+            fi
+            ;;
         esac
         print_success "Mosh installed"
     fi
@@ -284,18 +284,18 @@ fix_mosh_path() {
     local homebrew_path=""
 
     case "$os" in
-        macos)
-            # Apple Silicon vs Intel
-            if [[ -d "/opt/homebrew/bin" ]]; then
-                homebrew_path="/opt/homebrew/bin"
-            elif [[ -d "/usr/local/bin" ]]; then
-                homebrew_path="/usr/local/bin"
-            fi
-            ;;
-        linux)
-            # Linux typically uses /usr/bin for mosh
-            homebrew_path="/usr/bin"
-            ;;
+    macos)
+        # Apple Silicon vs Intel
+        if [[ -d "/opt/homebrew/bin" ]]; then
+            homebrew_path="/opt/homebrew/bin"
+        elif [[ -d "/usr/local/bin" ]]; then
+            homebrew_path="/usr/local/bin"
+        fi
+        ;;
+    linux)
+        # Linux typically uses /usr/bin for mosh
+        homebrew_path="/usr/bin"
+        ;;
     esac
 
     if [[ -z "$homebrew_path" ]]; then
@@ -307,9 +307,9 @@ fix_mosh_path() {
     if [[ -f "$HOME/.zshenv" ]] && grep -q "$homebrew_path" "$HOME/.zshenv" 2>/dev/null; then
         print_success "PATH already configured in ~/.zshenv"
     else
-        echo "" >> "$HOME/.zshenv"
-        echo "# Added by setup-mobile-coding.sh for Mosh support" >> "$HOME/.zshenv"
-        echo "export PATH=\"$homebrew_path:\$PATH\"" >> "$HOME/.zshenv"
+        echo "" >>"$HOME/.zshenv"
+        echo "# Added by setup-mobile-coding.sh for Mosh support" >>"$HOME/.zshenv"
+        echo "export PATH=\"$homebrew_path:\$PATH\"" >>"$HOME/.zshenv"
         print_success "Added $homebrew_path to PATH in ~/.zshenv"
     fi
 }
@@ -333,12 +333,12 @@ install_tailscale() {
     else
         print_step "Installing Tailscale..."
         case "$os" in
-            macos)
-                brew install --cask tailscale
-                ;;
-            linux)
-                curl -fsSL https://tailscale.com/install.sh | sh
-                ;;
+        macos)
+            brew install --cask tailscale
+            ;;
+        linux)
+            curl -fsSL https://tailscale.com/install.sh | sh </dev/null
+            ;;
         esac
         print_success "Tailscale installed"
     fi
@@ -398,22 +398,22 @@ configure_ssh() {
     # Enable SSH server
     print_step "Enabling SSH server..."
     case "$os" in
-        macos)
-            if ! sudo systemsetup -getremotelogin | grep -q "On"; then
-                sudo systemsetup -setremotelogin on
-                print_success "Remote Login enabled"
-            else
-                print_success "Remote Login already enabled"
-            fi
-            ;;
-        linux)
-            if ! systemctl is-active --quiet sshd; then
-                sudo systemctl enable --now sshd
-                print_success "SSH daemon enabled and started"
-            else
-                print_success "SSH daemon already running"
-            fi
-            ;;
+    macos)
+        if ! sudo systemsetup -getremotelogin | grep -q "On"; then
+            sudo systemsetup -setremotelogin on
+            print_success "Remote Login enabled"
+        else
+            print_success "Remote Login already enabled"
+        fi
+        ;;
+    linux)
+        if ! systemctl is-active --quiet sshd; then
+            sudo systemctl enable --now sshd
+            print_success "SSH daemon enabled and started"
+        else
+            print_success "SSH daemon already running"
+        fi
+        ;;
     esac
 
     # Ensure .ssh directory exists with correct permissions
@@ -445,7 +445,7 @@ configure_ssh() {
                     local pub_key=$(op item get "$key_name" --fields "public_key" 2>/dev/null)
                     if [[ -n "$pub_key" ]]; then
                         if ! grep -q "$pub_key" "$HOME/.ssh/authorized_keys" 2>/dev/null; then
-                            echo "$pub_key" >> "$HOME/.ssh/authorized_keys"
+                            echo "$pub_key" >>"$HOME/.ssh/authorized_keys"
                             print_success "Added '$key_name' public key to authorized_keys"
                             key_added=true
                         else
@@ -467,7 +467,7 @@ configure_ssh() {
             # Add to authorized_keys if not already there
             local local_pub_key=$(cat "$HOME/.ssh/id_ed25519.pub" 2>/dev/null)
             if [[ -n "$local_pub_key" ]] && ! grep -q "$local_pub_key" "$HOME/.ssh/authorized_keys" 2>/dev/null; then
-                echo "$local_pub_key" >> "$HOME/.ssh/authorized_keys"
+                echo "$local_pub_key" >>"$HOME/.ssh/authorized_keys"
                 print_success "Added local key to authorized_keys"
                 key_added=true
             elif [[ -n "$local_pub_key" ]]; then
@@ -478,7 +478,7 @@ configure_ssh() {
             print_success "Found local SSH key: ~/.ssh/id_rsa"
             local local_pub_key=$(cat "$HOME/.ssh/id_rsa.pub" 2>/dev/null)
             if [[ -n "$local_pub_key" ]] && ! grep -q "$local_pub_key" "$HOME/.ssh/authorized_keys" 2>/dev/null; then
-                echo "$local_pub_key" >> "$HOME/.ssh/authorized_keys"
+                echo "$local_pub_key" >>"$HOME/.ssh/authorized_keys"
                 print_success "Added local key to authorized_keys"
                 key_added=true
             elif [[ -n "$local_pub_key" ]]; then
@@ -494,7 +494,7 @@ configure_ssh() {
         echo ""
         if confirm "Generate a new SSH key for mobile access?"; then
             ssh-keygen -t ed25519 -C "mobile-access" -f "$HOME/.ssh/id_ed25519" -N ""
-            cat "$HOME/.ssh/id_ed25519.pub" >> "$HOME/.ssh/authorized_keys"
+            cat "$HOME/.ssh/id_ed25519.pub" >>"$HOME/.ssh/authorized_keys"
             print_success "Generated new SSH key and added to authorized_keys"
             echo ""
             print_warning "IMPORTANT: Add your new private key to 1Password"
@@ -533,12 +533,12 @@ configure_ssh() {
     # Restart SSH if needed
     if [[ "$needs_restart" == "true" ]]; then
         case "$os" in
-            macos)
-                sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
-                ;;
-            linux)
-                sudo systemctl restart sshd
-                ;;
+        macos)
+            sudo launchctl kickstart -k system/com.openssh.sshd 2>/dev/null || true
+            ;;
+        linux)
+            sudo systemctl restart sshd
+            ;;
         esac
         print_success "SSH service restarted"
     fi
@@ -562,28 +562,28 @@ disable_sleep() {
 
     print_step "Disabling sleep to keep machine accessible 24/7..."
     case "$os" in
-        macos)
-            # Disable sleep and disk sleep
-            sudo pmset -a sleep 0
-            sudo pmset -a disksleep 0
-            sudo pmset -a displaysleep 15  # Display can still sleep
+    macos)
+        # Disable sleep and disk sleep
+        sudo pmset -a sleep 0
+        sudo pmset -a disksleep 0
+        sudo pmset -a displaysleep 15 # Display can still sleep
 
-            # Prevent sleep when on power adapter
-            sudo pmset -c sleep 0
+        # Prevent sleep when on power adapter
+        sudo pmset -c sleep 0
 
-            print_success "System sleep disabled (display will sleep after 15 min)"
+        print_success "System sleep disabled (display will sleep after 15 min)"
 
-            # Show current settings
-            if [[ "$VERBOSE" == "true" ]]; then
-                echo ""
-                pmset -g
-            fi
-            ;;
-        linux)
-            # Mask sleep-related systemd targets
-            sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
-            print_success "Sleep/suspend/hibernate targets masked"
-            ;;
+        # Show current settings
+        if [[ "$VERBOSE" == "true" ]]; then
+            echo ""
+            pmset -g
+        fi
+        ;;
+    linux)
+        # Mask sleep-related systemd targets
+        sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
+        print_success "Sleep/suspend/hibernate targets masked"
+        ;;
     esac
 
     mark_step_complete "${MOBILE_STATE_PREFIX}-sleep"
@@ -606,23 +606,23 @@ configure_firewall() {
     print_step "Opening Mosh UDP ports (60000-61000)..."
 
     case "$os" in
-        macos)
-            # macOS firewall doesn't block outgoing by default
-            # and Tailscale handles the networking
-            print_success "macOS: Tailscale handles network routing, no firewall changes needed"
-            ;;
-        linux)
-            if command_exists ufw; then
-                sudo ufw allow 60000:61000/udp comment "Mosh"
-                print_success "UFW: Mosh ports opened"
-            elif command_exists firewall-cmd; then
-                sudo firewall-cmd --permanent --add-port=60000-61000/udp
-                sudo firewall-cmd --reload
-                print_success "firewalld: Mosh ports opened"
-            else
-                print_warning "No firewall detected. Mosh should work if no firewall is active."
-            fi
-            ;;
+    macos)
+        # macOS firewall doesn't block outgoing by default
+        # and Tailscale handles the networking
+        print_success "macOS: Tailscale handles network routing, no firewall changes needed"
+        ;;
+    linux)
+        if command_exists ufw; then
+            sudo ufw allow 60000:61000/udp comment "Mosh"
+            print_success "UFW: Mosh ports opened"
+        elif command_exists firewall-cmd; then
+            sudo firewall-cmd --permanent --add-port=60000-61000/udp
+            sudo firewall-cmd --reload
+            print_success "firewalld: Mosh ports opened"
+        else
+            print_warning "No firewall detected. Mosh should work if no firewall is active."
+        fi
+        ;;
     esac
 
     mark_step_complete "${MOBILE_STATE_PREFIX}-firewall"
@@ -646,7 +646,7 @@ create_mobile_tmux_session() {
 
     mkdir -p "$(dirname "$tmux_script")"
 
-    cat > "$tmux_script" << 'TMUX_SCRIPT'
+    cat >"$tmux_script" <<'TMUX_SCRIPT'
 #!/usr/bin/env bash
 
 # tmux-mobile-session.sh - Create a mobile-optimized tmux layout
@@ -741,9 +741,12 @@ install_clawdbot() {
     # Install Clawdbot
     print_step "Installing Clawdbot..."
     if ! command_exists clawdbot; then
-        npm install -g clawdbot@latest && \
-            print_success "Clawdbot installed" || \
-            { print_warning "Failed to install Clawdbot"; return 0; }
+        npm install -g clawdbot@latest &&
+            print_success "Clawdbot installed" ||
+            {
+                print_warning "Failed to install Clawdbot"
+                return 0
+            }
     else
         print_success "Clawdbot already installed: $(clawdbot --version 2>&1 | head -1 || echo 'version unknown')"
     fi
@@ -775,7 +778,7 @@ print_summary() {
         tailscale_hostname=$(tailscale status --json 2>/dev/null | grep -o '"DNSName":"[^"]*"' | head -1 | sed 's/"DNSName":"//;s/"//' | sed 's/\.$//' || echo "")
     fi
 
-    cat << EOF
+    cat <<EOF
 
 Your machine is now configured for remote mobile development!
 
