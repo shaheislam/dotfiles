@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Daemon that color-codes tmux windows based on agent state.
 #
-# 3-state color scheme (purely realtime — no persistent state files):
-#   Red (#f7768e)    = Agent actively working (process found, no ❯ in pane)
-#   Orange (#e0af68) = Waiting for user input (process found, ❯ visible)
+# 4-state color scheme (purely realtime — no persistent state files):
+#   Red (#f7768e)    = Agent actively working (spinner + "… (" visible)
+#   Orange (#e0af68) = Waiting for user input (agent present, no spinner)
+#   Green (#9ece6a)  = Task completed (COMPLETE or _DONE in pane)
 #   Default          = No agent in window
 #
 # Detection per poll (every 10s):
 #   1. tmux list-panes -a to get pane TTYs
 #   2. ps -t $tty to check for claude/opencode process
-#   3. tmux capture-pane to check for ❯ prompt
+#   3. tmux capture-pane to check for "… (" spinner pattern
 #   4. Set @wname_style accordingly
 #
 # Run with: tmux-claude-watcher.sh start
@@ -87,7 +88,8 @@ check_all_windows() {
         local target="${session}:${win_idx}"
 
         local agent_found=false
-        local agent_idle=false
+        local agent_working=false
+        local agent_complete=false
 
         # Check each pane in this window for agent processes
         for pane_entry in ${window_panes[$entry]}; do
@@ -100,25 +102,33 @@ check_all_windows() {
             if ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)(claude|opencode)( |$)'; then
                 agent_found=true
 
-                # Check if agent is at prompt (❯ visible = idle/waiting for input)
-                # Capture full visible pane — Claude's ❯ prompt can be mid-screen
-                # (e.g. plan approval menu pushes it 8-10 lines from bottom)
-                local pane_content
-                pane_content=$(tmux capture-pane -t "$pid" -p 2>/dev/null)
-                if echo "$pane_content" | grep -q '❯'; then
-                    agent_idle=true
+                # Detect state from the bottom of the pane (status area only).
+                # Only check last 8 lines to avoid false positives from
+                # conversation content that may contain the same patterns.
+                # "… (" = spinner with timing = actively working
+                #   e.g. "✽ Pontificating… (41s · ↓ 681 tokens)"
+                # COMPLETE or _DONE = task finished
+                # Otherwise = idle/waiting for input
+                local pane_bottom
+                pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 8)
+                if echo "$pane_bottom" | grep -q '… ('; then
+                    agent_working=true
+                elif echo "$pane_bottom" | grep -q 'COMPLETE\|_DONE'; then
+                    agent_complete=true
                 fi
                 break
             fi
         done
 
-        # Determine style
+        # Determine style (first match wins)
         local style=""
         if $agent_found; then
-            if $agent_idle; then
-                style="#[fg=#e0af68]" # orange — waiting for user input
-            else
+            if $agent_working; then
                 style="#[fg=#f7768e]" # red — actively working
+            elif $agent_complete; then
+                style="#[fg=#9ece6a]" # green — task completed
+            else
+                style="#[fg=#e0af68]" # orange — waiting for input
             fi
         fi
 
