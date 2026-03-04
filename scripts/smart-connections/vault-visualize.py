@@ -1,4 +1,4 @@
-#!/Users/shaheislam/dotfiles/.venv/vault-search/bin/python3
+#!/usr/bin/env python3
 """
 Obsidian Vault Embedding Visualization
 
@@ -56,12 +56,14 @@ def compute_file_embeddings(embeddings: np.ndarray, metadata: dict) -> tuple[lis
             file_emb = np.mean(embeddings[block_indices], axis=0)
             files.append(rel_path)
             file_embeddings.append(file_emb)
-            file_info_list.append({
-                "path": rel_path,
-                "title": file_info.get("title", Path(rel_path).stem),
-                "folder": str(Path(rel_path).parent) if str(Path(rel_path).parent) != "." else "root",
-                "keywords": file_info.get("keywords", [])[:5],
-            })
+            file_info_list.append(
+                {
+                    "path": rel_path,
+                    "title": file_info.get("title", Path(rel_path).stem),
+                    "folder": str(Path(rel_path).parent) if str(Path(rel_path).parent) != "." else "root",
+                    "keywords": file_info.get("keywords", [])[:5],
+                }
+            )
 
     return files, np.array(file_embeddings), file_info_list
 
@@ -71,6 +73,7 @@ def reduce_dimensions(embeddings: np.ndarray, method: str = "tsne", perplexity: 
     if method == "umap":
         try:
             from umap import UMAP
+
             reducer = UMAP(n_components=2, random_state=42, n_neighbors=15, min_dist=0.1)
             return reducer.fit_transform(embeddings)
         except ImportError:
@@ -80,6 +83,7 @@ def reduce_dimensions(embeddings: np.ndarray, method: str = "tsne", perplexity: 
 
     if method == "tsne":
         from sklearn.manifold import TSNE
+
         # Adjust perplexity for small datasets
         perplexity = min(perplexity, len(embeddings) - 1)
         perplexity = max(5, perplexity)
@@ -88,6 +92,7 @@ def reduce_dimensions(embeddings: np.ndarray, method: str = "tsne", perplexity: 
 
     elif method == "pca":
         from sklearn.decomposition import PCA
+
         pca = PCA(n_components=2, random_state=42)
         return pca.fit_transform(embeddings)
 
@@ -96,10 +101,7 @@ def reduce_dimensions(embeddings: np.ndarray, method: str = "tsne", perplexity: 
 
 
 def generate_html_visualization(
-    coordinates: np.ndarray,
-    file_info: list[dict],
-    color_by: str = "folder",
-    title: str = "Obsidian Vault Map"
+    coordinates: np.ndarray, file_info: list[dict], color_by: str = "folder", title: str = "Obsidian Vault Map"
 ) -> str:
     """Generate interactive HTML visualization using Plotly."""
 
@@ -119,9 +121,21 @@ def generate_html_visualization(
     # Generate unique colors for each folder
     unique_folders = list(set(folders))
     color_palette = [
-        "#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00",
-        "#ffff33", "#a65628", "#f781bf", "#999999", "#66c2a5",
-        "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f",
+        "#e41a1c",
+        "#377eb8",
+        "#4daf4a",
+        "#984ea3",
+        "#ff7f00",
+        "#ffff33",
+        "#a65628",
+        "#f781bf",
+        "#999999",
+        "#66c2a5",
+        "#fc8d62",
+        "#8da0cb",
+        "#e78ac3",
+        "#a6d854",
+        "#ffd92f",
     ]
 
     folder_colors = {f: color_palette[i % len(color_palette)] for i, f in enumerate(unique_folders)}
@@ -248,9 +262,7 @@ def generate_html_visualization(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Visualize Obsidian vault embeddings in 2D"
-    )
+    parser = argparse.ArgumentParser(description="Visualize Obsidian vault embeddings in 2D")
     parser.add_argument(
         "--vault",
         type=Path,
@@ -258,31 +270,36 @@ def main():
         help="Path to Obsidian vault (default: ~/obsidian)",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         type=Path,
         required=True,
         help="Output file path",
     )
     parser.add_argument(
-        "--method", "-m",
+        "--method",
+        "-m",
         choices=["tsne", "umap", "pca"],
         default="tsne",
         help="Dimensionality reduction method (default: tsne)",
     )
     parser.add_argument(
-        "--perplexity", "-p",
+        "--perplexity",
+        "-p",
         type=int,
         default=30,
         help="t-SNE perplexity (default: 30)",
     )
     parser.add_argument(
-        "--color-by", "-c",
+        "--color-by",
+        "-c",
         choices=["folder", "none"],
         default="folder",
         help="How to color points (default: folder)",
     )
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["html", "json"],
         default="html",
         help="Output format (default: html)",
@@ -309,22 +326,13 @@ def main():
         output_data = {
             "method": args.method,
             "points": [
-                {
-                    "x": float(coordinates[i, 0]),
-                    "y": float(coordinates[i, 1]),
-                    **file_info[i]
-                }
+                {"x": float(coordinates[i, 0]), "y": float(coordinates[i, 1]), **file_info[i]}
                 for i in range(len(files))
-            ]
+            ],
         }
         args.output.write_text(json.dumps(output_data, indent=2))
     else:
-        html = generate_html_visualization(
-            coordinates,
-            file_info,
-            args.color_by,
-            "Obsidian Vault Map"
-        )
+        html = generate_html_visualization(coordinates, file_info, args.color_by, "Obsidian Vault Map")
         args.output.write_text(html)
 
     print(f"Visualization saved to {args.output}")

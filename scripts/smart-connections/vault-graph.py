@@ -1,4 +1,4 @@
-#!/Users/shaheislam/dotfiles/.venv/vault-search/bin/python3
+#!/usr/bin/env python3
 """
 Obsidian Vault Connection Graph Export
 
@@ -103,12 +103,14 @@ def export_graph(
         if folder == ".":
             folder = "root"
 
-        nodes.append({
-            "id": rel_path,
-            "label": file_info.get("title", Path(rel_path).stem),
-            "folder": folder,
-            "keywords": file_info.get("keywords", [])[:10],
-        })
+        nodes.append(
+            {
+                "id": rel_path,
+                "label": file_info.get("title", Path(rel_path).stem),
+                "folder": folder,
+                "keywords": file_info.get("keywords", [])[:10],
+            }
+        )
 
     # Build edges
     edges = []
@@ -124,20 +126,24 @@ def export_graph(
             top_indices = np.argsort(sims)[-top_per_node:]
             for j in top_indices:
                 if sims[j] >= threshold:
-                    edges.append({
-                        "source": files[i],
-                        "target": files[j],
-                        "weight": float(sims[j]),
-                    })
+                    edges.append(
+                        {
+                            "source": files[i],
+                            "target": files[j],
+                            "weight": float(sims[j]),
+                        }
+                    )
         else:
             # All connections above threshold
             for j in range(i + 1, n):  # Upper triangle only
                 if sims[j] >= threshold:
-                    edges.append({
-                        "source": files[i],
-                        "target": files[j],
-                        "weight": float(sims[j]),
-                    })
+                    edges.append(
+                        {
+                            "source": files[i],
+                            "target": files[j],
+                            "weight": float(sims[j]),
+                        }
+                    )
 
     # Simple clustering by folder
     clusters = []
@@ -150,11 +156,13 @@ def export_graph(
             folder_groups[folder].append(node["id"])
 
         for folder, members in folder_groups.items():
-            clusters.append({
-                "id": folder,
-                "label": folder,
-                "members": members,
-            })
+            clusters.append(
+                {
+                    "id": folder,
+                    "label": folder,
+                    "members": members,
+                }
+            )
 
     return {
         "nodes": nodes,
@@ -165,7 +173,7 @@ def export_graph(
             "total_edges": len(edges),
             "threshold": threshold,
             "top_per_node": top_per_node,
-        }
+        },
     }
 
 
@@ -212,24 +220,28 @@ def export_obsidian_canvas(graph: dict) -> dict:
         x = radius * math.cos(angle)
         y = radius * math.sin(angle)
 
-        nodes.append({
-            "id": node["id"],
-            "type": "file",
-            "file": node["id"],
-            "x": int(x),
-            "y": int(y),
-            "width": 250,
-            "height": 50,
-        })
+        nodes.append(
+            {
+                "id": node["id"],
+                "type": "file",
+                "file": node["id"],
+                "x": int(x),
+                "y": int(y),
+                "width": 250,
+                "height": 50,
+            }
+        )
 
     for i, edge in enumerate(graph["edges"]):
-        edges.append({
-            "id": f"edge_{i}",
-            "fromNode": edge["source"],
-            "toNode": edge["target"],
-            "fromSide": "right",
-            "toSide": "left",
-        })
+        edges.append(
+            {
+                "id": f"edge_{i}",
+                "fromNode": edge["source"],
+                "toNode": edge["target"],
+                "fromSide": "right",
+                "toSide": "left",
+            }
+        )
 
     return {
         "nodes": nodes,
@@ -238,9 +250,7 @@ def export_obsidian_canvas(graph: dict) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Export Obsidian vault semantic connection graph"
-    )
+    parser = argparse.ArgumentParser(description="Export Obsidian vault semantic connection graph")
     parser.add_argument(
         "--vault",
         type=Path,
@@ -248,23 +258,27 @@ def main():
         help="Path to Obsidian vault (default: ~/obsidian)",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         type=Path,
         help="Output file path (default: stdout)",
     )
     parser.add_argument(
-        "--threshold", "-t",
+        "--threshold",
+        "-t",
         type=float,
         default=0.4,
         help="Minimum similarity threshold for edges (default: 0.4)",
     )
     parser.add_argument(
-        "--top-per-node", "-n",
+        "--top-per-node",
+        "-n",
         type=int,
         help="Only include top N connections per node",
     )
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["json", "dot", "canvas"],
         default="json",
         help="Output format (default: json)",

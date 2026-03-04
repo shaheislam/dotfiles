@@ -1,4 +1,4 @@
-#!/Users/shaheislam/dotfiles/.venv/vault-search/bin/python3
+#!/usr/bin/env python3
 """
 Obsidian Vault Semantic Indexer (Enhanced)
 
@@ -31,9 +31,9 @@ import numpy as np
 
 # Available embedding models
 MODELS = {
-    "minilm": "all-MiniLM-L6-v2",           # 90MB, 384 dims, fastest
+    "minilm": "all-MiniLM-L6-v2",  # 90MB, 384 dims, fastest
     "bge-small": "BAAI/bge-small-en-v1.5",  # 130MB, 384 dims, better quality
-    "bge-base": "BAAI/bge-base-en-v1.5",    # 440MB, 768 dims, best quality
+    "bge-base": "BAAI/bge-base-en-v1.5",  # 440MB, 768 dims, best quality
 }
 
 DEFAULT_MODEL = "minilm"
@@ -87,12 +87,14 @@ def extract_blocks(content: str, path: Path, min_block_size: int = 100) -> list[
             if current_block:
                 block_text = "\n".join(current_block).strip()
                 if len(block_text) >= min_block_size:
-                    blocks.append({
-                        "text": block_text,
-                        "heading": current_heading,
-                        "start_line": current_start,
-                        "preview": block_text[:150].replace("\n", " ").strip(),
-                    })
+                    blocks.append(
+                        {
+                            "text": block_text,
+                            "heading": current_heading,
+                            "start_line": current_start,
+                            "preview": block_text[:150].replace("\n", " ").strip(),
+                        }
+                    )
 
             # Start new block
             current_heading = match.group(2).strip()
@@ -105,21 +107,25 @@ def extract_blocks(content: str, path: Path, min_block_size: int = 100) -> list[
     if current_block:
         block_text = "\n".join(current_block).strip()
         if len(block_text) >= min_block_size:
-            blocks.append({
-                "text": block_text,
-                "heading": current_heading,
-                "start_line": current_start,
-                "preview": block_text[:150].replace("\n", " ").strip(),
-            })
+            blocks.append(
+                {
+                    "text": block_text,
+                    "heading": current_heading,
+                    "start_line": current_start,
+                    "preview": block_text[:150].replace("\n", " ").strip(),
+                }
+            )
 
     # If no blocks extracted (short file), use whole content
     if not blocks:
-        blocks.append({
-            "text": content.strip(),
-            "heading": extract_title(content, path),
-            "start_line": 0,
-            "preview": content[:150].replace("\n", " ").strip(),
-        })
+        blocks.append(
+            {
+                "text": content.strip(),
+                "heading": extract_title(content, path),
+                "start_line": 0,
+                "preview": content[:150].replace("\n", " ").strip(),
+            }
+        )
 
     return blocks
 
@@ -286,12 +292,14 @@ def build_index(
                 blocks = extract_blocks(content, path, min_block_size)
             else:
                 # File-level: single block per file
-                blocks = [{
-                    "text": f"{title}\n{title}\n{content}",
-                    "heading": title,
-                    "start_line": 0,
-                    "preview": content[:150].replace("\n", " ").strip(),
-                }]
+                blocks = [
+                    {
+                        "text": f"{title}\n{title}\n{content}",
+                        "heading": title,
+                        "start_line": 0,
+                        "preview": content[:150].replace("\n", " ").strip(),
+                    }
+                ]
 
             block_indices = []
             for block in blocks:
@@ -349,10 +357,12 @@ def build_index(
                     unchanged_embeddings.append(existing_embeddings[old_idx])
 
         if unchanged_embeddings and all_texts_to_embed:
-            all_embeddings = np.vstack([
-                np.array(unchanged_embeddings, dtype=np.float32),
-                new_embeddings.astype(np.float32),
-            ])
+            all_embeddings = np.vstack(
+                [
+                    np.array(unchanged_embeddings, dtype=np.float32),
+                    new_embeddings.astype(np.float32),
+                ]
+            )
         elif unchanged_embeddings:
             all_embeddings = np.array(unchanged_embeddings, dtype=np.float32)
         else:
@@ -380,9 +390,7 @@ def build_index(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Build semantic search index for Obsidian vault"
-    )
+    parser = argparse.ArgumentParser(description="Build semantic search index for Obsidian vault")
     parser.add_argument(
         "vault",
         type=Path,
@@ -391,7 +399,8 @@ def main():
         help="Path to Obsidian vault (default: ~/obsidian)",
     )
     parser.add_argument(
-        "--model", "-m",
+        "--model",
+        "-m",
         choices=list(MODELS.keys()),
         default=DEFAULT_MODEL,
         help=f"Embedding model to use (default: {DEFAULT_MODEL})",

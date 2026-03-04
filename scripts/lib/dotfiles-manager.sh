@@ -36,9 +36,9 @@ detect_stow_conflicts() {
     local conflicts=$(stow . --no --verbose 2>&1 | grep -E "existing target|cannot stow" | head -10)
 
     if [[ -n "$conflicts" ]]; then
-        return 0  # Conflicts found
+        return 0 # Conflicts found
     fi
-    return 1  # No conflicts
+    return 1 # No conflicts
 }
 
 backup_conflicting_files() {
@@ -65,7 +65,7 @@ backup_conflicting_files() {
             cp -a "$HOME/$file" "$backup_path"
             log_verbose "Backed up: $file"
         fi
-    done <<< "$conflicts"
+    done <<<"$conflicts"
 
     print_success "Backed up conflicting files to: $backup_dir"
     return 0
@@ -92,21 +92,25 @@ stow_dotfiles() {
     if detect_stow_conflicts; then
         print_warning "Stow conflicts detected"
 
-        # Backup conflicting files
+        # Backup conflicting files then remove them so stow can create symlinks
         backup_conflicting_files
 
-        # Now run stow with --adopt to handle conflicts
-        print_step "Running stow with conflict resolution..."
+        # Remove conflicting originals (already backed up above)
+        cd "$DOTFILES_ROOT" || return 1
+        local conflicts
+        conflicts=$(stow . --no --verbose 2>&1 | grep "existing target" | sed -E 's/.*existing target (.*) since.*/\1/' | sed 's/^[ \t]*//')
+        while IFS= read -r file; do
+            if [[ -n "$file" && -e "$HOME/$file" && ! -L "$HOME/$file" ]]; then
+                rm -f "$HOME/$file"
+                log_verbose "Removed conflicting file: $file (backed up)"
+            fi
+        done <<<"$conflicts"
+
+        print_step "Running stow after resolving conflicts..."
     fi
 
-    if stow . --adopt --verbose 2>&1 | tee /tmp/stow-output.log; then
+    if stow . --verbose 2>&1 | tee /tmp/stow-output.log; then
         print_success "Dotfiles symlinked with stow"
-
-        # Check if any files were adopted
-        if grep -q "LINK:" /tmp/stow-output.log; then
-            print_warning "Some files were adopted (local versions kept)"
-            log_verbose "Review changes with: git status"
-        fi
     else
         print_warning "Stow encountered issues, see /tmp/stow-output.log"
         return 1

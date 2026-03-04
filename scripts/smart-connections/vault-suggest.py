@@ -1,4 +1,4 @@
-#!/Users/shaheislam/dotfiles/.venv/vault-search/bin/python3
+#!/usr/bin/env python3
 """
 Obsidian Vault Backlink Suggester
 
@@ -150,14 +150,16 @@ def find_link_opportunities(
                 best_section_sim = similarities[tb_idx]
                 best_section = tb.get("heading", "")
 
-        suggestions.append({
-            "target_file": block_file,
-            "target_title": files.get(block_file, {}).get("title", Path(block_file).stem),
-            "target_section": best_section,
-            "similarity": sim,
-            "preview": block.get("preview", ""),
-            "reason": f"Semantically similar ({sim:.0%} match)",
-        })
+        suggestions.append(
+            {
+                "target_file": block_file,
+                "target_title": files.get(block_file, {}).get("title", Path(block_file).stem),
+                "target_section": best_section,
+                "similarity": sim,
+                "preview": block.get("preview", ""),
+                "reason": f"Semantically similar ({sim:.0%} match)",
+            }
+        )
 
     # Sort by similarity
     suggestions.sort(key=lambda x: x["similarity"], reverse=True)
@@ -226,14 +228,16 @@ def find_vault_wide_opportunities(
             if sim < min_similarity:
                 break
 
-            all_opportunities.append({
-                "source_file": rel_path,
-                "source_title": file_info.get("title", Path(rel_path).stem),
-                "target_file": block_file,
-                "target_title": files.get(block_file, {}).get("title", Path(block_file).stem),
-                "similarity": sim,
-                "reason": f"{sim:.0%} semantic similarity",
-            })
+            all_opportunities.append(
+                {
+                    "source_file": rel_path,
+                    "source_title": file_info.get("title", Path(rel_path).stem),
+                    "target_file": block_file,
+                    "target_title": files.get(block_file, {}).get("title", Path(block_file).stem),
+                    "similarity": sim,
+                    "reason": f"{sim:.0%} semantic similarity",
+                }
+            )
             break  # Only one suggestion per source file
 
     # Sort by similarity and dedupe bidirectional pairs
@@ -273,7 +277,7 @@ def format_suggestions(suggestions: list[dict], output_format: str = "plain", so
             if s.get("target_section"):
                 lines.append(f"  - Section: {s['target_section']}")
             if s.get("preview"):
-                lines.append(f"  - *\"{s['preview'][:80]}...\"*")
+                lines.append(f'  - *"{s["preview"][:80]}..."*')
 
         return "\n".join(lines)
 
@@ -298,7 +302,7 @@ def format_suggestions(suggestions: list[dict], output_format: str = "plain", so
                 if s.get("target_section"):
                     lines.append(f"   Section: {s['target_section']}")
                 if s.get("preview"):
-                    lines.append(f"   \"{s['preview'][:80]}...\"")
+                    lines.append(f'   "{s["preview"][:80]}..."')
 
             lines.append(f"   Reason: {s.get('reason', 'Semantic similarity')}")
             lines.append("")
@@ -307,9 +311,7 @@ def format_suggestions(suggestions: list[dict], output_format: str = "plain", so
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Suggest backlinks for Obsidian vault notes"
-    )
+    parser = argparse.ArgumentParser(description="Suggest backlinks for Obsidian vault notes")
     parser.add_argument(
         "file",
         nargs="?",
@@ -327,19 +329,22 @@ def main():
         help="Path to Obsidian vault (default: ~/obsidian)",
     )
     parser.add_argument(
-        "--min-similarity", "-s",
+        "--min-similarity",
+        "-s",
         type=float,
         default=0.5,
         help="Minimum similarity threshold (default: 0.5)",
     )
     parser.add_argument(
-        "--max", "-n",
+        "--max",
+        "-n",
         type=int,
         default=10,
         help="Maximum suggestions (default: 10)",
     )
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["plain", "markdown", "json"],
         default="plain",
         help="Output format (default: plain)",

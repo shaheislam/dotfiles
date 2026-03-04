@@ -321,18 +321,15 @@ phase_2_cli_tools() {
         mkdir -p "$(bat --config-dir)/themes"
         if curl -sL "https://raw.githubusercontent.com/catppuccin/bat/main/themes/Catppuccin%20Mocha.tmTheme" \
             -o "$(bat --config-dir)/themes/Catppuccin Mocha.tmTheme"; then
-            bat cache --build >/dev/null 2>&1
             echo '--theme="Catppuccin Mocha"' >"$(bat --config-dir)/config"
             print_success "Bat configured with Catppuccin Mocha theme"
         else
             print_warning "Failed to download Catppuccin Mocha theme for bat"
         fi
 
-        # Rebuild bat cache for custom themes (handles version upgrades)
-        if [[ -d "$DOTFILES_ROOT/.config/bat/themes" ]] || [[ -d "$(bat --config-dir)/themes" ]]; then
-            bat cache --build >/dev/null 2>&1 &&
-                print_success "bat cache rebuilt for custom themes" || true
-        fi
+        # Single cache rebuild covers both downloaded theme and dotfiles-managed themes
+        bat cache --build >/dev/null 2>&1 &&
+            print_success "bat cache rebuilt" || true
     fi
 
     mark_step_complete "cli_tools"
