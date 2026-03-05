@@ -85,3 +85,6 @@ work/**/CLAUDE.md
 !~/dotfiles/**/CLAUDE.local.md
 !~/personal/**/CLAUDE.md
 !~/personal/**/CLAUDE.local.md
+
+# Entire checkpoints
+.entire/
