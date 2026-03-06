@@ -31,15 +31,18 @@ fi
 # Re-inject beads subtask state after compaction
 if command -v bd >/dev/null 2>&1 && [ -d ".beads" ]; then
     IN_PROG=$(bd list --status=in_progress --limit 5 2>/dev/null)
-    READY_COUNT=$(bd count --status=open 2>/dev/null || echo "0")
     if [ -n "$IN_PROG" ]; then
         echo ""
         echo "Beads subtasks in-progress:"
         echo "$IN_PROG"
         echo "Run 'bd ready' to see what to work on next."
-    elif [ "$READY_COUNT" != "0" ]; then
-        echo ""
-        echo "Beads: $READY_COUNT open subtasks. Run 'bd ready' to continue."
+    else
+        READY=$(bd ready --limit 3 2>/dev/null)
+        if [ -n "$READY" ]; then
+            echo ""
+            echo "Beads ready work:"
+            echo "$READY"
+        fi
     fi
 fi
 

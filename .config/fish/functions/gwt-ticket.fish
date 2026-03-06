@@ -1097,15 +1097,16 @@ Do not ask questions - make reasonable decisions and iterate."
         set -l beads_suffix "
 
 BEADS SUBTASK WORKFLOW — Use beads to decompose and track your work:
-1. DECOMPOSE: Before coding, break this ticket into subtasks:
-   bd create --title=\"<subtask>\" --description=\"<what/why>\" --type=task --priority=2
-   Use 'bd dep add <child> <depends-on>' if ordering matters.
-2. WORK each subtask in dependency order:
-   bd update <id> --status=in_progress
+1. FIND PARENT: A parent bead was created for this ticket (external-ref: $issue_key).
+   Run 'bd list --status=open' to find its ID.
+2. DECOMPOSE: Break work into subtasks linked to the parent:
+   bd create --title=\"<subtask>\" --description=\"<what/why>\" --type=task --priority=2 --parent <parent-id>
+   Use 'bd dep add <child> <depends-on>' if subtask ordering matters.
+3. WORK each subtask in dependency order:
+   bd update <id> --claim
    (write code, tests, commits)
    bd close <id>
-3. CHECK between subtasks: bd ready (shows what is unblocked next)
-4. The parent bead for this ticket was created at startup. Run 'bd list --status=open' to find it.
+4. CHECK between subtasks: bd ready (shows what is unblocked next)
 This ensures progress survives context compaction — bd prime will re-inject your subtask state."
 
         if test -n "$prompt_suffix"

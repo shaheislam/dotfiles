@@ -481,6 +481,18 @@ on_completion() {
     local beads_status="skipped"
     if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
         if [[ -n "$issue_key" ]]; then
+            # Close any remaining in-progress subtasks from dynamic beads
+            local dynamic_beads
+            dynamic_beads=$(parse_yaml "dynamic_beads" "$TICKET_STATE")
+            if [[ "$dynamic_beads" == "true" ]]; then
+                local remaining
+                remaining=$(cd "$WORKTREE_PATH" && bd list --status=in_progress --json 2>/dev/null \
+                    | jq -r 'if type == "array" then .[].id else .id // empty end' 2>/dev/null | xargs)
+                if [[ -n "$remaining" ]]; then
+                    log "Beads: closing $(echo "$remaining" | wc -w | tr -d ' ') in-progress subtask(s)"
+                    (cd "$WORKTREE_PATH" && bd close $remaining 2>/dev/null) || true
+                fi
+            fi
             local bd_close_ok=false bd_export_ok=false
             if (cd "$WORKTREE_PATH" && bd close "$issue_key" 2>/dev/null); then
                 bd_close_ok=true
