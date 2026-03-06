@@ -45,9 +45,30 @@ What LSP currently **doesn't** provide to agents:
 - **Formatting**: LSP `textDocument/formatting` could auto-format after agent edits
 - **Call hierarchy**: `callHierarchy/incomingCalls` shows who calls a function
 
+### LSP as First-Class Gateway Input
+
+LSP diagnostics are already the highest-quality signal for many issue classes
+(type errors, unused variables, unreachable code) because they're language-aware
+with very low false positives. Rather than treating LSP as a separate system,
+it should be a first-class input in the AI Gateway pipeline:
+
+```
+LSP diagnostics → normalize → unified finding format → agent context
+```
+
+**Advantages over semgrep/shellcheck for some classes**:
+- **Type errors**: LSP has full type inference; semgrep has pattern matching
+- **Unused code**: LSP tracks actual references; linters use heuristics
+- **Import resolution**: LSP resolves real module graphs
+
+**Current limitation**: Claude Code auto-injects LSP diagnostics after edits,
+but these go through a separate channel (not the AI Gateway). Future work
+should unify these into a single findings stream so agents see one coherent
+list rather than split feedback from two systems.
+
 ### Recommendation
 
-These LSP capabilities would multiply agent effectiveness if exposed:
+These unexposed LSP capabilities would multiply agent effectiveness:
 1. **Code Actions** — Let agents apply LSP-suggested fixes directly
 2. **Rename** — Safe project-wide renames via LSP instead of find-and-replace
 3. **Call Hierarchy** — Understand calling patterns before modifying functions
@@ -132,6 +153,27 @@ rule:
 - ast-grep: When you need **fast structural search** (grep-like speed) with AST awareness
 - semgrep: When you need **comprehensive analysis** with taint tracking, data flow
 
+### Tool Overlap & Precedence
+
+Running both semgrep and ast-grep on the same code can produce duplicate or
+contradictory findings. The gateway uses this precedence strategy:
+
+| Concern | Owner | Rationale |
+|---------|-------|-----------|
+| Security (injection, secrets) | **semgrep** | Taint tracking, CWE mapping |
+| Structural patterns (defer-in-loop, missing ctx) | **ast-grep** | Faster, native syntax |
+| Style/convention | **semgrep** | Broader language support |
+| Quick search (ad-hoc investigation) | **ast-grep** | Interactive, grep-like |
+
+**Deduplication**: When both tools report the same file+line+category, the
+gateway should prefer the finding with higher confidence and richer metadata.
+Currently this is not implemented — it's a known limitation of the PoC.
+The `tool` field in findings lets consumers filter by source tool.
+
+**Rule ownership**: Each rule ID is prefixed with the tool name in the
+unified schema (e.g., `semgrep/python-subprocess-shell-true`), so there's
+no ambiguity about which tool produced the finding.
+
 ### Defining Custom Rules for Agents
 
 The pattern across all AST tools: **rules are YAML files with metadata**.
@@ -160,6 +202,32 @@ rules/
   ├── performance/    # N+1 queries, unnecessary allocations
   └── style/          # Project-specific conventions
 ```
+
+### Rule Governance
+
+`agent_guidance` is powerful but can encode unsafe or incorrect fixes.
+Each rule should include:
+
+- **`confidence`**: `high` / `medium` / `low` — agents should only auto-apply `high`
+- **`version`**: Semantic version for the rule (track guidance changes)
+- **`tested`**: Whether the guidance has been validated against real codebases
+
+Rules with `confidence: low` should be surfaced as suggestions, not directives.
+When guidance conflicts with project standards (e.g., project uses a specific
+error handling pattern), the project `.claude/CLAUDE.md` takes precedence.
+
+**Testing rule quality**: Run rules against known-good codebases and verify
+that agent guidance produces correct fixes. Example test approach:
+```bash
+# Create a file with the anti-pattern
+echo 'f = open("test.txt")' > /tmp/test_rule.py
+# Run semgrep, verify it matches
+semgrep --config semgrep-agent-rules.yaml /tmp/test_rule.py
+# Verify agent_guidance is actionable (manual review or LLM eval)
+```
+
+**Fallback behavior**: If agent_guidance is absent or inapplicable, agents
+should fall back to the rule's `message` field and their own judgment.
 
 ## 3. SonarQube
 
@@ -223,9 +291,11 @@ SonarLint runs the same rules **locally** without a server:
 │       │              │              │                │
 │       ▼              ▼              ▼                │
 │  ┌──────────────────────────────────────────┐       │
-│  │        Normalize → Unified JSON          │       │
-│  │   {tool, rule, file, line, severity,     │       │
-│  │    message, fix, metadata.agent_guidance} │       │
+│  │       Normalize → Unified + Native       │       │
+│  │   Common: tool, rule, file, line,        │       │
+│  │           severity, message              │       │
+│  │   Native: tool_native (raw tool output)  │       │
+│  │   Agent:  metadata.agent_guidance        │       │
 │  └──────────────┬───────────────────────────┘       │
 │                 │                                    │
 │     ┌───────────┼───────────┐                       │
@@ -235,6 +305,34 @@ SonarLint runs the same rules **locally** without a server:
 │                                                      │
 └─────────────────────────────────────────────────────┘
 ```
+
+### Schema Design: Unified + Lossless
+
+The normalized schema has common fields for cross-tool queries, but preserves
+tool-native data to avoid lossy flattening:
+
+```json
+{
+  "tool": "semgrep",
+  "rule": "python-subprocess-shell-true",
+  "file": "src/main.py",
+  "line": 42,
+  "end_line": 42,
+  "severity": "error",
+  "message": "shell=True is dangerous",
+  "fix": null,
+  "metadata": {"agent_guidance": "...", "confidence": "high"},
+  "tool_native": { /* raw semgrep output for this finding */ }
+}
+```
+
+**Known lossy mappings** (documented, not hidden):
+- shellcheck `style` severity → normalized to `info`
+- Semgrep taint findings lose dataflow trace in the common fields (preserved in `tool_native`)
+- Multiline code snippets truncated in prompt format (full in JSON)
+
+When downstream behavior depends on tool-specific semantics (e.g., semgrep
+taint traces, shellcheck fix replacements), consumers should read `tool_native`.
 
 ### Hook Integration Points
 
@@ -248,12 +346,59 @@ SonarLint runs the same rules **locally** without a server:
 ### Implementation: `.claude/hooks/static-analysis-context.sh`
 
 A PostToolUse hook runs lightweight analysis after each Edit/Write:
-- Shell files → shellcheck (fast, ~50ms)
-- Python files → ruff (fast, ~30ms)
+- Shell files → shellcheck (single-file, sub-second)
+- Python files → ruff (single-file, sub-second)
 - Only injects findings when issues are found
-- Skips semgrep in real-time (too slow for hooks, ~2-5s)
+- Skips semgrep in hook context (multi-second startup cost)
+- Debounces rapid edits via lockfile (see hook implementation)
 
-## 5. Phase Gate: Static Analysis
+**Note**: Actual latency depends on file size, warm cache, and system load.
+Run `scripts/aigateway/analyze.sh --benchmark` on your target files to measure.
+Anecdotal single-file runs show shellcheck and ruff completing under 200ms,
+but this is not a guarantee — profile before relying on it in tight loops.
+
+## 5. Security & Privacy
+
+### Path Redaction
+
+The PostToolUse hook strips absolute paths to project-relative paths before
+injecting into agent context. This prevents leaking full filesystem structure
+(e.g., `/Users/shahe/dotfiles-aigateway/scripts/...` → `scripts/...`).
+
+### Severity Gating
+
+Only findings at `warning` or above are injected by default. Configure via:
+```bash
+export AIGATEWAY_MIN_SEVERITY=error  # Only surface errors
+```
+
+### Code Snippet Exposure
+
+Tool findings may include code snippets. In the current PoC, this is acceptable
+because the agent already has read access to all project files. For future
+multi-tenant or remote agent scenarios, consider:
+- Stripping `code_snippet` and `tool_native` from prompt output
+- Sanitizing rule messages from third-party registries (they could contain injection attempts)
+- Allowlisting which rule registries are trusted
+
+### Third-Party Rule Content
+
+Custom semgrep rules in `semgrep-agent-rules.yaml` are project-owned and reviewed.
+The `--config auto` flag in analyze.sh also pulls community rules from Semgrep Registry.
+For sensitive repos, disable auto-config and use only local rules:
+```bash
+# In analyze.sh, remove: rule_args+=(--config "auto")
+```
+
+## 6. Known Limitations (PoC)
+
+- **No deduplication across tools**: If both semgrep and shellcheck flag the same issue, both findings appear. The `tool` field disambiguates but consumers must filter.
+- **No LSP integration in gateway**: LSP diagnostics flow through a separate Claude Code channel. Unifying them requires changes to Claude Code's plugin system.
+- **macOS-only lockfile**: The hook uses `mkdir` atomicity (portable) instead of `flock` (Linux-only). Tested on macOS.
+- **Semgrep broken on this system**: Python pydantic version conflict. Needs `brew reinstall semgrep` or `pipx install semgrep`.
+- **SARIF output is minimal**: Missing `taxonomies`, `invocations`, and `threadFlowLocations` fields from the full SARIF spec.
+
+## 7. Phase Gate: Static Analysis (Future)
 
 A new phase gate type for `phase-gates.sh`:
 
@@ -268,7 +413,7 @@ phase-gates.sh check static-analysis /path/to/worktree
 This would block agent merges until static analysis passes — ensuring code quality
 before merge-queue.sh accepts the work.
 
-## 6. Future Directions
+## 8. Future Directions
 
 ### Short-term (Implementable Now)
 - [x] Gateway script (`analyze.sh`) with unified output
@@ -291,7 +436,7 @@ before merge-queue.sh accepts the work.
 - [ ] Cross-project rule sharing via git-backed rule registry
 - [ ] LSP code actions exposed as agent tools
 
-## 7. Files Created
+## 9. Files Created
 
 | File | Purpose |
 |------|---------|

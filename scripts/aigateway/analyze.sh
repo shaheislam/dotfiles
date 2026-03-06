@@ -16,6 +16,7 @@
 #     --severity min    Minimum severity: info, warning, error (default: warning)
 #     --tool TOOL       Run specific tool only: semgrep, shellcheck, ruff
 #     --agent-context   Format output as agent-injectable context
+#     --benchmark       Measure and report analysis latency per tool
 #     --help            Show this help
 #
 # Exit codes:
@@ -32,6 +33,7 @@ RULES_FILE="$SCRIPT_DIR/semgrep-agent-rules.yaml"
 FORMAT="json"
 MIN_SEVERITY="warning"
 TARGET_TOOL=""
+BENCHMARK=false
 FILE_MODE="changed"
 FILES=()
 
@@ -65,6 +67,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     --agent-context)
         FORMAT="prompt"
+        shift
+        ;;
+    --benchmark)
+        BENCHMARK=true
         shift
         ;;
     --help | -h)
@@ -102,6 +108,24 @@ discover_files() {
         git ls-files 2>/dev/null
         ;;
     esac | sort -u
+}
+
+# ─── Benchmark Helper ────────────────────────────
+
+bench_start() {
+    if [[ "$BENCHMARK" == "true" ]]; then
+        date +%s%N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1e9))'
+    fi
+}
+
+bench_end() {
+    local tool="$1" start_ns="$2"
+    if [[ "$BENCHMARK" == "true" && -n "$start_ns" ]]; then
+        local end_ns
+        end_ns=$(date +%s%N 2>/dev/null || python3 -c 'import time; print(int(time.time()*1e9))')
+        local elapsed_ms=$(((end_ns - start_ns) / 1000000))
+        echo "[benchmark] $tool: ${elapsed_ms}ms" >&2
+    fi
 }
 
 # ─── Tool Runners ───────────────────────────────
@@ -206,7 +230,12 @@ normalize_findings() {
                 message: .extra.message,
                 code_snippet: .extra.lines,
                 fix: (.extra.fix // null),
-                metadata: (.extra.metadata // {})
+                metadata: (.extra.metadata // {}),
+                tool_native: {
+                    dataflow_trace: (.extra.dataflow_trace // null),
+                    metavars: (.extra.metavars // null),
+                    engine_kind: (.extra.engine_kind // null)
+                }
             }]' 2>/dev/null || echo '[]'
         ;;
     shellcheck)
@@ -221,7 +250,8 @@ normalize_findings() {
                 message: .message,
                 code_snippet: null,
                 fix: (.fix.replacements // null),
-                metadata: {column: .column, wiki: ("https://www.shellcheck.net/wiki/SC" + (.code | tostring))}
+                metadata: {column: .column, wiki: ("https://www.shellcheck.net/wiki/SC" + (.code | tostring))},
+                tool_native: {original_level: .level, fix: (.fix // null)}
             }]' 2>/dev/null || echo '[]'
         ;;
     ruff)
@@ -236,7 +266,11 @@ normalize_findings() {
                 message: .message,
                 code_snippet: null,
                 fix: (.fix // null),
-                metadata: {url: .url}
+                metadata: {url: .url},
+                tool_native: {
+                    noqa_row: (.noqa_row // null),
+                    cell: (.cell // null)
+                }
             }]' 2>/dev/null || echo '[]'
         ;;
     esac
@@ -299,24 +333,33 @@ main() {
     local all_findings="[]"
 
     if [[ -z "$TARGET_TOOL" || "$TARGET_TOOL" == "semgrep" ]]; then
+        local t0
+        t0=$(bench_start)
         local semgrep_raw
         semgrep_raw=$(run_semgrep "${files[@]}")
+        bench_end "semgrep" "$t0"
         local semgrep_findings
         semgrep_findings=$(normalize_findings "semgrep" "$semgrep_raw")
         all_findings=$(echo "$all_findings" "$semgrep_findings" | jq -s 'add')
     fi
 
     if [[ -z "$TARGET_TOOL" || "$TARGET_TOOL" == "shellcheck" ]]; then
+        local t0
+        t0=$(bench_start)
         local sc_raw
         sc_raw=$(run_shellcheck "${files[@]}")
+        bench_end "shellcheck" "$t0"
         local sc_findings
         sc_findings=$(normalize_findings "shellcheck" "$sc_raw")
         all_findings=$(echo "$all_findings" "$sc_findings" | jq -s 'add')
     fi
 
     if [[ -z "$TARGET_TOOL" || "$TARGET_TOOL" == "ruff" ]]; then
+        local t0
+        t0=$(bench_start)
         local ruff_raw
         ruff_raw=$(run_ruff "${files[@]}")
+        bench_end "ruff" "$t0"
         local ruff_findings
         ruff_findings=$(normalize_findings "ruff" "$ruff_raw")
         all_findings=$(echo "$all_findings" "$ruff_findings" | jq -s 'add')

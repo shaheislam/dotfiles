@@ -1,8 +1,18 @@
 rules:
   # ──────────────────────────────────────────────
+  # AI Gateway Agent Rules v0.1.0
+  #
+  # Each rule includes metadata for AI agent consumption:
+  #   agent_guidance: HOW to fix (not just WHAT is wrong)
+  #   confidence: high/medium/low (agents auto-apply only 'high')
+  #   version: semver for tracking guidance changes
+  #
+  # Governance: project CLAUDE.md overrides agent_guidance when
+  # project-specific patterns differ from generic guidance.
+  # ──────────────────────────────────────────────
+
+  # ──────────────────────────────────────────────
   # Shell Script Rules (Fish + Bash)
-  # These rules are designed with AI auto-fix metadata.
-  # Each rule includes 'fix' or 'metadata.agent_guidance' for LLM consumption.
   # ──────────────────────────────────────────────
 
   - id: bash-unquoted-variable
@@ -23,6 +33,7 @@ rules:
         word splitting is intentional (like loop iteration), add a comment
         explaining why quotes are omitted.
       confidence: high
+      version: "0.1.0"
       cwe: ["CWE-78"]
 
   - id: bash-eval-usage
@@ -40,6 +51,7 @@ rules:
         - For command construction: use arrays and "${arr[@]}"
         - For dynamic function calls: use $func_name directly
       confidence: high
+      version: "0.1.0"
       cwe: ["CWE-78", "CWE-94"]
 
   - id: bash-missing-set-euo
@@ -64,6 +76,8 @@ rules:
         - set -e: exit on error
         - set -u: error on undefined variables
         - set -o pipefail: pipe returns rightmost non-zero exit code
+      confidence: high
+      version: "0.1.0"
 
   # ──────────────────────────────────────────────
   # Python Rules
@@ -92,6 +106,7 @@ rules:
         Better: identify the specific exception types that can be raised
         and catch those explicitly.
       confidence: high
+      version: "0.1.0"
 
   - id: python-subprocess-shell-true
     pattern: subprocess.$FUNC(..., shell=True, ...)
@@ -109,6 +124,7 @@ rules:
         If shell features are needed (pipes, redirects), use
         subprocess.PIPE and chain commands explicitly.
       confidence: high
+      version: "0.1.0"
       cwe: ["CWE-78"]
 
   - id: python-hardcoded-secret
@@ -130,6 +146,7 @@ rules:
         - A secrets manager call for production
         - A .env file loaded via python-dotenv for development
       confidence: medium
+      version: "0.1.0"
       cwe: ["CWE-798"]
 
   # ──────────────────────────────────────────────
@@ -151,6 +168,7 @@ rules:
         - If receiving external data, use 'unknown' and narrow with type guards
         - If temporary, add a TODO comment with the planned type
       confidence: medium
+      version: "0.1.0"
 
   - id: ts-console-log-in-production
     pattern: console.log(...)
@@ -166,6 +184,7 @@ rules:
         - Intentional: replace with a structured logger (e.g., winston, pino)
         - Test file: leave it (check file path)
       confidence: low
+      version: "0.1.0"
 
   # ──────────────────────────────────────────────
   # Go Rules
@@ -187,6 +206,7 @@ rules:
         }
         If truly ignorable, add a comment explaining why.
       confidence: high
+      version: "0.1.0"
 
   # ──────────────────────────────────────────────
   # Generic Security Rules (all languages)
@@ -207,3 +227,4 @@ rules:
         3. If resolved, remove the comment
         4. If deferred, add a ticket reference
       confidence: low
+      version: "0.1.0"
