@@ -94,6 +94,7 @@ Multi-channel AI inbox. CLI: `openclaw` / `claw`. Config: `scripts/openclaw/open
 - **Clawdbot**: WhatsApp/Telegram interface (`npm install -g clawdbot@latest`)
 - **DNS**: Cloudflare (1.1.1.1) in `scripts/setup/macos-defaults.sh`
 - **Pi-hole**: `scripts/pihole/`, Fish wrapper: `pihole start|stop|dns-on|dns-off|status`
+- **SonarQube**: `scripts/sonarqube/`, Fish: `sonarqube start|stop|status|scan`, `sonar-scan --ai`, `sonar-init`
 - **Karabiner**: `.config/karabiner/karabiner.json` (Caps Lock ↔ Escape, edit via GUI)
 - **K8s Manifests**: ALWAYS in `scripts/manifests/` with README updates
 

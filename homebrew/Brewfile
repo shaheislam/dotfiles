@@ -169,6 +169,9 @@ brew "hadolint"
 brew "popeye"    # Kubernetes cluster scanner
 brew "conftest"  # Policy testing with OPA/Rego
 
+# Code Quality Tools
+brew "sonar-scanner"  # SonarQube scanner CLI for local code quality analysis
+
 # Observability & Monitoring Tools
 brew "stern"
 brew "dive"
