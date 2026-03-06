@@ -18,19 +18,25 @@
 #   - Debounce: skips if same file analyzed within DEBOUNCE_SECS (default 3s)
 #   - Lockfile: prevents concurrent runs via mkdir atomicity
 #   - Redaction: strips absolute paths to project-relative paths
+#   - Snippet redaction: strips code_snippet from prompt output (configurable)
 #   - Severity gate: only surfaces warning+ by default (configurable)
+#   - Stale TTL: cached findings expire after FINDINGS_TTL_SECS (default 60s)
+#   - Suppression: respects inline # noqa, # shellcheck disable, # aigateway:ignore
+#   - Audit log: optionally logs what enters agent context
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}"
 GATEWAY_SCRIPT="$PROJECT_DIR/scripts/aigateway/analyze.sh"
 
 # Configuration (override via environment)
 DEBOUNCE_SECS="${AIGATEWAY_DEBOUNCE_SECS:-3}"
 MIN_SEVERITY="${AIGATEWAY_MIN_SEVERITY:-warning}"
-LOCK_DIR="/tmp/aigateway-hooks"
-mkdir -p "$LOCK_DIR"
+FINDINGS_TTL_SECS="${AIGATEWAY_FINDINGS_TTL:-60}"
+REDACT_SNIPPETS="${AIGATEWAY_REDACT_SNIPPETS:-false}"
+AUDIT_LOG="${AIGATEWAY_AUDIT_LOG:-}" # Set to a path to enable
+STATE_DIR="/tmp/aigateway-hooks"
+mkdir -p "$STATE_DIR"
 
 # Extract the file path from tool input
 FILE_PATH=""
@@ -47,42 +53,60 @@ if [[ ! -x "$GATEWAY_SCRIPT" ]]; then
     exit 0
 fi
 
+# Compute a stable key for this file (used for marker/lock/cache)
+FILE_KEY=$(echo "$FILE_PATH" | sed 's|/|_|g')
+
 # ─── Debounce: skip if same file analyzed recently ────────
-# Uses file mtime of a marker to track last analysis time
-MARKER_FILE="$LOCK_DIR/$(echo "$FILE_PATH" | sed 's|/|_|g').marker"
+MARKER_FILE="$STATE_DIR/${FILE_KEY}.marker"
 if [[ -f "$MARKER_FILE" ]]; then
-    MARKER_AGE=$(($(date +%s) - $(stat -f '%m' "$MARKER_FILE" 2>/dev/null || echo 0)))
+    MARKER_AGE=$(($(date +%s) - $(stat -f '%m' "$MARKER_FILE" 2>/dev/null || stat -c '%Y' "$MARKER_FILE" 2>/dev/null || echo 0)))
     if [[ "$MARKER_AGE" -lt "$DEBOUNCE_SECS" ]]; then
         exit 0
     fi
 fi
 
 # ─── Lockfile: prevent concurrent analysis of same file ───
-# Uses mkdir atomicity (portable across macOS/Linux, no flock needed)
-LOCK_DIR_FILE="$LOCK_DIR/$(echo "$FILE_PATH" | sed 's|/|_|g').lock.d"
+LOCK_DIR_FILE="$STATE_DIR/${FILE_KEY}.lock.d"
 if ! mkdir "$LOCK_DIR_FILE" 2>/dev/null; then
-    # Check for stale lock (older than 30s = analysis hung or crashed)
     if [[ -d "$LOCK_DIR_FILE" ]]; then
-        LOCK_AGE=$(($(date +%s) - $(stat -f '%m' "$LOCK_DIR_FILE" 2>/dev/null || echo 0)))
+        LOCK_AGE=$(($(date +%s) - $(stat -f '%m' "$LOCK_DIR_FILE" 2>/dev/null || stat -c '%Y' "$LOCK_DIR_FILE" 2>/dev/null || echo 0)))
         if [[ "$LOCK_AGE" -gt 30 ]]; then
             rmdir "$LOCK_DIR_FILE" 2>/dev/null || true
             mkdir "$LOCK_DIR_FILE" 2>/dev/null || exit 0
         else
-            exit 0 # Another analysis is running for this file
+            exit 0
         fi
     fi
 fi
-# Clean up lock on exit
 trap 'rmdir "$LOCK_DIR_FILE" 2>/dev/null || true' EXIT
 
 # Update debounce marker
 touch "$MARKER_FILE"
 
+# ─── Stale findings TTL: invalidate old cached results ────
+# If the file was modified more recently than the last analysis,
+# or if the last analysis is older than TTL, force re-analysis.
+CACHE_FILE="$STATE_DIR/${FILE_KEY}.cache"
+if [[ -f "$CACHE_FILE" ]]; then
+    CACHE_AGE=$(($(date +%s) - $(stat -f '%m' "$CACHE_FILE" 2>/dev/null || stat -c '%Y' "$CACHE_FILE" 2>/dev/null || echo 0)))
+    FILE_MTIME=$(stat -f '%m' "$FILE_PATH" 2>/dev/null || stat -c '%Y' "$FILE_PATH" 2>/dev/null || echo 0)
+    CACHE_MTIME=$(stat -f '%m' "$CACHE_FILE" 2>/dev/null || stat -c '%Y' "$CACHE_FILE" 2>/dev/null || echo 0)
+
+    if [[ "$CACHE_AGE" -lt "$FINDINGS_TTL_SECS" && "$CACHE_MTIME" -gt "$FILE_MTIME" ]]; then
+        # Cache is fresh and file hasn't changed — use cached results
+        OUTPUT=$(cat "$CACHE_FILE")
+        if [[ -n "$OUTPUT" ]]; then
+            echo "$OUTPUT"
+        fi
+        exit 0
+    fi
+    # Cache stale or file changed — re-analyze below
+fi
+
 # Only analyze files we have tools for
 case "$FILE_PATH" in
 *.sh | *.bash | *.py | *.pyi | *.ts | *.tsx | *.js | *.jsx | *.go) ;;
 *)
-    # Check shebang for extensionless files
     if ! head -1 "$FILE_PATH" 2>/dev/null | grep -qE '^#!.*\b(bash|sh|python)\b'; then
         exit 0
     fi
@@ -90,25 +114,61 @@ case "$FILE_PATH" in
 esac
 
 # Select the fastest tool for the file type
-# Skip semgrep in hook context — it has multi-second startup cost
 TOOL_ARG=""
 case "$FILE_PATH" in
 *.sh | *.bash) TOOL_ARG="--tool shellcheck" ;;
 *.py | *.pyi) TOOL_ARG="--tool ruff" ;;
-*) exit 0 ;; # Skip for languages without fast single-file linters
+*) exit 0 ;;
 esac
 
-OUTPUT=$("$GATEWAY_SCRIPT" $TOOL_ARG --severity "$MIN_SEVERITY" --agent-context "$FILE_PATH" 2>/dev/null || true)
+RAW_OUTPUT=$("$GATEWAY_SCRIPT" $TOOL_ARG --severity "$MIN_SEVERITY" --agent-context "$FILE_PATH" 2>/dev/null || true)
 
-# Only inject if there are actual findings (not just "no issues found")
-if [[ -z "$OUTPUT" || "$OUTPUT" == *"no issues found"* ]]; then
-    exit 0
+# ─── Suppression: filter out findings for suppressed lines ──
+# Respects: # noqa, # shellcheck disable=SCxxxx, # aigateway:ignore
+if [[ -n "$RAW_OUTPUT" && "$RAW_OUTPUT" != *"no issues found"* ]]; then
+    # Build list of suppressed line numbers from the source file
+    SUPPRESSED_LINES=""
+    if [[ -f "$FILE_PATH" ]]; then
+        SUPPRESSED_LINES=$(grep -n '# *noqa\|# *shellcheck disable\|# *aigateway:ignore' "$FILE_PATH" 2>/dev/null | cut -d: -f1 | tr '\n' '|' | sed 's/|$//' || true)
+    fi
+
+    if [[ -n "$SUPPRESSED_LINES" ]]; then
+        # Remove lines matching suppressed line numbers from prompt output
+        RAW_OUTPUT=$(echo "$RAW_OUTPUT" | grep -vE "line ($SUPPRESSED_LINES):" || true)
+    fi
 fi
 
 # ─── Redact absolute paths to project-relative ────────────
-# Prevents leaking full filesystem paths into agent context
+OUTPUT="$RAW_OUTPUT"
 if [[ -n "$PROJECT_DIR" && "$PROJECT_DIR" != "." ]]; then
     OUTPUT=$(echo "$OUTPUT" | sed "s|$PROJECT_DIR/||g")
+fi
+
+# ─── Snippet redaction (opt-in) ──────────────────────────
+if [[ "$REDACT_SNIPPETS" == "true" ]]; then
+    OUTPUT=$(echo "$OUTPUT" | sed '/^    [0-9]*|/d')
+fi
+
+# Only emit if there are actual findings remaining after filtering
+if [[ -z "$OUTPUT" || "$OUTPUT" == *"no issues found"* || ! "$OUTPUT" =~ [a-zA-Z] ]]; then
+    # Cache empty result to avoid re-running until TTL
+    echo -n "" >"$CACHE_FILE"
+    exit 0
+fi
+
+# Cache the findings for TTL reuse
+echo "$OUTPUT" >"$CACHE_FILE"
+
+# ─── Audit log (opt-in) ─────────────────────────────────
+if [[ -n "$AUDIT_LOG" ]]; then
+    {
+        echo "---"
+        echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "file: $FILE_PATH"
+        echo "tool: ${TOOL_ARG#--tool }"
+        echo "findings_injected: true"
+        echo "line_count: $(echo "$OUTPUT" | wc -l | tr -d ' ')"
+    } >>"$AUDIT_LOG"
 fi
 
 echo "$OUTPUT"

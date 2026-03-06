@@ -128,6 +128,33 @@ bench_end() {
     fi
 }
 
+# Print benchmark methodology context so numbers are interpretable
+bench_report_context() {
+    if [[ "$BENCHMARK" != "true" ]]; then return; fi
+    local file_count="$1"
+    local total_bytes=0
+    for f in "${FILES[@]+"${FILES[@]}"}"; do
+        if [[ -f "$f" ]]; then
+            total_bytes=$((total_bytes + $(wc -c <"$f")))
+        fi
+    done
+    cat >&2 <<BENCH
+[benchmark] --- methodology ---
+[benchmark] file_count: $file_count
+[benchmark] total_bytes: $total_bytes
+[benchmark] file_mode: $FILE_MODE
+[benchmark] target_tool: ${TARGET_TOOL:-all}
+[benchmark] min_severity: $MIN_SEVERITY
+[benchmark] platform: $(uname -sm)
+[benchmark] cache: unknown (run twice; second run is warm)
+[benchmark] timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+[benchmark] WARNING: Numbers are single-run, not averaged.
+[benchmark]   Do not use for architectural defaults without
+[benchmark]   repeated measurement across representative files.
+[benchmark] -----------------------
+BENCH
+}
+
 # ─── Tool Runners ───────────────────────────────
 
 run_semgrep() {
@@ -276,6 +303,34 @@ normalize_findings() {
     esac
 }
 
+# ─── Deduplication ───────────────────────────────
+#
+# Identity key: file + line
+# When multiple tools report the same file+line, keep the finding with
+# higher severity. On tie, prefer the language-specific tool.
+#
+# Precedence: error > warning > info; on same severity, first tool wins.
+
+dedup_findings() {
+    local findings_json="$1"
+    echo "$findings_json" | jq '
+        def sev_rank:
+            if .severity == "error" or .severity == "ERROR" then 0
+            elif .severity == "warning" or .severity == "WARNING" then 1
+            else 2 end;
+
+        # Group by file:line identity key
+        group_by("\(.file):\(.line)") |
+        map(
+            sort_by(sev_rank) |
+            .[0] + {
+                dedup_key: "\(.[0].file):\(.[0].line)",
+                duplicates_removed: (length - 1)
+            }
+        )
+    '
+}
+
 # Format findings as agent-injectable prompt context
 format_as_prompt() {
     local findings_json="$1"
@@ -329,6 +384,9 @@ main() {
         exit 2
     fi
 
+    # Report benchmark context before running tools
+    bench_report_context "${#files[@]}"
+
     # Run selected tools
     local all_findings="[]"
 
@@ -364,6 +422,9 @@ main() {
         ruff_findings=$(normalize_findings "ruff" "$ruff_raw")
         all_findings=$(echo "$all_findings" "$ruff_findings" | jq -s 'add')
     fi
+
+    # Deduplicate cross-tool findings
+    all_findings=$(dedup_findings "$all_findings")
 
     # Output
     case "$FORMAT" in

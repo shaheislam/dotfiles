@@ -66,6 +66,43 @@ but these go through a separate channel (not the AI Gateway). Future work
 should unify these into a single findings stream so agents see one coherent
 list rather than split feedback from two systems.
 
+### LSP → Gateway Integration Contract
+
+To treat LSP as a first-class gateway input, diagnostics must map to the
+unified schema. Here is the concrete mapping:
+
+```
+LSP Diagnostic → Gateway Finding
+─────────────────────────────────
+diagnostic.source        → tool: "lsp-{source}" (e.g., "lsp-pyright")
+diagnostic.code          → rule: "{source}/{code}" (e.g., "pyright/reportMissingImports")
+diagnostic.range.start   → file: from textDocument.uri, line: range.start.line + 1
+diagnostic.range.end     → end_line: range.end.line + 1
+diagnostic.severity      → severity: 1=error, 2=warning, 3=info, 4=info
+diagnostic.message       → message
+diagnostic.codeAction    → fix (if available via textDocument/codeAction)
+diagnostic.data          → tool_native
+```
+
+**Precedence vs other tools**: LSP diagnostics take precedence over
+semgrep/shellcheck for the same file:line because they have:
+- Full type inference context (not pattern matching)
+- Actual reference tracking (not heuristic)
+- Lower false positive rate for type/import errors
+
+**Rollout plan**:
+1. **Phase 1** (current): LSP diagnostics flow through Claude Code's built-in
+   auto-diagnostic channel, separate from the gateway
+2. **Phase 2**: Create `scripts/aigateway/lsp-bridge.sh` that reads LSP
+   diagnostic JSON from Claude Code's internal format and normalizes to
+   gateway schema. Wire as an additional tool in analyze.sh
+3. **Phase 3**: Expose LSP code actions through the gateway so agents can
+   apply LSP-suggested fixes programmatically
+
+**Blocker for Phase 2**: Claude Code does not currently expose LSP diagnostic
+JSON in a machine-readable format accessible to hooks. This requires either
+a Claude Code plugin API extension or reading from the LSP server directly.
+
 ### Recommendation
 
 These unexposed LSP capabilities would multiply agent effectiveness:
@@ -322,17 +359,47 @@ tool-native data to avoid lossy flattening:
   "message": "shell=True is dangerous",
   "fix": null,
   "metadata": {"agent_guidance": "...", "confidence": "high"},
-  "tool_native": { /* raw semgrep output for this finding */ }
+  "tool_native": { "dataflow_trace": null, "metavars": null, "engine_kind": "OSS" },
+  "dedup_key": "src/main.py:42",
+  "duplicates_removed": 0
 }
 ```
 
-**Known lossy mappings** (documented, not hidden):
-- shellcheck `style` severity → normalized to `info`
-- Semgrep taint findings lose dataflow trace in the common fields (preserved in `tool_native`)
-- Multiline code snippets truncated in prompt format (full in JSON)
+#### Field-Level Contracts
 
-When downstream behavior depends on tool-specific semantics (e.g., semgrep
-taint traces, shellcheck fix replacements), consumers should read `tool_native`.
+| Field | Type | Guarantee | When to use `tool_native` instead |
+|-------|------|-----------|-----------------------------------|
+| `tool` | string | Always present. Enum: `semgrep`, `shellcheck`, `ruff` | — |
+| `rule` | string | Tool-prefixed rule ID (e.g., `SC2034`, `E501`) | — |
+| `file` | string | Relative path from project root | — |
+| `line` | int | 1-indexed start line | For column-level precision (shellcheck) |
+| `end_line` | int | 1-indexed end line. Same as `line` for single-line | For SARIF region with endColumn |
+| `severity` | string | Normalized to `error`/`warning`/`info` | For original severity (e.g., shellcheck `style`) |
+| `message` | string | Human-readable description from tool | — |
+| `fix` | object/null | Tool-specific fix structure (NOT normalized) | Always use tool_native for fix application |
+| `metadata` | object | Preserved from rule definition. May contain `agent_guidance`, `confidence`, `cwe`, `version` | — |
+| `tool_native` | object | Tool-specific fields not captured above | For taint traces, fix replacements, column info |
+| `dedup_key` | string | `file:line` identity key (added by dedup pass) | — |
+| `duplicates_removed` | int | Count of findings merged into this one | — |
+
+**Critical consumer rule**: For fix application (auto-fix, code actions),
+always use `tool_native.fix` — the top-level `fix` field is for presence
+detection only, not for mechanical application.
+
+**Known lossy mappings** (documented, not hidden):
+- shellcheck `style` severity → normalized to `info` (original in `tool_native.original_level`)
+- Semgrep taint findings lose dataflow trace in common fields (preserved in `tool_native.dataflow_trace`)
+- Multiline code snippets truncated in prompt format (full in JSON)
+- SARIF output does not include `taxonomies`, `invocations`, or `threadFlowLocations`
+
+### Deduplication Policy
+
+When multiple tools report findings at the same `file:line`:
+
+1. **Identity key**: `file:line` (coarse) — intentionally simple for the PoC
+2. **Winner selection**: higher severity wins. On tie, first tool in pipeline order
+3. **Conflict annotation**: `duplicates_removed` field tracks how many findings were merged
+4. **Future**: finer-grained key (`file:line:category`) once category is reliably extractable from all tools
 
 ### Hook Integration Points
 
@@ -372,31 +439,54 @@ Only findings at `warning` or above are injected by default. Configure via:
 export AIGATEWAY_MIN_SEVERITY=error  # Only surface errors
 ```
 
-### Code Snippet Exposure
+### Code Snippet & Content Redaction
 
-Tool findings may include code snippets. In the current PoC, this is acceptable
-because the agent already has read access to all project files. For future
-multi-tenant or remote agent scenarios, consider:
-- Stripping `code_snippet` and `tool_native` from prompt output
-- Sanitizing rule messages from third-party registries (they could contain injection attempts)
-- Allowlisting which rule registries are trusted
+Tool findings may include code snippets in messages. Controls:
+
+| Control | Default | Environment Variable |
+|---------|---------|---------------------|
+| Path redaction (absolute → relative) | **on** | Always applied |
+| Snippet redaction (strip code blocks) | **off** | `AIGATEWAY_REDACT_SNIPPETS=true` |
+| Severity gate (minimum level) | warning | `AIGATEWAY_MIN_SEVERITY=error` |
+
+When `AIGATEWAY_REDACT_SNIPPETS=true`, the hook strips indented code blocks
+from prompt output. The JSON format always retains full data — redaction only
+applies to what enters agent context via hooks.
+
+### Audit Logging
+
+Set `AIGATEWAY_AUDIT_LOG=/path/to/audit.log` to enable logging of every
+finding injection. Each entry records timestamp, file, tool, and line count.
+This provides an audit trail of what static analysis context was injected
+into agent conversations.
 
 ### Third-Party Rule Content
 
 Custom semgrep rules in `semgrep-agent-rules.yaml` are project-owned and reviewed.
 The `--config auto` flag in analyze.sh also pulls community rules from Semgrep Registry.
+
+**Trust model**:
+- Local rules (`semgrep-agent-rules.yaml`): trusted, version-controlled, tested
+- Semgrep Registry (`--config auto`): third-party, messages visible to agent
+- ast-grep rules: local only, no registry
+
 For sensitive repos, disable auto-config and use only local rules:
 ```bash
 # In analyze.sh, remove: rule_args+=(--config "auto")
 ```
 
+**Rule message sanitization**: Third-party rule messages are passed through
+as-is. They could theoretically contain prompt injection attempts. The
+severity gating provides partial mitigation (low-severity third-party rules
+are filtered by default). For high-security contexts, disable `--config auto`.
+
 ## 6. Known Limitations (PoC)
 
-- **No deduplication across tools**: If both semgrep and shellcheck flag the same issue, both findings appear. The `tool` field disambiguates but consumers must filter.
-- **No LSP integration in gateway**: LSP diagnostics flow through a separate Claude Code channel. Unifying them requires changes to Claude Code's plugin system.
-- **macOS-only lockfile**: The hook uses `mkdir` atomicity (portable) instead of `flock` (Linux-only). Tested on macOS.
-- **Semgrep broken on this system**: Python pydantic version conflict. Needs `brew reinstall semgrep` or `pipx install semgrep`.
-- **SARIF output is minimal**: Missing `taxonomies`, `invocations`, and `threadFlowLocations` fields from the full SARIF spec.
+- **Dedup is coarse-grained**: Uses `file:line` identity key. Two different issues on the same line will be merged. Future: add category to key.
+- **LSP not yet in gateway pipeline**: LSP diagnostics flow through a separate Claude Code channel. Phase 2 requires Claude Code to expose diagnostic JSON to hooks. See LSP integration contract above.
+- **Semgrep broken on this system**: Python pydantic version conflict. Needs `brew reinstall semgrep`.
+- **SARIF output is minimal**: Missing `taxonomies`, `invocations`, and `threadFlowLocations` from full SARIF spec.
+- **Benchmark is single-run**: Use `--benchmark` for indicative numbers only. Not suitable for architectural decisions without repeated measurement.
 
 ## 7. Phase Gate: Static Analysis (Future)
 
@@ -440,11 +530,12 @@ before merge-queue.sh accepts the work.
 
 | File | Purpose |
 |------|---------|
-| `scripts/aigateway/analyze.sh` | Main gateway script — runs analysis, formats output |
-| `scripts/aigateway/semgrep-agent-rules.yaml` | Custom semgrep rules with agent fix guidance |
+| `scripts/aigateway/analyze.sh` | Main gateway — runs analysis, dedup, formats output (JSON/SARIF/prompt) |
+| `scripts/aigateway/semgrep-agent-rules.yaml` | Custom rules with agent_guidance, confidence, version |
+| `scripts/aigateway/test-rules.sh` | Rule validation: schema, pattern matching, guidance quality |
 | `scripts/aigateway/ast-patterns/sgconfig.yml` | ast-grep configuration |
 | `scripts/aigateway/ast-patterns/rules/*.yml` | Structural patterns for Python, TypeScript, Go |
-| `.claude/hooks/static-analysis-context.sh` | PostToolUse hook for real-time feedback |
+| `.claude/hooks/static-analysis-context.sh` | PostToolUse hook with debounce/TTL/dedup/redaction/audit |
 | `docs/aigateway-static-analysis.md` | This document |
 
 ## References
