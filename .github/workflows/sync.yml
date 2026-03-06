@@ -25,7 +25,7 @@ on:
 
 concurrency:
   group: sync-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false  # Release bundles must complete
 
 jobs:
   create-release:
@@ -115,6 +115,10 @@ jobs:
 
     steps:
       - name: Create sync reminder
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_AUTHOR: ${{ github.actor }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           {
             echo "# Dotfiles Sync Required"
@@ -128,9 +132,9 @@ jobs:
             echo 'bash scripts/setup.sh'
             echo '```'
             echo ""
-            echo "Commit: ${{ github.sha }}"
-            echo "Author: ${{ github.actor }}"
-            echo "Message: ${{ github.event.head_commit.message }}"
+            echo "Commit: $COMMIT_SHA"
+            echo "Author: $COMMIT_AUTHOR"
+            printf "Message: %s\n" "$COMMIT_MESSAGE"
           } > sync-reminder.md
 
       - name: Upload reminder

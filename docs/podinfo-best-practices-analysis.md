@@ -156,16 +156,32 @@ has Docker test infrastructure but could run full setup validation in containers
   adding new consolidated workflow first, then removing old ones.
 - **POSIX check in PR validation**: Currently flags bash-isms in scripts that intentionally
   use bash. Should exclude files with `#!/usr/bin/env bash` shebang.
+- **Concurrency scoping**: PR/push workflows use `cancel-in-progress: true` (safe to
+  cancel stale runs). Release/maintenance workflows use `cancel-in-progress: false` to
+  ensure bundles and security scans complete.
+- **Dirty-tree check scope**: Only checks tracked files (`git diff`), not untracked.
+  Untracked artifacts (caches, logs) are handled by `.gitignore`.
+- **Tool dependencies**: `make check-deps` verifies shellcheck, shfmt, python3 are
+  installed before lint targets run. Optional tools (fish, yamllint) skip gracefully.
+
+## Future Work (not yet implemented)
+
+- **Pin GitHub Actions by SHA** — Currently using version tags (e.g., `@v4`).
+  SHA pinning (e.g., `@a5ac7e51b41094c92402da3b24376905380afc29`) prevents
+  supply chain attacks via tag mutation. Track with Dependabot or Renovate.
+- **Wire CI to call `make validate`** — Once the Makefile stabilizes, CI workflows
+  should call `make` targets instead of inline commands, completing the
+  "Makefile as contract" pattern.
 
 ## Recommendation
 
 **Priority order for implementation:**
 
 1. **Root Makefile** — highest impact, lowest risk. Unifies all dev commands.
-2. **Dirty tree check** — catches real bugs, 5-line addition to CI.
-3. **Concurrency groups** — saves CI minutes, trivial to add.
+2. **Dirty tree check** — catches real bugs, scoped to tracked files only.
+3. **Concurrency groups** — saves CI minutes on PR/push; preserves release/maintenance runs.
 4. **Workflow consolidation** — moderate effort, reduces maintenance burden.
 5. **Versioned releases** — nice-to-have, enables rollback.
 6. **SBOM/container e2e** — low priority, future consideration.
 
-Items 1-3 can be implemented in this session. Items 4-6 are future work.
+Items 1-3 implemented. Items 4-6 are future work.

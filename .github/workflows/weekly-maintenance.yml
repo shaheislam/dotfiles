@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: weekly-maintenance
-  cancel-in-progress: true
+  cancel-in-progress: false  # Security scans must complete
 
 jobs:
   dependency-audit:

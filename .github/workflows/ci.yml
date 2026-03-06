@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Weekly validation
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -217,19 +220,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run validation
+      - name: Check for uncommitted changes to tracked files
         run: |
-          # Run formatters/generators that might produce changes
-          for file in $(find . -name "*.json" -not -path "./.git/*"); do
-            python3 -m json.tool "$file" > /dev/null 2>&1 || true
-          done
-
-      - name: Check for uncommitted changes
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "Working tree is dirty after validation:"
-            git status --short
+          # Only check tracked files — untracked files (caches, logs)
+          # are expected and handled by .gitignore
+          if [ -n "$(git diff --name-only)" ] || [ -n "$(git diff --staged --name-only)" ]; then
+            echo "Tracked files were modified during CI:"
+            git diff --name-only
+            git diff --staged --name-only
             git diff
             exit 1
           fi
-          echo "Working tree is clean."
+          echo "All tracked files are clean."
