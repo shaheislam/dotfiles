@@ -22,6 +22,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
     #   --provider P    API provider profile (bedrock, vertex, foundry, gateway, or custom)
     #   --system S      Ticketing system: linear or jira
+    #   --codex         Use Codex CLI as primary agent instead of Claude Code
+    #   --codex-model M Codex model override (implies --codex)
+    #   --codex-profile P  Codex config profile from config.toml (implies --codex)
     #   --quiet, -q     Suppress verbose output (default, writes to .claude/gwt-ticket.log)
     #   --verbose, -v   Show full verbose output (overrides default quiet mode)
     #   --help, -h      Show help
@@ -100,6 +103,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l mayor_tracked false
     set -l swarm_epic_id "" # bd swarm: epic bead ID to create swarm from
     set -l quiet_mode true
+    set -l use_codex false
+    set -l codex_model ""
+    set -l codex_profile ""
 
     for i in (seq (count $argv))
         if $skip_next
@@ -392,6 +398,28 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --bridge-codex-profiles requires comma-separated profile names (e.g., work,personal)"
                     return 1
                 end
+            case --codex
+                set use_codex true
+            case --codex-model
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set codex_model $argv[$next_i]
+                    set use_codex true
+                    set skip_next true
+                else
+                    echo "Error: --codex-model requires a model name (e.g., o3, gpt-5.3-codex)"
+                    return 1
+                end
+            case --codex-profile
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set codex_profile $argv[$next_i]
+                    set use_codex true
+                    set skip_next true
+                else
+                    echo "Error: --codex-profile requires a profile name from config.toml (e.g., auto, safe, fast, local)"
+                    return 1
+                end
             case --no-checkpoints
                 set no_checkpoints true
             case --ckpt-agent
@@ -535,6 +563,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge-cooldown S  Cooldown seconds after rate limit (default: 300)"
         echo "  --bridge-profiles P  Claude subscription profiles for auto-rotation (e.g., work,personal)"
         echo "  --bridge-codex-profiles P  Codex profiles for auto-rotation (uses ~/.codex-<name>)"
+        echo "  --codex              Use Codex CLI as primary agent (codex exec --full-auto)"
+        echo "  --codex-model M     Codex model override (implies --codex; e.g., o3, gpt-5.3-codex)"
+        echo "  --codex-profile P   Codex config.toml profile (implies --codex; e.g., auto, safe, fast, local)"
         echo "  --rebase             Rebase onto main before merging (re-spawns on conflict)"
         echo "  --auto-cleanup       Auto-remove worktree after successful merge (1hr grace period)"
         echo "  --no-auto-cleanup    Disable auto-cleanup (keep worktree after merge)"
@@ -587,6 +618,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice tdd"
         echo ""
+        echo "  # Run with Codex CLI instead of Claude Code"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model o3"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-profile auto"
+        echo ""
         echo "Prompt Template Variables:"
         echo "  {{ISSUE_KEY}}          Issue key (ENG-123)"
         echo "  {{TITLE}}              Issue title"
@@ -605,6 +641,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 echo "Valid providers: "(string join ', ' $known_providers)
                 return 1
             end
+        end
+    end
+
+    # Validate Codex CLI is available when --codex is specified
+    if $use_codex
+        if not command -q codex
+            echo "Error: Codex CLI not found. Install: bun add -g @openai/codex"
+            return 1
         end
     end
 
@@ -1228,27 +1272,51 @@ $prompt_suffix"
             ''
     end
 
-    # Write prompt command to file as single line (for send-keys delivery via rename script)
-    # Newlines collapsed to spaces — Claude handles single-line instructions fine
     set -l prompt_cmd_file "$instance_env/prompt-cmd.txt"
     set -l oneline_prompt (string replace -a \n ' ' -- "$prompt")
-    if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-        printf '%s' "$slash_command \"$oneline_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
-    else
-        printf '%s' "$slash_command \"$oneline_prompt\"" >$prompt_cmd_file
-    end
 
-    # cd first so Claude runs in the worktree (launch script is non-interactive,
+    # cd first so the agent runs in the worktree (launch script is non-interactive,
     # so config.fish's interactive block is skipped — no direnv, no starship)
     set -a _ls "cd $worktree_path"
-    set -a _ls 'claude --dangerously-skip-permissions --add-dir '$add_dir_path
+
+    if $use_codex
+        # --- Codex harness: run codex exec (headless, one-shot) ---
+        # Set CODEX_HOME for profile isolation if needed
+        # (No slash commands or send-keys — prompt passed directly to codex exec)
+        # Codex exec: --full-auto = workspace-write sandbox + on-failure approval
+        # cd already sets the working dir; no --add-dir on exec (use -c for extra perms if needed)
+        set -l codex_cmd "codex exec --full-auto"
+        if test -n "$codex_model"
+            set codex_cmd "$codex_cmd --model $codex_model"
+        end
+        if test -n "$codex_profile"
+            set codex_cmd "$codex_cmd --profile $codex_profile"
+        end
+        # Write prompt to file for logging/reference (not used for delivery)
+        printf '%s' "$oneline_prompt" >$prompt_cmd_file
+        # Escape single quotes in prompt for fish heredoc
+        set -l escaped_prompt (string replace -a "'" "\\'" -- "$oneline_prompt")
+        set -a _ls "$codex_cmd '$escaped_prompt'"
+    else
+        # --- Claude harness: interactive with send-keys prompt delivery ---
+        # Write prompt command to file as single line (for send-keys delivery via rename script)
+        # Newlines collapsed to spaces — Claude handles single-line instructions fine
+        if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
+            printf '%s' "$slash_command \"$oneline_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
+        else
+            printf '%s' "$slash_command \"$oneline_prompt\"" >$prompt_cmd_file
+        end
+        set -a _ls 'claude --dangerously-skip-permissions --add-dir '$add_dir_path
+    end
 
     if not $use_devcon
         # Pane stays open for witness to use (conflict resolution, debugging)
+        set -l agent_name Claude
+        $use_codex; and set agent_name Codex
         set -a _ls '' \
-            'set -l claude_exit $status' \
-            'if test $claude_exit -ne 0' \
-            '    echo \'Claude exited with code \' $claude_exit' \
+            'set -l agent_exit $status' \
+            'if test $agent_exit -ne 0' \
+            "    echo '$agent_name exited with code ' \$agent_exit" \
             end \
             'exec fish'
     end
@@ -1267,12 +1335,21 @@ $prompt_suffix"
         else
             set -a _log "Ticket:    $issue_key - $title"
         end
-        set -a _log "Title:     $title" \
+        set -l _agent_label "Claude Code"
+        set -l _cmd_label "Command:   $slash_command"
+        if $use_codex
+            set _agent_label "Codex CLI"
+            set _cmd_label "Mode:      codex exec --full-auto"
+            test -n "$codex_model"; and set _cmd_label "$_cmd_label --model $codex_model"
+            test -n "$codex_profile"; and set _cmd_label "$_cmd_label --profile $codex_profile"
+        end
+        set -a _log "Agent:     $_agent_label" \
+            "Title:     $title" \
             "Branch:    $branch_name" \
             "Worktree:  $worktree_path" \
             "Tmux:      $session_name:$window_name" \
             "Max iter:  $max_iterations" \
-            "Command:   $slash_command"
+            "$_cmd_label"
         if test (count $skills) -gt 0
             set -a _log "Skills:    "(string join ', ' -- $skills)
         end
@@ -1421,10 +1498,18 @@ $prompt_suffix"
         # Write setup script to avoid send-keys buffer corruption from direnv output
         # Must be fish (not bash) because devcon is a fish function
         set -l setup_script "$worktree_path/.claude/setup-panes.fish"
-        # Background rename for devcon path (prompt delivered via CLI argument in launch script)
-        set -l rename_script_devcon "$HOME/dotfiles/scripts/gwt-rename-session.sh"
-        if not test -x "$rename_script_devcon"
-            set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
+        # Session setup differs by agent
+        set -l rename_line ""
+        if $use_codex
+            # Codex exec gets prompt directly — no send-keys delivery needed
+            set rename_line "tmux rename-window '$window_name' 2>/dev/null"
+        else
+            # Claude: background rename script delivers prompt via send-keys
+            set -l rename_script_devcon "$HOME/dotfiles/scripts/gwt-rename-session.sh"
+            if not test -x "$rename_script_devcon"
+                set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
+            end
+            set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &"
         end
         set -l nvim_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'"
         if test (count $nvim_ai_files) -gt 0
@@ -1432,7 +1517,7 @@ $prompt_suffix"
         end
         printf '%s\n' \
             '#!/usr/bin/env fish' \
-            "# Auto-generated by gwt-ticket - hybrid layout (Claude in devcon, nvim+terminal on host)" \
+            "# Auto-generated by gwt-ticket - hybrid layout (agent in devcon, nvim+terminal on host)" \
             "$devcon_up_cmd" \
             'or begin' \
             "    echo 'Devcontainer failed to start'" \
@@ -1445,7 +1530,7 @@ $prompt_suffix"
             'tmux split-window -v -p 30' \
             "tmux send-keys 'cd $worktree_path' Enter" \
             'tmux select-pane -U' \
-            "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &" \
+            "$rename_line" \
             disown \
             "$nvim_cmd" \
             'exec fish' >$setup_script
@@ -1485,13 +1570,20 @@ $prompt_suffix"
             tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
         end
 
-        # Step 4: Rename Claude session (prompt delivered via CLI argument in launch script)
-        set -l rename_script "$HOME/dotfiles/scripts/gwt-rename-session.sh"
-        if not test -x "$rename_script"
-            set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
+        # Step 4: Session setup (prompt delivery differs by agent)
+        if $use_codex
+            # Codex exec gets prompt directly via CLI — no send-keys needed
+            # Just rename the tmux window for identification
+            tmux rename-window -t "$session_name:$window_name" "$window_name" 2>/dev/null
+        else
+            # Claude: rename session + deliver prompt via send-keys
+            set -l rename_script "$HOME/dotfiles/scripts/gwt-rename-session.sh"
+            if not test -x "$rename_script"
+                set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
+            end
+            bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
+            disown
         end
-        bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
-        disown
     end
 
     # State file path (used in output and background block)

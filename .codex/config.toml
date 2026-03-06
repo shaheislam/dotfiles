@@ -1,0 +1,58 @@
+# Codex CLI Configuration
+# Managed by dotfiles (stow). Auth/sessions are machine-specific and gitignored.
+#
+# Usage:
+#   codex                        # Interactive with defaults
+#   codex -p auto "Fix bug"     # Full-auto profile
+#   codex -p safe "Review code" # Read-only sandbox
+#   codex -p local "Explain"    # Local Ollama model
+#
+# Override inline:
+#   codex -c model="o3" "prompt"
+#   codex -c 'sandbox_permissions=["disk-full-read-access"]' "prompt"
+
+model = "gpt-5.3-codex"
+approval_policy = "on-failure"
+model_reasoning_effort = "high"
+model_reasoning_summary = "detailed"
+
+[shell_environment_policy]
+inherit = "all"
+
+# --- Profiles ---
+
+[profiles.auto]
+# Full autonomous mode: sandboxed workspace writes, no approval prompts
+approval_policy = "on-failure"
+sandbox_mode = "workspace-write"
+model_reasoning_effort = "high"
+model_reasoning_summary = "detailed"
+
+[profiles.safe]
+# Read-only: safe for exploration and review tasks
+approval_policy = "untrusted"
+sandbox_mode = "read-only"
+model_reasoning_effort = "high"
+
+[profiles.fast]
+# Quick tasks with lower reasoning overhead
+model = "gpt-4.1"
+approval_policy = "on-failure"
+sandbox_mode = "workspace-write"
+model_reasoning_effort = "medium"
+model_reasoning_summary = "concise"
+
+[profiles.local]
+# Local Ollama model (requires ollama serve running)
+model_provider = "ollama-local"
+model = "qwen3-coder"
+approval_policy = "on-failure"
+sandbox_mode = "workspace-write"
+
+# --- Model Providers ---
+
+[model_providers.ollama-local]
+name = "Ollama (local)"
+base_url = "http://localhost:11434/v1"
+env_key = "OLLAMA_API_KEY"
+wire_api = "chat"
