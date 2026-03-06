@@ -475,10 +475,12 @@ on_completion() {
     # /rename is handled by gwt-rename-session.sh (waits for ralph-loop
     # completion, then sends /rename before witness reaches on_completion)
 
-    # Close the bead for this issue (bd sync removed — no-op costs ~300ms)
+    # Close the bead and export to JSONL for persistence
     if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
         if [[ -n "$issue_key" ]]; then
             (cd "$WORKTREE_PATH" && bd close "$issue_key" 2>/dev/null) || true
+            (cd "$WORKTREE_PATH" && bd export 2>/dev/null) || true
+            log "Beads: closed $issue_key and exported to JSONL"
         fi
     fi
 

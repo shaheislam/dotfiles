@@ -241,34 +241,32 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
                 echo "No ready work found (run from a directory with a .beads database)"
                 return 0
             end
-            set -l count (echo $bd_json | python3 -c "import json,sys; data=json.load(sys.stdin); print(len(data) if isinstance(data, list) else 0)")
-            if test "$count" -eq 0
+            # Normalize to array and count
+            set -l count (echo $bd_json | jq 'if type == "array" then length else 1 end' 2>/dev/null)
+            if test -z "$count" -o "$count" -eq 0
                 echo "No unblocked beads ready to work on"
                 return 0
             end
             echo "Found $count ready bead(s):"
             echo ""
-            # Queue each ready bead
-            echo $bd_json | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-if not isinstance(data, list):
-    data = [data]
-for issue in data:
-    bead_id = issue.get('id', '')
-    title = issue.get('title', 'Untitled')
-    desc = issue.get('description', '') or issue.get('body', '') or ''
-    ext_ref = issue.get('external_ref', '')
-    key = ext_ref if ext_ref else bead_id
-    print(f'BEAD|{key}|{title}|{desc[:200]}')
-" | while read -l line
+            # Queue each ready bead (use bead's own priority if no --priority override)
+            echo $bd_json | jq -r '
+                (if type == "array" then . else [.] end) | .[] |
+                "BEAD|\(.external_ref // .id)|\(.title // "Untitled")|\(.priority // 2)|\((.description // .body // "")[:200])"
+            ' 2>/dev/null | while read -l line
                 set -l parts (string split '|' $line)
                 set -l bead_key $parts[2]
                 set -l bead_title $parts[3]
-                set -l bead_desc $parts[4]
-                echo "  [$bead_key] $bead_title"
+                set -l bead_prio $parts[4]
+                set -l bead_desc $parts[5]
+                # Use explicit --priority override if provided, else bead's own priority
+                set -l effective_prio $bead_prio
+                if test "$priority" != 5
+                    set effective_prio $priority
+                end
+                echo "  [$bead_key] P$effective_prio $bead_title"
                 if not $dry_run
-                    set -l add_args $bead_key $bead_title $bead_desc --priority $priority
+                    set -l add_args $bead_key $bead_title $bead_desc --priority $effective_prio
                     if test -n "$sub_name"
                         set add_args $add_args --sub $sub_name
                     end

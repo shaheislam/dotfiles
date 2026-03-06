@@ -216,10 +216,10 @@ cmd_context() {
     tail -n "$recent" "$INDEX_FILE" | while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         local issue project synced file_path
-        issue=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['issue_key'])" 2>/dev/null) || continue
-        project=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['project'])" 2>/dev/null) || continue
-        synced=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['synced'])" 2>/dev/null) || continue
-        file_path=$(echo "$line" | python3 -c "import sys,json; print(json.loads(sys.stdin.read())['file'])" 2>/dev/null) || continue
+        issue=$(echo "$line" | jq -r '.issue_key' 2>/dev/null) || continue
+        project=$(echo "$line" | jq -r '.project' 2>/dev/null) || continue
+        synced=$(echo "$line" | jq -r '.synced' 2>/dev/null) || continue
+        file_path=$(echo "$line" | jq -r '.file' 2>/dev/null) || continue
 
         echo "- ${issue} (${project}, ${synced})"
 

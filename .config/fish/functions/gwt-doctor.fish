@@ -334,11 +334,32 @@ function gwt-doctor --description "Agent orchestration health check"
     # ── Check 9: Beads ──
     if command -q bd
         if test -d ".beads"
-            printf "  %s[PASS]%s Beads installed and active\n" (set_color green) (set_color normal)
-            set pass_count (math $pass_count + 1)
+            # Deep check: verify hooks are installed
+            set -l hooks_ok true
+            for hook in post-checkout post-merge
+                if not test -f ".beads/hooks/$hook"
+                    set hooks_ok false
+                    break
+                end
+            end
+            if $hooks_ok
+                printf "  %s[PASS]%s Beads installed, active, hooks present\n" (set_color green) (set_color normal)
+                set pass_count (math $pass_count + 1)
+            else
+                printf "  %s[WARN]%s Beads active but hooks incomplete\n" (set_color yellow) (set_color normal)
+                set warn_count (math $warn_count + 1)
+                if $do_fix
+                    printf "         → Reinstalling hooks...\n"
+                    bd hooks install 2>/dev/null; or true
+                end
+            end
         else
             printf "  %s[WARN]%s Beads installed but no .beads/ in current dir\n" (set_color yellow) (set_color normal)
             set warn_count (math $warn_count + 1)
+            if $do_fix; and $in_git_repo
+                printf "         → Initializing beads...\n"
+                bd init --quiet 2>/dev/null; or true
+            end
         end
     else
         printf "  %s[FAIL]%s Beads not installed\n" (set_color red) (set_color normal)

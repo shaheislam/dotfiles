@@ -99,6 +99,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l town_sync true
     set -l mayor_tracked false
     set -l swarm_epic_id "" # bd swarm: epic bead ID to create swarm from
+    set -l bead_priority "" # bd create --priority (0-4, empty = default)
     set -l quiet_mode true
 
     for i in (seq (count $argv))
@@ -475,6 +476,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --swarm-epic requires a bead epic ID (e.g., bd-abc12)"
                     return 1
                 end
+            case --priority
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set bead_priority $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --priority requires a value (0-4)"
+                    return 1
+                end
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -552,6 +562,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency, bd-bead)"
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
+        echo "  --priority N         Bead priority (0=critical, 1=high, 2=medium, 3=low, 4=backlog)"
         echo "  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)"
         echo "  --verbose, -v        Show full verbose output (overrides default quiet mode)"
         echo "  --help, -h           Show this help"
@@ -851,7 +862,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             end
             if test -d "$worktree_path/.beads"
                 cd $worktree_path
-                bd create "$title" --external-ref "$issue_key" --description "$description" --silent >/dev/null 2>&1; or true
+                set -l bd_create_args "$title" --external-ref "$issue_key" --description "$description" --silent
+                if test -n "$bead_priority"
+                    set -a bd_create_args --priority $bead_priority
+                end
+                bd create $bd_create_args >/dev/null 2>&1; or true
                 # GUPP Hook bead: ephemeral work-slung marker per Gastown Universal Propulsion Principle
                 bd create "hook: $issue_key" \
                     --ephemeral \
@@ -1575,6 +1590,7 @@ convoy_id: \"$convoy_id\"
 molecule_id: \"$molecule_id\"
 town_sync: $town_sync
 mayor_tracked: $mayor_tracked
+bead_priority: \"$bead_priority\"
 ---
 
 # Ticket Execution State
