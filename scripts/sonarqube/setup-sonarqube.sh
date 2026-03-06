@@ -24,7 +24,12 @@ SONARQUBE_PORT="${SONARQUBE_PORT:-9000}"
 SONARQUBE_URL="http://localhost:${SONARQUBE_PORT}"
 TOKEN_FILE="$HOME/.config/sonarqube/token"
 
-# Docker compose command (v2 plugin or v1 standalone fallback)
+# Docker compose command with fallback logic:
+#   1. Try 'docker compose' (v2 CLI plugin) — preferred, ships with Docker Desktop
+#   2. Fall back to 'docker-compose' (standalone binary) — common with Colima/Lima
+#   3. Fail with actionable error if neither is available
+# Note: On Colima setups, the standalone binary at /usr/local/bin/docker-compose
+# is often v2 under the hood, just not installed as a CLI plugin.
 docker_compose() {
     if docker compose version &>/dev/null; then
         docker compose "$@"
@@ -32,6 +37,7 @@ docker_compose() {
         docker-compose "$@"
     else
         log_error "Neither 'docker compose' plugin nor 'docker-compose' found"
+        log_error "Install: brew install docker-compose"
         return 1
     fi
 }
