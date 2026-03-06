@@ -8,6 +8,9 @@ on:
       - 'homebrew/Brewfile'
       - '.github/workflows/setup-test.yml'
 
+permissions:
+  contents: read
+
 concurrency:
   group: setup-test-${{ github.head_ref }}
   cancel-in-progress: true

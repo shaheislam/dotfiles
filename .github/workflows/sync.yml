@@ -23,6 +23,9 @@ on:
       - '.zshrc'
       - '.bashrc'
 
+permissions:
+  contents: read
+
 concurrency:
   group: sync-${{ github.ref }}
   cancel-in-progress: false  # Release bundles must complete

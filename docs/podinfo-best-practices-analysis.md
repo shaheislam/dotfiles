@@ -163,15 +163,34 @@ has Docker test infrastructure but could run full setup validation in containers
   Untracked artifacts (caches, logs) are handled by `.gitignore`.
 - **Tool dependencies**: `make check-deps` verifies shellcheck, shfmt, python3 are
   installed before lint targets run. Optional tools (fish, yamllint) skip gracefully.
+  Version pinning is not implemented — tools use whatever is on PATH. For dotfiles,
+  this is acceptable since Brewfile pins formula versions via lockfile. CI runners
+  use GitHub-maintained images with known tool versions.
+- **Dirty-tree and generated files**: No tracked file is generated or modified by
+  any `make` target in the `lint` or `smoke-test` chains. `fish-syntax` uses `-n`
+  (dry-run), `json-validate` only reads, `smoke-test.sh` is read-only. If a future
+  target generates tracked output, add a cleanup step before `check-dirty` or
+  exclude the path via `git diff --name-only -- ':!path/to/generated'`.
+- **Exit-code propagation in Make**: Each Make recipe line runs in a separate shell.
+  Make itself checks the exit code of every line and stops on non-zero (unless
+  prefixed with `-`). No `|| true` patterns remain in gate targets. The `SHELL`
+  is set to `/bin/bash` for consistent behavior. Advisory targets (`lint-strict`)
+  also propagate exit codes — they just aren't in the `test` chain.
 
 ## Future Work (not yet implemented)
 
 - **Pin GitHub Actions by SHA** — Currently using version tags (e.g., `@v4`).
   SHA pinning (e.g., `@a5ac7e51b41094c92402da3b24376905380afc29`) prevents
   supply chain attacks via tag mutation. Track with Dependabot or Renovate.
+  All 20+ action references across 6 workflows need updating.
 - **Wire CI to call `make validate`** — Once the Makefile stabilizes, CI workflows
   should call `make` targets instead of inline commands, completing the
   "Makefile as contract" pattern.
+- **Promote shellcheck to gate tier** — Currently `shellcheck -S error` finds
+  pre-existing errors in ~10 scripts. Once those are fixed, move `shellcheck`
+  into the `lint` target so `make test` catches shell errors.
+- **Tool version pinning** — Consider `.tool-versions` (asdf/mise) or Nix flake
+  for reproducible tool versions beyond Brewfile. Low priority for a dotfiles repo.
 
 ## Recommendation
 
