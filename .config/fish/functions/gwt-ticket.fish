@@ -479,7 +479,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             case --priority
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
-                    set bead_priority $argv[$next_i]
+                    set -l pval $argv[$next_i]
+                    if not string match -qr '^[0-4]$' -- "$pval"
+                        echo "Error: --priority must be 0-4 (got: $pval)"
+                        return 1
+                    end
+                    set bead_priority $pval
                     set skip_next true
                 else
                     echo "Error: --priority requires a value (0-4)"

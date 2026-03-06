@@ -250,15 +250,25 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
             echo "Found $count ready bead(s):"
             echo ""
             # Queue each ready bead (use bead's own priority if no --priority override)
+            # jq handles: missing fields (// fallback), non-numeric priority (tostring),
+            # null values, and both array and single-object responses from bd
             echo $bd_json | jq -r '
                 (if type == "array" then . else [.] end) | .[] |
-                "BEAD|\(.external_ref // .id)|\(.title // "Untitled")|\(.priority // 2)|\((.description // .body // "")[:200])"
+                (if (.external_ref // "" | length) > 0 then .external_ref else (.id // "unknown") end) as $key |
+                [$key, (.title // "Untitled"), ((.priority // 2) | tostring), ((.description // .body // "")[:200])] | @tsv
             ' 2>/dev/null | while read -l line
-                set -l parts (string split '|' $line)
-                set -l bead_key $parts[2]
-                set -l bead_title $parts[3]
-                set -l bead_prio $parts[4]
-                set -l bead_desc $parts[5]
+                set -l parts (string split \t $line)
+                if test (count $parts) -lt 3
+                    continue
+                end
+                set -l bead_key $parts[1]
+                set -l bead_title $parts[2]
+                set -l bead_prio $parts[3]
+                set -l bead_desc $parts[4]
+                # Validate priority is numeric 0-4, fallback to 2
+                if not string match -qr '^[0-4]$' -- "$bead_prio"
+                    set bead_prio 2
+                end
                 # Use explicit --priority override if provided, else bead's own priority
                 set -l effective_prio $bead_prio
                 if test "$priority" != 5

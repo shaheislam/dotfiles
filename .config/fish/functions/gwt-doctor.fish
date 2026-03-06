@@ -349,16 +349,24 @@ function gwt-doctor --description "Agent orchestration health check"
                 printf "  %s[WARN]%s Beads active but hooks incomplete\n" (set_color yellow) (set_color normal)
                 set warn_count (math $warn_count + 1)
                 if $do_fix
-                    printf "         → Reinstalling hooks...\n"
-                    bd hooks install 2>/dev/null; or true
+                    printf "         → Reinstalling hooks (bd hooks install)...\n"
+                    if bd hooks install 2>/dev/null
+                        printf "         → %sFixed%s\n" (set_color green) (set_color normal)
+                    else
+                        printf "         → %sFailed%s (run manually: bd hooks install)\n" (set_color red) (set_color normal)
+                    end
                 end
             end
         else
             printf "  %s[WARN]%s Beads installed but no .beads/ in current dir\n" (set_color yellow) (set_color normal)
             set warn_count (math $warn_count + 1)
             if $do_fix; and $in_git_repo
-                printf "         → Initializing beads...\n"
-                bd init --quiet 2>/dev/null; or true
+                printf "         → Initializing beads (bd init --quiet)...\n"
+                if bd init --quiet 2>/dev/null
+                    printf "         → %sFixed%s\n" (set_color green) (set_color normal)
+                else
+                    printf "         → %sFailed%s (run manually: bd init)\n" (set_color red) (set_color normal)
+                end
             end
         end
     else

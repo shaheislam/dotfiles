@@ -478,9 +478,20 @@ on_completion() {
     # Close the bead and export to JSONL for persistence
     if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
         if [[ -n "$issue_key" ]]; then
-            (cd "$WORKTREE_PATH" && bd close "$issue_key" 2>/dev/null) || true
-            (cd "$WORKTREE_PATH" && bd export 2>/dev/null) || true
-            log "Beads: closed $issue_key and exported to JSONL"
+            local bd_close_ok=false bd_export_ok=false
+            if (cd "$WORKTREE_PATH" && bd close "$issue_key" 2>/dev/null); then
+                bd_close_ok=true
+            fi
+            if (cd "$WORKTREE_PATH" && bd export 2>/dev/null); then
+                bd_export_ok=true
+            fi
+            if $bd_close_ok && $bd_export_ok; then
+                log "Beads: closed $issue_key and exported to JSONL"
+            elif $bd_close_ok; then
+                log "Beads: closed $issue_key (export failed, JSONL may be stale)"
+            else
+                log "Beads: close failed for $issue_key (may already be closed)"
+            fi
         fi
     fi
 
