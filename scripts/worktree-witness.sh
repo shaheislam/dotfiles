@@ -475,7 +475,10 @@ on_completion() {
     # /rename is handled by gwt-rename-session.sh (waits for ralph-loop
     # completion, then sends /rename before witness reaches on_completion)
 
-    # Close the bead and export to JSONL for persistence
+    # Close the bead and export to JSONL for persistence.
+    # Beads is metadata — failures are logged + recorded in progress.json
+    # but do NOT affect witness exit code (which signals agent lifecycle).
+    local beads_status="skipped"
     if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
         if [[ -n "$issue_key" ]]; then
             local bd_close_ok=false bd_export_ok=false
@@ -486,13 +489,24 @@ on_completion() {
                 bd_export_ok=true
             fi
             if $bd_close_ok && $bd_export_ok; then
+                beads_status="ok"
                 log "Beads: closed $issue_key and exported to JSONL"
             elif $bd_close_ok; then
+                beads_status="export_failed"
                 log "Beads: closed $issue_key (export failed, JSONL may be stale)"
             else
+                beads_status="close_failed"
                 log "Beads: close failed for $issue_key (may already be closed)"
             fi
         fi
+    fi
+
+    # Update progress.json with beads outcome (machine-readable for automation)
+    local progress_file="$WORKTREE_PATH/.claude/progress.json"
+    if [[ -f "$progress_file" ]]; then
+        local tmp_progress
+        tmp_progress=$(jq --arg bs "$beads_status" '. + {beads_status: $bs}' "$progress_file" 2>/dev/null) \
+            && echo "$tmp_progress" > "$progress_file"
     fi
 
     # Convoy: mark ticket complete in convoy
