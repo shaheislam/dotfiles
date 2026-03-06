@@ -314,7 +314,7 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
     fi
 
     # Check for LGTM consensus (strict: LGTM on a line by itself, no trailing caveats)
-    if echo "$review_output" | grep -qE '^\s*LGTM\s*$'; then
+    if echo "$review_output" | grep -qiE '^\s*LGTM\s*$'; then
         log "${C_GREEN}Claude approved changes (LGTM)${C_RESET}"
         if [ "$VERBOSE" != "0" ]; then
             echo "${C_DIM}Review: $(echo "$review_output" | head -3)${C_RESET}" >&2

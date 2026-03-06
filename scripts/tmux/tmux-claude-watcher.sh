@@ -117,7 +117,6 @@ check_all_windows() {
                 # "… (" = spinner with timing = actively working (Claude)
                 #   e.g. "✽ Pontificating… (41s · ↓ 681 tokens)"
                 # COMPLETE or _DONE = task finished
-                # Codex exec exits when done, so check if process is still running
                 # Otherwise = idle/waiting for input
                 local pane_bottom
                 pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 20)
@@ -125,11 +124,18 @@ check_all_windows() {
                     agent_working=true
                 elif echo "$pane_bottom" | grep -q 'COMPLETE\|_DONE'; then
                     agent_complete=true
-                elif echo "$pane_bottom" | grep -qE 'codex (exec|--full-auto)' && ! ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)codex( |$)'; then
-                    # Codex exec was the last command but process has exited → completed
-                    agent_complete=true
                 fi
                 break
+            else
+                # No agent process running — check if codex exec completed
+                # (codex exec exits when done, unlike claude which stays interactive)
+                local pane_bottom
+                pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 20)
+                if echo "$pane_bottom" | grep -qE 'codex (exec|--full-auto)'; then
+                    agent_found=true
+                    agent_complete=true
+                    break
+                fi
             fi
         done
 

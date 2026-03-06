@@ -1291,7 +1291,7 @@ $prompt_suffix"
         # --- Codex harness ---
         # Codex exec: --full-auto = workspace-write sandbox + on-failure approval
         # cd already sets the working dir; no --add-dir on exec
-        if test (count $mounts) -gt 0
+        if test (count $mounts) -gt 0; and not $use_devcon
             echo "Warning: Codex exec does not support --mount; mounts will be ignored" >&2
         end
         set -l codex_cmd "codex exec --full-auto"
@@ -1343,11 +1343,11 @@ $prompt_suffix"
             end
             $bridge_verbose; and set bridge_args "$bridge_args --verbose"
             $bridge_dry_run; and set bridge_args "$bridge_args --dry-run"
-            set bridge_args "$bridge_args --prompt-file $prompt_cmd_file"
+            set bridge_args "$bridge_args --prompt-file '$prompt_cmd_file'"
             set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd"
         else
             # --- Codex only: single-shot execution ---
-            set -a _ls "$codex_cmd \(cat $prompt_cmd_file\)"
+            set -a _ls "$codex_cmd \(cat '$prompt_cmd_file'\)"
         end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
@@ -1413,7 +1413,7 @@ $prompt_suffix"
             "echo '  Or:  codex exec --full-auto \"prompt\"  (headless)'" \
             "echo ''" \
             "echo '  Pre-populated command (press Enter to run):'" \
-            "echo '  codex exec --full-auto \"(cat $prompt_cmd_file)\"'"
+            "echo '  codex exec --full-auto \"\(cat $prompt_cmd_file\)\"'"
     end
     set -a _ss 'exec fish'
     printf '%s\n' $_ss >$standby_script
