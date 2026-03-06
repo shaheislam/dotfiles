@@ -1,0 +1,47 @@
+id: go-context-background-in-handler
+language: go
+rule:
+  pattern: context.Background()
+  inside:
+    any:
+      - kind: function_declaration
+        has:
+          pattern: func $NAME($$$PARAMS) $$$RETURNS
+          constraints:
+            PARAMS:
+              regex: 'http\.ResponseWriter|http\.Request'
+      - kind: method_declaration
+message: |
+  Using context.Background() inside an HTTP handler. Use the request's
+  context (r.Context()) instead, which carries deadline, cancellation,
+  and trace information.
+note: |
+  Agent fix: Replace context.Background() with r.Context() where
+  r is the *http.Request parameter. This propagates timeouts and
+  cancellation from the HTTP client.
+severity: warning
+
+---
+
+id: go-defer-in-loop
+language: go
+rule:
+  pattern: |
+    for $$$INIT {
+        $$$BEFORE
+        defer $EXPR
+        $$$AFTER
+    }
+message: |
+  'defer' inside a loop defers until function exit, not loop iteration.
+  This can cause resource leaks (file handles, connections).
+note: |
+  Agent fix: Move the deferred operation into a helper function:
+    for ... {
+        func() {
+            resource := acquire()
+            defer resource.Close()
+            // use resource
+        }()
+    }
+severity: error

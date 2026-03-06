@@ -1,0 +1,209 @@
+rules:
+  # ──────────────────────────────────────────────
+  # Shell Script Rules (Fish + Bash)
+  # These rules are designed with AI auto-fix metadata.
+  # Each rule includes 'fix' or 'metadata.agent_guidance' for LLM consumption.
+  # ──────────────────────────────────────────────
+
+  - id: bash-unquoted-variable
+    patterns:
+      - pattern: $CMD $VAR
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: '^\$[A-Za-z_]'
+    languages: [bash]
+    severity: WARNING
+    message: >
+      Unquoted variable '$VAR' may cause word splitting or globbing.
+      Wrap in double quotes: "$VAR"
+    metadata:
+      category: shell-safety
+      agent_guidance: |
+        Wrap the variable in double quotes. If it's used in a context where
+        word splitting is intentional (like loop iteration), add a comment
+        explaining why quotes are omitted.
+      confidence: high
+      cwe: ["CWE-78"]
+
+  - id: bash-eval-usage
+    pattern: eval $...ARGS
+    languages: [bash]
+    severity: ERROR
+    message: >
+      Use of 'eval' is dangerous and can lead to code injection.
+      Consider alternatives like arrays, indirect expansion, or command substitution.
+    metadata:
+      category: security
+      agent_guidance: |
+        Replace eval with safer alternatives:
+        - For variable indirection: use ${!var} (bash) or nameref
+        - For command construction: use arrays and "${arr[@]}"
+        - For dynamic function calls: use $func_name directly
+      confidence: high
+      cwe: ["CWE-78", "CWE-94"]
+
+  - id: bash-missing-set-euo
+    patterns:
+      - pattern: |
+          #!/usr/bin/env bash
+          ...
+      - pattern-not: |
+          #!/usr/bin/env bash
+          $...BEFORE
+          set -euo pipefail
+          $...AFTER
+    languages: [bash]
+    severity: WARNING
+    message: >
+      Bash script missing 'set -euo pipefail'. Add it after the shebang
+      for safer error handling.
+    metadata:
+      category: shell-safety
+      agent_guidance: |
+        Add 'set -euo pipefail' on the line after the shebang.
+        - set -e: exit on error
+        - set -u: error on undefined variables
+        - set -o pipefail: pipe returns rightmost non-zero exit code
+
+  # ──────────────────────────────────────────────
+  # Python Rules
+  # ──────────────────────────────────────────────
+
+  - id: python-bare-except
+    pattern: |
+      try:
+          ...
+      except:
+          ...
+    languages: [python]
+    severity: WARNING
+    message: >
+      Bare 'except' catches all exceptions including SystemExit and KeyboardInterrupt.
+      Use 'except Exception' or a more specific exception type.
+    fix: |
+      try:
+          ...
+      except Exception:
+          ...
+    metadata:
+      category: error-handling
+      agent_guidance: |
+        Replace bare 'except:' with 'except Exception:' at minimum.
+        Better: identify the specific exception types that can be raised
+        and catch those explicitly.
+      confidence: high
+
+  - id: python-subprocess-shell-true
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+    languages: [python]
+    severity: ERROR
+    message: >
+      subprocess with shell=True is vulnerable to shell injection.
+      Use a list of arguments instead.
+    metadata:
+      category: security
+      agent_guidance: |
+        Replace shell=True with a list of arguments:
+        - Before: subprocess.run(f"cmd {arg}", shell=True)
+        - After:  subprocess.run(["cmd", arg])
+        If shell features are needed (pipes, redirects), use
+        subprocess.PIPE and chain commands explicitly.
+      confidence: high
+      cwe: ["CWE-78"]
+
+  - id: python-hardcoded-secret
+    patterns:
+      - pattern: $VAR = "..."
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: '(?i)(password|secret|api_key|token|credentials)'
+    languages: [python]
+    severity: ERROR
+    message: >
+      Potential hardcoded secret in variable '$VAR'.
+      Use environment variables or a secrets manager instead.
+    metadata:
+      category: security
+      agent_guidance: |
+        Replace hardcoded secret with:
+        - os.environ.get("ENV_VAR_NAME") for env vars
+        - A secrets manager call for production
+        - A .env file loaded via python-dotenv for development
+      confidence: medium
+      cwe: ["CWE-798"]
+
+  # ──────────────────────────────────────────────
+  # TypeScript/JavaScript Rules
+  # ──────────────────────────────────────────────
+
+  - id: ts-any-type
+    pattern: "let $VAR: any = ..."
+    languages: [typescript]
+    severity: WARNING
+    message: >
+      Explicit 'any' type defeats TypeScript's type safety.
+      Use a specific type or 'unknown' if the type is truly dynamic.
+    metadata:
+      category: type-safety
+      agent_guidance: |
+        Replace 'any' with a proper type:
+        - If the shape is known, define an interface
+        - If receiving external data, use 'unknown' and narrow with type guards
+        - If temporary, add a TODO comment with the planned type
+      confidence: medium
+
+  - id: ts-console-log-in-production
+    pattern: console.log(...)
+    languages: [typescript, javascript]
+    severity: INFO
+    message: >
+      console.log found. Remove or replace with a proper logger for production code.
+    metadata:
+      category: code-quality
+      agent_guidance: |
+        Determine if this is debug code or intentional logging:
+        - Debug: remove it
+        - Intentional: replace with a structured logger (e.g., winston, pino)
+        - Test file: leave it (check file path)
+      confidence: low
+
+  # ──────────────────────────────────────────────
+  # Go Rules
+  # ──────────────────────────────────────────────
+
+  - id: go-unchecked-error
+    pattern: $RET, _ = $FUNC(...)
+    languages: [go]
+    severity: WARNING
+    message: >
+      Error return value of '$FUNC' is discarded. Always check errors in Go.
+    metadata:
+      category: error-handling
+      agent_guidance: |
+        Replace the blank identifier with an error check:
+        result, err := func(...)
+        if err != nil {
+            return fmt.Errorf("context: %w", err)
+        }
+        If truly ignorable, add a comment explaining why.
+      confidence: high
+
+  # ──────────────────────────────────────────────
+  # Generic Security Rules (all languages)
+  # ──────────────────────────────────────────────
+
+  - id: generic-todo-fixme-hack
+    pattern-regex: '(?i)(TODO|FIXME|HACK|XXX|WORKAROUND)[\s:](.*)'
+    languages: [generic]
+    severity: INFO
+    message: >
+      Found code annotation: $1. Consider creating a ticket or resolving the issue.
+    metadata:
+      category: code-quality
+      agent_guidance: |
+        For each TODO/FIXME/HACK:
+        1. Assess if it's still relevant
+        2. If actionable, create a beads issue: bd create --title="..." --type=task
+        3. If resolved, remove the comment
+        4. If deferred, add a ticket reference
+      confidence: low
