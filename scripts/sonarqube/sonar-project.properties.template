@@ -1,0 +1,38 @@
+# SonarQube Project Configuration Template
+# Copy to your project root as: sonar-project.properties
+#
+# The sonarqube/sonar-scan commands auto-detect most settings,
+# but this file gives you fine-grained control.
+
+# Required: unique project identifier
+sonar.projectKey=my-project
+
+# Optional: display name and version
+sonar.projectName=My Project
+sonar.projectVersion=1.0
+
+# Source directories (relative to project root)
+sonar.sources=src
+# sonar.tests=tests
+
+# Language-specific settings (uncomment as needed)
+# sonar.language=ts
+# sonar.typescript.lcov.reportPaths=coverage/lcov.info
+# sonar.python.coverage.reportPaths=coverage.xml
+# sonar.go.coverage.reportPaths=coverage.out
+
+# Exclusions (comma-separated glob patterns)
+sonar.exclusions=\
+  node_modules/**,\
+  dist/**,\
+  build/**,\
+  .next/**,\
+  vendor/**,\
+  target/**,\
+  coverage/**,\
+  **/*.test.*,\
+  **/*.spec.*,\
+  **/__tests__/**
+
+# Encoding
+sonar.sourceEncoding=UTF-8
