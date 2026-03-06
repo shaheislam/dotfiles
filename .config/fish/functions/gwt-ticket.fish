@@ -1154,9 +1154,9 @@ EVALUATE whether this task benefits from subtask decomposition:
 IF decomposing, use this workflow:
 1. Find the parent bead: bd list --status=open
 2. Create subtasks linked to parent:
-   bd create --title=\"<subtask>\" --description=\"<what/why>\" --type=task --priority=2 --parent <parent-id>
-   Use 'bd dep add <child> <depends-on>' if ordering matters.
-3. Work each subtask: bd update <id> --claim → code → bd close <id>
+   bd create --title='SUBTASK_TITLE' --description='WHY_AND_WHAT' --type=task --priority=2 --parent PARENT_BEAD_ID
+   Use 'bd dep add CHILD_ID BLOCKER_ID' if ordering matters.
+3. Work each subtask: bd update BEAD_ID --claim → code → bd close BEAD_ID
 4. Between subtasks: bd ready (shows what is unblocked next)
 
 Subtask state survives context compaction via bd prime."
