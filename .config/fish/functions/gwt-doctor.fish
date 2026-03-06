@@ -163,7 +163,7 @@ function gwt-doctor --description "Agent orchestration health check"
             set -l state_file "$wt/.claude/ticket-execute.local.md"
             if test -f "$state_file"
                 set -l active_val (grep "^active:" $state_file | head -1 | string replace -r '^active: *' '' | string trim | tr -d '"')
-                if test "$active_val" = "true"
+                if test "$active_val" = true
                     set -a active_wts $wt
                     set -l witness_pid_file "$wt/.claude/witness.pid"
                     if test -f "$witness_pid_file"
@@ -257,16 +257,16 @@ function gwt-doctor --description "Agent orchestration health check"
             set -l state_file "$wt/.claude/ticket-execute.local.md"
             if test -f "$state_file"
                 set -l active_val (grep "^active:" $state_file | head -1 | string replace -r '^active: *' '' | string trim | tr -d '"')
-                if test "$active_val" = "true"
-                    # Check if claude process is actually running in tmux for this worktree
+                if test "$active_val" = true
+                    # Check if agent process is actually running in tmux for this worktree
                     set -l wt_name (basename $wt)
                     set -l has_claude false
                     if command -q tmux; and tmux list-sessions >/dev/null 2>&1
-                        # Check if there's a tmux window with this worktree name that has a running claude process
+                        # Check if there's a tmux window with this worktree name that has a running agent process
                         set -l pane_pids (tmux list-panes -a -F "#{pane_pid} #{window_name}" 2>/dev/null | grep -i "$wt_name" | awk '{print $1}')
                         for pid in $pane_pids
-                            # Check if claude is among child processes
-                            if pgrep -P $pid -f "claude" >/dev/null 2>&1
+                            # Check if agent (claude or codex) is among child processes
+                            if pgrep -P $pid -f "claude|codex" >/dev/null 2>&1
                                 set has_claude true
                                 break
                             end

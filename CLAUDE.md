@@ -57,8 +57,8 @@
 | `gwt-parallel` | - | Launch multiple worktrees in tmux windows |
 | `gwt-status` | `gwts` | Show worktree + devcontainer status table |
 | `gwt-cleanup` | `gwtclean` | Remove stale devcontainer instances |
-| `gwt-ticket` | - | Autonomous ticket execution (worktree + ralph-loop) |
-| `gwt-doctor` | `gwtdoc` | Agent orchestration health check |
+| `gwt-ticket` | `gwtt` | Autonomous ticket execution (worktree + ralph-loop). Supports `--codex` for Codex CLI, `--bridge` for iterative Codex→Claude review |
+| `gwt-doctor` | `gwtdoc` | Agent orchestration health check (detects Claude + Codex) |
 
 **Subscription Profiles**: `claude-sub` (`csub`). Profile dirs: `~/.claude-<name>/`. Usage: `gwtt --sub personal`, `gwtc --sub work`.
 
@@ -131,6 +131,7 @@ Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit` hook. Fish: `
 ### Claude Pipeline & Cross-Provider Bridge
 - **Pipeline**: `claude-pipeline` / `cpipe`. Presets: `review`, `cheap`, `local`, `council`, `redteam`. Docs: `docs/claude-pipeline.md`.
 - **Cross-Provider Bridge**: `CROSS_PROVIDER_BRIDGE=1 claude`. Providers: Codex, Gemini, Ollama, DeepSeek. Details in `.claude/rules/cross-provider.md`.
+- **Codex Bridge Review**: `gwtt --codex --bridge TICKET-123` runs iterative Codex→Claude review loop. Config: `.codex/config.toml`. Script: `scripts/codex-bridge-review.sh`.
 - **DQS**: Council (`cpipe --preset council`), Red Team, First Principles. Docs: `docs/decision-quality-system.md`.
 
 ### Self-Hosted LLM

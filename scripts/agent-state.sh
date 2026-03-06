@@ -147,8 +147,8 @@ find_worktree_from_tmux() {
     return 1
 }
 
-# Check if claude process is alive in a tmux window
-find_claude_pid() {
+# Check if agent process (claude or codex) is alive in a tmux window
+find_agent_pid() {
     local target="$1"
     local session="${target%%:*}"
     local win_idx="${target#*:}"
@@ -158,13 +158,13 @@ find_claude_pid() {
         tty=$(tmux display-message -t "${session}:${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null) || continue
         [[ -z "$tty" ]] && continue
 
-        # Capture ps output once, use bash to find claude (avoids grep|head|awk pipeline)
+        # Capture ps output once, find agent process (avoids grep|head|awk pipeline)
         local ps_output
         ps_output=$(ps -o pid=,args= -t "$tty" 2>/dev/null) || continue
         local pid args
         while read -r pid args; do
             [[ -z "$pid" ]] && continue
-            if [[ "$args" =~ /claude($|[[:space:]]) ]]; then
+            if [[ "$args" =~ /(claude|codex)($|[[:space:]]) ]]; then
                 echo "$pid"
                 return 0
             fi
@@ -267,10 +267,10 @@ get_agent_state() {
 
     # Check if claude process is alive
     local claude_pid
-    claude_pid=$(find_claude_pid "$tmux_target") || claude_pid=""
+    claude_pid=$(find_agent_pid "$tmux_target") || claude_pid=""
 
     if [[ -z "$claude_pid" ]]; then
-        echo '{"state":"dead","worktree":"'"$worktree_path"'","issue_key":"'"$issue_key"'","title":"'"$(echo "$title" | sed 's/"/\\"/g')"'","reason":"claude process not found","tmux":"'"$tmux_target"'","iteration":"'"${iteration:-0}"'","max_iterations":"'"${max_iterations:-0}"'"}'
+        echo '{"state":"dead","worktree":"'"$worktree_path"'","issue_key":"'"$issue_key"'","title":"'"$(echo "$title" | sed 's/"/\\"/g')"'","reason":"agent process not found","tmux":"'"$tmux_target"'","iteration":"'"${iteration:-0}"'","max_iterations":"'"${max_iterations:-0}"'"}'
         return 0
     fi
 

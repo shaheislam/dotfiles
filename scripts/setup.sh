@@ -631,6 +631,19 @@ phase_4_cloud_tools() {
     _install_openclaw
     _install_sonar
 
+    # Codex post-install: generate Fish completions and set up MCP servers
+    if command_exists codex; then
+        # Fish completions (codex generates its own)
+        local fish_comp_dir="$HOME/.config/fish/completions"
+        mkdir -p "$fish_comp_dir"
+        codex completion fish >"$fish_comp_dir/codex.fish" 2>/dev/null || true
+
+        # MCP servers (mirror key Claude Code MCP servers)
+        codex mcp add context7 -- bunx @upstash/context7-mcp >/dev/null 2>&1 || true
+        codex mcp add playwright -- bunx @playwright/mcp@latest >/dev/null 2>&1 || true
+        log_verbose "Codex CLI: completions and MCP servers configured"
+    fi
+
     # Post-install: beads hooks (depends on beads being installed)
     if command_exists bd; then
         print_step "Configuring beads Claude Code hooks..."
