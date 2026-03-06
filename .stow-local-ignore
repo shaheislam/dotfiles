@@ -36,6 +36,10 @@ AGENTS\.md
 # Tmux Plugins (managed by TPM, not stow)
 \.tmux/plugins
 
+# Build/CI files (not config, not symlinked)
+Makefile
+^/\.beads$
+
 # Test and Debug Files
 ^/test.*
 ^/debug.*
