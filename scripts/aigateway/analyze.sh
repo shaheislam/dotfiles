@@ -28,6 +28,8 @@
 #   Missing/broken tools return empty findings, never block the pipeline.
 #   Rationale: static analysis is advisory for AI agents, not gating.
 #   A broken linter must not prevent an agent from editing files.
+#   Acceptance: all failure modes (missing tool, malformed output, timeout,
+#   partial tool failure) produce valid JSON with empty or partial findings.
 
 set -euo pipefail
 
