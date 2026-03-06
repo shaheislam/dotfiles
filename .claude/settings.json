@@ -194,15 +194,6 @@
           }
         ],
         "matcher": "compact"
-      },
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
       }
     ],
     "Stop": [
@@ -256,8 +247,42 @@
         ],
         "matcher": ""
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "command": "bash ~/.claude/hooks/worktree-init.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "command": "bash ~/.claude/hooks/worktree-cleanup.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "command": "bash ~/.claude/hooks/config-change.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
     ]
   },
+  "includeGitInstructions": false,
   "permissions": {
     "allow": [
       "Bash(git status *)",

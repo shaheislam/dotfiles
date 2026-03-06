@@ -13,6 +13,7 @@ COST_RAW=$(echo "$INPUT" | jq -r '.cost.total_cost_usd // 0')
 PCT=$(echo "$INPUT" | jq -r '.context_window.used_percentage // 0')
 DURATION_MS=$(echo "$INPUT" | jq -r '.cost.total_duration_ms // 0')
 AGENT=$(echo "$INPUT" | jq -r '.agent.name // empty')
+WORKTREE=$(echo "$INPUT" | jq -r '.worktree // empty')
 LINES_ADDED=$(echo "$INPUT" | jq -r '.cost.total_lines_added // 0')
 LINES_REMOVED=$(echo "$INPUT" | jq -r '.cost.total_lines_removed // 0')
 
@@ -115,6 +116,11 @@ STATUS+="${PURPLE}${FOLDER}${RESET}"
 
 if [ -n "$BRANCH" ]; then
     STATUS+="${DIM}:${RESET}${GREEN}${BRANCH}${RESET}"
+fi
+
+if [ -n "$WORKTREE" ]; then
+    WORKTREE_NAME=$(basename "$WORKTREE")
+    STATUS+="${DIM}/${RESET}${YELLOW}${WORKTREE_NAME}${RESET}"
 fi
 
 if [ -n "$AGENT" ]; then
