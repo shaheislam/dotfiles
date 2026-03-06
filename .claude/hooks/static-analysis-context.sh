@@ -54,7 +54,7 @@ if [[ ! -x "$GATEWAY_SCRIPT" ]]; then
 fi
 
 # Compute a stable key for this file (used for marker/lock/cache)
-FILE_KEY=$(echo "$FILE_PATH" | sed 's|/|_|g')
+FILE_KEY="${FILE_PATH//\//_}"
 
 # ─── Debounce: skip if same file analyzed recently ────────
 MARKER_FILE="$STATE_DIR/${FILE_KEY}.marker"
@@ -121,6 +121,8 @@ case "$FILE_PATH" in
 *) exit 0 ;;
 esac
 
+# TOOL_ARG intentionally word-splits into --tool <name>
+# shellcheck disable=SC2086
 RAW_OUTPUT=$("$GATEWAY_SCRIPT" $TOOL_ARG --severity "$MIN_SEVERITY" --agent-context "$FILE_PATH" 2>/dev/null || true)
 
 # ─── Suppression: filter out findings for suppressed lines ──
@@ -141,7 +143,7 @@ fi
 # ─── Redact absolute paths to project-relative ────────────
 OUTPUT="$RAW_OUTPUT"
 if [[ -n "$PROJECT_DIR" && "$PROJECT_DIR" != "." ]]; then
-    OUTPUT=$(echo "$OUTPUT" | sed "s|$PROJECT_DIR/||g")
+    OUTPUT="${OUTPUT//"$PROJECT_DIR/"/}"
 fi
 
 # ─── Snippet redaction (opt-in) ──────────────────────────
