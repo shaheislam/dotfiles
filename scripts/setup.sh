@@ -79,8 +79,8 @@ EXAMPLES:
     # Automated installation (CI/scripts)
     $0 --profile minimal --no-confirm
 
-    # Enable optional features (Nix, Pulse, Pi-Hole, Self-Hosted LLM)
-    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true ENABLE_SELFHOST_LLM=true $0 --profile comprehensive
+    # Enable optional features (Nix, Pulse, Pi-Hole, Self-Hosted LLM, SonarQube)
+    ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true ENABLE_SELFHOST_LLM=true ENABLE_SONARQUBE=true $0 --profile comprehensive
 
     # Clone personal repositories (set environment variables)
     OBSIDIAN_REPO=git@github.com:user/obsidian.git \\
@@ -92,6 +92,7 @@ ENVIRONMENT VARIABLES:
     ENABLE_PULSE=true       Enable Pulse coding tracker installation (Phase 11)
     ENABLE_PIHOLE=true      Enable Pi-hole DNS ad blocker via Colima + Docker (Phase 11)
     ENABLE_SELFHOST_LLM=true  Enable self-hosted LLM stack (Ollama + Open WebUI) (Phase 11)
+    ENABLE_SONARQUBE=true   Enable SonarQube code quality server via Colima + Docker (Phase 11)
     OBSIDIAN_REPO=<url>     Clone Obsidian vault from repository (Phase 10)
     NVIM_REPO=<url>         Clone personal Neovim config (Phase 10)
 
@@ -2027,6 +2028,57 @@ EOF
             fi
         else
             print_warning "Self-hosted LLM setup script not found"
+        fi
+    fi
+
+    if [[ "${ENABLE_SONARQUBE:-false}" == "true" ]]; then
+        print_header "Phase 11: Optional Features - SonarQube Code Quality"
+
+        if [[ "$DETECTED_OS" != "macos" ]]; then
+            print_warning "SonarQube Docker setup is macOS only (requires Colima). Skipping."
+        else
+            # Verify prerequisites
+            if ! command_exists colima || ! command_exists docker; then
+                print_warning "SonarQube requires colima and docker CLI. Install via: brew bundle --file=$DOTFILES_ROOT/homebrew/Brewfile"
+            else
+                print_step "Setting up SonarQube Community Edition..."
+
+                # Verify sonar-scanner is installed
+                if ! command_exists sonar-scanner; then
+                    print_step "Installing sonar-scanner via Homebrew..."
+                    brew install sonar-scanner 2>/dev/null ||
+                        print_warning "sonar-scanner installation failed - install manually: brew install sonar-scanner"
+                fi
+
+                # Start Colima if not running
+                if ! colima status &>/dev/null; then
+                    print_step "Starting Colima..."
+                    colima start --cpu 2 --memory 4 --disk 20 --runtime docker 2>/dev/null &&
+                        print_success "Colima started" ||
+                        print_warning "Colima start failed - start manually with: colima start"
+                fi
+
+                # Start SonarQube container
+                if colima status &>/dev/null; then
+                    local sonarqube_compose="$DOTFILES_ROOT/scripts/sonarqube/docker-compose.yml"
+                    if [[ -f "$sonarqube_compose" ]]; then
+                        # Set vm.max_map_count for Elasticsearch
+                        colima ssh -- sudo sysctl -w vm.max_map_count=262144 >/dev/null 2>&1 || true
+
+                        docker compose -f "$sonarqube_compose" up -d 2>/dev/null &&
+                            print_success "SonarQube container started" ||
+                            print_warning "SonarQube container start failed - run manually: ./scripts/sonarqube/setup-sonarqube.sh start"
+
+                        print_success "SonarQube code quality server configured"
+                        echo "  Web UI:    http://localhost:9000"
+                        echo "  Default:   admin / admin"
+                        echo "  Scan:      sonarqube scan ~/project"
+                        echo "  AI scan:   sonar-scan --ai"
+                    else
+                        print_warning "SonarQube docker-compose.yml not found at $sonarqube_compose"
+                    fi
+                fi
+            fi
         fi
     fi
 
