@@ -23,6 +23,10 @@ on:
       - '.zshrc'
       - '.bashrc'
 
+concurrency:
+  group: sync-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   create-release:
     name: Create Release Bundle
