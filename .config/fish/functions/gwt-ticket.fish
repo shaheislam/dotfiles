@@ -1467,12 +1467,15 @@ $prompt_suffix"
 
     # Fixed-position aliases: Claude ALWAYS top-left, Codex ALWAYS bottom-left
     # The --codex flag only controls which agent receives the task prompt
+    # NOTE: declare before if-block so variables persist in function scope
+    set -l claude_agent_script
+    set -l codex_agent_script
     if $use_codex
-        set -l claude_agent_script $secondary_script # Claude interactive (top-left)
-        set -l codex_agent_script $launch_script # Codex with prompt (bottom-left)
+        set claude_agent_script $secondary_script # Claude interactive (top-left)
+        set codex_agent_script $launch_script # Codex with prompt (bottom-left)
     else
-        set -l claude_agent_script $launch_script # Claude with prompt (top-left)
-        set -l codex_agent_script $secondary_script # Codex interactive (bottom-left)
+        set claude_agent_script $launch_script # Claude with prompt (top-left)
+        set codex_agent_script $secondary_script # Codex interactive (bottom-left)
     end
 
     # Write gwt-ticket log early so it can be opened in nvim alongside AI files
