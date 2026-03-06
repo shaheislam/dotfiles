@@ -164,3 +164,6 @@ fi
 
 # Source powerlevel10k config if using it
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# Added by sonarqube-cli installer
+export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"

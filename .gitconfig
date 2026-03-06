@@ -50,4 +50,4 @@
 [alias]
 	mergetool = "!nvim -c DiffviewOpen"
 [filter "json-normalize"]
-	clean = /Users/shaheislam/dotfiles/scripts/git-clean-json.sh
+	clean = /Users/shahe/dotfiles/scripts/git-clean-json.sh
