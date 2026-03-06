@@ -623,6 +623,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model o3"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-profile auto"
         echo ""
+        echo "  # Codex with Claude bridge review (Codex executes, Claude reviews)"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge --bridge-mode redteam"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge 5 --bridge-profiles work"
+        echo ""
         echo "Prompt Template Variables:"
         echo "  {{ISSUE_KEY}}          Issue key (ENG-123)"
         echo "  {{TITLE}}              Issue title"
@@ -1280,11 +1285,9 @@ $prompt_suffix"
     set -a _ls "cd $worktree_path"
 
     if $use_codex
-        # --- Codex harness: run codex exec (headless, one-shot) ---
-        # Set CODEX_HOME for profile isolation if needed
-        # (No slash commands or send-keys — prompt passed directly to codex exec)
+        # --- Codex harness ---
         # Codex exec: --full-auto = workspace-write sandbox + on-failure approval
-        # cd already sets the working dir; no --add-dir on exec (use -c for extra perms if needed)
+        # cd already sets the working dir; no --add-dir on exec
         set -l codex_cmd "codex exec --full-auto"
         if test -n "$codex_model"
             set codex_cmd "$codex_cmd --model $codex_model"
@@ -1292,11 +1295,54 @@ $prompt_suffix"
         if test -n "$codex_profile"
             set codex_cmd "$codex_cmd --profile $codex_profile"
         end
-        # Write prompt to file for logging/reference (not used for delivery)
+        # Write prompt to file for logging/reference
         printf '%s' "$oneline_prompt" >$prompt_cmd_file
         # Escape single quotes in prompt for fish heredoc
         set -l escaped_prompt (string replace -a "'" "\\'" -- "$oneline_prompt")
-        set -a _ls "$codex_cmd '$escaped_prompt'"
+
+        if $bridge_mode
+            # --- Codex + Bridge: iterative Codex→Claude review loop ---
+            # Resolve bridge review script path
+            set -l bridge_script ""
+            for p in ~/dotfiles/scripts/codex-bridge-review.sh ~/dotfiles-codexcli/scripts/codex-bridge-review.sh
+                if test -x "$p"
+                    set bridge_script $p
+                    break
+                end
+            end
+            if test -z "$bridge_script"
+                echo "Error: codex-bridge-review.sh not found" >&2
+                return 1
+            end
+            # Build bridge wrapper args
+            set -l bridge_args --max-iterations
+            if test -n "$bridge_iterations"
+                set bridge_args "$bridge_args $bridge_iterations"
+            else
+                set bridge_args "$bridge_args 3"
+            end
+            if test -n "$bridge_review_mode"
+                set bridge_args "$bridge_args --mode $bridge_review_mode"
+            end
+            if test -n "$bridge_model"
+                # bridge_model overrides the Claude reviewer model
+                set bridge_args "$bridge_args --claude-model $bridge_model"
+            end
+            if test -n "$bridge_profiles"
+                # Use first Claude profile for review
+                set -l first_profile (string split ',' -- $bridge_profiles)[1]
+                set bridge_args "$bridge_args --claude-profile $first_profile"
+            end
+            if test -n "$bridge_timeout"
+                set bridge_args "$bridge_args --timeout $bridge_timeout"
+            end
+            $bridge_verbose; and set bridge_args "$bridge_args --verbose"
+            $bridge_dry_run; and set bridge_args "$bridge_args --dry-run"
+            set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd '$escaped_prompt'"
+        else
+            # --- Codex only: single-shot execution ---
+            set -a _ls "$codex_cmd '$escaped_prompt'"
+        end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
         # Write prompt command to file as single line (for send-keys delivery via rename script)
@@ -1338,10 +1384,19 @@ $prompt_suffix"
         set -l _agent_label "Claude Code"
         set -l _cmd_label "Command:   $slash_command"
         if $use_codex
-            set _agent_label "Codex CLI"
+            if $bridge_mode
+                set _agent_label "Codex CLI + Claude Bridge"
+            else
+                set _agent_label "Codex CLI"
+            end
             set _cmd_label "Mode:      codex exec --full-auto"
             test -n "$codex_model"; and set _cmd_label "$_cmd_label --model $codex_model"
             test -n "$codex_profile"; and set _cmd_label "$_cmd_label --profile $codex_profile"
+            if $bridge_mode
+                set _cmd_label "$_cmd_label (bridge: $bridge_review_mode"
+                test -n "$bridge_iterations"; and set _cmd_label "$_cmd_label, iter=$bridge_iterations"
+                set _cmd_label "$_cmd_label)"
+            end
         end
         set -a _log "Agent:     $_agent_label" \
             "Title:     $title" \
