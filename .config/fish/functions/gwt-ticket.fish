@@ -1428,47 +1428,52 @@ $prompt_suffix"
     printf '%s\n' $_ls >$launch_script
     chmod +x $launch_script
 
-    # Write standby agent script (the "other" agent that sits ready in the bottom-left pane)
-    # Default: Claude primary (top-left), Codex standby (bottom-left)
-    # With --codex: Codex primary (top-left), Claude standby (bottom-left)
-    set -l standby_script "$instance_env/standby-agent.fish"
-    set -l _ss # standby script lines
+    # Write secondary agent script (auto-launches the non-primary agent in interactive mode)
+    # Both agents always launch — the --codex flag only controls which receives the task prompt
+    set -l secondary_script "$instance_env/secondary-agent.fish"
+    set -l _ss # secondary script lines
     set -a _ss '#!/usr/bin/env fish' ''
     set -a _ss "cd $worktree_path" ''
     if $use_codex
-        # Primary is Codex, standby is Claude
-        set -a _ss '# Claude Code standby - ready for manual use' \
-            "echo ''" \
-            "set_color cyan; echo '  Claude Code (standby)'; set_color normal"
+        # Codex is primary → secondary is Claude (interactive, no prompt)
+        set -a _ss '# Claude Code - interactive mode (secondary agent)'
         if test -n "$sub_profile"
-            set -a _ss "echo '  Profile: $sub_profile'"
             set -a _ss "set -gx CLAUDE_CONFIG_DIR $HOME/.claude-$sub_profile"
         end
-        set -a _ss "echo '  Run: claude --dangerously-skip-permissions'" \
-            "echo '  Or:  claude  (interactive with approvals)'" \
-            "echo ''" \
-            "echo '  Pre-populated command (press Enter to run):'" \
-            "echo '  claude --dangerously-skip-permissions'"
+        set -a _ss 'claude --dangerously-skip-permissions'
     else
-        # Primary is Claude, standby is Codex
-        set -a _ss '# Codex CLI standby - ready for manual use' \
-            "echo ''" \
-            "set_color green; echo '  Codex CLI (standby)'; set_color normal"
+        # Claude is primary → secondary is Codex (interactive, no prompt)
+        set -a _ss '# Codex CLI - interactive mode (secondary agent)'
+        set -l codex_cmd_interactive "codex --full-auto"
         if test -n "$codex_model"
-            set -a _ss "echo '  Model: $codex_model'"
+            set codex_cmd_interactive "$codex_cmd_interactive --model $codex_model"
         end
         if test -n "$codex_profile"
-            set -a _ss "echo '  Profile: $codex_profile'"
+            set codex_cmd_interactive "$codex_cmd_interactive --profile $codex_profile"
         end
-        set -a _ss "echo '  Run: codex --full-auto \"prompt\"'" \
-            "echo '  Or:  codex exec --full-auto \"prompt\"  (headless)'" \
-            "echo ''" \
-            "echo '  Pre-populated command (press Enter to run):'" \
-            "echo '  codex exec --full-auto \"\(cat $prompt_cmd_file\)\"'"
+        set -a _ss "$codex_cmd_interactive"
     end
-    set -a _ss 'exec fish'
-    printf '%s\n' $_ss >$standby_script
-    chmod +x $standby_script
+    # Exit handler + fallback shell (secondary always runs on host)
+    set -l _secondary_agent Codex
+    $use_codex; and set _secondary_agent Claude
+    set -a _ss '' \
+        'set -l agent_exit $status' \
+        'if test $agent_exit -ne 0' \
+        "    echo '$_secondary_agent exited with code ' \$agent_exit" \
+        end \
+        'exec fish'
+    printf '%s\n' $_ss >$secondary_script
+    chmod +x $secondary_script
+
+    # Fixed-position aliases: Claude ALWAYS top-left, Codex ALWAYS bottom-left
+    # The --codex flag only controls which agent receives the task prompt
+    if $use_codex
+        set -l claude_agent_script $secondary_script # Claude interactive (top-left)
+        set -l codex_agent_script $launch_script # Codex with prompt (bottom-left)
+    else
+        set -l claude_agent_script $launch_script # Claude with prompt (top-left)
+        set -l codex_agent_script $secondary_script # Codex interactive (bottom-left)
+    end
 
     # Write gwt-ticket log early so it can be opened in nvim alongside AI files
     # Single write instead of ~20 individual echo commands (saves ~30ms)
@@ -1497,10 +1502,12 @@ $prompt_suffix"
                 set _cmd_label "$_cmd_label)"
             end
         end
-        set -l _standby_label "Codex CLI"
-        $use_codex; and set _standby_label "Claude Code"
+        set -l _primary_label Claude
+        $use_codex; and set _primary_label Codex
         set -a _log "Agent:     $_agent_label" \
-            "Standby:   $_standby_label (bottom-left pane)" \
+            "Claude:    top-left pane" \
+            "Codex:     bottom-left pane" \
+            "Primary:   $_primary_label" \
             "Title:     $title" \
             "Branch:    $branch_name" \
             "Worktree:  $worktree_path" \
@@ -1644,17 +1651,23 @@ $prompt_suffix"
             'exec fish' >$claude_pane_script
         chmod +x $claude_pane_script
 
-        # Hybrid layout: agent in devcontainer, nvim + terminal + standby on host
-        # Primary agent in devcon, standby agent on host (ready for manual use)
+        # Fixed dual-agent layout (positions never change):
         # ┌──────────────┬──────────────┐
-        # │ Primary Agent│ nvim CLAUDE.md│ ← top-right (host)
-        # │ (devcon)     │              │
+        # │ Claude Code  │ nvim CLAUDE.md│
+        # │ (top-left)   │              │
         # ├──────────────┤              │
-        # │ Standby Agent├──────────────┤
-        # │ (host,ready) │   terminal   │ ← bottom-right (host)
+        # │ Codex CLI    ├──────────────┤
+        # │ (bottom-left)│   terminal   │
         # └──────────────┴──────────────┘
         set -l setup_script "$worktree_path/.claude/setup-panes.fish"
-        # Session setup differs by agent
+        # Claude pane: devcontainer when primary, host when secondary (interactive)
+        set -l devcon_claude_pane
+        if $use_codex
+            set devcon_claude_pane $claude_agent_script
+        else
+            set devcon_claude_pane $claude_pane_script
+        end
+        # Prompt delivery: only when Claude is primary (send-keys to Claude pane)
         set -l rename_line ""
         if $use_codex
             set rename_line "tmux rename-window '$window_name' 2>/dev/null"
@@ -1663,7 +1676,7 @@ $prompt_suffix"
             if not test -x "$rename_script_devcon"
                 set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
             end
-            set rename_line "bash '$rename_script_devcon' \"\$primary_pane_id\" '$window_name' '$prompt_cmd_file' &"
+            set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &"
         end
         set -l nvim_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'"
         if test (count $nvim_ai_files) -gt 0
@@ -1671,7 +1684,7 @@ $prompt_suffix"
         end
         printf '%s\n' \
             '#!/usr/bin/env fish' \
-            "# Auto-generated by gwt-ticket - dual-agent layout (primary in devcon, standby+nvim+terminal on host)" \
+            "# Auto-generated by gwt-ticket - fixed dual-agent layout (Claude top-left, Codex bottom-left)" \
             "$devcon_up_cmd" \
             'or begin' \
             "    echo 'Devcontainer failed to start'" \
@@ -1679,10 +1692,10 @@ $prompt_suffix"
             '    exit 1' \
             end \
             'sleep 2' \
-            "# Step 1: Primary agent pane (top-left, in devcon)" \
-            "set -l primary_pane_id (tmux split-window -hb -p 35 -P -F '#{pane_id}' 'fish $claude_pane_script')" \
-            "# Step 2: Standby agent pane (bottom-left, on host)" \
-            "tmux split-window -t \"\$primary_pane_id\" -v -p 40 'fish $standby_script'" \
+            "# Step 1: Claude pane (top-left, always Claude)" \
+            "set -l claude_pane_id (tmux split-window -hb -p 35 -P -F '#{pane_id}' 'fish $devcon_claude_pane')" \
+            "# Step 2: Codex pane (bottom-left, always Codex)" \
+            "tmux split-window -t \"\$claude_pane_id\" -v -p 40 'fish $codex_agent_script'" \
             "# Step 3: Right-side layout" \
             'tmux select-pane -R' \
             'tmux split-window -v -p 30' \
@@ -1697,30 +1710,27 @@ $prompt_suffix"
         # Short send-keys payload immune to direnv interference
         tmux send-keys -t "$session_name:$window_name" "fish $setup_script" Enter
     else
-        # Run locally with 4-pane dual-agent layout:
+        # Fixed dual-agent layout (positions never change):
         # ┌──────────────┬──────────────┐
-        # │ Primary Agent│ nvim CLAUDE.md│ ← top-right (70%)
-        # │ (active)     │              │
+        # │ Claude Code  │ nvim CLAUDE.md│ ← top-right (70%)
+        # │ (top-left)   │              │
         # ├──────────────┤              │
-        # │ Standby Agent├──────────────┤
-        # │ (ready)      │   terminal   │ ← bottom-right (30%)
+        # │ Codex CLI    ├──────────────┤
+        # │ (bottom-left)│   terminal   │ ← bottom-right (30%)
         # └──────────────┴──────────────┘
-        # Default: Claude(top-left) + Codex(bottom-left)
-        # --codex: Codex(top-left) + Claude(bottom-left)
 
-        # Step 1: Split horizontally - primary agent on left (35%)
-        set -l primary_pane_id (tmux split-window -t "$session_name:$window_name" -hb -p 35 -P -F '#{pane_id}' "fish $launch_script")
-        if test -z "$primary_pane_id"
-            echo "Error: Failed to create primary agent pane in $session_name:$window_name" >&2
+        # Step 1: Claude pane (top-left, 35%) — always Claude
+        set -l claude_pane_id (tmux split-window -t "$session_name:$window_name" -hb -p 35 -P -F '#{pane_id}' "fish $claude_agent_script")
+        if test -z "$claude_pane_id"
+            echo "Error: Failed to create Claude pane in $session_name:$window_name" >&2
             return 1
         end
 
-        # Step 2: Split left pane vertically - standby agent below (40% of left column)
-        set -l standby_pane_id (tmux split-window -t "$primary_pane_id" -v -p 40 -P -F '#{pane_id}' "fish $standby_script")
-        or echo "Warning: Failed to create standby pane" >&2
+        # Step 2: Codex pane (bottom-left, 40% of left column) — always Codex
+        set -l codex_pane_id (tmux split-window -t "$claude_pane_id" -v -p 40 -P -F '#{pane_id}' "fish $codex_agent_script")
+        or echo "Warning: Failed to create Codex pane" >&2
 
         # Step 3: Switch to right pane and split for nvim + terminal
-        # After step 2, active pane is standby (bottom-left). Go right twice to reach the original pane.
         tmux select-pane -t "$session_name:$window_name" -R
         tmux split-window -t "$session_name:$window_name" -v -p 30
         or echo "Warning: Failed to create terminal pane" >&2
@@ -1734,17 +1744,17 @@ $prompt_suffix"
             tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
         end
 
-        # Step 5: Session setup (prompt delivery differs by agent)
+        # Step 5: Prompt delivery — to Claude pane (top-left) when Claude is primary
         if $use_codex
-            # Codex exec gets prompt directly via CLI — no send-keys needed
+            # Codex is primary — prompt embedded in codex_agent_script CLI
             tmux rename-window -t "$session_name:$window_name" "$window_name" 2>/dev/null
         else
-            # Claude: rename session + deliver prompt via send-keys
+            # Claude is primary — deliver prompt via send-keys to Claude pane (top-left)
             set -l rename_script "$HOME/dotfiles/scripts/gwt-rename-session.sh"
             if not test -x "$rename_script"
                 set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
             end
-            bash "$rename_script" "$primary_pane_id" "$window_name" "$prompt_cmd_file" &
+            bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
             disown
         end
     end
