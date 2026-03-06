@@ -100,7 +100,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l mayor_tracked false
     set -l swarm_epic_id "" # bd swarm: epic bead ID to create swarm from
     set -l bead_priority "" # bd create --priority (0-4, empty = default)
-    set -l use_dynamic_beads false
+    set -l use_dynamic_beads true
     set -l quiet_mode true
 
     for i in (seq (count $argv))
@@ -491,8 +491,6 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --priority requires a value (0-4)"
                     return 1
                 end
-            case --beads
-                set use_dynamic_beads true
             case --no-beads
                 set use_dynamic_beads false
             case '-*'
@@ -573,8 +571,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
         echo "  --priority N         Bead priority (0=critical, 1=high, 2=medium, 3=low, 4=backlog)"
-        echo "  --beads              Enable dynamic beads subtask tracking during execution"
-        echo "  --no-beads           Disable dynamic beads (default)"
+        echo "  --no-beads           Disable automatic beads subtask tracking"
         echo "  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)"
         echo "  --verbose, -v        Show full verbose output (overrides default quiet mode)"
         echo "  --help, -h           Show this help"
@@ -1096,18 +1093,21 @@ Do not ask questions - make reasonable decisions and iterate."
     if $use_dynamic_beads; and command -q bd
         set -l beads_suffix "
 
-BEADS SUBTASK WORKFLOW — Use beads to decompose and track your work:
-1. FIND PARENT: A parent bead was created for this ticket (external-ref: $issue_key).
-   Run 'bd list --status=open' to find its ID.
-2. DECOMPOSE: Break work into subtasks linked to the parent:
+BEADS SUBTASK TRACKING — A parent bead was created for this ticket (external-ref: $issue_key).
+
+EVALUATE whether this task benefits from subtask decomposition:
+- Simple single-file changes or small fixes: skip decomposition, just work directly.
+- Multi-step tasks with distinct phases: decompose into subtasks.
+
+IF decomposing, use this workflow:
+1. Find the parent bead: bd list --status=open
+2. Create subtasks linked to parent:
    bd create --title=\"<subtask>\" --description=\"<what/why>\" --type=task --priority=2 --parent <parent-id>
-   Use 'bd dep add <child> <depends-on>' if subtask ordering matters.
-3. WORK each subtask in dependency order:
-   bd update <id> --claim
-   (write code, tests, commits)
-   bd close <id>
-4. CHECK between subtasks: bd ready (shows what is unblocked next)
-This ensures progress survives context compaction — bd prime will re-inject your subtask state."
+   Use 'bd dep add <child> <depends-on>' if ordering matters.
+3. Work each subtask: bd update <id> --claim → code → bd close <id>
+4. Between subtasks: bd ready (shows what is unblocked next)
+
+Subtask state survives context compaction via bd prime."
 
         if test -n "$prompt_suffix"
             set prompt_suffix "$prompt_suffix$beads_suffix"

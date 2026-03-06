@@ -280,7 +280,7 @@ function gwt-queue --description "Manage ticket queue for rate-limit-aware auton
                     if test -n "$sub_name"
                         set add_args $add_args --sub $sub_name
                     end
-                    set add_args $add_args --repo $repo_path --beads
+                    set add_args $add_args --repo $repo_path
                     bash $queue_daemon add $add_args 2>/dev/null
                     or echo "    Warning: failed to queue $bead_key"
                 end
