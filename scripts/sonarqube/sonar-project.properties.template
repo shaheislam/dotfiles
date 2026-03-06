@@ -1,21 +1,36 @@
-# SonarQube Project Configuration Template
+# SonarQube Project Configuration
 # Copy to your project root as: sonar-project.properties
 #
-# The sonarqube/sonar-scan commands auto-detect most settings,
-# but this file gives you fine-grained control.
+# The 'sonarqube scan' command auto-detects most settings from
+# the directory name. This file gives fine-grained control.
 
-# Required: unique project identifier
+# Required: unique project identifier (auto-set by sonarqube init)
 sonar.projectKey=my-project
 
-# Optional: display name and version
+# Display name and version
 sonar.projectName=My Project
 sonar.projectVersion=1.0
+
+# SonarQube server URL (default local Docker instance)
+sonar.host.url=http://localhost:9000
+
+# Token: set via SONAR_TOKEN env var or ~/.config/sonarqube/token
+# Do NOT commit tokens to version control.
+# sonar.token=
 
 # Source directories (relative to project root)
 sonar.sources=src
 # sonar.tests=tests
 
+# Quality gate: fail the scan if gate conditions are not met
+sonar.qualitygate.wait=true
+sonar.qualitygate.timeout=120
+
 # Language-specific settings (uncomment as needed)
+# Note: SonarQube CE analyzes JS, TS, Python, Java, Go, PHP, Ruby,
+# Scala, Kotlin, HTML, CSS, XML without plugins. C/C++, Rust, Swift
+# require marketplace plugins or higher editions.
+#
 # sonar.language=ts
 # sonar.typescript.lcov.reportPaths=coverage/lcov.info
 # sonar.python.coverage.reportPaths=coverage.xml
