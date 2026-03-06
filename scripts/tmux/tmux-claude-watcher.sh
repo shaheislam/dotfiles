@@ -104,9 +104,9 @@ check_all_windows() {
             local tty="${pane_entry#*:}"
             [[ -z "$tty" ]] && continue
 
-            # Look for claude or opencode process on this TTY
+            # Look for claude, codex, or opencode process on this TTY
             # Match with or without path prefix (e.g. "claude ..." or "/opt/homebrew/bin/claude ...")
-            if ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)(claude|opencode)( |$)'; then
+            if ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)(claude|codex|opencode)( |$)'; then
                 agent_found=true
 
                 # Detect state from the bottom of the pane.
@@ -114,15 +114,19 @@ check_all_windows() {
                 # tip text / status lines sit between it and the bottom.
                 # Layout: spinner → [tip 2-3 lines] → separator → ❯ prompt
                 #   → separator → model info → permissions → [remote ctrl]
-                # "… (" = spinner with timing = actively working
+                # "… (" = spinner with timing = actively working (Claude)
                 #   e.g. "✽ Pontificating… (41s · ↓ 681 tokens)"
                 # COMPLETE or _DONE = task finished
+                # Codex exec exits when done, so check if process is still running
                 # Otherwise = idle/waiting for input
                 local pane_bottom
                 pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 20)
                 if echo "$pane_bottom" | grep -q '… ('; then
                     agent_working=true
                 elif echo "$pane_bottom" | grep -q 'COMPLETE\|_DONE'; then
+                    agent_complete=true
+                elif echo "$pane_bottom" | grep -qE 'codex (exec|--full-auto)' && ! ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)codex( |$)'; then
+                    # Codex exec was the last command but process has exited → completed
                     agent_complete=true
                 fi
                 break

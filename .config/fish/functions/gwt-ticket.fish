@@ -25,6 +25,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --codex         Use Codex CLI as primary agent instead of Claude Code
     #   --codex-model M Codex model override (implies --codex)
     #   --codex-profile P  Codex config profile from config.toml (implies --codex)
+    #   --bridge        Enable iterative Codex→Claude review loop (requires --codex)
+    #   --bridge-iterations N  Max bridge review cycles (default: 3)
+    #   --bridge-mode M  Bridge review mode: review|redteam|steelman|assumptions
     #   --quiet, -q     Suppress verbose output (default, writes to .claude/gwt-ticket.log)
     #   --verbose, -v   Show full verbose output (overrides default quiet mode)
     #   --help, -h      Show help
@@ -1288,6 +1291,9 @@ $prompt_suffix"
         # --- Codex harness ---
         # Codex exec: --full-auto = workspace-write sandbox + on-failure approval
         # cd already sets the working dir; no --add-dir on exec
+        if test (count $mounts) -gt 0
+            echo "Warning: Codex exec does not support --mount; mounts will be ignored" >&2
+        end
         set -l codex_cmd "codex exec --full-auto"
         if test -n "$codex_model"
             set codex_cmd "$codex_cmd --model $codex_model"
@@ -1295,10 +1301,9 @@ $prompt_suffix"
         if test -n "$codex_profile"
             set codex_cmd "$codex_cmd --profile $codex_profile"
         end
-        # Write prompt to file for logging/reference
+        # Write prompt to file — agents read from this file at execution time
+        # (avoids shell injection from prompt content with quotes, backticks, $(), etc.)
         printf '%s' "$oneline_prompt" >$prompt_cmd_file
-        # Escape single quotes in prompt for fish heredoc
-        set -l escaped_prompt (string replace -a "'" "\\'" -- "$oneline_prompt")
 
         if $bridge_mode
             # --- Codex + Bridge: iterative Codex→Claude review loop ---
@@ -1338,10 +1343,11 @@ $prompt_suffix"
             end
             $bridge_verbose; and set bridge_args "$bridge_args --verbose"
             $bridge_dry_run; and set bridge_args "$bridge_args --dry-run"
-            set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd '$escaped_prompt'"
+            set bridge_args "$bridge_args --prompt-file $prompt_cmd_file"
+            set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd"
         else
             # --- Codex only: single-shot execution ---
-            set -a _ls "$codex_cmd '$escaped_prompt'"
+            set -a _ls "$codex_cmd \(cat $prompt_cmd_file\)"
         end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
@@ -1382,21 +1388,32 @@ $prompt_suffix"
         # Primary is Codex, standby is Claude
         set -a _ss '# Claude Code standby - ready for manual use' \
             "echo ''" \
-            "set_color cyan; echo '  Claude Code (standby)'; set_color normal" \
-            "echo '  Run: claude --dangerously-skip-permissions'" \
-            "echo '  Or:  claude  (interactive with approvals)'" \
-            "echo ''"
+            "set_color cyan; echo '  Claude Code (standby)'; set_color normal"
         if test -n "$sub_profile"
+            set -a _ss "echo '  Profile: $sub_profile'"
             set -a _ss "set -gx CLAUDE_CONFIG_DIR $HOME/.claude-$sub_profile"
         end
+        set -a _ss "echo '  Run: claude --dangerously-skip-permissions'" \
+            "echo '  Or:  claude  (interactive with approvals)'" \
+            "echo ''" \
+            "echo '  Pre-populated command (press Enter to run):'" \
+            "echo '  claude --dangerously-skip-permissions'"
     else
         # Primary is Claude, standby is Codex
         set -a _ss '# Codex CLI standby - ready for manual use' \
             "echo ''" \
-            "set_color green; echo '  Codex CLI (standby)'; set_color normal" \
-            "echo '  Run: codex --full-auto \"prompt\"'" \
+            "set_color green; echo '  Codex CLI (standby)'; set_color normal"
+        if test -n "$codex_model"
+            set -a _ss "echo '  Model: $codex_model'"
+        end
+        if test -n "$codex_profile"
+            set -a _ss "echo '  Profile: $codex_profile'"
+        end
+        set -a _ss "echo '  Run: codex --full-auto \"prompt\"'" \
             "echo '  Or:  codex exec --full-auto \"prompt\"  (headless)'" \
-            "echo ''"
+            "echo ''" \
+            "echo '  Pre-populated command (press Enter to run):'" \
+            "echo '  codex exec --full-auto \"(cat $prompt_cmd_file)\"'"
     end
     set -a _ss 'exec fish'
     printf '%s\n' $_ss >$standby_script
@@ -1743,11 +1760,21 @@ $prompt_suffix"
             set auto_generated_str true
         end
 
+        set -l agent_harness claude
+        if $use_codex
+            if $bridge_mode
+                set agent_harness codex-bridge
+            else
+                set agent_harness codex
+            end
+        end
+
         echo "---
 active: true
 issue_key: \"$issue_key\"
 title: \"$title\"
 ticketing_system: \"$ticketing_system\"
+agent_harness: \"$agent_harness\"
 auto_generated: $auto_generated_str
 started_at: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
 max_iterations: $max_iterations

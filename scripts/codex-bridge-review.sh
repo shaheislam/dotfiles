@@ -32,6 +32,9 @@ CLAUDE_PROFILE=""
 REVIEW_TIMEOUT=120
 VERBOSE="${CODEX_BRIDGE_VERBOSE:-0}"
 DRY_RUN=false
+PROMPT_FILE=""
+MAX_DIFF_LINES=500
+ITERATION_COOLDOWN=5
 CODEX_ARGS=()
 
 # --- Colors ---
@@ -82,6 +85,18 @@ while [ $# -gt 0 ]; do
         DRY_RUN=true
         shift
         ;;
+    --prompt-file)
+        PROMPT_FILE="$2"
+        shift 2
+        ;;
+    --max-diff-lines)
+        MAX_DIFF_LINES="$2"
+        shift 2
+        ;;
+    --cooldown)
+        ITERATION_COOLDOWN="$2"
+        shift 2
+        ;;
     --)
         shift
         break
@@ -93,7 +108,7 @@ done
 # Everything remaining is passed to codex exec
 CODEX_ARGS=("$@")
 
-if [ ${#CODEX_ARGS[@]} -eq 0 ]; then
+if [ ${#CODEX_ARGS[@]} -eq 0 ] && [ -z "$PROMPT_FILE" ]; then
     echo "Error: No codex arguments provided" >&2
     echo "Usage: codex-bridge-review.sh [options] -- <codex-exec-args...>" >&2
     exit 1
@@ -182,12 +197,15 @@ Please address the reviewer's feedback. Fix the identified issues while keeping 
 # --- Dry run ---
 if $DRY_RUN; then
     log_banner "Codex Bridge Review (DRY RUN)"
-    log "Max iterations: $MAX_ITERATIONS"
-    log "Review mode:    $REVIEW_MODE"
-    log "Claude model:   $CLAUDE_MODEL"
-    log "Claude profile: ${CLAUDE_PROFILE:-default}"
-    log "Review timeout: ${REVIEW_TIMEOUT}s"
-    log "Codex args:     ${CODEX_ARGS[*]}"
+    log "Max iterations:  $MAX_ITERATIONS"
+    log "Review mode:     $REVIEW_MODE"
+    log "Claude model:    $CLAUDE_MODEL"
+    log "Claude profile:  ${CLAUDE_PROFILE:-default}"
+    log "Review timeout:  ${REVIEW_TIMEOUT}s"
+    log "Max diff lines:  $MAX_DIFF_LINES"
+    log "Cooldown:        ${ITERATION_COOLDOWN}s"
+    log "Prompt file:     ${PROMPT_FILE:-<inline>}"
+    log "Codex args:      ${CODEX_ARGS[*]}"
     exit 0
 fi
 
@@ -204,8 +222,18 @@ fi
 # --- Capture initial state ---
 INITIAL_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "")
 
-# Extract the prompt (last argument to codex exec)
-ORIGINAL_PROMPT="${CODEX_ARGS[${#CODEX_ARGS[@]} - 1]}"
+# Extract the prompt: --prompt-file takes precedence, else last codex arg
+if [ -n "$PROMPT_FILE" ]; then
+    if [ ! -f "$PROMPT_FILE" ]; then
+        echo "Error: Prompt file not found: $PROMPT_FILE" >&2
+        exit 1
+    fi
+    ORIGINAL_PROMPT=$(cat "$PROMPT_FILE")
+    # Append prompt to codex args (read safely from file, no shell expansion)
+    CODEX_ARGS+=("$ORIGINAL_PROMPT")
+else
+    ORIGINAL_PROMPT="${CODEX_ARGS[${#CODEX_ARGS[@]} - 1]}"
+fi
 
 # --- Main loop ---
 iteration=0
@@ -217,10 +245,12 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
         log_v "Running: codex ${CODEX_ARGS[*]}"
 
         # First run: use original codex args
-        codex "${CODEX_ARGS[@]}" || {
-            log "${C_RED}Codex failed (exit $?)${C_RESET}"
-            exit $?
-        }
+        codex_exit=0
+        codex "${CODEX_ARGS[@]}" || codex_exit=$?
+        if [ "$codex_exit" -ne 0 ]; then
+            log "${C_RED}Codex failed (exit $codex_exit)${C_RESET}"
+            exit "$codex_exit"
+        fi
     else
         log_banner "Codex Fix Pass (iteration $iteration/$MAX_ITERATIONS)"
 
@@ -231,10 +261,12 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
         # Re-run codex with feedback prompt (keep same exec mode flags, replace prompt)
         # Extract flags (all but last arg which was the prompt)
         local_args=("${CODEX_ARGS[@]:0:${#CODEX_ARGS[@]}-1}")
-        codex "${local_args[@]}" "$local_prompt" || {
-            log "${C_RED}Codex fix pass failed (exit $?)${C_RESET}"
+        codex_exit=0
+        codex "${local_args[@]}" "$local_prompt" || codex_exit=$?
+        if [ "$codex_exit" -ne 0 ]; then
+            log "${C_RED}Codex fix pass failed (exit $codex_exit)${C_RESET}"
             break
-        }
+        fi
     fi
 
     # Check if anything changed
@@ -248,6 +280,15 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
     if [ $iteration -eq "$MAX_ITERATIONS" ]; then
         log "Max iterations reached — accepting changes"
         break
+    fi
+
+    # Truncate large diffs to avoid exceeding Claude's context
+    diff_line_count=$(echo "$current_diff" | wc -l | tr -d ' ')
+    if [ "$diff_line_count" -gt "$MAX_DIFF_LINES" ]; then
+        log "${C_YELLOW}Diff is $diff_line_count lines, truncating to $MAX_DIFF_LINES${C_RESET}"
+        current_diff=$(echo "$current_diff" | head -n "$MAX_DIFF_LINES")
+        current_diff="${current_diff}
+... (truncated: $diff_line_count total lines, showing first $MAX_DIFF_LINES)"
     fi
 
     # --- Claude Review ---
@@ -272,8 +313,8 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
         break
     fi
 
-    # Check for LGTM consensus
-    if echo "$review_output" | grep -qi "^LGTM$\|LGTM$\|looks good"; then
+    # Check for LGTM consensus (strict: LGTM on a line by itself, no trailing caveats)
+    if echo "$review_output" | grep -qE '^\s*LGTM\s*$'; then
         log "${C_GREEN}Claude approved changes (LGTM)${C_RESET}"
         if [ "$VERBOSE" != "0" ]; then
             echo "${C_DIM}Review: $(echo "$review_output" | head -3)${C_RESET}" >&2
@@ -286,6 +327,12 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
     echo "$review_output" | head -20 >&2
     if [ "$(echo "$review_output" | wc -l)" -gt 20 ]; then
         echo "${C_DIM}  ... ($(echo "$review_output" | wc -l) lines total)${C_RESET}" >&2
+    fi
+
+    # Rate-limit between iterations to avoid API hammering
+    if [ "$ITERATION_COOLDOWN" -gt 0 ]; then
+        log_v "Cooldown: ${ITERATION_COOLDOWN}s before next iteration"
+        sleep "$ITERATION_COOLDOWN"
     fi
 done
 

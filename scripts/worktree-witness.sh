@@ -8,9 +8,10 @@
 # Monitors:
 #   1. Ralph-loop progress (iteration counter advancing)
 #   2. Stuck agent detection (iteration unchanged >10min)
-#   3. Crash detection (claude process died but ticket still active)
+#   3. Crash detection (agent process died but ticket still active)
 #   4. Auto-retry on crash (restart with same prompt, up to N retries)
 #   5. Completion detection → submit to merge queue or auto-merge
+#   Supports both Claude and Codex agents (detected via agent-state.sh)
 #
 # Usage:
 #   worktree-witness.sh <worktree-path> [options]
