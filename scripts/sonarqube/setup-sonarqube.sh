@@ -282,11 +282,27 @@ run_doctor() {
         fi
     fi
 
+    # 8. Data persistence (Docker volumes)
+    local vol_count
+    vol_count=$(docker volume ls --format '{{.Name}}' 2>/dev/null | grep -c sonarqube || echo "0")
+    if [[ "$vol_count" -ge 3 ]]; then
+        log_success "Data volumes: $vol_count volumes (data persists across restarts)"
+    elif [[ "$vol_count" -gt 0 ]]; then
+        log_warning "Data volumes: only $vol_count of 3 expected volumes found"
+        issues=$((issues + 1))
+    else
+        log_info "Data volumes: none (will be created on first start)"
+    fi
+
     echo ""
     if [[ $issues -eq 0 ]]; then
         log_success "All checks passed - SonarQube is ready to use"
     else
         log_warning "$issues issue(s) found"
+        echo ""
+        echo "  Recovery after Colima crash:"
+        echo "    colima start && docker compose -f $COMPOSE_FILE up -d"
+        echo "    (Named volumes preserve all data across restarts)"
     fi
 }
 
@@ -381,13 +397,16 @@ generate_token() {
         echo "  3. Create a 'Global Analysis Token'"
         echo "  4. Save it securely (choose one):"
         echo ""
-        echo "     # Option A: File (chmod 600 applied automatically)"
+        echo "     # Option A: File (avoids shell history; use read, not echo)"
         echo "     mkdir -p ~/.config/sonarqube"
-        echo "     echo 'YOUR_TOKEN' > ~/.config/sonarqube/token"
+        echo "     read -sp 'Paste token: ' tok && printf '%s' \"\$tok\" > ~/.config/sonarqube/token"
         echo "     chmod 600 ~/.config/sonarqube/token"
         echo ""
-        echo "     # Option B: Environment variable (add to Fish config)"
-        echo "     set -Ux SONAR_TOKEN 'YOUR_TOKEN'"
+        echo "     # Option B: Fish universal variable"
+        echo "     read -sP 'Paste token: ' tok; set -Ux SONAR_TOKEN \$tok"
+        echo ""
+        echo "     WARNING: Avoid pasting tokens directly in shell commands"
+        echo "     (they persist in shell history). Use read -s as shown above."
         return 1
     fi
 
@@ -455,12 +474,15 @@ scan_project() {
     echo ""
 
     # Build scanner arguments
+    # Token is passed via SONAR_TOKEN env var (not CLI arg) to avoid
+    # exposing it in process list (ps output). sonar-scanner reads it
+    # from the environment automatically.
+    export SONAR_TOKEN="$token"
     local scanner_args=(
         "-Dsonar.projectKey=$project_key"
         "-Dsonar.projectName=$(basename "$project_dir")"
         "-Dsonar.sources=."
         "-Dsonar.host.url=${SONARQUBE_URL}"
-        "-Dsonar.token=${token}"
         "-Dsonar.projectBaseDir=${project_dir}"
         "-Dsonar.qualitygate.wait=true"
         "-Dsonar.qualitygate.timeout=120"
@@ -601,10 +623,17 @@ uninstall) uninstall ;;
     echo ""
     echo "Token storage (choose one):"
     echo "  File:  ~/.config/sonarqube/token (chmod 600)"
-    echo "  Env:   set -Ux SONAR_TOKEN 'your-token'"
+    echo "  Env:   set -Ux SONAR_TOKEN (use 'read -sP' to avoid shell history)"
+    echo "  Note:  Token is passed via env var, not CLI arg, to avoid ps exposure."
+    echo ""
+    echo "Data persistence:"
+    echo "  Scan results and config are stored in Docker named volumes"
+    echo "  (sonarqube_data, sonarqube_logs, sonarqube_extensions)."
+    echo "  These survive container restarts and Colima reboots."
+    echo "  Only 'sonarqube uninstall' or 'docker volume rm' deletes them."
     echo ""
     echo "Language support (CE, no plugins needed):"
     echo "  JavaScript, TypeScript, Python, Java, Go, PHP, Ruby, Scala,"
-    echo "  Kotlin, HTML, CSS, XML. Others need marketplace plugins."
+    echo "  Kotlin, HTML, CSS, XML. Others require marketplace plugins."
     ;;
 esac

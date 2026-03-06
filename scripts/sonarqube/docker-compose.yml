@@ -1,5 +1,17 @@
 # SonarQube Community Edition - Local Code Quality Analysis
-# Runs SonarQube server via Colima + Docker for local code quality scanning
+# Runs SonarQube CE server via Colima + Docker for local code quality scanning.
+#
+# All analysis features used by this integration (REST API for issues,
+# quality gates, project status) are available in Community Edition.
+# The custom AI analysis (--ai/--fix flags in Fish wrapper) is entirely
+# external to SonarQube: it fetches issues via the CE REST API and pipes
+# them to Claude CLI or local Ollama. No SonarQube AI plugins or higher
+# editions are required.
+#
+# Data persistence: Named Docker volumes (sonarqube_data, sonarqube_logs,
+# sonarqube_extensions) survive container stop/start and Colima reboots.
+# Only 'docker compose down -v' or 'docker volume rm' deletes them.
+# If Colima crashes, restart it and run 'docker compose up -d' to recover.
 #
 # Usage:
 #   ./scripts/sonarqube/setup-sonarqube.sh start
@@ -15,7 +27,8 @@ services:
     ports:
       - "${SONARQUBE_PORT:-9000}:9000"
     environment:
-      # Embedded H2 database (suitable for personal use, no external DB needed)
+      # Embedded H2 database (suitable for personal/single-user use, no external DB needed)
+      # Data is persisted in the sonarqube_data named volume below.
       SONAR_JDBC_URL: ""
       # JVM memory settings (tuned for personal use on macOS)
       SONAR_CE_JAVAOPTS: "-Xmx512m -Xms128m"
