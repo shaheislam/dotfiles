@@ -23,6 +23,11 @@
 #   0 - Analysis complete, findings reported
 #   1 - Error (bad args, missing tools)
 #   2 - No files to analyze
+#
+# Failure policy: FAIL-OPEN
+#   Missing/broken tools return empty findings, never block the pipeline.
+#   Rationale: static analysis is advisory for AI agents, not gating.
+#   A broken linter must not prevent an agent from editing files.
 
 set -euo pipefail
 
