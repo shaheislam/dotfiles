@@ -59,6 +59,7 @@ export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
 export HOMEBREW_AUTO_UPDATE_SECS=86400
 export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
+export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 
 # VSCode and Cursor PATH entries removed

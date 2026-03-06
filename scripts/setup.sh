@@ -607,6 +607,21 @@ phase_4_cloud_tools() {
         fi
     }
 
+    _install_sonar() {
+        if ! command_exists sonar; then
+            print_step "Installing SonarQube CLI..."
+            if curl -o- https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.sh | bash </dev/null 2>&1; then
+                # Ensure PATH includes sonar for current session
+                export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
+                print_success "SonarQube CLI installed: $(sonar --version 2>/dev/null || echo 'installed')"
+            else
+                print_warning "Failed to install SonarQube CLI"
+            fi
+        else
+            print_success "SonarQube CLI already installed"
+        fi
+    }
+
     # Run tool installs sequentially (brew doesn't support parallel operations)
     _install_recall
     _install_beads
@@ -614,6 +629,7 @@ phase_4_cloud_tools() {
     _install_ccr
     _install_codex
     _install_openclaw
+    _install_sonar
 
     # Post-install: beads hooks (depends on beads being installed)
     if command_exists bd; then
@@ -621,6 +637,21 @@ phase_4_cloud_tools() {
         bd setup claude >/dev/null 2>&1 &&
             print_success "Beads hooks installed" ||
             log_verbose "Beads hook setup skipped"
+    fi
+
+    # Post-install: SonarQube Claude Code integration (secrets hooks + MCP server)
+    if command_exists sonar && command_exists claude; then
+        if sonar auth status 2>&1 | grep -q "No saved connection"; then
+            log_verbose "SonarQube: no auth configured. Run 'sonar auth login' then 'sonar integrate claude -g' to enable Claude Code integration"
+        else
+            print_step "Configuring SonarQube Claude Code integration..."
+            sonar install secrets >/dev/null 2>&1 &&
+                print_success "SonarQube secrets scanner installed" ||
+                log_verbose "SonarQube secrets scanner installation skipped"
+            sonar integrate claude -g --non-interactive >/dev/null 2>&1 &&
+                print_success "SonarQube Claude Code integration configured (global)" ||
+                log_verbose "SonarQube Claude Code integration skipped (run 'sonar integrate claude -g' manually)"
+        fi
     fi
 
     # Setup Claude Code Router configuration
