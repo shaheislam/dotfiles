@@ -4,6 +4,15 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: write    # PR summary comments
+  security-events: write  # CodeQL analysis
+
+concurrency:
+  group: pr-validation-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-format:
     name: Lint & Format Check

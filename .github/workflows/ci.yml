@@ -8,6 +8,13 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Weekly validation
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-configs:
     name: Validate Configuration Files
@@ -29,7 +36,7 @@ jobs:
 
       - name: Check Shell Scripts
         run: |
-          find scripts -name "*.sh" -exec shellcheck {} \;
+          find scripts -name "*.sh" -exec shellcheck -S warning {} \;
 
       - name: Validate Brewfile
         run: |
@@ -205,3 +212,23 @@ jobs:
           if [[ -f ".config/claude-desktop/config.json" ]]; then
             python -m json.tool ".config/claude-desktop/config.json" > /dev/null
           fi
+
+  check-dirty-tree:
+    name: Verify Clean Working Tree
+    runs-on: ubuntu-latest
+    needs: [validate-configs, test-shell-configs]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for uncommitted changes to tracked files
+        run: |
+          # Only check tracked files — untracked files (caches, logs)
+          # are expected and handled by .gitignore
+          if [ -n "$(git diff --name-only)" ] || [ -n "$(git diff --staged --name-only)" ]; then
+            echo "Tracked files were modified during CI:"
+            git diff --name-only
+            git diff --staged --name-only
+            git diff
+            exit 1
+          fi
+          echo "All tracked files are clean."
