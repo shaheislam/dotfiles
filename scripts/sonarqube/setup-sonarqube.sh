@@ -283,8 +283,11 @@ run_doctor() {
     fi
 
     # 8. Data persistence (Docker volumes)
-    local vol_count
-    vol_count=$(docker volume ls --format '{{.Name}}' 2>/dev/null | grep -c sonarqube || echo "0")
+    local vol_count=0
+    if docker info &>/dev/null; then
+        vol_count=$(docker volume ls --format '{{.Name}}' 2>/dev/null | grep -c sonarqube 2>/dev/null || true)
+        vol_count="${vol_count:-0}"
+    fi
     if [[ "$vol_count" -ge 3 ]]; then
         log_success "Data volumes: $vol_count volumes (data persists across restarts)"
     elif [[ "$vol_count" -gt 0 ]]; then
@@ -381,7 +384,8 @@ generate_token() {
     log_info "Generating SonarQube API token..."
 
     # Try with default credentials first
-    local token_name="dotfiles-scanner-$(date +%Y%m%d)"
+    local token_name
+    token_name="dotfiles-scanner-$(date +%Y%m%d)"
     local response
 
     # Attempt token creation with admin credentials
