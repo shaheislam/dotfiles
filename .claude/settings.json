@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "attribution": {
-    "commit": "Co-Authored-By: Claude \u003cnoreply@anthropic.com\u003e",
+    "commit": "Co-Authored-By: Claude <noreply@anthropic.com>",
     "pr": ""
   },
   "autoUpdatesChannel": "latest",
@@ -31,15 +31,26 @@
     "type": "command"
   },
   "hooks": {
+    "ConfigChange": [
+      {
+        "hooks": [
+          {
+            "command": "bash ~/.claude/hooks/config-change.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
     "Notification": [
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/macos_notification.py 2\u003e/dev/null || true",
+            "command": "python3 ~/.claude/hooks/macos_notification.py 2>/dev/null || true",
             "type": "command"
           },
           {
-            "command": "bash ~/.claude/hooks/log-notification.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -50,7 +61,7 @@
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2\u003e/dev/null || true",
+            "command": "python3 ~/.claude/hooks/deepwiki-context.py 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -59,11 +70,11 @@
       {
         "hooks": [
           {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2\u003e/dev/null || true",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2>/dev/null || true",
             "type": "command"
           },
           {
-            "command": "bash ~/.claude/hooks/file-modified.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/file-modified.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -92,7 +103,7 @@
       {
         "hooks": [
           {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-failure.py 2\u003e/dev/null || true",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/log-tool-failure.py 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -149,7 +160,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2\u003e/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/fix-hookify-imports.sh 2>/dev/null || true",
             "type": "command"
           },
           {
@@ -162,7 +173,7 @@
       {
         "hooks": [
           {
-            "command": "bd prime 2\u003e/dev/null || true",
+            "command": "bd prime 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -171,7 +182,7 @@
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2\u003e/dev/null || true",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -180,7 +191,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/lsp-status.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -189,7 +200,7 @@
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2\u003e/dev/null || true",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-compact-reinject.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -215,7 +226,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/log-notification.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -226,7 +237,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/log-notification.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -237,7 +248,7 @@
       {
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2\u003e/dev/null || true",
+            "command": "bash ~/.claude/hooks/nvim-bridge.sh 2>/dev/null || true",
             "type": "command"
           },
           {
@@ -264,17 +275,6 @@
         "hooks": [
           {
             "command": "bash ~/.claude/hooks/worktree-cleanup.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      }
-    ],
-    "ConfigChange": [
-      {
-        "hooks": [
-          {
-            "command": "bash ~/.claude/hooks/config-change.sh 2>/dev/null || true",
             "type": "command"
           }
         ],

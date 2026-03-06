@@ -13,10 +13,11 @@ $kubernetes\
 $cmd_duration\
 """
 
-# PERF: Reduced from 500ms → 200ms → 100ms. With core.fsmonitor + untrackedCache
-# enabled in .gitconfig, git status is much faster and 100ms is sufficient.
-# Language version detection moved to disabled — rarely needed.
-command_timeout = 100
+# PERF: 500ms is the starship default. Previously reduced to 100ms but that
+# causes git timeouts under load (multiple worktrees, agents, disk I/O).
+# With core.fsmonitor + untrackedCache git is typically ~30ms, so 500ms gives
+# ample headroom without perceptible prompt lag.
+command_timeout = 500
 palette = 'catppuccin_mocha'
 
 [palettes.catppuccin_mocha]
