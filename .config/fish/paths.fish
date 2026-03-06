@@ -26,6 +26,7 @@ fish_add_path $HOME/.local/bin # User local binaries
 fish_add_path $HOME/.cargo/bin # Rust/Cargo binaries
 fish_add_path $HOME/.bun/bin # Bun JavaScript runtime
 fish_add_path $HOME/.rd/bin # Rancher Desktop
+fish_add_path $HOME/.local/share/sonarqube-cli/bin # SonarQube CLI
 
 # Python (OS-aware)
 if test "$_os" = Darwin
