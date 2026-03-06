@@ -24,6 +24,18 @@ SONARQUBE_PORT="${SONARQUBE_PORT:-9000}"
 SONARQUBE_URL="http://localhost:${SONARQUBE_PORT}"
 TOKEN_FILE="$HOME/.config/sonarqube/token"
 
+# Docker compose command (v2 plugin or v1 standalone fallback)
+docker_compose() {
+    if docker compose version &>/dev/null; then
+        docker compose "$@"
+    elif command -v docker-compose &>/dev/null; then
+        docker-compose "$@"
+    else
+        log_error "Neither 'docker compose' plugin nor 'docker-compose' found"
+        return 1
+    fi
+}
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -145,7 +157,7 @@ start_sonarqube() {
         colima ssh -- sudo sysctl -w vm.max_map_count=262144 >/dev/null 2>&1
     fi
 
-    docker compose -f "$COMPOSE_FILE" up -d
+    docker_compose -f "$COMPOSE_FILE" up -d
 
     wait_for_ready
 
@@ -165,7 +177,7 @@ stop_sonarqube() {
     check_prerequisites
 
     log_info "Stopping SonarQube..."
-    docker compose -f "$COMPOSE_FILE" down
+    docker_compose -f "$COMPOSE_FILE" down
     log_success "SonarQube stopped"
 }
 
@@ -439,6 +451,10 @@ generate_token() {
 # Scan a project
 scan_project() {
     local project_dir="${1:-.}"
+    if [[ ! -d "$project_dir" ]]; then
+        log_error "Directory not found: $project_dir"
+        exit 1
+    fi
     project_dir="$(cd "$project_dir" && pwd)"
 
     # Verify sonar-scanner is installed
@@ -533,6 +549,10 @@ scan_project() {
 # Initialize a project with sonar-project.properties
 init_project() {
     local project_dir="${1:-.}"
+    if [[ ! -d "$project_dir" ]]; then
+        log_error "Directory not found: $project_dir"
+        return 1
+    fi
     project_dir="$(cd "$project_dir" && pwd)"
 
     local props_file="$project_dir/sonar-project.properties"
@@ -566,13 +586,13 @@ init_project() {
 
 # Tail logs
 tail_logs() {
-    docker compose -f "$COMPOSE_FILE" logs -f --tail=50
+    docker_compose -f "$COMPOSE_FILE" logs -f --tail=50
 }
 
 # Pull latest image
 update_image() {
     log_info "Pulling latest SonarQube Community Edition image..."
-    docker compose -f "$COMPOSE_FILE" pull
+    docker_compose -f "$COMPOSE_FILE" pull
     log_success "Image updated. Restart with: sonarqube restart"
 }
 
@@ -586,7 +606,7 @@ uninstall() {
     fi
 
     log_info "Stopping and removing SonarQube..."
-    docker compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
+    docker_compose -f "$COMPOSE_FILE" down -v 2>/dev/null || true
 
     if [[ -f "$TOKEN_FILE" ]]; then
         rm -f "$TOKEN_FILE"
