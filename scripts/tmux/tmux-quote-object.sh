@@ -13,16 +13,28 @@ quote_type="${2:-any}" # "any", "double", "single", "backtick"
 
 # Read cursor position and line content from copy mode
 cursor_x=$(tmux display -p '#{copy_cursor_x}')
-cursor_line=$(tmux display -p '#{copy_cursor_line}')
-history_size=$(tmux display -p '#{history_size}')
+cursor_y=$(tmux display -p '#{copy_cursor_y}')
+scroll_pos=$(tmux display -p '#{scroll_position}')
+
+# DEBUG — remove after testing
+dbg=/tmp/tmux-quote-debug.log
+echo "=== $(date) ===" >"$dbg"
+echo "mode=$mode quote_type=$quote_type" >>"$dbg"
+echo "cursor_x=$cursor_x cursor_y=$cursor_y scroll_pos=$scroll_pos" >>"$dbg"
 
 # Bail if not in copy mode (format vars return empty)
-[[ -z "$cursor_x" ]] && exit 0
+[[ -z "$cursor_x" ]] && {
+    echo "BAIL: empty cursor_x" >>"$dbg"
+    exit 0
+}
 
-# Convert absolute line number to capture-pane coordinate
-# capture-pane: 0 = first visible line, negative = history
-capture_line=$((cursor_line - history_size))
-line=$(tmux capture-pane -p -S "$capture_line" -E "$capture_line") || exit 0
+# capture-pane coordinate: 0 = first visible line, negative = scrollback
+capture_line=$((cursor_y - scroll_pos))
+line=$(tmux capture-pane -p -S "$capture_line" -E "$capture_line") || {
+    echo "BAIL: capture-pane failed" >>"$dbg"
+    exit 0
+}
+echo "capture_line=$capture_line line=[$line]" >>"$dbg"
 
 # Which quote characters to search for
 case "$quote_type" in
@@ -64,7 +76,11 @@ for q in "${chars[@]}"; do
 done
 
 # No enclosing quotes found
-[[ $best_start -eq -1 ]] && exit 0
+echo "best_start=$best_start best_end=$best_end" >>"$dbg"
+[[ $best_start -eq -1 ]] && {
+    echo "BAIL: no quotes found" >>"$dbg"
+    exit 0
+}
 
 # Adjust for inside mode (exclude the quote characters)
 if [[ "$mode" == "inside" ]]; then
