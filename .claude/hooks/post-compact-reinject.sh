@@ -30,20 +30,45 @@ fi
 
 # Re-inject beads subtask state after compaction
 if command -v bd >/dev/null 2>&1 && [ -d ".beads" ]; then
-    IN_PROG=$(bd list --status=in_progress --limit 5 2>/dev/null)
-    if [ -n "$IN_PROG" ]; then
-        echo ""
-        echo "Beads subtasks in-progress:"
-        echo "$IN_PROG"
-        echo "Run 'bd ready' to see what to work on next."
-    else
-        READY=$(bd ready --limit 3 2>/dev/null)
-        if [ -n "$READY" ]; then
-            echo ""
-            echo "Beads ready work:"
-            echo "$READY"
-        fi
+    echo ""
+    echo "=== Beads Context ==="
+
+    # Show parent bead (the main ticket) if identifiable
+    PARENT=$(bd list --status=in_progress --type=task --limit 1 2>/dev/null | head -1) || true
+    if [ -n "$PARENT" ]; then
+        echo "Parent: $PARENT"
     fi
+
+    # Show in-progress subtasks
+    IN_PROG=$(bd list --status=in_progress --limit 5 2>/dev/null) || true
+    if [ -n "$IN_PROG" ]; then
+        echo "In-progress:"
+        echo "$IN_PROG"
+    fi
+
+    # Show what's ready to work on next
+    READY=$(bd ready --limit 3 2>/dev/null) || true
+    if [ -n "$READY" ]; then
+        echo "Ready (unblocked):"
+        echo "$READY"
+    fi
+
+    # Show recently closed (so agent knows what's done)
+    CLOSED=$(bd list --status=closed --limit 3 2>/dev/null) || true
+    if [ -n "$CLOSED" ]; then
+        echo "Recently closed:"
+        echo "$CLOSED"
+    fi
+
+    # Show blocked items (so agent knows what to unblock)
+    BLOCKED=$(bd blocked 2>/dev/null) || true
+    if [ -n "$BLOCKED" ]; then
+        echo "Blocked:"
+        echo "$BLOCKED"
+    fi
+
+    echo "Commands: bd ready | bd show ID | bd close ID | bd create --title=X --parent ID"
+    echo "=== End Beads ==="
 fi
 
 exit 0

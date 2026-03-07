@@ -1156,10 +1156,17 @@ IF decomposing, use this workflow:
 2. Create subtasks linked to parent:
    bd create --title='SUBTASK_TITLE' --description='WHY_AND_WHAT' --type=task --priority=2 --parent PARENT_BEAD_ID
    Use 'bd dep add CHILD_ID BLOCKER_ID' if ordering matters.
-3. Work each subtask: bd update BEAD_ID --claim → code → bd close BEAD_ID
+3. Work each subtask: bd update BEAD_ID --status=in_progress → code → bd close BEAD_ID
 4. Between subtasks: bd ready (shows what is unblocked next)
 
-Subtask state survives context compaction via bd prime."
+Subtask state survives context compaction via bd prime.
+
+BEADS TIPS:
+- Quick capture: bd q 'discovered issue' (silent, returns only ID)
+- Add notes: bd update ID --append-notes 'finding or decision'
+- Close multiple: bd close ID1 ID2 ID3 (batch close is more efficient)
+- Check blocked: bd blocked (see what needs unblocking)
+- Search: bd search 'keyword' (find related beads)"
 
         if test -n "$prompt_suffix"
             set prompt_suffix "$prompt_suffix$beads_suffix"

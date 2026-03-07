@@ -345,6 +345,17 @@ function gwt-doctor --description "Agent orchestration health check"
             if $hooks_ok
                 printf "  %s[PASS]%s Beads installed, active, hooks present\n" (set_color green) (set_color normal)
                 set pass_count (math $pass_count + 1)
+
+                # Quality sub-checks (informational, don't affect pass/fail)
+                set -l stale_count (bd stale --days 14 2>/dev/null | wc -l | string trim)
+                if test "$stale_count" -gt 0
+                    printf "         %s[INFO]%s %s stale beads (>14 days, run: bd stale --days 14)\n" (set_color yellow) (set_color normal) $stale_count
+                end
+
+                set -l in_prog_count (bd count --status=in_progress 2>/dev/null | string trim)
+                if test -n "$in_prog_count"; and test "$in_prog_count" -gt 5
+                    printf "         %s[INFO]%s %s in-progress beads (too many? run: bd list --status=in_progress)\n" (set_color yellow) (set_color normal) $in_prog_count
+                end
             else
                 printf "  %s[WARN]%s Beads active but hooks incomplete\n" (set_color yellow) (set_color normal)
                 set warn_count (math $warn_count + 1)
