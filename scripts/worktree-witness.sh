@@ -145,6 +145,14 @@ log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $msg" >>"$LOG_FILE"
 }
 
+# Add a comment to the bead (persistent, queryable via bd show/comments)
+bead_comment() {
+    local msg="$1"
+    if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" && -n "$issue_key" ]]; then
+        (cd "$WORKTREE_PATH" && bd comments add "$issue_key" "[witness] $msg" --author witness -q 2>/dev/null) || true
+    fi
+}
+
 # Send notification
 notify() {
     local title="$1" msg="$2"
@@ -338,6 +346,7 @@ monitor_loop() {
             iterations_observed=$((iterations_observed + 1))
             last_observed_iteration="$iteration"
             patrol_had_activity=true
+            bead_comment "Iteration $iteration/${max_iterations:-20} started"
             # Update progress file for gwt-status
             echo "{\"iteration\":$iteration,\"max_iterations\":${max_iterations:-20},\"state\":\"$state\",\"updated_at\":\"$now_ts\"}" >"$WORKTREE_PATH/.claude/progress.json"
         fi
@@ -361,6 +370,7 @@ monitor_loop() {
         case "$state" in
         completed)
             log "Agent completed (iteration: $iteration)"
+            bead_comment "Completed at iteration $iteration"
             notify "Agent Complete" "$issue_key: $title"
             # Audit + agent state: record completion
             if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
@@ -402,6 +412,7 @@ monitor_loop() {
                 local reason
                 reason=$(json_val_default "reason" "unknown" "$state_json")
                 log "Agent dead: $reason (retry $retries/$MAX_RETRIES)"
+                bead_comment "Crash detected, retry $retries/$MAX_RETRIES (reason: $reason)"
                 # Audit + agent state: record crash
                 if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
                     (cd "$WORKTREE_PATH" && bd audit record --kind tool_call --tool-name "witness-crash" --issue-id "$issue_key" --response "reason=$reason retry=$retries/$MAX_RETRIES" 2>/dev/null) || true
@@ -425,6 +436,7 @@ monitor_loop() {
                     sleep 10 # Give restart time to initialize
                 else
                     log "Max retries exceeded"
+                    bead_comment "Max retries ($MAX_RETRIES) exceeded"
                     notify "Agent Failed" "$issue_key: Max retries ($MAX_RETRIES) exceeded"
                     if [[ -x "$cv_script" ]]; then
                         "$cv_script" log "$WORKTREE_PATH" --event failed --detail "max retries ($MAX_RETRIES) exceeded" 2>/dev/null || true
@@ -467,6 +479,7 @@ monitor_loop() {
                 [[ -z "$stuck_for" ]] && stuck_for="?"
                 local minutes=$((${stuck_for:-0} / 60))
                 log "Agent stuck on iteration $iteration for ${minutes}m"
+                bead_comment "Stuck on iteration $iteration for ${minutes}m"
                 notify "Agent Stuck" "$issue_key: Stuck on iteration $iteration for ${minutes}m"
                 # Audit + agent state: record stuck
                 if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
@@ -531,6 +544,64 @@ on_completion() {
         if [[ -n "$preflight_result" ]]; then
             log "Beads preflight: $preflight_result"
         fi
+    fi
+
+    # Store git outcome in beads kv (before close, so bead is still open)
+    if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" && -n "$issue_key" ]]; then
+        # Detect base branch from git common dir
+        local git_common_dir
+        git_common_dir=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir 2>/dev/null) || true
+        local base_branch="main"
+        if [[ -n "$git_common_dir" ]]; then
+            local repo_root
+            repo_root=$(cd "$WORKTREE_PATH" && cd "$git_common_dir/.." 2>/dev/null && pwd) || true
+            if [[ -n "$repo_root" ]]; then
+                # Use the default branch (main or master)
+                for candidate in main master; do
+                    if git -C "$repo_root" rev-parse --verify "$candidate" &>/dev/null; then
+                        base_branch="$candidate"
+                        break
+                    fi
+                done
+            fi
+        fi
+
+        local diff_stat commit_count modified_files
+        diff_stat=$(git -C "$WORKTREE_PATH" diff --stat "$base_branch" 2>/dev/null | tail -1) || diff_stat=""
+        commit_count=$(git -C "$WORKTREE_PATH" rev-list --count "$base_branch..HEAD" 2>/dev/null) || commit_count="0"
+        modified_files=$(git -C "$WORKTREE_PATH" diff --name-only "$base_branch" 2>/dev/null | head -50 | paste -sd ',' -) || modified_files=""
+
+        (cd "$WORKTREE_PATH" && bd kv set "result.files_changed" "$diff_stat" 2>/dev/null) || true
+        (cd "$WORKTREE_PATH" && bd kv set "result.commit_count" "$commit_count" 2>/dev/null) || true
+        (cd "$WORKTREE_PATH" && bd kv set "result.modified_files" "$modified_files" 2>/dev/null) || true
+        bead_comment "Result: $diff_stat, $commit_count commit(s)"
+
+        # Auto-detect test results
+        local test_status="no_tests"
+        if [[ -d "$WORKTREE_PATH/.pytest_cache" ]]; then
+            if [[ -f "$WORKTREE_PATH/.pytest_cache/v/cache/lastfailed" ]]; then
+                local lastfailed_size
+                lastfailed_size=$(wc -c < "$WORKTREE_PATH/.pytest_cache/v/cache/lastfailed" 2>/dev/null | tr -d ' ')
+                if [[ "$lastfailed_size" -gt 2 ]]; then
+                    test_status="failed"
+                else
+                    test_status="passed"
+                fi
+            else
+                test_status="detected"
+            fi
+        elif [[ -f "$WORKTREE_PATH/junit.xml" || -f "$WORKTREE_PATH/test-results.xml" ]]; then
+            if grep -q 'failures="0"' "$WORKTREE_PATH/junit.xml" "$WORKTREE_PATH/test-results.xml" 2>/dev/null; then
+                test_status="passed"
+            else
+                test_status="failed"
+            fi
+        elif [[ -d "$WORKTREE_PATH/coverage" || -d "$WORKTREE_PATH/.nyc_output" ]]; then
+            test_status="detected"
+        elif git -C "$WORKTREE_PATH" log --oneline "$base_branch..HEAD" 2>/dev/null | grep -qi '\btest\b'; then
+            test_status="detected"
+        fi
+        (cd "$WORKTREE_PATH" && bd kv set "result.tests" "$test_status" 2>/dev/null) || true
     fi
 
     # Close the bead and export to JSONL for persistence.

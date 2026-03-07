@@ -1154,11 +1154,9 @@ Do not ask questions - make reasonable decisions and iterate."
 
 BEADS SUBTASK TRACKING — A parent bead was created for this ticket (external-ref: $issue_key).
 
-EVALUATE whether this task benefits from subtask decomposition:
-- Simple single-file changes or small fixes: skip decomposition, just work directly.
-- Multi-step tasks with distinct phases: decompose into subtasks.
+ALWAYS decompose multi-step tasks into subtasks. Only skip decomposition for true single-file, single-change fixes.
 
-IF decomposing, use this workflow:
+Workflow:
 1. Find the parent bead: bd list --status=open
 2. Create subtasks linked to parent:
    bd create --title='SUBTASK_TITLE' --description='WHY_AND_WHAT' --type=task --priority=2 --parent PARENT_BEAD_ID
@@ -1168,13 +1166,13 @@ IF decomposing, use this workflow:
 
 Subtask state survives context compaction via bd prime.
 
-BEADS TIPS:
-- Quick capture: bd q 'discovered issue' (silent, returns only ID)
-- Add notes: bd update ID --append-notes 'finding or decision'
-- Document decisions: bd comments add ID 'why I chose approach X over Y'
+REQUIRED BEHAVIORS:
+- ALWAYS use 'bd comments add ID \"why I chose approach X over Y\"' for decisions and trade-offs
+- ALWAYS use 'bd q \"discovered issue\"' to capture issues found during work (silent, returns only ID)
+- ALWAYS use 'bd update ID --append-notes \"finding or decision\"' to record findings
+- ALWAYS use 'bd search \"keyword\"' to check for related beads before creating new ones
 - Close multiple: bd close ID1 ID2 ID3 (batch close is more efficient)
 - Check blocked: bd blocked (see what needs unblocking)
-- Search: bd search 'keyword' (find related beads)
 - Store metadata: bd kv set key value (persistent across compactions)"
 
         if test -n "$prompt_suffix"
@@ -1414,7 +1412,7 @@ $prompt_suffix"
             set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd"
         else
             # --- Codex only: single-shot execution ---
-            set -a _ls "$codex_cmd \(cat '$prompt_cmd_file'\)"
+            set -a _ls (printf '%s "(cat \'%s\')"' "$codex_cmd" "$prompt_cmd_file")
         end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
