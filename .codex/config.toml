@@ -15,6 +15,7 @@ model = "gpt-5.3-codex"
 approval_policy = "on-failure"
 model_reasoning_effort = "high"
 model_reasoning_summary = "detailed"
+personality = "pragmatic"
 
 [shell_environment_policy]
 inherit = "all"
