@@ -51,6 +51,7 @@ COMMAND=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/json-helpers.sh"
 AGENT_STATE="$SCRIPT_DIR/agent-state.sh"
+BEADS_AUTOCOMMIT="$SCRIPT_DIR/beads-autocommit.sh"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -285,6 +286,9 @@ monitor_loop() {
             (cd "$WORKTREE_PATH" && bd agent state "$agent_bead_id" running 2>/dev/null) || true
         fi
     fi
+
+    # Auto-commit interactions.jsonl on main (bd writes there, not to worktree)
+    [[ -x "$BEADS_AUTOCOMMIT" ]] && (cd "$WORKTREE_PATH" && "$BEADS_AUTOCOMMIT" 2>/dev/null) || true
 
     local retries=0
     local last_state=""
@@ -540,8 +544,8 @@ on_completion() {
             dynamic_beads=$(parse_yaml "dynamic_beads" "$TICKET_STATE")
             if [[ "$dynamic_beads" == "true" ]]; then
                 local remaining
-                remaining=$(cd "$WORKTREE_PATH" && bd list --status=in_progress --json 2>/dev/null \
-                    | jq -r 'if type == "array" then .[].id else .id // empty end' 2>/dev/null | xargs)
+                remaining=$(cd "$WORKTREE_PATH" && bd list --status=in_progress --json 2>/dev/null |
+                    jq -r 'if type == "array" then .[].id else .id // empty end' 2>/dev/null | xargs)
                 if [[ -n "$remaining" ]]; then
                     log "Beads: closing $(echo "$remaining" | wc -w | tr -d ' ') in-progress subtask(s)"
                     (cd "$WORKTREE_PATH" && bd close $remaining 2>/dev/null) || true
@@ -578,9 +582,12 @@ on_completion() {
     local progress_file="$WORKTREE_PATH/.claude/progress.json"
     if [[ -f "$progress_file" ]]; then
         local tmp_progress
-        tmp_progress=$(jq --arg bs "$beads_status" '. + {beads_status: $bs}' "$progress_file" 2>/dev/null) \
-            && echo "$tmp_progress" > "$progress_file"
+        tmp_progress=$(jq --arg bs "$beads_status" '. + {beads_status: $bs}' "$progress_file" 2>/dev/null) &&
+            echo "$tmp_progress" >"$progress_file"
     fi
+
+    # Auto-commit interactions.jsonl on main (bd writes there, not to worktree)
+    [[ -x "$BEADS_AUTOCOMMIT" ]] && (cd "$WORKTREE_PATH" && "$BEADS_AUTOCOMMIT" 2>/dev/null) || true
 
     # Convoy: mark ticket complete in convoy
     local convoy_id

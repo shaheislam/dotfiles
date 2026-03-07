@@ -151,6 +151,10 @@
           {
             "command": "entire hooks claude-code session-end",
             "type": "command"
+          },
+          {
+            "command": "bash scripts/beads-autocommit.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
