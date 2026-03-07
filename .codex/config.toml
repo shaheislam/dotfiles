@@ -15,9 +15,22 @@ model = "gpt-5.4"
 approval_policy = "on-failure"
 model_reasoning_effort = "high"
 model_reasoning_summary = "detailed"
+service_tier = "fast"
+web_search = "cached"
+personality = "pragmatic"
+
+[history]
+persistence = "save-all"
 
 [tui]
 status_line = ["model", "context", "tokens", "git", "session"]
+show_tooltips = false
+notifications = true
+
+[features]
+undo = true
+prevent_idle_sleep = true
+multi_agent = true
 
 [shell_environment_policy]
 inherit = "all"
@@ -30,6 +43,7 @@ approval_policy = "on-failure"
 sandbox_mode = "workspace-write"
 model_reasoning_effort = "high"
 model_reasoning_summary = "detailed"
+service_tier = "fast"
 
 [profiles.safe]
 # Read-only: safe for exploration and review tasks
