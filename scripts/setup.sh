@@ -586,17 +586,16 @@ phase_4_cloud_tools() {
     }
 
     _install_codex() {
-        if ! command_exists codex; then
-            if command_exists bun; then
-                bun add -g @openai/codex >/dev/null 2>&1 ||
+        # Always run to install or update to latest version
+        if command_exists bun; then
+            bun add -g @openai/codex >/dev/null 2>&1 ||
+                log_verbose "OpenAI Codex CLI installation skipped (optional)"
+        elif command_exists npm; then
+            if npm install -g @openai/codex >/dev/null 2>&1; then
+                true
+            else
+                npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 ||
                     log_verbose "OpenAI Codex CLI installation skipped (optional)"
-            elif command_exists npm; then
-                if npm install -g @openai/codex >/dev/null 2>&1; then
-                    true
-                else
-                    npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 ||
-                        log_verbose "OpenAI Codex CLI installation skipped (optional)"
-                fi
             fi
         fi
     }

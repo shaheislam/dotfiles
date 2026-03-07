@@ -40,7 +40,7 @@ complete -c gwt-ticket -l bridge-cooldown -x -d 'Cooldown seconds after rate lim
 complete -c gwt-ticket -l bridge-profiles -x -d 'Claude subscription profiles for rotation'
 complete -c gwt-ticket -l bridge-codex-profiles -x -d 'Codex profiles for rotation'
 complete -c gwt-ticket -l codex -d 'Use Codex CLI as primary agent'
-complete -c gwt-ticket -l codex-model -x -a 'o3 gpt-5.3-codex gpt-4.1' -d 'Codex model override'
+complete -c gwt-ticket -l codex-model -x -a 'o3 gpt-5.4 gpt-5.3-codex gpt-4.1' -d 'Codex model override'
 complete -c gwt-ticket -l codex-profile -x -a 'auto safe fast local' -d 'Codex config.toml profile'
 complete -c gwt-ticket -l rebase -d 'Rebase onto main before merging'
 complete -c gwt-ticket -l auto-cleanup -d 'Auto-remove worktree after merge'
