@@ -23,7 +23,7 @@ personality = "pragmatic"
 persistence = "save-all"
 
 [tui]
-status_line = ["model", "context", "tokens", "git", "session"]
+status_line = ["model-name", "context-remaining", "used-tokens", "git-branch", "session-id"]
 show_tooltips = false
 notifications = true
 
