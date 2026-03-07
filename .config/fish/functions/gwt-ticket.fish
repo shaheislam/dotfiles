@@ -874,6 +874,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
 
+    # Preserve caller's working directory — background begin...end blocks
+    # use cd $worktree_path and can leak to the parent shell in Fish.
+    set -l _orig_pwd $PWD
+
     # Step 1: Create worktree via gwt-dev (reuses existing logic)
     if not $quiet_mode
         echo "[1/4] Creating worktree..."
@@ -1041,6 +1045,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         tmux new-session -d -s $session_name -n $window_name
         or begin
             echo "Error: Failed to create tmux session '$session_name'" >&2
+            builtin cd $_orig_pwd 2>/dev/null
             return 1
         end
         set created_new_session true
@@ -1066,6 +1071,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         tmux new-window -t "$session_name:" -n $window_name
         or begin
             echo "Error: Failed to create tmux window '$window_name' in session '$session_name'" >&2
+            builtin cd $_orig_pwd 2>/dev/null
             return 1
         end
     end
@@ -1091,6 +1097,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             for f in $HOME/dotfiles/templates/workflows/*.toml
                 echo "  "(basename $f .toml)
             end
+            builtin cd $_orig_pwd 2>/dev/null
             return 1
         end
 
@@ -1382,6 +1389,7 @@ $prompt_suffix"
             end
             if test -z "$bridge_script"
                 echo "Error: codex-bridge-review.sh not found" >&2
+                builtin cd $_orig_pwd 2>/dev/null
                 return 1
             end
             # Build bridge wrapper args
@@ -1740,6 +1748,7 @@ $prompt_suffix"
         set -l claude_pane_id (tmux split-window -t "$session_name:$window_name" -hb -p 35 -P -F '#{pane_id}' "fish $claude_agent_script")
         if test -z "$claude_pane_id"
             echo "Error: Failed to create Claude pane in $session_name:$window_name" >&2
+            builtin cd $_orig_pwd 2>/dev/null
             return 1
         end
 
@@ -1964,4 +1973,7 @@ $prompt" >$state_file
         end
     end </dev/null &
     disown 2>/dev/null
+
+    # Restore caller's working directory (cd in begin...end & blocks can leak)
+    builtin cd $_orig_pwd 2>/dev/null
 end
