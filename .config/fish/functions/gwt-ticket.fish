@@ -410,7 +410,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set use_codex true
                     set skip_next true
                 else
-                    echo "Error: --codex-model requires a model name (e.g., o3, gpt-5.3-codex)"
+                    echo "Error: --codex-model requires a model name (e.g., o3, gpt-5.4)"
                     return 1
                 end
             case --codex-profile
@@ -567,7 +567,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge-profiles P  Claude subscription profiles for auto-rotation (e.g., work,personal)"
         echo "  --bridge-codex-profiles P  Codex profiles for auto-rotation (uses ~/.codex-<name>)"
         echo "  --codex              Use Codex CLI as primary agent (codex exec --full-auto)"
-        echo "  --codex-model M     Codex model override (implies --codex; e.g., o3, gpt-5.3-codex)"
+        echo "  --codex-model M     Codex model override (implies --codex; e.g., o3, gpt-5.4)"
         echo "  --codex-profile P   Codex config.toml profile (implies --codex; e.g., auto, safe, fast, local)"
         echo "  --rebase             Rebase onto main before merging (re-spawns on conflict)"
         echo "  --auto-cleanup       Auto-remove worktree after successful merge (1hr grace period)"

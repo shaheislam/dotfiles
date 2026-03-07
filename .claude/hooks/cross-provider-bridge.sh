@@ -26,7 +26,7 @@
 #   CROSS_PROVIDER_CODEX_PROFILES=work,personal   Codex profiles for rotation (auto-discovered from ~/.codex-*/)
 #
 #   Provider-specific model overrides (legacy, still supported):
-#   CROSS_PROVIDER_CODEX_MODEL=                 Codex model override (default: gpt-5.3-codex)
+#   CROSS_PROVIDER_CODEX_MODEL=                 Codex model override (default: gpt-5.4)
 #   CROSS_PROVIDER_GEMINI_MODEL=                Gemini model (default: CLI default)
 #   CROSS_PROVIDER_OLLAMA_MODEL=qwen3-coder     Ollama model for direct use
 #   CROSS_PROVIDER_DEEPSEEK_MODEL=deepseek-r1   DeepSeek model (via Ollama)
@@ -152,7 +152,7 @@ parse_provider_models() {
 parse_provider_models
 
 # --- Default models (single source of truth for provider functions + dispatch) ---
-DEFAULT_CODEX_MODEL="${CROSS_PROVIDER_CODEX_MODEL:-gpt-5.3-codex}"
+DEFAULT_CODEX_MODEL="${CROSS_PROVIDER_CODEX_MODEL:-gpt-5.4}"
 DEFAULT_GEMINI_MODEL="${CROSS_PROVIDER_GEMINI_MODEL:-}"
 DEFAULT_OLLAMA_MODEL="${CROSS_PROVIDER_OLLAMA_MODEL:-qwen3-coder}"
 DEFAULT_DEEPSEEK_MODEL="${CROSS_PROVIDER_DEEPSEEK_MODEL:-deepseek-r1}"

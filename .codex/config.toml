@@ -11,10 +11,13 @@
 #   codex -c model="o3" "prompt"
 #   codex -c 'sandbox_permissions=["disk-full-read-access"]' "prompt"
 
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 approval_policy = "on-failure"
 model_reasoning_effort = "high"
 model_reasoning_summary = "detailed"
+
+[tui]
+status_line = ["model", "context", "tokens", "git", "session"]
 
 [shell_environment_policy]
 inherit = "all"
@@ -55,4 +58,4 @@ sandbox_mode = "workspace-write"
 name = "Ollama (local)"
 base_url = "http://localhost:11434/v1"
 env_key = "OLLAMA_API_KEY"
-wire_api = "chat"
+wire_api = "responses"
