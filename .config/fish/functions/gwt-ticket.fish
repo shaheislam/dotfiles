@@ -1414,7 +1414,7 @@ $prompt_suffix"
             set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd"
         else
             # --- Codex only: single-shot execution ---
-            set -a _ls "$codex_cmd \(cat '$prompt_cmd_file'\)"
+            set -a _ls (printf '%s "(cat \'%s\')"' "$codex_cmd" "$prompt_cmd_file")
         end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
