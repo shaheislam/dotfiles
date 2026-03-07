@@ -211,6 +211,19 @@ function gwt-status --description "Show worktree + devcontainer status"
 
     echo ""
 
+    # Beads summary (if available)
+    if command -q bd; and test -d ".beads"
+        set -l open_count (bd count --status=open 2>/dev/null | string trim)
+        set -l in_prog_count (bd count --status=in_progress 2>/dev/null | string trim)
+        set -l blocked_count (bd blocked 2>/dev/null | grep -c "^\(○\|◐\)" 2>/dev/null; or echo 0)
+        if test -n "$open_count" -o -n "$in_prog_count"
+            printf "Beads:     %s open, %s in-progress, %s blocked\n" \
+                (test -n "$open_count"; and echo $open_count; or echo 0) \
+                (test -n "$in_prog_count"; and echo $in_prog_count; or echo 0) \
+                $blocked_count
+        end
+    end
+
     # Summary
     echo "Container: running | stopped | ready"
     if test -n "$agent_state_script"

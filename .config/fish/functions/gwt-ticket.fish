@@ -936,6 +936,13 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     --event-target "$issue_key" \
                     --labels "gt:hook,gt:gupp" \
                     --silent >/dev/null 2>&1; or true
+                # Agent bead: enables bd agent state/heartbeat tracking
+                set -l agent_name "witness-"(basename $worktree_path)
+                set -l agent_bead_id (bd q "$agent_name" --type task --labels "gt:agent" 2>/dev/null)
+                if test -n "$agent_bead_id"
+                    bd agent state "$agent_bead_id" spawning >/dev/null 2>&1; or true
+                    bd kv set "agent.bead_id" "$agent_bead_id" >/dev/null 2>&1; or true
+                end
                 # Swarm molecule from epic (conditional)
                 if test -n "$swarm_epic_id"
                     bd swarm create "$swarm_epic_id" >/dev/null 2>&1; or true
@@ -1164,9 +1171,11 @@ Subtask state survives context compaction via bd prime.
 BEADS TIPS:
 - Quick capture: bd q 'discovered issue' (silent, returns only ID)
 - Add notes: bd update ID --append-notes 'finding or decision'
+- Document decisions: bd comments add ID 'why I chose approach X over Y'
 - Close multiple: bd close ID1 ID2 ID3 (batch close is more efficient)
 - Check blocked: bd blocked (see what needs unblocking)
-- Search: bd search 'keyword' (find related beads)"
+- Search: bd search 'keyword' (find related beads)
+- Store metadata: bd kv set key value (persistent across compactions)"
 
         if test -n "$prompt_suffix"
             set prompt_suffix "$prompt_suffix$beads_suffix"

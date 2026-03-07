@@ -262,11 +262,29 @@ EOF
 # Write initial progress file
 echo "{\"iteration\":0,\"max_iterations\":${max_iterations:-20},\"state\":\"starting\",\"updated_at\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" >"$WORKTREE_PATH/.claude/progress.json"
 
+# Store session metadata in beads kv (persistent, queryable)
+if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+    (cd "$WORKTREE_PATH" && bd kv set "witness.issue_key" "$issue_key" 2>/dev/null) || true
+    (cd "$WORKTREE_PATH" && bd kv set "witness.started_at" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" 2>/dev/null) || true
+    (cd "$WORKTREE_PATH" && bd kv set "witness.max_iterations" "${max_iterations:-20}" 2>/dev/null) || true
+    (cd "$WORKTREE_PATH" && bd kv set "witness.worktree" "$WORKTREE_PATH" 2>/dev/null) || true
+fi
+
 # Main monitoring loop
 monitor_loop() {
     trap 'cleanup' EXIT
     echo $BASHPID >"$PID_FILE"
     log "Witness started for $issue_key (PID $BASHPID)"
+
+    # Audit: record witness start + set agent state
+    local agent_bead_id=""
+    if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+        (cd "$WORKTREE_PATH" && bd audit record --kind tool_call --tool-name "witness-start" --issue-id "$issue_key" --response "PID=$BASHPID poll=${POLL_INTERVAL}s retries=$MAX_RETRIES" 2>/dev/null) || true
+        agent_bead_id=$(cd "$WORKTREE_PATH" && bd kv get "agent.bead_id" 2>/dev/null) || true
+        if [[ -n "$agent_bead_id" ]]; then
+            (cd "$WORKTREE_PATH" && bd agent state "$agent_bead_id" running 2>/dev/null) || true
+        fi
+    fi
 
     local retries=0
     local last_state=""
@@ -304,6 +322,11 @@ monitor_loop() {
         local iteration
         iteration=$(json_val_default "iteration" "0" "$state_json")
 
+        # Agent heartbeat on each poll (if agent bead exists)
+        if [[ -n "$agent_bead_id" ]]; then
+            (cd "$WORKTREE_PATH" && bd agent heartbeat "$agent_bead_id" 2>/dev/null) || true
+        fi
+
         # Track iteration progress
         local now_ts
         now_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -335,6 +358,13 @@ monitor_loop() {
         completed)
             log "Agent completed (iteration: $iteration)"
             notify "Agent Complete" "$issue_key: $title"
+            # Audit + agent state: record completion
+            if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+                (cd "$WORKTREE_PATH" && bd audit record --kind tool_call --tool-name "witness-complete" --issue-id "$issue_key" --response "iteration=$iteration" 2>/dev/null) || true
+                if [[ -n "$agent_bead_id" ]]; then
+                    (cd "$WORKTREE_PATH" && bd agent state "$agent_bead_id" done 2>/dev/null) || true
+                fi
+            fi
             # Log CV event
             local cv_script="$SCRIPT_DIR/agent-cv.sh"
             if [[ -x "$cv_script" ]]; then
@@ -368,6 +398,13 @@ monitor_loop() {
                 local reason
                 reason=$(json_val_default "reason" "unknown" "$state_json")
                 log "Agent dead: $reason (retry $retries/$MAX_RETRIES)"
+                # Audit + agent state: record crash
+                if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+                    (cd "$WORKTREE_PATH" && bd audit record --kind tool_call --tool-name "witness-crash" --issue-id "$issue_key" --response "reason=$reason retry=$retries/$MAX_RETRIES" 2>/dev/null) || true
+                    if [[ -n "$agent_bead_id" ]]; then
+                        (cd "$WORKTREE_PATH" && bd agent state "$agent_bead_id" dead 2>/dev/null) || true
+                    fi
+                fi
 
                 # Log CV crash event
                 local cv_script="$SCRIPT_DIR/agent-cv.sh"
@@ -427,6 +464,13 @@ monitor_loop() {
                 local minutes=$((${stuck_for:-0} / 60))
                 log "Agent stuck on iteration $iteration for ${minutes}m"
                 notify "Agent Stuck" "$issue_key: Stuck on iteration $iteration for ${minutes}m"
+                # Audit + agent state: record stuck
+                if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+                    (cd "$WORKTREE_PATH" && bd audit record --kind tool_call --tool-name "witness-stuck" --issue-id "$issue_key" --response "iteration=$iteration stuck_for=${minutes}m" 2>/dev/null) || true
+                    if [[ -n "$agent_bead_id" ]]; then
+                        (cd "$WORKTREE_PATH" && bd agent state "$agent_bead_id" stuck 2>/dev/null) || true
+                    fi
+                fi
 
                 # Log CV stuck event
                 local cv_script="$SCRIPT_DIR/agent-cv.sh"
@@ -476,6 +520,15 @@ on_completion() {
     # /rename is handled by gwt-rename-session.sh (waits for ralph-loop
     # completion, then sends /rename before witness reaches on_completion)
 
+    # Run beads preflight check before closing (informational only)
+    if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+        local preflight_result
+        preflight_result=$(cd "$WORKTREE_PATH" && bd preflight --check --json 2>/dev/null) || true
+        if [[ -n "$preflight_result" ]]; then
+            log "Beads preflight: $preflight_result"
+        fi
+    fi
+
     # Close the bead and export to JSONL for persistence.
     # Beads is metadata — failures are logged + recorded in progress.json
     # but do NOT affect witness exit code (which signals agent lifecycle).
@@ -512,6 +565,13 @@ on_completion() {
                 log "Beads: close failed for $issue_key (may already be closed)"
             fi
         fi
+    fi
+
+    # Store completion metadata in kv
+    if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+        (cd "$WORKTREE_PATH" && bd kv set "witness.completed_at" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" 2>/dev/null) || true
+        (cd "$WORKTREE_PATH" && bd kv set "witness.beads_status" "$beads_status" 2>/dev/null) || true
+        (cd "$WORKTREE_PATH" && bd kv set "witness.final_iteration" "${iteration:-0}" 2>/dev/null) || true
     fi
 
     # Update progress.json with beads outcome (machine-readable for automation)
