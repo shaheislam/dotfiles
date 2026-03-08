@@ -1,6 +1,20 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
+    "anthropic": {
+      "npm": "@ai-sdk/anthropic",
+      "models": {
+        "claude-opus-4-6": {
+          "name": "Claude Opus 4.6"
+        },
+        "claude-sonnet-4-6": {
+          "name": "Claude Sonnet 4.6"
+        },
+        "claude-haiku-4-5": {
+          "name": "Claude Haiku 4.5"
+        }
+      }
+    },
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Ollama (local)",
@@ -20,8 +34,8 @@
       }
     }
   },
-  "model": "ollama/qwen3-coder",
-  "small_model": "ollama/qwen2.5-coder:0.5b",
+  "model": "anthropic/claude-opus-4-6",
+  "small_model": "anthropic/claude-haiku-4-5",
   "autoupdate": false,
   "share": "disabled",
   "permission": {
