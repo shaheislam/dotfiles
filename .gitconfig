@@ -54,3 +54,8 @@
 [merge "jsonl-merge"]
 	name = JSONL merge for append-only line files
 	driver = /Users/shahe/dotfiles/scripts/merge-driver-jsonl.sh %A %O %B %L %P
+[diff "json"]
+	textconv = /Users/shahe/dotfiles/scripts/git-diff-json.sh
+[merge "union-doc"]
+	name = Union merge for documentation files
+	driver = /Users/shahe/dotfiles/scripts/merge-driver-union.sh %A %O %B %L %P
