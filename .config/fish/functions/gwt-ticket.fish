@@ -1366,7 +1366,7 @@ $prompt_suffix"
         if test (count $mounts) -gt 0; and not $use_devcon
             echo "Warning: Codex exec does not support --mount; mounts will be ignored" >&2
         end
-        set -l codex_cmd "codex exec --full-auto"
+        set -l codex_cmd "codex-rotate exec --full-auto"
         if test -n "$codex_model"
             set codex_cmd "$codex_cmd --model $codex_model"
         end
@@ -1466,7 +1466,7 @@ $prompt_suffix"
     else
         # Claude is primary → secondary is Codex (interactive, no prompt)
         set -a _ss '# Codex CLI - interactive mode (secondary agent)'
-        set -l codex_cmd_interactive "codex --full-auto"
+        set -l codex_cmd_interactive "codex-rotate --full-auto"
         if test -n "$codex_model"
             set codex_cmd_interactive "$codex_cmd_interactive --model $codex_model"
         end

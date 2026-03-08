@@ -59,6 +59,8 @@
 | `gwt-cleanup` | `gwtclean` | Remove stale devcontainer instances |
 | `gwt-ticket` | `gwtt` | Autonomous ticket execution (worktree + ralph-loop). Supports `--codex` for Codex CLI, `--bridge` for iterative Codex→Claude review |
 | `gwt-doctor` | `gwtdoc` | Agent orchestration health check (detects Claude + Codex) |
+| `codex-accounts` | - | Manage Codex CLI OAuth account profiles (`add`, `remove`, `list`, `status`) |
+| `codex-rotate` | - | Codex wrapper with round-robin account rotation + usage-limit failover |
 
 **Subscription Profiles**: `claude-sub` (`csub`). Profile dirs: `~/.claude-<name>/`. Usage: `gwtt --sub personal`, `gwtc --sub work`.
 
@@ -132,6 +134,7 @@ Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit` hook. Fish: `
 - **Pipeline**: `claude-pipeline` / `cpipe`. Presets: `review`, `cheap`, `local`, `council`, `redteam`. Docs: `docs/claude-pipeline.md`.
 - **Cross-Provider Bridge**: `CROSS_PROVIDER_BRIDGE=1 claude`. Providers: Codex, Gemini, Ollama, DeepSeek. Details in `.claude/rules/cross-provider.md`.
 - **Codex Bridge Review**: `gwtt --codex --bridge TICKET-123` runs iterative Codex→Claude review loop. Config: `.codex/config.toml`. Script: `scripts/codex-bridge-review.sh`.
+- **Codex Account Rotation**: `codex-rotate` wraps codex with round-robin rotation across multiple OAuth accounts. Profiles in `~/.codex/accounts/<name>/auth.json` (machine-local, gitignored). Enroll: `codex-accounts add <name>`. `gwt-ticket --codex` uses `codex-rotate` automatically.
 - **DQS**: Council (`cpipe --preset council`), Red Team, First Principles. Docs: `docs/decision-quality-system.md`.
 
 ### Self-Hosted LLM
