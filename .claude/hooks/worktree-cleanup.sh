@@ -13,7 +13,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] WorktreeRemove: ${WORKTREE_PATH:-unknown}" 
 
 # Sync beads before removal
 if command -v bd &>/dev/null && [ -n "$WORKTREE_PATH" ]; then
-    (cd "$WORKTREE_PATH" && bd sync --from-main 2>/dev/null) || true
+    (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
 fi
 
 exit 0
