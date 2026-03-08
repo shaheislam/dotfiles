@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # tmux-bracket-object.sh - Select around/inside bracket pairs in tmux copy mode
-# Usage: tmux-bracket-object.sh [around|inside] [paren|brace|any]
+# Usage: tmux-bracket-object.sh [around|inside] [paren|brace|square|angle|any]
 #
 # Finds the innermost enclosing bracket pair on the current line,
 # even when the cursor is NOT on a bracket character (Vim-like behavior).
 # Uses stack-based scanning for correct nesting. Single bash fork per invocation.
 #
-# Types:  paren = () only (Vim 'b'), brace = {} only (Vim 'B'), any = all
+# Types:  paren = (), brace = {}, square = [], angle = <>, any = all
 
 set -uo pipefail
 
-dbg=/tmp/bracket-debug.log
 mode="${1:-inside}"
 bracket_type="${2:-any}"
 
@@ -18,21 +17,17 @@ cursor_x=$(tmux display -p '#{copy_cursor_x}')
 cursor_y=$(tmux display -p '#{copy_cursor_y}')
 scroll_pos=$(tmux display -p '#{scroll_position}')
 
-echo "mode=$mode type=$bracket_type cx=$cursor_x cy=$cursor_y sp=$scroll_pos" >"$dbg"
-
-[[ -z "$cursor_x" ]] && {
-    echo "BAIL: empty cursor_x" >>"$dbg"
-    exit 0
-}
+[[ -z "$cursor_x" ]] && exit 0
 
 capture_line=$((cursor_y - scroll_pos))
 line=$(tmux capture-pane -p -S "$capture_line" -E "$capture_line") || exit 0
 len=${#line}
-echo "capture_line=$capture_line len=$len line=[$line]" >>"$dbg"
 
 case "$bracket_type" in
 paren) pairs=('()') ;;
 brace) pairs=('{}') ;;
+square) pairs=('[]') ;;
+angle) pairs=('<>') ;;
 any) pairs=('()' '{}' '[]') ;;
 *) exit 0 ;;
 esac
@@ -95,11 +90,7 @@ for pair in "${pairs[@]}"; do
     fi
 done
 
-echo "best_start=$best_start best_end=$best_end" >>"$dbg"
-[[ $best_start -eq -1 ]] && {
-    echo "BAIL: no brackets" >>"$dbg"
-    exit 0
-}
+[[ $best_start -eq -1 ]] && exit 0
 
 if [[ "$mode" == "inside" ]]; then
     best_start=$((best_start + 1))
@@ -111,6 +102,5 @@ tmux send-keys -X start-of-line
 [[ $best_start -gt 0 ]] && tmux send-keys -X -N "$best_start" cursor-right
 tmux send-keys -X begin-selection
 move=$((best_end - best_start))
-echo "selecting: start=$best_start end=$best_end move=$move" >>"$dbg"
 [[ $move -gt 0 ]] && tmux send-keys -X -N "$move" cursor-right
 exit 0
