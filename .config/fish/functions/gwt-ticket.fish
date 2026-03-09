@@ -13,6 +13,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
     #   --prompt-suffix S    Text to append to prompt
+    #   --edit               Compose prompt in nvim, auto-sends on save
     #   --desc-file FILE     Read description from file (- for stdin; avoids quote issues)
     #   --skill NAME [...]  Invoke skill(s) at prompt start
     #   --local         Use local Ollama model (default: qwen3-coder)
@@ -109,6 +110,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l bead_priority "" # bd create --priority (0-4, empty = default)
     set -l use_dynamic_beads true
     set -l quiet_mode true
+    set -l edit_mode false
     set -l use_codex false
     set -l codex_model ""
     set -l codex_profile ""
@@ -525,6 +527,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --no-beads
                 set use_dynamic_beads false
+            case --edit
+                set edit_mode true
             case --desc-file --description-file
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -623,6 +627,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
         echo "  --priority N         Bead priority (0=critical, 1=high, 2=medium, 3=low, 4=backlog)"
+        echo "  --edit               Compose prompt in nvim before sending (auto-sends on save)"
         echo "  --desc-file FILE     Read description from file (or - for stdin; avoids shell quoting)"
         echo "  --no-beads           Disable automatic beads subtask tracking"
         echo "  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)"
@@ -652,6 +657,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  # Run with local Ollama model (no cloud API)"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --local"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --model deepseek-coder-v2:16b"
+        echo ""
+        echo "  # Compose prompt in nvim (edit, save → auto-sends to Claude)"
+        echo "  gwt-ticket \"my-feature\" --edit"
+        echo "  gwt-ticket ENG-123 \"Fix auth\" --edit --max 30"
         echo ""
         echo "  # Description with quotes (from file or stdin)"
         echo "  gwt-ticket ENG-123 \"Fix bug\" --desc-file /tmp/description.txt"
@@ -751,7 +760,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
 
     if test -z "$description"
-        set description "$title" # Use title as description if not provided
+        if $edit_mode
+            set description "[EDIT: Describe the task, requirements, and context here]"
+        else
+            set description "$title" # Use title as description if not provided
+        end
     end
 
     # Generate branch name (5 piped string ops instead of 8 — saves ~5ms)
@@ -1447,15 +1460,24 @@ $prompt_suffix"
         end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
-        # Write prompt command to file as single line (for send-keys delivery via rename script)
-        # Newlines collapsed to spaces — Claude handles single-line instructions fine
-        # Escape backslashes then double quotes so they don't break the outer "..." wrapping
-        set -l escaped_prompt (string replace -a '\\' '\\\\' -- "$oneline_prompt")
-        set escaped_prompt (string replace -a '"' '\\"' -- "$escaped_prompt")
-        if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-            printf '%s' "$slash_command \"$escaped_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
+        if $edit_mode
+            # Interactive mode: write metadata for rename script to build command after user saves
+            printf '%s\n' \
+                "SLASH_COMMAND=$slash_command" \
+                "MAX_ITERATIONS=$max_iterations" \
+                "COMPLETION_PROMISE=$completion_promise" \
+                "PROMPT_FILE=$prompt_md_file" >"$instance_env/prompt-meta.env"
         else
-            printf '%s' "$slash_command \"$escaped_prompt\"" >$prompt_cmd_file
+            # Write prompt command to file as single line (for send-keys delivery via rename script)
+            # Newlines collapsed to spaces — Claude handles single-line instructions fine
+            # Escape backslashes then double quotes so they don't break the outer "..." wrapping
+            set -l escaped_prompt (string replace -a '\\' '\\\\' -- "$oneline_prompt")
+            set escaped_prompt (string replace -a '"' '\\"' -- "$escaped_prompt")
+            if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
+                printf '%s' "$slash_command \"$escaped_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
+            else
+                printf '%s' "$slash_command \"$escaped_prompt\"" >$prompt_cmd_file
+            end
         end
         set -a _ls 'claude --dangerously-skip-permissions --add-dir '$add_dir_path
     end
@@ -1582,12 +1604,18 @@ $prompt_suffix"
 
     # Write prompt to markdown file for nvim visibility (and as a record)
     set -l prompt_md_file "$worktree_path/.claude/prompt.local.md"
-    printf '%s\n' \
-        "# $issue_key — $title" \
-        '' \
-        '## Prompt' \
-        '' \
-        "$prompt" >$prompt_md_file
+    if $edit_mode
+        # Edit mode: raw prompt text — user edits this, then it's sent directly
+        printf '%s\n' "$prompt" >$prompt_md_file
+    else
+        # Normal mode: display-formatted with headers
+        printf '%s\n' \
+            "# $issue_key — $title" \
+            '' \
+            '## Prompt' \
+            '' \
+            "$prompt" >$prompt_md_file
+    end
 
     # Detect AI guidance files to auto-open in nvim buffers
     # prompt.local.md shown first (active buffer), then reference files as hidden buffers
@@ -1737,7 +1765,11 @@ $prompt_suffix"
             if not test -x "$rename_script_devcon"
                 set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
             end
-            set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &"
+            if $edit_mode
+                set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '' '$instance_env/prompt-meta.env' &"
+            else
+                set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &"
+            end
         end
         set -l nvim_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'"
         if test (count $nvim_ai_files) -gt 0
@@ -1816,7 +1848,11 @@ $prompt_suffix"
             if not test -x "$rename_script"
                 set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
             end
-            bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
+            if $edit_mode
+                bash "$rename_script" "$claude_pane_id" "$window_name" "" "$instance_env/prompt-meta.env" &
+            else
+                bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
+            end
             disown
         end
     end
