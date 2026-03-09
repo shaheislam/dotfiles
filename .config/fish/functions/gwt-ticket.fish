@@ -13,7 +13,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
     #   --prompt-suffix S    Text to append to prompt
-    #   --edit               Read description from centralized gwtt-prompt.local.md
+    #   --edit               Read description from gwtt-prompt.local.md (default)
+    #   --no-edit            Use title as description instead of prompt file
     #   --desc-file FILE     Read description from file (- for stdin; avoids quote issues)
     #   --skill NAME [...]  Invoke skill(s) at prompt start
     #   --local         Use local Ollama model (default: qwen3-coder)
@@ -110,7 +111,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l bead_priority "" # bd create --priority (0-4, empty = default)
     set -l use_dynamic_beads true
     set -l quiet_mode true
-    set -l edit_mode false
+    set -l edit_mode true
     set -l edit_prompt_file "$HOME/dotfiles/.claude/gwtt-prompt.local.md"
     set -l use_codex false
     set -l codex_model ""
@@ -530,6 +531,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 set use_dynamic_beads false
             case --edit
                 set edit_mode true
+            case --no-edit
+                set edit_mode false
             case --desc-file --description-file
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -628,7 +631,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
         echo "  --priority N         Bead priority (0=critical, 1=high, 2=medium, 3=low, 4=backlog)"
-        echo "  --edit               Read description from ~/dotfiles/.claude/gwtt-prompt.local.md"
+        echo "  --edit               Read description from gwtt-prompt.local.md (default)"
+        echo "  --no-edit            Use title as description (skip prompt file)"
         echo "  --desc-file FILE     Read description from file (or - for stdin; avoids shell quoting)"
         echo "  --no-beads           Disable automatic beads subtask tracking"
         echo "  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)"
@@ -659,9 +663,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --local"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --model deepseek-coder-v2:16b"
         echo ""
-        echo "  # Read description from centralized prompt file (edit in a split pane)"
-        echo "  gwt-ticket \"my-feature\" --edit"
-        echo "  gwt-ticket ENG-123 \"Fix auth\" --edit --max 30"
+        echo "  # Reads gwtt-prompt.local.md automatically (default behavior)"
+        echo "  gwt-ticket \"my-feature\""
+        echo "  gwt-ticket ENG-123 \"Fix auth\" --max 30"
+        echo ""
+        echo "  # Skip prompt file, use title as description"
+        echo "  gwt-ticket \"my-feature\" --no-edit"
         echo ""
         echo "  # Description with quotes (from file or stdin)"
         echo "  gwt-ticket ENG-123 \"Fix bug\" --desc-file /tmp/description.txt"
