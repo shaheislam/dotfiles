@@ -13,6 +13,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
     #   --prompt-suffix S    Text to append to prompt
+    #   --desc-file FILE     Read description from file (- for stdin; avoids quote issues)
     #   --skill NAME [...]  Invoke skill(s) at prompt start
     #   --local         Use local Ollama model (default: qwen3-coder)
     #   --model MODEL   Use specific Ollama model (implies --local)
@@ -524,6 +525,23 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --no-beads
                 set use_dynamic_beads false
+            case --desc-file --description-file
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set -l desc_path $argv[$next_i]
+                    if test "$desc_path" = -
+                        set description (cat)
+                    else if test -f "$desc_path"
+                        set description (cat "$desc_path")
+                    else
+                        echo "Error: Description file not found: $desc_path"
+                        return 1
+                    end
+                    set skip_next true
+                else
+                    echo "Error: --desc-file requires a file path (or - for stdin)"
+                    return 1
+                end
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -605,6 +623,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
         echo "  --priority N         Bead priority (0=critical, 1=high, 2=medium, 3=low, 4=backlog)"
+        echo "  --desc-file FILE     Read description from file (or - for stdin; avoids shell quoting)"
         echo "  --no-beads           Disable automatic beads subtask tracking"
         echo "  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)"
         echo "  --verbose, -v        Show full verbose output (overrides default quiet mode)"
@@ -633,6 +652,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  # Run with local Ollama model (no cloud API)"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --local"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --model deepseek-coder-v2:16b"
+        echo ""
+        echo "  # Description with quotes (from file or stdin)"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" --desc-file /tmp/description.txt"
+        echo "  pbpaste | gwt-ticket ENG-123 \"Fix bug\" --desc-file -"
         echo ""
         echo "  # Add instructions before/after"
         echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --prompt-prefix \"IMPORTANT: No test changes\""
@@ -1426,10 +1449,13 @@ $prompt_suffix"
         # --- Claude harness: interactive with send-keys prompt delivery ---
         # Write prompt command to file as single line (for send-keys delivery via rename script)
         # Newlines collapsed to spaces — Claude handles single-line instructions fine
+        # Escape backslashes then double quotes so they don't break the outer "..." wrapping
+        set -l escaped_prompt (string replace -a '\\' '\\\\' -- "$oneline_prompt")
+        set escaped_prompt (string replace -a '"' '\\"' -- "$escaped_prompt")
         if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
-            printf '%s' "$slash_command \"$oneline_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
+            printf '%s' "$slash_command \"$escaped_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
         else
-            printf '%s' "$slash_command \"$oneline_prompt\"" >$prompt_cmd_file
+            printf '%s' "$slash_command \"$escaped_prompt\"" >$prompt_cmd_file
         end
         set -a _ls 'claude --dangerously-skip-permissions --add-dir '$add_dir_path
     end
