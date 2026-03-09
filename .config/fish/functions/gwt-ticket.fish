@@ -1580,12 +1580,22 @@ $prompt_suffix"
         printf '%s\n' $_log >$gwt_log_file
     end
 
+    # Write prompt to markdown file for nvim visibility (and as a record)
+    set -l prompt_md_file "$worktree_path/.claude/prompt.local.md"
+    printf '%s\n' \
+        "# $issue_key — $title" \
+        '' \
+        '## Prompt' \
+        '' \
+        "$prompt" >$prompt_md_file
+
     # Detect AI guidance files to auto-open in nvim buffers
+    # prompt.local.md shown first (active buffer), then reference files as hidden buffers
     # CLAUDE.md: AI rules/constraints. AGENTS.md: practical agent rules (editable per-worktree)
     # gwt-ticket.log: execution details (quiet mode, not committed)
     # settings.local.json: per-worktree hook configuration (only in .claude/)
     # Priority: worktree root > .claude/ subdirectory
-    set -l nvim_ai_files
+    set -l nvim_ai_files "$prompt_md_file"
     for ai_file in CLAUDE.md AGENTS.md
         if test -f "$worktree_path/$ai_file"
             set -a nvim_ai_files "$worktree_path/$ai_file"
