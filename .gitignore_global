@@ -86,5 +86,8 @@ work/**/CLAUDE.md
 !~/personal/**/CLAUDE.md
 !~/personal/**/CLAUDE.local.md
 
+# Beads agent memory (always local, never committed)
+.beads/
+
 # Entire checkpoints
 .entire/

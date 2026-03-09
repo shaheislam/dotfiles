@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-# bd pre-commit hook disabled — JSONL export is broken (hangs 30s, fails)
-# and adds no value. bd data still works; use 'bd export' manually if needed.
-exit 0
