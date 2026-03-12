@@ -4,9 +4,11 @@
 **Repo**: https://github.com/manaflow-ai/cmux (5.4k stars, Swift, AGPL-3.0)
 **What it is**: Native macOS terminal (Swift/AppKit) built on libghostty with vertical sidebar tabs, agent notification system, in-app browser, and full CLI/socket API.
 
-## Verdict: YES, adopt cmux — but keep tmux for remote/SSH
+## Verdict: Don't adopt cmux as terminal — extract its patterns instead
 
-cmux directly addresses pain points in the current Ghostty + tmux setup, particularly around monitoring multiple parallel AI agent sessions. The notification ring + sidebar metadata system is purpose-built for the multi-agent workflow that drives this dotfiles setup.
+Primary stack is **WezTerm + tmux**, not Ghostty. cmux is a Ghostty fork, making it
+a poor fit as a terminal replacement. However, three architectural patterns from its
+codebase are directly extractable and improve the existing WezTerm + tmux setup.
 
 ## What cmux replaces
 

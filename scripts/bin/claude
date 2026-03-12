@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Event-driven Claude wrapper for tmux agent state tracking.
+#
+# When running inside tmux, exports TMUX_AGENT_TARGET (stable window ID)
+# so lifecycle hooks in settings.json can color the correct tmux window.
+# Falls through transparently when not in tmux or for non-interactive
+# subcommands (mcp, config, plugin, etc.).
+#
+# PATH priority: ~/dotfiles/scripts/bin comes before ~/.local/bin/claude
+# (set in paths.fish:44), so this wrapper intercepts `claude` invocations.
+
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+# --- Find real claude binary (skip own directory in PATH) ---
+find_real_claude() {
+    local IFS=':'
+    for dir in $PATH; do
+        [[ "$dir" == "$SELF_DIR" ]] && continue
+        local candidate="$dir/claude"
+        if [[ -x "$candidate" && ! -d "$candidate" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    echo "claude: real binary not found in PATH" >&2
+    return 1
+}
+
+REAL_CLAUDE=$(find_real_claude) || exit 1
+
+# --- Pass through if not in tmux ---
+if [[ -z "${TMUX:-}" ]]; then
+    exec "$REAL_CLAUDE" "$@"
+fi
+
+# --- Pass through for non-interactive subcommands ---
+for arg in "$@"; do
+    case "$arg" in
+        -*) continue ;; # skip flags
+        mcp|config|plugin|auth|doctor|update|api-key|logout|migrate-installer)
+            exec "$REAL_CLAUDE" "$@"
+            ;;
+        *) break ;; # first non-flag arg isn't a passthrough command
+    esac
+done
+
+# --- Export tmux target (stable window ID like @42) ---
+# #{window_id} survives window reordering unlike session:index.
+# Hook scripts in settings.json read $TMUX_AGENT_TARGET to know which window to color.
+export TMUX_AGENT_TARGET
+TMUX_AGENT_TARGET=$(tmux display-message -p '#{window_id}' 2>/dev/null) || true
+
+exec "$REAL_CLAUDE" "$@"

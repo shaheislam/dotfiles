@@ -52,6 +52,10 @@
           {
             "command": "bash ~/.claude/hooks/log-notification.sh 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-notify.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
@@ -155,6 +159,10 @@
           {
             "command": "bash scripts/beads-autocommit.sh 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-end.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
@@ -169,6 +177,10 @@
           },
           {
             "command": "entire hooks claude-code session-start",
+            "type": "command"
+          },
+          {
+            "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-start.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -221,6 +233,10 @@
           {
             "command": "entire hooks claude-code stop",
             "type": "command"
+          },
+          {
+            "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-stop.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
@@ -257,6 +273,10 @@
           },
           {
             "command": "entire hooks claude-code user-prompt-submit",
+            "type": "command"
+          },
+          {
+            "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-prompt.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
