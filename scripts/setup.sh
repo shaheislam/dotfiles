@@ -822,6 +822,15 @@ NMHEOF
             echo "  https://addons.mozilla.org/en-US/firefox/addon/claudecodebrowser/"
         fi
 
+        # agent-browser - AI-optimized headless browser CLI (ref-based interaction model)
+        # Complements Playwright MCP with persistent daemon + accessibility tree snapshots
+        if command_exists agent-browser; then
+            print_step "Configuring agent-browser..."
+            agent-browser install </dev/null >/dev/null 2>&1 &&
+                print_success "agent-browser Chromium installed" ||
+                log_verbose "agent-browser Chromium install skipped (run 'agent-browser install' manually)"
+        fi
+
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"
 
