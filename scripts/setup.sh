@@ -505,7 +505,7 @@ phase_4_cloud_tools() {
         bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
     fi
     rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
-    rm -f "$DOTFILES_ROOT/scripts/bin/claude" 2>/dev/null || true
+    # scripts/bin/claude is now the event-driven tmux wrapper — do not remove
 
     # Always install/upgrade via native installer on latest channel
     # The installer is idempotent — safe to run every time
