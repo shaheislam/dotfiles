@@ -39,6 +39,9 @@
 .claude/progress.json
 .claude/worker-cv.jsonl
 
+# Beads agent memory (local-only, never committed)
+.beads/
+
 # Entire CLI metadata (managed by entireio/cli)
 .entire/
 !.entire/settings.json
