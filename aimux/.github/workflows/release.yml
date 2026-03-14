@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Pre-release Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Go tests
+        run: go test -race ./...
+
+      - name: Go vet
+        run: go vet ./...
+
+  release:
+    name: Build and Release
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Build binaries
+        run: |
+          mkdir -p dist
+
+          # darwin/arm64 (Apple Silicon)
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/aimuxd-darwin-arm64 ./cmd/aimuxd/
+
+          # darwin/amd64 (Intel Mac)
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/aimuxd-darwin-amd64 ./cmd/aimuxd/
+
+          # linux/amd64
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/aimuxd-linux-amd64 ./cmd/aimuxd/
+
+          # linux/arm64
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/aimuxd-linux-arm64 ./cmd/aimuxd/
+
+      - name: Package shell scripts
+        run: |
+          tar czf dist/aimux-scripts.tar.gz \
+            bin/ lib/ config/ completions/ templates/ \
+            Makefile LICENSE README.md
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG_NAME" \
+            --title "$TAG_NAME" \
+            --generate-notes \
+            dist/*

@@ -9,6 +9,7 @@ _new_rebuild=false
 _new_fast=false
 _new_mounts=()
 _new_features=""
+_new_repo=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -40,6 +41,10 @@ while [[ $# -gt 0 ]]; do
         _new_features="$2"
         shift 2
         ;;
+    --repo)
+        _new_repo="$2"
+        shift 2
+        ;;
     -h | --help)
         cat <<'HELP'
 Usage: aimux new [options] <branch>
@@ -51,6 +56,7 @@ Options:
   -e, --exec          Enter container shell after start
   -m, --mount DIR     Additional directory mount (repeatable)
   -F, --features LIST Comma-separated devcontainer features
+  --repo DIR          Git repo directory (instead of detecting from cwd)
   --no-devcon         Skip devcontainer
   --rebuild           Remove + rebuild devcontainer
   --fast              Skip devcontainer lifecycle hooks
@@ -71,8 +77,13 @@ require git
 require tmux
 
 # Resolve repo root
-root="$(git_root)"
-[[ -z "$root" ]] && die "Not in a git repository"
+if [[ -n "$_new_repo" ]]; then
+    root="$(cd "$_new_repo" && git_root)"
+    [[ -z "$root" ]] && die "Not a git repository: $_new_repo"
+else
+    root="$(git_root)"
+    [[ -z "$root" ]] && die "Not in a git repository"
+fi
 
 repo_name="$(basename "$root")"
 
@@ -132,6 +143,23 @@ if ! $_new_no_devcon && has devcon; then
     (cd "$wt_dir" && devcon up "${devcon_args[@]}" 2>&1) || warn "devcontainer failed (continuing without)"
 elif ! $_new_no_devcon && ! has devcon; then
     : # silently skip if devcon not available
+fi
+
+# Write state file
+ensure_home
+state_write "$instance_name" \
+    status=active \
+    branch="$_new_branch" \
+    worktree="$wt_dir" \
+    repo="$root" \
+    created="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    provider="" \
+    ticket=""
+
+# Start tmux pipe-pane logging
+if in_tmux && [[ -n "${session:-}" ]]; then
+    mkdir -p "$AIMUX_LOG_DIR"
+    tmux pipe-pane -t "$session:$_new_branch" "cat >> $AIMUX_LOG_DIR/${instance_name}.log" 2>/dev/null || true
 fi
 
 # Summary

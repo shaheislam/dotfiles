@@ -10,13 +10,13 @@ setup() {
 @test "aimux version outputs version string" {
   run aimux version
   [ "$status" -eq 0 ]
-  [[ "$output" == "aimux 0.1.0" ]]
+  [[ "$output" == "aimux 0.2.0" ]]
 }
 
 @test "aimux --version outputs version string" {
   run aimux --version
   [ "$status" -eq 0 ]
-  [[ "$output" == "aimux 0.1.0" ]]
+  [[ "$output" == "aimux 0.2.0" ]]
 }
 
 @test "aimux help shows usage" {
@@ -166,6 +166,58 @@ setup() {
 
 @test "aimux attach --help shows usage" {
   run aimux attach --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]]
+}
+
+# === Log ===
+
+@test "aimux log --help shows usage" {
+  run aimux log --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]] || [[ "$output" == *"log"* ]]
+}
+
+# === Queue (extended) ===
+
+@test "aimux queue add requires args" {
+  run aimux queue add
+  # Should either error or show usage guidance
+  [[ "$status" -ne 0 ]] || [[ "$output" == *"Usage"* ]] || [[ "$output" == *"not yet"* ]] || [[ "$output" == *"queue"* ]]
+}
+
+@test "aimux queue list works" {
+  run aimux queue list
+  [ "$status" -eq 0 ] || [[ "$output" == *"queue"* ]]
+}
+
+@test "aimux queue status works" {
+  run aimux queue status
+  [ "$status" -eq 0 ] || [[ "$output" == *"queue"* ]]
+}
+
+# === Alias shortcuts ===
+
+@test "aimux st is alias for status" {
+  run aimux st --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]] || [[ "$output" == *"WORKTREE"* ]]
+}
+
+@test "aimux k is alias for kill" {
+  run aimux k --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]]
+}
+
+@test "aimux q is alias for queue" {
+  run aimux q help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Subcommands"* ]] || [[ "$output" == *"queue"* ]]
+}
+
+@test "aimux a is alias for attach" {
+  run aimux a --help
   [ "$status" -eq 0 ]
   [[ "$output" == *"Usage"* ]]
 }

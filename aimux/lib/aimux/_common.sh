@@ -20,11 +20,12 @@ COLOR_STUCK="#bb9af7"
 
 # Config
 AIMUX_HOME="${AIMUX_HOME:-$HOME/.aimux}"
-AIMUX_STATE_DIR="$AIMUX_HOME/workspaces"
+AIMUX_STATE_DIR="$AIMUX_HOME/state"
+AIMUX_LOG_DIR="$AIMUX_HOME/logs"
 AIMUX_LOG="$AIMUX_HOME/aimux.log"
 
 ensure_home() {
-    mkdir -p "$AIMUX_HOME" "$AIMUX_STATE_DIR" 2>/dev/null || true
+    mkdir -p "$AIMUX_HOME" "$AIMUX_STATE_DIR" "$AIMUX_LOG_DIR" 2>/dev/null || true
 }
 
 info() { printf "${BLUE}info${RESET}: %s\n" "$*"; }
@@ -72,4 +73,63 @@ sanitize_name() {
 log() {
     ensure_home
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >>"$AIMUX_LOG"
+}
+
+# --- State file management ---
+
+state_dir() {
+    echo "$AIMUX_HOME/state"
+}
+
+state_file() {
+    local workspace="$1"
+    echo "$(state_dir)/${workspace}.json"
+}
+
+state_write() {
+    local workspace="$1"
+    shift
+    # Atomic write via temp file
+    local sf
+    sf="$(state_file "$workspace")"
+    local tmp="${sf}.tmp"
+    mkdir -p "$(dirname "$sf")"
+    # Build JSON with provided key=value pairs
+    local json="{"
+    local first=true
+    while [[ $# -gt 0 ]]; do
+        local key="${1%%=*}" val="${1#*=}"
+        $first || json+=","
+        json+="\"$key\":\"$val\""
+        first=false
+        shift
+    done
+    json+="}"
+    echo "$json" >"$tmp"
+    mv "$tmp" "$sf"
+}
+
+state_read() {
+    local workspace="$1" key="$2" default="${3:-}"
+    local sf
+    sf="$(state_file "$workspace")"
+    if [[ -f "$sf" ]] && has jq; then
+        jq -r ".${key} // \"$default\"" "$sf" 2>/dev/null || echo "$default"
+    elif [[ -f "$sf" ]]; then
+        # Fallback: grep-based extraction for simple flat JSON
+        local val
+        val="$(grep -o "\"${key}\":\"[^\"]*\"" "$sf" 2>/dev/null | head -1 | sed 's/.*":"//' | sed 's/"$//')"
+        if [[ -n "$val" ]]; then
+            echo "$val"
+        else
+            echo "$default"
+        fi
+    else
+        echo "$default"
+    fi
+}
+
+state_remove() {
+    local workspace="$1"
+    rm -f "$(state_file "$workspace")" 2>/dev/null || true
 }

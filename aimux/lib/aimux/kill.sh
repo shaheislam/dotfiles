@@ -98,5 +98,14 @@ fi
 
 git worktree prune 2>/dev/null || true
 
+# Stop witness process
+witness_stop "$instance_name" 2>/dev/null || true
+
+# Remove state file
+state_remove "$instance_name"
+
+# Clean up log file
+rm -f "$AIMUX_LOG_DIR/${instance_name}.log" 2>/dev/null || true
+
 printf "${GREEN}Workspace killed${RESET}: %s\n" "$_kill_target"
 log "kill: removed workspace $_kill_target"

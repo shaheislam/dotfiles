@@ -1,0 +1,114 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck bin/
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './bin'
+          severity: warning
+
+      - name: ShellCheck lib/
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './lib'
+          severity: warning
+
+  bats-unit:
+    name: BATS Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install BATS
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats
+
+      - name: Run unit tests
+        run: bats tests/unit/
+
+  bats-integration:
+    name: BATS Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats tmux
+
+      - name: Configure git
+        run: |
+          git config --global user.email "ci@aimux.dev"
+          git config --global user.name "aimux-ci"
+          git config --global init.defaultBranch main
+
+      - name: Run integration tests
+        run: bats tests/integration/
+
+  bats-cli:
+    name: BATS CLI Smoke Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq bats tmux
+
+      - name: Configure git
+        run: |
+          git config --global user.email "ci@aimux.dev"
+          git config --global user.name "aimux-ci"
+          git config --global init.defaultBranch main
+
+      - name: Run CLI tests
+        run: bats tests/test_cli.bats
+
+  go-test:
+    name: Go Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Run tests
+        run: go test -v -race -count=1 ./...
+
+      - name: Build daemon
+        run: go build -o aimuxd ./cmd/aimuxd/
+
+  go-vet:
+    name: Go Vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Vet
+        run: go vet ./...

@@ -10,6 +10,7 @@ _aimux() {
     'kill:Kill workspace + cleanup'
     'doctor:Health check'
     'queue:Ticket queue management'
+    'log:View agent logs'
     'notify:Send notification'
     'daemon:Agent state monitoring daemon'
     'version:Show version'
@@ -30,9 +31,12 @@ _aimux() {
                   '--rebuild' '--fast' '--features[Features]:features:' ;;
         kill)   _arguments '--force' ;;
         run)    _arguments '--max[Max iterations]:iterations:' \
-                  '--provider[AI provider]:provider:(claude codex)' \
+                  '--provider[AI provider]:provider:(claude codex ollama)' \
                   '--command[Slash command]:cmd:' '--no-devcon' \
                   '--mount[Additional directory]:dir:_dirs' ;;
+        log)    _arguments '-f[Follow log output]' '--follow[Follow log output]' \
+                  '-a[Show all workspace logs]' '--all[Show all workspace logs]' \
+                  '--clear[Clear log files]' ;;
         notify) _arguments '--bell' '--osc' '--native' '--webhook' '--all' \
                   '--title[Notification title]:title:' ;;
       esac ;;

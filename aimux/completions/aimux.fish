@@ -10,6 +10,7 @@ complete -c aimux -n __fish_use_subcommand -a kill -d "Kill workspace"
 complete -c aimux -n __fish_use_subcommand -a doctor -d "Health check"
 complete -c aimux -n __fish_use_subcommand -a queue -d "Queue management"
 complete -c aimux -n __fish_use_subcommand -a notify -d "Send notification"
+complete -c aimux -n __fish_use_subcommand -a log -d "View agent logs"
 complete -c aimux -n __fish_use_subcommand -a daemon -d "Agent daemon"
 complete -c aimux -n __fish_use_subcommand -a version -d "Show version"
 complete -c aimux -n __fish_use_subcommand -a help -d "Show help"
@@ -28,7 +29,7 @@ complete -c aimux -n "__fish_seen_subcommand_from kill" -s f -l force -d "Force 
 
 # run subcommand
 complete -c aimux -n "__fish_seen_subcommand_from run" -l max -d "Max iterations" -r
-complete -c aimux -n "__fish_seen_subcommand_from run" -l provider -d "AI provider" -ra "claude codex"
+complete -c aimux -n "__fish_seen_subcommand_from run" -l provider -d "AI provider" -ra "claude codex ollama"
 complete -c aimux -n "__fish_seen_subcommand_from run" -l command -d "Slash command" -r
 complete -c aimux -n "__fish_seen_subcommand_from run" -l no-devcon -d "Skip devcontainer"
 complete -c aimux -n "__fish_seen_subcommand_from run" -s m -l mount -d "Additional mount" -rF
@@ -43,6 +44,11 @@ complete -c aimux -n "__fish_seen_subcommand_from notify" -l native -d "OS notif
 complete -c aimux -n "__fish_seen_subcommand_from notify" -l webhook -d "Webhook notification"
 complete -c aimux -n "__fish_seen_subcommand_from notify" -l all -d "All channels"
 complete -c aimux -n "__fish_seen_subcommand_from notify" -s t -l title -d "Notification title" -r
+
+# log subcommand
+complete -c aimux -n "__fish_seen_subcommand_from log" -s f -l follow -d "Follow log output"
+complete -c aimux -n "__fish_seen_subcommand_from log" -s a -l all -d "Show all workspace logs"
+complete -c aimux -n "__fish_seen_subcommand_from log" -l clear -d "Clear log files"
 
 # queue subcommand
 complete -c aimux -n "__fish_seen_subcommand_from queue" -a "add list start stop status help"

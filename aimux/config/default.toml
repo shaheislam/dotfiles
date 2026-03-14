@@ -1,0 +1,47 @@
+# aimux configuration
+# Copy to ~/.aimux/config.toml and customize
+
+[general]
+# Seconds between daemon poll cycles
+poll_interval = 10
+
+# Seconds of no output change before marking agent "stuck"
+stuck_timeout = 300
+
+# Default AI provider for 'aimux run' (claude, codex, ollama)
+default_provider = "claude"
+
+[notifications]
+# Notification channels: bell, osc, native, webhook
+channels = ["bell", "osc", "native"]
+
+# Webhook URL for Slack/Discord/etc integration (empty = disabled)
+webhook_url = ""
+
+[queue]
+# Maximum concurrent 'aimux run' executions dispatched by the queue
+max_concurrent = 3
+
+# Seconds to wait between dispatching queue entries
+cooldown = 60
+
+[providers.claude]
+command = "claude"
+args = ["--effort", "max"]
+detect_patterns = ["claude"]
+working_pattern = "… \\("
+done_patterns = ["COMPLETE", "_DONE", "TICKET_TASK_COMPLETE"]
+
+[providers.codex]
+command = "codex"
+args = ["--full-auto"]
+detect_patterns = ["codex"]
+working_pattern = ""
+done_patterns = ["COMPLETE"]
+
+[providers.ollama]
+command = "ollama"
+args = ["run"]
+detect_patterns = ["ollama"]
+working_pattern = ""
+done_patterns = [">>>"]

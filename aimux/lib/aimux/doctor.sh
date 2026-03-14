@@ -97,16 +97,73 @@ else
     _check "~/.aimux directory" warn "not created yet (will be created on first use)"
 fi
 
-# Check AI providers
-if has claude; then
-    _check "claude CLI" pass
+# Config file
+if [[ -f "$AIMUX_HOME/config.toml" ]]; then
+    _check "config.toml" pass
 else
-    _check "claude CLI" warn "not installed"
+    _check "config.toml" warn "not found (using defaults, copy from: aimux config/default.toml)"
 fi
-if has codex; then
-    _check "codex CLI" pass
+
+# Go daemon binary
+if has aimuxd; then
+    _check "aimuxd (Go daemon)" pass
+elif [[ -f "${AIMUX_DIR:-}/lib/aimux/aimuxd" ]]; then
+    _check "aimuxd (Go daemon)" pass "found in lib"
 else
-    _check "codex CLI" warn "not installed (optional)"
+    _check "aimuxd (Go daemon)" warn "not found (optional, bash daemon used as fallback)"
+fi
+echo
+
+# 6. State directory health
+printf "${BOLD}State Health${RESET}\n"
+if [[ -d "$AIMUX_STATE_DIR" ]]; then
+    state_count=0
+    for _sf in "$AIMUX_STATE_DIR"/*.json; do
+        [[ -f "$_sf" ]] && state_count=$((state_count + 1))
+    done
+    _check "state files ($state_count tracked)" pass
+
+    # Check for orphaned state files
+    orphans=0
+    for sf in "$AIMUX_STATE_DIR"/*.json; do
+        [[ -f "$sf" ]] || continue
+        ws_name="$(basename "$sf" .json)"
+        wt_path="$(state_read "$ws_name" "worktree" "")"
+        if [[ -n "$wt_path" && ! -d "$wt_path" ]]; then
+            orphans=$((orphans + 1))
+        fi
+    done
+    if [[ "$orphans" -gt 0 ]]; then
+        _check "orphaned state files" warn "$orphans state files reference missing worktrees"
+    fi
+else
+    _check "state directory" warn "not created yet"
+fi
+echo
+
+# 7. Providers
+printf "${BOLD}AI Providers${RESET}\n"
+for prov in $(provider_list 2>/dev/null); do
+    _prov_cmd="$(cfg_get "providers.${prov}.command" "$prov")"
+    if has "$_prov_cmd"; then
+        _check "provider: $prov ($_prov_cmd)" pass
+    else
+        _check "provider: $prov ($_prov_cmd)" warn "command not found"
+    fi
+done
+
+# Fallback if provider_list unavailable
+if ! provider_list &>/dev/null; then
+    if has claude; then
+        _check "claude CLI" pass
+    else
+        _check "claude CLI" warn "not installed"
+    fi
+    if has codex; then
+        _check "codex CLI" pass
+    else
+        _check "codex CLI" warn "not installed (optional)"
+    fi
 fi
 echo
 
