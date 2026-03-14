@@ -15,7 +15,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
     #   --no-claude   Skip auto-launching Claude in split pane
     #   --help, -h    Show this help
 
-    if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
+    if test "$argv[1]" = --help; or test "$argv[1]" = -h
         echo "Usage: gwt-parallel <branch1> <branch2> ... [--mount <dir>]"
         echo ""
         echo "Launch multiple worktrees in parallel tmux windows."
@@ -186,7 +186,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
                 # split right vertically (terminal bottom) → go up to top-right → launch nvim diffview
                 # Bottom-right pane gets devcontainer shell from the split command
                 # After nvim exits, original pane enters container shell (prevents host access)
-                tmux send-keys -t $window_name "$devcon_up_cmd && tmux split-window -hb -p 50 && tmux send-keys '$exec_cmd fish -c \"claude --dangerously-skip-permissions --add-dir $resolved_repo_root\"' Enter && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim -c 'DiffviewOpen' ; $exec_cmd fish" Enter
+                tmux send-keys -t $window_name "$devcon_up_cmd && tmux split-window -hb -p 50 && tmux send-keys '$exec_cmd fish -c \"claude --dangerously-skip-permissions --effort max --name $window_name --add-dir $resolved_repo_root\"' Enter && tmux last-pane && tmux split-window -v -p 30 -c $worktree_path '$exec_cmd fish' && tmux select-pane -U && $exec_cmd nvim -c 'DiffviewOpen' ; $exec_cmd fish" Enter
             end
         end
 

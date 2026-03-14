@@ -108,7 +108,7 @@ Multi-channel AI inbox. CLI: `openclaw` / `claw`. Config: `scripts/openclaw/open
 - Attribution: `commit: ""`, `pr: ""` (suppress AI trailers)
 - Permission rules: deny → ask → allow (first match wins)
 
-**Model**: Opus 4.6 default, `CLAUDE_CODE_EFFORT_LEVEL=max`, `/model opusplan` for plan→execute split.
+**Model**: Opus 4.6 default, `CLAUDE_CODE_EFFORT_LEVEL=max`, `--effort max` CLI flag on all launch commands, `/model opusplan` for plan→execute split.
 
 ### Claude Code Hooks
 Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `docs/claude-code-hooks.md`.
