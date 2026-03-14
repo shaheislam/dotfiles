@@ -1743,7 +1743,7 @@ $prompt_suffix"
         else
             printf '%s' "$slash_command \"$escaped_prompt\"" >$prompt_cmd_file
         end
-        set -a _ls 'claude --dangerously-skip-permissions --add-dir '$add_dir_path
+        set -a _ls 'claude --dangerously-skip-permissions --effort max --add-dir '$add_dir_path
     end
 
     if not $use_devcon
@@ -1774,7 +1774,7 @@ $prompt_suffix"
         if test -n "$sub_profile"
             set -a _ss "set -gx CLAUDE_CONFIG_DIR $HOME/.claude-$sub_profile"
         end
-        set -a _ss 'claude --dangerously-skip-permissions'
+        set -a _ss 'claude --dangerously-skip-permissions --effort max'
     else
         # Claude is primary → secondary is Codex (interactive, no prompt)
         set -a _ss '# Codex CLI - interactive mode (secondary agent)'

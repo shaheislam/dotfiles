@@ -28,14 +28,14 @@ Health checks now run in background by default, not blocking the main conversati
 
 ## Recommendations Requiring Your Decision
 
-### A. Effort Level: two-layer approach
-**Current**: `CLAUDE_CODE_EFFORT_LEVEL=high` in fish config (env var supports `low`|`medium`|`high` only). Worktree sessions get `/effort max` via `gwt-rename-session.sh` keystroke injection (session-only, Opus 4.6 exclusive).
+### A. Effort Level: `max` (deepest reasoning)
+**Current**: `CLAUDE_CODE_EFFORT_LEVEL=max` in fish config. The env var supports `low|medium|high|max|auto`. `max` is Opus 4.6 only and session-scoped (doesn't persist to settings). `/effort max` in gwt-rename-session.sh provides belt-and-suspenders.
 
-**Note**: `max` is NOT a valid env var value — Claude Code normalizes it to `high`. Use `/effort max` slash command for true max reasoning.
+**Note**: The `effortLevel` settings key only accepts `low`, `medium`, `high` — NOT `max`. The env var and `/effort` command both support `max`. `/effort` query may display `high` even when `max` is active (known display quirk — the env var takes precedence).
 
-**Trade-off**: `high` always = deepest env-var reasoning. `/effort max` is session-only and Opus 4.6 exclusive. `medium` default + ultrathink on demand = saves tokens on simple tasks.
+**Trade-off**: `max` = deepest reasoning, no token constraint, highest cost. `high` is cheaper. `medium` default + ultrathink on demand = saves tokens on simple tasks.
 
-**To change**: In `.config/fish/config.fish`, change `CLAUDE_CODE_EFFORT_LEVEL` to `medium` or `low`.
+**To change**: In `.config/fish/config.fish`, change `CLAUDE_CODE_EFFORT_LEVEL` to `high`, `medium`, or `low`.
 
 ### B. Agent `isolation: worktree` for risky agents
 Agents like `refactorer`, `security-reviewer` could benefit from worktree isolation to prevent accidental changes to the main workspace. Add `isolation: worktree` to their frontmatter.
