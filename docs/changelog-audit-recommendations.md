@@ -29,7 +29,7 @@ Health checks now run in background by default, not blocking the main conversati
 ## Recommendations Requiring Your Decision
 
 ### A. Effort Level: `max` (deepest reasoning)
-**Current**: `CLAUDE_CODE_EFFORT_LEVEL=max` in fish config. The env var supports `low|medium|high|max|auto`. `max` is Opus 4.6 only and session-scoped (doesn't persist to settings). `/effort max` in gwt-rename-session.sh provides belt-and-suspenders.
+**Current**: `CLAUDE_CODE_EFFORT_LEVEL=max` in fish config. The env var supports `low|medium|high|max|auto`. `max` is Opus 4.6 only and session-scoped (doesn't persist to settings). `--effort max` is passed as a CLI flag on all claude launch commands (gwt-ticket, gwt-parallel).
 
 **Note**: The `effortLevel` settings key only accepts `low`, `medium`, `high` — NOT `max`. The env var and `/effort` command both support `max`. `/effort` query may display `high` even when `max` is active (known display quirk — the env var takes precedence).
 
