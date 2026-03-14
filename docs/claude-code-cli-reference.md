@@ -71,6 +71,7 @@
 | `--fork-session` | Fork when resuming (new session ID) | `claude --resume abc --fork-session` |
 | `--from-pr` | Resume sessions linked to a PR | `claude --from-pr 123` |
 | `--session-id` | Use specific UUID for conversation | `claude --session-id "550e8400-..."` |
+| `--name`, `-n` | Set display name for session (shown in `/resume` and terminal title) | `claude --name auth-refactor` |
 | `--worktree`, `-w` | Start in isolated git worktree | `claude -w feature-auth` |
 | `--remote` | Create web session on claude.ai | `claude --remote "fix login bug"` |
 | `--teleport` | Resume web session locally | `claude --teleport` |
@@ -80,6 +81,7 @@
 | Flag | Description | Example |
 |------|-------------|---------|
 | `--model` | Set model (alias: `sonnet`, `opus`, `haiku`, or full name) | `claude --model claude-sonnet-4-6` |
+| `--effort` | Effort level: `low`, `medium`, `high`, `max` (max = Opus 4.6 only, 1M context) | `claude --effort max` |
 | `--print`, `-p` | Print mode (non-interactive) | `claude -p "query"` |
 | `--output-format` | Output format: `text`, `json`, `stream-json` | `claude -p --output-format json "query"` |
 | `--input-format` | Input format: `text`, `stream-json` | `claude -p --input-format stream-json` |
@@ -656,6 +658,8 @@ Control reasoning depth via settings or environment:
 | `auto` | Reset to model default | env var, `/effort` |
 
 Set in settings: `"effortLevel": "high"` or via `CLAUDE_CODE_EFFORT_LEVEL`. Note: settings key only supports `low`/`medium`/`high`; the env var also supports `max` and `auto`.
+
+**Display quirk**: Claude Code normalizes `max` → `high` in the status bar and internal env var. Verify `max` is active by checking the model ID suffix `[1m]` (1M context = max effort). The `--effort max` flag and `CLAUDE_CODE_EFFORT_LEVEL=max` env var both work correctly despite the display.
 
 ### 1M Context Window
 

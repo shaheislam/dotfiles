@@ -31,7 +31,9 @@ Health checks now run in background by default, not blocking the main conversati
 ### A. Effort Level: `max` (deepest reasoning)
 **Current**: `CLAUDE_CODE_EFFORT_LEVEL=max` in fish config. The env var supports `low|medium|high|max|auto`. `max` is Opus 4.6 only and session-scoped (doesn't persist to settings). `--effort max` is passed as a CLI flag on all claude launch commands (gwt-ticket, gwt-parallel).
 
-**Note**: The `effortLevel` settings key only accepts `low`, `medium`, `high` — NOT `max`. The env var and `/effort` command both support `max`. `/effort` query may display `high` even when `max` is active (known display quirk — the env var takes precedence).
+**Note**: The `effortLevel` settings key only accepts `low`, `medium`, `high` — NOT `max`. The env var and `/effort` command both support `max`.
+
+**Known display behavior**: Claude Code normalizes `max` → `high` in both the status bar UI and the internal `CLAUDE_CODE_EFFORT_LEVEL` env var. However, `max` IS active — verifiable by the model ID suffix `[1m]` (1M context window, only available at max effort). The `--effort max` CLI flag and `CLAUDE_CODE_EFFORT_LEVEL=max` env var both work; the normalization is purely cosmetic.
 
 **Trade-off**: `max` = deepest reasoning, no token constraint, highest cost. `high` is cheaper. `medium` default + ultrathink on demand = saves tokens on simple tasks.
 
