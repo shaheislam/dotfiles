@@ -3,6 +3,7 @@
 
 setup() {
   export AIMUX_TEST_DIR="$(mktemp -d)"
+  AIMUX_TEST_DIR="$(cd "$AIMUX_TEST_DIR" && pwd -P)"
   export AIMUX_HOME="$AIMUX_TEST_DIR/.aimux"
   export AIMUX_DIR="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   export PATH="$AIMUX_DIR/bin:$PATH"
@@ -16,6 +17,7 @@ setup() {
     git init -q
     git config user.email "test@aimux.dev"
     git config user.name "aimux-test"
+    git config core.hooksPath /dev/null
     git commit --allow-empty -q -m "Initial commit"
   )
 
@@ -54,15 +56,14 @@ teardown() {
   cd "$TEST_REPO"
   run aimux status
   [ "$status" -eq 0 ]
-  # Should at least show the main worktree
   [[ "$output" == *"WORKTREE"* ]]
 }
 
-@test "status fails outside git repo" {
+@test "status works outside git repo using state files" {
   cd /tmp
   run aimux status
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"git repository"* ]] || [[ "$output" == *"error"* ]]
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WORKTREE"* ]]
 }
 
 @test "status --help shows usage" {

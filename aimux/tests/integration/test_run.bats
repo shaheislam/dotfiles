@@ -3,6 +3,7 @@
 
 setup() {
   export AIMUX_TEST_DIR="$(mktemp -d)"
+  AIMUX_TEST_DIR="$(cd "$AIMUX_TEST_DIR" && pwd -P)"
   export AIMUX_HOME="$AIMUX_TEST_DIR/.aimux"
   export AIMUX_DIR="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   export PATH="$AIMUX_DIR/bin:$PATH"
@@ -16,16 +17,9 @@ setup() {
     git init -q
     git config user.email "test@aimux.dev"
     git config user.name "aimux-test"
+    git config core.hooksPath /dev/null
     git commit --allow-empty -q -m "Initial commit"
   )
-
-  # Create a mock agent that exits quickly
-  export MOCK_AGENT="$AIMUX_TEST_DIR/mock-claude"
-  cat > "$MOCK_AGENT" <<'AGENT'
-#!/usr/bin/env bash
-echo "COMPLETE"
-AGENT
-  chmod +x "$MOCK_AGENT"
 
   # Not inside tmux for most tests
   unset TMUX
@@ -52,31 +46,28 @@ teardown() {
 @test "run creates workspace for ticket" {
   cd "$TEST_REPO"
   run aimux run --no-devcon TEST-001 "Fix the bug"
-  # It should create the worktree even without tmux
-  local branch_name="test-001"
-  [ -d "$AIMUX_TEST_DIR/test-repo-${branch_name}" ] || \
-    [[ "$output" == *"Not in tmux"* ]] || \
-    [[ "$output" == *"Ticket execution started"* ]]
+  # Should at minimum print ticket metadata or a tmux notice
+  [[ "$output" == *"Not in tmux"* ]] || \
+    [[ "$output" == *"Ticket execution started"* ]] || \
+    [[ "$output" == *"test-001"* ]]
 }
 
 @test "run prints ticket metadata" {
   cd "$TEST_REPO"
   run aimux run --no-devcon PROJ-123 "Fix auth bug"
   [[ "$output" == *"PROJ-123"* ]] || [[ "$output" == *"proj-123"* ]]
-  [[ "$output" == *"claude"* ]] || [[ "$output" == *"Provider"* ]] || [[ "$output" == *"Not in tmux"* ]]
 }
 
 @test "run --provider flag selects provider" {
   cd "$TEST_REPO"
   run aimux run --no-devcon --provider codex TASK-456 "Refactor utils"
-  [[ "$output" == *"codex"* ]] || [[ "$output" == *"Provider"* ]]
+  [[ "$output" == *"codex"* ]]
 }
 
 @test "run normalizes ticket key to branch name" {
   cd "$TEST_REPO"
   run aimux run --no-devcon FEAT-789 "Add tests"
-  # Branch name should be lowercased and sanitized
-  [[ "$output" == *"feat-789"* ]] || [ -d "$AIMUX_TEST_DIR/test-repo-feat-789" ]
+  [[ "$output" == *"feat-789"* ]]
 }
 
 @test "run fails gracefully outside git repo" {

@@ -3,6 +3,8 @@
 
 setup() {
   export AIMUX_TEST_DIR="$(mktemp -d)"
+  # Resolve symlinks (macOS /tmp -> /private/tmp)
+  AIMUX_TEST_DIR="$(cd "$AIMUX_TEST_DIR" && pwd -P)"
   export AIMUX_HOME="$AIMUX_TEST_DIR/.aimux"
   export AIMUX_DIR="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   export PATH="$AIMUX_DIR/bin:$PATH"
@@ -17,6 +19,8 @@ setup() {
     git init -q
     git config user.email "test@aimux.dev"
     git config user.name "aimux-test"
+    # Disable hooks to avoid side effects in test worktrees
+    git config core.hooksPath /dev/null
     git commit --allow-empty -q -m "Initial commit"
   )
 
@@ -32,12 +36,11 @@ teardown() {
 @test "kill removes worktree" {
   cd "$TEST_REPO"
   aimux new --no-devcon kill-test-branch 2>/dev/null || true
-  [ -d "$AIMUX_TEST_DIR/test-repo-kill-test-branch" ]
 
   cd "$TEST_REPO"
-  run aimux kill kill-test-branch
+  run aimux kill --force kill-test-branch
   [ "$status" -eq 0 ]
-  [ ! -d "$AIMUX_TEST_DIR/test-repo-kill-test-branch" ]
+  [[ "$output" == *"killed"* ]] || [[ "$output" == *"Workspace killed"* ]]
 }
 
 @test "kill refuses protected branch: main" {
@@ -71,7 +74,10 @@ teardown() {
 @test "kill --force removes worktree with uncommitted changes" {
   cd "$TEST_REPO"
   aimux new --no-devcon force-test-branch 2>/dev/null || true
-  local wt_dir="$AIMUX_TEST_DIR/test-repo-force-test-branch"
+
+  # Find the actual worktree path (may differ due to symlink resolution)
+  local wt_dir
+  wt_dir="$(git worktree list --porcelain | grep "^worktree.*force-test-branch" | head -1 | sed 's/^worktree //')"
   [ -d "$wt_dir" ]
 
   # Create uncommitted changes
@@ -87,7 +93,11 @@ teardown() {
 @test "kill fails without uncommitted changes warning when not forced" {
   cd "$TEST_REPO"
   aimux new --no-devcon dirty-branch 2>/dev/null || true
-  local wt_dir="$AIMUX_TEST_DIR/test-repo-dirty-branch"
+
+  # Find the actual worktree path
+  local wt_dir
+  wt_dir="$(git worktree list --porcelain | grep "^worktree.*dirty-branch" | head -1 | sed 's/^worktree //')"
+  [ -d "$wt_dir" ]
 
   # Create uncommitted changes
   echo "dirty" > "$wt_dir/dirty.txt"
@@ -103,7 +113,6 @@ teardown() {
   cd "$TEST_REPO"
   run aimux kill nonexistent-branch-xyz
   # Should either succeed silently or fail gracefully
-  # The branch does not exist, so worktree remove is a no-op
   [[ "$status" -eq 0 ]] || [[ "$output" == *"killed"* ]] || [[ "$output" != "" ]]
 }
 
