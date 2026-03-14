@@ -1,64 +1,89 @@
-# TASK: codecompanion
+# TASK: cmuxbrowser — How cmux Uses Agent Browser from the Terminal
 
 ## Question
-Is it worth installing CodeCompanion (https://github.com/olimorris/codecompanion.nvim) into our Neovim config?
+How is cmux using agent-browser from within the terminal? Is there anything else we might be missing?
 
 ## Answer
-**Yes** - CodeCompanion is a strong fit for this setup. Here's the analysis:
 
-### Why Install
+### How cmux Does It
 
-1. **Fills a gap**: The current Neovim config has 78 plugins but zero AI tools. CodeCompanion adds chat, inline editing, and agentic workflows without duplicating any existing functionality.
+cmux embeds a **WKWebView** (native macOS WebKit browser) directly as a terminal pane. The browser API is a **port of vercel-labs/agent-browser** adapted for WKWebView instead of Playwright/Chromium.
 
-2. **Provider flexibility**: Supports 15+ HTTP adapters (Anthropic, OpenAI, Ollama, Gemini, etc.) and 8+ ACP agents (Claude Code, Codex, OpenCode). This aligns with the existing stack - Anthropic API is already available, and Ollama is configured in the dotfiles.
+**Architecture:**
+```
+cmux process (Swift/AppKit)
+    ├── Terminal panes (libghostty rendering)
+    └── Browser panes (WKWebView)
+         └── Scriptable API via Unix socket (/tmp/cmux.sock)
+              ├── CLI: cmux browser <command> [args]
+              └── Socket: JSON-RPC {"method": "browser.snapshot", "params": {...}}
+```
 
-3. **Zero-conflict dependencies**: Both required deps (plenary.nvim, nvim-treesitter) are already installed. Optional blink.cmp integration works natively.
+**Key design choices:**
+1. **No extension, no MCP, no network ports** — browser control goes through the same Unix socket as all other cmux commands
+2. **Socket auth** — only processes spawned within cmux terminals can connect (default mode), eliminating the CORS/no-auth attack surface
+3. **CLI-first** — every browser action is a `cmux browser` subcommand that AI agents call directly via Bash
+4. **Claude Code hooks** — `cmux claude-hook session-start|stop|notification` wires into Claude Code lifecycle, replacing tmux watcher polling
+5. **Notification rings** — blue rings on panes + sidebar badges when agents need attention, replacing fragile output-parsing
 
-4. **Excellent maintenance**: 6.2k stars, v18.7.0 (released Feb 18, 2026), 385 total releases, 163 contributors, 0 open issues. One of the most actively maintained Neovim plugins.
+**Full command surface (ported from agent-browser):**
+- Navigation: `goto`, `back`, `forward`, `reload`
+- DOM interaction: `click`, `dblclick`, `hover`, `focus`, `check`, `uncheck`, `type`, `fill`, `press`, `select`, `scroll`
+- Inspection: `snapshot` (accessibility tree with element refs), `screenshot`, `get` (url/title/text/html/value/attr), `is` (visible/enabled/checked), `find` (by role/text/label/testid)
+- JS execution: `eval`
+- State management: `cookies`, `storage`, `state save|load`, `addinitscript`, `addstyle`, `viewport`
+- Waiting: `wait` (selector/text/url/load-state/function)
+- Tab/dialog management: `tab`, `dialog`, `frame`
 
-5. **Complements Claude Code**: When editing in Neovim directly (not through Claude Code), CodeCompanion provides in-editor AI assistance. Different use case than the terminal-based Claude Code workflow.
+### What We Have (Current Dotfiles)
 
-### What It Does NOT Do
+Three separate browser automation approaches:
 
-- **No inline autocomplete** (like Copilot ghost-text). This is a deliberate design decision by the maintainer. If you want that, add copilot.lua separately.
-- **Not a replacement for Claude Code CLI** - it's complementary. Claude Code operates at the project level; CodeCompanion operates at the buffer/chat level.
+| Tool | Transport | Browser | Use Case |
+|------|-----------|---------|----------|
+| **Playwright MCP** | MCP stdio (bunx) | Isolated Chromium | General automation, testing |
+| **agent-browser CLI** | Bash CLI (v0.17.1) | Persistent Chromium daemon | AI-optimized ref-based interaction |
+| **ClaudeCodeBrowser** | MCP stdio (Python) | Real Firefox session | Firefox-specific automation |
 
-### What Was Implemented
+### What We're Missing
 
-**Files modified in `~/neovim`:**
+#### 1. MCP Parity Gap (Bug — Fixed)
+`.mcp.json` was missing `claudecodebrowser` that Claude Desktop config had. This violates the CLAUDE.md parity rule. **Fixed in this branch.**
 
-1. **`lua/plugins/codecompanion.lua`** (new) - Plugin config with:
-   - Anthropic as primary adapter (claude-sonnet-4)
-   - Ollama as secondary adapter (qwen2.5-coder:7b)
-   - `<leader>a` prefix keymaps for all AI operations
-   - Lazy-loaded on commands and keymaps
+#### 2. No Unified Browser Strategy
+cmux has one browser API for everything. We have three tools with different interfaces:
+- Playwright MCP uses `mcp__playwright__browser_*` tools
+- agent-browser uses Bash CLI with `@ref` selectors
+- ClaudeCodeBrowser uses `mcp__claudecodebrowser__browser_*` tools
 
-2. **`lua/plugins/blink-cmp.lua`** (modified) - Added CodeCompanion completion source for slash commands and variables in chat buffers
+**Impact:** AI agents must know which tool to use when. The agent-browser skill helps, but there's no decision logic for when to prefer one over another.
 
-3. **`lua/plugins/which-key.lua`** (modified) - Registered `<leader>a` group as "ai (CodeCompanion)"
+**Recommendation:** The agent-browser skill already documents the decision matrix (see `.claude/skills/agent-browser/SKILL.md` line 196-203). This is sufficient — we don't need to unify the tools, just ensure the skill is discoverable.
 
-### Keymaps
+#### 3. agent-browser Not Exposed as MCP
+agent-browser (v0.17.1) is CLI-only. cmux proves the CLI model works fine for AI agents — they call `cmux browser` via Bash. Our agent-browser skill already does exactly this (`allowed-tools: Bash(agent-browser:*)`).
 
-| Key | Mode | Action |
-|-----|------|--------|
-| `<leader>aa` | n, v | Action Palette (all commands) |
-| `<leader>ac` | n, v | Toggle Chat buffer |
-| `<leader>ai` | n, v | Inline Assist (prompt) |
-| `<leader>ae` | v | Explain selection |
-| `<leader>af` | v | Fix selection |
-| `<leader>at` | v | Generate tests for selection |
-| `<leader>ad` | v | Add selection to chat |
+**Decision:** CLI-only is the correct pattern for agent-browser. Adding an MCP wrapper would duplicate Playwright MCP's function without benefit. The Bash skill approach matches cmux's design.
 
-### Setup Required
+#### 4. No Native Browser Pane (Limitation, Not a Gap)
+cmux's killer feature is the browser-as-a-pane: `cmux browser open-split --url http://localhost:3000 --direction right` puts a browser next to your terminal. We can't replicate this in WezTerm/tmux — it requires a native app embedding WKWebView.
 
-Set `ANTHROPIC_API_KEY` environment variable (add to Fish config if not already present from Claude Code usage). For Ollama, ensure it's running locally.
+**Mitigation:** This is already covered in `docs/cmux-evaluation.md`. The evaluation correctly concluded: "extract patterns, don't adopt cmux as terminal."
 
-### Alternatives Considered
+#### 5. No Agent Notification Hooks for cmux
+The Brewfile has `cask "cmux"` and `tap "manaflow-ai/cmux"`, but there's no Claude Code hook wiring for `cmux claude-hook` commands. If someone runs Claude Code inside cmux, they won't get notification rings.
 
-| Plugin | Stars | Verdict |
-|--------|-------|---------|
-| **avante.nvim** | ~14k | More "Cursor-like" but worse docs, more bugs (200+ open issues), requires compiled artifacts |
-| **copilot.lua** | ~3k | Inline autocomplete only - complementary, not a replacement |
-| **CopilotChat.nvim** | ~3.5k | GitHub Copilot-only provider - less flexible |
+**Recommendation:** Add conditional Claude Code hooks that detect cmux and wire notifications. Low priority since cmux is "evaluate, don't adopt" per the evaluation doc.
 
-CodeCompanion is the best choice for a provider-agnostic, well-maintained, Neovim-native AI assistant.
+#### 6. Playwright MCP Flag Inconsistency
+`.mcp.json` uses `["@playwright/mcp@latest"]` but Claude Desktop uses `["-y", "@playwright/mcp@latest"]`. The `-y` flag auto-confirms the bunx install prompt. Without it, first-run may hang waiting for confirmation.
+
+**Fixed in this branch.**
+
+### Summary
+
+cmux's approach is architecturally cleaner (one socket, one API, zero network surface) but tied to a specific terminal app. Our multi-tool approach is more flexible and works across any terminal. The main actionable gaps were:
+1. MCP config parity (fixed)
+2. Playwright `-y` flag inconsistency (fixed)
+
+Everything else is either already handled (agent-browser skill, cmux evaluation doc) or not applicable (native browser panes require cmux adoption).
