@@ -51,7 +51,6 @@ COMMAND=""
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/json-helpers.sh"
 AGENT_STATE="$SCRIPT_DIR/agent-state.sh"
-BEADS_AUTOCOMMIT="$SCRIPT_DIR/beads-autocommit.sh"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -294,9 +293,6 @@ monitor_loop() {
             (cd "$WORKTREE_PATH" && bd agent state "$agent_bead_id" running 2>/dev/null) || true
         fi
     fi
-
-    # Auto-commit interactions.jsonl on main (bd writes there, not to worktree)
-    [[ -x "$BEADS_AUTOCOMMIT" ]] && (cd "$WORKTREE_PATH" && "$BEADS_AUTOCOMMIT" 2>/dev/null) || true
 
     local retries=0
     local last_state=""
@@ -581,7 +577,7 @@ on_completion() {
         if [[ -d "$WORKTREE_PATH/.pytest_cache" ]]; then
             if [[ -f "$WORKTREE_PATH/.pytest_cache/v/cache/lastfailed" ]]; then
                 local lastfailed_size
-                lastfailed_size=$(wc -c < "$WORKTREE_PATH/.pytest_cache/v/cache/lastfailed" 2>/dev/null | tr -d ' ')
+                lastfailed_size=$(wc -c <"$WORKTREE_PATH/.pytest_cache/v/cache/lastfailed" 2>/dev/null | tr -d ' ')
                 if [[ "$lastfailed_size" -gt 2 ]]; then
                     test_status="failed"
                 else
@@ -656,9 +652,6 @@ on_completion() {
         tmp_progress=$(jq --arg bs "$beads_status" '. + {beads_status: $bs}' "$progress_file" 2>/dev/null) &&
             echo "$tmp_progress" >"$progress_file"
     fi
-
-    # Auto-commit interactions.jsonl on main (bd writes there, not to worktree)
-    [[ -x "$BEADS_AUTOCOMMIT" ]] && (cd "$WORKTREE_PATH" && "$BEADS_AUTOCOMMIT" 2>/dev/null) || true
 
     # Convoy: mark ticket complete in convoy
     local convoy_id
