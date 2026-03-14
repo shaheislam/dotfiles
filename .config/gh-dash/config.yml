@@ -20,6 +20,11 @@ prSections:
     layout:
       repoName:
         width: 20
+  - title: Merge Queue
+    filters: is:open label:merge-when-ready,graphite sort:updated-desc
+    layout:
+      repoName:
+        width: 20
 
 issuesSections:
   - title: My Issues
@@ -71,11 +76,27 @@ defaults:
       assignees:
         hidden: true
 
+# Map GitHub repos to local paths (enables checkout, review, shell keybindings)
+# Exact matches take priority over wildcards
+repoPaths:
+  shaheislam/dotfiles: ~/dotfiles
+  shaheislam/neovim: ~/neovim
+  shaheislam/neovim-mini: ~/neovim-mini
+  shaheislam/obsidian: ~/obsidian
+  shaheislam/*: ~/*
+  corelize/*: ~/corelize/*
+  opennextjs/opennextjs-aws: ~/work/opennextjs-aws
+
 # Use delta for diffs (already configured in .gitconfig)
 pager:
   diff: delta
 
 keybindings:
+  universal:
+    - key: s
+      name: fish shell in repo (ALT-G for git-fzf)
+      command: >
+        cd {{.RepoPath}} && fish
   prs:
     - key: C
       name: checkout PR
@@ -91,7 +112,13 @@ keybindings:
       command: >
         cd {{.RepoPath}} && gh pr checkout {{.PrNumber}} &&
         tmux new-window -n "diff-{{.PrNumber}}" -c "{{.RepoPath}}"
-        'nvim -c DiffviewOpen'
+        'nvim -c "DiffviewOpen origin/HEAD...HEAD"'
+    - key: t
+      name: checkout PR in worktree
+      command: >
+        cd {{.RepoPath}} && git worktree add -b pr-{{.PrNumber}} ../$(basename {{.RepoPath}})-pr-{{.PrNumber}} &&
+        cd ../$(basename {{.RepoPath}})-pr-{{.PrNumber}} && gh pr checkout {{.PrNumber}} &&
+        fish
     - key: M
       name: merge PR (squash)
       command: >
@@ -104,6 +131,10 @@ keybindings:
       name: watch CI checks
       command: >
         gh pr checks {{.PrNumber}} --repo {{.RepoName}} --watch
+    - key: Q
+      name: merge queue status (gt-queue)
+      command: >
+        cd {{.RepoPath}} && fish -c "gt-queue status"
 
 # Tokyo Night theme
 theme:
