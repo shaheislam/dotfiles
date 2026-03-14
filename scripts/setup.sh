@@ -380,6 +380,18 @@ phase_2_cli_tools() {
         fi
     fi
 
+    # Install gh-dash extension (GitHub dashboard TUI)
+    if command_exists gh; then
+        if ! gh extension list 2>/dev/null | grep -q "gh-dash"; then
+            print_step "Installing gh-dash extension..."
+            gh extension install dlvhdr/gh-dash >/dev/null 2>&1 &&
+                print_success "gh-dash extension installed" ||
+                print_warning "Failed to install gh-dash extension"
+        else
+            print_success "gh-dash extension already installed"
+        fi
+    fi
+
     mark_step_complete "cli_tools"
 }
 
