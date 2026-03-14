@@ -32,7 +32,7 @@ Simple actionable rules for Claude Code framework operation.
 - Focus on what changed and why, not who or what tool made the change
 
 ### Bash Command Chaining
-- Use `;` not `&&` when chaining independent commands where the second's failure should not mask the first's success (e.g., `bd close ID; bd sync --from-main`)
+- Use `;` not `&&` when chaining independent commands where the second's failure should not mask the first's success (e.g., `bd close ID; bd sync`)
 - Only use `&&` when the second command genuinely depends on the first succeeding
 
 ### Systematic Codebase Changes
