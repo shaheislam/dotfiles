@@ -73,3 +73,6 @@ name = "Ollama (local)"
 base_url = "http://localhost:11434/v1"
 env_key = "OLLAMA_API_KEY"
 wire_api = "responses"
+
+[projects."/Users/shahe/dotfiles"]
+trust_level = "trusted"
