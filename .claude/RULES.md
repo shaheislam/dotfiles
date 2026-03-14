@@ -31,6 +31,10 @@ Simple actionable rules for Claude Code framework operation.
 - Keep commits professional, clear, and tool-agnostic
 - Focus on what changed and why, not who or what tool made the change
 
+### Bash Command Chaining
+- Use `;` not `&&` when chaining independent commands where the second's failure should not mask the first's success (e.g., `bd close ID; bd sync --from-main`)
+- Only use `&&` when the second command genuinely depends on the first succeeding
+
 ### Systematic Codebase Changes
 - **MANDATORY**: Complete project-wide discovery before any changes
 - Search ALL file types for ALL variations of target terms
@@ -67,6 +71,7 @@ Simple actionable rules for Claude Code framework operation.
 ❌ Mark complete without verification
 ❌ Use emojis in commit messages
 ❌ Reference AI assistants in commits
+❌ Chain independent commands with `&&` (use `;` instead)
 
 ### Auto-Triggers
 - Wave mode: complexity ≥0.7 + multiple domains
