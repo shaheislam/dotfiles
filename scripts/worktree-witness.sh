@@ -47,6 +47,8 @@ AUTO_CLEANUP=false
 GRACE_PERIOD=3600 # 1 hour default
 WORKTREE_PATH=""
 COMMAND=""
+CROWN_SIGNAL=""
+CROWN_WORKTREE_SIGNAL=""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/json-helpers.sh"
@@ -91,6 +93,15 @@ while [[ $# -gt 0 ]]; do
         GRACE_PERIOD="$2"
         shift 2
         ;;
+    --crown-signal)
+        CROWN_SIGNAL="$2"
+        DO_MERGE=false
+        shift 2
+        ;;
+    --crown-worktree-signal)
+        CROWN_WORKTREE_SIGNAL="$2"
+        shift 2
+        ;;
     --help | -h)
         echo "Usage: worktree-witness.sh <worktree-path> [options]"
         echo "       worktree-witness.sh stop <worktree-path>"
@@ -106,6 +117,8 @@ while [[ $# -gt 0 ]]; do
         echo "  --foreground        Run in foreground"
         echo "  --auto-cleanup      Remove worktree after successful merge (with grace period)"
         echo "  --grace-period N    Seconds to wait before auto-cleanup (default: 3600)"
+        echo "  --crown-signal FILE Write branch name to file on completion (crown mode, implies --no-merge)"
+        echo "  --crown-worktree-signal FILE  Write worktree path to file on completion (crown mode)"
         exit 0
         ;;
     -*)
@@ -460,6 +473,13 @@ monitor_loop() {
                     if [[ -x "$mail_script" ]]; then
                         "$mail_script" send all -s "Agent Failed: $issue_key" -m "$title failed after $MAX_RETRIES retries" --from "witness-$(basename "$WORKTREE_PATH")" 2>/dev/null || true
                     fi
+                    # Crown mode: signal failure to crown-witness
+                    if [[ -n "$CROWN_SIGNAL" ]]; then
+                        local failed_signal
+                        failed_signal=$(echo "$CROWN_SIGNAL" | sed 's|/done-|/failed-|')
+                        echo "max_retries_exceeded" >"$failed_signal"
+                        log "Crown failure signal written: $failed_signal"
+                    fi
                     # Mark witness inactive via awk (consistent with main batch update)
                     awk '/^active: true/ { print "active: false"; next } { print }' \
                         "$WITNESS_STATE" >"${WITNESS_STATE}.tmp" && mv "${WITNESS_STATE}.tmp" "$WITNESS_STATE" 2>/dev/null || true
@@ -529,6 +549,21 @@ monitor_loop() {
 # Handle agent completion
 on_completion() {
     log "Running post-completion actions"
+
+    # Crown mode: write branch name to signal file for crown-witness
+    if [[ -n "$CROWN_SIGNAL" ]]; then
+        local current_branch
+        current_branch=$(git -C "$WORKTREE_PATH" branch --show-current 2>/dev/null) || current_branch=""
+        if [[ -n "$current_branch" ]]; then
+            echo "$current_branch" >"$CROWN_SIGNAL"
+            log "Crown signal written: $current_branch -> $CROWN_SIGNAL"
+        else
+            log "Warning: Could not determine branch for crown signal"
+        fi
+        if [[ -n "$CROWN_WORKTREE_SIGNAL" ]]; then
+            echo "$WORKTREE_PATH" >"$CROWN_WORKTREE_SIGNAL"
+        fi
+    fi
 
     # /rename is handled by gwt-rename-session.sh (waits for ralph-loop
     # completion, then sends /rename before witness reaches on_completion)

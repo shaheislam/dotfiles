@@ -116,6 +116,13 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l use_codex false
     set -l codex_model ""
     set -l codex_profile ""
+    set -l crown_mode false
+    set -l crown_count 3
+    set -l crown_agents ""
+    set -l crown_judge council
+    set -l crown_subs ""
+    set -l crown_timeout 7200
+    set -l crown_signal "" # internal: signal file path for sub-gwt-ticket in crown mode
 
     for i in (seq (count $argv))
         if $skip_next
@@ -430,6 +437,72 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --codex-profile requires a profile name from config.toml (e.g., auto, safe, fast, local)"
                     return 1
                 end
+            case --crown
+                set crown_mode true
+                # Optional: --crown N sets contestant count
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    if string match -qr '^[0-9]+$' -- $argv[$next_i]
+                        set crown_count $argv[$next_i]
+                        set skip_next true
+                    end
+                end
+            case --crown-agents
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set crown_agents $argv[$next_i]
+                    set crown_mode true
+                    set skip_next true
+                else
+                    echo "Error: --crown-agents requires a comma-separated list (e.g., claude,claude,codex)"
+                    return 1
+                end
+            case --crown-judge
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set -l jpreset $argv[$next_i]
+                    if not contains -- $jpreset council review redteam
+                        echo "Error: Unknown crown judge preset '$jpreset'"
+                        echo "Valid presets: council, review, redteam"
+                        return 1
+                    end
+                    set crown_judge $jpreset
+                    set crown_mode true
+                    set skip_next true
+                else
+                    echo "Error: --crown-judge requires a preset (council|review|redteam)"
+                    return 1
+                end
+            case --crown-subs
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set crown_subs $argv[$next_i]
+                    set crown_mode true
+                    set skip_next true
+                else
+                    echo "Error: --crown-subs requires comma-separated profile names (e.g., personal,work,backup)"
+                    return 1
+                end
+            case --crown-timeout
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set crown_timeout $argv[$next_i]
+                    set crown_mode true
+                    set skip_next true
+                else
+                    echo "Error: --crown-timeout requires seconds"
+                    return 1
+                end
+            case --crown-signal
+                # Internal: used by crown parent to tell sub-gwt-ticket where to signal
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set crown_signal $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --crown-signal requires a file path"
+                    return 1
+                end
             case --no-checkpoints
                 set no_checkpoints true
             case --ckpt-agent
@@ -613,6 +686,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --codex              Use Codex CLI as primary agent (codex exec --full-auto)"
         echo "  --codex-model M     Codex model override (implies --codex; e.g., o3, gpt-5.4)"
         echo "  --codex-profile P   Codex config.toml profile (implies --codex; e.g., auto, safe, fast, local)"
+        echo "  --crown [N]          Tournament mode: N agents compete, LLM judge picks winner (default: 3)"
+        echo "  --crown-agents LIST  Comma-separated agent types per contestant (e.g., claude,claude,codex)"
+        echo "  --crown-judge PRESET Judge mode: council|review|redteam (default: council)"
+        echo "  --crown-subs LIST    Rotate subscription profiles across contestants (e.g., personal,work,backup)"
+        echo "  --crown-timeout N    Max wait for all contestants in seconds (default: 7200)"
         echo "  --rebase             Rebase onto main before merging (re-spawns on conflict)"
         echo "  --auto-cleanup       Auto-remove worktree after successful merge (1hr grace period)"
         echo "  --no-auto-cleanup    Disable auto-cleanup (keep worktree after merge)"
@@ -690,6 +768,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge --bridge-mode redteam"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge 5 --bridge-profiles work"
+        echo ""
+        echo "  # Crown tournament mode (N agents compete, LLM judges)"
+        echo "  gwt-ticket --crown TICKET-123 \"Fix auth\" \"Description\""
+        echo "  gwt-ticket --crown 5 TICKET-123 \"Fix auth\" \"Description\""
+        echo "  gwt-ticket --crown --crown-agents claude,claude,codex TICKET-123 \"Fix auth\" \"Desc\""
+        echo "  gwt-ticket --crown --bridge TICKET-123 \"Fix auth\" \"Desc\"  # each contestant uses bridge"
+        echo "  gwt-ticket --crown --crown-judge redteam TICKET-123 \"Fix auth\" \"Desc\""
+        echo "  gwt-ticket --crown --crown-subs personal,work,backup TICKET-123 \"Fix auth\" \"Desc\""
         echo ""
         echo "Prompt Template Variables:"
         echo "  {{ISSUE_KEY}}          Issue key (ENG-123)"
@@ -784,6 +870,165 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
 
+    # Crown tournament mode: spawn N sub-gwt-tickets and a crown-witness
+    # Only activates for the parent invocation (no --crown-signal means parent)
+    if $crown_mode; and test -z "$crown_signal"
+        # Validate crown count
+        if test "$crown_count" -lt 2
+            echo "Error: --crown requires at least 2 contestants (got: $crown_count)"
+            return 1
+        end
+
+        # Get repo root for crown-witness --repo
+        set -l _crown_git_common (git rev-parse --git-common-dir)
+        set -l _crown_repo_root (realpath "$_crown_git_common/..")
+
+        # Create crown directory
+        set -l _crown_slug (string lower -- $issue_key | string replace -ra '[^a-z0-9]+' '-')
+        set -l crown_dir "/tmp/crown-$_crown_slug"
+        mkdir -p "$crown_dir"
+
+        # Parse crown-agents list (default: all claude)
+        set -l agent_list
+        if test -n "$crown_agents"
+            set agent_list (string split ',' -- $crown_agents)
+            # If fewer agents than crown_count, cycle through them
+        else
+            for _n in (seq 1 $crown_count)
+                set -a agent_list claude
+            end
+        end
+
+        # Parse crown-subs list for rotation
+        set -l sub_list
+        if test -n "$crown_subs"
+            set sub_list (string split ',' -- $crown_subs)
+        end
+
+        echo "=== Crown Tournament ==="
+        echo "Contestants: $crown_count"
+        echo "Judge:       $crown_judge"
+        echo "Crown dir:   $crown_dir"
+        if test -n "$crown_agents"
+            echo "Agents:      $crown_agents"
+        end
+        if test -n "$crown_subs"
+            echo "Subs:        $crown_subs"
+        end
+        echo ""
+
+        # Spawn N sub-gwt-tickets
+        for _ci in (seq 1 $crown_count)
+            # Determine agent type for this contestant (cycle through agent_list)
+            set -l _agent_idx (math "($_ci - 1) % (count \$agent_list) + 1")
+            set -l _agent_type $agent_list[$_agent_idx]
+
+            # Determine sub profile for this contestant (cycle through sub_list)
+            set -l _sub_flag
+            if test (count $sub_list) -gt 0
+                set -l _sub_idx (math "($_ci - 1) % (count \$sub_list) + 1")
+                set _sub_flag --sub $sub_list[$_sub_idx]
+            else if test -n "$sub_profile"
+                set _sub_flag --sub "$sub_profile"
+            end
+
+            # Build sub-ticket args
+            set -l _sub_args
+            set -a _sub_args $issue_key "$title — Crown $_ci" "$description"
+            set -a _sub_args --max $max_iterations
+            set -a _sub_args --crown-signal "$crown_dir/done-$_ci"
+
+            # Agent type flag
+            if test "$_agent_type" = codex
+                set -a _sub_args --codex
+                if test -n "$codex_model"
+                    set -a _sub_args --codex-model $codex_model
+                end
+            end
+
+            # Pass through common flags
+            if $bridge_mode
+                set -a _sub_args --bridge
+                if test -n "$bridge_iterations"
+                    set -a _sub_args $bridge_iterations
+                end
+                if test -n "$bridge_review_mode"
+                    set -a _sub_args --bridge-mode $bridge_review_mode
+                end
+            end
+            if test -n "$_sub_flag"
+                set -a _sub_args $_sub_flag
+            end
+            if test -n "$provider_profile"
+                set -a _sub_args --provider $provider_profile
+            end
+            if test -n "$slash_command"; and test "$slash_command" != "/ralph-wiggum:ralph-loop"
+                set -a _sub_args --command $slash_command
+            end
+            if test (count $skills) -gt 0
+                set -a _sub_args --skill $skills
+            end
+            if $use_local
+                set -a _sub_args --local
+                if test -n "$local_model"
+                    set -a _sub_args --model $local_model
+                end
+            end
+            if test -n "$prompt_template"
+                set -a _sub_args --prompt-template $prompt_template
+            end
+            if test -n "$prompt_prefix"
+                set -a _sub_args --prompt-prefix $prompt_prefix
+            end
+            if test -n "$prompt_suffix"
+                set -a _sub_args --prompt-suffix $prompt_suffix
+            end
+            if $no_checkpoints
+                set -a _sub_args --no-checkpoints
+            end
+            if not $use_dynamic_beads
+                set -a _sub_args --no-beads
+            end
+            if not $edit_mode
+                set -a _sub_args --no-edit
+            end
+            set -a _sub_args --quiet
+
+            echo "Spawning contestant $_ci/$crown_count ($_agent_type)..."
+            gwt-ticket $_sub_args
+            or echo "Warning: Contestant $_ci failed to spawn" >&2
+        end
+
+        # Launch crown-witness in background
+        set -l _witness_script ""
+        for _p in ~/dotfiles/scripts/crown-witness.sh ~/dotfiles-cmux/scripts/crown-witness.sh
+            if test -x "$_p"
+                set _witness_script $_p
+                break
+            end
+        end
+        if test -n "$_witness_script"
+            echo ""
+            echo "Starting crown witness..."
+            bash "$_witness_script" "$crown_dir" \
+                --count $crown_count \
+                --judge $crown_judge \
+                --base main \
+                --repo "$_crown_repo_root" \
+                --timeout $crown_timeout \
+                --poll-interval 30
+        else
+            echo "Error: crown-witness.sh not found" >&2
+            return 1
+        end
+
+        echo ""
+        echo "=== Crown tournament started ==="
+        echo "Monitor: tail -f $crown_dir/crown-witness.log"
+        echo "Verdict: $crown_dir/verdict.json"
+        return 0
+    end
+
     # Generate branch name (5 piped string ops instead of 8 — saves ~5ms)
     set -l slug (string lower -- $title | string replace -ra '[^a-z0-9]+' '-' | string replace -r '^-|-$' '' | string sub -l 30 | string replace -r -- '-$' '')
     set -l branch_name
@@ -794,6 +1039,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         # Ticket: use just the key (e.g., plat-177)
         set -l key_lower (string lower $issue_key)
         set branch_name "$key_lower"
+    end
+
+    # Crown contestant: append suffix from signal file (e.g., done-1 → crown-1)
+    if test -n "$crown_signal"
+        set -l _crown_num (string replace -r '.*done-' '' -- (basename "$crown_signal"))
+        set branch_name "$branch_name-crown-$_crown_num"
+        # Strip " — Crown N" from title to avoid double-suffix on the slug
+        set title (string replace -r ' — Crown [0-9]+$' '' -- "$title")
     end
 
     # Get repository info (resolve to main repo root, not worktree root)
@@ -910,6 +1163,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             if test -n "$gate_dep_worktree"
                 echo "Gate dep:  $gate_dep_worktree"
             end
+        end
+        if test -n "$crown_signal"
+            echo "Crown:     contestant (signal: $crown_signal)"
         end
         echo ""
     end
@@ -2033,6 +2289,13 @@ $prompt" >$state_file
             set -l witness_args "$worktree_path" --poll-interval 30 --max-retries 3
             if test -n "$auto_cleanup"
                 set witness_args $witness_args $auto_cleanup
+            end
+            # Crown mode: pass signal file paths to witness (skip merge, signal crown-witness)
+            if test -n "$crown_signal"
+                set witness_args $witness_args --crown-signal "$crown_signal"
+                # Also write worktree path companion file for crown-witness
+                set -l _crown_wt_signal (string replace '/done-' '/worktree-' -- "$crown_signal")
+                set witness_args $witness_args --crown-worktree-signal "$_crown_wt_signal"
             end
             bash "$witness_script" $witness_args >/dev/null 2>&1 &
             disown 2>/dev/null
