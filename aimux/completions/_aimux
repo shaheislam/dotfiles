@@ -1,0 +1,42 @@
+#compdef aimux
+
+_aimux() {
+  local -a commands
+  commands=(
+    'new:Create workspace (worktree + tmux window)'
+    'status:Show all workspaces with agent state'
+    'run:Execute ticket autonomously'
+    'attach:Attach to workspace'
+    'kill:Kill workspace + cleanup'
+    'doctor:Health check'
+    'queue:Ticket queue management'
+    'notify:Send notification'
+    'daemon:Agent state monitoring daemon'
+    'version:Show version'
+    'help:Show help'
+  )
+
+  _arguments -C \
+    '1:command:->cmd' \
+    '*::arg:->args'
+
+  case "$state" in
+    cmd) _describe 'command' commands ;;
+    args)
+      case "$words[1]" in
+        daemon) _values 'subcommand' start stop status poll ;;
+        queue)  _values 'subcommand' add list start stop status help ;;
+        new)    _arguments '--new' '--exec' '--no-devcon' '--mount[Additional directory]:dir:_dirs' \
+                  '--rebuild' '--fast' '--features[Features]:features:' ;;
+        kill)   _arguments '--force' ;;
+        run)    _arguments '--max[Max iterations]:iterations:' \
+                  '--provider[AI provider]:provider:(claude codex)' \
+                  '--command[Slash command]:cmd:' '--no-devcon' \
+                  '--mount[Additional directory]:dir:_dirs' ;;
+        notify) _arguments '--bell' '--osc' '--native' '--webhook' '--all' \
+                  '--title[Notification title]:title:' ;;
+      esac ;;
+  esac
+}
+
+_aimux "$@"

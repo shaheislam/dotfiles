@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# aimux - AI Agent Multiplexer
+# Terminal-agnostic agent orchestration for tmux
+set -euo pipefail
+
+AIMUX_VERSION="0.1.0"
+AIMUX_HOME="${AIMUX_HOME:-$HOME/.aimux}"
+
+# Resolve real path of this script (follow symlinks)
+if command -v readlink &>/dev/null && readlink -f "$0" &>/dev/null; then
+  AIMUX_DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+elif command -v realpath &>/dev/null; then
+  AIMUX_DIR="$(cd "$(dirname "$(realpath "$0")")/.." && pwd)"
+else
+  AIMUX_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+fi
+
+AIMUX_LIB="$AIMUX_DIR/lib/aimux"
+
+# Source shared utilities
+# shellcheck source=../lib/aimux/_common.sh
+source "$AIMUX_LIB/_common.sh"
+
+cmd="${1:-help}"
+[[ $# -gt 0 ]] && shift
+
+case "$cmd" in
+  new)       source "$AIMUX_LIB/new.sh" "$@" ;;
+  status|st) source "$AIMUX_LIB/status.sh" "$@" ;;
+  run)       source "$AIMUX_LIB/run.sh" "$@" ;;
+  attach|a)  source "$AIMUX_LIB/attach.sh" "$@" ;;
+  kill|k)    source "$AIMUX_LIB/kill.sh" "$@" ;;
+  doctor)    source "$AIMUX_LIB/doctor.sh" "$@" ;;
+  queue|q)   source "$AIMUX_LIB/queue.sh" "$@" ;;
+  notify|n)  source "$AIMUX_LIB/notify.sh" "$@" ;;
+  daemon)    source "$AIMUX_LIB/daemon.sh" "$@" ;;
+  version|-v|--version) echo "aimux $AIMUX_VERSION" ;;
+  help|-h|--help|*)     source "$AIMUX_LIB/help.sh" ;;
+esac
