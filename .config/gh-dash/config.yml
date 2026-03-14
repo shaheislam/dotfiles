@@ -1,0 +1,148 @@
+# gh-dash configuration
+# Dashboard for GitHub PRs, issues, and notifications
+# Theme: Tokyo Night (consistent with dotfiles)
+
+prSections:
+  - title: My PRs
+    filters: is:open author:@me archived:false sort:updated-desc
+    layout:
+      author:
+        hidden: true
+      repoName:
+        width: 20
+  - title: Needs My Review
+    filters: is:open review-requested:@me archived:false sort:updated-desc
+    layout:
+      repoName:
+        width: 20
+  - title: Involved
+    filters: is:open involves:@me -author:@me archived:false updated:>={{ nowModify "-2w" }} sort:updated-desc
+    layout:
+      repoName:
+        width: 20
+
+issuesSections:
+  - title: My Issues
+    filters: is:open author:@me archived:false sort:updated-desc
+  - title: Assigned
+    filters: is:open assignee:@me archived:false sort:updated-desc
+
+notificationsSections:
+  - title: All
+    filters: ""
+  - title: Review Requested
+    filters: reason:review-requested
+  - title: Participating
+    filters: reason:participating
+  - title: Mentioned
+    filters: reason:mention
+
+defaults:
+  view: prs
+  prsLimit: 30
+  issuesLimit: 20
+  notificationsLimit: 20
+  refetchIntervalMinutes: 5
+  preview:
+    open: true
+    width: 60
+  layout:
+    prs:
+      updatedAt:
+        width: 7
+      repo:
+        width: 20
+      author:
+        width: 15
+      assignees:
+        hidden: true
+      base:
+        width: 15
+        hidden: true
+      lines:
+        width: 15
+    issues:
+      updatedAt:
+        width: 7
+      repo:
+        width: 15
+      creator:
+        width: 10
+      assignees:
+        hidden: true
+
+# Use delta for diffs (already configured in .gitconfig)
+pager:
+  diff: delta
+
+keybindings:
+  universal:
+    - key: g
+      name: lazygit
+      command: >
+        cd {{.RepoPath}} && lazygit
+  prs:
+    - key: C
+      name: checkout PR
+      command: >
+        cd {{.RepoPath}} && gh pr checkout {{.PrNumber}}
+    - key: v
+      name: review in Neovim (octo.nvim)
+      command: >
+        tmux new-window -n "PR-{{.PrNumber}}" -c "{{.RepoPath}}"
+        'nvim -c "silent Octo pr edit {{.PrNumber}}"'
+    - key: V
+      name: review diff in Neovim (diffview)
+      command: >
+        cd {{.RepoPath}} && gh pr checkout {{.PrNumber}} &&
+        tmux new-window -n "diff-{{.PrNumber}}" -c "{{.RepoPath}}"
+        'nvim -c DiffviewOpen'
+    - key: M
+      name: merge PR (squash)
+      command: >
+        gh pr merge {{.PrNumber}} --repo {{.RepoName}} --squash --delete-branch
+    - key: A
+      name: approve PR
+      command: >
+        gh pr review {{.PrNumber}} --repo {{.RepoName}} --approve
+    - key: W
+      name: watch CI checks
+      command: >
+        gh pr checks {{.PrNumber}} --repo {{.RepoName}} --watch
+
+# Tokyo Night theme
+theme:
+  ui:
+    sectionsShowCount: true
+    table:
+      compact: false
+      showSeparator: true
+  colors:
+    text:
+      primary: "#c0caf5"
+      secondary: "#7aa2f7"
+      inverted: "#1a1b26"
+      faint: "#565f89"
+      warning: "#e0af68"
+      success: "#9ece6a"
+    background:
+      selected: "#283457"
+    border:
+      primary: "#414868"
+      secondary: "#565f89"
+      faint: "#292e42"
+    icons:
+      prDraft: "#565f89"
+      prOpen: "#9ece6a"
+      prMerged: "#bb9af7"
+      prClosed: "#f7768e"
+      issueOpen: "#9ece6a"
+      issueClosed: "#bb9af7"
+      stateReady: "#9ece6a"
+      statePending: "#e0af68"
+      stateFailure: "#f7768e"
+      stateUnknown: "#565f89"
+
+confirmQuit: false
+showAuthorIcons: true
+smartFilteringAtLaunch: true

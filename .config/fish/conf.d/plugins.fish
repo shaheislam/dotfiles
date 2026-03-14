@@ -17,6 +17,9 @@ abbr -a kdel 'kubectl delete'
 abbr -a klog 'kubectl logs'
 abbr -a kexec 'kubectl exec -it'
 
+# GitHub dashboard
+abbr -a ghd 'gh dash'
+
 # Enable Fish's built-in autosuggestions (replaces zsh-autosuggestions)
 set -g fish_autosuggestion_enabled 1
 
