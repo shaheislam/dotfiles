@@ -1285,12 +1285,6 @@ phase_8_dotfiles() {
         git config --global merge.lockfile.driver "$main_wt/scripts/merge-driver-lockfile.sh %A %O %B %L %P"
         log_verbose "Lockfile merge driver registered"
 
-        # Register JSONL merge driver - dedup by id, sort by timestamp
-        # Prevents merge conflicts on append-only .beads/*.jsonl files
-        git config --global merge.jsonl-merge.name "JSONL merge for append-only line files"
-        git config --global merge.jsonl-merge.driver "$main_wt/scripts/merge-driver-jsonl.sh %A %O %B %L %P"
-        log_verbose "JSONL merge driver registered"
-
         # Register JSON diff driver - sorts keys for cleaner diffs
         git config --global diff.json.textconv "$main_wt/scripts/git-diff-json.sh"
         log_verbose "JSON diff driver registered"

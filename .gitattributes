@@ -48,14 +48,6 @@ scripts/test-filter.sh   merge=union-doc
 #       driver = scripts/merge-driver-lockfile.sh %A %O %B %L %P
 .config/nvim/lazy-lock.json merge=lockfile
 
-# JSONL merge for beads files - append-only, deduplicate by id, sort by time.
-# Multiple worktrees append independent lines; this driver combines them.
-#
-# Registered in git config via setup.sh:
-#   [merge "jsonl-merge"]
-#       driver = scripts/merge-driver-jsonl.sh %A %O %B %L %P
-.beads/*.jsonl merge=jsonl-merge
-
 # -----------------------------------------------------------------------------
 # 2. Line Ending Enforcement
 # -----------------------------------------------------------------------------

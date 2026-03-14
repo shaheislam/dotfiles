@@ -157,10 +157,6 @@
             "type": "command"
           },
           {
-            "command": "bash scripts/beads-autocommit.sh 2>/dev/null || true",
-            "type": "command"
-          },
-          {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-end.sh 2>/dev/null || true",
             "type": "command"
           }
