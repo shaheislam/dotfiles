@@ -76,11 +76,6 @@ pager:
   diff: delta
 
 keybindings:
-  universal:
-    - key: g
-      name: lazygit
-      command: >
-        cd {{.RepoPath}} && lazygit
   prs:
     - key: C
       name: checkout PR
