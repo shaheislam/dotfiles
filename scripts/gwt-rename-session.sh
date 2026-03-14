@@ -86,6 +86,16 @@ if ! wait_for_idle 15 4 3; then
     echo "Warning: /rc did not return to idle within 15s, continuing" >&2
 fi
 
+# Step 0c: Set effort to max for deepest reasoning (Opus 4.6).
+# Belt-and-suspenders with CLAUDE_CODE_EFFORT_LEVEL env var.
+tmux send-keys -l -t "$PANE_ID" "/effort max"
+sleep 0.2
+tmux send-keys -t "$PANE_ID" Enter
+
+if ! wait_for_idle 10 4 3; then
+    echo "Warning: /effort max did not return to idle within 10s, continuing" >&2
+fi
+
 # Step 1: Deliver prompt from file
 if [ -n "$PROMPT_CMD_FILE" ] && [ -f "$PROMPT_CMD_FILE" ]; then
     PROMPT_CMD=$(<"$PROMPT_CMD_FILE")
