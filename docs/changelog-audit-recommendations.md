@@ -28,13 +28,13 @@ Health checks now run in background by default, not blocking the main conversati
 
 ## Recommendations Requiring Your Decision
 
-### A. Effort Level: `high` vs `medium` + ultrathink
-**Current**: `CLAUDE_CODE_EFFORT_LEVEL=high` (always maximum reasoning)
+### A. Effort Level: `max` (deepest reasoning)
+**Current**: `CLAUDE_CODE_EFFORT_LEVEL=max` (deepest reasoning, Opus 4.6 only)
 **Since v2.1.68**: Opus 4.6 defaults to medium; "ultrathink" keyword triggers high for next turn.
 
-**Trade-off**: `high` always = more thorough but more tokens. `medium` default + ultrathink on demand = saves tokens on simple tasks.
+**Trade-off**: `max` always = deepest reasoning with no token constraint but highest cost. `high` is more practical for routine tasks. `medium` default + ultrathink on demand = saves tokens on simple tasks.
 
-**To change**: In `.config/fish/config.fish`, change `CLAUDE_CODE_EFFORT_LEVEL` to `medium`.
+**To change**: In `.config/fish/config.fish`, change `CLAUDE_CODE_EFFORT_LEVEL` to `high` or `medium`.
 
 ### B. Agent `isolation: worktree` for risky agents
 Agents like `refactorer`, `security-reviewer` could benefit from worktree isolation to prevent accidental changes to the main workspace. Add `isolation: worktree` to their frontmatter.
