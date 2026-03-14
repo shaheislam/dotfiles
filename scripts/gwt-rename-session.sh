@@ -87,7 +87,9 @@ if ! wait_for_idle 15 4 3; then
 fi
 
 # Step 0c: Set effort to max for deepest reasoning (Opus 4.6).
-# Belt-and-suspenders with CLAUDE_CODE_EFFORT_LEVEL env var.
+# IMPORTANT: /effort max is the ONLY way to get max — the env var only supports
+# low|medium|high. CLAUDE_CODE_EFFORT_LEVEL=high in fish config is the baseline;
+# this slash command upgrades to max for the session.
 tmux send-keys -l -t "$PANE_ID" "/effort max"
 sleep 0.2
 tmux send-keys -t "$PANE_ID" Enter

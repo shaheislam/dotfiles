@@ -65,7 +65,7 @@ if status is-interactive
     # Claude Code environment
     set -gx FORCE_AUTOUPDATE_PLUGINS 1 # Auto-update plugins on session start
     set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1 # Load CLAUDE.md from --add-dir paths
-    set -gx CLAUDE_CODE_EFFORT_LEVEL max # Opus 4.6 deepest reasoning: low|medium|high|max
+    set -gx CLAUDE_CODE_EFFORT_LEVEL high # env var: low|medium|high (max is /effort slash-cmd only)
 
     # ==================== Platform-Specific Configuration ====================
 

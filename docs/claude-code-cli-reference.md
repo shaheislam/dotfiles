@@ -647,13 +647,14 @@ claude --model haiku "simple question"
 
 Control reasoning depth via settings or environment:
 
-| Level | Behavior |
-|-------|----------|
-| `low` | Minimal thinking, fastest responses |
-| `medium` | Balanced reasoning (default) |
-| `high` | Maximum thinking budget, deepest analysis |
+| Level | Behavior | Availability |
+|-------|----------|--------------|
+| `low` | Minimal thinking, fastest responses | env var, settings, `/effort` |
+| `medium` | Balanced reasoning (default) | env var, settings, `/effort` |
+| `high` | Maximum thinking budget, deepest analysis | env var, settings, `/effort` |
+| `max` | Maximum capability with deepest reasoning (Opus 4.6 only) | `/effort max` only (session-only) |
 
-Set in settings: `"effortLevel": "high"` or via `CLAUDE_CODE_EFFORT_LEVEL`.
+Set in settings: `"effortLevel": "high"` or via `CLAUDE_CODE_EFFORT_LEVEL`. Note: `max` is NOT valid for the env var or settings — use `/effort max` slash command.
 
 ### 1M Context Window
 
@@ -1169,7 +1170,7 @@ These official flags are available but not yet integrated in our dotfiles:
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
-| `CLAUDE_CODE_EFFORT_LEVEL` | Reasoning effort: `low`, `medium`, `high` | Adaptive |
+| `CLAUDE_CODE_EFFORT_LEVEL` | Reasoning effort: `low`, `medium`, `high` (`max` NOT valid — use `/effort max`) | Adaptive |
 | `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING` | Disable adaptive thinking | `0` |
 | `CLAUDE_CODE_DISABLE_1M_CONTEXT` | Disable 1M context window | `0` |
 | `MAX_THINKING_TOKENS` | Max extended thinking budget | — |
