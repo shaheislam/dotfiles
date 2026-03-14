@@ -121,6 +121,22 @@ function claude-resume --description "FZF picker for resuming Claude sessions"
         end
 
         set -l session_id (printf '%s' "$selection" | cut -f1)
+        set -l source_project (printf '%s' "$selection" | cut -f2)
+
+        # Cross-directory resume: symlink session into current project dir if needed
+        set -l current_project (string replace -a '/' '-' -- (pwd))
+        if test "$source_project" != "$current_project"
+            set -l projects_dir ~/.claude/projects
+            set -l source_file "$projects_dir/$source_project/$session_id.jsonl"
+            set -l target_dir "$projects_dir/$current_project"
+            set -l target_file "$target_dir/$session_id.jsonl"
+
+            if test -f "$source_file"; and not test -e "$target_file"
+                mkdir -p "$target_dir"
+                ln -s "$source_file" "$target_file"
+                echo "Linked session from $source_project → current project"
+            end
+        end
 
         set -l resume_args --resume "$session_id"
         if set -q _flag_fork
