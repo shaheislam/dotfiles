@@ -179,7 +179,16 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     # Cache realpath once for reuse below
     set -l abs_wt (realpath $worktree_path)
 
-    # Skip devcontainer if requested (moved before mise trust — not needed without devcon)
+    # Trust mise config if present — must run before any early return
+    # so worktrees created with --no-devcon (e.g. gwt-ticket) are also trusted
+    if command -q mise
+        if test -f "$abs_wt/mise.toml"; or test -f "$abs_wt/.mise.toml"
+            mise trust "$abs_wt" 2>/dev/null
+            echo "   mise trusted: $abs_wt"
+        end
+    end
+
+    # Skip devcontainer if requested
     if $do_no_devcon
         echo "Worktree created: $worktree_path"
         if not $do_no_cd
@@ -187,14 +196,6 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
             echo "   Switched to: "(pwd)
         end
         return 0
-    end
-
-    # Trust mise config if present (inspired by DHH's worktree setup)
-    if command -q mise
-        if test -f "$abs_wt/mise.toml"; or test -f "$abs_wt/.mise.toml"
-            mise trust "$abs_wt" 2>/dev/null
-            echo "   mise trusted: $abs_wt"
-        end
     end
 
     # Always use the built-in devcon claude sandbox for isolation.
