@@ -74,7 +74,7 @@ Bind-mounts `~/.claude` into containers. Key file: `scripts/devcontainer/export-
 Multi-agent lifecycle management. Details in `.claude/rules/agent-orchestration.md`. Core scripts: `agent-state.sh`, `worktree-witness.sh`, `merge-queue.sh`, `agent-triage.sh`, `phase-gates.sh`. Higher-level: convoys, molecules, town-beads, mayor, dashboard.
 
 ### Beads Agent Memory
-Git-backed memory via `bd` CLI. Hooks: SessionStart (`bd prime`), PreCompact (`bd sync`). Commands: `/beads:ready`, `/beads:create`.
+Git-backed memory via `bd` CLI. Hooks: SessionStart (`bd prime`), PreCompact (`bd prime`). Commands: `/beads:ready`, `/beads:create`.
 
 ### Checkpoints
 Managed by `entire` CLI. Fish alias: `ckpt`. Key commands: `entire enable|status|explain|resume|rewind|doctor`. Per-worktree: `gwt-ticket` runs `entire enable` automatically.

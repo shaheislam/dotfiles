@@ -37,7 +37,7 @@ patrol exponential backoff, GUPP hook beads, and `gwt-nudge`.
 | Beads Feature | Our Equivalent | Status |
 |---------------|----------------|--------|
 | `bd prime` | SessionStart hook | ✅ Wired |
-| `bd sync` | PreCompact hook | ✅ Wired |
+| `bd prime` | PreCompact hook | ✅ Wired |
 | `bd init` | gwt-ticket auto-init | ✅ Per-worktree |
 | `bd create` | gwt-ticket creates bead | ✅ Fixed: uses --external-ref |
 | `bd ready` | `gwt-queue bd-ready` | ✅ Added |

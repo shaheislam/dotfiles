@@ -239,7 +239,7 @@ MCP tools follow pattern `mcp__<server>__<tool>`:
 |-------|------|---------|
 | **SessionStart** | `bash ~/dotfiles/scripts/fix-hookify-imports.sh` | Fixes hookify plugin imports |
 | **SessionStart** | `bd prime` | Primes Beads agent memory |
-| **PreCompact** | `bd sync` | Syncs Beads memory before compaction |
+| **PreCompact** | `bd prime` | Re-injects Beads workflow context before compaction |
 | **Stop** | `bash ~/.claude/hooks/cross-provider-bridge.sh` (180s) | Cross-provider review via Codex/OpenCode |
 
 > **Note**: Checkpoint hooks are now managed by the `entire` CLI (`entire enable`). See [entireio/cli](https://github.com/entireio/cli) for details.
