@@ -19,7 +19,7 @@
 # States:
 #   running    - Agent is actively processing (has child processes or growing stdout)
 #   idle       - Agent process exists but not actively working
-#   stuck      - Ralph-loop active but iteration unchanged for >10 minutes
+#   stuck      - Ralph-loop active but iteration unchanged for >30 minutes (STUCK_THRESHOLD)
 #   completed  - Ralph-loop finished (active: false)
 #   dead       - No agent process found but ticket is still active
 #   none       - No ticket execution in this worktree
@@ -42,7 +42,7 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # How long before we consider an agent stuck (seconds)
-STUCK_THRESHOLD="${STUCK_THRESHOLD:-600}" # 10 minutes default
+STUCK_THRESHOLD="${STUCK_THRESHOLD:-1800}" # 30 minutes default (complex single iterations can take 10+ min)
 
 JSON_OUTPUT=false
 SHOW_ALL=false

@@ -17,6 +17,12 @@ parse_yaml() {
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "")}"
 [[ -z "$PROJECT_DIR" ]] && exit 0
 
+# Clear stale stuck-detection iteration file for this worktree.
+# Without this, restarting a session in the same worktree inherits the old
+# timestamp, making agent-state.sh think the new session is already stuck.
+ITER_FILE="/tmp/tmux-claude-state/ralph-iter-$(echo "$PROJECT_DIR" | tr '/' '-')"
+rm -f "$ITER_FILE" 2>/dev/null || true
+
 RALPH_FILE="$PROJECT_DIR/.claude/ralph-loop.local.md"
 TICKET_FILE="$PROJECT_DIR/.claude/ticket-execute.local.md"
 
