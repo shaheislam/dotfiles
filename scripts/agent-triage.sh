@@ -364,6 +364,13 @@ action_nudge() {
         return 1
     fi
 
+    # Log full diagnostic context before kill (helps trace exit code 143)
+    local stuck_for
+    stuck_for=$(json_val "stuck_for" "$state_json" 2>/dev/null) || stuck_for="unknown"
+    local iteration
+    iteration=$(json_val "iteration" "$state_json" 2>/dev/null) || iteration="unknown"
+    log "NUDGE: sending SIGTERM to pid=$pid (iteration=$iteration, stuck_for=${stuck_for}s, target=$target)"
+
     # Kill the stuck claude process (now safe — restart path verified)
     local kill_sent=false
     if [[ -n "$pid" ]]; then
@@ -374,10 +381,11 @@ action_nudge() {
 
     # Restart with the pre-verified command
     tmux send-keys -t "${target}.0" "$restart_cmd" Enter 2>/dev/null || {
-        log_decision_extended "NUDGE" "partial: kill succeeded but restart failed" false "$kill_sent"
+        log_decision_extended "NUDGE" "partial: kill succeeded but restart failed (pid=$pid iter=$iteration stuck=${stuck_for}s)" false "$kill_sent"
         return 1
     }
 
+    log_decision_extended "NUDGE" "killed pid=$pid (iter=$iteration stuck=${stuck_for}s) and restarted" true "$kill_sent"
     increment_retry "nudge_count"
     return 0
 }
