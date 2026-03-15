@@ -89,6 +89,10 @@
           {
             "command": "timeout 5 entire hooks claude-code post-task 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "entire hooks claude-code post-task",
+            "type": "command"
           }
         ],
         "matcher": "Task"
@@ -97,6 +101,10 @@
         "hooks": [
           {
             "command": "timeout 5 entire hooks claude-code post-todo 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "entire hooks claude-code post-todo",
             "type": "command"
           }
         ],
@@ -144,6 +152,10 @@
           {
             "command": "timeout 5 entire hooks claude-code pre-task 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "entire hooks claude-code pre-task",
+            "type": "command"
           }
         ],
         "matcher": "Task"
@@ -158,6 +170,10 @@
           },
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-end.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "entire hooks claude-code session-end",
             "type": "command"
           }
         ],
@@ -177,6 +193,10 @@
           },
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-start.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "entire hooks claude-code session-start",
             "type": "command"
           }
         ],
@@ -233,6 +253,10 @@
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-stop.sh 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "entire hooks claude-code stop",
+            "type": "command"
           }
         ],
         "matcher": ""
@@ -273,6 +297,10 @@
           },
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-prompt.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "entire hooks claude-code user-prompt-submit",
             "type": "command"
           }
         ],
