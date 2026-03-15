@@ -148,14 +148,20 @@ find_worktree_from_tmux() {
 }
 
 # Check if agent process (claude or codex) is alive in a tmux window
+# IMPORTANT: Uses exact tmux matching (= prefix) to prevent prefix-matching
+# across similarly named windows (e.g., "falseuser" matching "falseuserwaf").
 find_agent_pid() {
     local target="$1"
     local session="${target%%:*}"
     local win_idx="${target#*:}"
 
-    for pane_idx in $(tmux list-panes -t "${session}:${win_idx}" -F "#{pane_index}" 2>/dev/null); do
+    # Use = prefix for exact matching to avoid tmux prefix-matching bug
+    # Without this, "session:foo" can match "session:foobar" if "foo" window is gone
+    local exact_target="=${session}:=${win_idx}"
+
+    for pane_idx in $(tmux list-panes -t "$exact_target" -F "#{pane_index}" 2>/dev/null); do
         local tty
-        tty=$(tmux display-message -t "${session}:${win_idx}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null) || continue
+        tty=$(tmux display-message -t "${exact_target}.${pane_idx}" -p "#{pane_tty}" 2>/dev/null) || continue
         [[ -z "$tty" ]] && continue
 
         # Capture ps output once, find agent process (avoids grep|head|awk pipeline)
@@ -259,8 +265,8 @@ get_agent_state() {
         return 0
     fi
 
-    # Check if tmux window exists
-    if ! tmux has-session -t "${tmux_target%%:*}" 2>/dev/null; then
+    # Check if tmux window exists (use exact match to prevent prefix matching)
+    if ! tmux has-session -t "=${tmux_target%%:*}" 2>/dev/null; then
         echo '{"state":"dead","worktree":"'"$worktree_path"'","issue_key":"'"$issue_key"'","title":"'"$(echo "$title" | sed 's/"/\\"/g')"'","reason":"tmux session gone","iteration":"'"${iteration:-0}"'","max_iterations":"'"${max_iterations:-0}"'"}'
         return 0
     fi

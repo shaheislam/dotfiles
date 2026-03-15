@@ -46,6 +46,11 @@ QUIET=false
 AI_TRIAGE=false
 WORKTREE_PATH=""
 
+# Log to stderr (silenced when called with 2>/dev/null from gwt-mayor)
+log() {
+    echo "[triage] $*" >&2
+}
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -283,7 +288,8 @@ action_start() {
     fi
 
     local session="${target%%:*}"
-    if ! tmux has-session -t "$session" 2>/dev/null; then
+    # Use exact match (= prefix) to prevent tmux prefix-matching across sessions
+    if ! tmux has-session -t "=$session" 2>/dev/null; then
         log_decision "START" "failed: tmux session gone" false
         return 1
     fi
@@ -294,7 +300,9 @@ action_start() {
         return 1
     }
 
-    tmux send-keys -t "${target}.0" "fish $launch_script" Enter 2>/dev/null || {
+    # Use exact match for window target
+    local exact_target="=${session}:=${target#*:}"
+    tmux send-keys -t "${exact_target}.0" "fish $launch_script" Enter 2>/dev/null || {
         log_decision "START" "failed: tmux send-keys failed" false
         return 1
     }
@@ -314,8 +322,10 @@ action_wake() {
         return 1
     fi
 
-    # Send empty Enter to wake up
-    tmux send-keys -t "${target}.0" "" Enter 2>/dev/null || {
+    # Use exact match for window target
+    local session="${target%%:*}"
+    local exact_target="=${session}:=${target#*:}"
+    tmux send-keys -t "${exact_target}.0" "" Enter 2>/dev/null || {
         log_decision "WAKE" "failed: tmux send-keys failed" false
         return 1
     }
@@ -329,6 +339,10 @@ action_wake() {
 # IMPORTANT: Verify restart path exists BEFORE killing the process.
 # Previously, kill fired unconditionally and restart often failed,
 # leaving the agent dead with no recovery (exit code 143).
+#
+# IMPORTANT: Use exact tmux matching (= prefix) to prevent prefix-matching
+# across similarly named windows (e.g., "falseuser" matching "falseuserwaf").
+# Previously, stale worktrees would kill active agents in different windows.
 action_nudge() {
     local state_json="$1"
 
@@ -342,9 +356,13 @@ action_nudge() {
         return 1
     fi
 
-    # Pre-flight: verify restart path exists BEFORE killing
+    # Use exact match (= prefix) for ALL tmux operations to prevent prefix matching
     local session="${target%%:*}"
-    if ! tmux has-session -t "$session" 2>/dev/null; then
+    local window="${target#*:}"
+    local exact_target="=${session}:=${window}"
+
+    # Pre-flight: verify restart path exists BEFORE killing
+    if ! tmux has-session -t "=$session" 2>/dev/null; then
         log_decision "NUDGE" "skipped: tmux session gone (kill would leave agent dead)" false
         return 1
     fi
@@ -358,10 +376,28 @@ action_nudge() {
         restart_cmd="cd $WORKTREE_PATH && claude --continue"
     fi
 
-    # Verify tmux pane is reachable before killing
-    if ! tmux display-message -t "${target}.0" -p "#{pane_id}" &>/dev/null; then
+    # Verify tmux pane is reachable before killing (exact match)
+    if ! tmux display-message -t "${exact_target}.0" -p "#{pane_id}" &>/dev/null; then
         log_decision "NUDGE" "skipped: tmux pane unreachable (kill would leave agent dead)" false
         return 1
+    fi
+
+    # Defense-in-depth: verify the PID's working directory matches expected worktree.
+    # This catches cases where tmux targeting resolves to the wrong window despite
+    # exact matching (e.g., window was renamed or reused).
+    if [[ -n "$pid" ]]; then
+        local pid_cwd
+        pid_cwd=$(lsof -p "$pid" -Fn 2>/dev/null | grep '^n/' | grep 'cwd' -A1 | tail -1 | sed 's/^n//' 2>/dev/null) || true
+        # Fallback: try /proc or pwdx on Linux, lsof -d cwd on macOS
+        if [[ -z "$pid_cwd" ]]; then
+            pid_cwd=$(lsof -d cwd -p "$pid" -Fn 2>/dev/null | grep '^n/' | sed 's/^n//' 2>/dev/null) || true
+        fi
+        if [[ -n "$pid_cwd" && -n "$WORKTREE_PATH" ]]; then
+            if [[ "$pid_cwd" != "$WORKTREE_PATH" && "$pid_cwd" != "$WORKTREE_PATH/"* ]]; then
+                log_decision_extended "NUDGE" "skipped: pid=$pid cwd=$pid_cwd does not match worktree=$WORKTREE_PATH (would kill wrong agent)" false false
+                return 1
+            fi
+        fi
     fi
 
     # Log full diagnostic context before kill (helps trace exit code 143)
@@ -379,8 +415,8 @@ action_nudge() {
         sleep 2
     fi
 
-    # Restart with the pre-verified command
-    tmux send-keys -t "${target}.0" "$restart_cmd" Enter 2>/dev/null || {
+    # Restart with the pre-verified command (exact match)
+    tmux send-keys -t "${exact_target}.0" "$restart_cmd" Enter 2>/dev/null || {
         log_decision_extended "NUDGE" "partial: kill succeeded but restart failed (pid=$pid iter=$iteration stuck=${stuck_for}s)" false "$kill_sent"
         return 1
     }

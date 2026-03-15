@@ -830,9 +830,9 @@ self_nuke() {
         git -C "$repo_root" worktree prune 2>/dev/null || true
     }
 
-    # Kill tmux window if it still exists
+    # Kill tmux window if it still exists (exact match to prevent prefix collision)
     if [[ -n "${tmux_session:-}" && -n "${tmux_window:-}" ]]; then
-        tmux kill-window -t "${tmux_session}:${tmux_window}" 2>/dev/null || true
+        tmux kill-window -t "=${tmux_session}:=${tmux_window}" 2>/dev/null || true
     fi
 
     # Clean up witness state files
@@ -881,8 +881,8 @@ SEANCE
         return 1
     fi
 
-    # Check if tmux window still exists
-    if ! tmux has-session -t "$session" 2>/dev/null; then
+    # Check if tmux window still exists (exact match to prevent prefix collision)
+    if ! tmux has-session -t "=$session" 2>/dev/null; then
         log "Tmux session $session no longer exists"
         return 1
     fi
@@ -892,16 +892,19 @@ SEANCE
     local fish_launch="$instance_env/launch-claude.fish"
     local local_launch="$WORKTREE_PATH/.claude/start-claude-pane.fish"
 
+    # Use exact match for window target
+    local exact_target="=${session}:=${window}"
+
     if [[ -f "$local_launch" ]]; then
         log "Restarting via $local_launch"
         # Find an empty pane or the claude pane (leftmost typically)
-        tmux send-keys -t "${session}:${window}.0" "fish $local_launch" Enter 2>/dev/null || {
+        tmux send-keys -t "${exact_target}.0" "fish $local_launch" Enter 2>/dev/null || {
             log "Failed to restart in tmux pane"
             return 1
         }
     elif [[ -f "$fish_launch" ]]; then
         log "Restarting via $fish_launch (local mode)"
-        tmux send-keys -t "${session}:${window}.0" "fish $fish_launch" Enter 2>/dev/null || {
+        tmux send-keys -t "${exact_target}.0" "fish $fish_launch" Enter 2>/dev/null || {
             log "Failed to restart in tmux pane"
             return 1
         }
