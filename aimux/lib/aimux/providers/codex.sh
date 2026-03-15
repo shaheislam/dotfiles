@@ -25,6 +25,14 @@ provider_codex_detect() {
 
 provider_codex_detect_state() {
     local content="$1"
+
+    # Check error/failure patterns first (highest priority)
+    if echo "$content" | grep -qE 'Error:|rate limit|usage limit|API error|Session expired' 2>/dev/null; then
+        echo "failed"
+        return 0
+    fi
+
+    # Check done patterns
     local done_raw
     done_raw="$(cfg_get "providers.codex.done_patterns" '["COMPLETE"]')"
     local pattern
@@ -36,10 +44,23 @@ provider_codex_detect_state() {
         fi
     done < <(echo "$done_raw" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 
+    # Check working pattern
     local working
     working="$(cfg_get "providers.codex.working_pattern" "")"
     if [[ -n "$working" ]] && echo "$content" | grep -qE "$working" 2>/dev/null; then
         echo "working"
+        return 0
+    fi
+
+    # Detect return to shell prompt (codex exited back to shell)
+    if echo "$content" | tail -3 | grep -qE '^[❯\$] *$|^❯ |^\$ $' 2>/dev/null; then
+        echo "done"
+        return 0
+    fi
+
+    # Detect codex asking for confirmation
+    if echo "$content" | tail -5 | grep -qE '\?\s*$|[Yy]/[Nn]|approve|confirm' 2>/dev/null; then
+        echo "idle"
         return 0
     fi
 

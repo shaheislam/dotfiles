@@ -13,6 +13,9 @@ COMMANDS:
   run <ticket> [msg]  Execute ticket autonomously
   attach [name]       Attach to workspace (fzf picker if no name)
   kill <name>         Kill workspace + cleanup worktree
+  merge <name>        Merge workspace back to main (or create PR)
+  pr [name]           Create GitHub PR from workspace
+  init                Interactive first-run setup
   doctor              Health check
   queue               Ticket queue management
   log [workspace]     View agent output logs
@@ -22,7 +25,7 @@ COMMANDS:
   help                Show this help
 
 ALIASES:
-  st = status, a = attach, k = kill, q = queue, l = log, n = notify
+  st = status, a = attach, k = kill, m = merge, q = queue, l = log, n = notify
 
 EXAMPLES:
   aimux new feature-auth           Create workspace for feature-auth branch
@@ -31,15 +34,19 @@ EXAMPLES:
   aimux run TASK-456 -P codex      Use Codex provider
   aimux kill feature-auth          Kill workspace and cleanup
   aimux daemon start               Start agent state monitoring
-  aimux queue add PROJ-789 "Test"  Add ticket to queue
-  aimux queue start                Start queue dispatcher
-  aimux log -f my-workspace        Follow workspace logs
+  aimux merge feature-auth          Merge workspace back to main
+  aimux merge --pr feature-auth     Create PR instead of local merge
+  aimux pr --draft feature-auth     Create draft PR from workspace
+  aimux init                        Run interactive setup
+  aimux queue add PROJ-789 "Test"   Add ticket to queue
+  aimux queue start                 Start queue dispatcher
+  aimux log -f my-workspace         Follow workspace logs
 
 CONFIGURATION:
   ~/.aimux/config.toml             Settings (providers, notifications, queue, etc.)
 
 PROVIDERS:
-  claude (default), codex, ollama  Built-in providers
+  claude (default), codex, ollama, aider, gemini, opencode, cline, amp, cursor, copilot
   ~/.aimux/providers/              User-defined provider plugins
 
 DOCS: https://github.com/shaheislam/aimux

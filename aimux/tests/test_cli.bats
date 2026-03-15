@@ -10,13 +10,13 @@ setup() {
 @test "aimux version outputs version string" {
   run aimux version
   [ "$status" -eq 0 ]
-  [[ "$output" == "aimux 0.2.0" ]]
+  [[ "$output" == "aimux 0.3.0" ]]
 }
 
 @test "aimux --version outputs version string" {
   run aimux --version
   [ "$status" -eq 0 ]
-  [[ "$output" == "aimux 0.2.0" ]]
+  [[ "$output" == "aimux 0.3.0" ]]
 }
 
 @test "aimux help shows usage" {
@@ -220,4 +220,51 @@ setup() {
   run aimux a --help
   [ "$status" -eq 0 ]
   [[ "$output" == *"Usage"* ]]
+}
+
+# === Merge ===
+
+@test "aimux merge --help shows usage" {
+  run aimux merge --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]]
+  [[ "$output" == *"--pr"* ]]
+  [[ "$output" == *"--squash"* ]]
+}
+
+@test "aimux merge requires workspace name" {
+  run aimux merge
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Usage"* ]]
+}
+
+@test "aimux merge rejects protected branch: main" {
+  run aimux merge main
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"protected"* ]]
+}
+
+@test "aimux m is alias for merge" {
+  run aimux m --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]]
+}
+
+# === PR ===
+
+@test "aimux pr --help shows usage" {
+  run aimux pr --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]]
+  [[ "$output" == *"--title"* ]]
+  [[ "$output" == *"--draft"* ]]
+}
+
+# === Init ===
+
+@test "aimux init --help shows usage" {
+  run aimux init --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage"* ]]
+  [[ "$output" == *"--force"* ]]
 }

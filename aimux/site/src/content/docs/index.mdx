@@ -82,6 +82,10 @@ aimux queue start
 # Monitor from anywhere
 aimux daemon start    # Colors tmux windows by agent state
 aimux log PROJ-123    # Tail agent output
+
+# When an agent finishes — merge or create PR
+aimux merge PROJ-123              # Merge to main
+aimux pr PROJ-124 --draft         # Create draft PR for review
 ```
 
 ## aimux vs the alternatives
@@ -94,6 +98,7 @@ aimux log PROJ-123    # Tail agent output
 | **Autonomous mode** | Witness + retry | No | No |
 | **Ticket queue** | Priority dispatch | No | No |
 | **Batch execution** | Yes | No | No |
+| **Merge / PR workflow** | Built-in (`merge`, `pr`) | No | No |
 | **Provider plugins** | Extensible | Works with any CLI | 11 built-in |
 | **Embedded browser** | No | Yes | No |
 | **Native GUI** | Optional desktop app | Required | No |

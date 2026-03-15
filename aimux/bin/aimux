@@ -3,7 +3,7 @@
 # Terminal-agnostic agent orchestration for tmux
 set -euo pipefail
 
-AIMUX_VERSION="0.2.0"
+AIMUX_VERSION="0.3.0"
 AIMUX_HOME="${AIMUX_HOME:-$HOME/.aimux}"
 
 # Resolve real path of this script (follow symlinks)
@@ -47,6 +47,9 @@ case "$cmd" in
   log|l)     source "$AIMUX_LIB/log.sh" "$@" ;;
   notify|n)  source "$AIMUX_LIB/notify.sh" "$@" ;;
   daemon)    source "$AIMUX_LIB/daemon.sh" "$@" ;;
+  merge|m)   source "$AIMUX_LIB/merge.sh" "$@" ;;
+  pr)        source "$AIMUX_LIB/pr.sh" "$@" ;;
+  init)      source "$AIMUX_LIB/init.sh" "$@" ;;
   version|-v|--version) echo "aimux $AIMUX_VERSION" ;;
   help|-h|--help|*)     source "$AIMUX_LIB/help.sh" ;;
 esac

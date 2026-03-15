@@ -26,7 +26,14 @@ provider_claude_detect() {
 
 provider_claude_detect_state() {
     local content="$1"
-    # Check done first (higher priority)
+
+    # Check error/failure patterns first (highest priority)
+    if echo "$content" | grep -qE 'Session expired|API error|rate limit|Error:' 2>/dev/null; then
+        echo "failed"
+        return 0
+    fi
+
+    # Check done patterns
     local done_raw
     done_raw="$(cfg_get "providers.claude.done_patterns" '["COMPLETE", "_DONE", "TICKET_TASK_COMPLETE"]')"
     local pattern
@@ -38,11 +45,23 @@ provider_claude_detect_state() {
         fi
     done < <(echo "$done_raw" | tr -d '[]"' | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 
-    # Check working pattern
+    # Check working pattern (spinner / active processing)
     local working
     working="$(cfg_get "providers.claude.working_pattern" '… \(')"
     if [[ -n "$working" ]] && echo "$content" | grep -qE "$working" 2>/dev/null; then
         echo "working"
+        return 0
+    fi
+
+    # Detect Claude asking for input — "?" prompt or "y/n" question means idle/waiting
+    if echo "$content" | tail -5 | grep -qE '\?\s*$|[Yy]/[Nn]|Do you want|Would you like' 2>/dev/null; then
+        echo "idle"
+        return 0
+    fi
+
+    # Detect return to shell prompt (agent exited back to shell)
+    if echo "$content" | tail -3 | grep -qE '^[❯\$] *$|^❯ |^\$ $' 2>/dev/null; then
+        echo "done"
         return 0
     fi
 

@@ -8,6 +8,9 @@ _aimux() {
     'run:Execute ticket autonomously'
     'attach:Attach to workspace'
     'kill:Kill workspace + cleanup'
+    'merge:Merge workspace back to main'
+    'pr:Create GitHub PR from workspace'
+    'init:Interactive first-run setup'
     'doctor:Health check'
     'queue:Ticket queue management'
     'log:View agent logs'
@@ -31,9 +34,24 @@ _aimux() {
                   '--rebuild' '--fast' '--features[Features]:features:' ;;
         kill)   _arguments '--force' ;;
         run)    _arguments '--max[Max iterations]:iterations:' \
-                  '--provider[AI provider]:provider:(claude codex ollama)' \
+                  '--provider[AI provider]:provider:(claude codex ollama aider gemini opencode cline amp cursor copilot)' \
                   '--command[Slash command]:cmd:' '--no-devcon' \
                   '--mount[Additional directory]:dir:_dirs' ;;
+        merge)  _arguments '--pr[Create PR instead of local merge]' \
+                  '--squash[Squash commits]' \
+                  '--message[Custom commit message]:message:' \
+                  '--delete[Delete workspace after merge]' \
+                  '--no-delete[Keep workspace after merge]' \
+                  '--dry-run[Preview without executing]' ;;
+        pr)     _arguments '-t[PR title]:title:' '--title[PR title]:title:' \
+                  '-b[PR body]:body:' '--body[PR body]:body:' \
+                  '-d[Create as draft PR]' '--draft[Create as draft PR]' \
+                  '--base[Base branch]:branch:' \
+                  '-r[Add reviewer]:reviewer:' '--reviewer[Add reviewer]:reviewer:' \
+                  '-l[Add label]:label:' '--label[Add label]:label:' \
+                  '--delete[Delete workspace after PR]' \
+                  '-o[Open PR in browser]' '--open[Open PR in browser]' ;;
+        init)   _arguments '--force[Overwrite existing config]' ;;
         log)    _arguments '-f[Follow log output]' '--follow[Follow log output]' \
                   '-a[Show all workspace logs]' '--all[Show all workspace logs]' \
                   '--clear[Clear log files]' ;;
