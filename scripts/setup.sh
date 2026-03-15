@@ -466,6 +466,7 @@ phase_3_development() {
         pipx install diagrams >/dev/null 2>&1 &
         pipx install hookify >/dev/null 2>&1 &
         pipx install websockets >/dev/null 2>&1 &
+        pipx install youtube-transcript-api >/dev/null 2>&1 &
         wait
         print_success "Python MCP servers installation complete"
     fi
