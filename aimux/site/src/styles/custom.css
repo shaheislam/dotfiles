@@ -1,0 +1,64 @@
+/* Tokyo Night inspired Starlight customization */
+:root {
+	--sl-color-accent-low: #1e2030;
+	--sl-color-accent: #7aa2f7;
+	--sl-color-accent-high: #c0caf5;
+	--sl-color-white: #c0caf5;
+	--sl-color-gray-1: #a9b1d6;
+	--sl-color-gray-2: #9aa5ce;
+	--sl-color-gray-3: #565f89;
+	--sl-color-gray-4: #414868;
+	--sl-color-gray-5: #292e42;
+	--sl-color-gray-6: #1a1b26;
+	--sl-color-black: #16161e;
+}
+
+[data-theme='light'] {
+	--sl-color-accent-low: #e8ecf5;
+	--sl-color-accent: #3d59a1;
+	--sl-color-accent-high: #1a1b26;
+	--sl-color-white: #1a1b26;
+	--sl-color-gray-1: #414868;
+	--sl-color-gray-2: #565f89;
+	--sl-color-gray-3: #9aa5ce;
+	--sl-color-gray-4: #c0caf5;
+	--sl-color-gray-5: #d5d6db;
+	--sl-color-gray-6: #f0f0f2;
+	--sl-color-black: #ffffff;
+}
+
+[data-theme='dark'] {
+	--sl-color-bg: #1a1b26;
+	--sl-color-bg-nav: #16161e;
+	--sl-color-bg-sidebar: #16161e;
+	--sl-color-hairline-light: #292e42;
+	--sl-color-hairline: #292e42;
+}
+
+/* Hero gradient text */
+.text-gradient {
+	background: linear-gradient(135deg, #7aa2f7 0%, #bb9af7 50%, #7dcfff 100%);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+/* Code block styling for dark theme */
+[data-theme='dark'] {
+	--sl-color-code-bg: #16161e;
+}
+
+/* Slightly tighten table spacing */
+table {
+	font-size: 0.9em;
+}
+
+/* Style command inline code references */
+code {
+	font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+}
+
+/* Hero section tweaks */
+.hero .tagline {
+	max-width: 42em;
+}

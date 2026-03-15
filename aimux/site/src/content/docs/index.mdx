@@ -1,0 +1,100 @@
+---
+title: aimux — AI Agent Multiplexer
+description: Terminal-agnostic AI agent orchestration. Run parallel coding agents in any terminal.
+template: splash
+hero:
+  title: |
+    Run AI agents
+    <span class="text-gradient">in any terminal</span>
+  tagline: Terminal-agnostic agent multiplexer -- create isolated workspaces, launch parallel agents, queue tickets, and monitor everything. Works with Claude Code, Codex, Ollama, and any CLI agent.
+  actions:
+    - text: Get Started
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/shaheislam/aimux
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Install in 30 seconds
+
+<Tabs>
+  <TabItem label="Homebrew">
+    ```bash
+    brew tap shaheislam/aimux
+    brew install aimux
+    aimux doctor
+    ```
+  </TabItem>
+  <TabItem label="From Source">
+    ```bash
+    git clone https://github.com/shaheislam/aimux.git
+    cd aimux && make install
+    aimux doctor
+    ```
+  </TabItem>
+</Tabs>
+
+## Why aimux?
+
+<CardGrid>
+  <Card title="Terminal Agnostic" icon="laptop">
+    Works inside **any terminal** -- Ghostty, iTerm2, WezTerm, Kitty, Alacritty, or plain Terminal.app. No lock-in. Just bash + tmux.
+  </Card>
+  <Card title="Autonomous Execution" icon="rocket">
+    `aimux run TICKET-123 "Fix the bug"` -- creates workspace, launches agent, monitors for completion, retries on failure. Go to sleep, wake up to results.
+  </Card>
+  <Card title="Queue System" icon="list-format">
+    Queue 20 tickets with `aimux queue add`. Priority dispatch respects rate limits and concurrency. Batch execution that no other tool offers.
+  </Card>
+  <Card title="Provider Plugins" icon="puzzle">
+    Ships with Claude Code, Codex, and Ollama. Add any CLI agent by dropping a 30-line bash file in `~/.aimux/providers/`.
+  </Card>
+  <Card title="Real Monitoring" icon="magnifier">
+    Daemon polls tmux panes, detects agent state (working/idle/done/stuck), color-codes windows, sends desktop + webhook notifications.
+  </Card>
+  <Card title="Works Today" icon="approve-check">
+    Not a prototype. 161 tests passing. `brew install` ready. Completions for Fish, Bash, and Zsh.
+  </Card>
+</CardGrid>
+
+## The workflow
+
+```bash
+# Create isolated workspace (git worktree + tmux window)
+aimux new feature-auth
+
+# Run a ticket autonomously -- agent launches, witness monitors
+aimux run PROJ-123 "Fix the session timeout bug"
+
+# Check on all your agents
+aimux status
+
+# Queue a batch for overnight execution
+aimux queue add PROJ-124 "Add rate limiting" --provider claude
+aimux queue add PROJ-125 "Write integration tests" --provider codex
+aimux queue start
+
+# Monitor from anywhere
+aimux daemon start    # Colors tmux windows by agent state
+aimux log PROJ-123    # Tail agent output
+```
+
+## aimux vs the alternatives
+
+| | aimux | cmux | dmux |
+|---|---|---|---|
+| **Approach** | CLI (any terminal) | GUI (macOS app) | TUI (tmux) |
+| **Platform** | macOS + Linux | macOS only | macOS + Linux |
+| **Terminal** | Any | Ghostty-based | tmux |
+| **Autonomous mode** | Witness + retry | No | No |
+| **Ticket queue** | Priority dispatch | No | No |
+| **Batch execution** | Yes | No | No |
+| **Provider plugins** | Extensible | Works with any CLI | 11 built-in |
+| **Embedded browser** | No | Yes | No |
+| **Native GUI** | Optional desktop app | Required | No |
+| **Install** | `brew install` | DMG download | `brew install` |
