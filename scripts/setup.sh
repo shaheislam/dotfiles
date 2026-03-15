@@ -324,6 +324,7 @@ phase_1_core_packages() {
     print_header "Phase 1: Core Packages"
 
     pm_update
+    pm_upgrade
 
     install_packages_from_profile "$PROFILE" "core"
 
