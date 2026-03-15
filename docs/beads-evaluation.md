@@ -16,7 +16,7 @@
 2. **Init per-project**: `bd init --quiet` (creates `.beads/` directory)
 3. **Claude Code integration**: `bd setup claude` installs SessionStart/PreCompact hooks
 4. **Optional plugin**: Install via `claude plugin install beads@steveyegge/beads`
-5. **Agent workflow**: `bd prime` injects ~1-2k tokens of context at session start; `bd ready --json` finds unblocked tasks; `bd sync` persists before session end
+5. **Agent workflow**: `bd prime` injects ~1-2k tokens of context at session start; `bd ready --json` finds unblocked tasks; `bd prime` re-injects context before compaction
 
 ## Your Current System vs. Beads
 

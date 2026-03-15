@@ -28,7 +28,7 @@
 | 3 | **PreToolUse** (Bash) | `use_bun.py` | Blocks npm/npx/yarn/pnpm, suggests bun/bunx | Enforces package manager consistency. Logs violations to `bun_enforcement.json` |
 | 4 | **PreToolUse** (Bash) | `validate-bash.py` | Blocks `rm -rf /`, `sudo rm`, `dd of=/dev/`, direct disk writes | Safety net against destructive commands. Fail-closed (bad JSON → block). Has allowlist for devcontainer/worktree/docker |
 | 5 | **PostToolUse** (Read) | `deepwiki-context.py` | Detects file language by extension, injects DeepWiki repo suggestions | Passive context — when Claude reads a `.py` file, it gets reminded about `python/cpython`, `fastapi/fastapi`, etc. |
-| 6 | **PreCompact** | `bd sync` | Syncs Beads memory before context compaction | Prevents memory loss during auto-compact |
+| 6 | **PreCompact** | `bd prime` | Re-injects Beads workflow context before compaction | Prevents memory loss during auto-compact |
 | 7 | **Notification** | `macos_notification.py` | macOS desktop notification (osascript) with type-specific sounds | Basso for errors, Sosumi for warnings, Glass for success, Blow for info |
 | 8 | **Notification** | `log-notification.sh` | Logs notifications to `~/.claude/hooks/logs/notifications-YYYY-MM-DD.log` | Audit trail of all Claude notifications |
 | 9 | **UserPromptSubmit** | `checkpoint-pre-prompt.sh` | Captures transcript offset, untracked files, timestamp before each prompt | Pre-state for checkpoint diff extraction |

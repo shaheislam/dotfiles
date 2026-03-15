@@ -878,7 +878,7 @@ See [Claude Code Hooks Reference](claude-code-hooks.md) for our complete hook co
 | SessionStart | `fix-hookify-imports.sh`, `bd prime`, `lsp-status.sh` | Plugin fixes, Beads memory, LSP context |
 | PreToolUse (Bash) | `use_bun.py`, `validate-bash.py` | Bun enforcement, dangerous command blocking |
 | PostToolUse (Read) | `deepwiki-context.py` | Language-aware DeepWiki suggestions |
-| PreCompact | `bd sync` | Beads memory sync |
+| PreCompact | `bd prime` | Beads workflow context |
 | Notification | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
 | UserPromptSubmit | `checkpoint-pre-prompt.sh`, `nvim-bridge.sh` | Checkpoints, Neovim state |
 | Stop | `checkpoint-capture.sh`, `cross-provider-bridge.sh` | Checkpoints, cross-provider review |

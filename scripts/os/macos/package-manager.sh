@@ -50,6 +50,15 @@ pm_update() {
     brew update 2>&1 || log_verbose "Homebrew update completed with warnings"
 }
 
+pm_upgrade() {
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        print_warning "DRY RUN: Would upgrade all Homebrew packages"
+        return 0
+    fi
+    print_step "Upgrading Homebrew packages..."
+    brew upgrade 2>&1 || log_verbose "Homebrew upgrade completed with warnings"
+}
+
 pm_install() {
     local package=$(pm_map_package_name "$1")
 

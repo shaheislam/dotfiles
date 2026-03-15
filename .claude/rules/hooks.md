@@ -15,7 +15,7 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 | **SessionStart** | `fix-hookify-imports.sh`, `bd prime`, `lsp-status.sh` | Plugin fixes, Beads memory, LSP context |
 | **PreToolUse** (Bash) | `use_bun.py`, `validate-bash.py` | Bun enforcement, dangerous command blocking |
 | **PostToolUse** (Read) | `deepwiki-context.py` | Language-aware DeepWiki repo suggestions |
-| **PreCompact** | `bd sync` | Beads memory sync before compaction |
+| **PreCompact** | `bd prime` | Re-inject Beads workflow context before compaction |
 | **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
 | **UserPromptSubmit** | `checkpoint-pre-prompt.sh`, `nvim-bridge.sh` | Checkpoint capture, Neovim editor context |
 | **SubagentStart** | `subagent-lifecycle.sh` | Log agent spawn events |
