@@ -197,6 +197,15 @@ log_decision() {
     echo "{\"timestamp\":\"$now\",\"worktree\":\"$WORKTREE_PATH\",\"action\":\"$action\",\"reason\":\"$reason\",\"executed\":$executed}" >>"$TRIAGE_LOG"
 }
 
+# Extended log for actions with side effects (e.g., NUDGE kill)
+log_decision_extended() {
+    local action="$1" reason="$2" executed="$3" kill_sent="$4"
+    mkdir -p "$(dirname "$TRIAGE_LOG")"
+    local now
+    now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    echo "{\"timestamp\":\"$now\",\"worktree\":\"$WORKTREE_PATH\",\"action\":\"$action\",\"reason\":\"$reason\",\"executed\":$executed,\"kill_sent\":$kill_sent}" >>"$TRIAGE_LOG"
+}
+
 # Output the decision result
 output_result() {
     local action="$1" reason="$2" state="$3" executed="$4"
@@ -316,6 +325,10 @@ action_wake() {
 }
 
 # NUDGE: kill stuck claude and restart with continuation prompt
+#
+# IMPORTANT: Verify restart path exists BEFORE killing the process.
+# Previously, kill fired unconditionally and restart often failed,
+# leaving the agent dead with no recovery (exit code 143).
 action_nudge() {
     local state_json="$1"
 
@@ -329,33 +342,39 @@ action_nudge() {
         return 1
     fi
 
-    # Kill the stuck claude process
-    if [[ -n "$pid" ]]; then
-        kill "$pid" 2>/dev/null || true
-        sleep 2
-    fi
-
-    # Restart with a continuation prompt via claude --continue
+    # Pre-flight: verify restart path exists BEFORE killing
     local session="${target%%:*}"
     if ! tmux has-session -t "$session" 2>/dev/null; then
-        log_decision "NUDGE" "failed: tmux session gone after kill" false
+        log_decision "NUDGE" "skipped: tmux session gone (kill would leave agent dead)" false
         return 1
     fi
 
-    # Use --continue flag so claude picks up where it left off
+    # Determine restart command before killing
+    local restart_cmd=""
     local launch_script
-    launch_script=$(find_launch_script) || {
-        # Fallback: start claude directly with --continue in the worktree
-        tmux send-keys -t "${target}.0" "cd $WORKTREE_PATH && claude --continue" Enter 2>/dev/null || {
-            log_decision "NUDGE" "failed: fallback restart failed" false
-            return 1
-        }
-        increment_retry "nudge_count"
-        return 0
-    }
+    if launch_script=$(find_launch_script); then
+        restart_cmd="fish $launch_script"
+    else
+        restart_cmd="cd $WORKTREE_PATH && claude --continue"
+    fi
 
-    tmux send-keys -t "${target}.0" "fish $launch_script" Enter 2>/dev/null || {
-        log_decision "NUDGE" "failed: tmux send-keys failed" false
+    # Verify tmux pane is reachable before killing
+    if ! tmux display-message -t "${target}.0" -p "#{pane_id}" &>/dev/null; then
+        log_decision "NUDGE" "skipped: tmux pane unreachable (kill would leave agent dead)" false
+        return 1
+    fi
+
+    # Kill the stuck claude process (now safe — restart path verified)
+    local kill_sent=false
+    if [[ -n "$pid" ]]; then
+        kill "$pid" 2>/dev/null || true
+        kill_sent=true
+        sleep 2
+    fi
+
+    # Restart with the pre-verified command
+    tmux send-keys -t "${target}.0" "$restart_cmd" Enter 2>/dev/null || {
+        log_decision_extended "NUDGE" "partial: kill succeeded but restart failed" false "$kill_sent"
         return 1
     }
 
