@@ -87,7 +87,7 @@
       {
         "hooks": [
           {
-            "command": "entire hooks claude-code post-task",
+            "command": "timeout 5 entire hooks claude-code post-task 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -96,7 +96,7 @@
       {
         "hooks": [
           {
-            "command": "entire hooks claude-code post-todo",
+            "command": "timeout 5 entire hooks claude-code post-todo 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -142,7 +142,7 @@
       {
         "hooks": [
           {
-            "command": "entire hooks claude-code pre-task",
+            "command": "timeout 5 entire hooks claude-code pre-task 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -153,7 +153,7 @@
       {
         "hooks": [
           {
-            "command": "entire hooks claude-code session-end",
+            "command": "timeout 10 entire hooks claude-code session-end 2>/dev/null || true",
             "type": "command"
           },
           {
@@ -172,7 +172,7 @@
             "type": "command"
           },
           {
-            "command": "entire hooks claude-code session-start",
+            "command": "timeout 10 entire hooks claude-code session-start 2>/dev/null || true",
             "type": "command"
           },
           {
@@ -223,11 +223,11 @@
       {
         "hooks": [
           {
-            "command": "bash ~/.claude/hooks/cross-provider-bridge.sh",
+            "command": "bash ~/.claude/hooks/cross-provider-bridge.sh 2>/dev/null || true",
             "type": "command"
           },
           {
-            "command": "entire hooks claude-code stop",
+            "command": "timeout 10 entire hooks claude-code stop 2>/dev/null || true",
             "type": "command"
           },
           {
@@ -268,7 +268,7 @@
             "type": "command"
           },
           {
-            "command": "entire hooks claude-code user-prompt-submit",
+            "command": "timeout 5 entire hooks claude-code user-prompt-submit 2>/dev/null || true",
             "type": "command"
           },
           {
