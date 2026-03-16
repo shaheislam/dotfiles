@@ -148,9 +148,9 @@ Claude Code extends the standard with: `disable-model-invocation`, `user-invocab
 
 ## Currently Installed (This Dotfiles)
 
-### Custom Skills (24 in .claude/skills/)
+### Custom Skills (25 in .claude/skills/)
 
-article, aws-profile, best-practice, claude-cleanup, commit-mode, confluence, cross-ref, cv-generate, diagram, dotfiles-sync, fish-reload, git-config-fix, jfdi (+ extract, recall, sync, synthesis), jira (+ batch), mcp-restart, s3-search, s3-upload, ticket-execute, todo.
+article, aws-profile, best-practice, claude-cleanup, commit-mode, confluence, cross-ref, cv-generate, diagram, dotfiles-sync, fish-reload, gap-analysis, git-config-fix, jfdi (+ extract, recall, sync, synthesis), jira (+ batch), mcp-restart, s3-search, s3-upload, ticket-execute, todo.
 
 ### Plugin Skills (14 plugins)
 
