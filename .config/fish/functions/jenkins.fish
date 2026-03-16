@@ -10,20 +10,25 @@
 #   jenkins who-am-i            - Check credentials
 #   jenkins version             - Show Jenkins version
 #   jenkins update              - Re-download jenkins-cli.jar
+#   jenkins setup               - Configure authentication
 #   jenkins doctor              - Check prerequisites
 
 function jenkins --description "Jenkins CLI for jenkins.thepetlabco.info"
     set -l jenkins_url "https://jenkins.thepetlabco.info"
     set -l jar_dir "$HOME/.local/share/jenkins-cli"
     set -l jar_path "$jar_dir/jenkins-cli.jar"
+    set -l auth_path "$jar_dir/auth"
 
     # Handle meta-commands before checking java
     switch "$argv[1]"
         case doctor
-            _jenkins_doctor "$jenkins_url" "$jar_path"
+            _jenkins_doctor "$jenkins_url" "$jar_path" "$auth_path"
             return $status
         case update
             _jenkins_download "$jenkins_url" "$jar_dir" "$jar_path"
+            return $status
+        case setup
+            _jenkins_setup "$auth_path"
             return $status
     end
 
@@ -41,10 +46,18 @@ function jenkins --description "Jenkins CLI for jenkins.thepetlabco.info"
         or return 1
     end
 
-    if test (count $argv) -eq 0
-        java -jar "$jar_path" -s "$jenkins_url" help
+    # Build auth args if credentials file exists
+    set -l auth_args
+    if test -f "$auth_path"
+        set auth_args -auth @$auth_path
     else
-        java -jar "$jar_path" -s "$jenkins_url" $argv
+        echo "Warning: No auth configured. Run 'jenkins setup' for authenticated access." >&2
+    end
+
+    if test (count $argv) -eq 0
+        java -jar "$jar_path" -s "$jenkins_url" $auth_args help
+    else
+        java -jar "$jar_path" -s "$jenkins_url" $auth_args $argv
     end
 end
 
@@ -64,9 +77,45 @@ function _jenkins_download --description "Download jenkins-cli.jar from server"
     end
 end
 
+function _jenkins_setup --description "Configure Jenkins CLI authentication"
+    set -l auth_path $argv[1]
+    set -l dir (path dirname "$auth_path")
+
+    if test -f "$auth_path"
+        echo "Auth file already exists at $auth_path"
+        read -l -P "Overwrite? [y/N] " confirm
+        if test "$confirm" != y -a "$confirm" != Y
+            return 0
+        end
+    end
+
+    echo "Jenkins CLI Authentication Setup"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "Get your API token from: https://jenkins.thepetlabco.info/user/<your-username>/configure"
+    echo ""
+
+    read -l -P "Username: " username
+    if test -z "$username"
+        echo "Error: Username cannot be empty"
+        return 1
+    end
+
+    read -l -P "API Token: " token
+    if test -z "$token"
+        echo "Error: API token cannot be empty"
+        return 1
+    end
+
+    mkdir -p "$dir"
+    echo "$username:$token" >"$auth_path"
+    chmod 600 "$auth_path"
+    echo "Auth saved to $auth_path (mode 600)"
+end
+
 function _jenkins_doctor --description "Check Jenkins CLI prerequisites"
     set -l url $argv[1]
     set -l jar $argv[2]
+    set -l auth $argv[3]
 
     echo "Jenkins CLI Doctor"
     echo "━━━━━━━━━━━━━━━━━"
@@ -87,6 +136,20 @@ function _jenkins_doctor --description "Check Jenkins CLI prerequisites"
     else
         echo "✗ jenkins-cli.jar not downloaded"
         echo "  Fix: jenkins update"
+    end
+
+    # Check auth
+    if test -f "$auth"
+        set -l perms (command stat -f%Lp "$auth" 2>/dev/null; or command stat -c%a "$auth" 2>/dev/null)
+        if test "$perms" = 600
+            echo "✓ Auth configured (mode $perms)"
+        else
+            echo "⚠ Auth file exists but permissions are $perms (expected 600)"
+            echo "  Fix: chmod 600 $auth"
+        end
+    else
+        echo "✗ Auth not configured"
+        echo "  Fix: jenkins setup"
     end
 
     # Check connectivity

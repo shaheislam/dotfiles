@@ -61,3 +61,4 @@ complete -c jenkins -n __fish_use_subcommand -a who-am-i -d "Check credentials a
 # Meta-commands (wrapper-specific)
 complete -c jenkins -n __fish_use_subcommand -a update -d "Re-download jenkins-cli.jar"
 complete -c jenkins -n __fish_use_subcommand -a doctor -d "Check prerequisites"
+complete -c jenkins -n __fish_use_subcommand -a setup -d "Configure authentication"

@@ -417,6 +417,11 @@ phase_2_cli_tools() {
         print_success "Jenkins CLI jar already present"
     fi
 
+    # Hint about auth setup
+    if [[ ! -f "$HOME/.local/share/jenkins-cli/auth" ]]; then
+        print_warning "Jenkins CLI auth not configured. Run 'jenkins setup' to authenticate."
+    fi
+
     mark_step_complete "cli_tools"
 }
 
