@@ -61,6 +61,7 @@ export PATH="$HOME/Library/Python/3.9/bin:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 
 # VSCode and Cursor PATH entries removed
 

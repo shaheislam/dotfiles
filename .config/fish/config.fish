@@ -2307,6 +2307,11 @@ fish_add_path $HOME/work/terraform-provision
 # iximiuz labctl CLI
 fish_add_path $HOME/.iximiuz/labctl/bin
 
+# OpenJDK (Homebrew) for Jenkins CLI
+if test -d /opt/homebrew/opt/openjdk/bin
+    fish_add_path /opt/homebrew/opt/openjdk/bin
+end
+
 # Opencode LSP integration with Nix
 # Prevent Opencode from downloading its own LSP servers
 # Uses Nix-managed LSP servers instead (from PATH)

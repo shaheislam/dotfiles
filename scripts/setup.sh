@@ -393,6 +393,30 @@ phase_2_cli_tools() {
         fi
     fi
 
+    # OpenJDK symlink for Jenkins CLI
+    if brew list openjdk >/dev/null 2>&1; then
+        if [[ ! -d "/Library/Java/JavaVirtualMachines/openjdk.jdk" ]]; then
+            print_step "Symlinking OpenJDK for system Java discovery..."
+            sudo ln -sfn "$(brew --prefix openjdk)/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk.jdk 2>/dev/null &&
+                print_success "OpenJDK symlinked to /Library/Java/JavaVirtualMachines/" ||
+                print_warning "Failed to symlink OpenJDK (may need sudo)"
+        else
+            print_success "OpenJDK already symlinked"
+        fi
+    fi
+
+    # Pre-download Jenkins CLI jar
+    local jenkins_jar="$HOME/.local/share/jenkins-cli/jenkins-cli.jar"
+    if [[ ! -f "$jenkins_jar" ]]; then
+        print_step "Downloading Jenkins CLI jar..."
+        mkdir -p "$HOME/.local/share/jenkins-cli"
+        curl -fsSL "https://jenkins.thepetlabco.info/jnlpJars/jenkins-cli.jar" -o "$jenkins_jar" 2>/dev/null &&
+            print_success "Jenkins CLI jar downloaded" ||
+            print_warning "Failed to download Jenkins CLI jar (network/VPN required)"
+    else
+        print_success "Jenkins CLI jar already present"
+    fi
+
     mark_step_complete "cli_tools"
 }
 

@@ -271,6 +271,7 @@ brew "typst"  # Modern typesetting system (LaTeX alternative) for invoices, docs
 # CI/CD & Automation Tools
 brew "act"
 brew "commitizen"
+brew "openjdk"  # Required for Jenkins CLI (jenkins-cli.jar)
 # brew "semantic-release" # Install via npm instead
 
 # Development Tools
