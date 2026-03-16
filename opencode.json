@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "local",
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "steampipe": {
+      "type": "local",
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@turbot/steampipe-mcp",
+        "postgresql://steampipe@localhost:9193/steampipe"
+      ]
+    },
+    "context7": {
+      "type": "local",
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "drawio": {
+      "type": "local",
+      "command": "bunx",
+      "args": [
+        "-y",
+        "drawio-mcp-server"
+      ]
+    },
+    "claudecodebrowser": {
+      "type": "local",
+      "command": "python3",
+      "args": [
+        "~/.claudecodebrowser/mcp-server/stdio_wrapper.py"
+      ]
+    }
+  }
+}

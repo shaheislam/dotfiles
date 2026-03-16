@@ -86,5 +86,11 @@ function gwt-setup --description "Run worktree setup scripts"
         bash "$sync_script" "$worktree_path" 2>/dev/null
     end
 
+    # Sync MCP config to agent-specific formats (.mcp.json → .cursor/mcp.json, .codex/config.toml, etc.)
+    set -l mcp_sync "$HOME/dotfiles/scripts/sync-mcp-config.sh"
+    if test -x "$mcp_sync"; and test -f "$worktree_path/.mcp.json"
+        bash "$mcp_sync" "$worktree_path" 2>/dev/null
+    end
+
     return 0
 end
