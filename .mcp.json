@@ -34,6 +34,12 @@
       "args": [
         "~/.claudecodebrowser/mcp-server/stdio_wrapper.py"
       ]
+    },
+    "pinchtab": {
+      "command": "pinchtab",
+      "args": [
+        "mcp"
+      ]
     }
   }
 }

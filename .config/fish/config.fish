@@ -67,6 +67,10 @@ if status is-interactive
     set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1 # Load CLAUDE.md from --add-dir paths
     set -gx CLAUDE_CODE_EFFORT_LEVEL max # env var: low|medium|high|max|auto (max=Opus 4.6 only, session-scoped)
 
+    # PinchTab - Multi-instance Chrome orchestrator for AI agents
+    set -gx PINCHTAB_PORT 9867
+    set -gx PINCHTAB_CONFIG "$HOME/.config/pinchtab/config.json"
+
     # ==================== Platform-Specific Configuration ====================
 
     # WSL-specific configuration

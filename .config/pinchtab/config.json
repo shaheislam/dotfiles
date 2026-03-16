@@ -1,0 +1,7 @@
+{
+  "port": "9867",
+  "headless": true,
+  "maxTabs": 10,
+  "timeoutSec": 30,
+  "navigateSec": 15
+}
