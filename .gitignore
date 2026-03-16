@@ -66,6 +66,9 @@
 
 # Keep these directories and files (they're tracked):
 # .claude/agents/        - Agent configurations
+# .claude/commands/      - Symlinked from .agents/commands/
+!.claude/commands/
+!.claude/commands/*.md
 
 # CV generation artifacts - these are all generated files
 jobapps/generated/

@@ -80,5 +80,11 @@ function gwt-setup --description "Run worktree setup scripts"
         echo "Setup completed"
     end
 
+    # Sync shared agent commands (.agents/commands/ → .claude/commands/, .cursor/commands/, etc.)
+    set -l sync_script "$HOME/dotfiles/scripts/sync-agent-commands.sh"
+    if test -x "$sync_script"; and test -d "$worktree_path/.agents/commands"
+        bash "$sync_script" "$worktree_path" 2>/dev/null
+    end
+
     return 0
 end
