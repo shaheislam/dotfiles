@@ -1,7 +1,7 @@
 ---
 name: gap-analysis
 description: Analyze external docs/repos via DeepWiki + WebFetch, perform gap analysis against current repo, and produce prioritized value-add recommendations
-argument-hint: "<url> [url2...] [--focus topic] [--depth N] [--output file.md]"
+argument-hint: "<url> [url2...] [--focus topic] [--depth N] [--output file.md] [--no-discover]"
 allowed-tools: WebFetch, WebSearch, Read, Write, Glob, Grep, Bash, AskUserQuestion, Agent, mcp__deepwiki__read_wiki_structure, mcp__deepwiki__read_wiki_contents, mcp__deepwiki__ask_question
 ---
 
@@ -18,6 +18,7 @@ URLS = all URL arguments (one or more https://... URLs)
 FOCUS = value after --focus flag (optional) — narrow analysis to specific area
 DEPTH = value after --depth flag (default: 2, max: 3) — how deep to crawl sublinks
 OUTPUT = value after --output flag (optional) — save report to file
+NO_DISCOVER = true if --no-discover flag present — skip related source discovery
 ```
 
 If no valid URL is provided, ask the user for one.
@@ -65,6 +66,42 @@ FEATURE_INVENTORY:
     complexity: "low|medium|high"  # estimated implementation effort
     evidence: "URL or doc section where this was found"
 ```
+
+## Step 2.5: Discover Related Resources (unless --no-discover)
+
+Automatically find related sources that enrich the analysis. Skip this step if `--no-discover` is set.
+
+### For GitHub Repos
+
+1. **Ask DeepWiki**: Use `mcp__deepwiki__ask_question` with `repoName: "{owner}/{repo}"`:
+   - "What other projects, libraries, or tools does this project reference, depend on, or recommend as companions?"
+   - "Are there any official plugins, extensions, or ecosystem tools for this project?"
+2. **Check repo metadata**: WebFetch the repo's main page to find:
+   - "Awesome list" links (often `awesome-{tool}` repos)
+   - Links in the README's "See Also", "Related Projects", "Alternatives", or "Ecosystem" sections
+   - GitHub topics/tags that lead to similar repos
+
+### For Documentation Sites
+
+1. **WebSearch** for complementary resources:
+   - `"{tool name}" best practices site:github.com`
+   - `"{tool name}" alternatives comparison`
+   - `"{tool name}" awesome list`
+2. **Check the fetched pages** for "See Also", "Related", "Integrations", or "Ecosystem" sections
+
+### Present Discoveries
+
+Before proceeding, briefly list the discovered related sources:
+
+```
+Related sources found:
+  1. [name] — [url] — [why it's relevant]
+  2. ...
+
+These will be included in the analysis. Use --no-discover to skip.
+```
+
+Fetch the top 3 most relevant discovered sources (using the same GitHub/docs logic from Step 2) and merge their features into FEATURE_INVENTORY. Tag each feature with its source for attribution.
 
 ## Step 3: Scan Current Repository
 
@@ -288,6 +325,11 @@ When multiple URLs are provided:
 /gap-analysis https://github.com/tmux-plugins/tpm --depth 1
   -> Shallow analysis of TPM repo
   -> Compares against current tmux plugin setup
+
+/gap-analysis https://github.com/charmbracelet/gum --no-discover
+  -> DeepWiki analyzes gum repo only (skips related source discovery)
+  -> No automatic search for awesome-gum or companion tools
+  -> Faster, focused on just the provided URL
 ```
 
 ## Error Handling
