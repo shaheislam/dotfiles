@@ -71,7 +71,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(claude_code_cost_usage_usd_total or claude_code_cost_usage_total or claude_code_cost_usage)",
+          "expr": "sum(claude_code_cost_usage_USD_total)",
           "legendFormat": "Cost"
         }
       ]
@@ -109,7 +109,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (type) (rate(claude_code_token_usage_tokens_total[5m]) or rate(claude_code_token_usage_total[5m]) or rate(claude_code_token_usage[5m]))",
+          "expr": "sum by (type) (rate(claude_code_token_usage_tokens_total[5m]))",
           "legendFormat": "{{type}}"
         }
       ]
@@ -199,7 +199,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(claude_code_session_count_total or claude_code_session_count)",
+          "expr": "sum(claude_code_session_count_total)",
           "legendFormat": "Sessions"
         }
       ]
@@ -263,7 +263,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(claude_code_lines_of_code_count_total or claude_code_lines_of_code_count)",
+          "expr": "sum(claude_code_lines_of_code_count_total)",
           "legendFormat": "Lines"
         }
       ]
@@ -353,7 +353,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(claude_code_commit_count_total or claude_code_commit_count)",
+          "expr": "sum(claude_code_commit_count_total)",
           "legendFormat": "Commits"
         }
       ]
@@ -405,7 +405,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "sum(claude_code_pull_request_count_total or claude_code_pull_request_count)",
+          "expr": "sum(claude_code_pull_request_count_total)",
           "legendFormat": "PRs"
         }
       ]
@@ -455,7 +455,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (type) (rate(claude_code_active_time_total_s_total[5m]) or rate(claude_code_active_time_total_total[5m]) or rate(claude_code_active_time_total[5m]))",
+          "expr": "sum by (type) (rate(claude_code_active_time_total_s_total[5m]))",
           "legendFormat": "{{type}}"
         }
       ]
@@ -493,7 +493,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (decision) (rate(claude_code_code_edit_tool_decision_total[5m]) or rate(claude_code_code_edit_tool_decision[5m]))",
+          "expr": "sum by (decision) (rate(claude_code_code_edit_tool_decision_total[5m]))",
           "legendFormat": "{{decision}}"
         }
       ]
@@ -531,7 +531,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (model) (rate(claude_code_token_usage_tokens_total[5m]) or rate(claude_code_token_usage_total[5m]) or rate(claude_code_token_usage[5m]))",
+          "expr": "sum by (model) (rate(claude_code_token_usage_tokens_total[5m]))",
           "legendFormat": "{{model}}"
         }
       ]

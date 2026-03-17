@@ -16,7 +16,8 @@ services:
       - "4318:4318"   # OTEL HTTP receiver
     volumes:
       - otel_data:/data
-      - ./grafana/dashboards:/otel-lgtm/grafana/dashboards:ro
+      - ./grafana/dashboards:/otel-lgtm/custom-dashboards:ro
+      - ./grafana/provisioning:/otel-lgtm/grafana/conf/provisioning/dashboards/custom:ro
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
