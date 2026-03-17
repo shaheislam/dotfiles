@@ -7,8 +7,12 @@ Check CI status for the current branch or a specific PR.
    - Show the failed check names and URLs
    - Fetch the log for the first failure: `gh run view <run-id> --log-failed`
    - Suggest a fix if the error is clear
+   - If a beads issue exists for this work, add a comment: `bd comments add <ID> "CI failure: <summary>"`
 4. If all checks pass, confirm success
-5. If no PR exists, inform the user and suggest creating one
+5. If no PR exists, check if this is an ephemeral worktree branch (no upstream) — if so, run local validation instead:
+   - Fish syntax check: `fish --no-execute .config/fish/functions/*.fish` for any changed fish files
+   - Shell lint: `bash -n scripts/*.sh` for any changed bash scripts
+   - Stow dry-run: `stow --simulate --restow .` if dotfiles changed
 
 ## Output Format
 - Use a table for check statuses when there are multiple
