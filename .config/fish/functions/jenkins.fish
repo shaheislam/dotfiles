@@ -91,7 +91,7 @@ function _jenkins_setup --description "Configure Jenkins CLI authentication"
 
     echo "Jenkins CLI Authentication Setup"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Get your API token from: https://jenkins.thepetlabco.info/user/<your-username>/configure"
+    echo "Get your API token from: https://jenkins.thepetlabco.info/me/security/"
     echo ""
 
     read -l -P "Username: " username
