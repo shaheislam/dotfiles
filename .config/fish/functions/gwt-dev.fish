@@ -203,17 +203,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     # so the project does NOT need its own .devcontainer/ directory.
     echo "Launching devcontainer sandbox with instance: $instance_name"
 
-    # Allocate port range for this worktree (prevents port conflicts across worktrees)
-    set -l port_base ""
-    set -l port_allocator "$HOME/dotfiles/scripts/port-allocator.sh"
-    if test -x "$port_allocator"
-        set port_base (bash "$port_allocator" allocate $instance_name 2>/dev/null)
-        if test -n "$port_base"
-            echo "   Ports: $port_base-"(math $port_base + 19)" (gwt-ports env $instance_name for details)"
-        end
-    end
-
-    # Run setup scripts if present
+    # Run structured setup (port allocation, agent sync, MCP sync, beads init)
     gwt-setup $worktree_path
 
     # Build devcon arguments
