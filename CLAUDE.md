@@ -61,6 +61,7 @@
 | `gwt-doctor` | `gwtdoc` | Agent orchestration health check (detects Claude + Codex) |
 | `codex-accounts` | - | Manage Codex CLI OAuth account profiles (`add`, `remove`, `list`, `status`) |
 | `codex-rotate` | - | Codex wrapper with round-robin account rotation + usage-limit failover |
+| `pinchtab-ctl` | `ptctl` | PinchTab Chrome orchestrator management (start/stop/status/dashboard/profiles) |
 
 **Subscription Profiles**: `claude-sub` (`csub`). Profile dirs: `~/.claude-<name>/`. Usage: `gwtt --sub personal`, `gwtc --sub work`.
 
@@ -90,6 +91,13 @@ Test cross-platform via Colima + Docker. Location: `scripts/docker/`. ALWAYS tes
 
 ### OpenClaw AI Platform
 Multi-channel AI inbox. CLI: `openclaw` / `claw`. Config: `scripts/openclaw/openclaw-base.json`. Docs: `docs/openclaw-setup.md`.
+
+### Browser Automation
+Four browser tools for AI agents, each with different strengths:
+- **PinchTab**: Multi-instance Chrome orchestrator. Fish: `pinchtab-ctl` (`ptctl`). Config: `.config/pinchtab/config.json`. MCP: `pinchtab mcp`.
+- **agent-browser**: Single-daemon ref-based CLI. Config: `.agent-browser/config.json`. Skill: `.claude/skills/agent-browser/`.
+- **Playwright MCP**: Structured MCP tool calls. Via `bunx @playwright/mcp@latest`.
+- **ClaudeCodeBrowser**: Firefox MCP. Fish: `ccb`. Install: `scripts/setup.sh`.
 
 ### Peripheral Tools
 - **Mobile Coding**: Mosh + Tailscale (`scripts/setup-mobile-coding.sh`)

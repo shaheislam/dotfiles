@@ -137,6 +137,8 @@ brew "sst/tap/opencode"  # AI coding agent built for the terminal
 brew "zippoxer/tap/recall"  # Search and resume Claude Code conversations
 brew "openclaw-cli"  # Self-hosted personal AI assistant gateway CLI
 brew "agent-browser"  # AI-optimized headless browser automation CLI (ref-based interaction model)
+# pinchtab: installed via curl installer (multi-instance Chrome orchestrator for AI agents)
+# Install: curl -fsSL https://pinchtab.com/install.sh | bash
 # cask "openclaw"  # macOS app (optional - enable if you want the menu bar companion)
 
 # Self-Hosted LLM Tools (resilience if cloud AI goes down)

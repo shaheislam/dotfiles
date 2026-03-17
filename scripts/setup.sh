@@ -874,6 +874,41 @@ NMHEOF
                 log_verbose "agent-browser Chromium install skipped (run 'agent-browser install' manually)"
         fi
 
+        # PinchTab - Multi-instance Chrome orchestrator for AI agents
+        # Provides persistent profiles, multi-agent coordination, dashboard, stealth mode
+        if ! command_exists pinchtab; then
+            print_step "Installing PinchTab..."
+            curl -fsSL https://pinchtab.com/install.sh | bash >/dev/null 2>&1 &&
+                print_success "PinchTab installed" ||
+                print_warning "PinchTab install failed (run 'curl -fsSL https://pinchtab.com/install.sh | bash' manually)"
+        else
+            print_success "PinchTab already installed"
+        fi
+
+        # Configure PinchTab defaults
+        if command_exists pinchtab; then
+            PINCHTAB_CONFIG_DIR="$HOME/.config/pinchtab"
+            mkdir -p "$PINCHTAB_CONFIG_DIR"
+            if [[ ! -f "$PINCHTAB_CONFIG_DIR/config.json" ]]; then
+                cat >"$PINCHTAB_CONFIG_DIR/config.json" <<'PTEOF'
+{
+  "port": "9867",
+  "headless": true,
+  "maxTabs": 10,
+  "timeoutSec": 30,
+  "navigateSec": 15
+}
+PTEOF
+                print_success "PinchTab config created at $PINCHTAB_CONFIG_DIR/config.json"
+            fi
+
+            # Register PinchTab as MCP server for Claude Code
+            claude mcp add --scope user pinchtab \
+                --transport stdio \
+                -- pinchtab mcp >/dev/null 2>&1 || true
+            print_success "PinchTab MCP server registered"
+        fi
+
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"
 

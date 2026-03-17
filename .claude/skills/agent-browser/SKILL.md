@@ -190,13 +190,39 @@ export AGENT_BROWSER_ACTION_POLICY=./policy.json
 export AGENT_BROWSER_MAX_OUTPUT=50000
 ```
 
-## When to Use agent-browser vs Playwright MCP
+## When to Use Which Browser Tool
 
 | Scenario | Use |
 |----------|-----|
 | Sequential page interactions (forms, scraping) | agent-browser |
 | Need persistent daemon (faster repeated ops) | agent-browser |
-| Accessibility tree / ref-based selectors | agent-browser |
-| Need MCP protocol integration | Playwright MCP |
+| Accessibility tree / ref-based selectors | agent-browser or PinchTab |
+| Need MCP protocol integration | Playwright MCP or PinchTab |
 | Parallel browser tabs with structured tool calls | Playwright MCP |
-| Screenshot-only tasks | Either |
+| Multiple isolated browser instances per agent | PinchTab |
+| Persistent login sessions across restarts | PinchTab (named profiles) |
+| Multi-agent coordination (tab locking) | PinchTab |
+| Stealth mode / anti-bot bypass | PinchTab |
+| Dashboard monitoring of browser instances | PinchTab |
+| Screenshot-only tasks | Any |
+
+### PinchTab Quick Reference
+
+PinchTab is a multi-instance Chrome orchestrator. Start it with `pinchtab-ctl start` (alias: `ptctl start`).
+
+```bash
+# Quick start
+pinchtab quick https://example.com
+
+# Instance with named profile (persistent sessions)
+pinchtab instance launch --profile work
+pinchtab nav https://example.com
+pinchtab snap
+pinchtab click e1
+pinchtab text
+
+# Dashboard
+pinchtab-ctl dashboard
+```
+
+Key difference: agent-browser runs one daemon, PinchTab orchestrates multiple isolated Chrome instances with separate profiles — ideal for multi-agent worktree workflows.
