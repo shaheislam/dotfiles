@@ -116,7 +116,7 @@ Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `do
 **Adding hooks**: Create executable in `.claude/hooks/` → wire in `.claude/settings.json` → add tests → update docs.
 
 ### Skills, Plugins & Subagents
-- **Skills**: 24 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`.
+- **Skills**: 28 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`.
 - **Plugins**: 14 plugins from 4 marketplaces + 9 LSP plugins. Managed via `claude plugin install|disable|enable|uninstall`.
 - **Subagents**: 15 agents in `.claude/agents/` (12 domain + 3 project-specific). Reference: `.claude/AGENTS.md`.
 
