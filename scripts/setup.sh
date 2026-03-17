@@ -137,7 +137,7 @@ parse_args() {
                 echo "Error: --offline-package requires a value"
                 exit 1
             }
-            OFFLINE_PACKAGE="$2"
+            export OFFLINE_PACKAGE="$2"
             MODE="offline"
             shift 2
             ;;
@@ -451,7 +451,7 @@ phase_3_development() {
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
         else
             print_step "Installing Node.js via nvm..."
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash </dev/null
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh </dev/null | bash
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm install 22
@@ -482,7 +482,7 @@ phase_3_development() {
             source "$HOME/.cargo/env" 2>/dev/null || true
         else
             print_step "Installing Rust via rustup..."
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y </dev/null
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs </dev/null | sh -s -- -y
             source "$HOME/.cargo/env"
         fi
     fi
@@ -1739,7 +1739,7 @@ phase_10_advanced_features() {
     elif [[ -L "$devcontainer_env/.config/nvim" ]]; then
         log_verbose "Devcontainer Neovim config already linked"
     else
-        log_verbose "~/neovim not found - devcontainer will use empty config"
+        log_verbose "$HOME/neovim not found - devcontainer will use empty config"
     fi
 
     print_success "Devcontainer environment ready at ~/.devcontainer/env"
@@ -1817,7 +1817,7 @@ phase_11_optional_features() {
         if ! command_exists nix; then
             print_step "Installing Nix package manager (Determinate Systems installer)..."
             # Use Determinate Systems installer for better macOS support
-            if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm </dev/null; then
+            if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix </dev/null | sh -s -- install --no-confirm; then
                 print_success "Nix package manager installed"
                 # Source Nix for current session
                 [[ -f '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]] &&
@@ -2126,6 +2126,47 @@ EOF
             fi
         else
             print_warning "Self-hosted LLM setup script not found"
+        fi
+    fi
+
+    if [[ "${ENABLE_OTEL:-false}" == "true" ]]; then
+        print_header "Phase 11: Optional Features - OpenTelemetry LGTM Stack"
+
+        if [[ "$DETECTED_OS" != "macos" ]]; then
+            print_warning "OTEL LGTM setup is macOS only (requires Colima). Skipping."
+        else
+            # Verify prerequisites
+            if ! command_exists colima || ! command_exists docker; then
+                print_warning "OTEL LGTM requires colima and docker CLI. Install via: brew bundle --file=$DOTFILES_ROOT/homebrew/Brewfile"
+            else
+                print_step "Setting up OpenTelemetry LGTM stack (Grafana all-in-one)..."
+
+                # Start Colima if not running
+                if ! colima status &>/dev/null; then
+                    print_step "Starting Colima..."
+                    colima start --cpu 2 --memory 4 --disk 20 --runtime docker 2>/dev/null &&
+                        print_success "Colima started" ||
+                        print_warning "Colima start failed - start manually with: colima start"
+                fi
+
+                # Start OTEL LGTM container
+                if colima status &>/dev/null; then
+                    local otel_compose="$DOTFILES_ROOT/scripts/otel/docker-compose.yml"
+                    if [[ -f "$otel_compose" ]]; then
+                        docker compose -f "$otel_compose" up -d 2>/dev/null &&
+                            print_success "OTEL LGTM container started" ||
+                            print_warning "OTEL LGTM container start failed - run manually: ./scripts/otel/setup-otel.sh start"
+
+                        print_success "OpenTelemetry LGTM stack configured"
+                        echo "  Grafana:   http://localhost:3000"
+                        echo "  OTEL HTTP: localhost:4318"
+                        echo "  Status:    ./scripts/otel/setup-otel.sh status"
+                        echo "  Doctor:    ./scripts/otel/setup-otel.sh doctor"
+                    else
+                        print_warning "OTEL docker-compose.yml not found at $otel_compose"
+                    fi
+                fi
+            fi
         fi
     fi
 

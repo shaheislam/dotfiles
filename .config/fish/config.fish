@@ -70,6 +70,9 @@ if status is-interactive
     # PinchTab - Multi-instance Chrome orchestrator for AI agents
     set -gx PINCHTAB_PORT 9867
     set -gx PINCHTAB_CONFIG "$HOME/.config/pinchtab/config.json"
+    # OpenTelemetry observability (harness engineering)
+    set -gx CLAUDE_CODE_ENABLE_TELEMETRY 1
+    set -gx OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4318"
 
     # ==================== Platform-Specific Configuration ====================
 

@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# Harness Engineering: Git Pre-Commit Hook
+# Enforces structural constraints on ALL commits, not just Claude sessions.
+# This extends harness coverage to manual edits and other tools.
+#
+# Install: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+ERRORS=0
+WARNINGS=0
+
+# Colors (respect NO_COLOR)
+if [ -z "${NO_COLOR:-}" ] && [ -t 1 ]; then
+    RED='\033[0;31m'
+    YELLOW='\033[1;33m'
+    GREEN='\033[0;32m'
+    NC='\033[0m'
+else
+    RED='' YELLOW='' GREEN='' NC=''
+fi
+
+error() { echo -e "${RED}ERROR:${NC} $1"; ERRORS=$((ERRORS + 1)); }
+warn()  { echo -e "${YELLOW}WARN:${NC} $1"; WARNINGS=$((WARNINGS + 1)); }
+ok()    { echo -e "${GREEN}OK:${NC} $1"; }
+
+# Get staged files
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED" ]; then
+    exit 0
+fi
+
+echo "Harness pre-commit: checking staged files..."
+
+# --- ShellCheck for .sh files ---
+SH_FILES=$(echo "$STAGED" | grep -E '\.sh$' || true)
+if [ -n "$SH_FILES" ] && command -v shellcheck &>/dev/null; then
+    for f in $SH_FILES; do
+        if [ -f "$f" ]; then
+            if ! shellcheck -S warning "$f" >/dev/null 2>&1; then
+                error "ShellCheck failed: $f"
+            else
+                ok "ShellCheck: $f"
+            fi
+        fi
+    done
+elif [ -n "$SH_FILES" ]; then
+    warn "shellcheck not installed — skipping .sh validation"
+fi
+
+# --- fish_indent for .fish files ---
+FISH_FILES=$(echo "$STAGED" | grep -E '\.fish$' || true)
+if [ -n "$FISH_FILES" ] && command -v fish_indent &>/dev/null; then
+    for f in $FISH_FILES; do
+        if [ -f "$f" ]; then
+            if ! diff -q "$f" <(fish_indent "$f") >/dev/null 2>&1; then
+                warn "fish_indent: $f not properly indented (auto-format with fish_indent -w)"
+            else
+                ok "fish_indent: $f"
+            fi
+        fi
+    done
+elif [ -n "$FISH_FILES" ]; then
+    warn "fish_indent not installed — skipping .fish validation"
+fi
+
+# --- YAML lint for .yml/.yaml files ---
+YAML_FILES=$(echo "$STAGED" | grep -E '\.(ya?ml)$' || true)
+if [ -n "$YAML_FILES" ] && command -v yamllint &>/dev/null; then
+    for f in $YAML_FILES; do
+        if [ -f "$f" ]; then
+            if ! yamllint -d relaxed "$f" >/dev/null 2>&1; then
+                warn "yamllint: $f has issues"
+            else
+                ok "yamllint: $f"
+            fi
+        fi
+    done
+fi
+
+# --- Python syntax for .py files ---
+PY_FILES=$(echo "$STAGED" | grep -E '\.py$' || true)
+if [ -n "$PY_FILES" ]; then
+    for f in $PY_FILES; do
+        if [ -f "$f" ]; then
+            if ! python3 -c "import ast; ast.parse(open('$f').read())" 2>/dev/null; then
+                error "Python syntax error: $f"
+            else
+                ok "Python syntax: $f"
+            fi
+        fi
+    done
+fi
+
+# --- Bash scripts must have shebang ---
+if [ -n "$SH_FILES" ]; then
+    for f in $SH_FILES; do
+        if [ -f "$f" ]; then
+            first_line=$(head -1 "$f")
+            if [[ ! "$first_line" =~ ^#! ]]; then
+                error "Missing shebang: $f"
+            fi
+        fi
+    done
+fi
+
+# --- No secrets in staged files ---
+for f in $STAGED; do
+    if [ -f "$f" ]; then
+        # Skip binary files
+        if file "$f" | grep -q "text"; then
+            if grep -qE '(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9]{20,}|ghp_[a-zA-Z0-9]{36}|password\s*=\s*["\x27][^"\x27]{8,})' "$f" 2>/dev/null; then
+                error "Potential secret detected: $f"
+            fi
+        fi
+    fi
+done
+
+# --- Summary ---
+echo ""
+if [ $ERRORS -gt 0 ]; then
+    echo -e "${RED}Pre-commit failed: $ERRORS error(s), $WARNINGS warning(s)${NC}"
+    echo "Fix errors and re-stage, or bypass with: git commit --no-verify"
+    exit 1
+elif [ $WARNINGS -gt 0 ]; then
+    echo -e "${YELLOW}Pre-commit passed with $WARNINGS warning(s)${NC}"
+    exit 0
+else
+    echo -e "${GREEN}Pre-commit: all checks passed${NC}"
+    exit 0
+fi
