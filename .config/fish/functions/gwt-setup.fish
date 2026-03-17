@@ -40,15 +40,21 @@ function gwt-setup --description "Run worktree setup scripts"
     # Export for use in setup scripts
     set -gx ROOT_WORKTREE_PATH $root_worktree_path
 
+    # Use structured step system if available (includes all sync steps)
+    set -l steps_script "$HOME/dotfiles/scripts/worktree-setup-steps.sh"
+    if test -x "$steps_script"
+        set -lx ROOT_WORKTREE_PATH $root_worktree_path
+        bash "$steps_script" $worktree_path
+        return $status
+    end
+
+    # Fallback: legacy setup (if step system not available)
     set -l setup_ran false
 
     # Check for .devcontainer/setup.sh
     set -l devcontainer_setup "$worktree_path/.devcontainer/setup.sh"
     if test -f "$devcontainer_setup"
         echo "Running .devcontainer/setup.sh"
-        if test -n "$root_worktree_path"
-            echo "   ROOT_WORKTREE_PATH=$root_worktree_path"
-        end
         pushd $worktree_path
         if test -x "$devcontainer_setup"
             $devcontainer_setup
@@ -63,9 +69,6 @@ function gwt-setup --description "Run worktree setup scripts"
     set -l scripts_setup "$worktree_path/scripts/setup-worktree.sh"
     if not $setup_ran; and test -f "$scripts_setup"
         echo "Running scripts/setup-worktree.sh"
-        if test -n "$root_worktree_path"
-            echo "   ROOT_WORKTREE_PATH=$root_worktree_path"
-        end
         pushd $worktree_path
         if test -x "$scripts_setup"
             $scripts_setup

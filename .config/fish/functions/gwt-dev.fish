@@ -203,7 +203,7 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
     # so the project does NOT need its own .devcontainer/ directory.
     echo "Launching devcontainer sandbox with instance: $instance_name"
 
-    # Run setup scripts if present
+    # Run structured setup (port allocation, agent sync, MCP sync, beads init)
     gwt-setup $worktree_path
 
     # Build devcon arguments

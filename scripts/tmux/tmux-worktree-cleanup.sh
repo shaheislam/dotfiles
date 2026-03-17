@@ -26,7 +26,7 @@ fi
 LOG_FILE="/tmp/tmux-worktree-cleanup.log"
 
 log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >>"$LOG_FILE"
 }
 
 # Map session names to their repo root directories
@@ -49,9 +49,9 @@ REPO_NAME=$(basename "$REPO_ROOT")
 
 # Skip special window names that aren't worktree branches
 case "$WINDOW_NAME" in
-    base|main|master|develop|fish|bash|zsh|"")
-        exit 0
-        ;;
+base | main | master | develop | fish | bash | zsh | "")
+    exit 0
+    ;;
 esac
 
 # The branch name is the window name (gwt-parallel names windows after branches,
@@ -83,13 +83,13 @@ fi
 # Get the branch name from the worktree metadata (more reliable than window name)
 # Use exact line match (^worktree path$) to avoid substring matches
 # e.g., "dotfiles-tmuxwindow" must not match "dotfiles-tmuxwindowclose2"
-ACTUAL_BRANCH=$(cd "$REPO_ROOT" && git worktree list --porcelain 2>/dev/null | \
+ACTUAL_BRANCH=$(cd "$REPO_ROOT" && git worktree list --porcelain 2>/dev/null |
     grep -A2 "^worktree ${RESOLVED_WORKTREE}$" | grep "^branch " | sed 's|^branch refs/heads/||')
 
 if [[ -z "$ACTUAL_BRANCH" ]]; then
     # Try with the non-resolved path (exact match)
     RESOLVED_WT_PATH=$(cd "$WORKTREE_PATH" 2>/dev/null && pwd -P || echo "$WORKTREE_PATH")
-    ACTUAL_BRANCH=$(cd "$REPO_ROOT" && git worktree list --porcelain 2>/dev/null | \
+    ACTUAL_BRANCH=$(cd "$REPO_ROOT" && git worktree list --porcelain 2>/dev/null |
         grep -A2 "^worktree ${RESOLVED_WT_PATH}$" | grep "^branch " | sed 's|^branch refs/heads/||')
 fi
 
@@ -100,10 +100,10 @@ fi
 
 # Don't delete protected branches
 case "$ACTUAL_BRANCH" in
-    main|master|develop)
-        log "SKIP: Protected branch $ACTUAL_BRANCH"
-        exit 0
-        ;;
+main | master | develop)
+    log "SKIP: Protected branch $ACTUAL_BRANCH"
+    exit 0
+    ;;
 esac
 
 log "CLEANUP: session=$SESSION_NAME window=$WINDOW_NAME branch=$ACTUAL_BRANCH worktree=$WORKTREE_PATH"
@@ -138,6 +138,13 @@ fi
 if [[ -d "$WORKSPACE_BASE/$INSTANCE_NAME" ]]; then
     rm -rf "${WORKSPACE_BASE:?}/$INSTANCE_NAME" 2>/dev/null || true
     log "Removed devcontainer workspace: $INSTANCE_NAME"
+fi
+
+# Release port allocation for this worktree
+PORT_ALLOCATOR="$HOME/dotfiles/scripts/port-allocator.sh"
+if [[ -x "$PORT_ALLOCATOR" ]]; then
+    bash "$PORT_ALLOCATOR" release "$INSTANCE_NAME" 2>/dev/null &&
+        log "Released port allocation: $INSTANCE_NAME" || true
 fi
 
 # Remove the worktree
