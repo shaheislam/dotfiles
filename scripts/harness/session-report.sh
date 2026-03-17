@@ -94,7 +94,7 @@ otel_api_errors="N/A"
 
 if $otel_enrich; then
     # Check if Grafana is reachable (LGTM container runs Prometheus at :9090 internally)
-    if curl -sf --connect-timeout 2 "http://localhost:3000/api/health" &>/dev/null; then
+    if curl -sf --connect-timeout 2 "http://localhost:3100/api/health" &>/dev/null; then
         # Query via Prometheus API (LGTM container exposes Prometheus at :9090 internally)
         # Use docker exec to query from inside the container
         if docker exec otel-lgtm curl -sf "http://localhost:9090/api/v1/query?query=sum(increase(claude_code_cost_usage_total[24h]))" 2>/dev/null | jq -r '.data.result[0].value[1] // empty' &>/dev/null; then

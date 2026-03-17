@@ -19,7 +19,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 CONTAINER_NAME="otel-lgtm"
-GRAFANA_PORT="3000"
+GRAFANA_PORT="3100"
 OTEL_GRPC_PORT="4317"
 OTEL_HTTP_PORT="4318"
 
@@ -343,7 +343,7 @@ main() {
         echo "  uninstall   Remove stack and volumes"
         echo ""
         echo "Ports:"
-        echo "  3000   Grafana UI"
+        echo "  3100   Grafana UI (host port)"
         echo "  4317   OTEL gRPC receiver"
         echo "  4318   OTEL HTTP receiver"
         echo ""

@@ -2096,7 +2096,7 @@ EOF
                             print_warning "OTEL LGTM container start failed - run manually: ./scripts/otel/setup-otel.sh start"
 
                         print_success "OpenTelemetry LGTM stack configured"
-                        echo "  Grafana:   http://localhost:3000"
+                        echo "  Grafana:   http://localhost:3100"
                         echo "  OTEL HTTP: localhost:4318"
                         echo "  Status:    ./scripts/otel/setup-otel.sh status"
                         echo "  Doctor:    ./scripts/otel/setup-otel.sh doctor"
