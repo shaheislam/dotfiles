@@ -67,6 +67,10 @@ if status is-interactive
     set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1 # Load CLAUDE.md from --add-dir paths
     set -gx CLAUDE_CODE_EFFORT_LEVEL max # env var: low|medium|high|max|auto (max=Opus 4.6 only, session-scoped)
 
+    # OpenTelemetry observability (harness engineering)
+    set -gx CLAUDE_CODE_ENABLE_TELEMETRY 1
+    set -gx OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4318"
+
     # ==================== Platform-Specific Configuration ====================
 
     # WSL-specific configuration

@@ -181,7 +181,38 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────────
-# 5. Stale State Files
+# 5. OTEL Observability Health
+# ─────────────────────────────────────────────────────
+echo -e "${BLUE}--- OTEL Observability Health ---${NC}"
+
+SETTINGS_FILE="$ROOT/.claude/settings.json"
+if [ -f "$SETTINGS_FILE" ]; then
+    if grep -q "OTEL_METRICS_EXPORTER" "$SETTINGS_FILE" 2>/dev/null; then
+        ok "settings.json has OTEL env vars"
+    else
+        warn "settings.json missing OTEL env vars (OTEL_METRICS_EXPORTER)"
+    fi
+
+    if grep -q "CLAUDE_CODE_ENABLE_TELEMETRY" "$SETTINGS_FILE" 2>/dev/null; then
+        ok "settings.json has CLAUDE_CODE_ENABLE_TELEMETRY"
+    else
+        warn "settings.json missing CLAUDE_CODE_ENABLE_TELEMETRY"
+    fi
+fi
+
+# Check OTEL container if docker is available
+if command -v docker &>/dev/null; then
+    if docker ps --filter "name=otel-lgtm" --format '{{.Status}}' 2>/dev/null | grep -q "Up"; then
+        ok "OTEL LGTM container running"
+    else
+        warn "OTEL LGTM container not running (start with: otel start)"
+    fi
+fi
+
+echo ""
+
+# ─────────────────────────────────────────────────────
+# 6. Stale State Files
 # ─────────────────────────────────────────────────────
 echo -e "${BLUE}--- Stale State Files ---${NC}"
 

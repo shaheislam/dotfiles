@@ -137,6 +137,9 @@ Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit` hook. Fish: `
 - **Codex Account Rotation**: `codex-rotate` wraps codex with round-robin rotation across multiple OAuth accounts. Profiles in `~/.codex/accounts/<name>/auth.json` (machine-local, gitignored). Enroll: `codex-accounts add <name>`. `gwt-ticket --codex` uses `codex-rotate` automatically.
 - **DQS**: Council (`cpipe --preset council`), Red Team, First Principles. Docs: `docs/decision-quality-system.md`.
 
+### OpenTelemetry Observability
+OTEL LGTM stack (`grafana/otel-lgtm`) — single container with OTEL Collector, Prometheus, Loki, Tempo, Pyroscope, and Grafana. Claude Code sends native telemetry (costs, tokens, tool durations, cache rates) via OTLP HTTP. Fish: `otel start|stop|status|open|doctor`. Config: `scripts/otel/`. Dashboard: `scripts/otel/grafana/dashboards/claude-code.json`. Details in `.claude/rules/otel-observability.md`.
+
 ### Self-Hosted LLM
 Ollama + Open WebUI. Setup: `scripts/setup-selfhost-llm.sh`. Fish: `llm`, `llm-code`, `llm-chat`, `llm-status`.
 

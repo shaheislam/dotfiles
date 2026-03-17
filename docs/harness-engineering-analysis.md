@@ -58,8 +58,8 @@ primary job shifts from writing code to:
 | Machine-readable knowledge base in repo | CLAUDE.md + RULES.md + PRINCIPLES.md + .claude/rules/*.md | **COVERED** |
 | Cross-linked design & architecture docs | Partial — docs exist but not cross-linked for agent navigation | **MEDIUM** |
 | Structured domain context (JSON/YAML) | .beads/ JSONL, YAML frontmatter in state files | **COVERED** |
-| Dynamic context from observability | tmux-claude-watcher reads state, but no LogQL/PromQL agent access | **HIGH** |
-| Agent access to runtime telemetry | Tool failure JSONL exists but no query interface for agents | **HIGH** |
+| Dynamic context from observability | OTEL LGTM stack with Grafana dashboards + PromQL access | **COVERED** (was HIGH) |
+| Agent access to runtime telemetry | OTEL metrics via Prometheus + session-report.sh --otel | **COVERED** (was HIGH) |
 | Session continuity across restarts | bd prime + entire checkpoints + ralph-loop state | **COVERED** |
 | Browser/navigation context | Playwright MCP available but not wired into harness feedback | **LOW** |
 
@@ -134,7 +134,7 @@ itself. This is the "verification loop" that Datadog describes as the critical m
 
 | # | Weakness | Impact |
 |---|----------|--------|
-| W1 | **No agent-queryable telemetry interface** | Agents can't learn from past failures — logs exist but aren't consumable |
+| W1 | ~~No agent-queryable telemetry interface~~ **RESOLVED** | OTEL LGTM stack + Grafana dashboards + session-report.sh --otel |
 | W2 | **No deterministic structural tests** | smoke-test.sh checks existence but not architectural invariants (e.g., "all Fish functions must have --description") |
 | W3 | **No documentation drift detection** | CLAUDE.md and rules/ can become stale without anyone noticing |
 | W4 | **No git pre-commit enforcement** | Constraints only fire during Claude sessions, not on manual commits or other tools |
@@ -142,7 +142,7 @@ itself. This is the "verification loop" that Datadog describes as the critical m
 | W6 | **Feedback loop not closed** | Data flows one way: agent → logs. No automated log → harness improvement path |
 | W7 | **No automated test-on-commit** | Tests exist but require manual invocation; no CI-like automation |
 | W8 | **Single-machine architecture** | All state lives on one Mac; no remote observability dashboard |
-| W9 | **No metrics aggregation** | Tool failure rates, session durations, completion rates not aggregated or trended |
+| W9 | ~~No metrics aggregation~~ **RESOLVED** | OTEL Prometheus aggregates metrics; Grafana dashboard trends tool failures, costs, sessions |
 | W10 | **Hook tests don't run automatically** | 44 tests exist but need manual `test-filter.sh hooks` invocation |
 
 ### Opportunities
@@ -289,14 +289,14 @@ Create `scripts/harness/suggest-improvements.sh`:
 | Merge Serialization | merge-queue.sh | **High** |
 | Session Continuity | beads + entire checkpoints | **High** |
 | Telemetry Collection | JSONL logs (tool failures, notifications) | **Medium** |
-| Telemetry Consumption | None — agents can't query logs | **None** |
+| Telemetry Consumption | OTEL LGTM + Grafana + session-report --otel | **High** |
 | Verification Loop | Open — no feedback from telemetry to harness | **None** |
 | Documentation Drift Detection | None | **None** |
 | Structural Architecture Tests | Partial (smoke-test.sh) | **Low** |
 | Pre-Commit Enforcement | None (hooks are Claude-lifecycle only) | **None** |
 | Periodic Health Agents | None (manual invocation only) | **None** |
-| Metrics Aggregation | None | **None** |
-| Observability Dashboard | agent-dashboard.sh (agent state only) | **Low** |
+| Metrics Aggregation | OTEL Prometheus (costs, tokens, tool durations, cache rates) | **High** |
+| Observability Dashboard | Grafana LGTM + Claude Code dashboard + agent-dashboard.sh | **High** |
 
 ---
 

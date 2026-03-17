@@ -1,0 +1,26 @@
+# OpenTelemetry LGTM Stack (Grafana all-in-one)
+# Single container: OTEL Collector + Prometheus + Loki + Tempo + Pyroscope + Grafana
+#
+# Usage:
+#   ./scripts/otel/setup-otel.sh start
+#   Or manually: docker compose -f scripts/otel/docker-compose.yml up -d
+
+services:
+  otel-lgtm:
+    container_name: otel-lgtm
+    image: grafana/otel-lgtm:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"   # Grafana UI
+      - "4317:4317"   # OTEL gRPC receiver
+      - "4318:4318"   # OTEL HTTP receiver
+    volumes:
+      - otel_data:/data
+      - ./grafana/dashboards:/otel-lgtm/grafana/dashboards:ro
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+
+volumes:
+  otel_data:
+    name: otel_data

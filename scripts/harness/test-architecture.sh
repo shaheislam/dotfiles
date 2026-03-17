@@ -212,7 +212,56 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────────
-# Group 6: No Hardcoded Paths
+# Group 6: OTEL Configuration
+# ─────────────────────────────────────────────────────
+echo -e "${BLUE}--- OTEL Configuration ---${NC}"
+
+SETTINGS="$ROOT/.claude/settings.json"
+if [ -f "$SETTINGS" ]; then
+    # Check OTEL env vars in settings.json
+    for var in CLAUDE_CODE_ENABLE_TELEMETRY OTEL_METRICS_EXPORTER OTEL_LOGS_EXPORTER OTEL_EXPORTER_OTLP_ENDPOINT OTEL_EXPORTER_OTLP_PROTOCOL; do
+        if grep -q "$var" "$SETTINGS" 2>/dev/null; then
+            pass "settings.json has $var"
+        else
+            fail "settings.json missing $var"
+        fi
+    done
+else
+    skip "settings.json not found"
+fi
+
+# Check OTEL docker-compose exists
+if [ -f "$ROOT/scripts/otel/docker-compose.yml" ]; then
+    pass "scripts/otel/docker-compose.yml exists"
+else
+    fail "scripts/otel/docker-compose.yml missing"
+fi
+
+# Check setup-otel.sh is executable
+if [ -x "$ROOT/scripts/otel/setup-otel.sh" ]; then
+    pass "scripts/otel/setup-otel.sh is executable"
+else
+    fail "scripts/otel/setup-otel.sh not executable"
+fi
+
+# Check Fish wrapper exists
+if [ -f "$ROOT/.config/fish/functions/otel.fish" ]; then
+    pass "otel.fish Fish wrapper exists"
+else
+    fail "otel.fish Fish wrapper missing"
+fi
+
+# Check Grafana dashboard exists
+if [ -f "$ROOT/scripts/otel/grafana/dashboards/claude-code.json" ]; then
+    pass "Claude Code Grafana dashboard exists"
+else
+    fail "Claude Code Grafana dashboard missing"
+fi
+
+echo ""
+
+# ─────────────────────────────────────────────────────
+# Group 7: No Hardcoded Paths
 # ─────────────────────────────────────────────────────
 echo -e "${BLUE}--- Path Safety ---${NC}"
 

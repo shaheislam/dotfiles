@@ -15,11 +15,16 @@ REPORT_DIR="$HOME/.claude/harness"
 REPORT_FILE="$REPORT_DIR/session-reports.jsonl"
 
 json_output=false
+otel_enrich=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
     --json)
         json_output=true
+        shift
+        ;;
+    --otel)
+        otel_enrich=true
         shift
         ;;
     *) shift ;;
@@ -81,6 +86,26 @@ fi
 : "${files_changed:=0}"
 [[ "$files_changed" =~ ^[0-9]+$ ]] || files_changed=0
 
+# Collect OTEL metrics if requested
+otel_cost="N/A"
+otel_tokens="N/A"
+otel_cache_hit="N/A"
+otel_api_errors="N/A"
+
+if $otel_enrich; then
+    # Check if Grafana is reachable (LGTM container runs Prometheus at :9090 internally)
+    if curl -sf --connect-timeout 2 "http://localhost:3000/api/health" &>/dev/null; then
+        # Query via Prometheus API (LGTM container exposes Prometheus at :9090 internally)
+        # Use docker exec to query from inside the container
+        if docker exec otel-lgtm curl -sf "http://localhost:9090/api/v1/query?query=sum(increase(claude_code_cost_usage_total[24h]))" 2>/dev/null | jq -r '.data.result[0].value[1] // empty' &>/dev/null; then
+            otel_cost=$(docker exec otel-lgtm curl -sf "http://localhost:9090/api/v1/query?query=sum(increase(claude_code_cost_usage_total[24h]))" 2>/dev/null | jq -r '.data.result[0].value[1] // "0"')
+            otel_tokens=$(docker exec otel-lgtm curl -sf "http://localhost:9090/api/v1/query?query=sum(increase(claude_code_tokens_total[24h]))" 2>/dev/null | jq -r '.data.result[0].value[1] // "0"')
+            otel_cache_hit=$(docker exec otel-lgtm curl -sf "http://localhost:9090/api/v1/query?query=sum(rate(claude_code_cache_hit_total[1h]))/(sum(rate(claude_code_cache_hit_total[1h]))+sum(rate(claude_code_cache_miss_total[1h])))" 2>/dev/null | jq -r '.data.result[0].value[1] // "0"')
+            otel_api_errors=$(docker exec otel-lgtm curl -sf "http://localhost:9090/api/v1/query?query=sum(increase(claude_code_api_error_total[24h]))" 2>/dev/null | jq -r '.data.result[0].value[1] // "0"')
+        fi
+    fi
+fi
+
 # Build report
 report=$(jq -n \
     --arg date "$date_str" \
@@ -93,6 +118,10 @@ report=$(jq -n \
     --argjson beads_closed "$beads_closed_today" \
     --argjson commits "$commits_today" \
     --argjson files_changed "$files_changed" \
+    --arg otel_cost "$otel_cost" \
+    --arg otel_tokens "$otel_tokens" \
+    --arg otel_cache_hit "$otel_cache_hit" \
+    --arg otel_api_errors "$otel_api_errors" \
     '{
         date: $date,
         timestamp: $timestamp,
@@ -103,7 +132,13 @@ report=$(jq -n \
         beads_open: $beads_open,
         beads_closed_today: $beads_closed,
         commits_today: $commits,
-        files_changed: $files_changed
+        files_changed: $files_changed,
+        otel: {
+            cost: $otel_cost,
+            tokens: $otel_tokens,
+            cache_hit_ratio: $otel_cache_hit,
+            api_errors: $otel_api_errors
+        }
     }')
 
 # Output
@@ -121,6 +156,15 @@ else
     echo "  Commits today:       $commits_today"
     echo "  Files changed:       ${files_changed:-0}"
     echo ""
+
+    if $otel_enrich; then
+        echo "  --- OTEL Metrics ---"
+        echo "  Cost (24h):        \$$otel_cost"
+        echo "  Tokens (24h):      $otel_tokens"
+        echo "  Cache hit ratio:   $otel_cache_hit"
+        echo "  API errors (24h):  $otel_api_errors"
+        echo ""
+    fi
 
     if [ "$failures_today" -gt 10 ]; then
         echo "  WARNING: High failure rate ($failures_today). Review with:"
