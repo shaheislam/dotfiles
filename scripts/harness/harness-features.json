@@ -1,0 +1,124 @@
+[
+  {
+    "id": "pre-commit-hooks",
+    "category": "architectural-constraints",
+    "description": "Git pre-commit hook validates shell scripts, Fish formatting, YAML, Python syntax, and secrets",
+    "steps": [
+      "Verify .githooks/pre-commit exists and is executable",
+      "Verify git core.hooksPath is set to .githooks",
+      "Stage a .sh file and verify ShellCheck runs",
+      "Stage a .fish file and verify fish_indent runs",
+      "Verify secret detection catches test patterns"
+    ],
+    "passes": true
+  },
+  {
+    "id": "session-report",
+    "category": "feedback-loop",
+    "description": "SessionEnd hook generates health report capturing failures, beads, commits, and OTEL metrics",
+    "steps": [
+      "Verify session-report.sh exists and is executable",
+      "Verify session-report.sh is wired into SessionEnd hook in settings.json",
+      "Run session-report.sh --json and verify valid JSON output",
+      "Verify report appends to ~/.claude/harness/session-reports.jsonl"
+    ],
+    "passes": true
+  },
+  {
+    "id": "telemetry-query",
+    "category": "feedback-loop",
+    "description": "Agents can query their own failure history via structured telemetry interface",
+    "steps": [
+      "Verify query-telemetry.sh exists and is executable",
+      "Run query-telemetry.sh summary and verify structured output",
+      "Run query-telemetry.sh top-failures --json and verify valid JSON",
+      "Verify error-rate command produces daily trend"
+    ],
+    "passes": true
+  },
+  {
+    "id": "architecture-tests",
+    "category": "architectural-constraints",
+    "description": "Deterministic structural tests enforce shell conventions, Fish function standards, stow integrity",
+    "steps": [
+      "Verify test-architecture.sh exists and is executable",
+      "Run test-architecture.sh and verify it produces pass/fail output",
+      "Verify it checks shell shebangs, executable bits, Fish --description flags",
+      "Verify it checks hook infrastructure and OTEL configuration"
+    ],
+    "passes": true
+  },
+  {
+    "id": "doc-validation",
+    "category": "entropy-management",
+    "description": "Cross-references CLAUDE.md against actual codebase state to detect documentation drift",
+    "steps": [
+      "Verify validate-docs.sh exists and is executable",
+      "Run validate-docs.sh and verify function table cross-reference",
+      "Verify rules file cross-reference works",
+      "Verify script reference validation works"
+    ],
+    "passes": true
+  },
+  {
+    "id": "drift-detection",
+    "category": "entropy-management",
+    "description": "Periodic entropy management detecting stow symlink drift, PATH parity, theme consistency",
+    "steps": [
+      "Verify detect-drift.sh exists and is executable",
+      "Run detect-drift.sh and verify stow symlink checks",
+      "Verify PATH parity check between Fish and Zsh",
+      "Verify Tokyo Night theme consistency check",
+      "Verify stale state file and orphan PID detection"
+    ],
+    "passes": true
+  },
+  {
+    "id": "harness-init",
+    "category": "initializer-pattern",
+    "description": "Bootstrap script activates all harness components and validates environment readiness",
+    "steps": [
+      "Verify init.sh exists and is executable",
+      "Run init.sh and verify it activates pre-commit hooks",
+      "Verify it validates all harness scripts are executable",
+      "Verify it runs verify-harness.sh to produce initial feature status"
+    ],
+    "passes": true
+  },
+  {
+    "id": "otel-observability",
+    "category": "feedback-loop",
+    "description": "OTEL LGTM stack captures metrics, events, and traces with Grafana dashboard",
+    "steps": [
+      "Verify OTEL env vars in settings.json",
+      "Verify docker-compose.yml and setup-otel.sh exist",
+      "Verify Grafana dashboard JSON exists",
+      "Verify otel.fish wrapper exists"
+    ],
+    "passes": true
+  },
+  {
+    "id": "session-continuity",
+    "category": "context-engineering",
+    "description": "Session state survives context compaction via beads prime, entire checkpoints, and work-detect",
+    "steps": [
+      "Verify bd prime is wired into PreCompact and SessionStart hooks",
+      "Verify work-detect.sh runs at SessionStart for resume context",
+      "Verify entire checkpoints are wired into session lifecycle",
+      "Verify ralph-loop state file tracks iteration progress"
+    ],
+    "passes": true
+  },
+  {
+    "id": "self-improvement",
+    "category": "feedback-loop",
+    "description": "Harness analyzes failure telemetry and suggests concrete improvements to hooks and tests",
+    "steps": [
+      "Verify suggest-improvements.sh exists and is executable",
+      "Run suggest-improvements.sh and verify it reads session reports",
+      "Verify it produces actionable suggestions based on failure patterns",
+      "Verify suggestions reference specific hooks or tests to add"
+    ],
+    "passes": true
+  }
+]
