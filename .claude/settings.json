@@ -183,6 +183,10 @@
           {
             "command": "entire hooks claude-code session-end",
             "type": "command"
+          },
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/harness/session-report.sh --json 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
