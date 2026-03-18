@@ -132,7 +132,7 @@ brew "mas"  # Mac App Store CLI
 cask "1password-cli"  # 1Password CLI for tmux-1password plugin
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
-cask "amazon-q"  # Amazon Q Developer CLI
+cask "kiro-cli"  # Kiro CLI (formerly Amazon Q Developer)
 brew "sst/tap/opencode"  # AI coding agent built for the terminal
 brew "zippoxer/tap/recall"  # Search and resume Claude Code conversations
 brew "openclaw-cli"  # Self-hosted personal AI assistant gateway CLI
