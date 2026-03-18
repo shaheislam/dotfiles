@@ -2149,16 +2149,20 @@ EOF
                         print_warning "Colima start failed - start manually with: colima start"
                 fi
 
+                # Detect compose command
+                local compose_cmd="docker-compose"
+                docker compose version &>/dev/null && compose_cmd="docker compose"
+
                 # Start OTEL LGTM container
                 if colima status &>/dev/null; then
                     local otel_compose="$DOTFILES_ROOT/scripts/otel/docker-compose.yml"
                     if [[ -f "$otel_compose" ]]; then
-                        docker compose -f "$otel_compose" up -d 2>/dev/null &&
+                        $compose_cmd -f "$otel_compose" up -d 2>/dev/null &&
                             print_success "OTEL LGTM container started" ||
                             print_warning "OTEL LGTM container start failed - run manually: ./scripts/otel/setup-otel.sh start"
 
                         print_success "OpenTelemetry LGTM stack configured"
-                        echo "  Grafana:   http://localhost:3000"
+                        echo "  Grafana:   http://localhost:3100"
                         echo "  OTEL HTTP: localhost:4318"
                         echo "  Status:    ./scripts/otel/setup-otel.sh status"
                         echo "  Doctor:    ./scripts/otel/setup-otel.sh doctor"

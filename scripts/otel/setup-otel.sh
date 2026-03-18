@@ -19,7 +19,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 CONTAINER_NAME="otel-lgtm"
-GRAFANA_PORT="3000"
+GRAFANA_PORT="3100"
 OTEL_GRPC_PORT="4317"
 OTEL_HTTP_PORT="4318"
 
@@ -34,6 +34,20 @@ log_info() { echo -e "${BLUE}  $1${NC}"; }
 log_success() { echo -e "${GREEN}  $1${NC}"; }
 log_warning() { echo -e "${YELLOW}  $1${NC}"; }
 log_error() { echo -e "${RED}  $1${NC}"; }
+
+# Detect docker compose command (plugin vs standalone)
+COMPOSE_CMD=""
+detect_compose() {
+    if docker compose version &>/dev/null; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &>/dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
+        log_error "Neither 'docker compose' nor 'docker-compose' found"
+        log_info "Install with: brew install docker-compose"
+        exit 1
+    fi
+}
 
 # Check prerequisites
 check_prerequisites() {
@@ -52,6 +66,8 @@ check_prerequisites() {
     if [[ $missing -eq 1 ]]; then
         exit 1
     fi
+
+    detect_compose
 }
 
 # Ensure Colima is running
@@ -74,7 +90,7 @@ start_otel() {
 
     ensure_colima
 
-    docker compose -f "$COMPOSE_FILE" up -d
+    $COMPOSE_CMD -f "$COMPOSE_FILE" up -d
 
     # Wait for Grafana to be ready
     log_info "Waiting for Grafana to initialize..."
@@ -105,14 +121,14 @@ start_otel() {
 # Stop the LGTM stack
 stop_otel() {
     log_info "Stopping OTEL LGTM stack..."
-    docker compose -f "$COMPOSE_FILE" down
+    $COMPOSE_CMD -f "$COMPOSE_FILE" down
     log_success "OTEL LGTM stack stopped"
 }
 
 # Restart the LGTM stack
 restart_otel() {
     log_info "Restarting OTEL LGTM stack..."
-    docker compose -f "$COMPOSE_FILE" restart
+    $COMPOSE_CMD -f "$COMPOSE_FILE" restart
     log_success "OTEL LGTM stack restarted"
 }
 
@@ -268,13 +284,13 @@ doctor_otel() {
 
 # Tail logs
 logs_otel() {
-    docker compose -f "$COMPOSE_FILE" logs -f --tail=50
+    $COMPOSE_CMD -f "$COMPOSE_FILE" logs -f --tail=50
 }
 
 # Update image
 update_otel() {
     log_info "Pulling latest OTEL LGTM image..."
-    docker compose -f "$COMPOSE_FILE" pull
+    $COMPOSE_CMD -f "$COMPOSE_FILE" pull
     log_success "Image updated"
     log_info "Restart with: $0 restart"
 }
@@ -288,7 +304,7 @@ uninstall_otel() {
         return
     fi
 
-    docker compose -f "$COMPOSE_FILE" down -v
+    $COMPOSE_CMD -f "$COMPOSE_FILE" down -v
     log_success "OTEL LGTM stack removed"
     log_info "Colima is still running. Stop it with: colima stop"
 }
@@ -327,7 +343,7 @@ main() {
         echo "  uninstall   Remove stack and volumes"
         echo ""
         echo "Ports:"
-        echo "  3000   Grafana UI"
+        echo "  3100   Grafana UI (host port)"
         echo "  4317   OTEL gRPC receiver"
         echo "  4318   OTEL HTTP receiver"
         echo ""

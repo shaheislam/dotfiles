@@ -20,7 +20,7 @@ Claude Code (OTEL SDK) --OTLP HTTP--> localhost:4318
                                     ├── Tempo (traces)
                                     ├── Loki (logs/events)
                                     ├── Pyroscope (profiles)
-                                    └── Grafana :3000 (visualization)
+                                    └── Grafana :3100 (visualization, host port)
 ```
 
 ## Environment Variables
