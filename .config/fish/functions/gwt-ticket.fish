@@ -1473,7 +1473,8 @@ Instructions:
 4. Write tests if applicable
 5. Run tests to verify
 6. Create atomic commits with descriptive messages
-7. When complete, output $completion_promise
+7. Run scripts/harness/suggest-improvements.sh — implement any HIGH priority suggestions and commit them
+8. When complete, output $completion_promise
 
 Do not ask questions - make reasonable decisions and iterate."
         end

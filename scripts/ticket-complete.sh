@@ -371,14 +371,6 @@ if [[ -f "$STATE_FILE" ]]; then
     echo "pr_url: \"$PR_URL\"" >>"$STATE_FILE"
 fi
 
-# Harness self-improvement: analyze session for improvement suggestions
-HARNESS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/harness"
-if [[ -x "$HARNESS_DIR/suggest-improvements.sh" ]]; then
-    echo -e "${BLUE}Running harness improvement analysis...${NC}"
-    "$HARNESS_DIR/suggest-improvements.sh" 2>/dev/null || true
-    echo ""
-fi
-
 echo ""
 echo -e "${GREEN}=== Ticket execution complete ===${NC}"
 echo ""
