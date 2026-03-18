@@ -1218,6 +1218,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Resolve worktree path
     set worktree_path (realpath $worktree_path)
 
+    # Harness init: activate pre-commit hooks and validate environment in worktree
+    set -l harness_init "$worktree_path/scripts/harness/init.sh"
+    if test -x "$harness_init"
+        bash "$harness_init" >/dev/null 2>&1; or true
+    end
+
     # Now that worktree path is resolved, set up quiet mode log file
     if $quiet_mode
         set gwt_log_file "$worktree_path/.claude/gwt-ticket.log"
@@ -1391,6 +1397,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Step 4: Build and launch Claude
     if not $quiet_mode
         echo "[4/4] Launching Claude with $slash_command..."
+    end
+
+    # Harness preflight: verify harness features before launch
+    set -l harness_verify "$worktree_path/scripts/harness/verify-harness.sh"
+    if test -x "$harness_verify"
+        set -l harness_status (bash "$harness_verify" --summary 2>/dev/null)
+        if not $quiet_mode; and test -n "$harness_status"
+            echo "  Harness: $harness_status"
+        end
     end
 
     # Build the prompt
