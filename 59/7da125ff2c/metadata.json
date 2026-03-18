@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.8",
+  "checkpoint_id": "597da125ff2c",
+  "strategy": "manual-commit",
+  "branch": "powpow",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/lib/binary-installer.sh",
+    "scripts/lib/dotfiles-manager.sh",
+    "scripts/os/macos/package-manager.sh",
+    "scripts/os/wsl/package-manager.sh",
+    "scripts/setup.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/59/7da125ff2c/0/metadata.json",
+      "transcript": "/59/7da125ff2c/0/full.jsonl",
+      "context": "/59/7da125ff2c/0/context.md",
+      "content_hash": "/59/7da125ff2c/0/content_hash.txt",
+      "prompt": "/59/7da125ff2c/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 97,
+    "cache_creation_tokens": 248572,
+    "cache_read_tokens": 10288092,
+    "output_tokens": 30944,
+    "api_call_count": 90
+  }
+}
