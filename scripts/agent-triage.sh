@@ -43,6 +43,7 @@ DRY_RUN=false
 JSON_OUTPUT=false
 ALL_MODE=false
 QUIET=false
+# shellcheck disable=SC2034 # used by ai-triage subcommand via eval
 AI_TRIAGE=false
 WORKTREE_PATH=""
 
@@ -71,6 +72,7 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     --ai-triage)
+        # shellcheck disable=SC2034
         AI_TRIAGE=true
         shift
         ;;
@@ -356,9 +358,18 @@ action_nudge() {
         return 1
     fi
 
-    # Use exact match (= prefix) for ALL tmux operations to prevent prefix matching
+    # Check if Claude is actively working (spinner visible in pane output).
+    # The spinner pattern "… (" appears when Claude is thinking/generating.
+    # Killing an actively working agent causes exit code 143 with no benefit.
     local session="${target%%:*}"
     local window="${target#*:}"
+    local pane_content
+    pane_content=$(tmux capture-pane -t "=${session}:=${window}.0" -p -S -20 2>/dev/null) || true
+    if echo "$pane_content" | grep -q '… (' 2>/dev/null; then
+        log_decision "NUDGE" "skipped: agent is actively working (spinner visible)" false
+        return 1
+    fi
+
     local exact_target="=${session}:=${window}"
 
     # Pre-flight: verify restart path exists BEFORE killing
