@@ -92,11 +92,27 @@ if [[ -n "$MOLECULE_ID" ]]; then
     fi
 fi
 
+# Harness self-improvement: check for HIGH priority suggestions
+# Silent when harness is healthy — only injects context when action is needed.
+HARNESS_SUGGESTIONS=""
+SUGGEST_SCRIPT="$PROJECT_DIR/scripts/harness/suggest-improvements.sh"
+if [[ -x "$SUGGEST_SCRIPT" ]]; then
+    HARNESS_JSON=$(timeout 5 "$SUGGEST_SCRIPT" --json 2>/dev/null) || true
+    if [[ -n "$HARNESS_JSON" ]] && [[ "$HARNESS_JSON" != "[]" ]]; then
+        # Only surface HIGH priority items to the agent
+        HIGH_ITEMS=$(echo "$HARNESS_JSON" | jq -r '.[] | select(.priority == "HIGH") | "- [\(.category)] \(.suggestion) → \(.action)"' 2>/dev/null) || true
+        if [[ -n "$HIGH_ITEMS" ]]; then
+            HARNESS_SUGGESTIONS="HARNESS IMPROVEMENTS NEEDED: Before completing your task, fix these HIGH priority issues and commit the changes: $HIGH_ITEMS"
+        fi
+    fi
+fi
+
 # Build resume message
 MSG="RESUME CONTEXT: Working on ${ISSUE_STR:-(unknown task)}."
 [[ -n "$ITER_STR" ]] && MSG="$MSG $ITER_STR"
 [[ -n "$MOL_SUMMARY" ]] && MSG="$MSG Molecule: $MOL_SUMMARY"
 [[ -n "$CKPT_SUMMARY" ]] && MSG="$MSG Checkpoint: $CKPT_SUMMARY"
+[[ -n "$HARNESS_SUGGESTIONS" ]] && MSG="$MSG $HARNESS_SUGGESTIONS"
 MSG="$MSG Use /ralph-wiggum:ralph-loop to continue or review the current state."
 
 echo "$MSG"

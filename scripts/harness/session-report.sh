@@ -58,8 +58,9 @@ fi
 beads_open=0
 beads_closed_today=0
 if command -v bd &>/dev/null; then
-    beads_open=$(bd list --status=open 2>/dev/null | wc -l | tr -d ' ')
-    beads_closed_today=$(bd list --status=closed 2>/dev/null | grep -c "$(date '+%Y-%m-%d')" 2>/dev/null || echo 0)
+    beads_open=$(bd list --status=open 2>/dev/null | wc -l | tr -d ' ') || beads_open=0
+    beads_closed_today=$(bd list --status=closed 2>/dev/null | grep -c "$(date '+%Y-%m-%d')" || true)
+    : "${beads_closed_today:=0}"
 fi
 
 # Check git activity

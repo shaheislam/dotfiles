@@ -132,7 +132,7 @@ brew "mas"  # Mac App Store CLI
 cask "1password-cli"  # 1Password CLI for tmux-1password plugin
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
-cask "amazon-q"  # Amazon Q Developer CLI
+cask "kiro-cli"  # Kiro CLI (formerly Amazon Q Developer)
 brew "sst/tap/opencode"  # AI coding agent built for the terminal
 brew "zippoxer/tap/recall"  # Search and resume Claude Code conversations
 brew "openclaw-cli"  # Self-hosted personal AI assistant gateway CLI
@@ -266,7 +266,6 @@ brew "watchexec"
 brew "entr"
 
 # Document Processing
-cask "mactex-no-gui"  # LaTeX compiler for CV generation
 brew "pandoc"  # Document format converter (required for OVIWrite)
 brew "typst"  # Modern typesetting system (LaTeX alternative) for invoices, docs, presentations
 
@@ -290,16 +289,8 @@ cask "font-fira-code-nerd-font"
 cask "font-hack-nerd-font"
 cask "font-iosevka-nerd-font"
 
-# Virtualization
-cask "vmware-fusion"  # Windows VM support for PioSolver/PokerTracker (ENABLE_WINDOWS_VM=true)
-
-# Tap for cmux terminal
-tap "manaflow-ai/cmux"
-
 # GUI Applications
-cask "cmux"  # Ghostty-based terminal with vertical tabs and agent notifications
 cask "wezterm"
 cask "session-manager-plugin"
-cask "altair-graphql-client"  # GraphQL IDE for testing and development
 
 # Mac App Store Applications

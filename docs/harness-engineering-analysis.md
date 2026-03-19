@@ -63,53 +63,54 @@ primary job shifts from writing code to:
 | Session continuity across restarts | bd prime + entire checkpoints + ralph-loop state | **COVERED** |
 | Browser/navigation context | Playwright MCP available but not wired into harness feedback | **LOW** |
 
-**Key Gap**: Agents can *produce* telemetry (JSONL logs, state files) but cannot *query* it.
-There's no agent-accessible interface to ask "what failed in the last 24 hours?" or
-"what's the error rate for tool X?" The data exists but the feedback loop isn't closed.
+**Key Gap**: ~~Agents can *produce* telemetry but cannot *query* it.~~ **RESOLVED** —
+`query-telemetry.sh` provides structured querying (failures, top-failures, error-rate, summary).
+Agents can now ask "what failed in the last 24 hours?" and get structured answers.
 
 ### Pillar 2: Architectural Constraints
 
 | Harness Engineering Requirement | Current State | Gap Level |
 |-------------------------------|---------------|-----------|
-| Deterministic custom linters | validate-bash.py (blocks dangerous commands), use_bun.py | **PARTIAL** |
-| Structural tests (like ArchUnit) | smoke-test.sh validates directory structure + essential files | **PARTIAL** |
+| Deterministic custom linters | validate-bash.py (blocks dangerous commands), use_bun.py | **COVERED** |
+| Structural tests (like ArchUnit) | test-architecture.sh (shebangs, Fish conventions, hooks, OTEL, paths) | **COVERED** (was PARTIAL) |
 | Layered dependency enforcement | No formal layer model (Types → Config → Service → UI) | **HIGH** |
 | CI/CD pipeline validation | No CI — local-only validation | **MEDIUM** |
-| Pre-commit hooks for constraint enforcement | No pre-commit hooks (hooks are Claude Code lifecycle, not git) | **MEDIUM** |
+| Pre-commit hooks for constraint enforcement | .githooks/pre-commit (ShellCheck, fish_indent, YAML, secrets) | **COVERED** (was MEDIUM) |
 | Module boundary definitions | Stow packages provide implicit boundaries, not enforced | **LOW** |
-| Documentation consistency enforcement | No periodic agent scanning for doc drift | **HIGH** |
+| Documentation consistency enforcement | validate-docs.sh cross-references CLAUDE.md vs actual files | **COVERED** (was HIGH) |
 
-**Key Gap**: The current hook system is excellent for *Claude Code lifecycle events* but doesn't
-include traditional software engineering guardrails like git pre-commit hooks, structural
-architecture tests, or documentation consistency validators. The constraint enforcement is
-agent-internal (hooks fire during Claude sessions) rather than universal (fires on any commit).
+**Key Gap**: ~~No traditional software engineering guardrails.~~ **MOSTLY RESOLVED** —
+Pre-commit hooks enforce ShellCheck, fish_indent, YAML lint, Python syntax, and secret detection.
+test-architecture.sh validates structural invariants. validate-docs.sh detects doc drift.
+Remaining gap: no CI/CD pipeline (local-only validation).
 
 ### Pillar 3: Entropy Management
 
 | Harness Engineering Requirement | Current State | Gap Level |
 |-------------------------------|---------------|-----------|
-| Periodic cleanup agents | gwt-cleanup for stale containers; no doc/config drift agents | **PARTIAL** |
-| Documentation drift detection | No automated scanning for stale/inconsistent docs | **HIGH** |
-| Architectural constraint monitoring | No periodic verification of stow integrity, theme consistency | **MEDIUM** |
-| Dead code / stale config detection | No automated detection | **MEDIUM** |
+| Periodic cleanup agents | gwt-cleanup + detect-drift.sh (stow, PATH, theme, stale files) | **COVERED** (was PARTIAL) |
+| Documentation drift detection | validate-docs.sh (function table, rules, scripts, Brewfile parity) | **COVERED** (was HIGH) |
+| Architectural constraint monitoring | detect-drift.sh (stow integrity, theme consistency, package drift) | **COVERED** (was MEDIUM) |
+| Dead code / stale config detection | detect-drift.sh checks stale state files and orphan PIDs | **PARTIAL** (was MEDIUM) |
 | Cross-worktree consistency | merge-driver-union.sh prevents conflicts but no proactive scanning | **LOW** |
 
-**Key Gap**: There are no "garbage collection agents" — periodic processes that scan for
-documentation staleness, configuration drift, broken symlinks, or architectural violations.
-The merge driver is reactive (fires during merge), not proactive (fires periodically).
+**Key Gap**: ~~No garbage collection agents.~~ **MOSTLY RESOLVED** —
+detect-drift.sh scans for stow drift, PATH parity, theme consistency, stale state files, orphan PIDs.
+validate-docs.sh detects documentation staleness. Both run on-demand (not yet periodic/cron).
 
 ### Feedback Loop Completeness
 
 | Feedback Loop Stage | Current State | Gap Level |
 |---------------------|---------------|-----------|
 | Agent generates output | Ralph-loop, gwt-ticket, ticket-execute | **COVERED** |
-| Harness verifies output | smoke-test.sh, hook tests (44), cross-platform tests | **PARTIAL** |
-| Production telemetry validates | JSONL logs exist but no automated analysis | **HIGH** |
-| Feedback updates harness | No automated harness improvement from telemetry | **HIGH** |
+| Harness verifies output | test-architecture.sh + pre-commit + hook tests + verify-harness.sh | **COVERED** (was PARTIAL) |
+| Production telemetry validates | query-telemetry.sh + session-report.sh (wired to SessionEnd) | **COVERED** (was HIGH) |
+| Feedback updates harness | suggest-improvements.sh analyzes failures → actionable suggestions | **PARTIAL** (was HIGH) |
 
-**Key Gap**: The feedback loop is open-ended. Agents produce work → tests validate some things →
-logs capture events, but there's no automated step that analyzes logs to *improve* the harness
-itself. This is the "verification loop" that Datadog describes as the critical missing piece.
+**Key Gap**: ~~Feedback loop is open-ended.~~ **MOSTLY RESOLVED** —
+suggest-improvements.sh reads harness-features.json pass/fail status and failure telemetry to
+produce prioritized improvement suggestions. The loop is: generate → verify → query → suggest.
+Remaining gap: suggestions are generated but not auto-applied (requires human review).
 
 ---
 
@@ -282,37 +283,44 @@ Create `scripts/harness/suggest-improvements.sh`:
 | Harness Engineering Concept | Your Implementation | Maturity |
 |----------------------------|---------------------|----------|
 | Context Engineering | CLAUDE.md + rules/ + beads + skills | **High** |
-| Architectural Constraints | validate-bash.py + smoke-test.sh | **Medium** |
-| Entropy Management | gwt-cleanup only | **Low** |
+| Architectural Constraints | validate-bash.py + smoke-test.sh + test-architecture.sh + pre-commit | **High** |
+| Entropy Management | gwt-cleanup + detect-drift.sh + validate-docs.sh | **Medium** |
 | Agent State Derivation | agent-state.sh (zero-file-cache) | **High** |
 | Failure Recovery | agent-triage.sh (START/WAKE/NUDGE) | **High** |
 | Merge Serialization | merge-queue.sh | **High** |
 | Session Continuity | beads + entire checkpoints | **High** |
 | Telemetry Collection | JSONL logs (tool failures, notifications) | **Medium** |
 | Telemetry Consumption | OTEL LGTM + Grafana + session-report --otel | **High** |
-| Verification Loop | Open — no feedback from telemetry to harness | **None** |
-| Documentation Drift Detection | None | **None** |
-| Structural Architecture Tests | Partial (smoke-test.sh) | **Low** |
-| Pre-Commit Enforcement | None (hooks are Claude-lifecycle only) | **None** |
-| Periodic Health Agents | None (manual invocation only) | **None** |
+| Verification Loop | suggest-improvements.sh + verify-harness.sh (feature pass/fail tracking) | **Medium** |
+| Documentation Drift Detection | validate-docs.sh (function table, rules, scripts cross-ref) | **Medium** |
+| Structural Architecture Tests | test-architecture.sh (shebangs, Fish conventions, hooks, OTEL, paths) | **High** |
+| Pre-Commit Enforcement | .githooks/pre-commit (ShellCheck, fish_indent, YAML, Python, secrets) | **High** |
+| Periodic Health Agents | detect-drift.sh + suggest-improvements.sh (manual invocation) | **Low** |
 | Metrics Aggregation | OTEL Prometheus (costs, tokens, tool durations, cache rates) | **High** |
 | Observability Dashboard | Grafana LGTM + Claude Code dashboard + agent-dashboard.sh | **High** |
+| Initializer Pattern | init.sh bootstraps harness (hooks, permissions, directories, verification) | **High** |
+| Feature List Pattern | harness-features.json with pass/fail tracking via verify-harness.sh | **High** |
 
 ---
 
 ## Verdict
 
-Your setup is **exceptionally strong** in the areas harness engineering calls "context engineering"
-and "agent orchestration." The beads system, agent-state derivation, triage, merge queue, and
-multi-agent tournament capabilities are well beyond what most teams have.
+Your setup is **exceptionally strong** across all three harness engineering pillars.
 
-The primary gaps are in the **verification and feedback** dimensions:
+**Context Engineering**: High maturity — CLAUDE.md hierarchy, beads memory, skills system, OTEL telemetry.
 
-1. **Telemetry is write-only** — agents produce logs but can't query them
-2. **No structural architecture tests** — constraints are convention-based, not enforced
-3. **No entropy management** — no periodic agents fighting documentation or config drift
-4. **No closed feedback loop** — data doesn't flow from telemetry back to harness improvement
-5. **No universal enforcement** — constraints fire during Claude sessions but not git commits
+**Architectural Constraints**: High maturity — test-architecture.sh enforces shell/Fish conventions,
+.githooks/pre-commit validates on every commit (ShellCheck, fish_indent, YAML, secrets), validate-bash.py
+blocks dangerous commands at runtime.
 
-Implementing Phase 1 (telemetry query + session reports + pre-commit hooks) would close the
-most critical gaps with moderate effort and immediately make the agent harness self-aware.
+**Entropy Management**: Medium maturity — detect-drift.sh checks stow integrity, PATH parity, theme
+consistency, stale state files. validate-docs.sh cross-references CLAUDE.md against actual files.
+
+**Verification Loop**: Medium maturity — suggest-improvements.sh analyzes failure telemetry and feature
+status to produce actionable suggestions. verify-harness.sh tracks 10 harness capabilities with
+pass/fail status in harness-features.json (Anthropic's feature_list.json pattern).
+
+**Remaining gaps** (LOW priority):
+1. Architecture tests and drift detection run manually, not in lifecycle hooks
+2. No periodic cron-based health checks (entropy management is on-demand only)
+3. Feedback loop could be tighter — suggestions are generated but not auto-applied

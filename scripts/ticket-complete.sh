@@ -281,7 +281,8 @@ Jira: $ISSUE_KEY"
 fi
 
 # Push branch if needed
-if ! git rev-parse --abbrev-ref --symbolic-full-name @{u} &>/dev/null; then
+# shellcheck disable=SC1083
+if ! git rev-parse --abbrev-ref --symbolic-full-name '@{u}' &>/dev/null; then
     echo "Pushing branch to remote..."
     git push -u origin "$BRANCH"
 fi

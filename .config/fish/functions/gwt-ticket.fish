@@ -1218,6 +1218,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Resolve worktree path
     set worktree_path (realpath $worktree_path)
 
+    # Harness init: activate pre-commit hooks and validate environment in worktree
+    set -l harness_init "$worktree_path/scripts/harness/init.sh"
+    if test -x "$harness_init"
+        bash "$harness_init" >/dev/null 2>&1; or true
+    end
+
     # Now that worktree path is resolved, set up quiet mode log file
     if $quiet_mode
         set gwt_log_file "$worktree_path/.claude/gwt-ticket.log"
@@ -1351,7 +1357,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if not tmux has-session -t $session_name 2>/dev/null
         # Create session with the ticket window as the initial window
         # This avoids an extra default window (which would show reattach-to-user-namespace)
-        tmux new-session -d -s $session_name -n $window_name
+        tmux new-session -d -s $session_name -n $window_name -c "$worktree_path"
         or begin
             echo "Error: Failed to create tmux session '$session_name'" >&2
             builtin cd $_orig_pwd 2>/dev/null
@@ -1377,7 +1383,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         # Trailing colon forces session-level targeting — without it, tmux
         # resolves bare "dotfiles" as window main:dotfiles when a window
         # with that name exists in the current session.
-        tmux new-window -t "$session_name:" -n $window_name
+        tmux new-window -t "$session_name:" -n $window_name -c "$worktree_path"
         or begin
             echo "Error: Failed to create tmux window '$window_name' in session '$session_name'" >&2
             builtin cd $_orig_pwd 2>/dev/null
@@ -1391,6 +1397,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Step 4: Build and launch Claude
     if not $quiet_mode
         echo "[4/4] Launching Claude with $slash_command..."
+    end
+
+    # Harness preflight: verify harness features before launch
+    set -l harness_verify "$worktree_path/scripts/harness/verify-harness.sh"
+    if test -x "$harness_verify"
+        set -l harness_status (bash "$harness_verify" --summary 2>/dev/null)
+        if not $quiet_mode; and test -n "$harness_status"
+            echo "  Harness: $harness_status"
+        end
     end
 
     # Build the prompt
@@ -2045,8 +2060,7 @@ $prompt_suffix"
             "tmux split-window -t \"\$claude_pane_id\" -v -p 40 'fish $codex_agent_script'" \
             "# Step 3: Right-side layout" \
             'tmux select-pane -R' \
-            'tmux split-window -v -p 30' \
-            "tmux send-keys 'cd $worktree_path' Enter" \
+            "tmux split-window -v -p 30 -c '$worktree_path'" \
             'tmux select-pane -U' \
             "$rename_line" \
             disown \
@@ -2080,16 +2094,15 @@ $prompt_suffix"
 
         # Step 3: Switch to right pane and split for nvim + terminal
         tmux select-pane -t "$session_name:$window_name" -R
-        tmux split-window -t "$session_name:$window_name" -v -p 30
+        tmux split-window -t "$session_name:$window_name" -v -p 30 -c "$worktree_path"
         or echo "Warning: Failed to create terminal pane" >&2
-        tmux send-keys -t "$session_name:$window_name" "cd $worktree_path" Enter
 
         # Step 4: Launch nvim in top-right pane
         tmux select-pane -t "$session_name:$window_name" -U
         if test (count $nvim_ai_files) -gt 0
-            tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" Enter
+            tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" Enter
         else
-            tmux send-keys -t "$session_name:$window_name" "cd $worktree_path && nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
+            tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
         end
 
         # Step 5: Prompt delivery — to Claude pane (top-left) when Claude is primary

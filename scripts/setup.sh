@@ -1323,6 +1323,15 @@ phase_8_dotfiles() {
 
     print_header "Phase 8: Dotfiles"
 
+    # Clean corrupted git reflog entries before any git-dependent operations
+    # Concurrent hooks (entire, beads) + fsmonitor can corrupt reflogs over time
+    if command_exists git && [[ -d "$DOTFILES_ROOT/.git" ]]; then
+        print_step "Cleaning git reflog..."
+        git -C "$DOTFILES_ROOT" reflog expire --expire=now --all 2>/dev/null &&
+            log_verbose "Git reflog cleaned" ||
+            log_verbose "Git reflog cleanup skipped"
+    fi
+
     stow_dotfiles
 
     # Configure git template directory for auto-setup hooks (e.g., .gitignore_local)
@@ -1375,6 +1384,20 @@ phase_8_dotfiles() {
         # Register plist diff driver - converts to XML for readable diffs
         git config --global diff.plist.textconv "plutil -convert xml1 -o -"
         log_verbose "Plist diff driver registered"
+
+        # Disable fsmonitor for dotfiles repo — the daemon inherits file descriptors
+        # from parent git processes, causing stale locks (brew update) and reflog
+        # corruption from concurrent hooks (entire, beads, worktree agents)
+        git -C "$DOTFILES_ROOT" config core.fsmonitor false
+        log_verbose "fsmonitor disabled for dotfiles repo"
+
+        # Enable scheduled git maintenance (gc, commit-graph, prefetch)
+        # Registers a launchd job on macOS for automatic repo health
+        if ! git config --global --get-all maintenance.repo | grep -qF "$DOTFILES_ROOT" 2>/dev/null; then
+            git maintenance start 2>/dev/null &&
+                print_success "Git scheduled maintenance enabled" ||
+                log_verbose "Git maintenance setup skipped"
+        fi
     fi
 
     # Setup local git excludes (.gitignore_local symlinks) for existing repos
