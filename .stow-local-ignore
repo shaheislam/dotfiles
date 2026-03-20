@@ -85,3 +85,12 @@ Makefile
 # OrbStack Fish Completions (managed by OrbStack, absolute symlinks)
 \.config/fish/completions/docker\.fish
 \.config/fish/completions/orbctl\.fish
+
+# Claude settings (managed manually, not by stow)
+\.claude/settings\.json
+
+# SSH config (managed by link_ssh_config, not stow)
+\.ssh
+
+# iTerm2 AppSupport (absolute symlink to Application Support)
+\.config/iterm2/AppSupport

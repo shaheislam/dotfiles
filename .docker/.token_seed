@@ -1,5 +1,8 @@
 {
+  "ghcr.io": {
+    "Seed": "p+M358+R7GPlgHCSzRwZ+w=="
+  },
   "registry-1.docker.io": {
-    "Seed": "CWzFlxJDNj7X4lAO8W8NQg=="
+    "Seed": "8lGf+IsxKKZHAIZ6kvfxmQ=="
   }
 }
