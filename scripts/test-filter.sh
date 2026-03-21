@@ -251,7 +251,8 @@ test_hooks() {
     # Validate Python syntax
     for hook in "$DOTFILES_ROOT"/.claude/hooks/*.py; do
         if [ -f "$hook" ]; then
-            local name=$(basename "$hook")
+            local name
+            name=$(basename "$hook")
             run_test "Hook $name valid Python" "python3 -c \"import py_compile; py_compile.compile('$hook', doraise=True)\""
         fi
     done
@@ -547,6 +548,12 @@ test_remote_control() {
 
     # Fish function uses claude remote-control command
     run_test "cc-rc calls claude remote-control" "grep -q 'claude remote-control' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc has interactive command" "grep -q 'case interactive' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+    run_test "cc-rc interactive uses --remote-control flag" "grep -q '\-\-remote-control' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
+
+    # Launch commands use --remote-control flag for deterministic enablement
+    run_test "gwt-ticket uses --remote-control flag" "grep -q '\-\-remote-control' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-parallel uses --remote-control flag" "grep -q '\-\-remote-control' '$DOTFILES_ROOT/.config/fish/functions/gwt-parallel.fish'"
 
     # Fish function supports --verbose and --sandbox flags
     run_test "cc-rc supports --verbose flag" "grep -q '\-\-verbose' '$DOTFILES_ROOT/.config/fish/functions/cc-rc.fish'"
@@ -624,6 +631,7 @@ test_nvim_bridge() {
     run_test "nvim-bridge exits 0 (no state)" "bash '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' >/dev/null 2>&1"
 
     # Hook outputs valid JSON when state exists
+    # shellcheck disable=SC2034
     local test_dir="/tmp/nvim-claude-bridge-test-$$"
     local test_hash
     test_hash=$(echo -n "/tmp/test-project" | shasum -a 256 | cut -c1-8)
