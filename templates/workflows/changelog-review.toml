@@ -1,0 +1,40 @@
+[workflow]
+name = "changelog-review"
+description = "Monthly tool changelog review with config fixes"
+slash_command = "/ralph-wiggum:ralph-loop"
+max_iterations = 20
+
+[prompt]
+template = """
+You are performing the monthly changelog review for the dotfiles repo.
+
+Steps:
+1. Run `bash scripts/harness/changelog-review.sh --days {days}` to fetch recent releases
+2. Read the JSONL output at `~/.claude/harness/changelog-reports/changelog-$(date +%Y-%m-%d).jsonl`
+3. For each tool with flags (breaking, security, config-change, new-feature):
+   a. Read the tool's release notes URL
+   b. Read the tool's current config files in this repo
+   c. Determine if any config changes are needed:
+      - Remove deprecated options flagged as breaking
+      - Update config syntax for breaking changes
+      - Enable valuable new features that align with existing setup
+      - Apply security-related config hardening
+   d. Make the config changes directly
+   e. Commit each tool's changes separately: `fix(<tool>): update config for <version>`
+4. If a tool's changelog mentions Brewfile-level changes (renamed formula, new tap), update homebrew/Brewfile
+5. Skip tools where:
+   - Config lives outside this repo (e.g., neovim in ~/neovim)
+   - Changes require GUI (e.g., Karabiner-Elements)
+   - Release is a pre-release
+6. After all changes, create a summary of what was updated and why
+
+Do not ask questions - make reasonable decisions based on release notes.
+Prefer conservative changes - only modify config when the changelog clearly warrants it.
+When unsure, add a TODO comment in the config rather than making a risky change.
+
+When complete, output {completion_promise}"""
+
+[completion]
+promise_prefix = "TICKET_"
+auto_merge = false
+create_pr = true
