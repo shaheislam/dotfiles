@@ -135,7 +135,7 @@ Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `do
 Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit` hook. Fish: `cc-bridge status|cat|clean`. Docs: `docs/nvim-claude-bridge.md`.
 
 ### Remote Control & Agent Teams
-- **Remote Control**: `cc-rc start|status|enable|disable`. Enabled globally via `setup.sh`.
+- **Remote Control**: `cc-rc start|interactive|status|enable|disable`. Launch commands use `--remote-control` flag for deterministic per-session enablement. Config fallback via `enableRemoteControl` in `~/.claude.json`.
 - **Agent Teams**: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `teammateMode: "auto"`. Use for same-repo collaboration; use `gwt-parallel` for isolated multi-branch.
 
 ### Claude Pipeline & Cross-Provider Bridge

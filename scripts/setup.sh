@@ -1339,46 +1339,48 @@ phase_8_dotfiles() {
         git config --global init.templateDir ~/.config/git/templates
         log_verbose "Git template directory configured"
 
-        # Git config entries registered with --global use absolute paths to scripts.
-        # These MUST point to the main worktree (~/dotfiles), not $DOTFILES_ROOT,
-        # because $DOTFILES_ROOT resolves to whichever worktree runs setup.sh.
-        # If that worktree is later deleted, global config breaks for all repos.
-        # Note: textconv and merge drivers execute shell commands during git
+        # Git config entries use ~/dotfiles (tilde) paths so git expands them
+        # at runtime. This survives home directory or username changes — unlike
+        # $HOME or absolute paths which get baked in at setup time.
+        # Note: merge drivers and textconv execute shell commands during git
         # diff/merge — acceptable for this trusted personal repo.
-        local main_wt
-        main_wt="$(git -C "$DOTFILES_ROOT" worktree list --porcelain | head -1 | sed 's/^worktree //')"
-        if [[ -z "$main_wt" || ! -d "$main_wt/scripts" ]]; then
-            main_wt="$HOME/dotfiles"
-        fi
+        # SC2088: Intentional — literal ~ stored in git config, expanded by git/shell at runtime.
+        # This survives home directory or username changes unlike $HOME which bakes in the path.
 
         # Register union-doc merge driver for documentation files (CLAUDE.md, AGENTS.md)
         # Prevents merge conflicts when multiple worktrees append to the same doc files
         git config --global merge.union-doc.name "Union merge for documentation files"
-        git config --global merge.union-doc.driver "$main_wt/scripts/merge-driver-union.sh %A %O %B %L %P"
+        # shellcheck disable=SC2088
+        git config --global merge.union-doc.driver "~/dotfiles/scripts/merge-driver-union.sh %A %O %B %L %P"
         log_verbose "Union-doc merge driver registered"
 
         # Register Brewfile merge driver - union merge + dedup of tap/brew/cask/mas
         git config --global merge.brewfile.name "Union merge for Brewfile"
-        git config --global merge.brewfile.driver "$main_wt/scripts/merge-driver-brewfile.sh %A %O %B %L %P"
+        # shellcheck disable=SC2088
+        git config --global merge.brewfile.driver "~/dotfiles/scripts/merge-driver-brewfile.sh %A %O %B %L %P"
         log_verbose "Brewfile merge driver registered"
 
         # Register JSON deep-merge driver for settings files
         git config --global merge.json-merge.name "Deep merge for JSON config files"
-        git config --global merge.json-merge.driver "$main_wt/scripts/merge-driver-json.sh %A %O %B %L %P"
+        # shellcheck disable=SC2088
+        git config --global merge.json-merge.driver "~/dotfiles/scripts/merge-driver-json.sh %A %O %B %L %P"
         log_verbose "JSON merge driver registered"
 
         # Register lockfile merge driver - keeps ours for auto-generated lockfiles
         git config --global merge.lockfile.name "Keep ours for lockfiles"
-        git config --global merge.lockfile.driver "$main_wt/scripts/merge-driver-lockfile.sh %A %O %B %L %P"
+        # shellcheck disable=SC2088
+        git config --global merge.lockfile.driver "~/dotfiles/scripts/merge-driver-lockfile.sh %A %O %B %L %P"
         log_verbose "Lockfile merge driver registered"
 
         # Register JSON diff driver - sorts keys for cleaner diffs
-        git config --global diff.json.textconv "$main_wt/scripts/git-diff-json.sh"
+        # shellcheck disable=SC2088
+        git config --global diff.json.textconv "~/dotfiles/scripts/git-diff-json.sh"
         log_verbose "JSON diff driver registered"
 
         # Register JSON clean filter - normalizes key order on commit
         # Prevents phantom diffs from tools that re-serialize JSON (e.g., Claude Code)
-        git config --global filter.json-normalize.clean "$main_wt/scripts/git-clean-json.sh"
+        # shellcheck disable=SC2088
+        git config --global filter.json-normalize.clean "~/dotfiles/scripts/git-clean-json.sh"
         log_verbose "JSON normalize filter registered"
 
         # Register plist diff driver - converts to XML for readable diffs
