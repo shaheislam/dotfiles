@@ -1,48 +1,17 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ]
-    },
     "context7": {
       "command": "bunx",
       "args": [
         "-y",
         "@upstash/context7-mcp"
       ]
-    },
-    "steampipe": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@turbot/steampipe-mcp",
-        "postgresql://steampipe@localhost:9193/steampipe"
-      ]
-    },
-    "drawio": {
-      "command": "bunx",
-      "args": [
-        "drawio-mcp-server"
-      ]
-    },
-    "claudecodebrowser": {
-      "command": "python3",
-      "args": [
-        "~/.claudecodebrowser/mcp-server/stdio_wrapper.py"
-      ]
-    },
-    "pinchtab": {
-      "command": "pinchtab",
-      "args": [
-        "mcp"
-      ]
     }
   },
   "preferences": {
-    "coworkScheduledTasksEnabled": false,
-    "sidebarMode": "task"
+    "coworkScheduledTasksEnabled": true,
+    "sidebarMode": "task",
+    "coworkWebSearchEnabled": true,
+    "ccdScheduledTasksEnabled": false
   }
 }
