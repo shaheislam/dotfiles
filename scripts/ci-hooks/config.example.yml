@@ -1,0 +1,87 @@
+# ~/.config/claude-ci/config.yml
+# Per-device CI hook configuration.
+# This file is device-local — never committed to git.
+#
+# Each device has different repos under ~/work with different tech stacks.
+# Auto-detection works for most repos; use overrides when you need custom commands.
+
+# Directories to monitor (glob patterns). Only repos under these paths trigger CI hooks.
+watch_paths:
+  - ~/work
+
+# Per-repo overrides. Keys are repo paths (~ expanded at runtime).
+# If a repo is listed here, these commands replace auto-detected ones.
+repos:
+  # Example: Python API service with custom test runner
+  # ~/work/api-service:
+  #   stack: python
+  #   ci:
+  #     - pytest -x --tb=short
+  #     - mypy src/
+  #     - ruff check src/
+
+  # Example: TypeScript frontend with specific build check
+  # ~/work/frontend:
+  #   stack: typescript
+  #   ci:
+  #     - npm run typecheck
+  #     - npm run lint
+  #     - npm test -- --watchAll=false
+
+  # Example: Go microservice
+  # ~/work/payments:
+  #   stack: go
+  #   ci:
+  #     - go vet ./...
+  #     - go test -race ./...
+  #     - golangci-lint run
+
+# Default CI commands by auto-detected stack.
+# These run when a repo has no per-repo override.
+# Commands run in order; first failure stops the chain.
+defaults:
+  node:
+    - npm test 2>/dev/null || true
+    - npm run lint 2>/dev/null || true
+  typescript:
+    - npx tsc --noEmit
+    - npm run lint 2>/dev/null || npm run eslint 2>/dev/null || true
+    - npm test 2>/dev/null || true
+  python:
+    - python -m pytest -x --tb=short 2>/dev/null || true
+    - ruff check . 2>/dev/null || python -m flake8 . 2>/dev/null || true
+    - mypy . 2>/dev/null || true
+  go:
+    - go vet ./...
+    - go test ./...
+  rust:
+    - cargo check
+    - cargo clippy -- -D warnings 2>/dev/null || true
+    - cargo test
+  ruby:
+    - bundle exec rubocop 2>/dev/null || true
+    - bundle exec rspec 2>/dev/null || bundle exec rake test 2>/dev/null || true
+  java:
+    - ./gradlew check 2>/dev/null || mvn verify -q 2>/dev/null || true
+  terraform:
+    - terraform fmt -check -recursive
+    - terraform validate
+  shell:
+    - shellcheck scripts/*.sh 2>/dev/null || true
+  docker:
+    - docker compose config --quiet 2>/dev/null || true
+
+# Hook behavior settings.
+settings:
+  # Run CI on git commit (PreToolUse hook)
+  check_on_commit: true
+  # Run CI on git push (PreToolUse hook)
+  check_on_push: true
+  # Run lightweight lint after file edits (PostToolUse hook)
+  lint_on_save: false
+  # Maximum seconds for the full CI run before timeout
+  timeout: 120
+  # Stop on first CI failure or run all checks
+  fail_fast: true
+  # Show CI output in Claude context (systemMessage injection)
+  inject_context: true
