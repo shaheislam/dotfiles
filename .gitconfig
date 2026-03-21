@@ -11,7 +11,7 @@
 	writeCommitGraph = true
 
 [init]
-	templateDir = ~/.config/git/templates
+	templateDir = /Users/shaheislam/.config/git/templates
 
 [user]
 	name = Shahe Islam
@@ -50,12 +50,25 @@
 [alias]
 	mergetool = "!nvim -c DiffviewOpen"
 [filter "json-normalize"]
-	clean = /Users/shahe/dotfiles/scripts/git-clean-json.sh
+	clean = /Users/shaheislam/dotfiles/scripts/git-clean-json.sh
 [merge "jsonl-merge"]
 	name = JSONL merge for append-only line files
 	driver = /Users/shahe/dotfiles/scripts/merge-driver-jsonl.sh %A %O %B %L %P
 [diff "json"]
-	textconv = /Users/shahe/dotfiles/scripts/git-diff-json.sh
+	textconv = /Users/shaheislam/dotfiles/scripts/git-diff-json.sh
 [merge "union-doc"]
 	name = Union merge for documentation files
-	driver = /Users/shahe/dotfiles/scripts/merge-driver-union.sh %A %O %B %L %P
+	driver = /Users/shaheislam/dotfiles/scripts/merge-driver-union.sh %A %O %B %L %P
+[merge "brewfile"]
+	name = Union merge for Brewfile
+	driver = /Users/shaheislam/dotfiles/scripts/merge-driver-brewfile.sh %A %O %B %L %P
+[merge "json-merge"]
+	name = Deep merge for JSON config files
+	driver = /Users/shaheislam/dotfiles/scripts/merge-driver-json.sh %A %O %B %L %P
+[merge "lockfile"]
+	name = Keep ours for lockfiles
+	driver = /Users/shaheislam/dotfiles/scripts/merge-driver-lockfile.sh %A %O %B %L %P
+[diff "plist"]
+	textconv = plutil -convert xml1 -o -
+[maintenance]
+	repo = /Users/shaheislam/dotfiles
