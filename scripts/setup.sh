@@ -1592,6 +1592,19 @@ phase_9_fonts_and_apps() {
             fi
         fi
 
+        # Setup Monthly Changelog Review LaunchAgent (1st of each month)
+        print_step "Setting up changelog review scheduler..."
+        local changelog_plist="$HOME/Library/LaunchAgents/com.dotfiles.changelog-review.plist"
+        if [[ -f "$changelog_plist" ]]; then
+            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.changelog-review"; then
+                launchctl bootstrap "gui/$(id -u)" "$changelog_plist" 2>/dev/null &&
+                    print_success "Changelog review scheduler started" ||
+                    log_verbose "Changelog review scheduler start skipped"
+            else
+                log_verbose "Changelog review scheduler already loaded"
+            fi
+        fi
+
         # Setup Karabiner-Elements (keyboard remapping)
         print_step "Setting up Karabiner-Elements..."
         if [[ -d "$DOTFILES_ROOT/.config/karabiner" ]]; then
