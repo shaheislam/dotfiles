@@ -53,14 +53,6 @@ def update_path [] {
         $paths
     }
     
-    # Add Cursor to PATH if it exists
-    let cursor_path = "/Applications/Cursor.app/Contents/Resources/app/bin"
-    let paths = if ($cursor_path | path exists) {
-        $paths | append $cursor_path
-    } else {
-        $paths
-    }
-    
     # Build new PATH by prepending our paths to existing PATH
     let current_path = ($env.PATH | split row (char esep))
     let new_paths = ($paths | where { |p| $p | path exists })

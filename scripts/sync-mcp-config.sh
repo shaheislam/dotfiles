@@ -6,7 +6,6 @@
 #
 # Supported agents:
 #   - Claude Code: reads .mcp.json natively (no action needed)
-#   - Cursor: .cursor/mcp.json (symlink to ../.mcp.json)
 #   - Codex: .codex/config.toml [mcp_servers.*] section
 #   - OpenCode: opencode.json remote servers section
 #
@@ -42,26 +41,6 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 synced=0
-
-# --- Cursor: symlink .cursor/mcp.json → ../.mcp.json ---
-cursor_dir="$REPO_ROOT/.cursor"
-cursor_mcp="$cursor_dir/mcp.json"
-
-if $DRY_RUN; then
-    echo "[cursor] Would create symlink: .cursor/mcp.json -> ../.mcp.json"
-else
-    mkdir -p "$cursor_dir"
-    if [ -L "$cursor_mcp" ]; then
-        rm "$cursor_mcp"
-    elif [ -f "$cursor_mcp" ]; then
-        echo "[cursor] WARNING: .cursor/mcp.json exists and is not a symlink (preserving)"
-    fi
-    if [ ! -e "$cursor_mcp" ]; then
-        ln -s "../.mcp.json" "$cursor_mcp"
-        echo "[cursor] Created: .cursor/mcp.json -> ../.mcp.json"
-        synced=$((synced + 1))
-    fi
-fi
 
 # --- Codex: replace [mcp_servers.*] sections in .codex/config.toml ---
 codex_config="$REPO_ROOT/.codex/config.toml"

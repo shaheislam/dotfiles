@@ -1456,6 +1456,14 @@ EXCLUDE_EOF
         print_success "Local git excludes configured"
     fi
 
+    # Setup per-device CI hooks for ~/work repos
+    if [[ -x "$DOTFILES_ROOT/scripts/ci-hooks/setup-ci-hooks.sh" ]]; then
+        print_step "Setting up local CI hooks for ~/work repos..."
+        "$DOTFILES_ROOT/scripts/ci-hooks/setup-ci-hooks.sh" >/dev/null 2>&1 &&
+            print_success "CI hooks configured (edit ~/.config/claude-ci/config.yml to customize)" ||
+            log_verbose "CI hooks setup skipped"
+    fi
+
     # Setup kubectl abbreviations for Fish (universal variables, one-time setup)
     if command_exists fish && [[ -f "$HOME/.config/fish/setup/kubectl-abbr-setup.fish" ]]; then
         print_step "Setting up kubectl abbreviations for Fish..."

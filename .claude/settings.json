@@ -117,6 +117,23 @@
           }
         ],
         "matcher": "TodoWrite"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/hooks/file-modified.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ci-lint-on-save.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write"
       }
     ],
     "PostToolUseFailure": [
@@ -167,6 +184,23 @@
           }
         ],
         "matcher": "Task"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/use_bun.py",
+            "type": "command"
+          },
+          {
+            "command": "python3 ~/.claude/hooks/validate-bash.py",
+            "type": "command"
+          },
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ci-precommit.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
       }
     ],
     "SessionEnd": [

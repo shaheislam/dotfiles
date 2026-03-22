@@ -70,7 +70,7 @@ Related repos:
 
 **URL**: https://github.com/VoltAgent/awesome-agent-skills (7.6k stars)
 
-**380+ skills** from official dev teams and community. Cross-compatible with Claude Code, Codex, Gemini CLI, Cursor, Copilot.
+**380+ skills** from official dev teams and community. Cross-compatible with Claude Code, Codex, Gemini CLI, and Copilot.
 
 Includes skills from: **Vercel** (React, Next.js, React Native), **Cloudflare** (Workers, KV, R2, D1), **Google/Gemini Labs**, **Hugging Face**, **Trail of Bits** (security), **Microsoft** (Azure), **Stripe**, **Sentry**, **Expo**.
 
@@ -134,7 +134,7 @@ Released December 2025 by Anthropic, adopted by OpenAI for Codex CLI. Skills wri
 | Claude Code | `.claude/skills/` |
 | Codex CLI | `.agents/skills/` |
 | Gemini CLI | `.gemini/skills/` |
-| Cursor | `.cursor/skills/` |
+
 | GitHub Copilot | `.github/skills/` |
 | Windsurf | `.windsurf/skills/` |
 
