@@ -12,6 +12,6 @@
     "coworkScheduledTasksEnabled": true,
     "sidebarMode": "task",
     "coworkWebSearchEnabled": true,
-    "ccdScheduledTasksEnabled": false
+    "ccdScheduledTasksEnabled": true
   }
 }
