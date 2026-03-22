@@ -1,0 +1,126 @@
+{
+  "version": 2,
+  "description": "Config-path overlay for changelog review. Tool list auto-discovered from Brewfile + brew info. This file only stores metadata that cannot be auto-detected: config paths, priority overrides, categories, and skip/notes.",
+  "overlays": {
+    "fish": {
+      "config_paths": [
+        ".config/fish/config.fish",
+        ".config/fish/functions/"
+      ],
+      "priority": "high",
+      "category": "shell"
+    },
+    "tmux": {
+      "config_paths": [
+        ".tmux.conf"
+      ],
+      "priority": "high",
+      "category": "shell"
+    },
+    "neovim": {
+      "config_paths": [],
+      "priority": "high",
+      "category": "editor",
+      "notes": "Config lives in ~/neovim (separate repo)",
+      "skip": true
+    },
+    "starship": {
+      "config_paths": [
+        ".config/starship.toml"
+      ],
+      "category": "shell"
+    },
+    "fzf": {
+      "config_paths": [
+        ".config/fish/config.fish"
+      ],
+      "category": "shell"
+    },
+    "bat": {
+      "config_paths": [
+        ".config/bat/"
+      ],
+      "category": "shell"
+    },
+    "atuin": {
+      "config_paths": [
+        ".config/atuin/"
+      ],
+      "category": "shell"
+    },
+    "yazi": {
+      "config_paths": [
+        ".config/yazi/"
+      ],
+      "category": "shell"
+    },
+    "ghostty": {
+      "config_paths": [
+        ".config/ghostty/"
+      ],
+      "priority": "high",
+      "category": "terminal"
+    },
+    "wezterm": {
+      "config_paths": [
+        ".config/wezterm/"
+      ],
+      "category": "terminal"
+    },
+    "git-delta": {
+      "config_paths": [
+        ".gitconfig"
+      ],
+      "category": "shell"
+    },
+    "direnv": {
+      "config_paths": [
+        ".config/direnv/"
+      ],
+      "category": "shell"
+    },
+    "mise": {
+      "config_paths": [
+        ".config/mise/"
+      ],
+      "category": "shell"
+    },
+    "bottom": {
+      "config_paths": [
+        ".config/bottom/"
+      ],
+      "category": "monitoring"
+    },
+    "karabiner-elements": {
+      "config_paths": [
+        ".config/karabiner/karabiner.json"
+      ],
+      "category": "system",
+      "notes": "Config should be edited via GUI only",
+      "skip": true
+    },
+    "kubectl": {
+      "priority": "high",
+      "category": "devops",
+      "notes": "Track deprecation notices for k8s API versions"
+    },
+    "terraform": {
+      "priority": "high",
+      "category": "devops"
+    },
+    "ollama": {
+      "priority": "high",
+      "category": "ai"
+    }
+  },
+  "skip_patterns": [
+    "font-*",
+    "python@*",
+    "openjdk",
+    "imagemagick",
+    "graphviz",
+    "w3m",
+    "curl",
+    "mas"
+  ]
+}

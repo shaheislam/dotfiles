@@ -1,0 +1,65 @@
+[workflow]
+name = "changelog-review"
+description = "Monthly tool changelog review with config fixes"
+slash_command = "/ralph-wiggum:ralph-loop"
+max_iterations = 20
+
+[prompt]
+template = """
+You are the dispatcher for the monthly changelog review.
+
+Your job is to fetch changelog data, identify tools that need attention, then
+spawn an isolated subagent per tool to make the actual config changes. This
+prevents context rot — each subagent only sees one tool's data.
+
+## Phase 1: Fetch and Filter
+
+1. Run `bash scripts/harness/changelog-review.sh --days {days}` to fetch releases
+2. Read the JSONL at `~/.claude/harness/changelog-reports/changelog-$(date +%Y-%m-%d).jsonl`
+3. Filter to tools with flags (breaking, security, config-change, new-feature)
+4. Skip tools where:
+   - config_paths is empty (no local config to review)
+   - Config lives outside this repo (neovim in ~/neovim)
+   - Changes require GUI (Karabiner-Elements)
+   - Release is a pre-release
+
+## Phase 2: Dispatch Subagents
+
+For each flagged tool, spawn a subagent (Agent tool) with this prompt pattern:
+
+  You are reviewing the changelog for TOOL_NAME and updating its dotfiles config.
+
+  Release: TAG (DATE)
+  Flags: FLAGS
+  Release URL: URL
+  Config paths: PATHS
+
+  Steps:
+  1. Fetch the release notes at URL using WebFetch
+  2. Read each config file in PATHS
+  3. Based on the release notes, determine what config changes are needed:
+     - breaking: remove deprecated options, update syntax
+     - security: apply hardening, update versions
+     - config-change: adopt new option names, update defaults
+     - new-feature: enable if it aligns with existing setup (Tokyo Night theme, etc.)
+  4. Make changes directly. Be conservative — only change what the changelog warrants.
+  5. When unsure, add a TODO comment rather than making a risky change.
+  6. Stage and commit: `fix(TOOL_NAME): update config for TAG`
+
+Spawn independent tools in parallel (max 3-4 concurrent to avoid git conflicts).
+For tools that share config files (e.g., fzf and fish both touch config.fish),
+run those sequentially.
+
+## Phase 3: Summary
+
+After all subagents complete:
+1. Run `git log --oneline` to list all commits made
+2. Summarize what was changed and why
+
+Do not ask questions - make reasonable decisions based on release notes.
+When complete, output {completion_promise}"""
+
+[completion]
+promise_prefix = "TICKET_"
+auto_merge = false
+create_pr = true

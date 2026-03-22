@@ -1,0 +1,59 @@
+[workflow]
+name = "insights-review"
+description = "Monthly harness insights review with fixes"
+slash_command = "/ralph-wiggum:ralph-loop"
+max_iterations = 20
+
+[prompt]
+template = """
+You are performing the monthly harness insights review for the dotfiles repo.
+
+Your job is to run the harness analysis tools, interpret the suggestions, then
+implement fixes for actionable items.
+
+## Phase 1: Gather Data
+
+1. Run `bash scripts/harness/suggest-improvements.sh --json` to get improvement suggestions
+2. Run `bash scripts/harness/detect-drift.sh` to check for configuration drift
+3. Run `bash scripts/harness/verify-harness.sh --json` to check harness feature status
+
+## Phase 2: Triage and Fix
+
+For each suggestion from suggest-improvements.sh:
+
+**HIGH priority** — fix directly:
+- Run the suggested action command to investigate
+- Implement the fix (add hooks, update settings, fix configs)
+- Commit: `fix(harness): <description>`
+
+**MEDIUM priority** — fix if straightforward:
+- If the fix is a config change or simple wiring, implement it
+- If it requires design decisions, add a TODO comment with context
+- Commit: `fix(harness): <description>`
+
+**LOW priority** — document only:
+- Add a TODO comment or note in the relevant file
+- Do not spend time on speculative improvements
+
+For drift issues from detect-drift.sh:
+- Fix broken symlinks (re-run stow)
+- Fix PATH parity issues (add to both Fish and Zsh)
+- Fix theme inconsistencies (apply Tokyo Night)
+- Commit each fix separately
+
+## Phase 3: Summary
+
+After all fixes:
+1. Run `bash scripts/harness/verify-harness.sh` to confirm improvements
+2. Run `git log --oneline` to list all commits
+3. Summarize what was fixed
+
+Do not ask questions - make reasonable decisions.
+Prefer targeted fixes over broad refactors.
+
+When complete, output {completion_promise}"""
+
+[completion]
+promise_prefix = "TICKET_"
+auto_merge = false
+create_pr = true
