@@ -411,6 +411,48 @@ if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
     OPEN_ISSUES=$(cd "$WORKTREE_PATH" && bd list --status=open 2>/dev/null | head -10) || OPEN_ISSUES="_None._"
 fi
 
+# Gather execution metadata (ephemeral — lost once worktree is cleaned up)
+LEARN_BRANCH=""
+LEARN_DEVICE=$(hostname -s 2>/dev/null || echo "unknown")
+LEARN_AGENT=$(parse_yaml_value "agent_harness")
+LEARN_ITERATIONS=0
+LEARN_DURATION=0
+LEARN_FILES_CHANGED=0
+LEARN_COMMITS_YAML=""
+
+if [[ -d "$WORKTREE_PATH" ]]; then
+    LEARN_BRANCH=$(git -C "$WORKTREE_PATH" branch --show-current 2>/dev/null || true)
+
+    # Iteration count from progress.json
+    PROGRESS_FILE="$WORKTREE_PATH/.claude/progress.json"
+    if [[ -f "$PROGRESS_FILE" ]]; then
+        LEARN_ITERATIONS=$(python3 -c "import json,sys; print(json.load(sys.stdin).get('iteration',0))" <"$PROGRESS_FILE" 2>/dev/null || echo 0)
+    fi
+
+    # Duration from started_at in state file
+    STARTED_AT=$(parse_yaml_value "started_at")
+    if [[ -n "$STARTED_AT" ]]; then
+        START_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$STARTED_AT" +%s 2>/dev/null || echo 0)
+        if [[ "$START_EPOCH" -gt 0 ]]; then
+            LEARN_DURATION=$(($(date +%s) - START_EPOCH))
+        fi
+    fi
+
+    # Merged commits and files changed (relative to main)
+    MAIN_BRANCH=$(git -C "$WORKTREE_PATH" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+    MERGE_BASE=$(git -C "$WORKTREE_PATH" merge-base "$MAIN_BRANCH" HEAD 2>/dev/null || true)
+    if [[ -n "$MERGE_BASE" ]]; then
+        LEARN_FILES_CHANGED=$(git -C "$WORKTREE_PATH" diff --name-only "$MERGE_BASE" HEAD 2>/dev/null | wc -l | tr -d ' ')
+
+        # Build YAML list of commits
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            LEARN_COMMITS_YAML="${LEARN_COMMITS_YAML}
+  - \"$line\""
+        done < <(git -C "$WORKTREE_PATH" log --oneline "$MERGE_BASE..HEAD" 2>/dev/null | head -30)
+    fi
+fi
+
 # Write 1: Obsidian note (always, even without beads)
 if [[ -d "$HOME/obsidian" ]]; then
     OBSIDIAN_DIR="$HOME/obsidian/Claude/Memories/learnings"
@@ -431,6 +473,16 @@ tags:
   - "memory/learning"
   - "ticket-learnings"
   - "$REPO_NAME"
+repo: "$REPO_NAME"
+branch: "$LEARN_BRANCH"
+device: "$LEARN_DEVICE"
+agent: "${LEARN_AGENT:-claude}"
+ticketing_system: "${TICKETING_SYSTEM:-none}"
+iterations: $LEARN_ITERATIONS
+duration_seconds: $LEARN_DURATION
+files_changed: $LEARN_FILES_CHANGED
+merged_commits:${LEARN_COMMITS_YAML:-"
+  - \"(none)\""}
 ---
 
 # + Learnings: $ISSUE_KEY -- $TITLE
@@ -484,6 +536,9 @@ if [[ -n "$REPO_ROOT" && -d "$REPO_ROOT/.claude" ]]; then
 # Learnings: $ISSUE_KEY -- $TITLE
 
 **Completed:** $NOW_ISO
+**Branch:** $LEARN_BRANCH
+**Device:** $LEARN_DEVICE
+**Agent:** ${LEARN_AGENT:-claude} | **Iterations:** $LEARN_ITERATIONS | **Duration:** ${LEARN_DURATION}s | **Files:** $LEARN_FILES_CHANGED
 **Worktree:** $WORKTREE_PATH
 **PR:** ${PR_URL:-N/A}
 
