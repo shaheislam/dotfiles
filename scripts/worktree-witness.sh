@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2168,SC1091,SC1010,SC2001,SC2086,SC1122,SC2155
 #
 # worktree-witness.sh - Per-worktree agent lifecycle monitor
 #
@@ -316,6 +317,7 @@ monitor_loop() {
     local patrol_sleep="$POLL_INTERVAL"
     local patrol_max_sleep=300 # 5 min cap
     local patrol_had_activity=false
+    local _semantic_poll_count=0
 
     while true; do
         # Check for active gates — pause monitoring while gated
@@ -373,6 +375,43 @@ monitor_loop() {
                 /^retries:/ { print "retries: " retries; next }
                 { print }
             ' "$WITNESS_STATE" >"${WITNESS_STATE}.tmp" && mv "${WITNESS_STATE}.tmp" "$WITNESS_STATE" 2>/dev/null || true
+        fi
+
+        # Semantic error detection (every 5th poll to avoid overhead)
+        _semantic_poll_count=$((_semantic_poll_count + 1))
+        if [[ $((_semantic_poll_count % 5)) -eq 0 ]]; then
+            local semantic_script="$SCRIPT_DIR/detect-semantic-errors.sh"
+            if [[ -x "$semantic_script" ]]; then
+                local semantic_output
+                if semantic_output=$("$semantic_script" "$WORKTREE_PATH" 2>/dev/null); then
+                    : # Clean — no warnings
+                else
+                    local warn_count
+                    warn_count=$(echo "$semantic_output" | python3 -c "import json,sys; print(json.load(sys.stdin).get('count',0))" 2>/dev/null || echo 0)
+                    log "Semantic warnings detected ($warn_count): $(echo "$semantic_output" | head -1)"
+                    bead_comment "Semantic check: $warn_count warnings detected"
+                    if [[ "$warn_count" -ge 3 ]]; then
+                        notify "Agent Warning" "$issue_key: $warn_count semantic warnings — possible confusion or looping"
+                    fi
+                fi
+            fi
+        fi
+
+        # Context health monitoring (every 10th poll)
+        if [[ $((_semantic_poll_count % 10)) -eq 0 ]]; then
+            local health_script="$SCRIPT_DIR/context-health-check.sh"
+            if [[ -x "$health_script" ]]; then
+                local health_output health_exit=0
+                health_output=$("$health_script" "$WORKTREE_PATH" 2>/dev/null) || health_exit=$?
+                if [[ "$health_exit" -ge 1 ]]; then
+                    local health_status
+                    health_status=$(echo "$health_output" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))" 2>/dev/null || echo "warning")
+                    log "Context health: $health_status"
+                    if [[ "$health_exit" -ge 2 ]]; then
+                        notify "Context Critical" "$issue_key: Context health degraded — consider compacting or restarting"
+                    fi
+                fi
+            fi
         fi
 
         # State transitions

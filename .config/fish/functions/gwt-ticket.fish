@@ -127,6 +127,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l crown_subs ""
     set -l crown_timeout 7200
     set -l crown_signal "" # internal: signal file path for sub-gwt-ticket in crown mode
+    set -l plan_first false
+    set -l validate_command ""
+    set -l browser_validate false
+    set -l mcps_include ""
+    set -l mcps_exclude false
 
     for i in (seq (count $argv))
         if $skip_next
@@ -645,6 +650,30 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --desc-file requires a file path (or - for stdin)"
                     return 1
                 end
+            case --plan-first
+                set plan_first true
+            case --validate
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set validate_command $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --validate requires a command (e.g., 'npm test')"
+                    return 1
+                end
+            case --browser-validate
+                set browser_validate true
+            case --mcps
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set mcps_include $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --mcps requires a comma-separated list"
+                    return 1
+                end
+            case --no-mcps
+                set mcps_exclude true
             case '-*'
                 echo "Error: Unknown option: $arg"
                 return 1
@@ -737,6 +766,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --no-edit            Use title as description (skip prompt file)"
         echo "  --desc-file FILE     Read description from file (or - for stdin; avoids shell quoting)"
         echo "  --no-beads           Disable automatic beads subtask tracking"
+        echo "  --plan-first         Start in plan mode, create plan before executing code changes"
+        echo "  --validate CMD       Inject validation command into prompt (e.g., 'npm test', 'make check')"
+        echo "  --browser-validate   Add browser validation step for web/UI projects (uses Playwright MCP)"
+        echo "  --mcps LIST          Only allow specified MCPs (comma-separated, e.g., playwright,context7)"
+        echo "  --no-mcps            Disable all MCP usage (use bash/scripts instead, saves context tokens)"
         echo "  --quiet, -q          Suppress verbose output (default; writes to .claude/gwt-ticket.log)"
         echo "  --verbose, -v        Show full verbose output (overrides default quiet mode)"
         echo "  --help, -h           Show this help"
@@ -800,6 +834,20 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket --crown --bridge TICKET-123 \"Fix auth\" \"Desc\"  # each contestant uses bridge"
         echo "  gwt-ticket --crown --crown-judge redteam TICKET-123 \"Fix auth\" \"Desc\""
         echo "  gwt-ticket --crown --crown-subs personal,work,backup TICKET-123 \"Fix auth\" \"Desc\""
+        echo ""
+        echo "  # Plan-first mode (analyze before executing)"
+        echo "  gwt-ticket ENG-123 \"Add auth\" \"OAuth2 flow\" --plan-first"
+        echo ""
+        echo "  # Inject validation loop"
+        echo "  gwt-ticket ENG-123 \"Fix tests\" \"Details\" --validate 'npm test'"
+        echo "  gwt-ticket ENG-123 \"Fix build\" \"Details\" --validate 'make check'"
+        echo ""
+        echo "  # Browser validation for web projects"
+        echo "  gwt-ticket ENG-123 \"Fix UI\" \"Details\" --browser-validate"
+        echo ""
+        echo "  # MCP scoping (reduce context token usage)"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --no-mcps"
+        echo "  gwt-ticket ENG-123 \"Fix UI\" \"Details\" --mcps playwright,context7"
         echo ""
         echo "Prompt Template Variables:"
         echo "  {{ISSUE_KEY}}          Issue key (ENG-123)"
@@ -1537,6 +1585,78 @@ REQUIRED BEHAVIORS:
         end
     end
 
+    # Inject plan-first mode instruction
+    if $plan_first
+        set -l plan_suffix "
+
+PLAN-FIRST MODE — Before writing ANY code, create a detailed implementation plan:
+1. Analyze the codebase to understand architecture, patterns, and conventions
+2. Identify all files that need modification and why
+3. Consider edge cases, risks, and alternative approaches
+4. Present the plan with specific changes per file
+5. Only after the plan is complete, switch to execution and implement
+Spend time building good context before executing. Fresh, focused context beats bloated context."
+        if test -n "$prompt_suffix"
+            set prompt_suffix "$prompt_suffix$plan_suffix"
+        else
+            set prompt_suffix "$plan_suffix"
+        end
+    end
+
+    # Inject validation loop command
+    if test -n "$validate_command"
+        set -l validate_suffix "
+
+VALIDATION LOOP — After EVERY meaningful code change, run this validation command:
+  $validate_command
+If validation fails, fix the issue before proceeding. Do NOT skip validation between changes.
+This is your primary feedback loop for code quality."
+        if test -n "$prompt_suffix"
+            set prompt_suffix "$prompt_suffix$validate_suffix"
+        else
+            set prompt_suffix "$validate_suffix"
+        end
+    end
+
+    # Inject browser validation instruction
+    if $browser_validate
+        set -l browser_suffix "
+
+BROWSER VALIDATION — After implementing UI changes, use Playwright MCP to verify:
+1. Navigate to the relevant page
+2. Take a screenshot to verify visual correctness
+3. Test key interactions (clicks, form submissions)
+4. Check for console errors
+Use browser validation as part of your verification loop for any user-facing changes."
+        if test -n "$prompt_suffix"
+            set prompt_suffix "$prompt_suffix$browser_suffix"
+        else
+            set prompt_suffix "$browser_suffix"
+        end
+    end
+
+    # Inject MCP scoping instruction
+    if $mcps_exclude
+        set -l mcp_suffix "
+
+MCP RESTRICTIONS — Do NOT use any MCP tools during this session. Use bash commands, scripts, and direct file operations instead. MCPs consume excessive context tokens."
+        if test -n "$prompt_suffix"
+            set prompt_suffix "$prompt_suffix$mcp_suffix"
+        else
+            set prompt_suffix "$mcp_suffix"
+        end
+    else if test -n "$mcps_include"
+        set -l mcp_suffix "
+
+MCP RESTRICTIONS — Only use these MCP tools: $mcps_include
+Avoid all other MCPs to keep context lean and focused. Use bash commands or scripts instead."
+        if test -n "$prompt_suffix"
+            set prompt_suffix "$prompt_suffix$mcp_suffix"
+        else
+            set prompt_suffix "$mcp_suffix"
+        end
+    end
+
     # Apply skills, prefix, and suffix
     set -l prompt ""
 
@@ -2244,6 +2364,9 @@ town_sync: $town_sync
 mayor_tracked: $mayor_tracked
 bead_priority: \"$bead_priority\"
 dynamic_beads: $use_dynamic_beads
+plan_first: $plan_first
+validate_command: \"$validate_command\"
+browser_validate: $browser_validate
 ---
 
 # Ticket Execution State

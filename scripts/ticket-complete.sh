@@ -202,7 +202,7 @@ cd "$WORKTREE_PATH"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Step 1: Check for uncommitted changes
-echo -e "${BLUE}[1/5] Checking git status...${NC}"
+echo -e "${BLUE}[1/6] Checking git status...${NC}"
 if [[ -n "$(git status --porcelain)" ]]; then
     echo -e "${YELLOW}Warning: Uncommitted changes detected${NC}"
     git status --short
@@ -210,7 +210,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 # Step 2: Merge into main (via queue or direct)
-echo -e "${BLUE}[2/5] Merging into main...${NC}"
+echo -e "${BLUE}[2/6] Merging into main...${NC}"
 
 MERGE_QUEUE="${SCRIPT_DIR}/merge-queue.sh"
 AUTO_MERGE="${SCRIPT_DIR}/auto-merge.sh"
@@ -235,7 +235,7 @@ else
 fi
 
 # Step 3: Create PR
-echo -e "${BLUE}[3/5] Creating Pull Request...${NC}"
+echo -e "${BLUE}[3/6] Creating Pull Request...${NC}"
 
 # Get current branch
 BRANCH=$(git branch --show-current)
@@ -311,7 +311,7 @@ else
 fi
 
 # Step 4: Link PR to ticket / Transition ticket
-echo -e "${BLUE}[4/5] Updating ticket...${NC}"
+echo -e "${BLUE}[4/6] Updating ticket...${NC}"
 
 if $IS_AUTO_GENERATED; then
     echo -e "${YELLOW}Skipping ticket updates (auto-generated task, no external ticket)${NC}"
@@ -347,7 +347,7 @@ else
 fi
 
 # Step 5: Send notification
-echo -e "${BLUE}[5/5] Sending notification...${NC}"
+echo -e "${BLUE}[5/6] Sending notification...${NC}"
 
 NOTIFICATION_TITLE="Ticket $ISSUE_KEY Complete"
 NOTIFICATION_MSG="$TITLE - PR: $PR_URL"
@@ -369,6 +369,38 @@ if [[ -f "$STATE_FILE" ]]; then
     sed -i '' 's/^active: true/active: false/' "$STATE_FILE" 2>/dev/null || true
     echo "completed_at: \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >>"$STATE_FILE"
     echo "pr_url: \"$PR_URL\"" >>"$STATE_FILE"
+fi
+
+# Step 6: Export learnings from beads
+echo -e "${BLUE}[6/6] Exporting learnings...${NC}"
+
+LEARNINGS_DIR="$HOME/.claude/learnings"
+mkdir -p "$LEARNINGS_DIR"
+LEARNINGS_FILE="$LEARNINGS_DIR/${ISSUE_KEY}.md"
+
+if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
+    {
+        echo "# Learnings: $ISSUE_KEY — $TITLE"
+        echo ""
+        echo "**Completed:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "**Worktree:** $WORKTREE_PATH"
+        echo "**PR:** ${PR_URL:-N/A}"
+        echo ""
+        echo "## Decisions & Trade-offs"
+        echo ""
+        (cd "$WORKTREE_PATH" && bd comments list 2>/dev/null) || echo "_No decision comments recorded._"
+        echo ""
+        echo "## Completed Subtasks"
+        echo ""
+        (cd "$WORKTREE_PATH" && bd list --status=closed 2>/dev/null | head -20) || echo "_No subtasks tracked._"
+        echo ""
+        echo "## Remaining Open Issues"
+        echo ""
+        (cd "$WORKTREE_PATH" && bd list --status=open 2>/dev/null | head -10) || echo "_None._"
+    } >"$LEARNINGS_FILE"
+    echo -e "${GREEN}Learnings exported to $LEARNINGS_FILE${NC}"
+else
+    echo -e "${YELLOW}Beads not available, skipping learnings export${NC}"
 fi
 
 echo ""
