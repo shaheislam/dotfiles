@@ -9,6 +9,7 @@
 #   changelog-review.sh --json             # JSON output
 #   changelog-review.sh --category shell   # Filter by category
 #   changelog-review.sh --dry-run          # Show what would be checked
+#   changelog-review.sh --flagged          # Show only tools with actionable flags (for dispatch)
 
 set -euo pipefail
 
@@ -21,6 +22,7 @@ REPORT_DIR="$HOME/.claude/harness/changelog-reports"
 DAYS=30
 JSON_OUTPUT=false
 DRY_RUN=false
+FLAGGED_ONLY=false
 CATEGORY_FILTER=""
 
 # Colors
@@ -39,6 +41,7 @@ usage() {
     echo "  --json            Output as JSON"
     echo "  --category CAT    Filter by category (shell, devops, security, etc.)"
     echo "  --dry-run         Show tools that would be checked"
+    echo "  --flagged         After fetch, print only flagged tools as JSON (for subagent dispatch)"
     echo "  -h, --help        Show this help"
     exit 0
 }
@@ -59,6 +62,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     --dry-run)
         DRY_RUN=true
+        shift
+        ;;
+    --flagged)
+        FLAGGED_ONLY=true
         shift
         ;;
     -h | --help) usage ;;
@@ -384,4 +391,25 @@ fi
 # JSON output mode
 if $JSON_OUTPUT && [ -f "$REPORT_DIR/changelog-${TODAY}.jsonl" ]; then
     jq -s '.' "$REPORT_DIR/changelog-${TODAY}.jsonl"
+fi
+
+# Flagged-only mode: output one JSON object per tool with actionable flags
+# Each object contains: name, latest_tag, url, flags, config_paths, category
+# Designed for subagent dispatch — parent reads this and spawns one agent per tool
+if $FLAGGED_ONLY && [ -f "$REPORT_DIR/changelog-${TODAY}.jsonl" ]; then
+    jq -s '
+        [.[] | select(.flags != "" and .config_paths != "" and .prerelease == false)]
+        | group_by(.name)
+        | map({
+            name: .[0].name,
+            repo: .[0].repo,
+            category: .[0].category,
+            config_paths: .[0].config_paths,
+            latest_tag: (map(.tag) | first),
+            latest_url: (map(.url) | first),
+            all_flags: (map(.flags) | join(",") | split(",") | unique | join(",")),
+            release_count: length,
+            releases: map({tag: .tag, url: .url, flags: .flags})
+        })
+    ' "$REPORT_DIR/changelog-${TODAY}.jsonl"
 fi
