@@ -1605,6 +1605,19 @@ phase_9_fonts_and_apps() {
             fi
         fi
 
+        # Setup Monthly Insights Review LaunchAgent (1st of each month, +1h after changelog)
+        print_step "Setting up insights review scheduler..."
+        local insights_plist="$HOME/Library/LaunchAgents/com.dotfiles.insights-review.plist"
+        if [[ -f "$insights_plist" ]]; then
+            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.insights-review"; then
+                launchctl bootstrap "gui/$(id -u)" "$insights_plist" 2>/dev/null &&
+                    print_success "Insights review scheduler started" ||
+                    log_verbose "Insights review scheduler start skipped"
+            else
+                log_verbose "Insights review scheduler already loaded"
+            fi
+        fi
+
         # Setup Karabiner-Elements (keyboard remapping)
         print_step "Setting up Karabiner-Elements..."
         if [[ -d "$DOTFILES_ROOT/.config/karabiner" ]]; then

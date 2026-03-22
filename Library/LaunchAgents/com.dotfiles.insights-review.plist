@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Monthly harness insights review: queues a gwt-ticket for analysis and fixes -->
+    <!-- Runs on the 1st of each month at 11:00 local time (1h after changelog review) -->
+    <!-- Install: launchctl load ~/Library/LaunchAgents/com.dotfiles.insights-review.plist -->
+    <!-- Remove:  launchctl unload ~/Library/LaunchAgents/com.dotfiles.insights-review.plist -->
+
+    <key>Label</key>
+    <string>com.dotfiles.insights-review</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/fish</string>
+        <string>-c</string>
+        <string>gwt-queue add TASK "Monthly insights review" "Run harness analysis (suggest-improvements, detect-drift, verify-harness), triage suggestions by priority, and implement fixes." --template insights-review --no-beads</string>
+    </array>
+
+    <!-- 1st of each month at 11:00 (staggered 1h after changelog review) -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Day</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>11</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/insights-review-stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/insights-review-stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/shahe</string>
+    </dict>
+</dict>
+</plist>
