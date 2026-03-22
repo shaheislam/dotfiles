@@ -49,11 +49,6 @@ if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
     fish_add_path "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 end
 
-# Add Cursor bin to PATH if it exists
-if test -d "/Applications/Cursor.app/Contents/Resources/app/bin"
-    fish_add_path "/Applications/Cursor.app/Contents/Resources/app/bin"
-end
-
 # Clean leaked container paths from fish_user_paths (devcontainer sessions
 # can persist /home/node/* paths into universal variables)
 if set -q fish_user_paths

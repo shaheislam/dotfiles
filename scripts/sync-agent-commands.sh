@@ -2,7 +2,7 @@
 # sync-agent-commands.sh — Sync .agents/commands/ to agent-specific directories
 #
 # Superset-sh pattern: single source of truth in .agents/commands/,
-# symlinked into .claude/commands/, .cursor/commands/, .codex/instructions/.
+# symlinked into .claude/commands/, .codex/instructions/.
 #
 # Usage:
 #   sync-agent-commands.sh [--dry-run] [repo-root]
@@ -34,7 +34,6 @@ fi
 # Agent target directories and their expected symlink format
 declare -A AGENT_DIRS=(
     [claude]=".claude/commands"
-    [cursor]=".cursor/commands"
 )
 
 synced=0

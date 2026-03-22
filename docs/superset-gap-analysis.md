@@ -15,11 +15,11 @@ Comparison of patterns from [superset-sh/superset](https://github.com/superset-s
 - Named offsets: PORT_APP, PORT_API, PORT_DEV, PORT_DB, PORT_REDIS, etc.
 
 ### 2. Centralized Agent Commands (P2)
-**Gap**: Agent prompts only existed in `.claude/skills/`, not shared with Cursor/Codex.
+**Gap**: Agent prompts only existed in `.claude/skills/`, not shared with Codex.
 **Superset pattern**: `.agents/commands/` as single source of truth with symlinks.
 **Our implementation**:
 - `.agents/commands/` with 4 shared commands: create-pr, ci-check, deslop, respond-to-pr-comments
-- `scripts/sync-agent-commands.sh` — creates relative symlinks to `.claude/commands/`, `.cursor/commands/`
+- `scripts/sync-agent-commands.sh` — creates relative symlinks to `.claude/commands/`
 - Generates `.codex/instructions.md` with command references
 - Auto-syncs during `gwt-setup`
 
@@ -33,11 +33,11 @@ Comparison of patterns from [superset-sh/superset](https://github.com/superset-s
 - `gwt-setup.fish` delegates to step system with legacy fallback
 
 ### 4. Multi-Agent MCP Config Parity (P2)
-**Gap**: MCP servers only configured for Claude Code, not Cursor/Codex/OpenCode.
+**Gap**: MCP servers only configured for Claude Code, not Codex/OpenCode.
 **Superset pattern**: Single `.mcp.json` at root, replicated to all agent configs.
 **Our implementation**:
 - `scripts/sync-mcp-config.sh` — converts `.mcp.json` into:
-  - Cursor: symlinks `.cursor/mcp.json`
+
   - Codex: appends `[mcp_servers.*]` TOML sections
   - OpenCode: generates `opencode.json`
 - Auto-syncs during `gwt-setup`

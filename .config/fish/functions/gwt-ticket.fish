@@ -511,7 +511,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set ckpt_agent $argv[$next_i]
                     set skip_next true
                 else
-                    echo "Error: --ckpt-agent requires agent name (claude-code, gemini, cursor, opencode)"
+                    echo "Error: --ckpt-agent requires agent name (claude-code, gemini, opencode)"
                     return 1
                 end
             case --auto-cleanup
@@ -702,7 +702,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --molecule [ID]      Create/attach molecule workflow (auto-creates from template steps)"
         echo "  --town               Enable town-level bead sync on completion (default: on)"
         echo "  --no-town            Disable town-level bead sync"
-        echo "  --ckpt-agent NAME    Checkpoint agent type (claude-code, gemini, cursor, opencode)"
+        echo "  --ckpt-agent NAME    Checkpoint agent type (claude-code, gemini, opencode)"
         echo "  --mayor              Register ticket with mayor for global tracking"
         echo "  --no-mayor           Disable mayor registration"
         echo "  --gate TYPE          Create phase gate (ci-pipeline, pr-review, human-input, dependency, bd-bead)"

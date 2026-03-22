@@ -93,4 +93,4 @@ Run `skills-manifest sync` inside a repo to materialize these into `.claude/skil
 ## Cross-Tool Compatibility
 
 Skills follow the [Agent Skills standard](https://agentskills.io/specification).
-They work across Claude Code, Codex CLI, Gemini CLI, Cursor, and Copilot.
+They work across Claude Code, Codex CLI, Gemini CLI, and Copilot.
