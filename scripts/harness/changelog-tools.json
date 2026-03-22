@@ -1,10 +1,8 @@
 {
-  "version": 1,
-  "description": "Tool registry for monthly changelog review. Maps tools to their GitHub repos and local config paths.",
-  "tools": [
-    {
-      "name": "fish",
-      "repo": "fish-shell/fish-shell",
+  "version": 2,
+  "description": "Config-path overlay for changelog review. Tool list auto-discovered from Brewfile + brew info. This file only stores metadata that cannot be auto-detected: config paths, priority overrides, categories, and skip/notes.",
+  "overlays": {
+    "fish": {
       "config_paths": [
         ".config/fish/config.fish",
         ".config/fish/functions/"
@@ -12,237 +10,117 @@
       "priority": "high",
       "category": "shell"
     },
-    {
-      "name": "tmux",
-      "repo": "tmux/tmux",
+    "tmux": {
       "config_paths": [
         ".tmux.conf"
       ],
       "priority": "high",
       "category": "shell"
     },
-    {
-      "name": "neovim",
-      "repo": "neovim/neovim",
+    "neovim": {
       "config_paths": [],
       "priority": "high",
       "category": "editor",
-      "notes": "Config lives in ~/neovim (separate repo)"
+      "notes": "Config lives in ~/neovim (separate repo)",
+      "skip": true
     },
-    {
-      "name": "starship",
-      "repo": "starship/starship",
+    "starship": {
       "config_paths": [
         ".config/starship.toml"
       ],
-      "priority": "medium",
       "category": "shell"
     },
-    {
-      "name": "fzf",
-      "repo": "junegunn/fzf",
+    "fzf": {
       "config_paths": [
         ".config/fish/config.fish"
       ],
-      "priority": "medium",
       "category": "shell"
     },
-    {
-      "name": "bat",
-      "repo": "sharkdp/bat",
+    "bat": {
       "config_paths": [
         ".config/bat/"
       ],
-      "priority": "low",
       "category": "shell"
     },
-    {
-      "name": "eza",
-      "repo": "eza-community/eza",
-      "config_paths": [],
-      "priority": "low",
-      "category": "shell"
-    },
-    {
-      "name": "zoxide",
-      "repo": "ajeetdsouza/zoxide",
-      "config_paths": [],
-      "priority": "low",
-      "category": "shell"
-    },
-    {
-      "name": "atuin",
-      "repo": "atuinsh/atuin",
+    "atuin": {
       "config_paths": [
         ".config/atuin/"
       ],
-      "priority": "medium",
       "category": "shell"
     },
-    {
-      "name": "yazi",
-      "repo": "sxyazi/yazi",
+    "yazi": {
       "config_paths": [
         ".config/yazi/"
       ],
-      "priority": "medium",
       "category": "shell"
     },
-    {
-      "name": "ghostty",
-      "repo": "ghostty-org/ghostty",
+    "ghostty": {
       "config_paths": [
         ".config/ghostty/"
       ],
       "priority": "high",
       "category": "terminal"
     },
-    {
-      "name": "wezterm",
-      "repo": "wez/wezterm",
+    "wezterm": {
       "config_paths": [
         ".config/wezterm/"
       ],
-      "priority": "medium",
       "category": "terminal"
     },
-    {
-      "name": "git-delta",
-      "repo": "dandavison/delta",
+    "git-delta": {
       "config_paths": [
         ".gitconfig"
       ],
-      "priority": "medium",
       "category": "shell"
     },
-    {
-      "name": "ripgrep",
-      "repo": "BurntSushi/ripgrep",
-      "config_paths": [],
-      "priority": "low",
+    "direnv": {
+      "config_paths": [
+        ".config/direnv/"
+      ],
       "category": "shell"
     },
-    {
-      "name": "fd",
-      "repo": "sharkdp/fd",
-      "config_paths": [],
-      "priority": "low",
+    "mise": {
+      "config_paths": [
+        ".config/mise/"
+      ],
       "category": "shell"
     },
-    {
-      "name": "terraform",
-      "repo": "hashicorp/terraform",
-      "config_paths": [],
-      "priority": "high",
-      "category": "devops"
+    "bottom": {
+      "config_paths": [
+        ".config/bottom/"
+      ],
+      "category": "monitoring"
     },
-    {
-      "name": "kubectl",
-      "repo": "kubernetes/kubernetes",
-      "config_paths": [],
+    "karabiner-elements": {
+      "config_paths": [
+        ".config/karabiner/karabiner.json"
+      ],
+      "category": "system",
+      "notes": "Config should be edited via GUI only",
+      "skip": true
+    },
+    "kubectl": {
       "priority": "high",
       "category": "devops",
       "notes": "Track deprecation notices for k8s API versions"
     },
-    {
-      "name": "helm",
-      "repo": "helm/helm",
-      "config_paths": [],
-      "priority": "medium",
+    "terraform": {
+      "priority": "high",
       "category": "devops"
     },
-    {
-      "name": "argocd",
-      "repo": "argoproj/argo-cd",
-      "config_paths": [],
-      "priority": "medium",
-      "category": "devops"
-    },
-    {
-      "name": "trivy",
-      "repo": "aquasecurity/trivy",
-      "config_paths": [],
-      "priority": "medium",
-      "category": "security"
-    },
-    {
-      "name": "gitleaks",
-      "repo": "gitleaks/gitleaks",
-      "config_paths": [],
-      "priority": "medium",
-      "category": "security"
-    },
-    {
-      "name": "semgrep",
-      "repo": "semgrep/semgrep",
-      "config_paths": [],
-      "priority": "medium",
-      "category": "security"
-    },
-    {
-      "name": "ollama",
-      "repo": "ollama/ollama",
-      "config_paths": [],
+    "ollama": {
       "priority": "high",
       "category": "ai"
-    },
-    {
-      "name": "stow",
-      "repo": "aspiers/stow",
-      "config_paths": [],
-      "priority": "medium",
-      "category": "system"
-    },
-    {
-      "name": "direnv",
-      "repo": "direnv/direnv",
-      "config_paths": [
-        ".config/direnv/"
-      ],
-      "priority": "low",
-      "category": "shell"
-    },
-    {
-      "name": "mise",
-      "repo": "jdx/mise",
-      "config_paths": [
-        ".config/mise/"
-      ],
-      "priority": "medium",
-      "category": "shell"
-    },
-    {
-      "name": "colima",
-      "repo": "abiosoft/colima",
-      "config_paths": [],
-      "priority": "medium",
-      "category": "devops"
-    },
-    {
-      "name": "karabiner-elements",
-      "repo": "pqrs-org/Karabiner-Elements",
-      "config_paths": [
-        ".config/karabiner/karabiner.json"
-      ],
-      "priority": "medium",
-      "category": "system",
-      "notes": "Config should be edited via GUI only"
-    },
-    {
-      "name": "bottom",
-      "repo": "ClementTsang/bottom",
-      "config_paths": [
-        ".config/bottom/"
-      ],
-      "priority": "low",
-      "category": "monitoring"
-    },
-    {
-      "name": "lazydocker",
-      "repo": "jesseduffield/lazydocker",
-      "config_paths": [],
-      "priority": "low",
-      "category": "devops"
     }
+  },
+  "skip_patterns": [
+    "font-*",
+    "python@*",
+    "openjdk",
+    "imagemagick",
+    "graphviz",
+    "w3m",
+    "curl",
+    "mas"
   ]
 }

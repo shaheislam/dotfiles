@@ -14,7 +14,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TOOLS_FILE="$SCRIPT_DIR/changelog-tools.json"
+OVERLAY_FILE="$SCRIPT_DIR/changelog-tools.json"
+BREWFILE="${DOTFILES_ROOT:-$HOME/dotfiles}/homebrew/Brewfile"
 CACHE_DIR="$HOME/.cache/dotfiles-changelog"
 REPORT_DIR="$HOME/.claude/harness/changelog-reports"
 
@@ -87,8 +88,8 @@ if ! command -v jq &>/dev/null; then
     exit 1
 fi
 
-if [ ! -f "$TOOLS_FILE" ]; then
-    echo "Error: Tool registry not found: $TOOLS_FILE" >&2
+if [ ! -f "$BREWFILE" ]; then
+    echo "Error: Brewfile not found: $BREWFILE" >&2
     exit 1
 fi
 
@@ -107,28 +108,141 @@ fi
 TODAY=$(date "+%Y-%m-%d")
 
 # ─────────────────────────────────────────────────────
-# Load tool registry
+# Auto-discover tools from Brewfile + brew info
 # ─────────────────────────────────────────────────────
 
-if [ -n "$CATEGORY_FILTER" ]; then
-    TOOLS=$(jq -c --arg cat "$CATEGORY_FILTER" '.tools[] | select(.category == $cat)' "$TOOLS_FILE")
-else
-    TOOLS=$(jq -c '.tools[]' "$TOOLS_FILE")
+# Load overlay file for config paths and metadata
+OVERLAY="{}"
+if [ -f "$OVERLAY_FILE" ]; then
+    OVERLAY=$(jq -r '.overlays // {}' "$OVERLAY_FILE")
+    SKIP_PATTERNS=$(jq -r '.skip_patterns // [] | .[]' "$OVERLAY_FILE")
 fi
 
-TOOL_COUNT=$(echo "$TOOLS" | wc -l | tr -d ' ')
+# Parse Brewfile for formula/cask names (skip comments, taps, empty lines)
+BREW_NAMES=()
+while IFS= read -r line; do
+    # Extract name from: brew "name" or cask "name"
+    if [[ "$line" =~ ^[[:space:]]*(brew|cask)[[:space:]]+\"([^\"]+)\" ]]; then
+        raw_name="${BASH_REMATCH[2]}"
+        # Strip tap prefix (e.g., "oven-sh/bun/bun" → "bun")
+        name="${raw_name##*/}"
+        BREW_NAMES+=("$name")
+    fi
+done <"$BREWFILE"
+
+# Get GitHub repos for all installed formulae in one call (cached per day)
+BREW_CACHE="$CACHE_DIR/brew-info-${TODAY}.json"
+if [ ! -f "$BREW_CACHE" ]; then
+    if ! $DRY_RUN; then
+        printf "  Discovering tool repos via brew info..." >&2
+    fi
+    brew info --json=v2 --installed 2>/dev/null | jq '[
+        .formulae[] | {
+            name: .name,
+            homepage: .homepage,
+            head_url: (.urls.head.url // ""),
+            stable_url: (.urls.stable.url // "")
+        }
+    ] + [
+        .casks[] | {
+            name: .token,
+            homepage: .homepage,
+            head_url: "",
+            stable_url: (.url // "")
+        }
+    ]' >"$BREW_CACHE" 2>/dev/null || echo "[]" >"$BREW_CACHE"
+    if ! $DRY_RUN; then
+        echo -e " done" >&2
+    fi
+fi
+
+# Extract GitHub owner/repo from URL
+extract_github_repo() {
+    local url="$1"
+    # Match github.com/owner/repo from various URL formats
+    if [[ "$url" =~ github\.com[/:]([^/]+)/([^/.]+) ]]; then
+        echo "${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+        return 0
+    fi
+    return 1
+}
+
+# Build tool list: merge Brewfile names + brew info repos + overlay metadata
+TOOLS_TMPFILE=$(mktemp)
+for name in "${BREW_NAMES[@]}"; do
+    # Check skip patterns from overlay
+    skip=false
+    for pattern in $SKIP_PATTERNS; do
+        # shellcheck disable=SC2053
+        if [[ "$name" == $pattern ]]; then
+            skip=true
+            break
+        fi
+    done
+    $skip && continue
+
+    # Check if overlay says skip
+    overlay_skip=$(echo "$OVERLAY" | jq -r --arg n "$name" '.[$n].skip // false')
+    [ "$overlay_skip" = "true" ] && continue
+
+    # Resolve GitHub repo from brew info cache
+    repo=""
+    brew_entry=$(jq -r --arg n "$name" '.[] | select(.name == $n)' "$BREW_CACHE" 2>/dev/null)
+    if [ -n "$brew_entry" ]; then
+        head_url=$(echo "$brew_entry" | jq -r '.head_url // ""')
+        homepage=$(echo "$brew_entry" | jq -r '.homepage // ""')
+        stable_url=$(echo "$brew_entry" | jq -r '.stable_url // ""')
+
+        # Try head_url first (most reliable), then homepage, then stable_url
+        repo=$(extract_github_repo "$head_url" 2>/dev/null) ||
+            repo=$(extract_github_repo "$homepage" 2>/dev/null) ||
+            repo=$(extract_github_repo "$stable_url" 2>/dev/null) ||
+            repo=""
+    fi
+
+    # Skip tools without a GitHub repo
+    [ -z "$repo" ] && continue
+
+    # Merge overlay metadata
+    config_paths=$(echo "$OVERLAY" | jq -r --arg n "$name" '.[$n].config_paths // [] | join(", ")')
+    priority=$(echo "$OVERLAY" | jq -r --arg n "$name" '.[$n].priority // "medium"')
+    category=$(echo "$OVERLAY" | jq -r --arg n "$name" '.[$n].category // "other"')
+
+    # Apply category filter
+    if [ -n "$CATEGORY_FILTER" ] && [ "$category" != "$CATEGORY_FILTER" ]; then
+        continue
+    fi
+
+    jq -nc \
+        --arg name "$name" \
+        --arg repo "$repo" \
+        --arg priority "$priority" \
+        --arg category "$category" \
+        --arg config_paths "$config_paths" \
+        '{name: $name, repo: $repo, priority: $priority, category: $category, config_paths: $config_paths}'
+done >"$TOOLS_TMPFILE"
+
+TOOLS=$(cat "$TOOLS_TMPFILE")
+rm -f "$TOOLS_TMPFILE"
+TOOL_COUNT=$(echo "$TOOLS" | grep -c '^{' || echo 0)
 
 if $DRY_RUN; then
     echo -e "${BLUE}=== Changelog Review (Dry Run) ===${NC}"
-    echo "Would check $TOOL_COUNT tools for releases in last $DAYS days"
+    echo "Discovered $TOOL_COUNT tools from Brewfile with GitHub repos"
     echo ""
     echo "$TOOLS" | while IFS= read -r tool; do
+        [ -z "$tool" ] && continue
         name=$(echo "$tool" | jq -r '.name')
         repo=$(echo "$tool" | jq -r '.repo')
         priority=$(echo "$tool" | jq -r '.priority')
         category=$(echo "$tool" | jq -r '.category')
-        echo "  [$priority] $name ($repo) — $category"
+        config_paths=$(echo "$tool" | jq -r '.config_paths')
+        marker=""
+        [ -n "$config_paths" ] && marker=" *"
+        echo "  [$priority] $name ($repo) — $category$marker"
     done
+    echo ""
+    echo "  * = has config path overlay"
     exit 0
 fi
 
@@ -200,11 +314,12 @@ analyze_release() {
 
 # Process each tool
 echo "$TOOLS" | while IFS= read -r tool; do
+    [ -z "$tool" ] && continue
     name=$(echo "$tool" | jq -r '.name')
     repo=$(echo "$tool" | jq -r '.repo')
     priority=$(echo "$tool" | jq -r '.priority')
     category=$(echo "$tool" | jq -r '.category')
-    config_paths=$(echo "$tool" | jq -r '.config_paths | join(", ")')
+    config_paths=$(echo "$tool" | jq -r '.config_paths')
 
     if ! $JSON_OUTPUT; then
         printf "  Checking %-20s " "$name..."
