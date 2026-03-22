@@ -1,7 +1,7 @@
 ---
 name: gap-analysis
-description: Analyze external docs/repos via DeepWiki + WebFetch, perform gap analysis against current repo, and produce prioritized value-add recommendations
-argument-hint: "<url> [url2...] [--focus topic] [--depth N] [--output file.md] [--no-discover]"
+description: Analyze external docs/repos via DeepWiki + WebFetch, perform gap analysis against current repo, and produce prioritized value-add recommendations. Accepts /youtube chain data or --from-transcript for transcript-based analysis.
+argument-hint: "<url> [url2...] [--from-transcript path] [--focus topic] [--depth N] [--output file.md] [--no-discover]"
 allowed-tools: WebFetch, WebSearch, Read, Write, Glob, Grep, Bash, AskUserQuestion, Agent, mcp__deepwiki__read_wiki_structure, mcp__deepwiki__read_wiki_contents, mcp__deepwiki__ask_question
 ---
 
@@ -15,13 +15,90 @@ Extract parameters from the input:
 
 ```
 URLS = all URL arguments (one or more https://... URLs)
+FROM_TRANSCRIPT = value after --from-transcript flag (optional) — path to a local transcript file
 FOCUS = value after --focus flag (optional) — narrow analysis to specific area
 DEPTH = value after --depth flag (default: 2, max: 3) — how deep to crawl sublinks
 OUTPUT = value after --output flag (optional) — save report to file
 NO_DISCOVER = true if --no-discover flag present — skip related source discovery
 ```
 
-If no valid URL is provided, ask the user for one.
+**Input resolution (in priority order):**
+
+1. If `--from-transcript` is provided: Use that file path as the input source (proceed to Step 1.5)
+2. If URL(s) are provided: Use those URLs as input (proceed to Step 2 as normal)
+3. If no URLs and no --from-transcript: Check conversation context for a `<!-- CHAIN:youtube -->` block (proceed to Step 1.5 if found)
+4. If none of the above: Ask the user for a URL or transcript path
+
+## Step 1.5: Resolve Transcript Input (when applicable)
+
+This step runs when input comes from a transcript file or YouTube chain data, rather than direct URLs. Skip this step if URLs were provided directly.
+
+### Detect YouTube Chain Data
+
+If no URLs or `--from-transcript` were provided, scan the conversation for a `<!-- CHAIN:youtube -->` block.
+If found, extract:
+- `file`: Path to the saved Obsidian note
+- `urls`: Any URLs the YouTube skill discovered
+- `tools`: Named tools/frameworks with types
+- `topics`: Content topics
+- `title`: Video title (for report header)
+- `source`: Original YouTube URL (for attribution)
+
+Set FROM_TRANSCRIPT to the `file` path from the chain data.
+
+### Read and Parse the Transcript File
+
+Read the file at FROM_TRANSCRIPT using the Read tool.
+
+Extract from the file:
+1. **Frontmatter metadata**: title, source URL, tags
+2. **Summary section**: The AI-generated summary
+3. **Key Takeaways section**: Actionable points
+4. **Topics Mentioned section**: Named tools, technologies, practices
+5. **Full Transcript section**: Scan for any URLs mentioned verbatim
+
+### Build URL List from Transcript Content
+
+Combine URLs from three sources:
+1. **Chain data `urls`** (if from chain): Already-extracted URLs
+2. **Transcript-mentioned URLs**: Any `https://` URLs found in the transcript text
+3. **WebSearch discoveries**: For each tool/framework from Topics Mentioned (or chain data `tools`) that has type `tool`, `framework`, `library`, or `platform`:
+   - Use WebSearch: `"{tool_name}" site:github.com` to find the canonical GitHub repo
+   - Use WebSearch: `"{tool_name}" official documentation` to find docs sites
+   - Take the top result for each (max 8 total WebSearch calls to stay efficient)
+
+**Prioritize** tools that:
+- Are directly relevant to the current repo's domain
+- Have type `tool`, `framework`, or `library` (not `practice` or `concept`)
+- Were emphasized in Key Takeaways
+
+If `--focus` was specified, filter to only tools/topics matching the focus.
+
+### Handle Practice-Based Content
+
+If the transcript primarily discusses **practices, patterns, or methodologies** rather than specific tools (e.g., "use TDD with agents", "always start in plan mode"):
+
+1. **Do not search for URLs** for practice items
+2. Instead, build the FEATURE_INVENTORY directly from the transcript:
+   - Each Key Takeaway becomes a feature entry
+   - Each practice from Topics Mentioned becomes a feature entry
+   - Use the transcript's recommendations as the "what the external source does" reference
+   - Category: map to closest match (e.g., "testing", "workflow", "security", "dx")
+   - Complexity: estimate based on the description
+   - Evidence: cite the transcript file path and section
+3. **Skip Step 2 entirely** — proceed directly to Step 3 (Scan Current Repository) with this practice-based FEATURE_INVENTORY
+
+### Proceed with Discovered URLs
+
+If URL discovery produced results:
+- Set URLS to the discovered URL list
+- Proceed to Step 2 with those URLs
+- In the final report header, note: `**Source:** Transcript analysis of "{TITLE}" ({YOUTUBE_URL})`
+- Include the transcript's Key Takeaways as additional context when building FEATURE_INVENTORY in Step 2
+
+If URL discovery produced NO results AND content is not practice-based:
+- Report: "The transcript did not reference any discoverable tools or repositories. The video's content will be used as the external reference."
+- Fall back to the practice-based handling above
 
 ## Step 2: Gather Intelligence from External Resources
 
@@ -192,6 +269,17 @@ Present the complete gap analysis using this structure:
 **Focus:** [FOCUS if specified, otherwise "Full analysis"]
 **Date:** [Today's date]
 
+> **For transcript-sourced analyses**, use this header instead:
+> ```
+> # Gap Analysis: "{VIDEO_TITLE}" Recommendations vs [Current Repo]
+>
+> **Source:** Transcript of [{VIDEO_TITLE}]({YOUTUBE_URL})
+> **Transcript:** {TRANSCRIPT_FILE_PATH}
+> **Tools Analyzed:** [list of GitHub repos/docs discovered from transcript]
+> **Focus:** [FOCUS if specified, otherwise "Full analysis"]
+> **Date:** [Today's date]
+> ```
+
 ---
 
 ## Executive Summary
@@ -330,6 +418,24 @@ When multiple URLs are provided:
   -> DeepWiki analyzes gum repo only (skips related source discovery)
   -> No automatic search for awesome-gum or companion tools
   -> Faster, focused on just the provided URL
+
+/gap-analysis --from-transcript ~/obsidian/Career/Videos/AI/2026-03-19-simon-willison-engineering-practices.md
+  -> Reads the transcript note
+  -> Discovers GitHub repos for Datasette, Django, Showboat
+  -> Treats TDD and conformance-driven development as practice-based features
+  -> Compares tool patterns and practices against current repo
+
+# Chained from /youtube (no arguments needed):
+/youtube https://www.youtube.com/watch?v=owmJyKVu5f8
+/gap-analysis
+  -> YouTube skill saves transcript and emits chain data
+  -> Gap analysis detects chain data, reads the saved file
+  -> Automatically discovers and analyzes referenced tools
+  -> Produces gap report comparing video's recommendations to current repo
+
+# Via gwt-ticket:
+gwt-ticket PROJ-123 "Analyze video" "Details" --skill youtube gap-analysis
+  -> Skills execute sequentially, chain data flows automatically
 ```
 
 ## Error Handling
@@ -340,5 +446,8 @@ When multiple URLs are provided:
 - **Paywall/login required**: Report limitation, suggest alternative sources
 - **Empty feature inventory**: Ask user to provide --focus to narrow scope
 - **Very large repos**: Use --focus to constrain analysis, or analyze most-starred/documented features first
+- **Transcript file not found**: Report error, suggest checking the path or running /youtube first
+- **No discoverable tools in transcript**: Use practice-based analysis (transcript becomes the reference)
+- **Chain data malformed**: Fall back to asking for --from-transcript path or URL
 
 Now analyze the resources and perform the gap analysis: $ARGUMENTS

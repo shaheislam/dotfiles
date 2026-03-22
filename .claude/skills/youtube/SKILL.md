@@ -1,6 +1,6 @@
 ---
 name: youtube
-description: Fetch YouTube transcript, summarize key points with AI, and save to Obsidian vault
+description: Fetch YouTube transcript, summarize key points with AI, save to Obsidian vault, and emit chain data for downstream skills (e.g., /gap-analysis)
 argument-hint: "<youtube-url> [--folder subfolder] [--timestamps] [--no-summary]"
 allowed-tools: Bash, Read, Write, Glob, AskUserQuestion, WebFetch
 ---
@@ -55,6 +55,11 @@ Using the raw transcript text, generate:
 2. **Key Takeaways** (5-10 bullet points): The most actionable or informative points
 
 3. **Topics Mentioned**: List of specific technologies, concepts, people, or tools discussed
+
+4. **Discoverable References**: From the transcript text, extract:
+   - Any URLs mentioned verbatim (GitHub repos, documentation sites, tool homepages)
+   - For each tool/technology/framework/library named in Topics Mentioned, classify as: `tool`, `framework`, `library`, `platform`, `practice`, or `concept`
+   - Do NOT web-search at this stage — just extract what is explicitly mentioned or commonly known
 
 ## Step 5: Generate Tags
 
@@ -142,6 +147,40 @@ Report:
 - Summary length (word count)
 - Number of key takeaways extracted
 - Source URL
+
+## Step 9: Emit Chain Data (for downstream skills)
+
+After confirmation, output a structured chain data block that downstream skills (e.g., `/gap-analysis`) can detect in conversation context. This block is always emitted — it is harmless when no downstream skill is listening.
+
+Output the following block exactly:
+
+```
+<!-- CHAIN:youtube -->
+```yaml
+file: {SAVED_FILE_PATH}
+title: "{TITLE}"
+source: {YOUTUBE_URL}
+urls:
+  - {URL_1 from Discoverable References, if any}
+  - {URL_2}
+tools:
+  - name: "{TOOL_NAME}"
+    type: {tool|framework|library|platform|practice|concept}
+  - ...
+topics:
+  - {content-based tags, excluding "youtube" and "transcript"}
+tags:
+  - {all generated tags}
+```
+<!-- /CHAIN:youtube -->
+```
+
+**Rules for chain data:**
+- `urls`: Only include URLs that were explicitly mentioned in the transcript or are well-known canonical URLs for tools discussed. If no URLs are discoverable, omit the `urls` key entirely.
+- `tools`: Include every specific tool, framework, library, or platform from Topics Mentioned. Also include notable practices (e.g., "Test-Driven Development") with type `practice`.
+- `topics`: The content-based tags (exclude the fixed "youtube" and "transcript" tags).
+- `tags`: All tags including "youtube" and "transcript".
+- If no tools or URLs were found, still emit the block with just `file`, `title`, `source`, `topics`, and `tags`.
 
 ## Error Handling
 
