@@ -9,6 +9,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #
     # Options:
     #   --max N         Max iterations (default: 20)
+    #   --max-turns N   Max agentic turns per Claude session (budget cap)
+    #   --max-budget N  Max API spend in USD before stopping (e.g., 5.00)
     #   --command C     Slash command to use (default: /ralph-wiggum:ralph-loop)
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
@@ -110,6 +112,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l swarm_epic_id "" # bd swarm: epic bead ID to create swarm from
     set -l bead_priority "" # bd create --priority (0-4, empty = default)
     set -l use_dynamic_beads true
+    set -l max_turns ""
+    set -l max_budget ""
     set -l quiet_mode true
     set -l edit_mode true
     set -l edit_prompt_file "$HOME/dotfiles/.claude/gwtt-prompt.local.md"
@@ -148,6 +152,24 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set skip_next true
                 else
                     echo "Error: --max requires a number"
+                    return 1
+                end
+            case --max-turns
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set max_turns $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --max-turns requires a number"
+                    return 1
+                end
+            case --max-budget
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set max_budget $argv[$next_i]
+                    set skip_next true
+                else
+                    echo "Error: --max-budget requires a dollar amount (e.g., 5.00)"
                     return 1
                 end
             case --session
@@ -658,6 +680,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo ""
         echo "Options:"
         echo "  --max N              Max iterations (default: 20)"
+        echo "  --max-turns N        Max agentic turns per Claude session (budget cap)"
+        echo "  --max-budget N       Max API spend in USD before stopping (e.g., 5.00)"
         echo "  --command C          Slash command (default: /ralph-wiggum:ralph-loop)"
         echo "  --prompt-template F  Custom prompt template file"
         echo "  --prompt-prefix P    Text to prepend to prompt"
@@ -1758,7 +1782,14 @@ $prompt_suffix"
         else
             printf '%s' "$slash_command \"$escaped_prompt\"" >$prompt_cmd_file
         end
-        set -a _ls 'claude --dangerously-skip-permissions --effort max --remote-control --name '$window_name' --add-dir '$add_dir_path
+        set -l claude_budget_flags ""
+        if test -n "$max_turns"
+            set claude_budget_flags "$claude_budget_flags --max-turns $max_turns"
+        end
+        if test -n "$max_budget"
+            set claude_budget_flags "$claude_budget_flags --max-budget-usd $max_budget"
+        end
+        set -a _ls 'claude --dangerously-skip-permissions --effort max --remote-control --name '$window_name' --add-dir '$add_dir_path$claude_budget_flags
     end
 
     if not $use_devcon

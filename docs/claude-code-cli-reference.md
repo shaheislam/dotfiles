@@ -1116,7 +1116,9 @@ Our dotfiles configure `teammateMode: "auto"` in `~/.claude.json`. For different
 | `cc-rc` | `.config/fish/functions/cc-rc.fish` | `remote-control`, `--verbose`, `--sandbox`, `auth status --text` | Remote Control management |
 | `cc-lsp` | `.config/fish/functions/cc-lsp.fish` | `plugin marketplace add`, `plugin install`, `plugin marketplace list` | LSP plugin management |
 | `gwt-claude` / `gwtc` | `.config/fish/functions/gwt-claude.fish` | Via `devcon claude` with `CLAUDE_CONFIG_DIR` | Claude in worktree devcontainer |
-| `gwt-ticket` / `gwtt` | `.config/fish/functions/gwt-ticket.fish` | Via ralph-loop in devcontainer | Autonomous ticket execution |
+| `gwt-ticket` / `gwtt` | `.config/fish/functions/gwt-ticket.fish` | Via ralph-loop, `--max-turns`, `--max-budget-usd` | Autonomous ticket execution |
+| `claude-review` | `.config/fish/functions/claude-review.fish` | `-p`, `--max-turns`, `--max-budget-usd`, `--output-format json`, `--json-schema` | Budget-capped PR review |
+| `claude-warm` | `.config/fish/functions/claude-warm.fish` | `--name`, context loading | Pre-warm named session for forking |
 
 ### Setup Script (`scripts/setup.sh`)
 

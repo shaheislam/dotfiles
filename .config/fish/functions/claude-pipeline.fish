@@ -6,7 +6,7 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
     #
     # Default: opus (reasoning) → sonnet (implementation)
 
-    if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
+    if test "$argv[1]" = --help; or test "$argv[1]" = -h
         echo "Usage: claude-pipeline [options] <prompt>"
         echo ""
         echo "Chain Claude models: pass reasoning output as input to implementation."
@@ -18,6 +18,8 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
         echo "  --stages N        Number of stages (2-5, default: 2)"
         echo "  --stream          Use stream-json format between stages (structured)"
         echo "  --save FILE       Save intermediate outputs to files"
+        echo "  --json            Output structured JSON from final stage"
+        echo "  --json-schema F   JSON schema file for validated structured output"
         echo "  --dry-run         Show the pipeline command without executing"
         echo "  --system PROMPT   System prompt for all stages"
         echo "  --verbose         Show stage progress"
@@ -60,14 +62,16 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
     end
 
     # Parse arguments
-    set -l reason_model "opus"
-    set -l execute_model "sonnet"
+    set -l reason_model opus
+    set -l execute_model sonnet
     set -l stages 2
     set -l use_stream false
     set -l save_prefix ""
     set -l dry_run false
     set -l system_prompt ""
     set -l verbose false
+    set -l json_output false
+    set -l json_schema ""
     set -l prompt_args
     set -l stage_models
     set -l stage_prompts
@@ -96,38 +100,44 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
                 set system_prompt $argv[$i]
             case --verbose
                 set verbose true
+            case --json
+                set json_output true
+            case --json-schema
+                set i (math $i + 1)
+                set json_schema $argv[$i]
+                set json_output true
             case --preset
                 set i (math $i + 1)
                 switch $argv[$i]
                     case think
-                        set reason_model "opus"
-                        set execute_model "sonnet"
+                        set reason_model opus
+                        set execute_model sonnet
                         set stages 2
                     case review
-                        set reason_model "opus"
-                        set execute_model "sonnet"
+                        set reason_model opus
+                        set execute_model sonnet
                         set stages 3
-                        set stage_models "opus" "sonnet" "haiku"
+                        set stage_models opus sonnet haiku
                         set stage_prompts "Analyze and create a detailed implementation plan for:" "Implement the plan from the previous analysis:" "Review the implementation for bugs, edge cases, and improvements:"
                     case cheap
-                        set reason_model "sonnet"
-                        set execute_model "haiku"
+                        set reason_model sonnet
+                        set execute_model haiku
                         set stages 2
                     case local
-                        set reason_model "ollama"
-                        set execute_model "sonnet"
+                        set reason_model ollama
+                        set execute_model sonnet
                         set stages 2
                     case council
-                        set reason_model "opus"
-                        set execute_model "sonnet"
+                        set reason_model opus
+                        set execute_model sonnet
                         set stages 3
-                        set stage_models "opus" "sonnet" "opus"
+                        set stage_models opus sonnet opus
                         set stage_prompts "Round 1 - State your position from multiple expert perspectives (architect, security, operations, user experience). Identify concerns, trade-offs, and risks for:" "Round 2 - Counter-argue the concerns raised. Steelman the proposal where valid, concede where criticisms hold. Respond to:" "Round 3 - Synthesize the debate. List: strongest arguments for, strongest arguments against, convergence points, unresolved tensions, and recommended changes for:"
                     case redteam
-                        set reason_model "opus"
-                        set execute_model "sonnet"
+                        set reason_model opus
+                        set execute_model sonnet
                         set stages 2
-                        set stage_models "opus" "sonnet"
+                        set stage_models opus sonnet
                         set stage_prompts "You are a hostile adversarial reviewer. BREAK this plan. Find: 1) Fatal flaws causing project failure 2) Hidden wrong assumptions 3) Missing failure modes 4) Optimistic estimates that will slip 5) Dependencies that will break. Be specific and ruthless. Attack:" "Synthesize the adversarial review into actionable findings. For each attack: rate severity (critical/high/medium/low), assess if the plan can survive it, and recommend specific mitigations. Review:"
                     case '*'
                         echo "Error: Unknown preset '$argv[$i]'"
@@ -253,7 +263,7 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
 
     # Handle local ollama model
     set -l stage1_cmd
-    if test "$stage1_model" = "ollama"
+    if test "$stage1_model" = ollama
         # Use local Ollama via claude-local in print mode
         set -l ollama_model (set -q LLM_CODE_MODEL; and echo $LLM_CODE_MODEL; or echo "qwen3-coder")
         set stage1_cmd "ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_API_KEY=ollama ANTHROPIC_MODEL=$ollama_model claude -p $system_flag $out_format_flag '$stage1_prompt'"
@@ -262,7 +272,7 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
     end
 
     set -l output
-    if test "$stage1_model" = "ollama"
+    if test "$stage1_model" = ollama
         set -l ollama_model (set -q LLM_CODE_MODEL; and echo $LLM_CODE_MODEL; or echo "qwen3-coder")
         set output (ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_API_KEY=ollama ANTHROPIC_MODEL=$ollama_model claude -p $system_flag "$stage1_prompt" 2>/dev/null)
     else
@@ -276,7 +286,7 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
 
     # Save stage 1 output if requested
     if test -n "$save_prefix"
-        echo "$output" > "$save_prefix-stage1.txt"
+        echo "$output" >"$save_prefix-stage1.txt"
         if $verbose
             echo "  Saved: $save_prefix-stage1.txt"
         end
@@ -292,11 +302,22 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
             echo "--- Stage $s/$stages [$model] ---"
         end
 
-        if test "$model" = "ollama"
+        # Apply JSON output flags only to the final stage
+        set -l final_stage_flags
+        if test $s -eq $stages
+            if $json_output
+                set -a final_stage_flags --output-format json
+            end
+            if test -n "$json_schema"
+                set -a final_stage_flags --json-schema $json_schema
+            end
+        end
+
+        if test "$model" = ollama
             set -l ollama_model (set -q LLM_CODE_MODEL; and echo $LLM_CODE_MODEL; or echo "qwen3-coder")
-            set output (ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_API_KEY=ollama ANTHROPIC_MODEL=$ollama_model claude -p $system_flag "$stage_input" 2>/dev/null)
+            set output (ANTHROPIC_BASE_URL=http://localhost:11434 ANTHROPIC_API_KEY=ollama ANTHROPIC_MODEL=$ollama_model claude -p $system_flag $final_stage_flags "$stage_input" 2>/dev/null)
         else
-            set output (claude -p --model $model $system_flag "$stage_input" 2>/dev/null)
+            set output (claude -p --model $model $system_flag $final_stage_flags "$stage_input" 2>/dev/null)
         end
 
         if test $status -ne 0
@@ -306,7 +327,7 @@ function claude-pipeline --description "Chain Claude Code models: reasoning → 
 
         # Save intermediate output
         if test -n "$save_prefix"
-            echo "$output" > "$save_prefix-stage$s.txt"
+            echo "$output" >"$save_prefix-stage$s.txt"
             if $verbose
                 echo "  Saved: $save_prefix-stage$s.txt"
             end
