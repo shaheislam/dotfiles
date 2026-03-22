@@ -106,7 +106,7 @@ keybindings:
       name: review in Neovim (octo.nvim)
       command: >
         tmux new-window -n "PR-{{.PrNumber}}" -c "{{.RepoPath}}"
-        'nvim -c "silent Octo pr edit {{.PrNumber}}"'
+        'nvim -c "silent Octo pr edit {{.PrNumber}} {{.RepoName}}"'
     - key: V
       name: review diff in Neovim (diffview)
       command: >
