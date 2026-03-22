@@ -418,7 +418,17 @@ LEARN_AGENT=$(parse_yaml_value "agent_harness")
 LEARN_ITERATIONS=0
 LEARN_DURATION=0
 LEARN_FILES_CHANGED=0
+LEARN_INSERTIONS=0
+LEARN_DELETIONS=0
+LEARN_RETRIES=0
+LEARN_AUTO_GENERATED=$IS_AUTO_GENERATED
+LEARN_SUB_PROFILE=$(parse_yaml_value "sub_profile")
+LEARN_TEMPLATE=$(parse_yaml_value "workflow_template")
+LEARN_MODEL="${CLAUDE_MODEL:-opus}"
 LEARN_COMMITS_YAML=""
+LEARN_API_COST=""
+LEARN_TOTAL_TOKENS=""
+LEARN_SEMANTIC_WARNINGS=0
 
 if [[ -d "$WORKTREE_PATH" ]]; then
     LEARN_BRANCH=$(git -C "$WORKTREE_PATH" branch --show-current 2>/dev/null || true)
@@ -427,6 +437,12 @@ if [[ -d "$WORKTREE_PATH" ]]; then
     PROGRESS_FILE="$WORKTREE_PATH/.claude/progress.json"
     if [[ -f "$PROGRESS_FILE" ]]; then
         LEARN_ITERATIONS=$(python3 -c "import json,sys; print(json.load(sys.stdin).get('iteration',0))" <"$PROGRESS_FILE" 2>/dev/null || echo 0)
+    fi
+
+    # Retry count from witness state
+    WITNESS_STATE="$WORKTREE_PATH/.claude/witness.local.md"
+    if [[ -f "$WITNESS_STATE" ]]; then
+        LEARN_RETRIES=$(grep '^retries:' "$WITNESS_STATE" 2>/dev/null | head -1 | awk '{print $2}' || echo 0)
     fi
 
     # Duration from started_at in state file
@@ -438,11 +454,16 @@ if [[ -d "$WORKTREE_PATH" ]]; then
         fi
     fi
 
-    # Merged commits and files changed (relative to main)
+    # Merged commits, files changed, insertions/deletions (relative to main)
     MAIN_BRANCH=$(git -C "$WORKTREE_PATH" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
     MERGE_BASE=$(git -C "$WORKTREE_PATH" merge-base "$MAIN_BRANCH" HEAD 2>/dev/null || true)
     if [[ -n "$MERGE_BASE" ]]; then
         LEARN_FILES_CHANGED=$(git -C "$WORKTREE_PATH" diff --name-only "$MERGE_BASE" HEAD 2>/dev/null | wc -l | tr -d ' ')
+
+        # Insertions/deletions from shortstat
+        SHORTSTAT=$(git -C "$WORKTREE_PATH" diff --shortstat "$MERGE_BASE" HEAD 2>/dev/null || true)
+        LEARN_INSERTIONS=$(echo "$SHORTSTAT" | grep -o '[0-9]* insertion' | grep -o '[0-9]*' || echo 0)
+        LEARN_DELETIONS=$(echo "$SHORTSTAT" | grep -o '[0-9]* deletion' | grep -o '[0-9]*' || echo 0)
 
         # Build YAML list of commits
         while IFS= read -r line; do
@@ -451,6 +472,23 @@ if [[ -d "$WORKTREE_PATH" ]]; then
   - \"$line\""
         done < <(git -C "$WORKTREE_PATH" log --oneline "$MERGE_BASE..HEAD" 2>/dev/null | head -30)
     fi
+
+    # Semantic warning count (from last detection run)
+    SEMANTIC_SCRIPT="$(cd "$(dirname "$0")" && pwd)/detect-semantic-errors.sh"
+    if [[ -x "$SEMANTIC_SCRIPT" ]]; then
+        SEMANTIC_OUT=$("$SEMANTIC_SCRIPT" "$WORKTREE_PATH" 2>/dev/null) ||
+            LEARN_SEMANTIC_WARNINGS=$(echo "$SEMANTIC_OUT" | python3 -c "import json,sys; print(json.load(sys.stdin).get('count',0))" 2>/dev/null || echo 0)
+    fi
+fi
+
+# Probe OTEL for cost/token data (graceful — zero impact if stack not running)
+if curl -sf "http://localhost:3100/api/v1/query" --connect-timeout 1 >/dev/null 2>&1; then
+    # Grafana/Prometheus is reachable — try to query session metrics
+    # Uses the OTEL metric names from Claude Code's native telemetry
+    LEARN_API_COST=$(curl -sf "http://localhost:9090/api/v1/query?query=sum(claude_api_cost_dollars)" --connect-timeout 2 2>/dev/null |
+        python3 -c "import json,sys; r=json.load(sys.stdin); print(r['data']['result'][0]['value'][1] if r.get('data',{}).get('result') else '')" 2>/dev/null || true)
+    LEARN_TOTAL_TOKENS=$(curl -sf "http://localhost:9090/api/v1/query?query=sum(claude_tokens_total)" --connect-timeout 2 2>/dev/null |
+        python3 -c "import json,sys; r=json.load(sys.stdin); print(r['data']['result'][0]['value'][1] if r.get('data',{}).get('result') else '')" 2>/dev/null || true)
 fi
 
 # Write 1: Obsidian note (always, even without beads)
@@ -477,10 +515,20 @@ repo: "$REPO_NAME"
 branch: "$LEARN_BRANCH"
 device: "$LEARN_DEVICE"
 agent: "${LEARN_AGENT:-claude}"
+model: "$LEARN_MODEL"
+sub_profile: "${LEARN_SUB_PROFILE:-default}"
+template: "${LEARN_TEMPLATE:-none}"
 ticketing_system: "${TICKETING_SYSTEM:-none}"
+auto_generated: $LEARN_AUTO_GENERATED
 iterations: $LEARN_ITERATIONS
+retries: $LEARN_RETRIES
 duration_seconds: $LEARN_DURATION
 files_changed: $LEARN_FILES_CHANGED
+insertions: $LEARN_INSERTIONS
+deletions: $LEARN_DELETIONS
+semantic_warnings: $LEARN_SEMANTIC_WARNINGS
+api_cost_usd: ${LEARN_API_COST:-null}
+total_tokens: ${LEARN_TOTAL_TOKENS:-null}
 merged_commits:${LEARN_COMMITS_YAML:-"
   - \"(none)\""}
 ---
@@ -536,9 +584,11 @@ if [[ -n "$REPO_ROOT" && -d "$REPO_ROOT/.claude" ]]; then
 # Learnings: $ISSUE_KEY -- $TITLE
 
 **Completed:** $NOW_ISO
-**Branch:** $LEARN_BRANCH
-**Device:** $LEARN_DEVICE
-**Agent:** ${LEARN_AGENT:-claude} | **Iterations:** $LEARN_ITERATIONS | **Duration:** ${LEARN_DURATION}s | **Files:** $LEARN_FILES_CHANGED
+**Branch:** $LEARN_BRANCH | **Device:** $LEARN_DEVICE | **Model:** $LEARN_MODEL
+**Agent:** ${LEARN_AGENT:-claude} | **Sub:** ${LEARN_SUB_PROFILE:-default} | **Template:** ${LEARN_TEMPLATE:-none}
+**Iterations:** $LEARN_ITERATIONS | **Retries:** $LEARN_RETRIES | **Duration:** ${LEARN_DURATION}s
+**Files:** $LEARN_FILES_CHANGED (+$LEARN_INSERTIONS/-$LEARN_DELETIONS) | **Warnings:** $LEARN_SEMANTIC_WARNINGS
+**Cost:** ${LEARN_API_COST:-N/A} USD | **Tokens:** ${LEARN_TOTAL_TOKENS:-N/A}
 **Worktree:** $WORKTREE_PATH
 **PR:** ${PR_URL:-N/A}
 
