@@ -1,0 +1,53 @@
+id: python-open-without-context-manager
+language: python
+rule:
+  pattern: $VAR = open($$$ARGS)
+message: |
+  File opened without context manager. Use 'with open(...)' to ensure
+  the file is properly closed even if an exception occurs.
+note: |
+  Agent fix: Replace with a 'with' statement:
+    with open(...) as f:
+        # use f here
+  This ensures proper cleanup via __exit__.
+severity: warning
+
+---
+
+id: python-mutable-default-arg
+language: python
+rule:
+  pattern: def $FUNC($$$BEFORE, $PARAM=$DEFAULT, $$$AFTER)
+  constraints:
+    DEFAULT:
+      regex: '^\[|^\{|^set\('
+message: |
+  Mutable default argument '$DEFAULT' is shared across all calls.
+  Use None and create inside the function body.
+note: |
+  Agent fix: Change to:
+    def func(..., param=None, ...):
+        if param is None:
+            param = []  # or {} or set()
+severity: warning
+
+---
+
+id: python-assert-in-production
+language: python
+rule:
+  pattern: assert $CONDITION
+  not:
+    inside:
+      kind: function_definition
+      has:
+        pattern: def test_$NAME($$$)
+message: |
+  'assert' statements are removed when Python runs with -O flag.
+  Use explicit checks with proper error handling for production code.
+note: |
+  Agent fix: Replace with:
+    if not condition:
+        raise ValueError("descriptive message")
+  Only use assert in test files (test_*.py).
+severity: warning

@@ -165,6 +165,7 @@ brew "grype"
 brew "tfsec"
 brew "checkov"
 brew "semgrep"
+brew "ast-grep"  # Structural code search using AST patterns (AI Gateway)
 brew "nuclei"
 brew "sops"
 brew "age"

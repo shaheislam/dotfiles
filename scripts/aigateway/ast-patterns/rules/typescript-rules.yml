@@ -1,0 +1,50 @@
+id: ts-async-no-await
+language: typescript
+rule:
+  kind: function_declaration
+  has:
+    kind: async
+  not:
+    has:
+      kind: await_expression
+message: |
+  Async function without any 'await' expression. Either the async
+  keyword is unnecessary, or an await is missing.
+note: |
+  Agent fix: Check if:
+  1. The function should actually be async (needs await somewhere)
+  2. The async keyword can be removed (function returns synchronously)
+  3. A promise-returning call is missing its await
+severity: warning
+
+---
+
+id: ts-non-null-assertion
+language: typescript
+rule:
+  kind: non_null_expression
+message: |
+  Non-null assertion (!) bypasses TypeScript's null checking.
+  Use optional chaining (?.) or proper null guards instead.
+note: |
+  Agent fix: Replace ! with proper null handling:
+  - x!.prop  ->  x?.prop  (if result can be undefined)
+  - x!.prop  ->  if (x) { x.prop }  (if null is an error)
+  - In tests: assertion is acceptable, add comment
+severity: warning
+
+---
+
+id: ts-type-assertion-as-any
+language: typescript
+rule:
+  pattern: $EXPR as any
+message: |
+  Type assertion 'as any' defeats type safety. Use a more specific type
+  or 'as unknown' as an intermediate step.
+note: |
+  Agent fix:
+  - If the target type is known: use 'as TargetType'
+  - If narrowing: use 'as unknown as TargetType'
+  - If genuinely dynamic: define a proper type and validate at runtime
+severity: warning
