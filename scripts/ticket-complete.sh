@@ -105,6 +105,16 @@ parse_yaml_value() {
     grep "^${key}:" "$STATE_FILE" | head -1 | sed "s/^${key}: *//" | tr -d '"'
 }
 
+slugify() {
+    local text="$1"
+    text=$(echo "$text" | tr '[:upper:]' '[:lower:]')
+    text=$(echo "$text" | sed 's/[^a-z0-9 _-]//g')
+    text=$(echo "$text" | sed 's/[ _]/-/g')
+    text=$(echo "$text" | sed 's/-\{2,\}/-/g')
+    text=$(echo "$text" | sed 's/^-//;s/-$//')
+    echo "${text:0:60}"
+}
+
 ISSUE_KEY=$(parse_yaml_value "issue_key")
 TITLE=$(parse_yaml_value "title")
 TICKETING_SYSTEM=$(parse_yaml_value "ticketing_system")
@@ -371,36 +381,127 @@ if [[ -f "$STATE_FILE" ]]; then
     echo "pr_url: \"$PR_URL\"" >>"$STATE_FILE"
 fi
 
-# Step 6: Export learnings from beads
+# Step 6: Export learnings (Obsidian + per-repo)
 echo -e "${BLUE}[6/6] Exporting learnings...${NC}"
 
-LEARNINGS_DIR="$HOME/.claude/learnings"
-mkdir -p "$LEARNINGS_DIR"
-LEARNINGS_FILE="$LEARNINGS_DIR/${ISSUE_KEY}.md"
+# Derive repo root from worktree
+REPO_ROOT=""
+if [[ -d "$WORKTREE_PATH" ]]; then
+    GIT_COMMON_DIR=$(git -C "$WORKTREE_PATH" rev-parse --git-common-dir 2>/dev/null || true)
+    if [[ -n "$GIT_COMMON_DIR" ]]; then
+        REPO_ROOT=$(cd "$WORKTREE_PATH" && cd "$GIT_COMMON_DIR/.." && pwd 2>/dev/null || true)
+    fi
+fi
+REPO_NAME=$(basename "${REPO_ROOT:-unknown}")
+
+# Timestamps and filename components
+NOW_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+TODAY=$(date -u +%Y-%m-%d)
+ISSUE_KEY_LOWER=$(echo "$ISSUE_KEY" | tr '[:upper:]' '[:lower:]')
+TITLE_SLUG=$(slugify "$TITLE")
+
+# Capture beads content (reused in both outputs)
+DECISIONS="_No decision comments recorded._"
+CLOSED_TASKS="_No subtasks tracked._"
+OPEN_ISSUES="_None._"
 
 if command -v bd &>/dev/null && [[ -d "$WORKTREE_PATH/.beads" ]]; then
-    {
-        echo "# Learnings: $ISSUE_KEY — $TITLE"
-        echo ""
-        echo "**Completed:** $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        echo "**Worktree:** $WORKTREE_PATH"
-        echo "**PR:** ${PR_URL:-N/A}"
-        echo ""
-        echo "## Decisions & Trade-offs"
-        echo ""
-        (cd "$WORKTREE_PATH" && bd comments list 2>/dev/null) || echo "_No decision comments recorded._"
-        echo ""
-        echo "## Completed Subtasks"
-        echo ""
-        (cd "$WORKTREE_PATH" && bd list --status=closed 2>/dev/null | head -20) || echo "_No subtasks tracked._"
-        echo ""
-        echo "## Remaining Open Issues"
-        echo ""
-        (cd "$WORKTREE_PATH" && bd list --status=open 2>/dev/null | head -10) || echo "_None._"
-    } >"$LEARNINGS_FILE"
-    echo -e "${GREEN}Learnings exported to $LEARNINGS_FILE${NC}"
+    DECISIONS=$(cd "$WORKTREE_PATH" && bd comments list 2>/dev/null) || DECISIONS="_No decision comments recorded._"
+    CLOSED_TASKS=$(cd "$WORKTREE_PATH" && bd list --status=closed 2>/dev/null | head -20) || CLOSED_TASKS="_No subtasks tracked._"
+    OPEN_ISSUES=$(cd "$WORKTREE_PATH" && bd list --status=open 2>/dev/null | head -10) || OPEN_ISSUES="_None._"
+fi
+
+# Write 1: Obsidian note (always, even without beads)
+if [[ -d "$HOME/obsidian" ]]; then
+    OBSIDIAN_DIR="$HOME/obsidian/Claude/Memories/learnings"
+    OBSIDIAN_FILE="${OBSIDIAN_DIR}/${TODAY}-${ISSUE_KEY_LOWER}-${TITLE_SLUG:-untitled}.md"
+    mkdir -p "$OBSIDIAN_DIR"
+    cat >"$OBSIDIAN_FILE" <<OBSIDIAN_EOF
+---
+type: "learning"
+category: "technical"
+confidence: 0.80
+formed: "$NOW_ISO"
+source_session: ""
+entities:
+  - "$REPO_NAME"
+  - "$ISSUE_KEY"
+tags:
+  - "claude-memory"
+  - "memory/learning"
+  - "ticket-learnings"
+  - "$REPO_NAME"
+---
+
+# + Learnings: $ISSUE_KEY -- $TITLE
+
+## Summary
+
+Ticket $ISSUE_KEY completed via autonomous execution.
+
+## Why This Matters
+
+Captures decisions, trade-offs, and open issues from ticket execution for future reference.
+
+## Original Context
+
+**Completed:** $NOW_ISO
+**Worktree:** $WORKTREE_PATH
+**PR:** ${PR_URL:-N/A}
+
+## Decisions & Trade-offs
+
+$DECISIONS
+
+## Completed Subtasks
+
+$CLOSED_TASKS
+
+## Remaining Open Issues
+
+$OPEN_ISSUES
+
+## Related Entities
+
+- $REPO_NAME
+- $ISSUE_KEY
+
+## Source
+
+Autonomous ticket execution via gwt-ticket
+OBSIDIAN_EOF
+    echo -e "${GREEN}Obsidian: $OBSIDIAN_FILE${NC}"
 else
-    echo -e "${YELLOW}Beads not available, skipping learnings export${NC}"
+    echo -e "${YELLOW}Obsidian vault not found, skipping${NC}"
+fi
+
+# Write 2: Per-repo .claude/learnings/ (only if repo root accessible)
+if [[ -n "$REPO_ROOT" && -d "$REPO_ROOT/.claude" ]]; then
+    REPO_LEARNINGS_DIR="$REPO_ROOT/.claude/learnings"
+    REPO_LEARNINGS_FILE="$REPO_LEARNINGS_DIR/${ISSUE_KEY}.md"
+    mkdir -p "$REPO_LEARNINGS_DIR"
+    cat >"$REPO_LEARNINGS_FILE" <<REPO_EOF
+# Learnings: $ISSUE_KEY -- $TITLE
+
+**Completed:** $NOW_ISO
+**Worktree:** $WORKTREE_PATH
+**PR:** ${PR_URL:-N/A}
+
+## Decisions & Trade-offs
+
+$DECISIONS
+
+## Completed Subtasks
+
+$CLOSED_TASKS
+
+## Remaining Open Issues
+
+$OPEN_ISSUES
+REPO_EOF
+    echo -e "${GREEN}Per-repo: $REPO_LEARNINGS_FILE${NC}"
+else
+    echo -e "${YELLOW}Repo .claude/ not accessible, skipping per-repo${NC}"
 fi
 
 echo ""
