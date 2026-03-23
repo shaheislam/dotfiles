@@ -2090,12 +2090,60 @@ $prompt_suffix"
         set -a nvim_ai_files "$worktree_path/.claude/settings.local.json"
     end
 
-    # Include plan.md in nvim buffers if it pre-exists (resumed sessions)
-    # For first-run sessions, lazy-loaded via tmux send-keys after background creation
-    set -l plan_md_preexisted false
-    if test -f "$worktree_path/.claude/plan.md"
-        set -a nvim_ai_files "$worktree_path/.claude/plan.md"
-        set plan_md_preexisted true
+    # Initialize living plan document before nvim launches so it's in the buffer list
+    set -l plan_file "$worktree_path/.claude/plan.md"
+    if not test -f "$plan_file"
+        echo "---
+ticket: \"$issue_key\"
+title: \"$title\"
+created: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
+---
+
+# Plan: $issue_key
+
+## Objective
+
+$title
+$description
+
+## Approach
+
+_To be filled by the agent as work begins._
+
+## Progress
+
+- [ ] Investigation / codebase understanding
+- [ ] Implementation
+- [ ] Testing
+- [ ] Verification
+
+## Key Decisions
+
+_Record important decisions and trade-offs here._
+
+## Current State
+
+_Update this section as work progresses. This survives context compaction._
+
+## Next Steps
+
+_What needs to happen next._
+
+## Useful Commands
+
+_Save commands here that produced valuable results or solved problems.
+Include what the command does and why it matters. Format:_
+
+\`\`\`bash
+# Description of what this does and why it's useful
+command --with-flags
+\`\`\`
+" >"$plan_file"
+    end
+
+    # Include plan.md in nvim buffers (always exists now — created above or pre-existing)
+    if test -f "$plan_file"
+        set -a nvim_ai_files "$plan_file"
     end
 
     # Common nvim launch flags: suppress messages + auto-reload timer for plan.md
@@ -2419,69 +2467,7 @@ the post-completion hook will:
 
 $prompt" >$state_file
 
-        # Initialize living plan document for session persistence across compactions
-        set -l plan_file "$worktree_path/.claude/plan.md"
-        if not test -f "$plan_file"
-            echo "---
-ticket: \"$issue_key\"
-title: \"$title\"
-created: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
----
-
-# Plan: $issue_key
-
-## Objective
-
-$title
-$description
-
-## Approach
-
-_To be filled by the agent as work begins._
-
-## Progress
-
-- [ ] Investigation / codebase understanding
-- [ ] Implementation
-- [ ] Testing
-- [ ] Verification
-
-## Key Decisions
-
-_Record important decisions and trade-offs here._
-
-## Current State
-
-_Update this section as work progresses. This survives context compaction._
-
-## Next Steps
-
-_What needs to happen next._
-
-## Useful Commands
-
-_Save commands here that produced valuable results or solved problems.
-Include what the command does and why it matters. Format:_
-
-\`\`\`bash
-# Description of what this does and why it's useful
-command --with-flags
-\`\`\`
-" >"$plan_file"
-        end
-
-        # Lazy-open plan.md in nvim if it was just created (not pre-existing)
-        if not $plan_md_preexisted
-            sleep 3 # Wait for nvim to fully initialize
-            set -l _nvim_pane (tmux list-panes -t "$session_name:$window_name" \
-                -F '#{pane_index} #{pane_current_command}' 2>/dev/null \
-                | grep -i nvim | head -1 | awk '{print $1}')
-            if test -n "$_nvim_pane"
-                tmux send-keys -t "$session_name:$window_name.$_nvim_pane" Escape
-                sleep 0.2
-                tmux send-keys -t "$session_name:$window_name.$_nvim_pane" ":badd $plan_file" Enter
-            end
-        end
+        # plan.md is now created synchronously before nvim launches (in nvim buffer list)
 
         # Create phase gate if --gate was specified
         if test -n "$gate_type"
