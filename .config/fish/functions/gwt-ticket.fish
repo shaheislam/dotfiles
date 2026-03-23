@@ -1594,11 +1594,14 @@ This file persists across context compactions and session restarts.
 UPDATE .claude/plan.md at these points:
 - After initial codebase investigation (fill in Approach section)
 - After completing each major subtask (update Progress + Current State)
+- After a subagent returns results (capture key findings in Current State)
 - Before any natural stopping point (update Next Steps)
 - When making important decisions (add to Key Decisions)
 - When a command produces valuable results or solves a problem (add to Useful Commands)
+- When closing a bead (update Progress checklist to match bead status)
 
 Only save commands that are genuinely useful — not routine ls/git status calls.
+ALWAYS use Edit (not Write) when updating plan.md to avoid clobbering external edits.
 The plan is your persistent memory. Hooks will re-inject it after compaction."
     if test -n "$prompt_suffix"
         set prompt_suffix "$prompt_suffix$living_plan_suffix"
