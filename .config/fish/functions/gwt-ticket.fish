@@ -929,8 +929,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         if $edit_mode
             if not test -f "$edit_prompt_file"
                 echo "Error: Prompt file not found: $edit_prompt_file"
-                echo "Create per-repo: gwtt-prompt-file --create"
-                echo "Or global: echo '# Describe your task here' > \$HOME/dotfiles/.claude/gwtt-prompt.local.md"
+                echo "Are you inside a git repository? gwtt-prompt-file auto-creates per-repo prompt files."
                 return 1
             end
             set description (cat "$edit_prompt_file")
