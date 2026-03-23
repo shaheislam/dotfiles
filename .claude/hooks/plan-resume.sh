@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # plan-resume.sh - SessionStart hook to inject living plan into context
 #
-# Extracts key sections (Current State, Next Steps, Useful Commands) from
-# .claude/plan.md rather than injecting the full plan. Keeps context small.
-# Silent exit when no plan exists or plan has no meaningful content.
+# Extracts key sections from .claude/plan.md. Keeps context small.
+# (#5) Auto-creates a minimal plan if none exists (non-gwt sessions).
+# Silent exit when plan has no meaningful content.
 
 set -euo pipefail
 
@@ -11,7 +11,40 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null |
 [[ -z "$PROJECT_DIR" ]] && exit 0
 
 PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
-[[ -f "$PLAN_FILE" ]] || exit 0
+
+# (#5) Auto-create minimal plan for interactive (non-gwt) sessions
+if [[ ! -f "$PLAN_FILE" ]]; then
+    # Only create if .claude/ dir exists (indicates a Claude project)
+    if [[ -d "$PROJECT_DIR/.claude" ]]; then
+        BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        cat >"$PLAN_FILE" <<TEMPLATE
+---
+branch: "$BRANCH"
+created: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+---
+
+# Session Plan
+
+## Objective
+
+_Describe what you're working on._
+
+## Current State
+
+_Update this section as work progresses. This survives context compaction._
+
+## Next Steps
+
+_What needs to happen next._
+
+## Useful Commands
+
+_Save commands here that produced valuable results or solved problems._
+TEMPLATE
+        echo "Created .claude/plan.md — update it as you work to persist state across compactions."
+    fi
+    exit 0
+fi
 
 EXTRACTOR="$PROJECT_DIR/.claude/hooks/plan-extract-sections.sh"
 if [[ ! -x "$EXTRACTOR" ]]; then

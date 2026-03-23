@@ -60,6 +60,7 @@
 .claude/*.local.md
 .claude/ralph-loop.local.md
 .claude/plan.md
+.claude/plan.md.bak
 .claude/witness.pid
 
 # Launch templates - machine-specific settings

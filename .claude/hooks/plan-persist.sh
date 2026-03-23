@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # plan-persist.sh - PreCompact hook to preserve living plan across compaction
 #
-# Extracts key sections (Current State, Next Steps, Useful Commands) from
-# .claude/plan.md rather than injecting the full plan. Keeps context small.
+# Extracts key sections from .claude/plan.md. Keeps context small.
+# (#9) Creates a backup before compaction for crash recovery.
 
 set -euo pipefail
 
@@ -11,6 +11,9 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null |
 
 PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
 [[ -f "$PLAN_FILE" ]] || exit 0
+
+# (#9) Backup plan before compaction — crash recovery safety net
+cp "$PLAN_FILE" "${PLAN_FILE}.bak" 2>/dev/null || true
 
 EXTRACTOR="$PROJECT_DIR/.claude/hooks/plan-extract-sections.sh"
 if [[ ! -x "$EXTRACTOR" ]]; then
