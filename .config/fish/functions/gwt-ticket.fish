@@ -15,7 +15,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
     #   --prompt-suffix S    Text to append to prompt
-    #   --edit               Read description from gwtt-prompt.local.md (default)
+    #   --edit               Read description from per-repo gwtt-prompt.local.md (default)
     #   --no-edit            Use title as description instead of prompt file
     #   --desc-file FILE     Read description from file (- for stdin; avoids quote issues)
     #   --skill NAME [...]  Invoke skill(s) at prompt start
@@ -116,7 +116,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l max_budget ""
     set -l quiet_mode true
     set -l edit_mode true
-    set -l edit_prompt_file "$HOME/dotfiles/.claude/gwtt-prompt.local.md"
+    set -l edit_prompt_file (gwtt-prompt-file 2>/dev/null; or echo "$HOME/dotfiles/.claude/gwtt-prompt.local.md")
     set -l use_codex false
     set -l codex_model ""
     set -l codex_profile ""
@@ -762,7 +762,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --gate-dep PATH      Dependency worktree for --gate dependency"
         echo "  --swarm-epic ID      Create bd swarm molecule from epic bead ID (e.g., bd-abc12)"
         echo "  --priority N         Bead priority (0=critical, 1=high, 2=medium, 3=low, 4=backlog)"
-        echo "  --edit               Read description from gwtt-prompt.local.md (default)"
+        echo "  --edit               Read description from per-repo gwtt-prompt.local.md (default)"
         echo "  --no-edit            Use title as description (skip prompt file)"
         echo "  --desc-file FILE     Read description from file (or - for stdin; avoids shell quoting)"
         echo "  --no-beads           Disable automatic beads subtask tracking"
@@ -799,7 +799,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --local"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --model deepseek-coder-v2:16b"
         echo ""
-        echo "  # Reads gwtt-prompt.local.md automatically (default behavior)"
+        echo "  # Reads per-repo .claude/gwtt-prompt.local.md (falls back to global)"
         echo "  gwt-ticket \"my-feature\""
         echo "  gwt-ticket ENG-123 \"Fix auth\" --max 30"
         echo ""
@@ -928,13 +928,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if test -z "$description"
         if $edit_mode
             if not test -f "$edit_prompt_file"
-                echo "Error: Centralized prompt file not found: $edit_prompt_file"
-                echo "Create it: echo '# Describe your task here' > $edit_prompt_file"
+                echo "Error: Prompt file not found: $edit_prompt_file"
+                echo "Create per-repo: gwtt-prompt-file --create"
+                echo "Or global: echo '# Describe your task here' > \$HOME/dotfiles/.claude/gwtt-prompt.local.md"
                 return 1
             end
             set description (cat "$edit_prompt_file")
             if test -z "$description"
-                echo "Error: Centralized prompt file is empty: $edit_prompt_file"
+                echo "Error: Prompt file is empty: $edit_prompt_file"
                 return 1
             end
         else
