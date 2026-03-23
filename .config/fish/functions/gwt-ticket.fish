@@ -2090,6 +2090,18 @@ $prompt_suffix"
         set -a nvim_ai_files "$worktree_path/.claude/settings.local.json"
     end
 
+    # Include plan.md in nvim buffers if it pre-exists (resumed sessions)
+    # For first-run sessions, lazy-loaded via tmux send-keys after background creation
+    set -l plan_md_preexisted false
+    if test -f "$worktree_path/.claude/plan.md"
+        set -a nvim_ai_files "$worktree_path/.claude/plan.md"
+        set plan_md_preexisted true
+    end
+
+    # Common nvim launch flags: suppress messages + auto-reload timer for plan.md
+    # Timer: 2s delay to let buffers load, then checktime every 5s for on-disk changes
+    set -l nvim_base_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' --cmd 'lua vim.defer_fn(function() local t = vim.uv.new_timer() t:start(5000, 5000, vim.schedule_wrap(function() pcall(vim.cmd, \"checktime\") end)) end, 2000)'"
+
     if $use_devcon
         # Build devcon up command - rebuild ensures fresh container with correct mounts
         # Without -r, devcontainer up reuses existing containers that may lack --mount binds
@@ -2215,7 +2227,7 @@ $prompt_suffix"
             end
             set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &"
         end
-        set -l nvim_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'"
+        set -l nvim_cmd "$nvim_base_cmd"
         if test (count $nvim_ai_files) -gt 0
             set nvim_cmd "$nvim_cmd $nvim_ai_files"
         end
@@ -2275,9 +2287,9 @@ $prompt_suffix"
         # Step 4: Launch nvim in top-right pane
         tmux select-pane -t "$session_name:$window_name" -U
         if test (count $nvim_ai_files) -gt 0
-            tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" Enter
+            tmux send-keys -t "$session_name:$window_name" "$nvim_base_cmd $nvim_ai_files" Enter
         else
-            tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
+            tmux send-keys -t "$session_name:$window_name" "$nvim_base_cmd" Enter
         end
 
         # Step 5: Prompt delivery — to Claude pane (top-left) when Claude is primary
@@ -2456,6 +2468,19 @@ Include what the command does and why it matters. Format:_
 command --with-flags
 \`\`\`
 " >"$plan_file"
+        end
+
+        # Lazy-open plan.md in nvim if it was just created (not pre-existing)
+        if not $plan_md_preexisted
+            sleep 3 # Wait for nvim to fully initialize
+            set -l _nvim_pane (tmux list-panes -t "$session_name:$window_name" \
+                -F '#{pane_index} #{pane_current_command}' 2>/dev/null \
+                | grep -i nvim | head -1 | awk '{print $1}')
+            if test -n "$_nvim_pane"
+                tmux send-keys -t "$session_name:$window_name.$_nvim_pane" Escape
+                sleep 0.2
+                tmux send-keys -t "$session_name:$window_name.$_nvim_pane" ":badd $plan_file" Enter
+            end
         end
 
         # Create phase gate if --gate was specified
