@@ -153,6 +153,10 @@
           {
             "command": "bd prime",
             "type": "command"
+          },
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-persist.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
@@ -270,6 +274,15 @@
         "hooks": [
           {
             "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-resume.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
