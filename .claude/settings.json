@@ -138,7 +138,7 @@
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-watch.sh 2>/dev/null || true",
+            "command": "bash ~/.claude/hooks/plan-watch.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -164,7 +164,7 @@
             "type": "command"
           },
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-persist.sh 2>/dev/null || true",
+            "command": "bash ~/.claude/hooks/plan-persist.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -291,7 +291,7 @@
       {
         "hooks": [
           {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-resume.sh 2>/dev/null || true",
+            "command": "bash ~/.claude/hooks/plan-resume.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
