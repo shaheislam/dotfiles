@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # plan-persist.sh - PreCompact hook to preserve living plan across compaction
 #
-# Reads .claude/plan.md and outputs it as context so the compacted session
-# retains the full plan state. Also reminds Claude to keep the plan updated.
+# Extracts key sections (Current State, Next Steps, Useful Commands) from
+# .claude/plan.md rather than injecting the full plan. Keeps context small.
 
 set -euo pipefail
 
@@ -12,14 +12,24 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null |
 PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
 [[ -f "$PLAN_FILE" ]] || exit 0
 
-# Output the plan content so it survives compaction
-echo "=== Living Plan (from .claude/plan.md) ==="
-cat "$PLAN_FILE"
-echo ""
-echo "=== End Living Plan ==="
-echo ""
-echo "IMPORTANT: The above plan was loaded from .claude/plan.md. After compaction,"
-echo "update .claude/plan.md with your current progress, decisions, and next steps."
-echo "This file is your persistent memory across compactions."
+EXTRACTOR="$PROJECT_DIR/.claude/hooks/plan-extract-sections.sh"
+if [[ ! -x "$EXTRACTOR" ]]; then
+    EXTRACTOR="$HOME/dotfiles/.claude/hooks/plan-extract-sections.sh"
+fi
+
+SECTIONS=""
+if [[ -x "$EXTRACTOR" ]]; then
+    SECTIONS=$(bash "$EXTRACTOR" "$PLAN_FILE" 2>/dev/null) || true
+fi
+
+if [[ -n "$SECTIONS" ]]; then
+    echo "=== Living Plan (key sections from .claude/plan.md) ==="
+    echo "$SECTIONS"
+    echo "=== End Living Plan ==="
+    echo ""
+    echo "After compaction, read .claude/plan.md for full context, then update it."
+else
+    echo "A plan file exists at .claude/plan.md — read it after compaction to resume."
+fi
 
 exit 0

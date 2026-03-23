@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # plan-resume.sh - SessionStart hook to inject living plan into context
 #
-# On session start (fresh or post-compaction), reads .claude/plan.md and
-# outputs it so Claude has the full plan context immediately.
-# Silent exit when no plan exists.
+# Extracts key sections (Current State, Next Steps, Useful Commands) from
+# .claude/plan.md rather than injecting the full plan. Keeps context small.
+# Silent exit when no plan exists or plan has no meaningful content.
 
 set -euo pipefail
 
@@ -13,15 +13,22 @@ PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null |
 PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
 [[ -f "$PLAN_FILE" ]] || exit 0
 
-# Check the plan has content beyond just the template header
-CONTENT_LINES=$(grep -cv '^\s*$\|^---$\|^#' "$PLAN_FILE" 2>/dev/null || echo "0")
-[[ "$CONTENT_LINES" -eq 0 ]] && exit 0
+EXTRACTOR="$PROJECT_DIR/.claude/hooks/plan-extract-sections.sh"
+if [[ ! -x "$EXTRACTOR" ]]; then
+    EXTRACTOR="$HOME/dotfiles/.claude/hooks/plan-extract-sections.sh"
+fi
 
-echo "=== Living Plan (.claude/plan.md) ==="
-cat "$PLAN_FILE"
-echo "=== End Living Plan ==="
-echo ""
-echo "Keep .claude/plan.md updated as you work. Update it after completing"
-echo "subtasks, making key decisions, or before natural stopping points."
+SECTIONS=""
+if [[ -x "$EXTRACTOR" ]]; then
+    SECTIONS=$(bash "$EXTRACTOR" "$PLAN_FILE" 2>/dev/null) || true
+fi
+
+if [[ -n "$SECTIONS" ]]; then
+    echo "=== Living Plan (.claude/plan.md) ==="
+    echo "$SECTIONS"
+    echo "=== End Living Plan ==="
+    echo ""
+    echo "Read .claude/plan.md for full context. Keep it updated as you work."
+fi
 
 exit 0

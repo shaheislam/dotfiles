@@ -1596,7 +1596,9 @@ UPDATE .claude/plan.md at these points:
 - After completing each major subtask (update Progress + Current State)
 - Before any natural stopping point (update Next Steps)
 - When making important decisions (add to Key Decisions)
+- When a command produces valuable results or solves a problem (add to Useful Commands)
 
+Only save commands that are genuinely useful — not routine ls/git status calls.
 The plan is your persistent memory. Hooks will re-inject it after compaction."
     if test -n "$prompt_suffix"
         set prompt_suffix "$prompt_suffix$living_plan_suffix"
@@ -2440,6 +2442,16 @@ _Update this section as work progresses. This survives context compaction._
 ## Next Steps
 
 _What needs to happen next._
+
+## Useful Commands
+
+_Save commands here that produced valuable results or solved problems.
+Include what the command does and why it matters. Format:_
+
+\`\`\`bash
+# Description of what this does and why it's useful
+command --with-flags
+\`\`\`
 " >"$plan_file"
         end
 

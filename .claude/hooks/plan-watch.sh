@@ -54,12 +54,27 @@ if [[ "$TOOL_NAME" == "Edit" || "$TOOL_NAME" == "Write" ]]; then
     fi
 fi
 
-# External edit detected — re-inject the updated plan
+# External edit detected — inject key sections from updated plan
+EXTRACTOR="$PROJECT_DIR/.claude/hooks/plan-extract-sections.sh"
+if [[ ! -x "$EXTRACTOR" ]]; then
+    EXTRACTOR="$HOME/dotfiles/.claude/hooks/plan-extract-sections.sh"
+fi
+
 echo "PLAN UPDATED EXTERNALLY — .claude/plan.md was modified outside this session."
 echo "Review the changes and course-correct your approach accordingly."
 echo ""
-echo "=== Updated Plan ==="
-cat "$PLAN_FILE"
-echo "=== End Updated Plan ==="
+
+SECTIONS=""
+if [[ -x "$EXTRACTOR" ]]; then
+    SECTIONS=$(bash "$EXTRACTOR" "$PLAN_FILE" 2>/dev/null) || true
+fi
+
+if [[ -n "$SECTIONS" ]]; then
+    echo "=== Updated Plan (key sections) ==="
+    echo "$SECTIONS"
+    echo "=== End Updated Plan ==="
+else
+    echo "Read .claude/plan.md for the full updated plan."
+fi
 
 exit 0
