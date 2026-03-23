@@ -134,6 +134,15 @@
           }
         ],
         "matcher": "Edit|Write"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/plan-watch.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
       }
     ],
     "PostToolUseFailure": [
