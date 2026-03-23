@@ -1585,6 +1585,30 @@ REQUIRED BEHAVIORS:
         end
     end
 
+    # Inject living plan instructions (always active — plan.md is initialized at launch)
+    set -l living_plan_suffix "
+
+LIVING PLAN — A plan file exists at .claude/plan.md for this session.
+This file persists across context compactions and session restarts.
+
+UPDATE .claude/plan.md at these points:
+- After initial codebase investigation (fill in Approach section)
+- After completing each major subtask (update Progress + Current State)
+- After a subagent returns results (capture key findings in Current State)
+- Before any natural stopping point (update Next Steps)
+- When making important decisions (add to Key Decisions)
+- When a command produces valuable results or solves a problem (add to Useful Commands)
+- When closing a bead (update Progress checklist to match bead status)
+
+Only save commands that are genuinely useful — not routine ls/git status calls.
+ALWAYS use Edit (not Write) when updating plan.md to avoid clobbering external edits.
+The plan is your persistent memory. Hooks will re-inject it after compaction."
+    if test -n "$prompt_suffix"
+        set prompt_suffix "$prompt_suffix$living_plan_suffix"
+    else
+        set prompt_suffix "$living_plan_suffix"
+    end
+
     # Inject plan-first mode instruction
     if $plan_first
         set -l plan_suffix "
@@ -2066,6 +2090,18 @@ $prompt_suffix"
         set -a nvim_ai_files "$worktree_path/.claude/settings.local.json"
     end
 
+    # Include plan.md in nvim buffers if it pre-exists (resumed sessions)
+    # For first-run sessions, lazy-loaded via tmux send-keys after background creation
+    set -l plan_md_preexisted false
+    if test -f "$worktree_path/.claude/plan.md"
+        set -a nvim_ai_files "$worktree_path/.claude/plan.md"
+        set plan_md_preexisted true
+    end
+
+    # Common nvim launch flags: suppress messages + auto-reload timer for plan.md
+    # Timer: 2s delay to let buffers load, then checktime every 5s for on-disk changes
+    set -l nvim_base_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' --cmd 'lua vim.defer_fn(function() local t = vim.uv.new_timer() t:start(5000, 5000, vim.schedule_wrap(function() pcall(vim.cmd, \"checktime\") end)) end, 2000)'"
+
     if $use_devcon
         # Build devcon up command - rebuild ensures fresh container with correct mounts
         # Without -r, devcontainer up reuses existing containers that may lack --mount binds
@@ -2191,7 +2227,7 @@ $prompt_suffix"
             end
             set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &"
         end
-        set -l nvim_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'"
+        set -l nvim_cmd "$nvim_base_cmd"
         if test (count $nvim_ai_files) -gt 0
             set nvim_cmd "$nvim_cmd $nvim_ai_files"
         end
@@ -2251,9 +2287,9 @@ $prompt_suffix"
         # Step 4: Launch nvim in top-right pane
         tmux select-pane -t "$session_name:$window_name" -U
         if test (count $nvim_ai_files) -gt 0
-            tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' $nvim_ai_files" Enter
+            tmux send-keys -t "$session_name:$window_name" "$nvim_base_cmd $nvim_ai_files" Enter
         else
-            tmux send-keys -t "$session_name:$window_name" "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'" Enter
+            tmux send-keys -t "$session_name:$window_name" "$nvim_base_cmd" Enter
         end
 
         # Step 5: Prompt delivery — to Claude pane (top-left) when Claude is primary
@@ -2382,6 +2418,70 @@ the post-completion hook will:
 ## Prompt Given
 
 $prompt" >$state_file
+
+        # Initialize living plan document for session persistence across compactions
+        set -l plan_file "$worktree_path/.claude/plan.md"
+        if not test -f "$plan_file"
+            echo "---
+ticket: \"$issue_key\"
+title: \"$title\"
+created: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
+---
+
+# Plan: $issue_key
+
+## Objective
+
+$title
+$description
+
+## Approach
+
+_To be filled by the agent as work begins._
+
+## Progress
+
+- [ ] Investigation / codebase understanding
+- [ ] Implementation
+- [ ] Testing
+- [ ] Verification
+
+## Key Decisions
+
+_Record important decisions and trade-offs here._
+
+## Current State
+
+_Update this section as work progresses. This survives context compaction._
+
+## Next Steps
+
+_What needs to happen next._
+
+## Useful Commands
+
+_Save commands here that produced valuable results or solved problems.
+Include what the command does and why it matters. Format:_
+
+\`\`\`bash
+# Description of what this does and why it's useful
+command --with-flags
+\`\`\`
+" >"$plan_file"
+        end
+
+        # Lazy-open plan.md in nvim if it was just created (not pre-existing)
+        if not $plan_md_preexisted
+            sleep 3 # Wait for nvim to fully initialize
+            set -l _nvim_pane (tmux list-panes -t "$session_name:$window_name" \
+                -F '#{pane_index} #{pane_current_command}' 2>/dev/null \
+                | grep -i nvim | head -1 | awk '{print $1}')
+            if test -n "$_nvim_pane"
+                tmux send-keys -t "$session_name:$window_name.$_nvim_pane" Escape
+                sleep 0.2
+                tmux send-keys -t "$session_name:$window_name.$_nvim_pane" ":badd $plan_file" Enter
+            end
+        end
 
         # Create phase gate if --gate was specified
         if test -n "$gate_type"
