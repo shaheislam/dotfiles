@@ -21,6 +21,7 @@ if [[ ! -f "$PLAN_FILE" ]]; then
 ---
 branch: "$BRANCH"
 created: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+last_updated: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 ---
 
 # Session Plan

@@ -2097,6 +2097,7 @@ $prompt_suffix"
 ticket: \"$issue_key\"
 title: \"$title\"
 created: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
+last_updated: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
 ---
 
 # Plan: $issue_key

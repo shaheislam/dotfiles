@@ -67,7 +67,20 @@ TOOL_INPUT=$(echo "$INPUT" | python3 -c "import json,sys; print(json.load(sys.st
 
 if [[ "$TOOL_NAME" == "Edit" || "$TOOL_NAME" == "Write" ]]; then
     if [[ "$TOOL_INPUT" == *"plan.md"* ]]; then
-        # Agent edited — update snapshot silently, clear stale warning
+        # Agent edited — stamp last_updated in frontmatter
+        NOW_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        if head -1 "$PLAN_FILE" | grep -q '^---$'; then
+            if grep -q '^last_updated:' "$PLAN_FILE"; then
+                awk -v ts="$NOW_UTC" '{
+                    if ($0 ~ /^last_updated:/) print "last_updated: \"" ts "\""
+                    else print
+                }' "$PLAN_FILE" >"${PLAN_FILE}.tmp" && mv "${PLAN_FILE}.tmp" "$PLAN_FILE"
+            else
+                # Insert last_updated before closing --- of frontmatter
+                awk -v ts="$NOW_UTC" 'BEGIN{s=0;d=0} /^---$/ && !s{s=1;print;next} /^---$/ && s && !d{print "last_updated: \"" ts "\""; d=1} {print}' "$PLAN_FILE" >"${PLAN_FILE}.tmp" && mv "${PLAN_FILE}.tmp" "$PLAN_FILE"
+            fi
+        fi
+        # Update snapshot silently, clear stale warning
         cp "$PLAN_FILE" "$CONTENT_CACHE" 2>/dev/null || true
         rm -f "$STALE_WARN_CACHE" 2>/dev/null || true
         exit 0
