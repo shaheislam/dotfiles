@@ -1585,6 +1585,25 @@ REQUIRED BEHAVIORS:
         end
     end
 
+    # Inject living plan instructions (always active — plan.md is initialized at launch)
+    set -l living_plan_suffix "
+
+LIVING PLAN — A plan file exists at .claude/plan.md for this session.
+This file persists across context compactions and session restarts.
+
+UPDATE .claude/plan.md at these points:
+- After initial codebase investigation (fill in Approach section)
+- After completing each major subtask (update Progress + Current State)
+- Before any natural stopping point (update Next Steps)
+- When making important decisions (add to Key Decisions)
+
+The plan is your persistent memory. Hooks will re-inject it after compaction."
+    if test -n "$prompt_suffix"
+        set prompt_suffix "$prompt_suffix$living_plan_suffix"
+    else
+        set prompt_suffix "$living_plan_suffix"
+    end
+
     # Inject plan-first mode instruction
     if $plan_first
         set -l plan_suffix "
@@ -2382,6 +2401,47 @@ the post-completion hook will:
 ## Prompt Given
 
 $prompt" >$state_file
+
+        # Initialize living plan document for session persistence across compactions
+        set -l plan_file "$worktree_path/.claude/plan.md"
+        if not test -f "$plan_file"
+            echo "---
+ticket: \"$issue_key\"
+title: \"$title\"
+created: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
+---
+
+# Plan: $issue_key
+
+## Objective
+
+$title
+$description
+
+## Approach
+
+_To be filled by the agent as work begins._
+
+## Progress
+
+- [ ] Investigation / codebase understanding
+- [ ] Implementation
+- [ ] Testing
+- [ ] Verification
+
+## Key Decisions
+
+_Record important decisions and trade-offs here._
+
+## Current State
+
+_Update this section as work progresses. This survives context compaction._
+
+## Next Steps
+
+_What needs to happen next._
+" >"$plan_file"
+        end
 
         # Create phase gate if --gate was specified
         if test -n "$gate_type"

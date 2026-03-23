@@ -80,6 +80,9 @@ Git-backed memory via `bd` CLI. Hooks: SessionStart (`bd prime`), PreCompact (`b
 ### Checkpoints
 Managed by `entire` CLI. Fish alias: `ckpt`. Key commands: `entire enable|status|explain|resume|rewind|doctor`. Per-worktree: `gwt-ticket` runs `entire enable` automatically.
 
+### Living Plan
+Per-worktree `.claude/plan.md` — a living document that persists session state across context compactions. Initialized by `gwt-ticket` at launch with ticket details and structured sections (Objective, Approach, Progress, Decisions, Next Steps). Hooks: `plan-persist.sh` (PreCompact) re-injects plan before compaction; `plan-resume.sh` (SessionStart) loads plan on session start. Update the plan at natural checkpoints during work.
+
 ### MCP Server Integration
 **CRITICAL**: ALWAYS maintain parity between Claude Desktop (`claude_desktop_config.json`) and CLI (`claude mcp add` in `setup.sh`). Use `bunx` not `npx`, `uvx` for AWS MCPs, `pipx run` for Python MCPs. Details in `.claude/rules/mcp-servers.md`.
 

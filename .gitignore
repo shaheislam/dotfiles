@@ -59,6 +59,7 @@
 .claude/start-claude-pane.fish
 .claude/*.local.md
 .claude/ralph-loop.local.md
+.claude/plan.md
 .claude/witness.pid
 
 # Launch templates - machine-specific settings
