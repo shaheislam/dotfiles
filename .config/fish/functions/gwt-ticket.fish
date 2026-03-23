@@ -2141,9 +2141,10 @@ command --with-flags
 " >"$plan_file"
     end
 
-    # Include plan.md in nvim buffers (always exists now — created above or pre-existing)
+    # plan.md is the living document — make it the active buffer when nvim opens
+    # (prompt.local.md and other files become hidden buffers accessible via :ls)
     if test -f "$plan_file"
-        set -a nvim_ai_files "$plan_file"
+        set nvim_ai_files "$plan_file" $nvim_ai_files
     end
 
     # Common nvim launch flags: suppress messages + auto-reload timer for plan.md
