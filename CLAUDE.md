@@ -111,6 +111,8 @@ Four browser tools for AI agents, each with different strengths:
 
 **Settings Hierarchy** (higher overrides lower): Managed → Local (`.claude/settings.local.json`) → Project (`.claude/settings.json`) → User (`~/.claude/settings.json`)
 
+**CLAUDE.md Hierarchy**: Claude Code walks UP from CWD, loading all `CLAUDE.md` / `.claude/CLAUDE.md` files. Does NOT require a git repo. A shared `~/work/CLAUDE.md` applies to all projects within `~/work/`; deeper files override shallower ones. `@import` supports up to 5 hops. Exclude with `claudeMdExcludes` in settings. Guide: `docs/claudemd-hierarchy.md`. Template: `templates/workspace-CLAUDE.md`.
+
 **Key configs** (`~/.claude.json`):
 - Sandbox: `autoAllowBashIfSandboxed: true`, `excludedCommands: ["docker", "colima"]`
 - Attribution: `commit: ""`, `pr: ""` (suppress AI trailers)
