@@ -6,6 +6,9 @@
 # Keeps injected context small regardless of total plan size.
 #
 # Usage: bash plan-extract-sections.sh /path/to/plan.md
+#
+# Handles: (#7) caps Useful Commands at last 10 entries
+#          (#8) fuzzy-matches section headers (case-insensitive, common variations)
 
 set -euo pipefail
 
@@ -13,24 +16,40 @@ PLAN_FILE="${1:-}"
 [[ -f "$PLAN_FILE" ]] || exit 0
 
 # Extract content between ## headings using awk
-# Captures: Current State, Next Steps, Useful Commands
+# Fuzzy match: case-insensitive, supports common variations
 extract_section() {
-    local section="$1" file="$2"
-    awk -v sec="## $section" '
-        $0 == sec { found=1; print; next }
-        found && /^## / { exit }
+    local file="$1"
+    shift
+    # Accept multiple patterns — first match wins
+    local patterns=("$@")
+    awk -v patterns="${patterns[*]}" '
+        BEGIN {
+            n = split(patterns, pats, " ")
+        }
+        /^## / {
+            if (found) exit
+            line = tolower($0)
+            gsub(/^## /, "", line)
+            for (i = 1; i <= n; i++) {
+                if (index(line, pats[i]) > 0) {
+                    found = 1
+                    print
+                    next
+                }
+            }
+        }
         found { print }
     ' "$file"
 }
 
-CURRENT=$(extract_section "Current State" "$PLAN_FILE")
-NEXT=$(extract_section "Next Steps" "$PLAN_FILE")
-COMMANDS=$(extract_section "Useful Commands" "$PLAN_FILE")
+# (#8) Fuzzy match common variations of section names
+CURRENT=$(extract_section "$PLAN_FILE" "current state" "current status" "state" "status" "where we are")
+NEXT=$(extract_section "$PLAN_FILE" "next steps" "next" "todo" "remaining" "what's next")
+COMMANDS=$(extract_section "$PLAN_FILE" "useful commands" "commands" "useful scripts" "recipes")
 
 # Only output sections that have real content (not just headings, blanks, or _placeholder_ lines)
 has_content() {
     local text="$1"
-    # Strip heading lines, blank lines, and italic placeholder lines (_..._)
     local real
     real=$(echo "$text" | grep -v '^\(## \|[[:space:]]*$\)' | grep -v '^_.*_$' 2>/dev/null)
     [[ -n "$real" ]]
@@ -48,12 +67,27 @@ if has_content "$NEXT"; then
 "
 fi
 
+# (#7) Cap Useful Commands at last 10 code blocks
 if has_content "$COMMANDS"; then
-    OUTPUT="${OUTPUT}${COMMANDS}
+    # Count code blocks (``` pairs)
+    BLOCK_COUNT=$(echo "$COMMANDS" | grep -c '^```' 2>/dev/null || echo "0")
+    ENTRY_COUNT=$((BLOCK_COUNT / 2))
+
+    if [[ "$ENTRY_COUNT" -gt 10 ]]; then
+        # Keep heading + last 10 code blocks (20 ``` lines worth)
+        HEADING=$(echo "$COMMANDS" | head -1)
+        # Extract last 10 blocks: find line numbers of opening ```, take last 10
+        OPENERS=$(echo "$COMMANDS" | grep -n '^```' | tail -20 | head -1 | cut -d: -f1)
+        OUTPUT="${OUTPUT}${HEADING}
+(showing last 10 of ${ENTRY_COUNT} saved commands)
+$(echo "$COMMANDS" | tail -n +"$OPENERS")
 "
+    else
+        OUTPUT="${OUTPUT}${COMMANDS}
+"
+    fi
 fi
 
-# Only output if we have something meaningful
 if [[ -n "$OUTPUT" ]]; then
     echo "$OUTPUT"
 fi
