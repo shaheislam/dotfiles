@@ -61,6 +61,8 @@
 .claude/ralph-loop.local.md
 .claude/plan.md
 .claude/plan.md.bak
+.claude/CHANGELOG.md
+.claude/CHANGELOG.md.bak
 .claude/witness.pid
 
 # Launch templates - machine-specific settings

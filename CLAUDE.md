@@ -81,7 +81,12 @@ Git-backed memory via `bd` CLI. Hooks: SessionStart (`bd prime`), PreCompact (`b
 Managed by `entire` CLI. Fish alias: `ckpt`. Key commands: `entire enable|status|explain|resume|rewind|doctor`. Per-worktree: `gwt-ticket` runs `entire enable` automatically.
 
 ### Living Plan
-Per-worktree `.claude/plan.md` — a living document that persists session state across context compactions. Initialized by `gwt-ticket` at launch with ticket details and structured sections (Objective, Approach, Progress, Decisions, Next Steps). Hooks: `plan-persist.sh` (PreCompact) re-injects plan before compaction; `plan-resume.sh` (SessionStart) loads plan on session start. Update the plan at natural checkpoints during work.
+Per-worktree `.claude/plan.md` — a living document that persists session state across context compactions. Initialized by `gwt-ticket` at launch with ticket details and structured sections (Objective, Approach, Progress, Decisions, Next Steps, Metrics). Hooks: `plan-persist.sh` (PreCompact) re-injects plan before compaction; `plan-resume.sh` (SessionStart) loads plan on session start. Update the plan at natural checkpoints during work.
+
+**Success Criteria Validation**: `plan-validate-criteria.sh` reads `## Success Criteria` from plan.md and runs any embedded `bash` code blocks as test oracles. Use `--summary` for one-line output. Criteria without code blocks are tagged `MANUAL`.
+
+### Session Changelog
+Per-worktree `.claude/CHANGELOG.md` — append-only progress log complementing plan.md. Plan.md is a mutable snapshot (current state); CHANGELOG.md is immutable history (what happened, when, and why). Initialized by `gwt-ticket`. Entry types: PROGRESS, DECISION, FAILED, METRIC, DISCOVERY. Hooks: `changelog-persist.sh` (PreCompact) injects last 15 entries; `changelog-resume.sh` (SessionStart) shows last 10. Append via `changelog-append.sh <type> "message"` or edit directly. FAILED entries are dead ends — never retry them.
 
 ### MCP Server Integration
 **CRITICAL**: ALWAYS maintain parity between Claude Desktop (`claude_desktop_config.json`) and CLI (`claude mcp add` in `setup.sh`). Use `bunx` not `npx`, `uvx` for AWS MCPs, `pipx run` for Python MCPs. Details in `.claude/rules/mcp-servers.md`.
