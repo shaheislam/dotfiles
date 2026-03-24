@@ -30,6 +30,18 @@ last_updated: "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 _Describe what you're working on._
 
+## Failed Approaches
+
+_Record approaches that didn't work and WHY. This prevents retrying dead ends after compaction._
+
+## Success Criteria
+
+_Define quantifiable objectives. What does 'done' look like?_
+
+## Known Limitations
+
+_Track constraints and blockers discovered during work._
+
 ## Current State
 
 _Update this section as work progresses. This survives context compaction._

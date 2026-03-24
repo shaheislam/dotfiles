@@ -1597,8 +1597,13 @@ UPDATE .claude/plan.md at these points:
 - After a subagent returns results (capture key findings in Current State)
 - Before any natural stopping point (update Next Steps)
 - When making important decisions (add to Key Decisions)
+- When an approach fails or a dead end is found (add to Failed Approaches with WHY it failed)
 - When a command produces valuable results or solves a problem (add to Useful Commands)
 - When closing a bead (update Progress checklist to match bead status)
+
+DEAD-END PREVENTION: Before trying a new approach, check the Failed Approaches section.
+If an approach is listed there, do NOT retry it — find an alternative.
+When recording a failed approach, always include WHY it failed so future sessions understand.
 
 Only save commands that are genuinely useful — not routine ls/git status calls.
 ALWAYS use Edit (not Write) when updating plan.md to avoid clobbering external edits.
@@ -2121,6 +2126,18 @@ _To be filled by the agent as work begins._
 ## Key Decisions
 
 _Record important decisions and trade-offs here._
+
+## Failed Approaches
+
+_Record approaches that didn't work and WHY. This prevents retrying dead ends after compaction._
+
+## Success Criteria
+
+_Define quantifiable objectives. What does 'done' look like?_
+
+## Known Limitations
+
+_Track constraints and blockers discovered during work._
 
 ## Current State
 

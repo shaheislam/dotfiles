@@ -2,7 +2,7 @@
 # plan-extract-sections.sh - Extract key sections from .claude/plan.md
 #
 # Shared helper for plan hooks. Extracts only the sections needed for
-# context recovery: Current State, Next Steps, Useful Commands.
+# context recovery: Failed Approaches, Current State, Next Steps, Useful Commands.
 # Keeps injected context small regardless of total plan size.
 #
 # Usage: bash plan-extract-sections.sh /path/to/plan.md
@@ -43,6 +43,7 @@ extract_section() {
 }
 
 # (#8) Fuzzy match common variations of section names
+FAILED=$(extract_section "$PLAN_FILE" "failed approaches" "failed" "dead ends" "dead-ends" "what didn't work" "didn't work" "tried and failed")
 CURRENT=$(extract_section "$PLAN_FILE" "current state" "current status" "state" "status" "where we are")
 NEXT=$(extract_section "$PLAN_FILE" "next steps" "next" "todo" "remaining" "what's next")
 COMMANDS=$(extract_section "$PLAN_FILE" "useful commands" "commands" "useful scripts" "recipes")
@@ -56,6 +57,12 @@ has_content() {
 }
 
 OUTPUT=""
+
+# Failed Approaches first — dead-end prevention is highest priority for compaction survival
+if has_content "$FAILED"; then
+    OUTPUT="${OUTPUT}${FAILED}
+"
+fi
 
 if has_content "$CURRENT"; then
     OUTPUT="${OUTPUT}${CURRENT}
