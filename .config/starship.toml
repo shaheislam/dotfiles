@@ -13,11 +13,12 @@ $kubernetes\
 $cmd_duration\
 """
 
-# PERF: 300ms balances responsiveness with reliability. Git modules typically
-# complete in ~30ms (with fsmonitor + untrackedCache), but spike under load
-# (concurrent agents, disk I/O). 100ms caused frequent timeouts; 300ms gives
-# 10x headroom. Increase to 500 (starship default) if timeouts recur.
-command_timeout = 300
+# PERF: 1000ms accommodates git command spikes under heavy load (concurrent
+# agents, multiple worktrees, disk I/O contention). Git modules typically
+# complete in ~30ms (with fsmonitor + untrackedCache), but spike to 300ms+
+# under load. Prior values: 100ms (frequent timeouts), 300ms (sporadic
+# timeouts in worktrees). Starship default is 500ms.
+command_timeout = 1000
 palette = 'catppuccin_mocha'
 
 [palettes.catppuccin_mocha]
