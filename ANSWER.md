@@ -1,89 +1,201 @@
-# TASK: cmuxbrowser — How cmux Uses Agent Browser from the Terminal
+# Skills Audit: Recommendations for New Skills
 
-## Question
-How is cmux using agent-browser from within the terminal? Is there anything else we might be missing?
+## Executive Summary
 
-## Answer
+After cataloging all 32 existing skills, analyzing git history (300+ commits since Jan 2026), beads task patterns, 14 hook events with 30+ implementations, and 15 subagents, the clearest gaps align with **explicitly documented pain points**: setup parity (Fish/Zsh PATH, MCP Desktop/CLI), drift detection, and validation — all called out in CLAUDE.md and AGENTS.md but lacking unified skill entry points.
 
-### How cmux Does It
+Observability infrastructure exists across multiple layers — `/session-review` (git-based), `/jfdi-synthesis` (external DB), `insights-review.toml` (workflow orchestrator), and harness scripts (`session-report.sh`, `query-telemetry.sh`) — but no single interactive skill fuses JFDI + OTEL + beads data together. The higher-leverage opportunity is enriching existing skills rather than creating new observability skills from scratch.
 
-cmux embeds a **WKWebView** (native macOS WebKit browser) directly as a terminal pane. The browser API is a **port of vercel-labs/agent-browser** adapted for WKWebView instead of Playwright/Chromium.
+## Current Skills by Category (32 total)
 
-**Architecture:**
-```
-cmux process (Swift/AppKit)
-    ├── Terminal panes (libghostty rendering)
-    └── Browser panes (WKWebView)
-         └── Scriptable API via Unix socket (/tmp/cmux.sock)
-              ├── CLI: cmux browser <command> [args]
-              └── Socket: JSON-RPC {"method": "browser.snapshot", "params": {...}}
-```
+| Category | Count | Skills |
+|----------|-------|--------|
+| **Workflow** | 4 | start, wrap-up, session-review, ticket-execute |
+| **Knowledge Mgmt** | 6 | jfdi, jfdi-sync, jfdi-extract, jfdi-recall, jfdi-synthesis, dream |
+| **Research & Analysis** | 4 | gap-analysis, best-practice, research-spike, youtube |
+| **Content & Publishing** | 3 | article, confluence, diagram |
+| **Ticketing** | 3 | todo, jira, jira-batch |
+| **Dev Infrastructure** | 6 | dotfiles-sync, fish-reload, mcp-restart, git-config-fix, commit-mode, claude-cleanup |
+| **Cloud & Ops** | 3 | aws-profile, s3-search, s3-upload |
+| **Specialized** | 3 | cv-generate, cross-ref, agent-browser |
 
-**Key design choices:**
-1. **No extension, no MCP, no network ports** — browser control goes through the same Unix socket as all other cmux commands
-2. **Socket auth** — only processes spawned within cmux terminals can connect (default mode), eliminating the CORS/no-auth attack surface
-3. **CLI-first** — every browser action is a `cmux browser` subcommand that AI agents call directly via Bash
-4. **Claude Code hooks** — `cmux claude-hook session-start|stop|notification` wires into Claude Code lifecycle, replacing tmux watcher polling
-5. **Notification rings** — blue rings on panes + sidebar badges when agents need attention, replacing fragile output-parsing
+## Recommended New Skills (Prioritized)
 
-**Full command surface (ported from agent-browser):**
-- Navigation: `goto`, `back`, `forward`, `reload`
-- DOM interaction: `click`, `dblclick`, `hover`, `focus`, `check`, `uncheck`, `type`, `fill`, `press`, `select`, `scroll`
-- Inspection: `snapshot` (accessibility tree with element refs), `screenshot`, `get` (url/title/text/html/value/attr), `is` (visible/enabled/checked), `find` (by role/text/label/testid)
-- JS execution: `eval`
-- State management: `cookies`, `storage`, `state save|load`, `addinitscript`, `addstyle`, `viewport`
-- Waiting: `wait` (selector/text/url/load-state/function)
-- Tab/dialog management: `tab`, `dialog`, `frame`
+### Tier 1: High-Value, Addresses Documented Pain Points
 
-### What We Have (Current Dotfiles)
+#### 1. `/health-check` — Dotfiles & Tooling Health Dashboard
 
-Three separate browser automation approaches:
+**What**: Run all validation scripts (`test-architecture.sh`, `validate-docs.sh`, `detect-drift.sh`, stow simulate, Fish/Bash syntax checks) in one shot. Report pass/fail with actionable fixes.
 
-| Tool | Transport | Browser | Use Case |
-|------|-----------|---------|----------|
-| **Playwright MCP** | MCP stdio (bunx) | Isolated Chromium | General automation, testing |
-| **agent-browser CLI** | Bash CLI (v0.17.1) | Persistent Chromium daemon | AI-optimized ref-based interaction |
-| **ClaudeCodeBrowser** | MCP stdio (Python) | Real Firefox session | Firefox-specific automation |
+**Why — matches documented pain points**: CLAUDE.md's Troubleshooting section explicitly lists missing PATH, theme inconsistency, plugin failures, and stow conflicts as recurring issues. AGENTS.md warns about file location mistakes, shell script parity, and MCP parity. These are the most concrete, repeatedly documented problems. The `dotfiles-doctor` agent exists but isn't a skill — meaning you can't invoke it with `/health-check` from any session.
 
-### What We're Missing
+**Evidence**: `detect-drift.sh` checks stow integrity, PATH parity, theme consistency, stale state files. `test-architecture.sh` validates structural invariants. `validate-docs.sh` checks doc accuracy. These scripts exist and work but have no unified entry point. The `insights-review.toml` workflow orchestrates them but requires manual invocation of each step.
 
-#### 1. MCP Parity Gap (Bug — Fixed)
-`.mcp.json` was missing `claudecodebrowser` that Claude Desktop config had. This violates the CLAUDE.md parity rule. **Fixed in this branch.**
+**Trigger**: `/health-check`, or "check my dotfiles", "is everything working", "validate my setup"
 
-#### 2. No Unified Browser Strategy
-cmux has one browser API for everything. We have three tools with different interfaces:
-- Playwright MCP uses `mcp__playwright__browser_*` tools
-- agent-browser uses Bash CLI with `@ref` selectors
-- ClaudeCodeBrowser uses `mcp__claudecodebrowser__browser_*` tools
+---
 
-**Impact:** AI agents must know which tool to use when. The agent-browser skill helps, but there's no decision logic for when to prefer one over another.
+#### 2. `/hook-audit` — Hook Effectiveness Review
 
-**Recommendation:** The agent-browser skill already documents the decision matrix (see `.claude/skills/agent-browser/SKILL.md` line 196-203). This is sufficient — we don't need to unify the tools, just ensure the skill is discoverable.
+**What**: Enumerate all configured hooks, check which are actually executing (via JSONL logs or OTEL telemetry), identify stale hooks (referenced but missing scripts), and measure hook duration/failure rates.
 
-#### 3. agent-browser Not Exposed as MCP
-agent-browser (v0.17.1) is CLI-only. cmux proves the CLI model works fine for AI agents — they call `cmux browser` via Bash. Our agent-browser skill already does exactly this (`allowed-tools: Bash(agent-browser:*)`).
+**Evidence**: You have 14 hook events with 30+ implementations. Several hooks reference scripts that may have drifted (e.g., `session-synthesize.sh`, `session-end-extract.py` with missing dependencies). The hooks analysis doc is comprehensive but one-off — no recurring audit.
 
-**Decision:** CLI-only is the correct pattern for agent-browser. Adding an MCP wrapper would duplicate Playwright MCP's function without benefit. The Bash skill approach matches cmux's design.
+**Trigger**: `/hook-audit`, or "which hooks are firing", "audit my hooks", "stale hooks"
 
-#### 4. No Native Browser Pane (Limitation, Not a Gap)
-cmux's killer feature is the browser-as-a-pane: `cmux browser open-split --url http://localhost:3000 --direction right` puts a browser next to your terminal. We can't replicate this in WezTerm/tmux — it requires a native app embedding WKWebView.
+---
 
-**Mitigation:** This is already covered in `docs/cmux-evaluation.md`. The evaluation correctly concluded: "extract patterns, don't adopt cmux as terminal."
+#### 3. Enrich `/session-review` with OTEL + Beads Inputs (Extend Existing Skill)
 
-#### 5. No Agent Notification Hooks for cmux
-The Brewfile has `cask "cmux"` and `tap "manaflow-ai/cmux"`, but there's no Claude Code hook wiring for `cmux claude-hook` commands. If someone runs Claude Code inside cmux, they won't get notification rings.
+**What**: Instead of a new `/pattern-mine` skill, extend the existing `/session-review` skill to pull from three data sources:
+- **Git** (already does this): commits, diffs, file changes
+- **OTEL** (add): tool durations, API costs, error rates via `query-telemetry.sh`
+- **Beads** (add): task completion rates, blocked issue patterns via `bd stats`
 
-**Recommendation:** Add conditional Claude Code hooks that detect cmux and wire notifications. Low priority since cmux is "evaluate, don't adopt" per the evaluation doc.
+**Why — lower risk than a new skill**: `/session-review` already has the retrospective framing and git integration. Adding OTEL and beads inputs enriches it without creating a parallel skill that fragments the workflow. `/jfdi-synthesis` handles the Obsidian/monthly view; the enriched `/session-review` handles interactive in-session analysis.
 
-#### 6. Playwright MCP Flag Inconsistency
-`.mcp.json` uses `["@playwright/mcp@latest"]` but Claude Desktop uses `["-y", "@playwright/mcp@latest"]`. The `-y` flag auto-confirms the bunx install prompt. Without it, first-run may hang waiting for confirmation.
+**Evidence**: Currently `/session-review` is git-only (reads commits from session boundary to HEAD). `session-report.sh` already fuses hook logs + beads + git at the script level. The skill just needs to call that script and incorporate its output.
 
-**Fixed in this branch.**
+**Security constraint**: Session data must stay local-only. No transcript content should be written to shared files. Opt-in scope: only analyze the current session unless explicitly asked for broader range. Redact file paths containing secrets directories (`.ssh/`, `.gnupg/`, `1Password/`).
 
-### Summary
+**Trigger**: Same as current `/session-review`, now with richer output
 
-cmux's approach is architecturally cleaner (one socket, one API, zero network surface) but tied to a specific terminal app. Our multi-tool approach is more flexible and works across any terminal. The main actionable gaps were:
-1. MCP config parity (fixed)
-2. Playwright `-y` flag inconsistency (fixed)
+---
 
-Everything else is either already handled (agent-browser skill, cmux evaluation doc) or not applicable (native browser panes require cmux adoption).
+#### 4. `/onboard-tool` — Script-Backed Tool Integration Validator
+
+**What**: A script-backed skill (not a prompt-only checklist) that runs deterministic checks for a given tool name:
+1. `grep -q <tool> homebrew/Brewfile` — verify Brewfile entry
+2. `grep -q <tool> scripts/setup.sh` — verify setup script reference
+3. Check Fish PATH for tool binary (`command -v <tool>` in fish context)
+4. Check Zsh PATH parity (`zsh -c 'command -v <tool>'`)
+5. `stow --simulate --verbose . 2>&1` — verify stow won't conflict
+6. If GUI: check for `.config/<tool>/` directory and Tokyo Night colors
+
+**Why — script-backed avoids drift**: A prompt-only checklist would duplicate CLAUDE.md and diverge over time. A script reads the canonical sources (Brewfile, setup.sh, config files) directly and reports what's missing. The skill invokes the script and formats the output, keeping the checklist in one place (the code).
+
+**Evidence**: AGENTS.md documents recurring "file location mistakes" and "shell script parity" as explicit pain points. Multiple commits fix missing PATH entries or Zsh compatibility — indicating steps get skipped even with the CLAUDE.md checklist present. Post-change validation (stow dry-run) prevents breaking both config targets.
+
+**Trigger**: `/onboard-tool <name>`, or "add a new tool", "integrate X into my dotfiles"
+
+---
+
+### Tier 2: Medium-Value, Addresses Recurring Patterns
+
+#### 5. `/changelog` — Generate Human-Readable Changelog
+
+**What**: Generate a changelog for the last N days/commits in a format suitable for personal review. Group by category (new tools, fixes, config changes, skill additions). Different from git log — it's a curated summary.
+
+**Why**: With 300+ commits in 3 months, understanding "what changed this week" requires manual git log spelunking. The session changelog (`.claude/CHANGELOG.md`) is per-worktree and append-only — no cross-worktree view.
+
+**Trigger**: `/changelog`, `/changelog 7d`, or "what changed this week", "recent changes summary"
+
+---
+
+#### 6. `/prompt-library` — Curate Effective Prompts
+
+**What**: Manage a collection of prompts that work well for this project. Extract from session history, tag by task type, make searchable. Different from beads (which tracks tasks) — this tracks *how you ask for things*.
+
+**Evidence**: Per-repo `gwt-prompt.local.md` files are created manually. No centralized prompt template collection. Effective prompts get lost in session history.
+
+**Trigger**: `/prompt-library save`, `/prompt-library search <topic>`, or "save this prompt", "find a prompt for"
+
+---
+
+#### 7. `/witness` — Watch for Changes in External Dependencies
+
+**What**: Given a file path, git ref, or URL, set up a monitoring task that alerts when changes are detected. Useful for tracking upstream changes in tools you integrate with.
+
+**Evidence**: Multiple open beads are witness tasks (BEADS-0qg witness-dotfiles-linetrim, BEADS-4nq witness-dotfiles-beadscommit, BEADS-e8d witness-dotfiles-aimux). These are created manually and checked manually.
+
+**Trigger**: `/witness <path-or-url>`, or "watch for changes in X", "notify me when X changes"
+
+---
+
+#### 8. `/stow-diff` — Preview Stow Changes Before Apply
+
+**What**: Show exactly what symlinks would change, be created, or be removed by a stow operation. More informative than `stow --simulate --verbose` — groups by application, highlights conflicts, shows before/after state.
+
+**Evidence**: Stow operations are a common source of issues. The testing conventions doc explicitly says "always run stow --simulate --verbose . before actual stow operations." A skill wrapping this with better output reduces friction.
+
+**Trigger**: `/stow-diff`, or "preview stow changes", "what will stow do"
+
+---
+
+### Tier 3: Nice-to-Have, Lower Frequency
+
+#### 9. `/theme-check` — Tokyo Night Consistency Audit
+
+**What**: Scan all config files for color definitions and verify they match the Tokyo Night palette defined in `.claude/context/`. Flag any off-palette colors.
+
+**Evidence**: CLAUDE.md says "ALWAYS maintain consistent theming (Tokyo Night) across applications." The context directory has theme specs. But no automated verification.
+
+**Trigger**: `/theme-check`, or "check theme consistency", "are my colors right"
+
+---
+
+#### 10. `/mcp-parity` — MCP Server Configuration Parity Check
+
+**What**: Compare MCP server configurations between Claude Desktop (`claude_desktop_config.json`) and CLI (`setup.sh` `claude mcp add` commands). Flag any servers present in one but not the other.
+
+**Evidence**: CLAUDE.md explicitly says "CRITICAL: ALWAYS maintain parity between Claude Desktop and CLI." This is a manual check that could be automated.
+
+**Trigger**: `/mcp-parity`, or "check mcp servers", "are my MCPs in sync"
+
+---
+
+## Extend vs Create: Prefer Enriching Existing Skills
+
+Before creating new skills, consider whether an existing skill can absorb the capability:
+
+| Need | Extend This | Add What |
+|------|-------------|----------|
+| Session observability | `/session-review` | OTEL metrics + beads stats via `session-report.sh` |
+| Monthly patterns | `/jfdi-synthesis` | Beads completion trends, hook failure rates |
+| Drift detection | `/dotfiles-sync` | Call `detect-drift.sh` as pre-flight check |
+| Theme validation | `/dotfiles-sync` | Tokyo Night color audit as post-stow step |
+
+Only create a new skill when the capability doesn't fit an existing skill's scope (e.g., `/health-check` unifies 3+ scripts that span multiple existing skill domains).
+
+## Skills NOT Recommended (Covered Adequately)
+
+| Need | Already Covered By |
+|------|--------------------|
+| Task creation | `/todo` + `/start` |
+| Research | `/gap-analysis` + `/research-spike` + `/best-practice` |
+| Memory consolidation | `/dream` + JFDI family |
+| Browser automation | `/agent-browser` + Playwright MCP + PinchTab |
+| CI/CD review | `ci-check` plugin skill |
+| PR creation | `create-pr` plugin skill |
+| Code review | `code-review` plugin skill |
+| Session retrospective | `/session-review` (git) + `/jfdi-synthesis` (DB) + `insights-review.toml` (workflow) |
+
+## Implementation Priority
+
+Ranked by alignment with explicitly documented pain points (CLAUDE.md Troubleshooting, AGENTS.md warnings), not by assumed leverage:
+
+1. **`/health-check`** — Directly addresses 4 of 4 Troubleshooting items (PATH, theme, plugins, stow). Wires existing scripts.
+2. **`/onboard-tool`** — Script-backed validation against the most-skipped checklist. Prevents PATH parity fixes.
+3. **Enrich `/session-review`** — Low-risk extension adds OTEL + beads to existing git-based retrospective.
+4. **`/hook-audit`** — Infrastructure health for 30+ hook implementations that are hard to verify manually.
+5. **`/mcp-parity`** — CLAUDE.md calls this "CRITICAL" but it's a manual check today.
+6. **`/changelog`** — Low effort, useful for weekly reviews.
+
+The remaining items (witness, stow-diff, prompt-library, theme-check) are valuable but lower frequency.
+
+## Security Considerations
+
+Skills that analyze session data or cross-reference configurations must respect these constraints:
+
+- **Pattern mining / session review**: Local-only analysis. Never write transcript content, file paths containing secrets directories (`.ssh/`, `.gnupg/`, `1Password/`, `.codex/accounts/`), or API keys to shared files. Opt-in scope: analyze current session by default, broader range only on explicit request.
+- **MCP/stow-related skills**: Always enforce dry-run before apply. Post-change validation required (verify both Desktop and CLI configs load correctly after parity fix; verify stow symlinks resolve after sync).
+- **Hook audit**: Read-only analysis of hook logs. Never modify hook configurations without explicit user confirmation. Flag hooks that have filesystem write access to sensitive paths.
+
+## Methodology
+
+- **Skills catalog**: Read frontmatter of all 32 skills in `.claude/skills/`
+- **Git history**: Analyzed 300+ commits since 2026-01-01 (188 feat, 134 fix, 50 docs, 27 test)
+- **Beads**: Reviewed open and closed issues for recurring task patterns
+- **Hooks**: Mapped all 14 hook events and 30+ implementations
+- **Agents**: Reviewed 15 subagents for coverage overlap
+- **Documentation**: Cross-referenced CLAUDE.md, rules/, and docs/ for stated workflows vs actual skill coverage
