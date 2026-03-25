@@ -325,6 +325,10 @@
           {
             "command": "entire hooks claude-code stop",
             "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/skills/dream/dream-hook.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
