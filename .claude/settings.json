@@ -82,24 +82,7 @@
       {
         "hooks": [
           {
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-format.py 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "bash ~/.claude/hooks/file-modified.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": "Edit|Write"
-      },
-      {
-        "hooks": [
-          {
             "command": "timeout 5 entire hooks claude-code post-task 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "entire hooks claude-code post-task",
             "type": "command"
           }
         ],
@@ -109,10 +92,6 @@
         "hooks": [
           {
             "command": "timeout 5 entire hooks claude-code post-todo 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "entire hooks claude-code post-todo",
             "type": "command"
           }
         ],
@@ -175,24 +154,7 @@
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/use_bun.py",
-            "type": "command"
-          },
-          {
-            "command": "python3 ~/.claude/hooks/validate-bash.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
-      },
-      {
-        "hooks": [
-          {
             "command": "timeout 5 entire hooks claude-code pre-task 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "entire hooks claude-code pre-task",
             "type": "command"
           }
         ],
@@ -230,10 +192,6 @@
           {
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/harness/session-report.sh --json 2>/dev/null || true",
             "type": "command"
-          },
-          {
-            "command": "entire hooks claude-code session-end",
-            "type": "command"
           }
         ],
         "matcher": ""
@@ -252,10 +210,6 @@
           },
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-start.sh 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "entire hooks claude-code session-start",
             "type": "command"
           }
         ],
@@ -323,10 +277,6 @@
             "type": "command"
           },
           {
-            "command": "entire hooks claude-code stop",
-            "type": "command"
-          },
-          {
             "command": "bash ~/.claude/skills/dream/dream-hook.sh 2>/dev/null || true",
             "type": "command"
           }
@@ -369,10 +319,6 @@
           },
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-prompt.sh 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "entire hooks claude-code user-prompt-submit",
             "type": "command"
           }
         ],
