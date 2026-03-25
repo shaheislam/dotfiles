@@ -1608,7 +1608,7 @@ If an approach is listed there, do NOT retry it — find an alternative.
 When recording a failed approach, always include WHY it failed so future sessions understand.
 
 Only save commands that are genuinely useful — not routine ls/git status calls.
-ALWAYS use Edit (not Write) when updating plan.md to avoid clobbering external edits.
+ALWAYS use Edit (not Write) when updating .plan.md to avoid clobbering external edits.
 The plan is your persistent memory. Hooks will re-inject it after compaction."
     if test -n "$prompt_suffix"
         set prompt_suffix "$prompt_suffix$living_plan_suffix"
