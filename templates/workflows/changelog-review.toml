@@ -23,28 +23,72 @@ prevents context rot — each subagent only sees one tool's data.
    - Changes require GUI (Karabiner-Elements)
    - Release is a pre-release
 
+## Phase 1.5: AI-Powered Triage
+
+For each flagged tool, do a quick impact estimate before dispatching:
+1. Count how many Fish functions reference this tool: `rg -l TOOL_NAME .config/fish/functions/ | wc -l`
+2. Count how many scripts reference it: `rg -l TOOL_NAME scripts/ | wc -l`
+3. Check if it has a dedicated config directory: `ls .config/TOOL_NAME/ 2>/dev/null`
+
+Assign priority:
+- HIGH: security flag OR breaking flag + >5 dependents
+- MEDIUM: breaking flag + <=5 dependents, OR config-change flag
+- LOW: new-feature flag only
+
+Dispatch HIGH priority tools first, then MEDIUM, then LOW.
+Report the triage results before dispatching.
+
 ## Phase 2: Dispatch Subagents
 
 For each flagged tool, spawn a subagent (Agent tool) with this prompt pattern:
 
-  You are reviewing the changelog for TOOL_NAME and updating its dotfiles config.
+  You are an AI-powered dependency reviewer for TOOL_NAME in a dotfiles repo.
+  Your job is NOT just to apply changes mechanically — it is to apply JUDGMENT
+  about whether and how changes affect this specific setup.
 
   Release: TAG (DATE)
   Flags: FLAGS
   Release URL: URL
   Config paths: PATHS
 
-  Steps:
+  ## Phase A: Understand Impact (before touching any files)
+
   1. Fetch the release notes at URL using WebFetch
   2. Read each config file in PATHS
-  3. Based on the release notes, determine what config changes are needed:
+  3. Search the codebase for all references to TOOL_NAME:
+     - Grep for the tool name in .config/fish/functions/, scripts/, .claude/
+     - Check if any Fish aliases, abbreviations, or functions wrap this tool
+     - Check if other tools depend on this one (e.g., fzf is used by dozens of functions)
+  4. For each change in the release notes, assess:
+     - **Relevance**: Does this change affect any config option we actually use? (skip irrelevant changes)
+     - **Breaking risk**: Could this break existing Fish functions or scripts that depend on this tool?
+     - **Security**: Does this fix a vulnerability relevant to our usage (local dev, not server)?
+     - **Performance**: Any regressions that affect interactive shell performance?
+     - **Compatibility**: Does this conflict with our current usage patterns?
+
+  ## Phase B: Write Analysis Summary
+
+  Before making any changes, output a brief analysis:
+  ```
+  TOOL_NAME TAG — Impact Analysis
+  - Changes relevant to our setup: N of M total changes
+  - Breaking risk: none/low/medium/high (explain)
+  - Dependents in this repo: list Fish functions/scripts that use this tool
+  - Recommended actions: list specific config changes with rationale
+  - Skipped changes: list irrelevant changes and why they don't apply
+  ```
+
+  ## Phase C: Apply Changes (only what the analysis warrants)
+
+  3. Based on the analysis, determine what config changes are needed:
      - breaking: remove deprecated options, update syntax
      - security: apply hardening, update versions
      - config-change: adopt new option names, update defaults
      - new-feature: enable if it aligns with existing setup (Tokyo Night theme, etc.)
-  4. Make changes directly. Be conservative — only change what the changelog warrants.
+  4. Make changes directly. Be conservative — only change what the analysis supports.
   5. When unsure, add a TODO comment rather than making a risky change.
   6. Stage and commit: `fix(TOOL_NAME): update config for TAG`
+     Include the impact summary in the commit body.
 
 Spawn independent tools in parallel (max 3-4 concurrent to avoid git conflicts).
 For tools that share config files (e.g., fzf and fish both touch config.fish),

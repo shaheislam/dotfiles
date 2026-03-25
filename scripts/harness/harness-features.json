@@ -120,5 +120,53 @@
       "Verify suggestions reference specific hooks or tests to add"
     ],
     "passes": true
+  },
+  {
+    "id": "dep-trace",
+    "category": "entropy-management",
+    "description": "Fish function traces tool/config dependencies across dotfiles for safe removal and deprecation planning",
+    "steps": [
+      "Verify dep-trace.fish exists in .config/fish/functions/",
+      "Verify fish -n passes for dep-trace.fish",
+      "Run dep-trace --brief for a known tool and verify output",
+      "Run dep-trace --json for a known tool and verify valid JSON"
+    ],
+    "passes": true
+  },
+  {
+    "id": "deprecation-plan",
+    "category": "entropy-management",
+    "description": "Script analyzes removal impact before deprecating a tool, producing dependency map, removal sequence, and effort estimate",
+    "steps": [
+      "Verify deprecation-plan.sh exists and is executable",
+      "Run deprecation-plan.sh with --brief and verify output",
+      "Run deprecation-plan.sh with --json and verify valid JSON",
+      "Verify shellcheck passes"
+    ],
+    "passes": true
+  },
+  {
+    "id": "ai-changelog-review",
+    "category": "feedback-loop",
+    "description": "Changelog review dispatch includes AI-powered triage and impact analysis phases for judgment-based dependency review",
+    "steps": [
+      "Verify changelog-review.toml contains Phase 1.5 AI-Powered Triage",
+      "Verify subagent prompt includes Phase A: Understand Impact",
+      "Verify subagent prompt includes Phase B: Write Analysis Summary",
+      "Verify subagent prompt includes codebase dependency search step"
+    ],
+    "passes": true
+  },
+  {
+    "id": "research-spike",
+    "category": "feedback-loop",
+    "description": "Skill for structured AI-driven research spikes covering tool evaluations, migration assessments, and open questions",
+    "steps": [
+      "Verify SKILL.md exists in .claude/skills/research-spike/",
+      "Verify skill has tool evaluation, migration, and open question modes",
+      "Verify skill integrates with dep-trace for migration assessments",
+      "Verify skill produces structured recommendation report"
+    ],
+    "passes": true
   }
 ]
