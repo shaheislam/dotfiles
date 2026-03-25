@@ -58,7 +58,7 @@ cat pyproject.toml 2>/dev/null | grep -E '(ruff|mypy|pytest)'
 - Check shell script syntax: `bash -n` on any changed `.sh` files
 - Verify stow would succeed: `stow --simulate --verbose . 2>&1` (if config files changed)
 
-Report results. If validation fails, stop and fix before continuing.
+Report results. If validation fails, suggest running `/fix` to diagnose and repair, then re-run `/wrap-up`.
 
 ### 3. Run Tests
 
