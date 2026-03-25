@@ -1,7 +1,7 @@
 [workflow]
 name = "insights-review"
 description = "Monthly harness insights review with fixes"
-slash_command = "/ralph-wiggum:ralph-loop"
+slash_command = "/ralph-loop:ralph-loop"
 max_iterations = 20
 
 [prompt]

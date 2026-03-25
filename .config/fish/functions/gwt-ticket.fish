@@ -11,7 +11,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --max N         Max iterations (default: 20)
     #   --max-turns N   Max agentic turns per Claude session (budget cap)
     #   --max-budget N  Max API spend in USD before stopping (e.g., 5.00)
-    #   --command C     Slash command to use (default: /ralph-wiggum:ralph-loop)
+    #   --command C     Slash command to use (default: /ralph-loop:ralph-loop)
     #   --prompt-template F  File with custom prompt template
     #   --prompt-prefix P    Text to prepend to prompt
     #   --prompt-suffix S    Text to append to prompt
@@ -74,7 +74,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l skip_next false
     set -l positional_index 0
     set -l is_auto_generated false # Track if issue key was auto-generated
-    set -l slash_command "/ralph-wiggum:ralph-loop"
+    set -l slash_command "/ralph-loop:ralph-loop"
     set -l prompt_template ""
     set -l prompt_prefix ""
     set -l prompt_suffix ""
@@ -738,7 +738,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --max N              Max iterations (default: 20)"
         echo "  --max-turns N        Max agentic turns per Claude session (budget cap)"
         echo "  --max-budget N       Max API spend in USD before stopping (e.g., 5.00)"
-        echo "  --command C          Slash command (default: /ralph-wiggum:ralph-loop)"
+        echo "  --command C          Slash command (default: /ralph-loop:ralph-loop)"
         echo "  --prompt-template F  Custom prompt template file"
         echo "  --prompt-prefix P    Text to prepend to prompt"
         echo "  --prompt-suffix S    Text to append to prompt"
@@ -1066,7 +1066,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             if test -n "$provider_profile"
                 set -a _sub_args --provider $provider_profile
             end
-            if test -n "$slash_command"; and test "$slash_command" != "/ralph-wiggum:ralph-loop"
+            if test -n "$slash_command"; and test "$slash_command" != "/ralph-loop:ralph-loop"
                 set -a _sub_args --command $slash_command
             end
             if test (count $skills) -gt 0
@@ -1966,7 +1966,7 @@ $prompt_suffix"
         # Escape backslashes then double quotes so they don't break the outer "..." wrapping
         set -l escaped_prompt (string replace -a '\\' '\\\\' -- "$oneline_prompt")
         set escaped_prompt (string replace -a '"' '\\"' -- "$escaped_prompt")
-        if string match -q '*/ralph-wiggum:ralph-loop*' $slash_command
+        if string match -q '*/ralph-loop:ralph-loop*' $slash_command
             printf '%s' "$slash_command \"$escaped_prompt\" --max-iterations $max_iterations --completion-promise $completion_promise" >$prompt_cmd_file
         else
             printf '%s' "$slash_command \"$escaped_prompt\"" >$prompt_cmd_file

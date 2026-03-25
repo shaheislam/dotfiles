@@ -1,7 +1,7 @@
 [workflow]
 name = "plan-review"
 description = "Decision Quality System - structured plan evaluation with three-path analysis"
-slash_command = "/ralph-wiggum:ralph-loop"
+slash_command = "/ralph-loop:ralph-loop"
 max_iterations = 15
 
 [prompt]

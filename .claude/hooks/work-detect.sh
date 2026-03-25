@@ -113,7 +113,7 @@ MSG="RESUME CONTEXT: Working on ${ISSUE_STR:-(unknown task)}."
 [[ -n "$MOL_SUMMARY" ]] && MSG="$MSG Molecule: $MOL_SUMMARY"
 [[ -n "$CKPT_SUMMARY" ]] && MSG="$MSG Checkpoint: $CKPT_SUMMARY"
 [[ -n "$HARNESS_SUGGESTIONS" ]] && MSG="$MSG $HARNESS_SUGGESTIONS"
-MSG="$MSG Use /ralph-wiggum:ralph-loop to continue or review the current state."
+MSG="$MSG Use /ralph-loop:ralph-loop to continue or review the current state."
 
 echo "$MSG"
 exit 0

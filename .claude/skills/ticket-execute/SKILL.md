@@ -118,7 +118,7 @@ Post-completion:
 ## Options
 
 - `--max N`: Set max iterations (default: 20)
-- `--command C`: Slash command to use (default: /ralph-wiggum:ralph-loop)
+- `--command C`: Slash command to use (default: /ralph-loop:ralph-loop)
 - `--prompt-template F`: Custom prompt template file
 - `--prompt-prefix P`: Text to prepend to prompt
 - `--prompt-suffix S`: Text to append to prompt

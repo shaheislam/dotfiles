@@ -10,7 +10,7 @@
 #
 # Options:
 #   --max N              Max iterations (default: 20)
-#   --command C          Slash command (default: /ralph-wiggum:ralph-loop)
+#   --command C          Slash command (default: /ralph-loop:ralph-loop)
 #   --prompt-template F  Custom prompt template file
 #   --prompt-prefix P    Text to prepend to prompt
 #   --prompt-suffix S    Text to append to prompt
@@ -46,7 +46,7 @@ ARGUMENTS:
 
 OPTIONS:
   --max N              Max iterations (default: 20)
-  --command C          Slash command (default: /ralph-wiggum:ralph-loop)
+  --command C          Slash command (default: /ralph-loop:ralph-loop)
   --prompt-template F  Custom prompt template file
   --prompt-prefix P    Text to prepend to prompt
   --prompt-suffix S    Text to append to prompt
@@ -229,7 +229,7 @@ if $DRY_RUN; then
     echo "  1. Create worktree via gwt-dev"
     echo "  2. Start devcontainer (if available)"
     echo "  3. Create tmux window in repo-named session"
-    echo "  4. Launch Claude with ${SLASH_COMMAND:-/ralph-wiggum:ralph-loop} ($MAX_ITERATIONS iterations max)"
+    echo "  4. Launch Claude with ${SLASH_COMMAND:-/ralph-loop:ralph-loop} ($MAX_ITERATIONS iterations max)"
     exit 0
 fi
 

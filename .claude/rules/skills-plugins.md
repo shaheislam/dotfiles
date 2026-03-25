@@ -24,7 +24,7 @@ Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`
 | **pr-review-toolkit** | Auto-triggered | 6 specialized reviewers |
 | **hookify** | `/hookify` | Create hooks via markdown |
 | **feature-dev** | `/feature-dev` | 7-phase feature development |
-| **ralph-wiggum** | `/ralph-wiggum:ralph-loop` | Autonomous iteration loops |
+| **ralph-loop** | `/ralph-loop:ralph-loop` | Autonomous iteration loops |
 | **beads** | `/beads:ready`, `/beads:create` | Git-backed agent memory |
 
 **Managing**: `claude plugin install|disable|enable|uninstall plugin-name@marketplace`

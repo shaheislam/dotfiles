@@ -1,7 +1,7 @@
 [workflow]
 name = "bugfix"
 description = "Fix a bug or issue"
-slash_command = "/ralph-wiggum:ralph-loop"
+slash_command = "/ralph-loop:ralph-loop"
 max_iterations = 50
 
 [prompt]
