@@ -190,6 +190,12 @@ validate_output() {
         return 1
     fi
 
+    # Body must have at least one heading after frontmatter
+    if ! echo "$output" | tail -n +3 | grep -q '^#' 2>/dev/null; then
+        echo "no headings in body (likely truncated)" >&2
+        return 1
+    fi
+
     return 0
 }
 
@@ -199,21 +205,21 @@ validate_output() {
 # cases where the JSONL is unavailable (non-Claude sessions, early exit).
 
 resolve_session_id() {
-    # Try 1: Find the most recent JSONL for this project directory.
+    # Try 1: Find a JSONL for this project that was modified recently (last 2h).
+    # This reduces the chance of picking a stale session from the same project.
     # Claude stores sessions at ~/.claude/projects/<slug>/<uuid>.jsonl
     local project_slug
     project_slug=$(echo "$PROJECT_CWD" | tr '/' '-')
     local jsonl_dir="$CLAUDE_PROJECTS_DIR/$project_slug"
 
     if [[ -d "$jsonl_dir" ]]; then
-        local latest_jsonl
-        latest_jsonl=$(find "$jsonl_dir" -maxdepth 1 -name '*.jsonl' -type f -print0 2>/dev/null |
+        # -mmin -120: modified in last 2 hours (likely the current session)
+        local recent_jsonl
+        recent_jsonl=$(find "$jsonl_dir" -maxdepth 1 -name '*.jsonl' -type f -mmin -120 -print0 2>/dev/null |
             xargs -0 ls -t 2>/dev/null | head -1)
-        if [[ -n "$latest_jsonl" ]]; then
-            # Extract UUID from filename (e.g., c15be7c5-878e-499f-b9a4-81b049678fad.jsonl)
+        if [[ -n "$recent_jsonl" ]]; then
             local uuid
-            uuid=$(basename "$latest_jsonl" .jsonl)
-            # Validate it looks like a UUID
+            uuid=$(basename "$recent_jsonl" .jsonl)
             if [[ "$uuid" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
                 echo "$uuid"
                 return
@@ -221,18 +227,19 @@ resolve_session_id() {
         fi
     fi
 
-    # Try 2: Content-based hash from HEAD commit + branch + project.
-    # This is unique per commit state, so two sessions that end at different
-    # commits get different IDs (unlike the old date-only approach).
+    # Try 2: Content-based hash including epoch seconds for uniqueness.
+    # Two sessions on the same branch/commit/project still get different IDs
+    # because the epoch differs.
     local branch=""
     local head_sha=""
     if git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null; then
         branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || echo "detached")
         head_sha=$(git -C "$PROJECT_CWD" rev-parse --short HEAD 2>/dev/null || echo "unknown")
     fi
-    local project
+    local project epoch
     project=$(basename "$PROJECT_CWD")
-    echo -n "${head_sha}:${branch}:${project}:${TODAY}" | md5sum | cut -c1-12
+    epoch=$(date +%s)
+    echo -n "${head_sha}:${branch}:${project}:${epoch}" | md5sum | cut -c1-12
 }
 
 SESSION_ID=$(resolve_session_id)
@@ -264,8 +271,9 @@ if $RECONCILE; then
             # Only process files from the last 7 days
             if [[ $(find "$jsonl_file" -mtime -7 2>/dev/null) ]]; then
                 local_date=$(date -r "$jsonl_file" -u +%Y-%m-%d 2>/dev/null || date -u +%Y-%m-%d)
-                local_output="$CLAUDE_SESSIONS_DIR/${local_date}-synth-${local_uuid}.md"
-                if [[ ! -f "$local_output" ]]; then
+                # Search by UUID glob (synthesis may have run on a different day)
+                # shellcheck disable=SC2144
+                if [[ ! -f "$CLAUDE_SESSIONS_DIR"/*-synth-"${local_uuid}".md ]]; then
                     echo -e "  Missing: ${local_uuid} (${local_date})"
                     reconciled=$((reconciled + 1))
                 fi
@@ -289,17 +297,19 @@ extract_plan_fields() {
     local plan_file="$PROJECT_CWD/.claude/plan.md"
     [[ -f "$plan_file" ]] || return 0
 
-    # Extract only the structured sections, not raw file content
+    # Extract YAML frontmatter fields only (between first --- and second ---)
+    local frontmatter
+    frontmatter=$(sed -n '2,/^---$/p' "$plan_file" | sed '/^---$/d')
     local field value
     for field in "ticket" "title"; do
-        value=$({ grep "^${field}:" "$plan_file" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
+        value=$(echo "$frontmatter" | { grep "^${field}:" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
         [[ -n "$value" ]] && echo "plan_${field}: ${value}"
     done
 
-    # Extract section contents by header (bounded to next ## header)
+    # Extract section contents by header, excluding the next ## header line
     for section in "Objective" "Approach" "Progress" "Key Decisions" "Failed Approaches" "Current State"; do
         local content
-        content=$(sed -n "/^## ${section}/,/^## /p" "$plan_file" | head -20 | tail -n +2 | sed '/^$/d')
+        content=$(sed -n "/^## ${section}/,/^## /p" "$plan_file" | grep -v '^## ' | head -20 | sed '/^$/d')
         if [[ -n "$content" && "$content" != _* ]]; then
             echo ""
             echo "### Plan: ${section}"
@@ -334,17 +344,17 @@ extract_git_context() {
     echo ""
     echo "commits:"
     if [[ -n "$merge_base" ]]; then
-        git -C "$PROJECT_CWD" log --oneline "$merge_base..HEAD" 2>/dev/null | head -30
+        git -C "$PROJECT_CWD" log --oneline "$merge_base..HEAD" 2>/dev/null | head -30 | redact_secrets
     else
-        git -C "$PROJECT_CWD" log --oneline -10 2>/dev/null
+        git -C "$PROJECT_CWD" log --oneline -10 2>/dev/null | redact_secrets
     fi
 
     echo ""
     echo "diffstat:"
     if [[ -n "$merge_base" ]]; then
-        git -C "$PROJECT_CWD" diff --stat "$merge_base" HEAD 2>/dev/null | tail -20
+        git -C "$PROJECT_CWD" diff --stat "$merge_base" HEAD 2>/dev/null | tail -20 | redact_secrets
     else
-        git -C "$PROJECT_CWD" diff --stat HEAD~5 HEAD 2>/dev/null | tail -20
+        git -C "$PROJECT_CWD" diff --stat HEAD~5 HEAD 2>/dev/null | tail -20 | redact_secrets
     fi
 }
 
@@ -353,25 +363,29 @@ extract_beads_fields() {
     [[ -d "$PROJECT_CWD/.beads" ]] || return 0
 
     echo "open_issues:"
-    (cd "$PROJECT_CWD" && bd list --status=open 2>/dev/null | head -10) || true
+    (cd "$PROJECT_CWD" && bd list --status=open 2>/dev/null | head -10 | redact_secrets) || true
 
     echo ""
     echo "closed_issues:"
-    (cd "$PROJECT_CWD" && bd list --status=closed 2>/dev/null | head -10) || true
+    (cd "$PROJECT_CWD" && bd list --status=closed 2>/dev/null | head -10 | redact_secrets) || true
 
     echo ""
     echo "decisions:"
-    (cd "$PROJECT_CWD" && bd comments list 2>/dev/null | head -15) || true
+    (cd "$PROJECT_CWD" && bd comments list 2>/dev/null | head -15 | redact_secrets) || true
 }
 
 extract_ticket_fields() {
     local state_file="$PROJECT_CWD/.claude/ticket-execute.local.md"
     [[ -f "$state_file" ]] || return 0
 
-    # Extract only safe YAML fields, not the entire file
+    # Extract frontmatter block only (between first --- and second ---)
+    local frontmatter
+    frontmatter=$(sed -n '2,/^---$/p' "$state_file" | sed '/^---$/d')
+
+    # Extract only named safe fields from frontmatter, not body text
     local field value
     for field in "issue_key" "title" "ticketing_system" "active" "started_at" "completed_at" "agent_harness" "sub_profile"; do
-        value=$({ grep "^${field}:" "$state_file" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
+        value=$(echo "$frontmatter" | { grep "^${field}:" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
         [[ -n "$value" ]] && echo "${field}: ${value}"
     done
 }
