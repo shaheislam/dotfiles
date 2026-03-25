@@ -1564,7 +1564,9 @@ Workflow:
 2. Create subtasks linked to parent:
    bd create --title='SUBTASK_TITLE' --description='WHY_AND_WHAT' --type=task --priority=2 --parent PARENT_BEAD_ID
    Use 'bd dep add CHILD_ID BLOCKER_ID' if ordering matters.
-3. Work each subtask: bd update BEAD_ID --status=in_progress → code → bd close BEAD_ID
+3. Work each subtask:
+   bd update BEAD_ID --status=in_progress → code → run tests if applicable → commit → bd close BEAD_ID
+   Hooks enforce syntax and formatting on commit. Focus on testing and bead lifecycle.
 4. Between subtasks: bd ready (shows what is unblocked next)
 
 Subtask state survives context compaction via bd prime.
