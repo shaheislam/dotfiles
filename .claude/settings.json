@@ -281,10 +281,6 @@
             "type": "command"
           },
           {
-            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
-            "type": "command"
-          },
-          {
             "command": "bash ~/.claude/skills/dream/dream-hook.sh 2>/dev/null || true",
             "type": "command"
           }

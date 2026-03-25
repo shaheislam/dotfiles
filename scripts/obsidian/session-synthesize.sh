@@ -227,19 +227,18 @@ resolve_session_id() {
         fi
     fi
 
-    # Try 2: Content-based hash including epoch seconds for uniqueness.
-    # Two sessions on the same branch/commit/project still get different IDs
-    # because the epoch differs.
+    # Try 2: Deterministic content-based hash (no epoch).
+    # Same project/branch/commit always produces the same ID, so later
+    # synthesis overwrites earlier (correct: later = more complete data).
     local branch=""
     local head_sha=""
     if git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null; then
         branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || echo "detached")
         head_sha=$(git -C "$PROJECT_CWD" rev-parse --short HEAD 2>/dev/null || echo "unknown")
     fi
-    local project epoch
+    local project
     project=$(basename "$PROJECT_CWD")
-    epoch=$(date +%s)
-    echo -n "${head_sha}:${branch}:${project}:${epoch}" | md5sum | cut -c1-12
+    echo -n "${head_sha}:${branch}:${project}" | md5sum | cut -c1-12
 }
 
 SESSION_ID=$(resolve_session_id)
@@ -260,9 +259,11 @@ fi
 
 # --- Reconcile Mode ---
 # Scans for recent JSONL sessions that lack a corresponding synthesis note.
+# Attempts synthesis for reachable projects (CWD still exists).
 if $RECONCILE; then
     echo -e "${BLUE}=== Reconcile: scanning for missed sessions ===${NC}"
-    reconciled=0
+    missing=0
+    synthesized=0
     for jsonl_dir in "$CLAUDE_PROJECTS_DIR"/*/; do
         [[ -d "$jsonl_dir" ]] || continue
         for jsonl_file in "$jsonl_dir"*.jsonl; do
@@ -271,20 +272,30 @@ if $RECONCILE; then
             # Only process files from the last 7 days
             if [[ $(find "$jsonl_file" -mtime -7 2>/dev/null) ]]; then
                 local_date=$(date -r "$jsonl_file" -u +%Y-%m-%d 2>/dev/null || date -u +%Y-%m-%d)
-                # Search by UUID glob (synthesis may have run on a different day)
-                # shellcheck disable=SC2144
-                if [[ ! -f "$CLAUDE_SESSIONS_DIR"/*-synth-"${local_uuid}".md ]]; then
-                    echo -e "  Missing: ${local_uuid} (${local_date})"
-                    reconciled=$((reconciled + 1))
+                # Check for existing synthesis (compgen -G expands globs correctly)
+                if ! compgen -G "$CLAUDE_SESSIONS_DIR"/*-synth-"${local_uuid}".md >/dev/null 2>&1; then
+                    missing=$((missing + 1))
+                    # Reconstruct CWD from slug: -Users-shahe-project → /Users/shahe/project
+                    reconcile_slug=$(basename "$jsonl_dir")
+                    reconcile_cwd=$(echo "$reconcile_slug" | sed 's/^-/\//' | sed 's/-/\//g')
+                    if [[ -d "$reconcile_cwd" ]]; then
+                        echo -e "  Synthesizing: ${local_uuid} (${local_date}) → ${reconcile_cwd}"
+                        if timeout 60 bash "$0" --cwd "$reconcile_cwd" 2>/dev/null; then
+                            synthesized=$((synthesized + 1))
+                        else
+                            echo -e "  ${YELLOW}Failed: ${local_uuid}${NC}"
+                        fi
+                    else
+                        echo -e "  Skipped: ${local_uuid} (${local_date}) — project dir gone: ${reconcile_cwd}"
+                    fi
                 fi
             fi
         done
     done
-    if [[ $reconciled -eq 0 ]]; then
+    if [[ $missing -eq 0 ]]; then
         echo -e "${GREEN}All recent sessions have synthesis notes.${NC}"
     else
-        echo -e "${YELLOW}Found $reconciled sessions without synthesis notes.${NC}"
-        echo -e "Run without --reconcile from each project to generate them."
+        echo -e "${YELLOW}Found $missing missing, synthesized $synthesized.${NC}"
     fi
     exit 0
 fi
