@@ -1,45 +1,50 @@
-Role: SRE
+What we're looking for
 
-Skills: Deep Linux, Scripting - Python, DevOps, Kubernetes
+    4–7 years of relevant experience
+    Experience with startup or high growth environments
+    Proven track record of owning infrastructure end-to-end
+    Experience with SOC 2, ISO 27001, or GDPR compliance
+    Strong skills in Python or Bash for automation
 
-Salary: £500k Plus
+About the role
+They are seeking an experienced Senior Infrastructure Engineer to lead the design,
+implementation, and maintenance of their cloud systems as we scale. This role is ideal for
+someone who thrives on building robust, secure, and cost-efficient infrastructure that empowers engineering teams to deliver quickly without sacrificing reliability or compliance.
 
-Location: London
-
-
-The ideal candidate comes from a top-tier tech environment (FAANG, elite trading, hyperscale infra). They have experience building technology 0→1, owning systems end-to-end, and working close to the metal. They will operate across everything from bare-metal Linux to modern build and observability stacks.
-
-
-Overview
-
-Join a core engineering group as Lead Site Reliability Engineer, designing and scaling Linux platforms that underpin ML/AI-driven trading. You will architect and own reliability for massive simulation, HPC, and production workloads—ensuring ultra-reliable, ultra-fast trading systems. This is a hands-on, leadership role focused equally on technical depth, strategic decision-making, and driving platform SRE excellence.
-
+You will be the driving force behind our DevOps, observability, and compliance readiness,
+ensuring our systems are audit-ready, highly available, and optimized for both performance and cost.
 
 Key Responsibilities
+Architect, implement, and maintain cloud infrastructure to support rapid product growth.
+Prepare infrastructure for SOC 2 / ISO 27001 audits, aligning with customer
+expectations.
+Build and maintain CI/CD pipelines for backend, frontend, and data services to enable
+rapid, reliable releases.
+Drive product-wide systems for logging, metrics, tracing, alerting and on-call processes.
+Monitor and control cloud costs, identifying opportunities for optimization without
+sacrificing performance.
+Act as the internal advocate for operational excellence.
 
-    Lead SRE practices for Linux platforms powering low-latency, high-throughput trading workloads.
-    Architect, optimize, and tune Linux for performance, resilience, and minimal latency.
-    Drive incident response, root cause analysis, and continuous reliability improvement across production systems.
-    Oversee system automation and reproducibility—build, deploy, and fleet-manage bare-metal Linux and containerized stacks.
-    Manage and enhance Kubernetes clusters, network configuration, and large-scale orchestration.
-    Set observability standards; expand monitoring, alerting, and performance metrics across platforms.
-    Analyze networking, kernel-level performance, and distributed systems—solving core challenges in a multi-petabyte, multi-cluster environment.
-    Build Python tools for automation, reliability engineering, and performance analysis.
-    Design highly distributed systems
+Key Requirements:
+Technical stack: Azure (also AWS is a plus), Terraform, AKS (Kubernetes), Docker,
+Github actions.
+Observability: Experience implementing logging, metrics, and tracing frameworks.
+Security: Familiarity with best practices, secrets management, and security scanning
+tools.
+Networking: Solid understanding of VPCs, private networking, DNS, load balancers,
+VPNs, and firewalls.
+Databases & Storage: Experience with provisioning, scaling, and managing production-
+grade databases (PostgreSQL, MySQL, NoSQL) and blob storage.
+Scripting & Automation: Strong skills in Python or Bash for automation and tooling.
+4–7 years of relevant experience, ideally including startup or high growth/high load
+environments.
+Proven track record of owning infrastructure end-to-end — from architecture through
+production support.
+Experience implementing reliability, security, and compliance measures ahead of scale-
+up or audit readiness.
+History of driving cost efficiency while enabling growth.
+Exposure to SOC 2, ISO 27001, or GDPR compliance processes.
 
-
-What You Will Work On
-
-    Ultra-reliable, high-performance trading infrastructure where every engineering optimization affects performance
-    Next-generation simulation and HPC compute pipelines, supporting ML/AI workflows at scale.
-    Integration and continuous improvement of internal and open-source tools for automation and reliability.
-    Strategic platform direction: shaping foundational systems for critical infrastructure in an elite trading environment.
-
-
-Team and Culture
-
-    Small, autonomous Linux SRE team with direct ownership and impact.
-    Collaborative engagement with quants, researchers, and trading experts to deliver robust platforms.
-    A culture built on deep technical ownership, learning, and high standards of performance engineering
-
-
+Benefits:
+- You will be reporting directly to the founders, who have two successful venture-
+backed exits under their belt. 100 - 200 K GBP base salary + equity.
