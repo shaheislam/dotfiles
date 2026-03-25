@@ -14,6 +14,7 @@ Lifecycle hooks for deterministic control over Claude Code behavior. See `docs/c
 |-------|-------|---------|
 | **SessionStart** | `fix-hookify-imports.sh`, `bd prime`, `lsp-status.sh` | Plugin fixes, Beads memory, LSP context |
 | **PreToolUse** (Bash) | `use_bun.py`, `validate-bash.py` | Bun enforcement, dangerous command blocking |
+| **PreToolUse** (Edit\|Write) | `settings-edit-redirect.py` | Redirect settings.json edits to Bash+jq ([#37029](https://github.com/anthropics/claude-code/issues/37029)) |
 | **PostToolUse** (Read) | `deepwiki-context.py` | Language-aware DeepWiki repo suggestions |
 | **PreCompact** | `bd prime` | Re-inject Beads workflow context before compaction |
 | **Notification** | `macos_notification.py`, `log-notification.sh` | Desktop alerts, audit logging |
