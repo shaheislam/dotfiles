@@ -5,7 +5,11 @@ description: Consolidate AI agent memory through a 4-phase process (Orient, Gath
 
 # Dream - Memory Consolidation for Claude Code
 
-> Your AI agent dreams like you do. Consolidates memory while you sleep.
+> A reflective pass over your memory files. Synthesize what you've learned
+> recently into durable, well-organized memories so that future sessions
+> can orient quickly.
+
+Aligned with the native Claude Code autodream feature (feature flag: `tengu_onyx_plover`).
 
 ---
 
@@ -17,21 +21,38 @@ Dream runs in 4 sequential phases. Execute them in order. Do not skip phases.
 ORIENT --> GATHER SIGNAL --> CONSOLIDATE --> PRUNE & INDEX
 ```
 
-### Auto-trigger flow (native Claude Code hooks)
+### Auto-trigger flow
 
 ```
+Every session start
+  --> SessionStart hook increments session counter
 Session ends
   --> Stop hook fires should-dream.sh (~10ms)
-  --> Checks: 24hrs passed?
-  --> If NO: exits silently, zero overhead
-  --> If YES: creates ~/.claude/.dream-pending flag
-Next session starts
-  --> Claude reads CLAUDE.md, sees .dream-pending exists
-  --> Spawns /dream as background subagent
+  --> Checks: minHours elapsed OR minSessions reached?
+  --> If NEITHER: exits silently, zero overhead
+  --> If EITHER: gathers session metadata, spawns dream agent
   --> Dream runs all 4 phases
-  --> Writes .last-dream timestamp, deletes .dream-pending
-  --> Timer resets for next 24hrs
+  --> Writes .last-dream timestamp, resets session counter
+  --> Updates .dream-status for status line
 ```
+
+### Status line
+
+`dream-status.sh` outputs for status line integration:
+- `running` — dream is currently active
+- `never` — dream has never run
+- `last ran Xh ago` — time since last consolidation
+- `never — /dream to run` — hint when never run (with --hint flag)
+
+### Configuration (.dream-config)
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `DREAM_MEMORY_TYPE` | `native` | Memory system: native, openclaw, project-root |
+| `DREAM_MIN_HOURS` | `24` | Hours between dreams (0 = disabled) |
+| `DREAM_MIN_SESSIONS` | `5` | Sessions between dreams (0 = disabled) |
+| `DREAM_LINE_LIMIT` | `200` | Max lines for MEMORY.md |
+| `DREAM_SESSION_WINDOW_DAYS` | `7` | Days of sessions to feed to dream agent |
 
 ---
 

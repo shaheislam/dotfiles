@@ -245,6 +245,15 @@
       {
         "hooks": [
           {
+            "command": "bash ~/.claude/skills/dream/count-session.sh 2>/dev/null || true",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      },
+      {
+        "hooks": [
+          {
             "command": "bash ~/.claude/hooks/plan-resume.sh 2>/dev/null || true",
             "type": "command"
           }

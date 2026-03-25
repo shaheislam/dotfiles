@@ -1,0 +1,18 @@
+# Dream skill configuration
+# Memory system type: native | openclaw | project-root
+DREAM_MEMORY_TYPE=native
+
+# Trigger thresholds (dream runs when EITHER condition is met)
+# Minimum hours since last dream (0 = disabled)
+DREAM_MIN_HOURS=24
+# Minimum sessions since last dream (0 = disabled)
+DREAM_MIN_SESSIONS=5
+
+# Memory index line limit
+DREAM_LINE_LIMIT=200
+
+# Session metadata: how many recent sessions to feed to the dream agent
+DREAM_SESSION_WINDOW_DAYS=7
+
+# For openclaw/project-root types only
+# DREAM_MEMORY_PATH=.

@@ -39,6 +39,11 @@
 .claude/progress.json
 .claude/worker-cv.jsonl
 
+# Dream skill runtime state (regenerated at runtime, never commit)
+.claude/skills/dream/.session-count
+.claude/skills/dream/.dream-status
+.claude/skills/dream/.last-dream
+
 # Beads agent memory (local-only, never committed)
 .beads/
 
