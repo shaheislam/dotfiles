@@ -2,7 +2,9 @@
 
 ## Executive Summary
 
-After cataloging all 32 existing skills, analyzing git history (300+ commits since Jan 2026), beads task patterns, 14 hook events with 30+ implementations, and 15 subagents, the clearest gap is **workflow observability** — understanding what you do, what works, and what fails across sessions. You have excellent infrastructure for *doing* work but limited tooling for *learning from* work.
+After cataloging all 32 existing skills, analyzing git history (300+ commits since Jan 2026), beads task patterns, 14 hook events with 30+ implementations, and 15 subagents, the clearest gaps align with **explicitly documented pain points**: setup parity (Fish/Zsh PATH, MCP Desktop/CLI), drift detection, and validation — all called out in CLAUDE.md and AGENTS.md but lacking unified skill entry points.
+
+Observability infrastructure exists across multiple layers — `/session-review` (git-based), `/jfdi-synthesis` (external DB), `insights-review.toml` (workflow orchestrator), and harness scripts (`session-report.sh`, `query-telemetry.sh`) — but no single interactive skill fuses JFDI + OTEL + beads data together. The higher-leverage opportunity is enriching existing skills rather than creating new observability skills from scratch.
 
 ## Current Skills by Category (32 total)
 
@@ -19,15 +21,15 @@ After cataloging all 32 existing skills, analyzing git history (300+ commits sin
 
 ## Recommended New Skills (Prioritized)
 
-### Tier 1: High-Value, Fills Clear Gap
+### Tier 1: High-Value, Addresses Documented Pain Points
 
 #### 1. `/health-check` — Dotfiles & Tooling Health Dashboard
 
 **What**: Run all validation scripts (`test-architecture.sh`, `validate-docs.sh`, `detect-drift.sh`, stow simulate, Fish/Bash syntax checks) in one shot. Report pass/fail with actionable fixes.
 
-**Why**: You have 3+ quality gate scripts that run ad-hoc. No single entry point combines them. The `dotfiles-doctor` agent exists but isn't a skill — meaning you can't invoke it with `/health-check` from any session.
+**Why — matches documented pain points**: CLAUDE.md's Troubleshooting section explicitly lists missing PATH, theme inconsistency, plugin failures, and stow conflicts as recurring issues. AGENTS.md warns about file location mistakes, shell script parity, and MCP parity. These are the most concrete, repeatedly documented problems. The `dotfiles-doctor` agent exists but isn't a skill — meaning you can't invoke it with `/health-check` from any session.
 
-**Evidence**: `detect-drift.sh` checks stow integrity, PATH parity, theme consistency, stale state files. `test-architecture.sh` validates structural invariants. `validate-docs.sh` checks doc accuracy. These are documented but not unified.
+**Evidence**: `detect-drift.sh` checks stow integrity, PATH parity, theme consistency, stale state files. `test-architecture.sh` validates structural invariants. `validate-docs.sh` checks doc accuracy. These scripts exist and work but have no unified entry point. The `insights-review.toml` workflow orchestrates them but requires manual invocation of each step.
 
 **Trigger**: `/health-check`, or "check my dotfiles", "is everything working", "validate my setup"
 
@@ -43,37 +45,36 @@ After cataloging all 32 existing skills, analyzing git history (300+ commits sin
 
 ---
 
-#### 3. `/pattern-mine` — Session Pattern Extraction
+#### 3. Enrich `/session-review` with OTEL + Beads Inputs (Extend Existing Skill)
 
-**What**: Analyze recent session transcripts (via JFDI database, OTEL telemetry, or beads history) to extract:
-- Most-used tool sequences (e.g., Read->Edit->Bash patterns)
-- Recurring prompting phrases that indicate unmet needs
-- Error clusters (what fails repeatedly)
-- Time-of-day and task-type distributions
+**What**: Instead of a new `/pattern-mine` skill, extend the existing `/session-review` skill to pull from three data sources:
+- **Git** (already does this): commits, diffs, file changes
+- **OTEL** (add): tool durations, API costs, error rates via `query-telemetry.sh`
+- **Beads** (add): task completion rates, blocked issue patterns via `bd stats`
 
-**Why**: This is exactly what the current task is — and it's being done manually. This is the skill equivalent of "gap-analysis but for your own workflow."
+**Why — lower risk than a new skill**: `/session-review` already has the retrospective framing and git integration. Adding OTEL and beads inputs enriches it without creating a parallel skill that fragments the workflow. `/jfdi-synthesis` handles the Obsidian/monthly view; the enriched `/session-review` handles interactive in-session analysis.
 
-**Evidence**: The JFDI family captures session data. OTEL captures metrics. Beads tracks tasks. But nothing synthesizes *across* these sources to find patterns. `/jfdi-synthesis` comes closest but is monthly Obsidian output, not interactive analysis.
+**Evidence**: Currently `/session-review` is git-only (reads commits from session boundary to HEAD). `session-report.sh` already fuses hook logs + beads + git at the script level. The skill just needs to call that script and incorporate its output.
 
-**Trigger**: `/pattern-mine`, or "what patterns do you see", "analyze my sessions", "what do I do most"
+**Security constraint**: Session data must stay local-only. No transcript content should be written to shared files. Opt-in scope: only analyze the current session unless explicitly asked for broader range. Redact file paths containing secrets directories (`.ssh/`, `.gnupg/`, `1Password/`).
+
+**Trigger**: Same as current `/session-review`, now with richer output
 
 ---
 
-#### 4. `/onboard-tool` — New Tool Integration Checklist
+#### 4. `/onboard-tool` — Script-Backed Tool Integration Validator
 
-**What**: When adding a new CLI tool or GUI app, walk through the full integration checklist from CLAUDE.md:
-1. Add to Brewfile
-2. Add Fish PATH (`.config/fish/config.fish`)
-3. Update `scripts/setup.sh`
-4. Create aliases/functions
-5. Add Zsh compatibility (`.zshrc`)
-6. Apply Tokyo Night theme (if GUI)
-7. Create `.config/` subdirectory (if needed)
-8. Run stow simulate
+**What**: A script-backed skill (not a prompt-only checklist) that runs deterministic checks for a given tool name:
+1. `grep -q <tool> homebrew/Brewfile` — verify Brewfile entry
+2. `grep -q <tool> scripts/setup.sh` — verify setup script reference
+3. Check Fish PATH for tool binary (`command -v <tool>` in fish context)
+4. Check Zsh PATH parity (`zsh -c 'command -v <tool>'`)
+5. `stow --simulate --verbose . 2>&1` — verify stow won't conflict
+6. If GUI: check for `.config/<tool>/` directory and Tokyo Night colors
 
-**Why**: CLAUDE.md documents this checklist but it's easy to miss steps. A skill that walks through it interactively ensures completeness.
+**Why — script-backed avoids drift**: A prompt-only checklist would duplicate CLAUDE.md and diverge over time. A script reads the canonical sources (Brewfile, setup.sh, config files) directly and reports what's missing. The skill invokes the script and formats the output, keeping the checklist in one place (the code).
 
-**Evidence**: The "Adding New Tools" section in CLAUDE.md is one of the most referenced sections. Multiple commits fix missing PATH entries or Zsh compatibility gaps — indicating steps get skipped.
+**Evidence**: AGENTS.md documents recurring "file location mistakes" and "shell script parity" as explicit pain points. Multiple commits fix missing PATH entries or Zsh compatibility — indicating steps get skipped even with the CLAUDE.md checklist present. Post-change validation (stow dry-run) prevents breaking both config targets.
 
 **Trigger**: `/onboard-tool <name>`, or "add a new tool", "integrate X into my dotfiles"
 
@@ -143,6 +144,19 @@ After cataloging all 32 existing skills, analyzing git history (300+ commits sin
 
 ---
 
+## Extend vs Create: Prefer Enriching Existing Skills
+
+Before creating new skills, consider whether an existing skill can absorb the capability:
+
+| Need | Extend This | Add What |
+|------|-------------|----------|
+| Session observability | `/session-review` | OTEL metrics + beads stats via `session-report.sh` |
+| Monthly patterns | `/jfdi-synthesis` | Beads completion trends, hook failure rates |
+| Drift detection | `/dotfiles-sync` | Call `detect-drift.sh` as pre-flight check |
+| Theme validation | `/dotfiles-sync` | Tokyo Night color audit as post-stow step |
+
+Only create a new skill when the capability doesn't fit an existing skill's scope (e.g., `/health-check` unifies 3+ scripts that span multiple existing skill domains).
+
 ## Skills NOT Recommended (Covered Adequately)
 
 | Need | Already Covered By |
@@ -154,18 +168,28 @@ After cataloging all 32 existing skills, analyzing git history (300+ commits sin
 | CI/CD review | `ci-check` plugin skill |
 | PR creation | `create-pr` plugin skill |
 | Code review | `code-review` plugin skill |
+| Session retrospective | `/session-review` (git) + `/jfdi-synthesis` (DB) + `insights-review.toml` (workflow) |
 
 ## Implementation Priority
 
-If building these, the order that maximizes value:
+Ranked by alignment with explicitly documented pain points (CLAUDE.md Troubleshooting, AGENTS.md warnings), not by assumed leverage:
 
-1. **`/health-check`** — Immediate value, mostly wiring existing scripts
-2. **`/onboard-tool`** — Prevents recurring integration gaps
-3. **`/pattern-mine`** — Deepest insight value, builds on JFDI + OTEL infrastructure
-4. **`/hook-audit`** — Maintains hook infrastructure health
-5. **`/changelog`** — Low effort, useful for weekly reviews
+1. **`/health-check`** — Directly addresses 4 of 4 Troubleshooting items (PATH, theme, plugins, stow). Wires existing scripts.
+2. **`/onboard-tool`** — Script-backed validation against the most-skipped checklist. Prevents PATH parity fixes.
+3. **Enrich `/session-review`** — Low-risk extension adds OTEL + beads to existing git-based retrospective.
+4. **`/hook-audit`** — Infrastructure health for 30+ hook implementations that are hard to verify manually.
+5. **`/mcp-parity`** — CLAUDE.md calls this "CRITICAL" but it's a manual check today.
+6. **`/changelog`** — Low effort, useful for weekly reviews.
 
-The remaining 5 are valuable but lower frequency — build them when the need arises naturally.
+The remaining items (witness, stow-diff, prompt-library, theme-check) are valuable but lower frequency.
+
+## Security Considerations
+
+Skills that analyze session data or cross-reference configurations must respect these constraints:
+
+- **Pattern mining / session review**: Local-only analysis. Never write transcript content, file paths containing secrets directories (`.ssh/`, `.gnupg/`, `1Password/`, `.codex/accounts/`), or API keys to shared files. Opt-in scope: analyze current session by default, broader range only on explicit request.
+- **MCP/stow-related skills**: Always enforce dry-run before apply. Post-change validation required (verify both Desktop and CLI configs load correctly after parity fix; verify stow symlinks resolve after sync).
+- **Hook audit**: Read-only analysis of hook logs. Never modify hook configurations without explicit user confirmation. Flag hooks that have filesystem write access to sensitive paths.
 
 ## Methodology
 
