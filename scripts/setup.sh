@@ -986,7 +986,7 @@ PTEOF
         claude plugin install feature-dev@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install frontend-design@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install plugin-dev@claude-code-plugins >/dev/null 2>&1 || true
-        claude plugin install ralph-wiggum@claude-code-plugins >/dev/null 2>&1 || true
+        claude plugin install ralph-loop@claude-plugins-official >/dev/null 2>&1 || true
         claude plugin install agent-sdk-dev@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install explanatory-output-style@claude-code-plugins >/dev/null 2>&1 || true
         claude plugin install learning-output-style@claude-code-plugins >/dev/null 2>&1 || true
@@ -998,7 +998,7 @@ PTEOF
         claude plugin install superpowers@superpowers-marketplace >/dev/null 2>&1 || true
 
         print_success "Claude Code plugins installed (16 plugins, 7 marketplaces)"
-        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads, example-skills, superpowers"
+        log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-loop, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads, example-skills, superpowers"
 
         # Claude Code LSP Server Integration
         # LSP plugins give Claude Code native code intelligence (diagnostics, go-to-definition,
@@ -1030,7 +1030,7 @@ PTEOF
             "$DOTFILES_ROOT/scripts/fix-hookify-imports.sh" || true
         fi
 
-        # frankbria Ralph - external autonomous loop tool (complements ralph-wiggum plugin)
+        # frankbria Ralph - external autonomous loop tool (complements ralph-loop plugin)
         if [[ ! -d "$HOME/ralph-claude-code" ]]; then
             print_step "Installing frankbria Ralph (autonomous loop tool)..."
             git clone https://github.com/frankbria/ralph-claude-code.git "$HOME/ralph-claude-code" </dev/null >/dev/null 2>&1

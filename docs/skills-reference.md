@@ -154,7 +154,7 @@ article, aws-profile, best-practice, claude-cleanup, commit-mode, confluence, cr
 
 ### Plugin Skills (14 plugins)
 
-code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-wiggum, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads.
+code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-loop, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads.
 
 ### Plugin Marketplaces Configured
 
