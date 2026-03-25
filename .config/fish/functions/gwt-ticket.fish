@@ -1544,7 +1544,7 @@ Instructions:
 3. Implement the fix/feature
 4. Write tests if applicable
 5. Run tests to verify
-6. Follow the WRAP-UP DISCIPLINE for validation and commits
+6. Create atomic commits with descriptive messages
 7. When complete, output $completion_promise
 
 Do not ask questions - make reasonable decisions and iterate."
@@ -1564,7 +1564,9 @@ Workflow:
 2. Create subtasks linked to parent:
    bd create --title='SUBTASK_TITLE' --description='WHY_AND_WHAT' --type=task --priority=2 --parent PARENT_BEAD_ID
    Use 'bd dep add CHILD_ID BLOCKER_ID' if ordering matters.
-3. Work each subtask: bd update BEAD_ID --status=in_progress → code → bd close BEAD_ID
+3. Work each subtask:
+   bd update BEAD_ID --status=in_progress → code → run tests if applicable → commit → bd close BEAD_ID
+   Hooks enforce syntax and formatting on commit. Focus on testing and bead lifecycle.
 4. Between subtasks: bd ready (shows what is unblocked next)
 
 Subtask state survives context compaction via bd prime.
@@ -1576,14 +1578,7 @@ REQUIRED BEHAVIORS:
 - ALWAYS use 'bd search \"keyword\"' to check for related beads before creating new ones
 - Close multiple: bd close ID1 ID2 ID3 (batch close is more efficient)
 - Check blocked: bd blocked (see what needs unblocking)
-- Store metadata: bd kv set key value (persistent across compactions)
-
-WRAP-UP DISCIPLINE — Before EACH commit, follow this workflow:
-1. VALIDATE: Run syntax checks on changed files (fish --no-execute for .fish, bash -n for .sh)
-2. TEST: Run related tests if they exist
-3. COMMIT: Stage and commit with conventional format (type: brief description). No emojis, no AI references.
-4. CLOSE: bd close BEAD_ID for the completed subtask
-5. NEXT: bd ready to find the next unblocked subtask"
+- Store metadata: bd kv set key value (persistent across compactions)"
 
         if test -n "$prompt_suffix"
             set prompt_suffix "$prompt_suffix$beads_suffix"
