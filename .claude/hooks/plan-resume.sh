@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # plan-resume.sh - SessionStart hook to inject living plan into context
 #
-# Extracts key sections from .claude/plan.md. Keeps context small.
+# Extracts key sections from .plan.md. Keeps context small.
 # (#5) Auto-creates a minimal plan if none exists (non-gwt sessions).
 # Silent exit when plan has no meaningful content.
 
@@ -10,7 +10,11 @@ set -euo pipefail
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "")}"
 [[ -z "$PROJECT_DIR" ]] && exit 0
 
-PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
+PLAN_FILE="$PROJECT_DIR/.plan.md"
+# Migrate legacy location: move .claude/plan.md to .plan.md if it exists
+if [[ ! -f "$PLAN_FILE" && -f "$PROJECT_DIR/.claude/plan.md" ]]; then
+    mv "$PROJECT_DIR/.claude/plan.md" "$PLAN_FILE" 2>/dev/null || true
+fi
 
 # (#5) Auto-create minimal plan for interactive (non-gwt) sessions
 if [[ ! -f "$PLAN_FILE" ]]; then
@@ -54,7 +58,7 @@ _What needs to happen next._
 
 _Save commands here that produced valuable results or solved problems._
 TEMPLATE
-        echo "Created .claude/plan.md — update it as you work to persist state across compactions."
+        echo "Created .plan.md — update it as you work to persist state across compactions."
     fi
     exit 0
 fi
@@ -70,11 +74,11 @@ if [[ -x "$EXTRACTOR" ]]; then
 fi
 
 if [[ -n "$SECTIONS" ]]; then
-    echo "=== Living Plan (.claude/plan.md) ==="
+    echo "=== Living Plan (.plan.md) ==="
     echo "$SECTIONS"
     echo "=== End Living Plan ==="
     echo ""
-    echo "Read .claude/plan.md for full context. Keep it updated as you work."
+    echo "Read .plan.md for full context. Keep it updated as you work."
 fi
 
 exit 0

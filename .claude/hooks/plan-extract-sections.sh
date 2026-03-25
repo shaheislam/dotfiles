@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# plan-extract-sections.sh - Extract key sections from .claude/plan.md
+# plan-extract-sections.sh - Extract key sections from .plan.md
 #
 # Shared helper for plan hooks. Extracts only the sections needed for
 # context recovery: Failed Approaches, Current State, Next Steps, Useful Commands.

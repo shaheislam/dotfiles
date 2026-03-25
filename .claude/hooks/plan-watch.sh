@@ -2,7 +2,7 @@
 # plan-watch.sh - PostToolUse hook to detect external edits and plan staleness
 #
 # Two responsibilities:
-# 1. Detect external edits to .claude/plan.md and show the diff (#3)
+# 1. Detect external edits to .plan.md and show the diff (#3)
 # 2. Detect plan staleness — warn if plan hasn't been updated in N minutes (#2)
 #
 # Uses /tmp cache files for mtime comparison and content snapshots.
@@ -12,7 +12,9 @@ set -euo pipefail
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "")}"
 [[ -z "$PROJECT_DIR" ]] && exit 0
 
-PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
+PLAN_FILE="$PROJECT_DIR/.plan.md"
+# Fallback to legacy location for existing worktrees
+[[ -f "$PLAN_FILE" ]] || PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
 [[ -f "$PLAN_FILE" ]] || exit 0
 
 CACHE_KEY=$(echo "$PROJECT_DIR" | tr '/' '-')
@@ -44,7 +46,7 @@ if [[ -n "$CACHED_MTIME" && "$CURRENT_MTIME" == "$CACHED_MTIME" ]]; then
         if [[ "$LAST_WARN" != "$CURRENT_MTIME" ]]; then
             echo "$CURRENT_MTIME" >"$STALE_WARN_CACHE"
             MINS=$((AGE / 60))
-            echo "PLAN STALE — .claude/plan.md hasn't been updated in ${MINS} minutes."
+            echo "PLAN STALE — .plan.md hasn't been updated in ${MINS} minutes."
             echo "Update Current State and Next Steps to keep your persistent memory fresh."
         fi
     fi
@@ -88,7 +90,7 @@ if [[ "$TOOL_NAME" == "Edit" || "$TOOL_NAME" == "Write" ]]; then
 fi
 
 # --- (#3) External edit detected — show diff ---
-echo "PLAN UPDATED EXTERNALLY — .claude/plan.md was modified outside this session."
+echo "PLAN UPDATED EXTERNALLY — .plan.md was modified outside this session."
 echo "Review the changes and course-correct your approach accordingly."
 echo ""
 
