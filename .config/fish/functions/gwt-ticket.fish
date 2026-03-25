@@ -19,6 +19,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --no-edit            Use title as description instead of prompt file
     #   --desc-file FILE     Read description from file (- for stdin; avoids quote issues)
     #   --skill NAME [...]  Invoke skill(s) at prompt start
+    #   --add-dir PATH [...] Additional directories for Claude --add-dir
     #   --local         Use local Ollama model (default: qwen3-coder)
     #   --model MODEL   Use specific Ollama model (implies --local)
     #   --mount, -m     Additional mount (repeatable)
@@ -79,6 +80,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l prompt_suffix ""
     set -l skills
     set -l skills_skip_to 0
+    set -l extra_dirs
+    set -l extra_dirs_skip_to 0
     set -l sub_profile ""
     set -l provider_profile ""
     set -l bridge_mode false
@@ -138,8 +141,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             set skip_next false
             continue
         end
-        # Skip args consumed by --skill's multi-arg parsing
-        if test $i -le $skills_skip_to
+        # Skip args consumed by --skill's or --add-dir's multi-arg parsing
+        if test $i -le $skills_skip_to; or test $i -le $extra_dirs_skip_to
             continue
         end
 
@@ -257,6 +260,30 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
                 if not $found_skill
                     echo "Error: --skill requires at least one skill name (e.g., --skill bestpractice tdd)"
+                    return 1
+                end
+            case --add-dir
+                # Consume all following non-flag arguments as additional directory paths
+                set -l found_dir false
+                set -l j (math $i + 1)
+                while test $j -le (count $argv)
+                    if string match -q -- '--*' $argv[$j]
+                        break
+                    end
+                    set -l dir_path $argv[$j]
+                    # Resolve to absolute path
+                    set dir_path (realpath -- "$dir_path" 2>/dev/null; or echo "$dir_path")
+                    if not test -d "$dir_path"
+                        echo "Error: --add-dir path does not exist: $dir_path" >&2
+                        return 1
+                    end
+                    set -a extra_dirs $dir_path
+                    set found_dir true
+                    set extra_dirs_skip_to $j
+                    set j (math $j + 1)
+                end
+                if not $found_dir
+                    echo "Error: --add-dir requires at least one directory path"
                     return 1
                 end
             case --sub
@@ -716,6 +743,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --prompt-prefix P    Text to prepend to prompt"
         echo "  --prompt-suffix S    Text to append to prompt"
         echo "  --skill NAME [...]   Invoke skill(s) at start of prompt (e.g., --skill bestpractice tdd)"
+        echo "  --add-dir PATH [...] Additional directories for Claude --add-dir (e.g., --add-dir ~/other-repo)"
         echo "  --sub NAME           Claude subscription profile (uses ~/.claude-NAME config dir)"
         echo "  --provider NAME      API provider profile (bedrock, vertex, foundry, gateway, or custom)"
         echo "  --local              Use local Ollama model (default: qwen3-coder)"
@@ -816,6 +844,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  # Invoke skill(s) before working on the ticket"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice tdd"
+        echo ""
+        echo "  # Add extra directories for Claude to access"
+        echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/other-repo"
+        echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/lib-a ~/lib-b"
         echo ""
         echo "  # Run with Codex CLI instead of Claude Code"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex"
@@ -1040,6 +1072,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             if test (count $skills) -gt 0
                 set -a _sub_args --skill $skills
             end
+            if test (count $extra_dirs) -gt 0
+                set -a _sub_args --add-dir $extra_dirs
+            end
             if $use_local
                 set -a _sub_args --local
                 if test -n "$local_model"
@@ -1217,6 +1252,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
         if test (count $skills) -gt 0
             echo "Skills:    "(string join ', ' -- $skills)
+        end
+        if test (count $extra_dirs) -gt 0
+            echo "Add-dirs:  "(string join ', ' -- $extra_dirs)
         end
         if test -n "$convoy_id"
             echo "Convoy:    $convoy_id"
@@ -1940,7 +1978,12 @@ $prompt_suffix"
         if test -n "$max_budget"
             set claude_budget_flags "$claude_budget_flags --max-budget-usd $max_budget"
         end
-        set -a _ls 'claude --dangerously-skip-permissions --effort max --remote-control --name '$window_name' --add-dir '$add_dir_path$claude_budget_flags
+        # Build extra --add-dir flags for additional directories
+        set -l extra_dir_flags ""
+        for edir in $extra_dirs
+            set extra_dir_flags "$extra_dir_flags --add-dir $edir"
+        end
+        set -a _ls 'claude --dangerously-skip-permissions --effort max --remote-control --name '$window_name' --add-dir '$add_dir_path$extra_dir_flags$claude_budget_flags
     end
 
     if not $use_devcon
@@ -2050,6 +2093,9 @@ $prompt_suffix"
             "$_cmd_label"
         if test (count $skills) -gt 0
             set -a _log "Skills:    "(string join ', ' -- $skills)
+        end
+        if test (count $extra_dirs) -gt 0
+            set -a _log "Add-dirs:  "(string join ', ' -- $extra_dirs)
         end
         set -a _log '' \
             'Monitoring:' \
