@@ -43,6 +43,7 @@ PROJECT_CWD=""
 TICKET_ID=""
 VERBOSE=false
 RECONCILE=false
+FORCE_SESSION_ID=""
 
 show_help() {
     cat <<'EOF'
@@ -55,6 +56,7 @@ OPTIONS:
   --worktree PATH   Worktree path (for gwt-ticket sessions)
   --cwd PATH        Project working directory (default: current dir)
   --ticket ID       Ticket/issue ID to associate
+  --session-id UUID Force a specific session ID (used by reconcile)
   --reconcile       Catch up missed sessions (crash/SIGKILL recovery)
   --dry-run         Print synthesis prompt without writing
   --verbose         Show gathered context
@@ -86,6 +88,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     --ticket)
         TICKET_ID="$2"
+        shift 2
+        ;;
+    --session-id)
+        FORCE_SESSION_ID="$2"
         shift 2
         ;;
     --reconcile)
@@ -205,6 +211,12 @@ validate_output() {
 # cases where the JSONL is unavailable (non-Claude sessions, early exit).
 
 resolve_session_id() {
+    # Override: caller supplied a specific session ID (e.g., reconcile mode)
+    if [[ -n "$FORCE_SESSION_ID" ]]; then
+        echo "$FORCE_SESSION_ID"
+        return
+    fi
+
     # Try 1: Find a JSONL for this project that was modified recently (last 2h).
     # This reduces the chance of picking a stale session from the same project.
     # Claude stores sessions at ~/.claude/projects/<slug>/<uuid>.jsonl
@@ -280,7 +292,7 @@ if $RECONCILE; then
                     reconcile_cwd=$(echo "$reconcile_slug" | sed 's/^-/\//' | sed 's/-/\//g')
                     if [[ -d "$reconcile_cwd" ]]; then
                         echo -e "  Synthesizing: ${local_uuid} (${local_date}) → ${reconcile_cwd}"
-                        if timeout 60 bash "$0" --cwd "$reconcile_cwd" 2>/dev/null; then
+                        if timeout 60 bash "$0" --cwd "$reconcile_cwd" --session-id "$local_uuid" 2>/dev/null; then
                             synthesized=$((synthesized + 1))
                         else
                             echo -e "  ${YELLOW}Failed: ${local_uuid}${NC}"

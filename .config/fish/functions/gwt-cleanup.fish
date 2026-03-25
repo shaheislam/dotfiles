@@ -1,19 +1,21 @@
 function gwt-cleanup --description "Clean up stale worktree devcontainer instances"
-    # Usage: gwt-cleanup [--prune] [--dry-run] [--force]
+    # Usage: gwt-cleanup [--prune] [--dry-run] [--force] [--reconcile]
     #
     # Identifies and removes devcontainer instances for worktrees that
     # no longer exist.
     #
     # Options:
-    #   --prune, -p    Remove stale instances (default: just list)
-    #   --dry-run, -n  Show what would be removed without doing it
-    #   --force, -f    Skip confirmation prompts
-    #   --all, -a      Check all instances, not just current repo's
+    #   --prune, -p      Remove stale instances (default: just list)
+    #   --dry-run, -n    Show what would be removed without doing it
+    #   --force, -f      Skip confirmation prompts
+    #   --all, -a        Check all instances, not just current repo's
+    #   --reconcile, -r  Find and synthesize missed Obsidian session notes
 
     set -l do_prune false
     set -l do_dry_run false
     set -l do_force false
     set -l do_all false
+    set -l do_reconcile false
 
     for arg in $argv
         switch $arg
@@ -25,18 +27,33 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
                 set do_force true
             case --all -a
                 set do_all true
+            case --reconcile -r
+                set do_reconcile true
             case --help -h
-                echo "Usage: gwt-cleanup [--prune] [--dry-run] [--force] [--all]"
+                echo "Usage: gwt-cleanup [--prune] [--dry-run] [--force] [--all] [--reconcile]"
                 echo ""
                 echo "Clean up devcontainer instances for deleted worktrees."
                 echo ""
                 echo "Options:"
-                echo "  --prune, -p    Remove stale instances"
-                echo "  --dry-run, -n  Show what would be removed"
-                echo "  --force, -f    Skip confirmation"
-                echo "  --all, -a      Check all instances, not just current repo"
+                echo "  --prune, -p      Remove stale instances"
+                echo "  --dry-run, -n    Show what would be removed"
+                echo "  --force, -f      Skip confirmation"
+                echo "  --all, -a        Check all instances, not just current repo"
+                echo "  --reconcile, -r  Find and synthesize missed Obsidian session notes"
                 return 0
         end
+    end
+
+    # Standalone reconcile: run session reconciliation and return
+    if $do_reconcile; and not $do_prune
+        set -l synth_script "$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"
+        if test -x "$synth_script"
+            bash "$synth_script" --reconcile
+        else
+            echo "Error: session-synthesize.sh not found" >&2
+            return 1
+        end
+        return 0
     end
 
     set -l instance_base "$HOME/.devcontainer/instances"
@@ -222,12 +239,13 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         echo "Run with --prune to remove these instances"
     end
 
-    # Reconcile missed Obsidian session syntheses after cleanup
-    if $do_prune; and test (count $to_remove) -gt 0
+    # Reconcile missed Obsidian session syntheses (explicit flag only)
+    if $do_reconcile
         set -l synth_script "$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"
         if test -x "$synth_script"
+            echo ""
             echo "Reconciling missed Obsidian session syntheses..."
-            timeout 30 bash "$synth_script" --reconcile 2>/dev/null; or true
+            bash "$synth_script" --reconcile; or true
         end
     end
 
