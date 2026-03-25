@@ -34,6 +34,8 @@
 - Shell configs → dotfiles root level
 - Scripts → `scripts/` directory
 - Package management → `homebrew/` directory
+- Agent context → `.claude/context/` (theme specs, workflows)
+- Convention rules → `.claude/rules/conventions-*.md` (shell style, testing, commits)
 
 ### Adding New Tools
 - **CLI Tools**: Brewfile → Fish PATH → setup.sh → aliases/functions → Zsh compatibility
@@ -134,7 +136,7 @@ Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `do
 **Adding hooks**: Create executable in `.claude/hooks/` → wire in `.claude/settings.json` → add tests → update docs.
 
 ### Skills, Plugins & Subagents
-- **Skills**: 28 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`.
+- **Skills**: 30 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`. Workflow: `/start` (pick next task) and `/wrap-up` (validate + commit).
 - **Plugins**: 14 plugins from 4 marketplaces + 9 LSP plugins. Managed via `claude plugin install|disable|enable|uninstall`.
 - **Subagents**: 15 agents in `.claude/agents/` (12 domain + 3 project-specific). Reference: `.claude/AGENTS.md`.
 
