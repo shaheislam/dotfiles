@@ -235,7 +235,7 @@ get_agent_state() {
     fi
 
     # Ralph-loop completed but ticket still active → completed
-    # Check explicit active:false OR file deleted by ralph-wiggum stop hook
+    # Check explicit active:false OR file deleted by ralph-loop stop hook
     if [[ "$ralph_active" == "false" ]]; then
         echo '{"state":"completed","worktree":"'"$worktree_path"'","issue_key":"'"$issue_key"'","title":"'"$(echo "$title" | sed 's/"/\\"/g')"'","iteration":"'"${iteration:-0}"'","max_iterations":"'"${max_iterations:-0}"'"}'
         return 0
