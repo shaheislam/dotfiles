@@ -43,7 +43,8 @@ WHAT IT DOES:
   3. Creates PR with ticket link in description
   4. Transitions ticket to Done/Review
   5. Sends notification (if configured)
-  6. Cleans up state file
+  6. Synthesizes session to Obsidian vault
+  7. Exports learnings (Obsidian + per-repo)
 
 REQUIREMENTS:
   - gh CLI authenticated
@@ -212,7 +213,7 @@ cd "$WORKTREE_PATH"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Step 1: Check for uncommitted changes
-echo -e "${BLUE}[1/6] Checking git status...${NC}"
+echo -e "${BLUE}[1/7] Checking git status...${NC}"
 if [[ -n "$(git status --porcelain)" ]]; then
     echo -e "${YELLOW}Warning: Uncommitted changes detected${NC}"
     git status --short
@@ -220,7 +221,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 # Step 2: Merge into main (via queue or direct)
-echo -e "${BLUE}[2/6] Merging into main...${NC}"
+echo -e "${BLUE}[2/7] Merging into main...${NC}"
 
 MERGE_QUEUE="${SCRIPT_DIR}/merge-queue.sh"
 AUTO_MERGE="${SCRIPT_DIR}/auto-merge.sh"
@@ -245,7 +246,7 @@ else
 fi
 
 # Step 3: Create PR
-echo -e "${BLUE}[3/6] Creating Pull Request...${NC}"
+echo -e "${BLUE}[3/7] Creating Pull Request...${NC}"
 
 # Get current branch
 BRANCH=$(git branch --show-current)
@@ -321,7 +322,7 @@ else
 fi
 
 # Step 4: Link PR to ticket / Transition ticket
-echo -e "${BLUE}[4/6] Updating ticket...${NC}"
+echo -e "${BLUE}[4/7] Updating ticket...${NC}"
 
 if $IS_AUTO_GENERATED; then
     echo -e "${YELLOW}Skipping ticket updates (auto-generated task, no external ticket)${NC}"
@@ -357,7 +358,7 @@ else
 fi
 
 # Step 5: Send notification
-echo -e "${BLUE}[5/6] Sending notification...${NC}"
+echo -e "${BLUE}[5/7] Sending notification...${NC}"
 
 NOTIFICATION_TITLE="Ticket $ISSUE_KEY Complete"
 NOTIFICATION_MSG="$TITLE - PR: $PR_URL"
@@ -381,8 +382,22 @@ if [[ -f "$STATE_FILE" ]]; then
     echo "pr_url: \"$PR_URL\"" >>"$STATE_FILE"
 fi
 
-# Step 6: Export learnings (Obsidian + per-repo)
-echo -e "${BLUE}[6/6] Exporting learnings...${NC}"
+# Step 6: Synthesize session to Obsidian
+echo -e "${BLUE}[6/7] Synthesizing session to Obsidian...${NC}"
+
+SYNTHESIZE_SCRIPT="${SCRIPT_DIR}/obsidian/session-synthesize.sh"
+if [[ -x "$SYNTHESIZE_SCRIPT" ]]; then
+    timeout 60 bash "$SYNTHESIZE_SCRIPT" \
+        --worktree "$WORKTREE_PATH" \
+        --ticket "$ISSUE_KEY" 2>&1 || {
+        echo -e "${YELLOW}Session synthesis completed with warnings${NC}"
+    }
+else
+    echo -e "${YELLOW}session-synthesize.sh not found, skipping${NC}"
+fi
+
+# Step 7: Export learnings (Obsidian + per-repo)
+echo -e "${BLUE}[7/7] Exporting learnings...${NC}"
 
 # Derive repo root from worktree
 REPO_ROOT=""
