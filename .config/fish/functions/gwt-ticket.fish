@@ -1628,10 +1628,10 @@ REQUIRED BEHAVIORS:
     # Inject living plan instructions (always active — plan.md is initialized at launch)
     set -l living_plan_suffix "
 
-LIVING PLAN — A plan file exists at .claude/plan.md for this session.
+LIVING PLAN — A plan file exists at .plan.md for this session.
 This file persists across context compactions and session restarts.
 
-UPDATE .claude/plan.md at these points:
+UPDATE .plan.md at these points:
 - After initial codebase investigation (fill in Approach section)
 - After completing each major subtask (update Progress + Current State)
 - After a subagent returns results (capture key findings in Current State)
@@ -1646,7 +1646,7 @@ If an approach is listed there, do NOT retry it — find an alternative.
 When recording a failed approach, always include WHY it failed so future sessions understand.
 
 Only save commands that are genuinely useful — not routine ls/git status calls.
-ALWAYS use Edit (not Write) when updating plan.md to avoid clobbering external edits.
+ALWAYS use Edit (not Write) when updating .plan.md to avoid clobbering external edits.
 The plan is your persistent memory. Hooks will re-inject it after compaction."
     if test -n "$prompt_suffix"
         set prompt_suffix "$prompt_suffix$living_plan_suffix"
@@ -2144,7 +2144,7 @@ $prompt_suffix"
     end
 
     # Initialize living plan document before nvim launches so it's in the buffer list
-    set -l plan_file "$worktree_path/.claude/plan.md"
+    set -l plan_file "$worktree_path/.plan.md"
     if not test -f "$plan_file"
         echo "---
 ticket: \"$issue_key\"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # plan-persist.sh - PreCompact hook to preserve living plan across compaction
 #
-# Extracts key sections from .claude/plan.md. Keeps context small.
+# Extracts key sections from .plan.md. Keeps context small.
 # (#9) Creates a backup before compaction for crash recovery.
 
 set -euo pipefail
@@ -9,7 +9,9 @@ set -euo pipefail
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "")}"
 [[ -z "$PROJECT_DIR" ]] && exit 0
 
-PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
+PLAN_FILE="$PROJECT_DIR/.plan.md"
+# Fallback to legacy location for existing worktrees
+[[ -f "$PLAN_FILE" ]] || PLAN_FILE="$PROJECT_DIR/.claude/plan.md"
 [[ -f "$PLAN_FILE" ]] || exit 0
 
 # (#9) Backup plan before compaction — crash recovery safety net
@@ -26,13 +28,13 @@ if [[ -x "$EXTRACTOR" ]]; then
 fi
 
 if [[ -n "$SECTIONS" ]]; then
-    echo "=== Living Plan (key sections from .claude/plan.md) ==="
+    echo "=== Living Plan (key sections from .plan.md) ==="
     echo "$SECTIONS"
     echo "=== End Living Plan ==="
     echo ""
-    echo "After compaction, read .claude/plan.md for full context, then update it."
+    echo "After compaction, read .plan.md for full context, then update it."
 else
-    echo "A plan file exists at .claude/plan.md — read it after compaction to resume."
+    echo "A plan file exists at .plan.md — read it after compaction to resume."
 fi
 
 exit 0

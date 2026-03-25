@@ -23,7 +23,7 @@ Read the project's key context files to understand the current state:
 
 ```bash
 # Check for living plan (persists session state)
-cat .claude/plan.md 2>/dev/null
+cat .plan.md 2>/dev/null
 
 # Check for session changelog (recent history)
 tail -20 .claude/CHANGELOG.md 2>/dev/null
@@ -81,7 +81,7 @@ bd show PARENT_ID
 
 Check for related context files:
 - If the bead title or description references specific files, read those files
-- If there's a `.claude/plan.md` with relevant sections, note them
+- If there's a `.plan.md` with relevant sections, note them
 
 ### 5. Mark In-Progress and Begin
 

@@ -59,6 +59,9 @@
 .claude/start-claude-pane.fish
 .claude/*.local.md
 .claude/ralph-loop.local.md
+.plan.md
+.plan.md.bak
+# Legacy location (existing worktrees)
 .claude/plan.md
 .claude/plan.md.bak
 .claude/CHANGELOG.md
