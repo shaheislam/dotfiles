@@ -294,7 +294,8 @@ fi
 # This bounds the data to session-relevant content and reduces leak surface.
 
 extract_plan_fields() {
-    local plan_file="$PROJECT_CWD/.claude/plan.md"
+    local plan_file="$PROJECT_CWD/.plan.md"
+    [[ -f "$plan_file" ]] || plan_file="$PROJECT_CWD/.claude/plan.md"
     [[ -f "$plan_file" ]] || return 0
 
     # Extract YAML frontmatter fields only (between first --- and second ---)
@@ -398,7 +399,8 @@ derive_title() {
         [[ -n "$title" ]] && echo "$title" && return 0
     fi
 
-    local plan_file="$PROJECT_CWD/.claude/plan.md"
+    local plan_file="$PROJECT_CWD/.plan.md"
+    [[ -f "$plan_file" ]] || plan_file="$PROJECT_CWD/.claude/plan.md"
     if [[ -f "$plan_file" ]]; then
         local plan_title
         plan_title=$({ grep '^title:' "$plan_file" || true; } | head -1 | sed 's/^title: *//' | tr -d '"')

@@ -192,6 +192,10 @@
           {
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/harness/session-report.sh --json 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""

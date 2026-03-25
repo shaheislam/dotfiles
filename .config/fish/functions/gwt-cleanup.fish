@@ -222,6 +222,15 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         echo "Run with --prune to remove these instances"
     end
 
+    # Reconcile missed Obsidian session syntheses after cleanup
+    if $do_prune; and test (count $to_remove) -gt 0
+        set -l synth_script "$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"
+        if test -x "$synth_script"
+            echo "Reconciling missed Obsidian session syntheses..."
+            timeout 30 bash "$synth_script" --reconcile 2>/dev/null; or true
+        end
+    end
+
     # Clean up orphaned claude-code-config-* Docker volumes from old per-container approach
     if command -q docker
         set -l orphaned_vols (docker volume ls -q --filter "name=claude-code-config-" 2>/dev/null)

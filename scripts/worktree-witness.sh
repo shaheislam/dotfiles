@@ -862,6 +862,15 @@ self_nuke() {
 
     log "Self-nuke executing: removing worktree $WORKTREE_PATH"
 
+    # Synthesize session to Obsidian before removal (data lives in the worktree)
+    local synth_script="$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"
+    if [[ -x "$synth_script" ]]; then
+        log "Synthesizing session before worktree removal..."
+        timeout 60 bash "$synth_script" --worktree "$WORKTREE_PATH" 2>/dev/null || {
+            log "Session synthesis failed or timed out (non-fatal)"
+        }
+    fi
+
     # Remove worktree
     git worktree remove "$WORKTREE_PATH" --force 2>/dev/null || {
         log "Self-nuke: git worktree remove failed, trying rm"
