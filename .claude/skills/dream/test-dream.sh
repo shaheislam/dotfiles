@@ -318,6 +318,133 @@ do_teardown() {
     pass "Test environment removed."
 }
 
+do_unit() {
+    echo ""
+    info "Running unit tests for dream infrastructure scripts..."
+    echo ""
+
+    local total=0
+    local passed=0
+
+    run_check() {
+        total=$((total + 1))
+        if eval "$1"; then
+            pass "$2"
+            passed=$((passed + 1))
+        else
+            fail "$2"
+        fi
+    }
+
+    # Allow override for worktree testing
+    local skill_dir="${DREAM_SKILL_DIR:-$HOME/.claude/skills/dream}"
+
+    # Syntax checks
+    run_check "bash -n '$skill_dir/should-dream.sh'" \
+        "should-dream.sh syntax valid"
+    run_check "bash -n '$skill_dir/dream-hook.sh'" \
+        "dream-hook.sh syntax valid"
+    run_check "bash -n '$skill_dir/count-session.sh'" \
+        "count-session.sh syntax valid"
+    run_check "bash -n '$skill_dir/gather-sessions.sh'" \
+        "gather-sessions.sh syntax valid"
+    run_check "bash -n '$skill_dir/dream-status.sh'" \
+        "dream-status.sh syntax valid"
+
+    # Config file exists with required keys
+    run_check "[[ -f '$skill_dir/.dream-config' ]]" \
+        ".dream-config exists"
+    run_check "grep -q 'DREAM_MIN_HOURS=' '$skill_dir/.dream-config'" \
+        ".dream-config has DREAM_MIN_HOURS"
+    run_check "grep -q 'DREAM_MIN_SESSIONS=' '$skill_dir/.dream-config'" \
+        ".dream-config has DREAM_MIN_SESSIONS"
+    run_check "grep -q 'DREAM_LINE_LIMIT=' '$skill_dir/.dream-config'" \
+        ".dream-config has DREAM_LINE_LIMIT"
+    run_check "grep -q 'DREAM_SESSION_WINDOW_DAYS=' '$skill_dir/.dream-config'" \
+        ".dream-config has DREAM_SESSION_WINDOW_DAYS"
+
+    # Session counter test
+    local orig_count=""
+    if [[ -f "$skill_dir/.session-count" ]]; then
+        orig_count=$(cat "$skill_dir/.session-count")
+    fi
+    bash "$skill_dir/count-session.sh"
+    local new_count
+    new_count=$(cat "$skill_dir/.session-count" 2>/dev/null || echo "0")
+    run_check "[[ '$new_count' -gt 0 ]]" \
+        "count-session.sh increments counter (count: $new_count)"
+    # Restore original count
+    if [[ -n "$orig_count" ]]; then
+        echo "$orig_count" >"$skill_dir/.session-count"
+    else
+        rm -f "$skill_dir/.session-count"
+    fi
+
+    # Status script output
+    local status_output
+    status_output=$(bash "$skill_dir/dream-status.sh" 2>/dev/null || echo "")
+    run_check "[[ -n '$status_output' ]]" \
+        "dream-status.sh produces output: '$status_output'"
+
+    # Status with hint flag
+    local hint_output
+    hint_output=$(bash "$skill_dir/dream-status.sh" --hint 2>/dev/null || echo "")
+    run_check "[[ -n '$hint_output' ]]" \
+        "dream-status.sh --hint produces output: '$hint_output'"
+
+    # SKILL.md has required sections
+    run_check "grep -q 'Configuration' '$skill_dir/SKILL.md'" \
+        "SKILL.md documents configuration"
+    run_check "grep -q 'Status line' '$skill_dir/SKILL.md'" \
+        "SKILL.md documents status line"
+    run_check "grep -q 'DREAM_MIN_SESSIONS' '$skill_dir/SKILL.md'" \
+        "SKILL.md documents minSessions"
+
+    # Hook is wired in settings.json (check both user and project settings)
+    local settings_file="$HOME/.claude/settings.json"
+    local project_settings=""
+    # Also check project-level settings if in a worktree
+    if [[ -f "$skill_dir/../../settings.json" ]]; then
+        project_settings="$skill_dir/../../settings.json"
+    fi
+    if [[ -f "$settings_file" ]] || [[ -n "$project_settings" ]]; then
+        run_check "grep -rq 'dream-hook.sh' '$settings_file' '$project_settings' 2>/dev/null" \
+            "dream-hook.sh wired in settings.json Stop hook"
+        run_check "grep -rq 'count-session.sh' '$settings_file' '$project_settings' 2>/dev/null" \
+            "count-session.sh wired in settings.json SessionStart hook"
+    else
+        warn "settings.json not found, skipping hook wiring checks"
+    fi
+
+    # dream-hook.sh contains native-aligned prompt
+    run_check "grep -q 'You are performing a dream' '$skill_dir/dream-hook.sh'" \
+        "dream-hook.sh uses native autodream prompt"
+    run_check "grep -q 'gather-sessions.sh' '$skill_dir/dream-hook.sh'" \
+        "dream-hook.sh feeds session metadata"
+    run_check "grep -q 'dream-status' '$skill_dir/dream-hook.sh'" \
+        "dream-hook.sh updates status file"
+
+    # should-dream.sh checks both thresholds
+    run_check "grep -q 'check_session_threshold' '$skill_dir/should-dream.sh'" \
+        "should-dream.sh has session threshold check"
+    run_check "grep -q 'check_time_threshold' '$skill_dir/should-dream.sh'" \
+        "should-dream.sh has time threshold check"
+
+    echo ""
+    echo "=============================="
+    echo -e "  Results: ${passed}/${total} unit checks passed"
+    echo "=============================="
+    echo ""
+
+    if [[ $passed -eq $total ]]; then
+        echo -e "${GREEN}All unit tests passed!${NC}"
+        return 0
+    else
+        echo -e "${RED}Some unit tests failed.${NC}"
+        return 1
+    fi
+}
+
 case "${1:-}" in
 setup)
     do_setup
@@ -325,14 +452,18 @@ setup)
 verify)
     do_verify
     ;;
+unit)
+    do_unit
+    ;;
 teardown)
     do_teardown
     ;;
 *)
-    echo "Usage: $0 {setup|verify|teardown}"
+    echo "Usage: $0 {setup|verify|unit|teardown}"
     echo ""
     echo "  setup     - Create test fixtures with known issues"
     echo "  verify    - Check if dream skill fixed the issues"
+    echo "  unit      - Run unit tests on dream infrastructure scripts"
     echo "  teardown  - Remove test fixtures"
     exit 1
     ;;
