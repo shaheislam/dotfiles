@@ -138,7 +138,7 @@ Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `do
 **Settings Edit Workaround** ([#37029](https://github.com/anthropics/claude-code/issues/37029)): `--dangerously-skip-permissions` still prompts for edits to `~/.claude/settings*.json`. A PreToolUse hook (`settings-edit-redirect.py`) blocks Edit/Write on these files and redirects to `jq` via Bash. When modifying Claude settings, ALWAYS use Bash + jq instead of Edit.
 
 ### Skills, Plugins & Subagents
-- **Skills**: 30 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`. Workflow: `/start` (pick next task) and `/wrap-up` (validate + commit).
+- **Skills**: 38 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`. Workflow: `/start` (pick next task) and `/wrap-up` (validate + commit).
 - **Plugins**: 14 plugins from 4 marketplaces + 9 LSP plugins. Managed via `claude plugin install|disable|enable|uninstall`.
 - **Subagents**: 15 agents in `.claude/agents/` (12 domain + 3 project-specific). Reference: `.claude/AGENTS.md`.
 
