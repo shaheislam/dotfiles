@@ -66,19 +66,24 @@ Choose the pattern that best matches the requirement. Complex requirements may c
 
 ## Step 3: Ground in Domain Theory
 
-Match the requirement to relevant frameworks:
+Read `references/domain_theories.md` for the full theory catalog (50+ theories across 10 domains). Match the requirement to the most relevant domain and cite the specific theory.
 
-| Domain | Frameworks |
-|--------|-----------|
-| UX/UI | Gestalt principles, Fitts's Law, Nielsen heuristics |
-| Productivity | GTD, Eisenhower matrix, Pomodoro |
-| Behavior | BJ Fogg Behavior Model, Hook Model |
-| Security | Zero Trust, OWASP Top 10, Principle of Least Privilege |
-| Architecture | SOLID, CAP theorem, 12-factor app |
-| Data | ACID, eventual consistency, CQRS |
-| Testing | Test pyramid, property-based testing, mutation testing |
+Quick domain lookup:
 
-Add a one-line note citing which theory applies and why.
+| Domain | Key Theories | When to Use |
+|--------|-------------|-------------|
+| Productivity | GTD, Eisenhower, Kanban, JTBD | Task management, workflow, prioritization |
+| UX/UI | Gestalt, Fitts's Law, Hick's Law, Nielsen | Interface layout, interaction design |
+| Behavior | BJ Fogg, Hook Model, Nudge Theory | User engagement, habit formation |
+| Security | Zero Trust, Least Privilege, OWASP | Auth, access control, data protection |
+| Architecture | SOLID, CAP, 12-Factor, Conway's Law | System design, module boundaries |
+| Data | ACID, Eventual Consistency, CQRS | Storage, transactions, query patterns |
+| Testing | Test Pyramid, Boundary Analysis, Chaos Engineering | Verification, quality gates |
+| Performance | Amdahl's Law, Little's Law, Backpressure | Scaling, throughput, latency |
+| Operations | SLO/SLI, MTTR>MTBF, Circuit Breaker | Reliability, monitoring, incident response |
+| Communication | AIDA, Cialdini's Principles, Info Architecture | Messaging, content structure |
+
+For each cited theory, include: theory name, one sentence on how it applies, and what it implies for the requirement.
 
 ## Step 4: Extract Concrete Examples
 
@@ -151,6 +156,50 @@ ENHANCED PROMPT:
 [Complete enhanced prompt from Step 5]
 ```
 
+## Handling Compound Requirements
+
+If the input contains multiple concerns, decompose into atomic EARS statements:
+
+**Signal words**: "and", "also", "including", "as well as", "with support for"
+
+**Before** (compound):
+> "The system should handle user uploads fast and securely with good error messages"
+
+**After** (decomposed):
+1. When a user uploads a file, the system shall begin processing within 2 seconds.
+2. When a user uploads a file, the system shall validate the file type against an allowlist before processing.
+3. If an upload fails validation, the system shall display the rejection reason and accepted file types.
+
+Each atomic statement gets its own EARS pattern, domain theory citation, and examples.
+
+## Non-Functional Requirement Patterns
+
+For performance, scalability, and reliability requirements, use measurable EARS extensions:
+
+**Performance**:
+```
+The system shall [action] within [time] under [load].
+```
+Example: "The system shall return search results within 200ms under 1000 concurrent users."
+
+**Availability**:
+```
+The system shall maintain [metric] of [target] measured over [period].
+```
+Example: "The system shall maintain uptime of 99.9% measured over each calendar month."
+
+**Scalability**:
+```
+The system shall support [capacity] without [degradation condition].
+```
+Example: "The system shall support 10,000 concurrent WebSocket connections without exceeding 4GB memory."
+
+**Data Integrity**:
+```
+The system shall ensure [data property] even when [failure scenario].
+```
+Example: "The system shall ensure no duplicate transactions even when the client retries a timed-out request."
+
 ## Quality Checks
 
 Before presenting results, verify:
@@ -160,3 +209,5 @@ Before presenting results, verify:
 - [ ] At least one error case is covered
 - [ ] Acceptance criteria are binary pass/fail testable
 - [ ] Domain theory is cited where applicable
+- [ ] Compound requirements are decomposed into atomic statements
+- [ ] Non-functional requirements include measurable thresholds

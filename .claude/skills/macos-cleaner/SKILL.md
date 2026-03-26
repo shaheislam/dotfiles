@@ -44,8 +44,16 @@ Analyze each major category:
 # Developer caches
 du -sh ~/.npm ~/.cache ~/.cargo ~/.rustup ~/.local 2>/dev/null | sort -rh
 
-# Homebrew
+# Homebrew (cache + orphaned deps)
 du -sh "$(brew --prefix)/Cellar" "$(brew --cache)" 2>/dev/null
+brew autoremove --dry-run 2>/dev/null | tail -5
+
+# Python caches
+du -sh ~/.cache/pip ~/.local/pipx 2>/dev/null | sort -rh
+
+# Nix store (if present)
+du -sh /nix/store 2>/dev/null
+nix-store --gc --print-dead 2>/dev/null | wc -l
 
 # Application caches
 du -sh ~/Library/Caches/* 2>/dev/null | sort -rh | head -15
@@ -53,6 +61,7 @@ du -sh ~/Library/Caches/* 2>/dev/null | sort -rh | head -15
 # Xcode (if present)
 du -sh ~/Library/Developer/Xcode/DerivedData 2>/dev/null
 du -sh ~/Library/Developer/CoreSimulator 2>/dev/null
+xcrun simctl list devices unavailable 2>/dev/null | grep -c "unavailable"
 
 # Claude Code sessions
 du -sh ~/.claude/projects 2>/dev/null
@@ -91,8 +100,12 @@ Present a table with safety classification:
 | `~/.Trash` | 5.2G | SAFE | Deleted files already in trash | None |
 | `brew --cache` | 3.1G | SAFE | Downloaded package archives | Re-downloads on next install |
 | `~/.npm/_cacache` | 1.8G | CAUTION | npm package cache | Re-downloads, slow on bad network |
+| `~/.cache/pip` | 500M | SAFE | pip download cache | Re-downloads on next install |
 | `DerivedData` | 12G | CAUTION | Xcode build cache | 10-30 min rebuild per project |
-| `~/.claude/projects` | 800M | CAUTION | Session history | Lost forever, use history-finder first |
+| Unavailable sims | 3G | SAFE | Old iOS simulator runtimes | No rebuild cost |
+| `~/.claude/projects` | 800M | CAUTION | Session history | Lost forever, use /continue-claude-work first |
+| `/nix/store` dead | 5G | SAFE | Unreferenced Nix packages | Re-downloads if needed |
+| `brew` orphans | 1G | SAFE | Unused dependency packages | Reinstalls if needed |
 | Docker volumes | 8G | DANGER | May contain databases | Inspect before removing |
 
 ### Safety Levels
@@ -113,6 +126,18 @@ Present commands grouped by safety level. User executes them, we don't.
 
 # Clear Homebrew cache (X.XG)
 # brew cleanup --prune=0
+
+# Remove orphaned Homebrew dependencies (X.XG)
+# brew autoremove
+
+# Clear pip cache (X.XG)
+# pip cache purge
+
+# Remove unavailable Xcode simulators (X.XG)
+# xcrun simctl delete unavailable
+
+# Garbage-collect Nix store dead paths (X.XG)
+# nix-collect-garbage -d
 
 # === CAUTION (confirm each) ===
 # Clear npm cache (X.XG) - will re-download on next install

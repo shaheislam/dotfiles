@@ -7,11 +7,11 @@ allowed-tools: Bash, Read, Glob, Grep
 
 # Continue Claude Work
 
-Recover actionable context from a prior Claude Code session and continue in the current conversation.
+Recover actionable context from a prior session and continue in the current conversation.
 
 ## Why This Exists
 
-`claude --resume` replays the full session transcript into the context window. For long sessions this wastes tokens on resolved issues and stale state. This skill selectively reconstructs only actionable context: the latest compact summary, pending work, known errors, and current workspace state.
+`claude --resume` replays the full transcript into the context window. For long sessions this wastes tokens on resolved issues and stale state. This skill runs `scripts/extract_context.py` to selectively extract only actionable context: session end status, compact summary, pending work, errors, and tool/file stats.
 
 ## Arguments
 
@@ -20,214 +20,111 @@ Recover actionable context from a prior Claude Code session and continue in the 
   - `--list` - Show recent sessions for this project
   - `--search <query>` - Find sessions by keyword
 
-## Step 1: Locate Sessions
-
-Find the project's session directory:
+## Step 1: Locate Session Directory
 
 ```bash
-# Get the normalized project path used by Claude Code
 PROJECT_DIR=$(pwd)
 NORMALIZED=$(echo "$PROJECT_DIR" | sed 's|/|-|g; s|^-||')
 SESSION_DIR="$HOME/.claude/projects/$NORMALIZED"
-
-# Verify it exists
-ls -la "$SESSION_DIR"/*.jsonl 2>/dev/null | tail -10
+ls "$SESSION_DIR"/*.jsonl 2>/dev/null | wc -l
 ```
 
-If `--list`:
+If no sessions found, also try the `-Users-` prefix variant that Claude Code sometimes uses.
+
+## Step 2: Run Extraction Script
+
+For `--list`:
 ```bash
-# List recent sessions with metadata
 for f in $(ls -t "$SESSION_DIR"/*.jsonl 2>/dev/null | head -10); do
-  SESSION_ID=$(basename "$f" .jsonl)
-  SIZE=$(du -sh "$f" | cut -f1)
-  MODIFIED=$(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$f")
-  # Get first user message as topic hint
-  TOPIC=$(grep -m1 '"role":"user"' "$f" 2>/dev/null | python3 -c "
-import sys, json
-try:
-    line = json.loads(sys.stdin.readline())
-    msg = line.get('message', {})
-    content = msg.get('content', '')
-    if isinstance(content, list):
-        for c in content:
-            if isinstance(c, dict) and c.get('type') == 'text':
-                content = c['text']
-                break
-    print(str(content)[:80])
-except: print('(no topic)')
-" 2>/dev/null)
-  echo "$MODIFIED  $SIZE  $SESSION_ID  $TOPIC"
+  stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$f" | tr '\n' ' '
+  du -sh "$f" | cut -f1 | tr '\n' ' '
+  basename "$f" .jsonl
 done
 ```
-Stop here if `--list` was specified.
 
-If `--search`:
+For `--search`:
 ```bash
-# Search across sessions for keyword
-grep -l "$QUERY" "$SESSION_DIR"/*.jsonl 2>/dev/null | while read f; do
-  SESSION_ID=$(basename "$f" .jsonl)
-  MODIFIED=$(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$f")
-  echo "$MODIFIED  $SESSION_ID"
+grep -rl "$QUERY" "$SESSION_DIR"/*.jsonl 2>/dev/null | while read f; do
+  basename "$f" .jsonl
 done
 ```
-Stop here if `--search` was specified.
 
-## Step 2: Extract Context
-
-For the target session (specific ID or most recent):
-
+For context extraction (specific session or most recent):
 ```bash
 SESSION_FILE="$SESSION_DIR/$SESSION_ID.jsonl"
 
-# Skip if this is the active session (modified < 60s ago)
+# Guard: skip if this is the active session
 if [ $(($(date +%s) - $(stat -f '%m' "$SESSION_FILE"))) -lt 60 ]; then
-  echo "WARNING: This appears to be the currently active session. Skipping."
-  exit 1
+  echo "WARNING: Active session. Skipping."
+else
+  python3 "$(dirname "$0")/../scripts/extract_context.py" "$SESSION_FILE"
 fi
 ```
 
-### Find Compact Summary (Highest-Signal Context)
+The script outputs structured sections: SESSION_STATUS, COMPACT_SUMMARY, RECENT_MESSAGES, ERRORS, TOP_TOOLS, FILES_TOUCHED.
 
-The compact summary is Claude's own distilled understanding of the conversation:
+## Step 3: Act on Session Status
 
-```bash
-# Find the last compaction boundary and extract the summary
-python3 -c "
-import json, sys
+The script classifies how the session ended. Branch strategy accordingly:
 
-session_file = '$SESSION_FILE'
-last_compact = None
+| Status | Meaning | Strategy |
+|--------|---------|----------|
+| **COMPLETED** | Session ended normally | Check if follow-up work was mentioned in final messages |
+| **INTERRUPTED** | User was mid-conversation | Resume from their last message - this is the primary use case |
+| **ERROR_CASCADE** | 3+ consecutive tool errors | Read the errors section first. Do NOT retry the same approach blindly |
+| **ABANDONED** | Session stopped without conclusion | Check recent messages for intent, then check workspace state |
 
-with open(session_file) as f:
-    for line in f:
-        try:
-            entry = json.loads(line.strip())
-            if entry.get('type') == 'summary':
-                last_compact = entry
-        except: pass
-
-if last_compact:
-    msg = last_compact.get('summary', last_compact.get('message', {}).get('content', ''))
-    if isinstance(msg, list):
-        texts = [c.get('text', '') for c in msg if isinstance(c, dict) and c.get('type') == 'text']
-        msg = '\n'.join(texts)
-    print('=== COMPACT SUMMARY ===')
-    print(str(msg)[:3000])
-else:
-    print('No compaction found (short session)')
-" 2>/dev/null
-```
-
-### Extract Recent Messages
+## Step 4: Check Current Workspace State
 
 ```bash
-# Get last 20 meaningful messages (skip system/progress)
-python3 -c "
-import json
-
-session_file = '$SESSION_FILE'
-messages = []
-
-with open(session_file) as f:
-    for line in f:
-        try:
-            entry = json.loads(line.strip())
-            if entry.get('type') in ('user', 'assistant'):
-                msg = entry.get('message', {})
-                role = msg.get('role', entry.get('type', ''))
-                content = msg.get('content', '')
-                if isinstance(content, list):
-                    texts = [c.get('text', '') for c in content if isinstance(c, dict) and c.get('type') == 'text']
-                    content = '\n'.join(texts)
-                content = str(content).strip()
-                # Skip system reminders and empty
-                if content and '<system-reminder>' not in content and '<task-notification>' not in content:
-                    messages.append((role, content[:500]))
-        except: pass
-
-print('=== RECENT MESSAGES (last 20) ===')
-for role, content in messages[-20:]:
-    print(f'\n[{role.upper()}]: {content}')
-" 2>/dev/null
-```
-
-### Check for Errors and Unresolved Work
-
-```bash
-# Find tool errors
-python3 -c "
-import json
-
-session_file = '$SESSION_FILE'
-errors = []
-
-with open(session_file) as f:
-    for line in f:
-        try:
-            entry = json.loads(line.strip())
-            if entry.get('type') == 'tool_result':
-                content = entry.get('content', '')
-                if 'error' in str(content).lower():
-                    errors.append(str(content)[:200])
-        except: pass
-
-if errors:
-    print('=== ERRORS ENCOUNTERED ===')
-    for e in errors[-5:]:
-        print(f'- {e}')
-else:
-    print('No errors found in session')
-" 2>/dev/null
-```
-
-## Step 3: Check Current Workspace State
-
-```bash
-# Current git state
 git status --short
 git log --oneline -5
-
-# Check for living plan
 cat .plan.md 2>/dev/null | head -40
-
-# Check for in-progress beads
 bd list --status=in_progress 2>/dev/null
 ```
 
-## Step 4: Reconcile and Continue
+Cross-reference workspace state against the extracted context:
+- If git branch changed since the session, note it
+- If referenced files were modified by another session, note conflicts
+- If .plan.md exists, it may be more current than the session transcript
+
+## Step 5: Reconcile and Continue
 
 Before making changes:
-1. Confirm current directory matches the session's project
-2. If git branch has changed, note and decide whether to switch
-3. Verify old claims still hold by checking referenced files
-4. Do NOT assume prior claims are valid without checking
+1. Verify current directory matches the session's project
+2. Check that files mentioned in the session still exist and match expectations
+3. Do NOT assume prior claims are valid without checking
 
 Then:
-- Implement the next concrete step from the last user request
-- Run deterministic verification (tests, type-checks, build)
-- If blocked, state the exact blocker and propose one next action
+- For INTERRUPTED: implement the next concrete step from the last user request
+- For ERROR_CASCADE: diagnose the root cause before retrying
+- For ABANDONED: present a summary and ask user what to prioritize
+- For COMPLETED: check for mentioned follow-up work
 
-## Step 5: Report
+Always run deterministic verification (tests, type-checks, build) after changes.
+
+## Step 6: Report
 
 ```
 === CONTEXT RECOVERED ===
 Session: [session-id]
 Last active: [date]
+Status: [COMPLETED|INTERRUPTED|ERROR_CASCADE|ABANDONED]
 Summary: [key findings from compact summary]
+Top files: [most-touched files from session]
 
-=== WORK EXECUTED ===
-- [files changed]
-- [commands run]
-- [test results]
+=== STRATEGY ===
+[Based on status, what we're doing and why]
 
 === REMAINING ===
-- [pending tasks, if any]
+[Pending tasks, if any]
 ```
 
 ## Guardrails
 
 - Do NOT run `claude --resume` or `claude --continue` - this skill provides context recovery within the current session
-- Do NOT treat compact summaries as complete truth - they are lossy. Always verify against current workspace
+- Do NOT treat compact summaries as complete truth - they are lossy. Verify against current workspace
 - Do NOT overwrite unrelated working-tree changes
-- Do NOT load full session files into context - use the extraction scripts above
+- Do NOT load full session JSONL files into context - always use the extraction script
 - Session files are local only - cannot recover from other machines
+- For ERROR_CASCADE sessions: read errors before acting. The same approach will likely fail again
