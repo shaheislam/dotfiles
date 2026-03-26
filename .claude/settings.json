@@ -18,6 +18,7 @@
     "learning-output-style@claude-code-plugins": true,
     "plugin-dev@claude-code-plugins": true,
     "pr-review-toolkit@claude-code-plugins": true,
+    "pua@pua-skills": true,
     "ralph-loop@claude-plugins-official": true,
     "security-guidance@claude-code-plugins": true,
     "superpowers@superpowers-marketplace": true,
