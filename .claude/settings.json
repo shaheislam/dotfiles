@@ -250,6 +250,10 @@
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-start.sh 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/hooks/plugin-chmod-fix.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
