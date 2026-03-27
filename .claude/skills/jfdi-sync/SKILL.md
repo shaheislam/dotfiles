@@ -1,3 +1,8 @@
+---
+name: jfdi-sync
+description: Sync Claude Code sessions to the JFDI database and Obsidian vault. Use when syncing JSONL session files, updating the SQLite database, or refreshing the Obsidian session index.
+---
+
 # JFDI Sync
 
 Sync Claude Code sessions to the JFDI database and Obsidian vault.

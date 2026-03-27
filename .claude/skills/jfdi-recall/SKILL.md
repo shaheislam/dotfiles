@@ -1,3 +1,8 @@
+---
+name: jfdi-recall
+description: Query memories from the JFDI database on demand. Use when searching past session insights, recalling corrections, decisions, or learned patterns from previous work.
+---
+
 # JFDI Recall
 
 Query memories from the JFDI database on demand.

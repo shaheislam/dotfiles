@@ -1,3 +1,8 @@
+---
+name: jfdi
+description: "JFDI Executive Assistant. Captures session metadata, extracts memories, and syncs to Obsidian. Use when checking JFDI status or orchestrating the sync/extract/recall/synthesis pipeline."
+---
+
 # JFDI Executive Assistant
 
 The JFDI (Just F***ing Do It) system captures session metadata, extracts memories, and syncs to Obsidian.

@@ -1,4 +1,5 @@
 ---
+name: jira-batch
 description: Batch create Jira tickets from epic markdown files
 arguments:
   - name: file

@@ -1,4 +1,5 @@
 ---
+name: ticket-execute
 description: Execute a ticket autonomously using devcontainer + ralph-loop
 arguments:
   - name: ticket
