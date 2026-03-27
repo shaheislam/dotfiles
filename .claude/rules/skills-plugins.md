@@ -13,10 +13,10 @@ All custom commands migrated to `.claude/skills/` (24 skills). See `docs/skills-
 **Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification)
 
-## Plugins (14 total)
+## Plugins (15 total)
 Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.
 
-**Marketplaces**: `anthropics/claude-code`, `kenryu42/cc-marketplace`, `antonbabenko/terraform-skill`, `steveyegge/beads`
+**Marketplaces**: `anthropics/claude-code`, `kenryu42/cc-marketplace`, `antonbabenko/terraform-skill`, `steveyegge/beads`, `tanweai/pua`
 
 | Plugin | Command | Purpose |
 |--------|---------|---------|
@@ -26,6 +26,7 @@ Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`
 | **feature-dev** | `/feature-dev` | 7-phase feature development |
 | **ralph-loop** | `/ralph-loop:ralph-loop` | Autonomous iteration loops |
 | **beads** | `/beads:ready`, `/beads:create` | Git-backed agent memory |
+| **pua** | `/pua`, `/pua:p7`, `/pua:loop` | AI debugging persistence (L0-L4 pressure escalation) |
 
 **Managing**: `claude plugin install|disable|enable|uninstall plugin-name@marketplace`
 **Token Cost**: `explanatory-output-style` and `learning-output-style` add SessionStart hooks. Disable when not needed.

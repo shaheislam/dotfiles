@@ -139,7 +139,7 @@ Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `do
 
 ### Skills, Plugins & Subagents
 - **Skills**: 38 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`. Workflow: `/start` (pick next task) and `/wrap-up` (validate + commit).
-- **Plugins**: 14 plugins from 4 marketplaces + 9 LSP plugins. Managed via `claude plugin install|disable|enable|uninstall`.
+- **Plugins**: 15 plugins from 5 marketplaces + 9 LSP plugins. Managed via `claude plugin install|disable|enable|uninstall`. Includes `pua@pua-skills` for AI debugging persistence (L0-L4 pressure escalation).
 - **Subagents**: 15 agents in `.claude/agents/` (12 domain + 3 project-specific). Reference: `.claude/AGENTS.md`.
 
 ### LSP Integration
