@@ -1,3 +1,8 @@
+---
+name: jfdi-extract
+description: Extract memories from Claude Code sessions using AI analysis. Use when processing unextracted sessions, running memory extraction pipelines, or syncing session insights to Obsidian.
+---
+
 # JFDI Extract
 
 Extract memories from Claude Code sessions using AI analysis.

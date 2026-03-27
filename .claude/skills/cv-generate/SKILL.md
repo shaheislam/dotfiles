@@ -1,3 +1,8 @@
+---
+name: cv-generate
+description: "AI-Powered CV Generator. Generate an optimized CV in LaTeX format by analyzing job descriptions and matching relevant skills. Use when creating tailored CVs, processing job descriptions, or compiling LaTeX resumes to PDF."
+---
+
 # /cv-generate - AI-Powered CV Generator
 
 Generate an optimized CV in LaTeX format by analyzing job descriptions and matching relevant skills.

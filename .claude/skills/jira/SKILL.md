@@ -1,4 +1,5 @@
 ---
+name: jira
 description: Jira ticket management - create, update, search, and batch operations
 arguments:
   - name: action

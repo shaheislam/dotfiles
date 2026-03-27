@@ -1,4 +1,5 @@
 ---
+name: todo
 description: Quick ticket creation - auto-detects Linear (personal) or Jira (work)
 arguments:
   - name: description

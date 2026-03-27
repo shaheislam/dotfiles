@@ -1,3 +1,8 @@
+---
+name: jfdi-synthesis
+description: Generate weekly synthesis reports from session and memory data. Use when creating weekly summaries, analyzing work patterns, or generating Obsidian synthesis reports.
+---
+
 # JFDI Synthesis
 
 Generate weekly synthesis reports from session and memory data.

@@ -1,4 +1,5 @@
 ---
+name: confluence
 description: Convert markdown to Confluence Storage Format and publish to pages
 arguments:
   - name: action
