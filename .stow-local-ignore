@@ -13,6 +13,7 @@ scripts/
 homebrew/
 CLAUDE\.md
 AGENTS\.md
+GEMINI\.md
 
 # Nix home-manager (managed by Nix, not stow)
 \.config/home-manager
