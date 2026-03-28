@@ -72,7 +72,18 @@ function codex-rotate --description "Run codex with automatic account rotation (
     echo "codex-rotate: All $total accounts exhausted (usage limits). Try again later." >&2
     echo "codex-rotate: Accounts tried:" >&2
     for name in $names
-        set -l info (_codex_accounts_decode_jwt "$accounts_dir/$name/auth.json")
+        # Inline JWT decode to avoid dependency on codex-accounts autoload
+        set -l info (python3 -c "
+import json, base64, sys
+try:
+    auth = json.load(open('$accounts_dir/$name/auth.json'))
+    token = auth.get('tokens', {}).get('id_token', '')
+    payload = token.split('.')[1]
+    payload += '=' * (4 - len(payload) % 4)
+    data = json.loads(base64.urlsafe_b64decode(payload))
+    print(f'{data.get(\"email\", \"unknown\")} ({data.get(\"https://api.openai.com/auth\", {}).get(\"chatgpt_plan_type\", \"unknown\")})')
+except: print('decode error')
+" 2>/dev/null; or echo "decode error")
         echo "  - $name: $info" >&2
     end
     return 1
