@@ -65,9 +65,10 @@
 - Functions in `.config/fish/functions/` — one function per file
 - Function filename must match function name
 - Use `argparse` for flag parsing, `set -l` for locals, `set -gx` for exports
-- Use `test` over `[` for conditionals
+- Use `set` not `export`. Use `; and` not `&&`. Use `test` not `[[ ]]`
 - String operations: prefer Fish builtins (`string match`, `string replace`)
 - Error output: `echo "Error: message" >&2`
+- `config.fish` is 2800+ lines. Read the relevant section first, do not rewrite the entire file
 
 ### Bash Scripts
 - Scripts in `scripts/` directory
@@ -102,8 +103,12 @@
 - Bash lint: `shellcheck <file>`
 - Stow dry-run: `stow --simulate --verbose .`
 - Smoke test: `scripts/smoke-test.sh`
+- macOS validation: `scripts/validate-macos.sh`
 - Filtered tests: `scripts/test-filter.sh [group]` (run `--list` for groups)
 - Full validation: `scripts/validate-comprehensive.sh`
+- For Fish functions, test by sourcing: `source .config/fish/functions/<name>.fish`
+- There are no unit test frameworks for shell scripts — test by execution
+- Cross-platform testing via Docker containers (`scripts/docker/`). Start Colima first
 
 ## Setup Script
 
@@ -111,6 +116,23 @@
 - Profiles: minimal, standard, comprehensive, dev, ops
 - New tool additions require: Brewfile entry + setup.sh phase + Fish/Zsh PATH config
 - Test with `--dry-run` flag first
+
+### Git Worktree Functions
+
+- The `gwt-*` functions in `.config/fish/functions/` are the core worktree system
+- `gwt-dev.fish` creates worktrees with devcontainer isolation
+- `gwt-ticket.fish` is the autonomous ticket executor — read it before modifying
+- `devcon.fish` handles all devcontainer lifecycle — do not create separate container management
+- The devcon sandbox (`~/dotfiles/devcontainer/claude-code-plugins/`) is a built-in container config. Projects do NOT need their own `.devcontainer/` directory to use it
+- All tmux panes in devcontainer windows must run inside the container (via `devcontainer exec`)
+
+### Peripheral Tools
+
+- **Self-Hosted LLM**: Ollama + Open WebUI. Setup: `scripts/setup-selfhost-llm.sh`. Fish: `llm`, `llm-code`, `llm-chat`, `llm-status`
+- **Mobile Coding**: Mosh + Tailscale (`scripts/setup-mobile-coding.sh`)
+- **Pi-hole**: `scripts/pihole/`, Fish wrapper: `pihole start|stop|dns-on|dns-off|status`
+- **Karabiner**: `.config/karabiner/karabiner.json` (Caps Lock ↔ Escape, edit via GUI)
+- **K8s Manifests**: ALWAYS in `scripts/manifests/` with README updates
 
 ## Common Mistakes to Avoid
 
@@ -120,6 +142,8 @@
 - Do not manually create symlinks — use stow
 - Do not modify Karabiner JSON directly — use the GUI
 - Do not sort/reorganize Brewfile — maintain existing grouping
+- Do not create README.md files unless explicitly asked
+- Do not add Tokyo Night theme configs without checking all tools for consistency
 - tmux plugins are managed by TPM, not stow
 - LazyVim config lives in `~/neovim`, not here
 
@@ -134,3 +158,19 @@
 - **Theme Inconsistency**: Check Tokyo Night theme application
 - **Plugin Failures**: Verify plugin managers are properly configured
 - **Stow Conflicts**: Resolve symlink conflicts before deployment
+
+## Session Completion
+
+When ending a work session, complete ALL steps:
+
+1. **Run quality gates** (if code changed) — tests, linters, syntax checks
+2. **Commit changes** — use conventional commit format
+3. **Push to remote** — work is NOT complete until `git push` succeeds:
+   ```
+   git pull --rebase
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+4. **Verify** — all changes committed AND pushed
+
+Do not stop before pushing — that leaves work stranded locally.
