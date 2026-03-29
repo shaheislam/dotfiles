@@ -66,6 +66,7 @@ list_groups() {
     echo "  openclaw      - OpenClaw integration"
     echo "  subagents     - Claude Code subagent files"
     echo "  integrations  - Third-party provider integrations"
+    echo "  opencode      - OpenCode project config, commands, agents, and plugins"
     echo "  all           - Run all groups"
 }
 
@@ -748,6 +749,45 @@ test_entire() {
     run_test "CLAUDE.md documents attribution subcommand" "grep -q 'attribution' '$DOTFILES_ROOT/CLAUDE.md'"
 }
 
+test_opencode() {
+    echo -e "${BLUE}--- OpenCode Tests ---${NC}"
+
+    run_test "OpenCode config exists" "[ -f '$DOTFILES_ROOT/.config/opencode/opencode.json' ]"
+    run_test "OpenCode config is valid JSON" "jq empty '$DOTFILES_ROOT/.config/opencode/opencode.json'"
+    run_test "OpenCode permissions are blanket allow" "[ \"\$(jq -r '.permission' '$DOTFILES_ROOT/.config/opencode/opencode.json')\" = 'allow' ]"
+    run_test "OpenCode config has openai provider" "jq -e '.provider.openai' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode config has gpt-5.1-codex model" "jq -e '.provider.openai.models[\"gpt-5.1-codex\"]' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+
+    run_test "OpenCode command directory exists" "[ -d '$DOTFILES_ROOT/.opencode/command' ]"
+    run_test "OpenCode doctor command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/doctor.md' ]"
+    run_test "OpenCode review command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/review-changes.md' ]"
+    run_test "OpenCode fix command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/fix-dotfiles.md' ]"
+
+    run_test "OpenCode agents directory exists" "[ -d '$DOTFILES_ROOT/.opencode/agents' ]"
+    run_test "OpenCode review agent exists" "[ -f '$DOTFILES_ROOT/.opencode/agents/dotfiles-review.md' ]"
+    run_test "OpenCode debug agent exists" "[ -f '$DOTFILES_ROOT/.opencode/agents/dotfiles-debug.md' ]"
+
+    run_test "OpenCode entire plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/entire.ts' ]"
+    run_test "OpenCode project env plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/project-env.ts' ]"
+    run_test "OpenCode project env plugin sets CLAUDE_PROJECT_DIR" "grep -q 'CLAUDE_PROJECT_DIR' '$DOTFILES_ROOT/.opencode/plugins/project-env.ts'"
+    run_test "OpenCode tmux status plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/tmux-status.ts' ]"
+
+    run_test "OpenCode model routing config exists" "[ -f '$DOTFILES_ROOT/.opencode/model-routing.json' ]"
+    run_test "OpenCode model routing config is valid JSON" "jq empty '$DOTFILES_ROOT/.opencode/model-routing.json'"
+    run_test "OpenCode model routing has presets" "jq -e '.presets | length > 0' '$DOTFILES_ROOT/.opencode/model-routing.json' >/dev/null 2>&1"
+
+    run_test "OpenCode route command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/route.md' ]"
+    run_test "OpenCode worktree-status command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/worktree-status.md' ]"
+    run_test "OpenCode sync-beads command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/sync-beads.md' ]"
+
+    run_test "OpenCode doctor script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/doctor.sh' ]"
+    run_test "OpenCode doctor script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/opencode/doctor.sh'"
+    run_test "OpenCode doctor fish wrapper exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/opencode-doctor.fish' ]"
+    run_test "OpenCode doctor fish wrapper syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/opencode-doctor.fish'"
+
+    run_test "gwt-ticket has OpenCode doctor preflight" "grep -q 'opencode/doctor.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+}
+
 test_subagents() {
     echo -e "${BLUE}--- Claude Code Subagent Tests ---${NC}"
 
@@ -994,6 +1034,7 @@ gitattributes) test_gitattributes ;;
 merge-driver) bash "$SCRIPT_DIR/tests/test-merge-driver.sh" ;;
 openclaw) bash "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 integrations) test_integrations ;;
+opencode) test_opencode ;;
 all)
     test_fish
     test_stow
@@ -1012,6 +1053,7 @@ all)
     test_settings
     test_entire
     test_integrations
+    test_opencode
     test_gitattributes
     # OpenClaw tests run from their own script (separate counters)
     # External test suites run as subprocesses (own set -e / counters)

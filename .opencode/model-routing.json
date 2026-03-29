@@ -1,0 +1,29 @@
+{
+  "$comment": "Task-to-model routing presets. Used by OpenCode commands to select the right model for the job.",
+  "presets": {
+    "plan": {
+      "model": "anthropic/claude-opus-4-6",
+      "description": "Architecture, design, and implementation planning"
+    },
+    "review": {
+      "model": "anthropic/claude-opus-4-6",
+      "description": "Code review, security audit, ship readiness"
+    },
+    "execute": {
+      "model": "openai/gpt-5.1-codex",
+      "description": "Deep code implementation, refactoring, bulk edits"
+    },
+    "debug": {
+      "model": "openai/gpt-5.1-codex",
+      "description": "Root cause analysis, investigation, probing"
+    },
+    "batch": {
+      "model": "ollama/qwen3-coder",
+      "description": "Cheap local edits, formatting, repetitive changes"
+    },
+    "triage": {
+      "model": "anthropic/claude-haiku-4-5",
+      "description": "Quick classification, summarization, small questions"
+    }
+  }
+}

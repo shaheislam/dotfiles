@@ -951,6 +951,21 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             case ollama
                 set provider_display Ollama
         end
+        # Soft doctor preflight — warn but don't block launch
+        set -l doctor_script "$HOME/dotfiles/scripts/opencode/doctor.sh"
+        if test -x "$doctor_script"
+            set -l doctor_out (bash "$doctor_script" 2>&1)
+            set -l doctor_exit $status
+            if test $doctor_exit -ne 0
+                echo "Warning: OpenCode doctor found issues:" >&2
+                for line in $doctor_out
+                    if string match -q 'FAIL*' -- $line
+                        echo "  $line" >&2
+                    end
+                end
+                echo "  Run 'opencode-doctor' for details." >&2
+            end
+        end
     end
 
     # Show agent status
