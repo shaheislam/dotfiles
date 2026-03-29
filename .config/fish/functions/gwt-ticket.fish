@@ -2074,7 +2074,7 @@ $prompt_suffix"
                 set -a _ss "$codex_cmd_interactive"
             case opencode
                 set -a _ss '# OpenCode - interactive mode (assistant pane)'
-                set -l opencode_cmd "opencode"
+                set -l opencode_cmd opencode
                 if test -n "$opencode_model"
                     set opencode_cmd "$opencode_cmd --model $opencode_model"
                 end
@@ -2090,7 +2090,7 @@ $prompt_suffix"
     set -a _ss '' \
         'set -l agent_exit $status' \
         'if test $agent_exit -ne 0' \
-            "    echo '$_secondary_agent exited with code ' \$agent_exit" \
+        "    echo '$_secondary_agent exited with code ' \$agent_exit" \
         end \
         'exec fish'
     printf '%s\n' $_ss >$secondary_script
