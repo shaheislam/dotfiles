@@ -124,15 +124,26 @@ function codex-rotate --description "Run codex with automatic account rotation (
             end
         end
 
-        # Run codex, capture exit code and stderr
+        # Run codex, stream stderr live, and also capture it for rotation logic
         set -l stderr_file (mktemp)
+        set -l stderr_pipe (mktemp -u)
         set -l codex_args $argv
         if test -n "$workspace_id"
             set codex_args -c "forced_chatgpt_workspace_id=\"$workspace_id\"" $codex_args
         end
-        codex $codex_args 2>$stderr_file
+        if not mkfifo "$stderr_pipe"
+            echo "codex-rotate: Failed to create stderr pipe." >&2
+            rm -f "$stderr_file"
+            _codex_rotate_cleanup_temp "$original_auth_tmp"
+            return 1
+        end
+        tee "$stderr_file" <"$stderr_pipe" >&2 &
+        set -l tee_pid $last_pid
+        codex $codex_args 2>"$stderr_pipe"
         set -l exit_code $status
+        wait $tee_pid >/dev/null 2>&1
         set -l stderr_content (cat "$stderr_file" 2>/dev/null)
+        rm -f "$stderr_pipe"
         rm -f "$stderr_file"
 
         # Check for broken codex install (missing native dep or posix_spawn failure)
@@ -143,13 +154,21 @@ function codex-rotate --description "Run codex with automatic account rotation (
             bun install -g @openai/codex@latest 2>&1 | tail -1 >&2
             # Retry once after reinstall
             set -l retry_stderr (mktemp)
-            codex $codex_args 2>$retry_stderr
-            set -l retry_code $status
-            set -l retry_content (cat "$retry_stderr" 2>/dev/null)
-            rm -f "$retry_stderr"
-            if test -n "$retry_content"
-                echo "$retry_content" >&2
+            set -l retry_pipe (mktemp -u)
+            if not mkfifo "$retry_pipe"
+                echo "codex-rotate: Failed to create retry stderr pipe." >&2
+                rm -f "$retry_stderr"
+                _codex_rotate_cleanup_temp "$original_auth_tmp"
+                return 1
             end
+            tee "$retry_stderr" <"$retry_pipe" >&2 &
+            set -l retry_tee_pid $last_pid
+            codex $codex_args 2>"$retry_pipe"
+            set -l retry_code $status
+            wait $retry_tee_pid >/dev/null 2>&1
+            set -l retry_content (cat "$retry_stderr" 2>/dev/null)
+            rm -f "$retry_pipe"
+            rm -f "$retry_stderr"
             _codex_rotate_cleanup_temp "$original_auth_tmp"
             return $retry_code
         end
@@ -165,9 +184,6 @@ function codex-rotate --description "Run codex with automatic account rotation (
         end
 
         # Not a usage-limit error (or success) -- return as-is
-        if test -n "$stderr_content"
-            echo "$stderr_content" >&2
-        end
         _codex_rotate_cleanup_temp "$original_auth_tmp"
         return $exit_code
     end
