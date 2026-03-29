@@ -47,7 +47,8 @@
   "plugin": [
     "@tarquinen/opencode-dcp@latest",
     "opencode-pty",
-    "opencode-vibeguard"
+    "opencode-vibeguard",
+    "opencode-notificator"
   ],
   "autoupdate": false,
   "share": "disabled",

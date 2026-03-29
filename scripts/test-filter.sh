@@ -804,6 +804,7 @@ test_opencode() {
     run_test "OpenCode DCP config exists" "[ -f '$DOTFILES_ROOT/.opencode/dcp.jsonc' ]"
     run_test "OpenCode VibeGuard config exists" "[ -f '$DOTFILES_ROOT/.opencode/vibeguard.config.json' ]"
     run_test "OpenCode VibeGuard enabled" "jq -e '.enabled == true' '$DOTFILES_ROOT/.opencode/vibeguard.config.json' >/dev/null 2>&1"
+    run_test "OpenCode notificator plugin configured" "jq -e '.plugin[] | select(contains(\"notificator\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
 }
 
 test_subagents() {
