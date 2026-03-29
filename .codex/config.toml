@@ -106,3 +106,6 @@ args = ["-y", "drawio-mcp-server"]
 type = "stdio"
 command = "python3"
 args = ["~/.claudecodebrowser/mcp-server/stdio_wrapper.py"]
+
+[notice]
+hide_rate_limit_model_nudge = true
