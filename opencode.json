@@ -1,44 +1,24 @@
 {
   "mcp": {
     "playwright": {
-      "type": "stdio",
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@playwright/mcp@latest"
-      ]
+      "type": "local",
+      "command": ["bunx", "-y", "@playwright/mcp@latest"]
     },
     "steampipe": {
-      "type": "stdio",
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@turbot/steampipe-mcp",
-        "postgresql://steampipe@localhost:9193/steampipe"
-      ]
+      "type": "local",
+      "command": ["bunx", "-y", "@turbot/steampipe-mcp", "postgresql://steampipe@localhost:9193/steampipe"]
     },
     "context7": {
-      "type": "stdio",
-      "command": "bunx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ]
+      "type": "local",
+      "command": ["bunx", "-y", "@upstash/context7-mcp"]
     },
     "drawio": {
-      "type": "stdio",
-      "command": "bunx",
-      "args": [
-        "-y",
-        "drawio-mcp-server"
-      ]
+      "type": "local",
+      "command": ["bunx", "-y", "drawio-mcp-server"]
     },
     "claudecodebrowser": {
-      "type": "stdio",
-      "command": "python3",
-      "args": [
-        "~/.claudecodebrowser/mcp-server/stdio_wrapper.py"
-      ]
+      "type": "local",
+      "command": ["python3", "~/.claudecodebrowser/mcp-server/stdio_wrapper.py"]
     }
   }
 }
