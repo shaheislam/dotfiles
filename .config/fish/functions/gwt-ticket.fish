@@ -1957,7 +1957,10 @@ $prompt_suffix"
             set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd"
         else
             # --- Codex only: single-shot execution ---
-            set -a _ls (printf '%s "(cat \'%s\')"' "$codex_cmd" "$prompt_cmd_file")
+            # Fish does not expand command substitutions inside double quotes,
+            # so keep the file read unquoted and rely on the one-line prompt file
+            # to pass a single prompt argument safely.
+            set -a _ls (printf "%s (cat '%s')" "$codex_cmd" "$prompt_cmd_file")
         end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
