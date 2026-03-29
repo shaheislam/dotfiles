@@ -2000,7 +2000,7 @@ $prompt_suffix"
         set -l _layout_label "Claude left | nvim top-right | terminal bottom-right"
         if $use_codex
             set _primary_label OpenCode
-            set _layout_label "nvim top-left | terminal bottom-left | OpenCode right"
+            set _layout_label "OpenCode left | nvim top-right | terminal bottom-right"
         end
         set -a _log "Agent:     $_agent_label" \
             "Primary:   $_primary_label" \
@@ -2282,21 +2282,20 @@ command --with-flags
         if $use_codex
             # OpenCode layout:
             # ┌──────────────┬──────────────┐
-            # │ nvim         │   OpenCode   │
-            # ├──────────────┤   (right)    │
-            # │ terminal     │              │
+            # │  OpenCode    │ nvim         │
+            # │   (left)     ├──────────────┤
+            # │              │ terminal     │
             # └──────────────┴──────────────┘
-            set -l opencode_pane_id (tmux display-message -p -t "$session_name:$window_name" '#{pane_id}')
-            set -l left_pane_id (tmux split-window -t "$opencode_pane_id" -hb -p 35 -P -F '#{pane_id}')
-            if test -z "$left_pane_id"
-                echo "Error: Failed to create editor pane in $session_name:$window_name" >&2
+            set -l right_pane_id (tmux display-message -p -t "$session_name:$window_name" '#{pane_id}')
+            set -l opencode_pane_id (tmux split-window -t "$right_pane_id" -hb -p 35 -P -F '#{pane_id}' "fish $launch_script")
+            if test -z "$opencode_pane_id"
+                echo "Error: Failed to create OpenCode pane in $session_name:$window_name" >&2
                 builtin cd $_orig_pwd 2>/dev/null
                 return 1
             end
-            tmux split-window -t "$left_pane_id" -v -p 30 -c "$worktree_path"
+            tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path"
             or echo "Warning: Failed to create terminal pane" >&2
-            tmux send-keys -t "$left_pane_id" "fish $nvim_launch_script" Enter
-            tmux send-keys -t "$opencode_pane_id" "fish $launch_script" Enter
+            tmux send-keys -t "$right_pane_id" "fish $nvim_launch_script" Enter
             tmux rename-window -t "$session_name:$window_name" "$window_name" 2>/dev/null
         else
             # Claude layout:
