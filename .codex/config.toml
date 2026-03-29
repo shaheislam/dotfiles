@@ -80,6 +80,9 @@ trust_level = "trusted"
 [projects."/Users/shahe/neovim"]
 trust_level = "trusted"
 
+[projects."/Users/shahe/dotfiles-tokyo"]
+trust_level = "trusted"
+
 # --- MCP Servers (synced from .mcp.json) ---
 
 [mcp_servers.playwright]
