@@ -24,7 +24,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
             echo "Logging in for account '$name'..."
             echo "A browser window will open. Sign in with the OpenAI account for '$name'."
-            opencode auth login --provider openai --method OAuth
+            opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
             if test $status -ne 0
                 echo "Login failed." >&2
                 return 1
@@ -277,7 +277,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             echo "All saved accounts are rate-limited." >&2
             echo "Opening OpenCode login to authenticate a new account..." >&2
             echo "" >&2
-            opencode auth login --provider openai --method OAuth
+            opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
             if test $status -eq 0
                 echo ""
                 echo "Login successful. You may want to save this account:"
@@ -285,7 +285,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             end
 
         case login
-            opencode auth login --provider openai --method OAuth
+            opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
             if test $status -eq 0
                 echo ""
                 echo "Login successful. Save this account with:"
