@@ -77,6 +77,9 @@ wire_api = "responses"
 [projects."/Users/shahe/dotfiles"]
 trust_level = "trusted"
 
+[projects."/Users/shahe/neovim"]
+trust_level = "trusted"
+
 # --- MCP Servers (synced from .mcp.json) ---
 
 [mcp_servers.playwright]
