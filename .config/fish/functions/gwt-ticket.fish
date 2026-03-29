@@ -1956,7 +1956,7 @@ $prompt_suffix"
         set -a _ls "        echo 'OpenCode login for $provider_display did not complete.'"
         set -a _ls '        exec fish'
         set -a _ls '    end'
-        set -a _ls 'end'
+        set -a _ls end
         set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
         set -a _ls "$opencode_cmd --prompt \"\$initial_prompt\""
     else
