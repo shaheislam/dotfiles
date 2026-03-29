@@ -94,11 +94,20 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
             end
 
             rm -rf "$acct_dir"
+            if test $status -ne 0
+                echo "Failed to remove account directory '$acct_dir'." >&2
+                return 1
+            end
+
             # Remove from accounts list
             if test -f "$accounts_file"
                 set -l tmp (mktemp)
                 grep -vx "$name" "$accounts_file" >"$tmp"
-                mv "$tmp" "$accounts_file"
+                if not mv "$tmp" "$accounts_file"
+                    rm -f "$tmp"
+                    echo "Failed to update enrolled accounts list at '$accounts_file'." >&2
+                    return 1
+                end
             end
             echo "Account '$name' removed."
 
