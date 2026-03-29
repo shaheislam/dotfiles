@@ -939,6 +939,28 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             echo "Error: OpenCode not found. Install: brew install opencode"
             return 1
         end
+        set -l opencode_provider (string split -m1 '/' -- $opencode_model)[1]
+        set -l provider_display $opencode_provider
+        switch $opencode_provider
+            case openai
+                set provider_display OpenAI
+            case anthropic
+                set provider_display Anthropic
+            case ollama
+                set provider_display Ollama
+        end
+        set -l auth_list (opencode auth list 2>/dev/null)
+        if not string match -iq "*$provider_display*" -- $auth_list
+            echo "Error: OpenCode is not authenticated for $provider_display." >&2
+            if test -n "$auth_list"
+                echo "$auth_list" | sed 's/\x1b\[[0-9;]*m//g' >&2
+            else
+                echo "No OpenCode credentials found." >&2
+            end
+            echo "Run: opencode auth login" >&2
+            echo "Then authenticate the $provider_display account you want for model $opencode_model." >&2
+            return 1
+        end
     end
 
     # Show agent status
