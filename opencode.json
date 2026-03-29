@@ -1,7 +1,7 @@
 {
-  "mcpServers": {
+  "mcp": {
     "playwright": {
-      "type": "local",
+      "type": "stdio",
       "command": "bunx",
       "args": [
         "-y",
@@ -9,7 +9,7 @@
       ]
     },
     "steampipe": {
-      "type": "local",
+      "type": "stdio",
       "command": "bunx",
       "args": [
         "-y",
@@ -18,7 +18,7 @@
       ]
     },
     "context7": {
-      "type": "local",
+      "type": "stdio",
       "command": "bunx",
       "args": [
         "-y",
@@ -26,7 +26,7 @@
       ]
     },
     "drawio": {
-      "type": "local",
+      "type": "stdio",
       "command": "bunx",
       "args": [
         "-y",
@@ -34,7 +34,7 @@
       ]
     },
     "claudecodebrowser": {
-      "type": "local",
+      "type": "stdio",
       "command": "python3",
       "args": [
         "~/.claudecodebrowser/mcp-server/stdio_wrapper.py"
