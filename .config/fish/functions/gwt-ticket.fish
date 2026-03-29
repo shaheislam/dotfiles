@@ -28,12 +28,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
     #   --provider P    API provider profile (bedrock, vertex, foundry, gateway, or custom)
     #   --system S      Ticketing system: linear or jira
-    #   --pane-agent A  Bottom-left assistant pane agent: opencode|codex (default: opencode)
-    #   --opencode-model M  OpenCode model override for the bottom-left pane
-    #   --codex         Use Codex CLI as primary agent instead of Claude Code
-    #   --codex-model M Codex model override (implies --codex)
-    #   --codex-profile P  Codex config profile from config.toml (implies --codex)
-    #   --bridge        Enable iterative Codex→Claude review loop (requires --codex)
+    #   --opencode-model M  OpenCode model override (implies --codex)
+    #   --codex         Use OpenCode on the right-hand side instead of Claude Code on the left
+    #   --codex-model M Codex/OpenAI model override for OpenCode (implies --codex)
+    #   --codex-profile P  Legacy compatibility flag; OpenCode auth comes from its own config
+    #   --bridge        Enable Claude's cross-provider review flow
     #   --bridge-iterations N  Max bridge review cycles (default: 3)
     #   --bridge-mode M  Bridge review mode: review|redteam|steelman|assumptions
     #   --quiet, -q     Suppress verbose output (default, writes to .claude/gwt-ticket.log)
@@ -122,7 +121,6 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l quiet_mode true
     set -l edit_mode true
     set -l edit_prompt_file (gwtt-prompt-file 2>/dev/null; or echo "$HOME/dotfiles/.claude/gwtt-prompt.local.md")
-    set -l pane_agent opencode
     set -l opencode_model ""
     set -l use_codex false
     set -l codex_model ""
@@ -475,24 +473,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 end
             case --codex
                 set use_codex true
-            case --pane-agent --companion-agent
-                set -l next_i (math $i + 1)
-                if test $next_i -le (count $argv)
-                    set -l requested_pane_agent $argv[$next_i]
-                    if not contains -- $requested_pane_agent opencode codex
-                        echo "Error: --pane-agent requires 'opencode' or 'codex'"
-                        return 1
-                    end
-                    set pane_agent $requested_pane_agent
-                    set skip_next true
-                else
-                    echo "Error: --pane-agent requires 'opencode' or 'codex'"
-                    return 1
-                end
             case --opencode-model
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
                     set opencode_model $argv[$next_i]
+                    set use_codex true
                     set skip_next true
                 else
                     echo "Error: --opencode-model requires a model id (e.g., openai/gpt-5.1-codex)"
@@ -791,11 +776,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge-cooldown S  Cooldown seconds after rate limit (default: 300)"
         echo "  --bridge-profiles P  Claude subscription profiles for auto-rotation (e.g., work,personal)"
         echo "  --bridge-codex-profiles P  Codex profiles for auto-rotation (uses ~/.codex-<name>)"
-        echo "  --pane-agent A       Bottom-left assistant pane agent: opencode|codex (default: opencode)"
-        echo "  --opencode-model M   OpenCode model override for the bottom-left pane (e.g., openai/gpt-5.1-codex)"
-        echo "  --codex              Use Codex CLI as primary agent (codex exec --full-auto)"
-        echo "  --codex-model M     Codex model override (implies --codex; e.g., o3, gpt-5.4)"
-        echo "  --codex-profile P   Codex config.toml profile (implies --codex; e.g., auto, safe, fast, local)"
+        echo "  --opencode-model M   OpenCode model override (implies --codex; e.g., openai/gpt-5.1-codex)"
+        echo "  --codex              Use OpenCode on the right-hand side instead of Claude Code on the left"
+        echo "  --codex-model M      Codex/OpenAI model override for OpenCode (implies --codex; e.g., gpt-5.1-codex)"
+        echo "  --codex-profile P    Legacy compatibility flag; OpenCode auth comes from its own config"
         echo "  --crown [N]          Tournament mode: N agents compete, LLM judge picks winner (default: 3)"
         echo "  --crown-agents LIST  Comma-separated agent types per contestant (e.g., claude,claude,codex)"
         echo "  --crown-judge PRESET Judge mode: council|review|redteam (default: council)"
@@ -878,21 +862,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/other-repo"
         echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/lib-a ~/lib-b"
         echo ""
-        echo "  # Use OpenCode in the companion pane (default) with an OpenAI/Codex model"
+        echo "  # Run OpenCode on the right with an OpenAI/Codex model"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --opencode-model openai/gpt-5.1-codex"
         echo ""
-        echo "  # Switch the companion pane back to Codex CLI"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --pane-agent codex"
-        echo ""
-        echo "  # Run with Codex CLI instead of Claude Code"
+        echo "  # Run OpenCode instead of Claude Code"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model o3"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-profile auto"
-        echo ""
-        echo "  # Codex with Claude bridge review (Codex executes, Claude reviews)"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge --bridge-mode redteam"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex --bridge 5 --bridge-profiles work"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model gpt-5.1-codex"
         echo ""
         echo "  # Crown tournament mode (N agents compete, LLM judges)"
         echo "  gwt-ticket --crown TICKET-123 \"Fix auth\" \"Description\""
@@ -937,14 +912,29 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         end
     end
 
-    # Validate Codex CLI is available when --codex is specified
     if $use_codex
-        if not command -q codex
-            echo "Error: Codex CLI not found. Install: bun add -g @openai/codex"
-            return 1
+        if test -n "$codex_profile"
+            echo "Warning: --codex-profile is ignored in OpenCode mode; use 'opencode auth login' for the OpenAI account you want." >&2
         end
-    end
-    if not $use_codex; and test "$pane_agent" = opencode
+        if $use_devcon
+            echo "Warning: --devcon is ignored in --codex OpenCode mode." >&2
+            set use_devcon false
+        end
+        if $bridge_mode
+            echo "Warning: --bridge is ignored in --codex OpenCode mode." >&2
+            set bridge_mode false
+        end
+        if test -z "$opencode_model"
+            if test -n "$codex_model"
+                if string match -q '*/*' -- "$codex_model"
+                    set opencode_model "$codex_model"
+                else
+                    set opencode_model "openai/$codex_model"
+                end
+            else
+                set opencode_model "openai/gpt-5.1-codex"
+            end
+        end
         if not command -q opencode
             echo "Error: OpenCode not found. Install: brew install opencode"
             return 1
@@ -1938,71 +1928,15 @@ $prompt_suffix"
     set -a _ls "cd $worktree_path"
 
     if $use_codex
-        # --- Codex harness ---
-        # Codex exec: --full-auto = workspace-write sandbox + on-failure approval
-        # cd already sets the working dir; no --add-dir on exec
-        if test (count $mounts) -gt 0; and not $use_devcon
-            echo "Warning: Codex exec does not support --mount; mounts will be ignored" >&2
-        end
-        set -l codex_cmd "codex-rotate exec --full-auto --skip-git-repo-check"
-        if test -n "$codex_model"
-            set codex_cmd "$codex_cmd --model $codex_model"
-        end
-        if test -n "$codex_profile"
-            set codex_cmd "$codex_cmd --profile $codex_profile"
-        end
-        # Write prompt to file — agents read from this file at execution time
-        # (avoids shell injection from prompt content with quotes, backticks, $(), etc.)
+        # --- OpenCode harness ---
+        # In --codex mode we launch OpenCode on the host and seed the TUI prompt.
         printf '%s' "$oneline_prompt" >$prompt_cmd_file
-
-        if $bridge_mode
-            # --- Codex + Bridge: iterative Codex→Claude review loop ---
-            # Resolve bridge review script path
-            set -l bridge_script ""
-            for p in ~/dotfiles/scripts/codex-bridge-review.sh ~/dotfiles-codexcli/scripts/codex-bridge-review.sh
-                if test -x "$p"
-                    set bridge_script $p
-                    break
-                end
-            end
-            if test -z "$bridge_script"
-                echo "Error: codex-bridge-review.sh not found" >&2
-                builtin cd $_orig_pwd 2>/dev/null
-                return 1
-            end
-            # Build bridge wrapper args
-            set -l bridge_args --max-iterations
-            if test -n "$bridge_iterations"
-                set bridge_args "$bridge_args $bridge_iterations"
-            else
-                set bridge_args "$bridge_args 3"
-            end
-            if test -n "$bridge_review_mode"
-                set bridge_args "$bridge_args --mode $bridge_review_mode"
-            end
-            if test -n "$bridge_model"
-                # bridge_model overrides the Claude reviewer model
-                set bridge_args "$bridge_args --claude-model $bridge_model"
-            end
-            if test -n "$bridge_profiles"
-                # Use first Claude profile for review
-                set -l first_profile (string split ',' -- $bridge_profiles)[1]
-                set bridge_args "$bridge_args --claude-profile $first_profile"
-            end
-            if test -n "$bridge_timeout"
-                set bridge_args "$bridge_args --timeout $bridge_timeout"
-            end
-            $bridge_verbose; and set bridge_args "$bridge_args --verbose"
-            $bridge_dry_run; and set bridge_args "$bridge_args --dry-run"
-            set bridge_args "$bridge_args --prompt-file '$prompt_cmd_file'"
-            set -a _ls "bash '$bridge_script' $bridge_args -- $codex_cmd"
-        else
-            # --- Codex only: single-shot execution ---
-            # Fish does not expand command substitutions inside double quotes,
-            # so keep the file read unquoted and rely on the one-line prompt file
-            # to pass a single prompt argument safely.
-            set -a _ls (printf "%s (cat '%s')" "$codex_cmd" "$prompt_cmd_file")
+        set -l opencode_cmd opencode
+        if test -n "$opencode_model"
+            set opencode_cmd "$opencode_cmd --model $opencode_model"
         end
+        set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
+        set -a _ls "$opencode_cmd --prompt \"\$initial_prompt\""
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
         # Write prompt command to file as single line (for send-keys delivery via rename script)
@@ -2032,8 +1966,8 @@ $prompt_suffix"
 
     if not $use_devcon
         # Pane stays open for witness to use (conflict resolution, debugging)
-        set -l agent_name Claude
-        $use_codex; and set agent_name Codex
+        set -l agent_name "Claude Code"
+        $use_codex; and set agent_name OpenCode
         set -a _ls '' \
             'set -l agent_exit $status' \
             'if test $agent_exit -ne 0' \
@@ -2045,74 +1979,6 @@ $prompt_suffix"
     # Single write: all launch script content at once
     printf '%s\n' $_ls >$launch_script
     chmod +x $launch_script
-
-    # Write companion agent script for the bottom-left pane.
-    # Default flow: Claude primary + configurable assistant pane.
-    # Codex-primary flow keeps Claude in the companion pane.
-    set -l secondary_script "$instance_env/secondary-agent.fish"
-    set -l _ss # secondary script lines
-    set -a _ss '#!/usr/bin/env fish' ''
-    set -a _ss "cd $worktree_path" ''
-    if $use_codex
-        # Codex is primary → secondary is Claude (interactive, no prompt)
-        set -a _ss '# Claude Code - interactive mode (secondary agent)'
-        if test -n "$sub_profile"
-            set -a _ss "set -gx CLAUDE_CONFIG_DIR $HOME/.claude-$sub_profile"
-        end
-        set -a _ss 'claude --dangerously-skip-permissions --effort max --remote-control --name '$window_name'-secondary'
-    else
-        switch $pane_agent
-            case codex
-                set -a _ss '# Codex CLI - interactive mode (assistant pane)'
-                set -l codex_cmd_interactive "codex-rotate --full-auto --skip-git-repo-check"
-                if test -n "$codex_model"
-                    set codex_cmd_interactive "$codex_cmd_interactive --model $codex_model"
-                end
-                if test -n "$codex_profile"
-                    set codex_cmd_interactive "$codex_cmd_interactive --profile $codex_profile"
-                end
-                set -a _ss "$codex_cmd_interactive"
-            case opencode
-                set -a _ss '# OpenCode - interactive mode (assistant pane)'
-                set -l opencode_cmd opencode
-                if test -n "$opencode_model"
-                    set opencode_cmd "$opencode_cmd --model $opencode_model"
-                end
-                set -a _ss "$opencode_cmd"
-        end
-    end
-    # Exit handler + fallback shell (secondary always runs on host)
-    set -l _secondary_agent OpenCode
-    if test "$pane_agent" = codex
-        set _secondary_agent Codex
-    end
-    $use_codex; and set _secondary_agent Claude
-    set -a _ss '' \
-        'set -l agent_exit $status' \
-        'if test $agent_exit -ne 0' \
-        "    echo '$_secondary_agent exited with code ' \$agent_exit" \
-        end \
-        'exec fish'
-    printf '%s\n' $_ss >$secondary_script
-    chmod +x $secondary_script
-
-    # Fixed-position aliases: Claude is always top-left, assistant pane is bottom-left.
-    # The bottom-left pane defaults to OpenCode, unless --pane-agent codex is used.
-    # NOTE: declare before if-block so variables persist in function scope.
-    set -l claude_agent_script
-    set -l bottom_agent_script
-    set -l bottom_agent_name OpenCode
-    if test "$pane_agent" = codex
-        set bottom_agent_name Codex
-    end
-    if $use_codex
-        set claude_agent_script $secondary_script # Claude interactive (top-left)
-        set bottom_agent_script $launch_script # Codex with prompt (bottom-left)
-        set bottom_agent_name Codex
-    else
-        set claude_agent_script $launch_script # Claude with prompt (top-left)
-        set bottom_agent_script $secondary_script # Assistant pane (bottom-left)
-    end
 
     # Write gwt-ticket log early so it can be opened in nvim alongside AI files
     # Single write instead of ~20 individual echo commands (saves ~30ms)
@@ -2127,26 +1993,18 @@ $prompt_suffix"
         set -l _agent_label "Claude Code"
         set -l _cmd_label "Command:   $slash_command"
         if $use_codex
-            if $bridge_mode
-                set _agent_label "Codex CLI + Claude Bridge"
-            else
-                set _agent_label "Codex CLI"
-            end
-            set _cmd_label "Mode:      codex exec --full-auto"
-            test -n "$codex_model"; and set _cmd_label "$_cmd_label --model $codex_model"
-            test -n "$codex_profile"; and set _cmd_label "$_cmd_label --profile $codex_profile"
-            if $bridge_mode
-                set _cmd_label "$_cmd_label (bridge: $bridge_review_mode"
-                test -n "$bridge_iterations"; and set _cmd_label "$_cmd_label, iter=$bridge_iterations"
-                set _cmd_label "$_cmd_label)"
-            end
+            set _agent_label OpenCode
+            set _cmd_label "Mode:      opencode --model $opencode_model"
         end
-        set -l _primary_label Claude
-        $use_codex; and set _primary_label Codex
+        set -l _primary_label "Claude Code"
+        set -l _layout_label "Claude left | nvim top-right | terminal bottom-right"
+        if $use_codex
+            set _primary_label OpenCode
+            set _layout_label "nvim top-left | terminal bottom-left | OpenCode right"
+        end
         set -a _log "Agent:     $_agent_label" \
-            "Claude:    top-left pane" \
-            "$bottom_agent_name:  bottom-left pane" \
             "Primary:   $_primary_label" \
+            "Layout:    $_layout_label" \
             "Title:     $title" \
             "Branch:    $branch_name" \
             "Worktree:  $worktree_path" \
@@ -2278,6 +2136,16 @@ command --with-flags
     # Common nvim launch flags: suppress messages + auto-reload timer for plan.md
     # Timer: 2s delay to let buffers load, then checktime every 5s for on-disk changes
     set -l nvim_base_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' --cmd 'lua vim.defer_fn(function() local t = vim.uv.new_timer() t:start(5000, 5000, vim.schedule_wrap(function() pcall(vim.cmd, \"checktime\") end)) end, 2000)'"
+    set -l nvim_cmd "$nvim_base_cmd"
+    if test (count $nvim_ai_files) -gt 0
+        set nvim_cmd "$nvim_cmd $nvim_ai_files"
+    end
+    set -l nvim_launch_script "$instance_env/open-nvim.fish"
+    printf '%s\n' \
+        '#!/usr/bin/env fish' \
+        "cd $worktree_path" \
+        "$nvim_cmd" >$nvim_launch_script
+    chmod +x $nvim_launch_script
 
     if $use_devcon
         # Build devcon up command - rebuild ensures fresh container with correct mounts
@@ -2377,40 +2245,21 @@ command --with-flags
             'exec fish' >$claude_pane_script
         chmod +x $claude_pane_script
 
-        # Fixed layout (positions never change):
+        # Claude layout:
         # ┌──────────────┬──────────────┐
         # │ Claude Code  │ nvim CLAUDE.md│
-        # │ (top-left)   │              │
-        # ├──────────────┤              │
-        # │ assistant    ├──────────────┤
-        # │ (bottom-left)│   terminal   │
+        # │ (left)       │              │
+        # │              ├──────────────┤
+        # │              │   terminal   │
         # └──────────────┴──────────────┘
         set -l setup_script "$worktree_path/.claude/setup-panes.fish"
-        # Claude pane: devcontainer when primary, host when secondary (interactive)
-        set -l devcon_claude_pane
-        if $use_codex
-            set devcon_claude_pane $claude_agent_script
-        else
-            set devcon_claude_pane $claude_pane_script
-        end
-        # Prompt delivery: only when Claude is primary (send-keys to Claude pane)
-        set -l rename_line ""
-        if $use_codex
-            set rename_line "tmux rename-window '$window_name' 2>/dev/null"
-        else
-            set -l rename_script_devcon "$HOME/dotfiles/scripts/gwt-rename-session.sh"
-            if not test -x "$rename_script_devcon"
-                set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
-            end
-            set rename_line "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &"
-        end
-        set -l nvim_cmd "$nvim_base_cmd"
-        if test (count $nvim_ai_files) -gt 0
-            set nvim_cmd "$nvim_cmd $nvim_ai_files"
+        set -l rename_script_devcon "$HOME/dotfiles/scripts/gwt-rename-session.sh"
+        if not test -x "$rename_script_devcon"
+            set rename_script_devcon "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
         end
         printf '%s\n' \
             '#!/usr/bin/env fish' \
-            "# Auto-generated by gwt-ticket - fixed left-column layout (Claude top-left, $bottom_agent_name bottom-left)" \
+            '# Auto-generated by gwt-ticket - Claude left, editor+terminal right' \
             "$devcon_up_cmd" \
             'or begin' \
             "    echo 'Devcontainer failed to start'" \
@@ -2418,63 +2267,54 @@ command --with-flags
             '    exit 1' \
             end \
             'sleep 2' \
-            "# Step 1: Claude pane (top-left, always Claude)" \
-            "set -l claude_pane_id (tmux split-window -hb -p 35 -P -F '#{pane_id}' 'fish $devcon_claude_pane')" \
-            "# Step 2: Assistant pane (bottom-left, $bottom_agent_name)" \
-            "tmux split-window -t \"\$claude_pane_id\" -v -p 40 'fish $bottom_agent_script'" \
-            "# Step 3: Right-side layout" \
-            'tmux select-pane -R' \
-            "tmux split-window -v -p 30 -c '$worktree_path'" \
-            'tmux select-pane -U' \
-            "$rename_line" \
+            "set -l right_pane_id (tmux display-message -p '#{pane_id}')" \
+            "set -l claude_pane_id (tmux split-window -t \"\$right_pane_id\" -hb -p 35 -P -F '#{pane_id}' 'fish $claude_pane_script')" \
+            "tmux split-window -t \"\$right_pane_id\" -v -p 30 -c '$worktree_path'" \
+            "tmux send-keys -t \"\$right_pane_id\" 'fish $nvim_launch_script' Enter" \
+            "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &" \
             disown \
-            "$nvim_cmd" \
             'exec fish' >$setup_script
         chmod +x $setup_script
 
         # Short send-keys payload immune to direnv interference
         tmux send-keys -t "$session_name:$window_name" "fish $setup_script" Enter
     else
-        # Fixed layout (positions never change):
-        # ┌──────────────┬──────────────┐
-        # │ Claude Code  │ nvim CLAUDE.md│ ← top-right (70%)
-        # │ (top-left)   │              │
-        # ├──────────────┤              │
-        # │ assistant    ├──────────────┤
-        # │ (bottom-left)│   terminal   │ ← bottom-right (30%)
-        # └──────────────┴──────────────┘
-
-        # Step 1: Claude pane (top-left, 35%) — always Claude
-        set -l claude_pane_id (tmux split-window -t "$session_name:$window_name" -hb -p 35 -P -F '#{pane_id}' "fish $claude_agent_script")
-        if test -z "$claude_pane_id"
-            echo "Error: Failed to create Claude pane in $session_name:$window_name" >&2
-            builtin cd $_orig_pwd 2>/dev/null
-            return 1
-        end
-
-        # Step 2: Assistant pane (bottom-left, 40% of left column)
-        set -l bottom_pane_id (tmux split-window -t "$claude_pane_id" -v -p 40 -P -F '#{pane_id}' "fish $bottom_agent_script")
-        or echo "Warning: Failed to create $bottom_agent_name pane" >&2
-
-        # Step 3: Switch to right pane and split for nvim + terminal
-        tmux select-pane -t "$session_name:$window_name" -R
-        tmux split-window -t "$session_name:$window_name" -v -p 30 -c "$worktree_path"
-        or echo "Warning: Failed to create terminal pane" >&2
-
-        # Step 4: Launch nvim in top-right pane
-        tmux select-pane -t "$session_name:$window_name" -U
-        if test (count $nvim_ai_files) -gt 0
-            tmux send-keys -t "$session_name:$window_name" "$nvim_base_cmd $nvim_ai_files" Enter
-        else
-            tmux send-keys -t "$session_name:$window_name" "$nvim_base_cmd" Enter
-        end
-
-        # Step 5: Prompt delivery — to Claude pane (top-left) when Claude is primary
         if $use_codex
-            # Codex is primary — prompt is embedded in the bottom-left launch script CLI
+            # OpenCode layout:
+            # ┌──────────────┬──────────────┐
+            # │ nvim         │   OpenCode   │
+            # ├──────────────┤   (right)    │
+            # │ terminal     │              │
+            # └──────────────┴──────────────┘
+            set -l opencode_pane_id (tmux display-message -p -t "$session_name:$window_name" '#{pane_id}')
+            set -l left_pane_id (tmux split-window -t "$opencode_pane_id" -hb -p 35 -P -F '#{pane_id}')
+            if test -z "$left_pane_id"
+                echo "Error: Failed to create editor pane in $session_name:$window_name" >&2
+                builtin cd $_orig_pwd 2>/dev/null
+                return 1
+            end
+            tmux split-window -t "$left_pane_id" -v -p 30 -c "$worktree_path"
+            or echo "Warning: Failed to create terminal pane" >&2
+            tmux send-keys -t "$left_pane_id" "fish $nvim_launch_script" Enter
+            tmux send-keys -t "$opencode_pane_id" "fish $launch_script" Enter
             tmux rename-window -t "$session_name:$window_name" "$window_name" 2>/dev/null
         else
-            # Claude is primary — deliver prompt via send-keys to Claude pane (top-left)
+            # Claude layout:
+            # ┌──────────────┬──────────────┐
+            # │ Claude Code  │ nvim         │
+            # │ (left)       ├──────────────┤
+            # │              │ terminal     │
+            # └──────────────┴──────────────┘
+            set -l right_pane_id (tmux display-message -p -t "$session_name:$window_name" '#{pane_id}')
+            set -l claude_pane_id (tmux split-window -t "$right_pane_id" -hb -p 35 -P -F '#{pane_id}' "fish $launch_script")
+            if test -z "$claude_pane_id"
+                echo "Error: Failed to create Claude pane in $session_name:$window_name" >&2
+                builtin cd $_orig_pwd 2>/dev/null
+                return 1
+            end
+            tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path"
+            or echo "Warning: Failed to create terminal pane" >&2
+            tmux send-keys -t "$right_pane_id" "fish $nvim_launch_script" Enter
             set -l rename_script "$HOME/dotfiles/scripts/gwt-rename-session.sh"
             if not test -x "$rename_script"
                 set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
