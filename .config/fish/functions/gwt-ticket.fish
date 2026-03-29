@@ -122,6 +122,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l edit_mode true
     set -l edit_prompt_file (gwtt-prompt-file 2>/dev/null; or echo "$HOME/dotfiles/.claude/gwtt-prompt.local.md")
     set -l opencode_model ""
+    set -l opencode_provider ""
+    set -l provider_display ""
     set -l use_codex false
     set -l codex_model ""
     set -l codex_profile ""
@@ -939,8 +941,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             echo "Error: OpenCode not found. Install: brew install opencode"
             return 1
         end
-        set -l opencode_provider (string split -m1 '/' -- $opencode_model)[1]
-        set -l provider_display $opencode_provider
+        set opencode_provider (string split -m1 '/' -- $opencode_model)[1]
+        set provider_display $opencode_provider
         switch $opencode_provider
             case openai
                 set provider_display OpenAI
@@ -948,18 +950,6 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                 set provider_display Anthropic
             case ollama
                 set provider_display Ollama
-        end
-        set -l auth_list (opencode auth list 2>/dev/null)
-        if not string match -iq "*$provider_display*" -- $auth_list
-            echo "Error: OpenCode is not authenticated for $provider_display." >&2
-            if test -n "$auth_list"
-                echo "$auth_list" | sed 's/\x1b\[[0-9;]*m//g' >&2
-            else
-                echo "No OpenCode credentials found." >&2
-            end
-            echo "Run: opencode auth login" >&2
-            echo "Then authenticate the $provider_display account you want for model $opencode_model." >&2
-            return 1
         end
     end
 
@@ -1957,6 +1947,16 @@ $prompt_suffix"
         if test -n "$opencode_model"
             set opencode_cmd "$opencode_cmd --model $opencode_model"
         end
+        set -a _ls "set -l auth_list (opencode auth list 2>/dev/null | string collect)"
+        set -a _ls "if not string match -iq '*$provider_display*' -- \$auth_list"
+        set -a _ls "    echo 'OpenCode is not authenticated for $provider_display. Starting login...'"
+        set -a _ls "    opencode auth login --provider $opencode_provider"
+        set -a _ls "    set auth_list (opencode auth list 2>/dev/null | string collect)"
+        set -a _ls "    if not string match -iq '*$provider_display*' -- \$auth_list"
+        set -a _ls "        echo 'OpenCode login for $provider_display did not complete.'"
+        set -a _ls '        exec fish'
+        set -a _ls '    end'
+        set -a _ls 'end'
         set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
         set -a _ls "$opencode_cmd --prompt \"\$initial_prompt\""
     else
