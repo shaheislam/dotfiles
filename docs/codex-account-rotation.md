@@ -31,13 +31,15 @@ codex-accounts add acct5
 
 **Tip:** Use different browser profiles or incognito windows to sign in with different OpenAI accounts.
 
-**Workspace auth note:** If Codex signs into the right email but still lands on the wrong default org/workspace, finish the browser login, switch to the correct workspace in the UI, then persist that live session with:
+**Workspace auth note:** Codex auth tokens can stay on `org: Personal` even when the browser UI is using a paid workspace. Rotation now supports pinning a ChatGPT workspace UUID directly, which is more reliable than relying on the browser's default org.
 
 ```fish
+codex-accounts workspace discover
+codex-accounts workspace set acct1 <workspace-id>
 codex-accounts capture acct1
 ```
 
-`codex-rotate` also preserves and tries a distinct live `~/.codex/auth.json` session before falling back to enrolled accounts, so a fresh manual workspace login is no longer clobbered immediately by rotation.
+`codex-rotate` preserves and tries a distinct live `~/.codex/auth.json` session before falling back to enrolled accounts, and it passes `-c forced_chatgpt_workspace_id="..."` whenever a workspace pin is configured.
 
 ### Step 2: Verify enrollment
 
@@ -108,6 +110,7 @@ gwt-ticket --crown 3 --crown-agents claude,claude,codex TICKET "Fix" "Desc"
 4. On each `codex-rotate` call:
    - Reads current index, advances to next (round-robin)
    - Copies that account's `auth.json` to `~/.codex/auth.json`
+   - Applies an optional workspace pin from `CODEX_CHATGPT_WORKSPACE_ID`, `~/.codex/accounts/<name>/workspace_id`, or `~/.codex/accounts/.workspace-id`
    - Runs `codex` with the given arguments
    - If "usage limit" error detected in stderr, tries next account
    - If all accounts exhausted, reports failure
@@ -137,8 +140,10 @@ codex-accounts 1p-pull acct2
   accounts/
     .accounts            # Enrolled names list
     .current             # Current rotation index (0-based)
+    .workspace-id        # Optional global workspace pin
     acct1/
       auth.json          # OAuth credentials
+      workspace_id       # Optional per-account workspace pin
       .1p-meta           # 1Password sync metadata (if synced)
     acct2/
       auth.json
@@ -151,7 +156,7 @@ codex-accounts 1p-pull acct2
 |---------|-----|
 | `No accounts enrolled` | Run `codex-accounts add <name>` |
 | Account skipped (missing auth.json) | Re-enroll: `codex-accounts remove <name>; codex-accounts add <name>` |
-| Logged into right email but wrong workspace/org | `codex login`, switch workspace in UI, then `codex-accounts capture <name>` |
+| Logged into right email but wrong workspace/org | `codex-accounts workspace discover`, then `codex-accounts workspace set <name> <workspace-id>` |
 | All accounts exhausted | Wait for limits to reset, or add more accounts |
 | 1Password sync conflict | Use `--force` flag or resolve manually |
 | Token expired | `codex-accounts remove <name>; codex-accounts add <name>` |
@@ -162,6 +167,9 @@ codex-accounts 1p-pull acct2
 |---------|-------------|
 | `codex-accounts add <name>` | Enroll new account (browser OAuth) |
 | `codex-accounts capture <name>` | Save the current live Codex session into rotation |
+| `codex-accounts workspace discover` | List workspace/account UUID candidates from local auth and browser storage |
+| `codex-accounts workspace set [name] <workspace-id>` | Pin a global or per-account workspace UUID |
+| `codex-accounts workspace clear [name]` | Remove a workspace pin |
 | `codex-accounts remove <name>` | Remove account |
 | `codex-accounts list` | Show all accounts with JWT info |
 | `codex-accounts status` | Show rotation state |

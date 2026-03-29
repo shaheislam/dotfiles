@@ -16,7 +16,12 @@ function codex-rotate --description "Run codex with automatic account rotation (
     if not test -f "$accounts_file"
         echo "codex-rotate: No accounts enrolled. Running plain codex." >&2
         echo "  Enroll accounts with: codex-accounts add <name>" >&2
-        codex $argv
+        set -l plain_codex_args $argv
+        set -l plain_workspace_id (_codex_workspace_id)
+        if test -n "$plain_workspace_id"
+            set plain_codex_args -c "forced_chatgpt_workspace_id=\"$plain_workspace_id\"" $plain_codex_args
+        end
+        codex $plain_codex_args
         set -l exit_code $status
         _codex_rotate_cleanup_temp "$original_auth_tmp"
         return $exit_code
@@ -26,7 +31,12 @@ function codex-rotate --description "Run codex with automatic account rotation (
     set -l total (count $names)
 
     if test $total -eq 0
-        codex $argv
+        set -l plain_codex_args $argv
+        set -l plain_workspace_id (_codex_workspace_id)
+        if test -n "$plain_workspace_id"
+            set plain_codex_args -c "forced_chatgpt_workspace_id=\"$plain_workspace_id\"" $plain_codex_args
+        end
+        codex $plain_codex_args
         set -l exit_code $status
         _codex_rotate_cleanup_temp "$original_auth_tmp"
         return $exit_code
@@ -95,15 +105,32 @@ function codex-rotate --description "Run codex with automatic account rotation (
         set -l info (_codex_rotate_decode_auth "$acct_auth")
         set -a tried_names "$name"
         set -a tried_infos "$info"
+        set -l workspace_lookup_name ""
+        if test "$name" != "__active__"
+            set workspace_lookup_name "$name"
+        end
+        set -l workspace_id (_codex_workspace_id "$workspace_lookup_name")
         if test "$name" = "__active__"
-            echo "codex-rotate: Using current live session ($info)" >&2
+            if test -n "$workspace_id"
+                echo "codex-rotate: Using current live session ($info) [workspace: $workspace_id]" >&2
+            else
+                echo "codex-rotate: Using current live session ($info)" >&2
+            end
         else
-            echo "codex-rotate: Using account '$name' ($info)" >&2
+            if test -n "$workspace_id"
+                echo "codex-rotate: Using account '$name' ($info) [workspace: $workspace_id]" >&2
+            else
+                echo "codex-rotate: Using account '$name' ($info)" >&2
+            end
         end
 
         # Run codex, capture exit code and stderr
         set -l stderr_file (mktemp)
-        codex $argv 2>$stderr_file
+        set -l codex_args $argv
+        if test -n "$workspace_id"
+            set codex_args -c "forced_chatgpt_workspace_id=\"$workspace_id\"" $codex_args
+        end
+        codex $codex_args 2>$stderr_file
         set -l exit_code $status
         set -l stderr_content (cat "$stderr_file" 2>/dev/null)
         rm -f "$stderr_file"
@@ -116,7 +143,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
             bun install -g @openai/codex@latest 2>&1 | tail -1 >&2
             # Retry once after reinstall
             set -l retry_stderr (mktemp)
-            codex $argv 2>$retry_stderr
+            codex $codex_args 2>$retry_stderr
             set -l retry_code $status
             set -l retry_content (cat "$retry_stderr" 2>/dev/null)
             rm -f "$retry_stderr"

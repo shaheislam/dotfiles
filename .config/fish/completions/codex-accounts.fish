@@ -10,10 +10,15 @@ complete -c codex-accounts -n __fish_use_subcommand -a rm -d "Remove an enrolled
 complete -c codex-accounts -n __fish_use_subcommand -a list -d "Show all enrolled accounts"
 complete -c codex-accounts -n __fish_use_subcommand -a ls -d "Show all enrolled accounts"
 complete -c codex-accounts -n __fish_use_subcommand -a status -d "Show rotation state"
+complete -c codex-accounts -n __fish_use_subcommand -a workspace -d "Discover or pin a workspace UUID"
 complete -c codex-accounts -n __fish_use_subcommand -a 1p-push -d "Push account to 1Password"
 complete -c codex-accounts -n __fish_use_subcommand -a 1p-pull -d "Pull account(s) from 1Password"
 complete -c codex-accounts -n __fish_use_subcommand -a 1p-list -d "List accounts in 1Password"
 complete -c codex-accounts -n __fish_use_subcommand -a 1p-sync -d "Local-first sync (push local, pull remote-only)"
+
+# Workspace actions
+complete -c codex-accounts -n "__fish_seen_subcommand_from workspace; and not __fish_seen_subcommand_from set clear show discover" -a "set clear show discover" -d "Workspace command"
+complete -c codex-accounts -n "__fish_seen_subcommand_from workspace show clear set" -a "(cat ~/.codex/accounts/.accounts 2>/dev/null)"
 
 # For remove: complete with enrolled account names
 complete -c codex-accounts -n "__fish_seen_subcommand_from remove rm" -a "(cat ~/.codex/accounts/.accounts 2>/dev/null)"

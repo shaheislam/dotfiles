@@ -125,7 +125,12 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
                 set -l auth_file "$accounts_dir/$name/auth.json"
                 if test -f "$auth_file"
                     set -l info (_codex_accounts_decode_jwt "$auth_file")
-                    echo "$marker$name: $info"
+                    set -l workspace_id (_codex_workspace_id "$name")
+                    if test -n "$workspace_id"
+                        echo "$marker$name: $info [workspace: $workspace_id]"
+                    else
+                        echo "$marker$name: $info"
+                    end
                 else
                     echo "$marker$name: (auth.json missing)"
                 end
@@ -145,6 +150,113 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
             echo "Total accounts: "(count $names)
             echo "Last used:      $names["(math $current_idx + 1)"]"
             echo "Next up:        $names["(math $next_idx + 1)"]"
+
+        case workspace
+            set -l action $argv[1]
+            set -e argv[1]
+
+            switch "$action"
+                case set
+                    set -l workspace_id ""
+                    set -l target_name ""
+
+                    if test (count $argv) -eq 1
+                        set workspace_id $argv[1]
+                    else if test (count $argv) -eq 2
+                        set target_name $argv[1]
+                        set workspace_id $argv[2]
+                    else
+                        echo "Usage: codex-accounts workspace set <workspace-id>" >&2
+                        echo "   or: codex-accounts workspace set <name> <workspace-id>" >&2
+                        return 1
+                    end
+
+                    if not string match -rq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' -- "$workspace_id"
+                        echo "Error: Workspace ID must be a UUID." >&2
+                        return 1
+                    end
+
+                    if test -n "$target_name"
+                        set -l acct_dir "$accounts_dir/$target_name"
+                        if not test -d "$acct_dir"
+                            echo "Error: Account '$target_name' is not enrolled." >&2
+                            return 1
+                        end
+                        printf "%s\n" "$workspace_id" >"$acct_dir/workspace_id"
+                        chmod 600 "$acct_dir/workspace_id"
+                        echo "Saved workspace pin for '$target_name': $workspace_id"
+                    else
+                        mkdir -p "$accounts_dir"
+                        printf "%s\n" "$workspace_id" >"$accounts_dir/.workspace-id"
+                        chmod 600 "$accounts_dir/.workspace-id"
+                        echo "Saved global workspace pin: $workspace_id"
+                    end
+
+                case clear
+                    if test (count $argv) -gt 1
+                        echo "Usage: codex-accounts workspace clear [name]" >&2
+                        return 1
+                    end
+
+                    if test (count $argv) -eq 1
+                        set -l target_name $argv[1]
+                        set -l workspace_file "$accounts_dir/$target_name/workspace_id"
+                        if not test -f "$workspace_file"
+                            echo "No account-specific workspace pin set for '$target_name'."
+                            return 0
+                        end
+                        rm -f "$workspace_file"
+                        echo "Cleared workspace pin for '$target_name'."
+                    else
+                        set -l workspace_file "$accounts_dir/.workspace-id"
+                        if not test -f "$workspace_file"
+                            echo "No global workspace pin is set."
+                            return 0
+                        end
+                        rm -f "$workspace_file"
+                        echo "Cleared global workspace pin."
+                    end
+
+                case show
+                    if test (count $argv) -gt 1
+                        echo "Usage: codex-accounts workspace show [name]" >&2
+                        return 1
+                    end
+
+                    if test (count $argv) -eq 1
+                        set -l target_name $argv[1]
+                        if set -q CODEX_CHATGPT_WORKSPACE_ID; and test -n "$CODEX_CHATGPT_WORKSPACE_ID"
+                            echo "Workspace pin for '$target_name': $CODEX_CHATGPT_WORKSPACE_ID (from CODEX_CHATGPT_WORKSPACE_ID)"
+                        else if test -f "$accounts_dir/$target_name/workspace_id"
+                            echo "Workspace pin for '$target_name': "(string trim -- (cat "$accounts_dir/$target_name/workspace_id"))
+                        else if test -f "$accounts_dir/.workspace-id"
+                            echo "Workspace pin for '$target_name': "(string trim -- (cat "$accounts_dir/.workspace-id"))" (from global pin)"
+                        else
+                            echo "No workspace pin configured for '$target_name'."
+                        end
+                    else
+                        if set -q CODEX_CHATGPT_WORKSPACE_ID; and test -n "$CODEX_CHATGPT_WORKSPACE_ID"
+                            echo "Global workspace pin: $CODEX_CHATGPT_WORKSPACE_ID (from CODEX_CHATGPT_WORKSPACE_ID)"
+                        else if test -f "$accounts_dir/.workspace-id"
+                            echo "Global workspace pin: "(string trim -- (cat "$accounts_dir/.workspace-id"))
+                        else
+                            echo "No global workspace pin configured."
+                        end
+                    end
+
+                case discover
+                    _codex_accounts_discover_workspaces
+
+                case '*'
+                    echo "Usage: codex-accounts workspace <set|clear|show|discover> [...]" >&2
+                    echo "" >&2
+                    echo "Examples:" >&2
+                    echo "  codex-accounts workspace discover" >&2
+                    echo "  codex-accounts workspace set 8497ebb1-3614-41a1-ac1c-4da94c38f852" >&2
+                    echo "  codex-accounts workspace set acct1 8497ebb1-3614-41a1-ac1c-4da94c38f852" >&2
+                    echo "  codex-accounts workspace clear acct1" >&2
+                    return 1
+            end
 
         case 1p-push
             # Push a local account to 1Password via temp file (no secrets in CLI args)
@@ -384,6 +496,7 @@ for i in json.load(sys.stdin):
             echo "  remove <name>     Remove an enrolled account" >&2
             echo "  list              Show all enrolled accounts" >&2
             echo "  status            Show rotation state" >&2
+            echo "  workspace ...     Discover or pin a workspace UUID" >&2
             echo "" >&2
             echo "1Password:" >&2
             echo "  1p-push <name>    Push account to 1Password" >&2
@@ -459,6 +572,12 @@ end
 function _codex_accounts_warn_workspace_mismatch --description "Warn when auth still points at a personal/free default org"
     set -l auth_file $argv[1]
     set -l name $argv[2]
+    set -l workspace_id (_codex_workspace_id "$name")
+    if test -n "$workspace_id"
+        echo "  Workspace pin: $workspace_id"
+        return 0
+    end
+
     set -l meta (_codex_accounts_decode_meta "$auth_file")
     if test "$meta" = "decode error"
         return 0
@@ -474,8 +593,127 @@ function _codex_accounts_warn_workspace_mismatch --description "Warn when auth s
 
     if test "$org_title" = "Personal"; or test "$plan" = "free"
         echo "  Warning: '$name' is still using the $org_title org on the $plan plan." >&2
-        echo "  If you expected a workspace-backed plan, run 'codex login', switch to the workspace in the UI, then run 'codex-accounts capture $name'." >&2
+        echo "  If you expected a workspace-backed plan, set a workspace pin with 'codex-accounts workspace set $name <workspace-id>'." >&2
+        echo "  Use 'codex-accounts workspace discover' to list local workspace candidates." >&2
     end
+end
+
+function _codex_accounts_discover_workspaces --description "List workspace/account IDs seen in live auth and browser local storage"
+    python3 -c "
+import base64
+import collections
+import json
+import os
+import re
+
+WS_RE = re.compile(r'\"workspace_id\":\"([0-9a-fA-F-]{36})\"')
+PLAN_RE = re.compile(r'\"plan_type\":\"([^\"]+)\"')
+PAGE_RE = re.compile(r'\"currentPage\":\"([^\"]+)\"')
+
+candidates = collections.OrderedDict()
+
+def add_candidate(workspace_id, source, plan='unknown', note=''):
+    if not workspace_id:
+        return
+    item = candidates.setdefault(workspace_id, {'plans': set(), 'sources': [], 'notes': []})
+    if plan and plan != 'unknown':
+        item['plans'].add(plan)
+    if source not in item['sources']:
+        item['sources'].append(source)
+    if note and note not in item['notes']:
+        item['notes'].append(note)
+
+auth_file = os.path.expanduser('~/.codex/auth.json')
+if os.path.isfile(auth_file):
+    try:
+        auth = json.load(open(auth_file))
+        token = auth.get('tokens', {}).get('id_token', '')
+        if token:
+            payload = token.split('.')[1]
+            payload += '=' * (-len(payload) % 4)
+            data = json.loads(base64.urlsafe_b64decode(payload))
+            meta = data.get('https://api.openai.com/auth', {})
+            account_id = meta.get('chatgpt_account_id') or auth.get('tokens', {}).get('account_id')
+            plan = meta.get('chatgpt_plan_type', 'unknown')
+            orgs = meta.get('organizations', []) or []
+            org_title = 'unknown'
+            for org in orgs:
+                if isinstance(org, dict) and org.get('is_default'):
+                    org_title = org.get('title', 'unknown')
+                    break
+            if org_title == 'unknown' and orgs:
+                org_title = orgs[0].get('title', 'unknown')
+            add_candidate(account_id, 'live-auth', plan, f'org: {org_title}')
+    except Exception:
+        pass
+
+accounts_dir = os.path.expanduser('~/.codex/accounts')
+accounts_file = os.path.join(accounts_dir, '.accounts')
+if os.path.isfile(accounts_file):
+    for name in open(accounts_file):
+        name = name.strip()
+        if not name:
+            continue
+        auth_path = os.path.join(accounts_dir, name, 'auth.json')
+        if not os.path.isfile(auth_path):
+            continue
+        try:
+            auth = json.load(open(auth_path))
+            token = auth.get('tokens', {}).get('id_token', '')
+            if not token:
+                continue
+            payload = token.split('.')[1]
+            payload += '=' * (-len(payload) % 4)
+            data = json.loads(base64.urlsafe_b64decode(payload))
+            meta = data.get('https://api.openai.com/auth', {})
+            account_id = meta.get('chatgpt_account_id') or auth.get('tokens', {}).get('account_id')
+            plan = meta.get('chatgpt_plan_type', 'unknown')
+            add_candidate(account_id, f'account:{name}', plan)
+        except Exception:
+            pass
+
+roots = [
+    os.path.expanduser('~/Library/Application Support/Arc/User Data/Default/Local Storage/leveldb'),
+    os.path.expanduser('~/Library/Application Support/Google/Chrome/Default/Local Storage/leveldb'),
+    os.path.expanduser('~/Library/Application Support/Google/Chrome/Profile 1/Local Storage/leveldb'),
+    os.path.expanduser('~/Library/Application Support/Google/Chrome/Profile 2/Local Storage/leveldb'),
+]
+
+for root in roots:
+    if not os.path.isdir(root):
+        continue
+    source_name = root.replace(os.path.expanduser('~/Library/Application Support/'), '')
+    for entry in os.scandir(root):
+        if not entry.is_file():
+            continue
+        try:
+            data = open(entry.path, 'rb').read()
+        except Exception:
+            continue
+        text = data.decode('utf-8', 'replace')
+        for match in WS_RE.finditer(text):
+            workspace_id = match.group(1)
+            window = text[max(0, match.start() - 200):match.start() + 1200]
+            plan_match = PLAN_RE.search(window)
+            page_match = PAGE_RE.search(window)
+            plan = plan_match.group(1) if plan_match else 'unknown'
+            note = f'page: {page_match.group(1)}' if page_match else ''
+            add_candidate(workspace_id, source_name, plan, note)
+
+if not candidates:
+    print('No workspace candidates found.')
+    raise SystemExit(0)
+
+print('Workspace candidates:')
+for workspace_id, meta in candidates.items():
+    plans = ', '.join(sorted(meta['plans'])) if meta['plans'] else 'unknown'
+    sources = ', '.join(meta['sources'][:4])
+    note = meta['notes'][0] if meta['notes'] else ''
+    line = f'  {workspace_id}  plan={plans}  sources={sources}'
+    if note:
+        line += f'  note={note}'
+    print(line)
+" 2>/dev/null; or echo "Failed to discover workspace candidates."
 end
 
 function _codex_accounts_validate_auth --description "Validate auth.json has expected structure"

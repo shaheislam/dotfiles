@@ -82,8 +82,14 @@ test_fish() {
 
     run_test "codex-accounts supports capture" \
         "grep -q 'case capture refresh' '$DOTFILES_ROOT/.config/fish/functions/codex-accounts.fish'"
+    run_test "codex-accounts supports workspace pinning" \
+        "grep -q 'case workspace' '$DOTFILES_ROOT/.config/fish/functions/codex-accounts.fish'"
     run_test "codex-rotate preserves live session candidate" \
         "grep -q '__active__' '$DOTFILES_ROOT/.config/fish/functions/codex-rotate.fish'"
+    run_test "codex-rotate supports forced workspace config" \
+        "grep -q 'forced_chatgpt_workspace_id' '$DOTFILES_ROOT/.config/fish/functions/codex-rotate.fish'"
+    run_test "_codex_workspace_id helper exists" \
+        "[ -f '$DOTFILES_ROOT/.config/fish/functions/_codex_workspace_id.fish' ]"
 
     # Check tab completion functions exist
     for func in _cd_fzf_tab_complete _fifc_or_fzf _autopair_tab; do
@@ -97,7 +103,7 @@ test_fish() {
         for func in _cd_fzf_tab_complete _fifc_or_fzf; do
             run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
         done
-        for func in codex-accounts codex-rotate; do
+        for func in _codex_workspace_id codex-accounts codex-rotate; do
             run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
         done
         # Validate _cd_fzf_tab_complete loads and is queryable
