@@ -66,7 +66,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
             end
         end
         if not $active_is_enrolled
-            set -a candidate_names "__active__"
+            set -a candidate_names __active__
             set -a candidate_auths "$original_auth_tmp"
             set -a candidate_slots -1
         end
@@ -89,7 +89,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
         set -l slot $candidate_slots[$i]
 
         if not test -f "$acct_auth"
-            if test "$name" = "__active__"
+            if test "$name" = __active__
                 echo "codex-rotate: Current live session auth disappeared, skipping." >&2
             else
                 echo "codex-rotate: Account '$name' missing auth.json, skipping." >&2
@@ -106,11 +106,11 @@ function codex-rotate --description "Run codex with automatic account rotation (
         set -a tried_names "$name"
         set -a tried_infos "$info"
         set -l workspace_lookup_name ""
-        if test "$name" != "__active__"
+        if test "$name" != __active__
             set workspace_lookup_name "$name"
         end
         set -l workspace_id (_codex_workspace_id "$workspace_lookup_name")
-        if test "$name" = "__active__"
+        if test "$name" = __active__
             if test -n "$workspace_id"
                 echo "codex-rotate: Using current live session ($info) [workspace: $workspace_id]" >&2
             else
@@ -124,26 +124,21 @@ function codex-rotate --description "Run codex with automatic account rotation (
             end
         end
 
-        # Run codex, stream stderr live, and also capture it for rotation logic
+        # Run codex, mirror stderr live from a regular file, and also capture it
+        # for rotation logic. Avoid FIFOs here: fish blocks opening them even for
+        # background jobs, which can deadlock before codex starts.
         set -l stderr_file (mktemp)
-        set -l stderr_pipe (mktemp -u)
         set -l codex_args $argv
         if test -n "$workspace_id"
             set codex_args -c "forced_chatgpt_workspace_id=\"$workspace_id\"" $codex_args
         end
-        if not mkfifo "$stderr_pipe"
-            echo "codex-rotate: Failed to create stderr pipe." >&2
-            rm -f "$stderr_file"
-            _codex_rotate_cleanup_temp "$original_auth_tmp"
-            return 1
-        end
-        tee "$stderr_file" <"$stderr_pipe" >&2 &
-        set -l tee_pid $last_pid
-        codex $codex_args 2>"$stderr_pipe"
+        tail -n 0 -f "$stderr_file" >&2 &
+        set -l stderr_tail_pid $last_pid
+        codex $codex_args 2>"$stderr_file"
         set -l exit_code $status
-        wait $tee_pid >/dev/null 2>&1
+        kill $stderr_tail_pid >/dev/null 2>&1
+        wait $stderr_tail_pid >/dev/null 2>&1
         set -l stderr_content (cat "$stderr_file" 2>/dev/null)
-        rm -f "$stderr_pipe"
         rm -f "$stderr_file"
 
         # Check for broken codex install (missing native dep or posix_spawn failure)
@@ -154,20 +149,13 @@ function codex-rotate --description "Run codex with automatic account rotation (
             bun install -g @openai/codex@latest 2>&1 | tail -1 >&2
             # Retry once after reinstall
             set -l retry_stderr (mktemp)
-            set -l retry_pipe (mktemp -u)
-            if not mkfifo "$retry_pipe"
-                echo "codex-rotate: Failed to create retry stderr pipe." >&2
-                rm -f "$retry_stderr"
-                _codex_rotate_cleanup_temp "$original_auth_tmp"
-                return 1
-            end
-            tee "$retry_stderr" <"$retry_pipe" >&2 &
-            set -l retry_tee_pid $last_pid
-            codex $codex_args 2>"$retry_pipe"
+            tail -n 0 -f "$retry_stderr" >&2 &
+            set -l retry_tail_pid $last_pid
+            codex $codex_args 2>"$retry_stderr"
             set -l retry_code $status
-            wait $retry_tee_pid >/dev/null 2>&1
+            kill $retry_tail_pid >/dev/null 2>&1
+            wait $retry_tail_pid >/dev/null 2>&1
             set -l retry_content (cat "$retry_stderr" 2>/dev/null)
-            rm -f "$retry_pipe"
             rm -f "$retry_stderr"
             _codex_rotate_cleanup_temp "$original_auth_tmp"
             return $retry_code
@@ -175,7 +163,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
 
         # Check for usage limit error
         if test $exit_code -ne 0; and string match -qi "*usage limit*" "$stderr_content"
-            if test "$name" = "__active__"
+            if test "$name" = __active__
                 echo "codex-rotate: Current live session hit usage limit, trying next..." >&2
             else
                 echo "codex-rotate: Account '$name' hit usage limit, trying next..." >&2
@@ -194,7 +182,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
     for i in (seq (count $tried_names))
         set -l name $tried_names[$i]
         set -l info $tried_infos[$i]
-        if test "$name" = "__active__"
+        if test "$name" = __active__
             echo "  - current live session: $info" >&2
         else
             echo "  - $name: $info" >&2
