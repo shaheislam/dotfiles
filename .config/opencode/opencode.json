@@ -46,11 +46,7 @@
   "small_model": "anthropic/claude-haiku-4-5",
   "autoupdate": false,
   "share": "disabled",
-  "permission": {
-    "bash": "ask",
-    "edit": "allow",
-    "external_directory": "ask"
-  },
+  "permission": "allow",
   "compaction": {
     "auto": true,
     "prune": true,
