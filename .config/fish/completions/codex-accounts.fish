@@ -3,6 +3,8 @@ complete -c codex-accounts -f
 
 # Subcommands
 complete -c codex-accounts -n __fish_use_subcommand -a add -d "Enroll a new account"
+complete -c codex-accounts -n __fish_use_subcommand -a capture -d "Capture the current live Codex auth"
+complete -c codex-accounts -n __fish_use_subcommand -a refresh -d "Alias for capture"
 complete -c codex-accounts -n __fish_use_subcommand -a remove -d "Remove an enrolled account"
 complete -c codex-accounts -n __fish_use_subcommand -a rm -d "Remove an enrolled account"
 complete -c codex-accounts -n __fish_use_subcommand -a list -d "Show all enrolled accounts"
@@ -15,6 +17,9 @@ complete -c codex-accounts -n __fish_use_subcommand -a 1p-sync -d "Local-first s
 
 # For remove: complete with enrolled account names
 complete -c codex-accounts -n "__fish_seen_subcommand_from remove rm" -a "(cat ~/.codex/accounts/.accounts 2>/dev/null)"
+
+# For capture/refresh: complete with enrolled account names
+complete -c codex-accounts -n "__fish_seen_subcommand_from capture refresh" -a "(cat ~/.codex/accounts/.accounts 2>/dev/null)"
 
 # For 1p-push: complete with enrolled account names
 complete -c codex-accounts -n "__fish_seen_subcommand_from 1p-push" -a "(cat ~/.codex/accounts/.accounts 2>/dev/null)"

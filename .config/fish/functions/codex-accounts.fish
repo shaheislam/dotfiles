@@ -44,7 +44,41 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
 
             # Show confirmation with decoded JWT info
             _codex_accounts_show_info "$acct_dir/auth.json" "$name"
+            _codex_accounts_warn_workspace_mismatch "$acct_dir/auth.json" "$name"
             echo "Account '$name' enrolled successfully."
+
+        case capture refresh
+            if test (count $argv) -lt 1
+                echo "Usage: codex-accounts $subcmd <name>" >&2
+                return 1
+            end
+            set -l name $argv[1]
+            set -l acct_dir "$accounts_dir/$name"
+            set -l live_auth "$HOME/.codex/auth.json"
+
+            if not test -f "$live_auth"
+                echo "Error: No live Codex auth found at $live_auth" >&2
+                echo "Run: codex login"
+                return 1
+            end
+
+            if not _codex_accounts_validate_auth "$live_auth"
+                echo "Error: Live auth.json is invalid." >&2
+                return 1
+            end
+
+            mkdir -p "$accounts_dir" "$acct_dir"
+            cp "$live_auth" "$acct_dir/auth.json"
+            chmod 600 "$acct_dir/auth.json"
+
+            touch "$accounts_file"
+            if not grep -qx "$name" "$accounts_file" 2>/dev/null
+                echo "$name" >>"$accounts_file"
+            end
+
+            _codex_accounts_show_info "$acct_dir/auth.json" "$name"
+            _codex_accounts_warn_workspace_mismatch "$acct_dir/auth.json" "$name"
+            echo "Account '$name' captured from the current Codex session."
 
         case remove rm
             if test (count $argv) -lt 1
@@ -345,6 +379,8 @@ for i in json.load(sys.stdin):
             echo "" >&2
             echo "Commands:" >&2
             echo "  add <name>        Enroll a new account (opens browser login)" >&2
+            echo "  capture <name>    Save the current ~/.codex/auth.json into rotation" >&2
+            echo "  refresh <name>    Alias for capture" >&2
             echo "  remove <name>     Remove an enrolled account" >&2
             echo "  list              Show all enrolled accounts" >&2
             echo "  status            Show rotation state" >&2
@@ -364,22 +400,52 @@ end
 
 # --- Helper functions ---
 
-function _codex_accounts_decode_jwt --description "Decode JWT from auth.json to extract email and plan"
+function _codex_accounts_decode_meta --description "Decode auth.json into tab-separated email, plan, org title, org id"
     set -l auth_file $argv[1]
     python3 -c "
 import json, base64, sys
 auth = json.load(open('$auth_file'))
 token = auth.get('tokens', {}).get('id_token', '')
 if not token:
-    print('no id_token')
+    print('no id_token\tunknown\tunknown\tunknown')
     sys.exit(0)
 payload = token.split('.')[1]
-payload += '=' * (4 - len(payload) % 4)
+payload += '=' * (-len(payload) % 4)
 data = json.loads(base64.urlsafe_b64decode(payload))
 email = data.get('email', 'unknown')
-plan = data.get('https://api.openai.com/auth', {}).get('chatgpt_plan_type', 'unknown')
-print(f'{email} ({plan})')
+auth_meta = data.get('https://api.openai.com/auth', {})
+plan = auth_meta.get('chatgpt_plan_type', 'unknown')
+organizations = auth_meta.get('organizations', []) or []
+default_org = None
+for org in organizations:
+    if isinstance(org, dict) and org.get('is_default'):
+        default_org = org
+        break
+if default_org is None and organizations:
+    default_org = organizations[0]
+org_title = (default_org or {}).get('title', 'unknown')
+org_id = (default_org or {}).get('id', 'unknown')
+print(f'{email}\t{plan}\t{org_title}\t{org_id}')
 " 2>/dev/null; or echo "decode error"
+end
+
+function _codex_accounts_decode_jwt --description "Decode JWT from auth.json to extract email, plan, and default org"
+    set -l meta (_codex_accounts_decode_meta "$argv[1]")
+    if test "$meta" = "decode error"
+        echo "decode error"
+        return 0
+    end
+
+    set -l fields (string split \t -- "$meta")
+    set -l email unknown
+    set -l plan unknown
+    set -l org_title unknown
+
+    test (count $fields) -ge 1; and set email $fields[1]
+    test (count $fields) -ge 2; and set plan $fields[2]
+    test (count $fields) -ge 3; and set org_title $fields[3]
+
+    echo "$email ($plan, org: $org_title)"
 end
 
 function _codex_accounts_show_info --description "Display account info from auth.json"
@@ -388,6 +454,28 @@ function _codex_accounts_show_info --description "Display account info from auth
     set -l info (_codex_accounts_decode_jwt "$auth_file")
     echo "  Account: $name"
     echo "  Details: $info"
+end
+
+function _codex_accounts_warn_workspace_mismatch --description "Warn when auth still points at a personal/free default org"
+    set -l auth_file $argv[1]
+    set -l name $argv[2]
+    set -l meta (_codex_accounts_decode_meta "$auth_file")
+    if test "$meta" = "decode error"
+        return 0
+    end
+
+    set -l fields (string split \t -- "$meta")
+    if test (count $fields) -lt 3
+        return 0
+    end
+
+    set -l plan $fields[2]
+    set -l org_title $fields[3]
+
+    if test "$org_title" = "Personal"; or test "$plan" = "free"
+        echo "  Warning: '$name' is still using the $org_title org on the $plan plan." >&2
+        echo "  If you expected a workspace-backed plan, run 'codex login', switch to the workspace in the UI, then run 'codex-accounts capture $name'." >&2
+    end
 end
 
 function _codex_accounts_validate_auth --description "Validate auth.json has expected structure"

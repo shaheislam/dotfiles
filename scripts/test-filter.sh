@@ -80,6 +80,11 @@ test_fish() {
         run_test "Fish function $func exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/$func.fish' ]"
     done
 
+    run_test "codex-accounts supports capture" \
+        "grep -q 'case capture refresh' '$DOTFILES_ROOT/.config/fish/functions/codex-accounts.fish'"
+    run_test "codex-rotate preserves live session candidate" \
+        "grep -q '__active__' '$DOTFILES_ROOT/.config/fish/functions/codex-rotate.fish'"
+
     # Check tab completion functions exist
     for func in _cd_fzf_tab_complete _fifc_or_fzf _autopair_tab; do
         run_test "Fish tab completion $func exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/$func.fish' ]"
@@ -90,6 +95,9 @@ test_fish() {
         run_test "Fish config.fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/config.fish'"
         # Validate tab completion function syntax
         for func in _cd_fzf_tab_complete _fifc_or_fzf; do
+            run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
+        done
+        for func in codex-accounts codex-rotate; do
             run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
         done
         # Validate _cd_fzf_tab_complete loads and is queryable

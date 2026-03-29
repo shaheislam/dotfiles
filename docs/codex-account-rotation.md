@@ -31,6 +31,14 @@ codex-accounts add acct5
 
 **Tip:** Use different browser profiles or incognito windows to sign in with different OpenAI accounts.
 
+**Workspace auth note:** If Codex signs into the right email but still lands on the wrong default org/workspace, finish the browser login, switch to the correct workspace in the UI, then persist that live session with:
+
+```fish
+codex-accounts capture acct1
+```
+
+`codex-rotate` also preserves and tries a distinct live `~/.codex/auth.json` session before falling back to enrolled accounts, so a fresh manual workspace login is no longer clobbered immediately by rotation.
+
 ### Step 2: Verify enrollment
 
 ```fish
@@ -143,6 +151,7 @@ codex-accounts 1p-pull acct2
 |---------|-----|
 | `No accounts enrolled` | Run `codex-accounts add <name>` |
 | Account skipped (missing auth.json) | Re-enroll: `codex-accounts remove <name>; codex-accounts add <name>` |
+| Logged into right email but wrong workspace/org | `codex login`, switch workspace in UI, then `codex-accounts capture <name>` |
 | All accounts exhausted | Wait for limits to reset, or add more accounts |
 | 1Password sync conflict | Use `--force` flag or resolve manually |
 | Token expired | `codex-accounts remove <name>; codex-accounts add <name>` |
@@ -152,6 +161,7 @@ codex-accounts 1p-pull acct2
 | Command | Description |
 |---------|-------------|
 | `codex-accounts add <name>` | Enroll new account (browser OAuth) |
+| `codex-accounts capture <name>` | Save the current live Codex session into rotation |
 | `codex-accounts remove <name>` | Remove account |
 | `codex-accounts list` | Show all accounts with JWT info |
 | `codex-accounts status` | Show rotation state |
