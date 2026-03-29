@@ -144,6 +144,48 @@ if [ "${1:-}" != "--quick" ] && [ -x "$USAGE_CHECK" ]; then
     fi
 fi
 
+# npm plugins configured in opencode.json
+if [ -f "$CONFIG_FILE" ]; then
+    plugin_list="$(jq -r '.plugin // [] | join(", ")' "$CONFIG_FILE" 2>/dev/null || true)"
+    if [ -n "$plugin_list" ]; then
+        plugin_npm_count="$(jq '.plugin // [] | length' "$CONFIG_FILE" 2>/dev/null || echo 0)"
+        print_result PASS "npm plugins" "$plugin_npm_count configured: $plugin_list"
+    else
+        print_result WARN "npm plugins" "No npm plugins in opencode.json"
+    fi
+
+    # Check npm plugin cache
+    npm_cache="$HOME/.cache/opencode/node_modules"
+    for pkg in $(jq -r '.plugin // [] | .[]' "$CONFIG_FILE" 2>/dev/null); do
+        # Strip @latest or version tags for cache lookup
+        pkg_name="$(echo "$pkg" | sed 's/@latest$//' | sed 's/@[0-9].*$//')"
+        if [ -d "$npm_cache/$pkg_name" ]; then
+            print_result PASS "cached: $pkg_name" "Installed"
+        else
+            print_result WARN "cached: $pkg_name" "Not cached (will install on next run)"
+        fi
+    done
+fi
+
+# DCP config
+if [ -f "$ROOT/.opencode/dcp.jsonc" ]; then
+    print_result PASS "DCP config" ".opencode/dcp.jsonc"
+else
+    print_result WARN "DCP config" "Missing .opencode/dcp.jsonc"
+fi
+
+# VibeGuard config
+if [ -f "$ROOT/.opencode/vibeguard.config.json" ]; then
+    vg_enabled="$(jq -r '.enabled // false' "$ROOT/.opencode/vibeguard.config.json" 2>/dev/null || echo false)"
+    if [ "$vg_enabled" = "true" ]; then
+        print_result PASS "VibeGuard" "Enabled"
+    else
+        print_result WARN "VibeGuard" "Disabled in config"
+    fi
+else
+    print_result WARN "VibeGuard" "Missing vibeguard.config.json"
+fi
+
 command_count="$(count_files "$COMMAND_DIR")"
 if [ "$command_count" -gt 0 ]; then
     print_result PASS "project commands" "$command_count files in .opencode/command"

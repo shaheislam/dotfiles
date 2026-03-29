@@ -796,6 +796,14 @@ test_opencode() {
     run_test "OpenCode accounts has check-and-rotate" "grep -q 'check-and-rotate' '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish'"
 
     run_test "gwt-ticket has usage-check preflight" "grep -q 'usage-check.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+
+    run_test "OpenCode npm plugins configured" "jq -e '.plugin | length > 0' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode DCP plugin configured" "jq -e '.plugin[] | select(contains(\"dcp\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode PTY plugin configured" "jq -e '.plugin[] | select(contains(\"pty\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode VibeGuard plugin configured" "jq -e '.plugin[] | select(contains(\"vibeguard\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode DCP config exists" "[ -f '$DOTFILES_ROOT/.opencode/dcp.jsonc' ]"
+    run_test "OpenCode VibeGuard config exists" "[ -f '$DOTFILES_ROOT/.opencode/vibeguard.config.json' ]"
+    run_test "OpenCode VibeGuard enabled" "jq -e '.enabled == true' '$DOTFILES_ROOT/.opencode/vibeguard.config.json' >/dev/null 2>&1"
 }
 
 test_subagents() {
