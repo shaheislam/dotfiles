@@ -786,6 +786,16 @@ test_opencode() {
     run_test "OpenCode doctor fish wrapper syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/opencode-doctor.fish'"
 
     run_test "gwt-ticket has OpenCode doctor preflight" "grep -q 'opencode/doctor.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+
+    run_test "OpenCode usage-check script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/usage-check.sh' ]"
+    run_test "OpenCode usage-check script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/usage-check.sh' ]"
+    run_test "OpenCode usage-check script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/opencode/usage-check.sh'"
+
+    run_test "OpenCode accounts fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish' ]"
+    run_test "OpenCode accounts fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish'"
+    run_test "OpenCode accounts has check-and-rotate" "grep -q 'check-and-rotate' '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish'"
+
+    run_test "gwt-ticket has usage-check preflight" "grep -q 'usage-check.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
 }
 
 test_subagents() {

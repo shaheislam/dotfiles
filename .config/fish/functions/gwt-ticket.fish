@@ -1972,6 +1972,18 @@ $prompt_suffix"
         set -a _ls '        exec fish'
         set -a _ls '    end'
         set -a _ls end
+        # Usage limit preflight — check before launching OpenCode
+        set -a _ls "bash '$HOME/dotfiles/scripts/opencode/usage-check.sh' --quiet"
+        set -a _ls 'set -l _usage_exit $status'
+        set -a _ls 'if test $_usage_exit -eq 1'
+        set -a _ls "    echo 'OpenAI usage limit reached on current account.'"
+        set -a _ls '    if functions -q opencode-accounts'
+        set -a _ls '        opencode-accounts check-and-rotate'
+        set -a _ls '    else'
+        set -a _ls "        echo 'Run: opencode auth login --provider openai (to switch accounts)'"
+        set -a _ls "        opencode auth login --provider openai"
+        set -a _ls '    end'
+        set -a _ls end
         set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
         set -a _ls "$opencode_cmd --prompt \"\$initial_prompt\""
     else

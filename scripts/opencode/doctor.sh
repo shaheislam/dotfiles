@@ -101,6 +101,49 @@ else
     print_result WARN "auth file" "Missing or invalid $AUTH_FILE"
 fi
 
+# Account profiles
+ACCOUNTS_DIR="$HOME/.opencode/accounts"
+ACCOUNTS_FILE="$ACCOUNTS_DIR/.accounts"
+if [ -f "$ACCOUNTS_FILE" ]; then
+    acct_count="$(wc -l <"$ACCOUNTS_FILE" | tr -d ' ')"
+    print_result PASS "account profiles" "$acct_count profiles in $ACCOUNTS_DIR"
+else
+    print_result WARN "account profiles" "No profiles (use opencode-accounts add <name>)"
+fi
+
+# Current account email (decode JWT)
+if [ -f "$AUTH_FILE" ]; then
+    access_token="$(jq -r '.openai.access // empty' "$AUTH_FILE" 2>/dev/null || true)"
+    if [ -n "$access_token" ]; then
+        email="$(python3 -c "
+import json, base64
+try:
+    payload = '$access_token'.split('.')[1]
+    payload += '=' * (-len(payload) % 4)
+    claims = json.loads(base64.urlsafe_b64decode(payload))
+    print(claims.get('email', 'unknown'))
+except Exception:
+    print('unknown')
+" 2>/dev/null || echo "unknown")"
+        print_result PASS "active account" "$email"
+    fi
+fi
+
+# Usage check (skip if --quick flag)
+USAGE_CHECK="$ROOT/scripts/opencode/usage-check.sh"
+if [ "${1:-}" != "--quick" ] && [ -x "$USAGE_CHECK" ]; then
+    if "$USAGE_CHECK" --quiet 2>/dev/null; then
+        print_result PASS "OpenAI usage" "Available"
+    else
+        usage_exit=$?
+        case "$usage_exit" in
+        1) print_result WARN "OpenAI usage" "Rate limited" ;;
+        2) print_result WARN "OpenAI usage" "Auth invalid or expired" ;;
+        *) print_result WARN "OpenAI usage" "Check failed (exit $usage_exit)" ;;
+        esac
+    fi
+fi
+
 command_count="$(count_files "$COMMAND_DIR")"
 if [ "$command_count" -gt 0 ]; then
     print_result PASS "project commands" "$command_count files in .opencode/command"
