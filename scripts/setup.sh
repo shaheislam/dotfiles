@@ -630,15 +630,29 @@ phase_4_cloud_tools() {
 
     _install_codex() {
         # Always run to install or update to latest version
+        # IMPORTANT: Only use bun. npm installs to /opt/homebrew/ which shadows
+        # the bun install and can break due to macOS Sequoia posix_spawn security
+        # rejecting unsigned native binaries with com.apple.provenance xattr.
+
+        # Clean up any stale npm-installed codex that would shadow bun's version
+        local npm_codex="/opt/homebrew/lib/node_modules/@openai/codex"
+        if [ -d "$npm_codex" ]; then
+            log_verbose "Removing stale codex install at $npm_codex (shadows bun)"
+            rm -rf "$npm_codex" /opt/homebrew/bin/codex 2>/dev/null || true
+        fi
+
         if command_exists bun; then
-            bun add -g @openai/codex >/dev/null 2>&1 ||
+            bun install -g @openai/codex@latest >/dev/null 2>&1 ||
                 log_verbose "OpenAI Codex CLI installation skipped (optional)"
-        elif command_exists npm; then
-            if npm install -g @openai/codex >/dev/null 2>&1; then
-                true
-            else
-                npm install --prefix "$HOME/.local" @openai/codex >/dev/null 2>&1 ||
-                    log_verbose "OpenAI Codex CLI installation skipped (optional)"
+        else
+            log_verbose "OpenAI Codex CLI requires bun (install via Homebrew)"
+        fi
+
+        # Verify the install works (catches native binary issues early)
+        if command_exists codex; then
+            if ! codex --version >/dev/null 2>&1; then
+                log_verbose "Codex installed but binary broken, reinstalling..."
+                bun install -g @openai/codex@latest >/dev/null 2>&1 || true
             fi
         fi
     }
