@@ -54,6 +54,24 @@ function codex-rotate --description "Run codex with automatic account rotation (
         set -l stderr_content (cat "$stderr_file" 2>/dev/null)
         rm -f "$stderr_file"
 
+        # Check for broken codex install (missing native dep or posix_spawn failure)
+        if test $exit_code -ne 0; and begin
+                string match -qi "*Missing optional dependency*" -- "$stderr_content"; or string match -qi "*spawn Unknown system error*" -- "$stderr_content"
+            end
+            echo "codex-rotate: Codex binary is broken. Attempting reinstall..." >&2
+            bun install -g @openai/codex@latest 2>&1 | tail -1 >&2
+            # Retry once after reinstall
+            set -l retry_stderr (mktemp)
+            codex $argv 2>$retry_stderr
+            set -l retry_code $status
+            set -l retry_content (cat "$retry_stderr" 2>/dev/null)
+            rm -f "$retry_stderr"
+            if test -n "$retry_content"
+                echo "$retry_content" >&2
+            end
+            return $retry_code
+        end
+
         # Check for usage limit error
         if test $exit_code -ne 0; and string match -qi "*usage limit*" "$stderr_content"
             echo "codex-rotate: Account '$name' hit usage limit, trying next..." >&2
