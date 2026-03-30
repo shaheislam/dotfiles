@@ -8,7 +8,7 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
     #   --sub NAME    Claude subscription profile (uses ~/.claude-NAME config dir)
     #   --help, -h    Show this help
 
-    if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
+    if test "$argv[1]" = --help; or test "$argv[1]" = -h
         echo "Usage: gwt-claude [branch-name] [options]"
         echo ""
         echo "Launch Claude Code in a worktree's devcontainer."
@@ -85,7 +85,7 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
         set -l selected (printf '%s\n' $worktrees | fzf --height=40% --reverse --prompt="Select worktree for Claude: ")
 
         if test -z "$selected"
-            echo "Cancelled"
+            echo Cancelled
             return 0
         end
 
@@ -113,6 +113,17 @@ function gwt-claude --description "Launch Claude Code in worktree devcontainer"
     set worktree_path (realpath $worktree_path)
     echo "Worktree: $worktree_path"
     echo "Instance: $instance_name"
+
+    set -l manifest_script "$repo_root/scripts/workspace-manifest.sh"
+    if test -x "$manifest_script"
+        set -l manifest_output ($manifest_script info --worktree "$worktree_path" 2>/dev/null)
+        if test -n "$manifest_output"
+            echo "Workspace manifest summary:"
+            for line in $manifest_output
+                echo "  $line"
+            end
+        end
+    end
 
     # Always use the built-in devcon claude sandbox for isolation.
     # The devcon function uses ~/dotfiles/devcontainer/claude-code-plugins/

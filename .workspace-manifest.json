@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.conductor.build/schemas/workspace-manifest.v1.json",
+  "version": 1,
+  "runScriptMode": "nonconcurrent",
+  "scripts": {
+    "setup": "scripts/setup.sh --profile standard --dry-run",
+    "run": "scripts/test-filter.sh claude",
+    "archive": "scripts/ticket-complete.sh \"$PWD\""
+  },
+  "notes": [
+    "Setup runs the standard profile in dry-run mode so new machines can verify dependencies without rebuilding everything.",
+    "The claude test filter exercises the hooks that every conductor session depends on before larger suites.",
+    "Archive delegates to ticket-complete.sh; run it once the worktree is ready for merge + ticket transitions."
+  ]
+}

@@ -43,6 +43,13 @@ This file documents specific behaviors and constraints for AI agents working on 
 - `.claude/hooks/validate-bash.py` - Blocks dangerous bash commands (PreToolUse hook).
 - `scripts/plan-validate.sh <plan.md>` - Validates plan markdown against DQS required sections (10 required, `--strict` for optional).
 
+## Workspace Manifest
+
+- `.workspace-manifest.json` in the repo root defines the canonical `setup`, `run`, and `archive` commands plus `runScriptMode` guidance for conductor-compatible workflows.
+- Use `scripts/workspace-manifest.sh info|command|exec` to inspect or run the manifest entries. The script resolves the current worktree automatically and executes commands from that directory.
+- `gwt-ticket` injects these commands into its prompt and logs; keep the manifest accurate so every agent session follows the same lifecycle.
+- Keep manifest commands in sync with the repo's scripts (update both the JSON and docs when commands change). If you add new lifecycle steps, document them in this section before use.
+
 ## Git Worktree Functions
 
 - The `gwt-*` functions in `.config/fish/functions/` are the core worktree system.

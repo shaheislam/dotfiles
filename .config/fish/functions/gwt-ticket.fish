@@ -1586,6 +1586,45 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     # Build the prompt
     set -l completion_promise "TICKET_"$issue_key"_COMPLETE"
     set -l base_prompt ""
+    set -l workspace_manifest_path ""
+    set -l workspace_manifest_mode ""
+    set -l workspace_manifest_setup ""
+    set -l workspace_manifest_run ""
+    set -l workspace_manifest_archive ""
+    set -l workspace_manifest_exists false
+
+    set -l manifest_script "$repo_root/scripts/workspace-manifest.sh"
+    if test -x "$manifest_script"
+        set -l manifest_info ($manifest_script info --json --worktree "$worktree_path" 2>/dev/null | string collect)
+        if test -n "$manifest_info"; and command -q python3
+            set -l manifest_data (printf '%s\n' "$manifest_info" | python3 -c 'import json, sys; data=json.load(sys.stdin); scripts=data.get("scripts", {}); print(data.get("manifest", "")); print(data.get("runScriptMode", "")); print(scripts.get("setup", "")); print(scripts.get("run", "")); print(scripts.get("archive", ""));')
+            if test (count $manifest_data) -ge 5
+                set workspace_manifest_path $manifest_data[1]
+                set workspace_manifest_mode $manifest_data[2]
+                set workspace_manifest_setup $manifest_data[3]
+                set workspace_manifest_run $manifest_data[4]
+                set workspace_manifest_archive $manifest_data[5]
+                set workspace_manifest_exists true
+            end
+        end
+    end
+
+    if $workspace_manifest_exists; and not $quiet_mode
+        echo "Workspace manifest: $workspace_manifest_path"
+        if test -n "$workspace_manifest_mode"
+            echo "  runScriptMode: $workspace_manifest_mode"
+        end
+        if test -n "$workspace_manifest_setup"
+            echo "  Setup: $workspace_manifest_setup"
+        end
+        if test -n "$workspace_manifest_run"
+            echo "  Run:   $workspace_manifest_run"
+        end
+        if test -n "$workspace_manifest_archive"
+            echo "  Archive: $workspace_manifest_archive"
+        end
+        echo "  Use scripts/workspace-manifest.sh exec <phase> to run these commands."
+    end
 
     # Load workflow template if --template was specified
     if test -n "$workflow_template"
@@ -1652,6 +1691,26 @@ Instructions:
 
 Do not ask questions - make reasonable decisions and iterate."
         end
+    end
+
+    if $workspace_manifest_exists
+        set -l manifest_prompt "Workspace Scripts (.workspace-manifest.json):"
+        if test -n "$workspace_manifest_mode"
+            set manifest_prompt "$manifest_prompt\n- Run Script Mode: $workspace_manifest_mode (do not run phases concurrently)."
+        end
+        if test -n "$workspace_manifest_setup"
+            set manifest_prompt "$manifest_prompt\n- Setup: $workspace_manifest_setup"
+        end
+        if test -n "$workspace_manifest_run"
+            set manifest_prompt "$manifest_prompt\n- Run: $workspace_manifest_run"
+        end
+        if test -n "$workspace_manifest_archive"
+            set manifest_prompt "$manifest_prompt\n- Archive: $workspace_manifest_archive"
+        end
+        set manifest_prompt "$manifest_prompt\n- Execute via scripts/workspace-manifest.sh exec <phase> so every session uses the same entrypoints."
+        set base_prompt "$base_prompt
+
+$manifest_prompt"
     end
 
     # Inject dynamic beads workflow instructions into prompt_suffix
