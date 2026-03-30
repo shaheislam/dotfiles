@@ -1,15 +1,27 @@
 {
+  "$schema": "https://raw.githubusercontent.com/Opencode-DCP/opencode-dynamic-context-pruning/master/dcp.schema.json",
   // Dynamic Context Pruning — @tarquinen/opencode-dcp
   "enabled": true,
   "debug": false,
-  "strictModelSelection": false,
-  "showModelErrorToasts": true,
-  "showUpdateToasts": false,
-  "strategies": {
-    "onIdle": ["ai-analysis"],
-    "onTool": ["ai-analysis"]
+  "pruneNotification": "minimal",
+  "pruneNotificationType": "chat",
+  "commands": {
+    "enabled": true,
+    "protectedTools": ["bash"]
   },
-  "pruning_summary": "minimal",
-  "nudge_freq": 10,
-  "protectedTools": ["bash"]
+  "compress": {
+    "nudgeFrequency": 10,
+    "protectedTools": ["bash"]
+  },
+  "strategies": {
+    "deduplication": {
+      "enabled": true,
+      "protectedTools": ["bash"]
+    },
+    "purgeErrors": {
+      "enabled": true,
+      "turns": 4,
+      "protectedTools": ["bash"]
+    }
+  }
 }
