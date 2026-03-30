@@ -1,3 +1,11 @@
+# TASK: bucharest — Capital of Japan
+
+Ticket `TASK` asks: *"What is the capital of Japan?"*
+
+**Answer: Tokyo.** Tokyo has been Japan's capital since Emperor Meiji moved the imperial seat there in 1869; it houses the Imperial Palace, National Diet, and central government ministries, making it the country's political and administrative hub.
+
+---
+
 # Skills Audit: Recommendations for New Skills
 
 ## Executive Summary
