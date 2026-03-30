@@ -322,20 +322,20 @@ try:
     data = json.load(open('$acct_auth'))
     token = data.get('access', '')
     if not token:
-        print('unknown')
+        print('no token')
         raise SystemExit(0)
     payload = token.split('.')[1]
     payload += '=' * (-len(payload) % 4)
     claims = json.loads(base64.urlsafe_b64decode(payload))
     auth_meta = claims.get('https://api.openai.com/auth', {})
-    email = claims.get('email', 'unknown')
+    profile = claims.get('https://api.openai.com/profile', {})
+    email = profile.get('email') or claims.get('email') or 'unknown'
     plan = auth_meta.get('chatgpt_plan_type', 'unknown')
-    orgs = auth_meta.get('organizations', []) or []
-    default_org = next((o for o in orgs if isinstance(o, dict) and o.get('is_default')), orgs[0] if orgs else None)
-    org_title = (default_org or {}).get('title', 'unknown')
-    print(f'{email} ({plan}, org: {org_title})')
-except Exception:
-    print('decode error')
+    user_id = auth_meta.get('chatgpt_user_id', '')
+    short_id = user_id[-8:] if user_id else '?'
+    print(f'{email} ({plan}, uid: ...{short_id})')
+except Exception as e:
+    print(f'decode error: {e}')
 " 2>/dev/null; or echo "decode error"
 end
 

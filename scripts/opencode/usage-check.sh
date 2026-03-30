@@ -120,6 +120,12 @@ case "$http_code" in
     log_err "OpenAI API: connection failed (timeout or network error)"
     exit 2
     ;;
+500 | 502 | 503 | 504)
+    # Server-side errors are transient — treat as "available" so we don't
+    # block launches or wrongly skip accounts during rotation.
+    log "OpenAI API: server error (HTTP $http_code) — assuming available"
+    exit 0
+    ;;
 *)
     # Check body for usage limit indicators even on other status codes
     if echo "$body" | grep -qi "usage.limit\|limit.*reached\|exceeded.*quota"; then
