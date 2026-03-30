@@ -156,6 +156,28 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
   }
 
+  function runCommandSync(command: string, args: string[] = [], payload?: Record<string, unknown>): HookResult {
+    const proc = Bun.spawnSync([command, ...args], {
+      cwd: projectDir,
+      env: {
+        ...process.env,
+        CLAUDE_PROJECT_DIR: projectDir,
+        PROJECT_ROOT: projectDir,
+        REPO_ROOT: projectDir,
+        DOTFILES_ROOT,
+      },
+      stdin: payload ? new TextEncoder().encode(`${JSON.stringify(payload)}\n`) : undefined,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+
+    return {
+      stdout: Buffer.from(proc.stdout || []).toString("utf8").trim(),
+      stderr: Buffer.from(proc.stderr || []).toString("utf8").trim(),
+      exitCode: proc.exitCode ?? 0,
+    }
+  }
+
   async function runContextScript(script: string) {
     const result = await runScript(script)
     if (result.stdout) {
@@ -268,7 +290,22 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     shutdownHandled = true
 
     runScriptSync(tmuxHookPath("tmux-agent-end.sh"))
+    runCommandSync("bash", [join(projectDir, "scripts", "harness", "session-report.sh"), "--json"])
+    runCommandSync("bash", [join(DOTFILES_ROOT, "scripts", "obsidian", "session-synthesize.sh"), "--cwd", projectDir])
+    runCommandSync("bash", [join(DOTFILES_ROOT, "scripts", "opencode", "jfdi-shutdown-sync.sh")])
     runScriptSync(dreamPath("dream-hook.sh"))
+  }
+
+  function handleNotification(message: string, title?: string, variant?: string) {
+    const payload = {
+      title: title || "OpenCode",
+      message,
+      variant: variant || "info",
+      session_id: currentSessionID ?? undefined,
+    }
+
+    runScriptSync(hookPath("log-notification.sh"), payload)
+    runScriptSync(tmuxHookPath("tmux-agent-notify.sh"), payload)
   }
 
   return {
@@ -320,6 +357,11 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
           if (event.properties.status.type === "idle") {
             await runScript(tmuxHookPath("tmux-agent-stop.sh"))
           }
+          break
+        }
+
+        case "tui.toast.show": {
+          handleNotification(event.properties.message, event.properties.title, event.properties.variant)
           break
         }
 

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import type { Part, UserMessage } from "@opencode-ai/sdk"
 import type { Plugin } from "@opencode-ai/plugin"
@@ -15,7 +15,7 @@ type AuthFile = {
   [key: string]: unknown
 }
 
-type PromptState = {
+export type PromptState = {
   messageID: string
   agent: string
   model: {
@@ -40,6 +40,15 @@ const ACCOUNTS_DIR = process.env.OPENCODE_ACCOUNTS_DIR || join(HOME, ".opencode"
 const ACCOUNTS_FILE = join(ACCOUNTS_DIR, ".accounts")
 const CURRENT_FILE = join(ACCOUNTS_DIR, ".current")
 const USAGE_CHECK_SCRIPT = process.env.OPENCODE_USAGE_CHECK_SCRIPT || join(DOTFILES_ROOT, "scripts", "opencode", "usage-check.sh")
+const DEBUG_LOG = process.env.OPENCODE_ROTATE_DEBUG_LOG
+
+async function debugLog(message: string) {
+  if (!DEBUG_LOG) {
+    return
+  }
+
+  await appendFile(DEBUG_LOG, `${message}\n`)
+}
 
 function isOpenAIUsageLimit(error: unknown) {
   if (!error || typeof error !== "object") {
@@ -48,6 +57,10 @@ function isOpenAIUsageLimit(error: unknown) {
 
   const candidate = error as {
     name?: string
+    message?: string
+    statusCode?: number
+    url?: string
+    responseBody?: string
     data?: {
       statusCode?: number
       message?: string
@@ -56,15 +69,22 @@ function isOpenAIUsageLimit(error: unknown) {
     }
   }
 
-  const text = [candidate.data?.message, candidate.data?.responseBody].filter(Boolean).join("\n").toLowerCase()
+  const text = [candidate.message, candidate.responseBody, candidate.data?.message, candidate.data?.responseBody]
+    .filter(Boolean)
+    .join("\n")
+    .toLowerCase()
   const providerID = candidate.data?.providerID
-  const statusCode = candidate.data?.statusCode
+  const statusCode = candidate.statusCode ?? candidate.data?.statusCode
 
   if (candidate.name === "ProviderAuthError" && providerID !== "openai") {
     return false
   }
 
   if (providerID && providerID !== "openai") {
+    return false
+  }
+
+  if (candidate.url && !candidate.url.includes("/v1/")) {
     return false
   }
 
@@ -161,8 +181,10 @@ async function probeToken(token: string) {
     return 2
   }
 
+  const cwd = existsSync(DOTFILES_ROOT) ? DOTFILES_ROOT : HOME || "."
+
   const proc = Bun.spawn([USAGE_CHECK_SCRIPT, "--quiet", "--token", token], {
-    cwd: DOTFILES_ROOT,
+    cwd,
     stdout: "ignore",
     stderr: "ignore",
   })
@@ -182,7 +204,7 @@ async function switchAccount(name: string, openai: OpenAIAuth) {
   }
 }
 
-function toPromptParts(parts: Part[]) {
+export function toPromptParts(parts: Part[]) {
   return parts.flatMap((part) => {
     switch (part.type) {
       case "text":
@@ -190,10 +212,6 @@ function toPromptParts(parts: Part[]) {
           id: part.id,
           type: "text" as const,
           text: part.text,
-          synthetic: part.synthetic,
-          ignored: part.ignored,
-          time: part.time,
-          metadata: part.metadata,
         }]
       case "file":
         return [{
@@ -202,14 +220,12 @@ function toPromptParts(parts: Part[]) {
           mime: part.mime,
           filename: part.filename,
           url: part.url,
-          source: part.source,
         }]
       case "agent":
         return [{
           id: part.id,
           type: "agent" as const,
           name: part.name,
-          source: part.source,
         }]
       case "subtask":
         return [{
@@ -249,14 +265,17 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
   }
 
   async function rotateAccount(): Promise<RotationResult> {
+    await debugLog(`rotateAccount authFile=${AUTH_FILE}`)
     const auth = await readJsonFile<AuthFile>(AUTH_FILE)
     if (!auth?.openai) {
       return { ok: false, reason: "No active OpenAI auth found" }
     }
 
     await mkdir(ACCOUNTS_DIR, { recursive: true })
+    await debugLog(`rotateAccount accountsDir=${ACCOUNTS_DIR}`)
 
     const accountNames = await ensureCurrentAccountSaved(auth.openai, await readAccountNames())
+    await debugLog(`rotateAccount names=${accountNames.join(",")}`)
     if (accountNames.length === 0) {
       return { ok: false, reason: "No saved OpenAI accounts are available" }
     }
@@ -268,6 +287,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
       const saved = await readJsonFile<OpenAIAuth>(join(ACCOUNTS_DIR, name, "openai-auth.json"))
       if (authKey(saved) === currentKey) {
         activeName = name
+        await debugLog(`rotateAccount active=${name}`)
         break
       }
     }
@@ -275,23 +295,39 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
     for (const name of rotateFrom(accountNames, activeName)) {
       const saved = await readJsonFile<OpenAIAuth>(join(ACCOUNTS_DIR, name, "openai-auth.json"))
       if (!saved?.access || authKey(saved) === currentKey) {
+        await debugLog(`rotateAccount skip=${name}`)
         continue
       }
 
       const status = await probeToken(saved.access)
+      await debugLog(`rotateAccount probe=${name} status=${status}`)
       if (status !== 0) {
         continue
       }
 
       await switchAccount(name, saved)
+      await debugLog(`rotateAccount switched=${name}`)
       return { ok: true, name }
     }
 
     return { ok: false, reason: "All saved OpenAI accounts are currently unavailable" }
   }
 
+  function buildReplayBody(pending: PromptState) {
+    return {
+      parts: toPromptParts(pending.parts),
+      ...(pending.agent ? { agent: pending.agent } : {}),
+      ...(pending.model ? { model: pending.model } : {}),
+      ...(pending.format ? { format: pending.format } : {}),
+      ...(pending.system ? { system: pending.system } : {}),
+      ...(pending.tools ? { tools: pending.tools } : {}),
+      ...(pending.variant ? { variant: pending.variant } : {}),
+    }
+  }
+
   return {
     "chat.message": async (input, output) => {
+      await debugLog(`chat.message provider=${output.message.model.providerID} message=${output.message.id}`)
       if (output.message.model.providerID !== "openai") {
         pendingPrompts.delete(input.sessionID)
         return
@@ -311,7 +347,9 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
     },
 
     event: async ({ event }) => {
+      await debugLog(`event type=${event.type}`)
       if (event.type === "message.updated" && event.properties.info.role === "assistant") {
+        await debugLog(`message.updated assistant error=${Boolean(event.properties.info.error)} parent=${event.properties.info.parentID || ""}`)
         if (!event.properties.info.error) {
           const pending = pendingPrompts.get(event.properties.info.sessionID)
           if (pending && pending.messageID === event.properties.info.parentID) {
@@ -332,6 +370,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
       }
 
       const pending = pendingPrompts.get(sessionID)
+      await debugLog(`session.error pending=${Boolean(pending)} session=${sessionID}`)
       if (!pending || pending.model.providerID !== "openai") {
         return
       }
@@ -341,6 +380,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
       }
 
       if (!isOpenAIUsageLimit(event.properties.error)) {
+        await debugLog("session.error ignored by usage-limit detector")
         return
       }
 
@@ -348,6 +388,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
 
       try {
         const result = await rotateAccount()
+        await debugLog(`rotation result ok=${result.ok}`)
         if (!result.ok) {
           handledMessages.add(pending.messageID)
           await showToast(`${result.reason}. Save another account with opencode-accounts.`, "error")
@@ -357,19 +398,16 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
         handledMessages.add(pending.messageID)
         await showToast(`Switched to '${result.name}' and retrying the last prompt.`, "warning")
 
+        const body = buildReplayBody(pending)
+
         await client.session.prompt({
           path: { sessionID },
           query: { directory },
-          body: {
-            agent: pending.agent,
-            model: pending.model,
-            format: pending.format,
-            system: pending.system,
-            tools: pending.tools,
-            variant: pending.variant,
-            parts: toPromptParts(pending.parts),
-          },
+          body,
         })
+      } catch (error) {
+        await debugLog(`rotation exception=${String(error)}`)
+        throw error
       } finally {
         rotatingSessions.delete(sessionID)
       }

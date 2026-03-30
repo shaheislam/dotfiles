@@ -48,6 +48,14 @@ export const EntirePlugin: Plugin = async ({ $, directory }) => {
     }
   }
 
+  function extractToolArgs(candidate: unknown) {
+    if (!candidate || typeof candidate !== "object") {
+      return {} as Record<string, unknown>
+    }
+
+    return candidate as Record<string, unknown>
+  }
+
   return {
     event: async ({ event }) => {
       switch (event.type) {
@@ -124,6 +132,40 @@ export const EntirePlugin: Plugin = async ({ $, directory }) => {
           break
         }
 
+        case "todo.updated": {
+          await callHook("post-todo", {
+            session_id: event.properties.sessionID,
+            todos: event.properties.todos,
+          })
+          break
+        }
+
+        case "command.executed": {
+          await callHook("post-task", {
+            session_id: event.properties.sessionID,
+            name: event.properties.name,
+            arguments: event.properties.arguments,
+            message_id: event.properties.messageID,
+          })
+          break
+        }
+
+        case "worktree.ready": {
+          await callHook("worktree-create", {
+            name: event.properties.name,
+            branch: event.properties.branch,
+          })
+          break
+        }
+
+        case "worktree.failed": {
+          await callHook("worktree-remove", {
+            message: event.properties.message,
+            reason: "worktree.failed",
+          })
+          break
+        }
+
         case "session.deleted": {
           const session = (event as any).properties?.info
           if (!session?.id) break
@@ -152,6 +194,42 @@ export const EntirePlugin: Plugin = async ({ $, directory }) => {
           })
           break
         }
+      }
+    },
+
+    "tool.execute.before": async (input, output) => {
+      if (input.tool !== "task") {
+        return
+      }
+
+      const args = extractToolArgs(output.args)
+      await callHook("pre-task", {
+        session_id: currentSessionID,
+        description: args.description,
+        prompt: args.prompt,
+        subagent_type: args.subagent_type,
+      })
+    },
+
+    "tool.execute.after": async (input, output) => {
+      if (input.tool === "task") {
+        const args = extractToolArgs(input.args)
+        await callHook("post-task", {
+          session_id: currentSessionID,
+          description: args.description,
+          prompt: args.prompt,
+          subagent_type: args.subagent_type,
+          output: output.output,
+        })
+        return
+      }
+
+      if (input.tool === "todowrite") {
+        const args = extractToolArgs(input.args)
+        await callHook("post-todo", {
+          session_id: currentSessionID,
+          todos: args.todos,
+        })
       }
     },
   }
