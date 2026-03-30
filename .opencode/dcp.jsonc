@@ -1,13 +1,15 @@
 {
   // Dynamic Context Pruning — @tarquinen/opencode-dcp
-  // Project-level config. See: https://github.com/Tarquinen/opencode-dynamic-context-pruning
-  "compressionMode": "range",
-  "maxContextLimit": 100000,
-  "minContextLimit": 50000,
+  "enabled": true,
+  "debug": false,
+  "strictModelSelection": false,
+  "showModelErrorToasts": true,
+  "showUpdateToasts": false,
   "strategies": {
-    "deduplication": true,
-    "purgeErrors": true
+    "onIdle": ["ai-analysis"],
+    "onTool": ["ai-analysis"]
   },
-  "notificationStyle": "minimal",
-  "protectUserMessages": true
+  "pruning_summary": "minimal",
+  "nudge_freq": 10,
+  "protectedTools": ["bash"]
 }
