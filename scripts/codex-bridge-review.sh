@@ -311,8 +311,7 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
     log_banner "Review (iteration $iteration/$MAX_ITERATIONS, mode=$REVIEW_MODE)"
 
     review_output=""
-    if run_review_via_companion "$REVIEW_MODE" "$current_diff"; then
-        review_output=$(run_review_via_companion "$REVIEW_MODE" "$current_diff")
+    if review_output=$(run_review_via_companion "$REVIEW_MODE"); then
         log_v "Used Codex companion for review"
     else
         log_v "Codex companion unavailable, falling back to Claude"
