@@ -768,6 +768,8 @@ test_opencode() {
     run_test "OpenCode debug agent exists" "[ -f '$DOTFILES_ROOT/.opencode/agents/dotfiles-debug.md' ]"
 
     run_test "OpenCode entire plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/entire.ts' ]"
+    run_test "OpenCode Claude compat plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/claude-compat.ts' ]"
+    run_test "OpenCode OpenAI rotate plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/openai-rotate.ts' ]"
     run_test "OpenCode project env plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/project-env.ts' ]"
     run_test "OpenCode project env plugin sets CLAUDE_PROJECT_DIR" "grep -q 'CLAUDE_PROJECT_DIR' '$DOTFILES_ROOT/.opencode/plugins/project-env.ts'"
     run_test "OpenCode tmux status plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/tmux-status.ts' ]"
@@ -790,6 +792,14 @@ test_opencode() {
     run_test "OpenCode usage-check script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/usage-check.sh' ]"
     run_test "OpenCode usage-check script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/usage-check.sh' ]"
     run_test "OpenCode usage-check script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/opencode/usage-check.sh'"
+    run_test "OpenCode Claude compat test script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/test-claude-compat.sh' ]"
+    run_test "OpenCode Claude compat test script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-claude-compat.sh' ]"
+    run_test "OpenCode Claude compat test script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/opencode/test-claude-compat.sh'"
+    run_test "OpenCode Claude compat harness passes" "'$DOTFILES_ROOT/scripts/opencode/test-claude-compat.sh' >/dev/null"
+    run_test "OpenCode rotation test script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/test-rotation.sh' ]"
+    run_test "OpenCode rotation test script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-rotation.sh' ]"
+    run_test "OpenCode rotation test script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/opencode/test-rotation.sh'"
+    run_test "OpenCode rotation harness passes" "'$DOTFILES_ROOT/scripts/opencode/test-rotation.sh' >/dev/null"
 
     run_test "OpenCode accounts fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish' ]"
     run_test "OpenCode accounts fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish'"

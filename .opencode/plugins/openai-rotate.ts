@@ -229,7 +229,7 @@ function toPromptParts(parts: Part[]) {
 
 export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
   const pendingPrompts = new Map<string, PromptState>()
-  const retriedMessages = new Set<string>()
+  const handledMessages = new Set<string>()
   const rotatingSessions = new Set<string>()
 
   async function showToast(message: string, variant: "info" | "success" | "warning" | "error") {
@@ -307,7 +307,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
         variant: output.message.variant,
         parts: structuredClone(output.parts),
       })
-      retriedMessages.delete(output.message.id)
+      handledMessages.delete(output.message.id)
     },
 
     event: async ({ event }) => {
@@ -316,7 +316,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
           const pending = pendingPrompts.get(event.properties.info.sessionID)
           if (pending && pending.messageID === event.properties.info.parentID) {
             pendingPrompts.delete(event.properties.info.sessionID)
-            retriedMessages.delete(pending.messageID)
+            handledMessages.delete(pending.messageID)
           }
         }
         return
@@ -336,7 +336,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
         return
       }
 
-      if (retriedMessages.has(pending.messageID)) {
+      if (handledMessages.has(pending.messageID)) {
         return
       }
 
@@ -349,11 +349,12 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
       try {
         const result = await rotateAccount()
         if (!result.ok) {
+          handledMessages.add(pending.messageID)
           await showToast(`${result.reason}. Save another account with opencode-accounts.`, "error")
           return
         }
 
-        retriedMessages.add(pending.messageID)
+        handledMessages.add(pending.messageID)
         await showToast(`Switched to '${result.name}' and retrying the last prompt.`, "warning")
 
         await client.session.prompt({

@@ -213,6 +213,18 @@ else
     print_result WARN "entire plugin" "Missing .opencode/plugins/entire.ts"
 fi
 
+if [ -f "$PLUGIN_DIR/claude-compat.ts" ]; then
+    print_result PASS "compat plugin" "$PLUGIN_DIR/claude-compat.ts"
+else
+    print_result WARN "compat plugin" "Missing .opencode/plugins/claude-compat.ts"
+fi
+
+if [ -f "$PLUGIN_DIR/openai-rotate.ts" ]; then
+    print_result PASS "rotate plugin" "$PLUGIN_DIR/openai-rotate.ts"
+else
+    print_result WARN "rotate plugin" "Missing .opencode/plugins/openai-rotate.ts"
+fi
+
 if [ -f "$PLUGIN_DIR/project-env.ts" ]; then
     print_result PASS "env plugin" "$PLUGIN_DIR/project-env.ts"
 else
@@ -237,6 +249,35 @@ if [ -f "$FISH_FUNC" ]; then
     print_result PASS "fish wrapper" "$FISH_FUNC"
 else
     print_result WARN "fish wrapper" "Missing opencode-doctor.fish"
+fi
+
+CLAUDE_COMPAT_TEST="$ROOT/scripts/opencode/test-claude-compat.sh"
+ROTATION_TEST="$ROOT/scripts/opencode/test-rotation.sh"
+
+if [ -x "$CLAUDE_COMPAT_TEST" ]; then
+    print_result PASS "compat harness" "$CLAUDE_COMPAT_TEST"
+    if [ "${1:-}" != "--quick" ]; then
+        if "$CLAUDE_COMPAT_TEST" >/dev/null 2>&1; then
+            print_result PASS "compat recovery" "Simulation passed"
+        else
+            print_result WARN "compat recovery" "Simulation failed"
+        fi
+    fi
+else
+    print_result WARN "compat harness" "Missing scripts/opencode/test-claude-compat.sh"
+fi
+
+if [ -x "$ROTATION_TEST" ]; then
+    print_result PASS "rotation harness" "$ROTATION_TEST"
+    if [ "${1:-}" != "--quick" ]; then
+        if "$ROTATION_TEST" >/dev/null 2>&1; then
+            print_result PASS "rotation recovery" "Simulation passed"
+        else
+            print_result WARN "rotation recovery" "Simulation failed"
+        fi
+    fi
+else
+    print_result WARN "rotation harness" "Missing scripts/opencode/test-rotation.sh"
 fi
 
 if command -v tmux >/dev/null 2>&1; then
