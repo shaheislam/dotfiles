@@ -73,7 +73,27 @@ ls tests/ 2>/dev/null
 
 If no test framework is detected, note "No automated tests found" and continue.
 
-### 4. Generate Commit
+### 4. Codex Adversarial Review (if available)
+
+If the codex plugin is installed (`ls ~/.claude/plugins/marketplaces/openai-codex/ 2>/dev/null`), run a pre-commit adversarial review:
+
+```bash
+# Only run if there are staged or unstaged changes to review
+git diff --shortstat --cached; git diff --shortstat
+```
+
+If there are changes and `--no-commit` was NOT specified:
+- Invoke `/codex:adversarial-review --wait --scope working-tree`
+- Review the output for BLOCK/ALLOW verdict
+- If BLOCK: report the issues and stop — do NOT commit. Suggest the user fix the issues and re-run `/wrap-up`
+- If ALLOW or review unavailable (Codex not installed/authenticated): continue to commit
+
+This step is skipped silently if:
+- Codex CLI is not installed
+- No changes exist to review
+- `--no-commit` was specified
+
+### 5. Generate Commit
 
 If `--no-commit` was NOT specified:
 
@@ -99,7 +119,7 @@ If `--amend` was specified, amend the previous commit. Otherwise create a new co
 git commit -m "type: description"
 ```
 
-### 5. Update Task Status
+### 6. Update Task Status
 
 If `--no-close` was NOT specified and a bead was identified:
 
@@ -111,7 +131,7 @@ bd close BEAD_ID
 bd show PARENT_ID 2>/dev/null
 ```
 
-### 6. Report Summary
+### 7. Report Summary
 
 Output a wrap-up summary:
 
@@ -119,6 +139,7 @@ Output a wrap-up summary:
 --- WRAP-UP ---
 Validation: {PASS/FAIL with details}
 Tests: {PASS/FAIL/NONE}
+Codex Review: {ALLOW/BLOCK/SKIPPED}
 Commit: {commit hash} — {commit message}
 Bead: {BEAD_ID} closed
 Remaining: {count of open subtasks under parent, if any}
