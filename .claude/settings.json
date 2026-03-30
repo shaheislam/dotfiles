@@ -10,6 +10,7 @@
     "beads@steveyegge/beads": true,
     "code-review@claude-code-plugins": true,
     "code-simplifier@claude-plugins-official": true,
+    "codex@openai-codex": true,
     "example-skills@anthropic-agent-skills": true,
     "explanatory-output-style@claude-code-plugins": true,
     "feature-dev@claude-code-plugins": true,
@@ -36,6 +37,12 @@
     "OTEL_METRIC_EXPORT_INTERVAL": "10000"
   },
   "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "repo": "openai/codex-plugin-cc",
+        "source": "github"
+      }
+    },
     "pua-skills": {
       "source": {
         "repo": "tanweai/pua",
