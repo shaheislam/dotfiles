@@ -244,6 +244,10 @@ make clean && make
 - **Development Tools**: Complete toolchain for multiple languages
 - **Consistent Theming**: Tokyo Night theme across applications
 
+## AI Assistants
+
+- **OpenCode workflows**: [docs/opencode-nvim.md](docs/opencode-nvim.md) explains how to keep the tmux side pane while adopting the `opencode.nvim` plugin for context-aware prompts, edit review, and LSP hooks inside Neovim.
+
 ## Customization
 
 - **Shell aliases**: Edit `.config/fish/config.fish`
