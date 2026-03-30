@@ -54,6 +54,22 @@ log() { echo "${C_DIM}[codex-bridge]${C_RESET} $*" >&2; }
 log_v() { [ "$VERBOSE" != "0" ] && log "$@" || true; }
 log_banner() { echo "${C_CYAN}${C_BOLD}=== $1 ===${C_RESET}" >&2; }
 
+# Use codex plugin companion if available (structured review with app server)
+CODEX_COMPANION="${HOME}/.claude/plugins/marketplaces/openai-codex/plugins/codex/scripts/codex-companion.mjs"
+
+run_review_via_companion() {
+    local mode="$1"
+    if command -v node &>/dev/null && [ -f "$CODEX_COMPANION" ]; then
+        local result
+        result=$(timeout "${REVIEW_TIMEOUT}s" node "$CODEX_COMPANION" "$mode" --wait --scope working-tree 2>/dev/null) || return 1
+        if [ -n "$result" ]; then
+            echo "$result"
+            return 0
+        fi
+    fi
+    return 1
+}
+
 # --- Parse options (everything before --) ---
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -291,22 +307,28 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
 ... (truncated: $diff_line_count total lines, showing first $MAX_DIFF_LINES)"
     fi
 
-    # --- Claude Review ---
-    log_banner "Claude Review (iteration $iteration/$MAX_ITERATIONS, mode=$REVIEW_MODE)"
+    # --- Review via Codex companion or Claude fallback ---
+    log_banner "Review (iteration $iteration/$MAX_ITERATIONS, mode=$REVIEW_MODE)"
 
-    review_prompt_text=$(review_prompt "$REVIEW_MODE" "$ORIGINAL_PROMPT" "$current_diff" "$iteration")
-    log_v "Review prompt length: ${#review_prompt_text} chars"
+    review_output=""
+    if review_output=$(run_review_via_companion "$REVIEW_MODE"); then
+        log_v "Used Codex companion for review"
+    else
+        log_v "Codex companion unavailable, falling back to Claude"
+        review_prompt_text=$(review_prompt "$REVIEW_MODE" "$ORIGINAL_PROMPT" "$current_diff" "$iteration")
+        log_v "Review prompt length: ${#review_prompt_text} chars"
 
-    # Build claude command
-    claude_cmd=(claude -p --model "$CLAUDE_MODEL")
-    if [ -n "$CLAUDE_PROFILE" ]; then
-        claude_cmd=(env "CLAUDE_CONFIG_DIR=$HOME/.claude-$CLAUDE_PROFILE" "${claude_cmd[@]}")
+        # Build claude command
+        claude_cmd=(claude -p --model "$CLAUDE_MODEL")
+        if [ -n "$CLAUDE_PROFILE" ]; then
+            claude_cmd=(env "CLAUDE_CONFIG_DIR=$HOME/.claude-$CLAUDE_PROFILE" "${claude_cmd[@]}")
+        fi
+
+        review_output=$(echo "$review_prompt_text" | timeout "$REVIEW_TIMEOUT" "${claude_cmd[@]}" 2>/dev/null) || {
+            log "${C_YELLOW}Review timed out or failed — accepting changes${C_RESET}"
+            break
+        }
     fi
-
-    review_output=$(echo "$review_prompt_text" | timeout "$REVIEW_TIMEOUT" "${claude_cmd[@]}" 2>/dev/null) || {
-        log "${C_YELLOW}Claude review timed out or failed — accepting changes${C_RESET}"
-        break
-    }
 
     if [ -z "$review_output" ]; then
         log "Claude returned empty review — accepting changes"

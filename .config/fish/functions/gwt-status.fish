@@ -92,11 +92,24 @@ function gwt-status --description "Show worktree + devcontainer status"
         end
     end
 
+    # Detect codex companion for job status
+    set -l codex_companion "$HOME/.claude/plugins/marketplaces/openai-codex/plugins/codex/scripts/codex-companion.mjs"
+    set -l has_codex false
+    if command -q node; and test -f "$codex_companion"
+        set has_codex true
+    end
+
     # Print header
     echo ""
-    if test -n "$agent_state_script"
+    if test -n "$agent_state_script"; and $has_codex
+        printf "%-40s %-20s %-15s %-18s %-15s %-10s\n" WORKTREE BRANCH CONTAINER AGENT CODEX STATUS
+        printf "%-40s %-20s %-15s %-18s %-15s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 18 "-") (string repeat -n 15 "-") (string repeat -n 10 "-")
+    else if test -n "$agent_state_script"
         printf "%-40s %-20s %-15s %-18s %-10s\n" WORKTREE BRANCH CONTAINER AGENT STATUS
         printf "%-40s %-20s %-15s %-18s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 18 "-") (string repeat -n 10 "-")
+    else if $has_codex
+        printf "%-40s %-20s %-15s %-15s %-10s\n" WORKTREE BRANCH CONTAINER CODEX STATUS
+        printf "%-40s %-20s %-15s %-15s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 15 "-") (string repeat -n 10 "-")
     else
         printf "%-40s %-20s %-15s %-10s\n" WORKTREE BRANCH CONTAINER STATUS
         printf "%-40s %-20s %-15s %-10s\n" (string repeat -n 40 "-") (string repeat -n 20 "-") (string repeat -n 15 "-") (string repeat -n 10 "-")
@@ -202,8 +215,27 @@ function gwt-status --description "Show worktree + devcontainer status"
             set display_path "..."(string sub -s -35 $wt_path)
         end
 
-        if test -n "$agent_state_script"
+        # Codex job status
+        set -l codex_display -
+        if $has_codex
+            set -l codex_json (cd "$wt_path" 2>/dev/null; and node "$codex_companion" status --json 2>/dev/null | string collect)
+            if test -n "$codex_json"
+                set -l active_count (echo "$codex_json" | jq -r '.active // 0' 2>/dev/null)
+                set -l last_status (echo "$codex_json" | jq -r '.lastStatus // "none"' 2>/dev/null)
+                if test "$active_count" -gt 0 2>/dev/null
+                    set codex_display "[$active_count active]"
+                else if test "$last_status" != none -a "$last_status" != null
+                    set codex_display "$last_status"
+                end
+            end
+        end
+
+        if test -n "$agent_state_script"; and $has_codex
+            printf "%s%-38s %-20s %-15s %s%-18s%s %-15s %s\n" $marker $display_path $wt_branch $instance_name (set_color $agent_color) $agent_display (set_color normal) $codex_display $container_status
+        else if test -n "$agent_state_script"
             printf "%s%-38s %-20s %-15s %s%-18s%s %s\n" $marker $display_path $wt_branch $instance_name (set_color $agent_color) $agent_display (set_color normal) $container_status
+        else if $has_codex
+            printf "%s%-38s %-20s %-15s %-15s %s\n" $marker $display_path $wt_branch $instance_name $codex_display $container_status
         else
             printf "%s%-38s %-20s %-15s %s\n" $marker $display_path $wt_branch $instance_name $container_status
         end

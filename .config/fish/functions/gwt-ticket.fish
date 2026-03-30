@@ -91,6 +91,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l status_json false
     set -l gate_type ""
     set -l gate_dep_worktree ""
+    set -l review_gate false
     set -l no_checkpoints false
     set -l ckpt_agent ""
     set -l bridge_iterations ""
@@ -505,6 +506,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --codex-profile requires a profile name from config.toml (e.g., auto, safe, fast, local)"
                     return 1
                 end
+            case --review-gate
+                set review_gate true
             case --crown
                 set crown_mode true
                 # Optional: --crown N sets contestant count
@@ -782,6 +785,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --codex              Use OpenCode on the right-hand side instead of Claude Code on the left"
         echo "  --codex-model M      Codex/OpenAI model override for OpenCode (implies --codex; e.g., gpt-5.1-codex)"
         echo "  --codex-profile P    Legacy compatibility flag; OpenCode auth comes from its own config"
+        echo "  --review-gate        Enable Codex stop-time review gate (blocks session end until Codex approves)"
         echo "  --crown [N]          Tournament mode: N agents compete, LLM judge picks winner (default: 3)"
         echo "  --crown-agents LIST  Comma-separated agent types per contestant (e.g., claude,claude,codex)"
         echo "  --crown-judge PRESET Judge mode: council|review|redteam (default: council)"
@@ -859,6 +863,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  # Invoke skill(s) before working on the ticket"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --skill bestpractice tdd"
+        echo ""
+        echo "  # Enable Codex review gate (blocks session end until Codex approves)"
+        echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --review-gate"
         echo ""
         echo "  # Add extra directories for Claude to access"
         echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/other-repo"
@@ -1674,7 +1681,14 @@ REQUIRED BEHAVIORS:
 - ALWAYS use 'bd search \"keyword\"' to check for related beads before creating new ones
 - Close multiple: bd close ID1 ID2 ID3 (batch close is more efficient)
 - Check blocked: bd blocked (see what needs unblocking)
-- Store metadata: bd kv set key value (persistent across compactions)"
+- Store metadata: bd kv set key value (persistent across compactions)
+
+CODEX DELEGATION — For independent subtasks, consider using /codex:rescue to delegate work to Codex in background:
+- Use when a subtask is self-contained and doesn't depend on your current work
+- Run: /codex:rescue --background 'Complete subtask: TITLE. Details: DESCRIPTION'
+- Check progress: /codex:status
+- Get results: /codex:result JOB_ID
+Only delegate when you have 3+ subtasks AND the subtask is truly independent."
 
         if test -n "$prompt_suffix"
             set prompt_suffix "$prompt_suffix$beads_suffix"
@@ -1782,6 +1796,11 @@ Avoid all other MCPs to keep context lean and focused. Use bash commands or scri
         else
             set prompt_suffix "$mcp_suffix"
         end
+    end
+
+    # Inject review gate skill if requested
+    if $review_gate
+        set -p skills "codex:setup --enable-review-gate"
     end
 
     # Apply skills, prefix, and suffix

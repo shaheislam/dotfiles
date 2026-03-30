@@ -993,6 +993,7 @@ PTEOF
         claude plugin marketplace add obra/superpowers-marketplace >/dev/null 2>&1 || true
         claude plugin marketplace add steveyegge/beads >/dev/null 2>&1 || true
         claude plugin marketplace add tanweai/pua >/dev/null 2>&1 || true
+        claude plugin marketplace add openai/codex-plugin-cc >/dev/null 2>&1 || true
 
         # Install plugins (sequential — all write to shared settings.json)
         claude plugin install code-review@claude-code-plugins >/dev/null 2>&1 || true
@@ -1012,11 +1013,12 @@ PTEOF
         claude plugin install example-skills@anthropic-agent-skills >/dev/null 2>&1 || true
         claude plugin install superpowers@superpowers-marketplace >/dev/null 2>&1 || true
         claude plugin install pua@pua-skills >/dev/null 2>&1 || true
+        claude plugin install codex@openai-codex >/dev/null 2>&1 || true
 
         # Fix execute permissions on plugin scripts (upstream repos don't set +x in git)
         find "$HOME/.claude/plugins/marketplaces" -type f -name '*.sh' ! -perm -u+x -exec chmod +x {} + 2>/dev/null || true
 
-        print_success "Claude Code plugins installed (17 plugins, 8 marketplaces)"
+        print_success "Claude Code plugins installed (18 plugins, 9 marketplaces)"
         log_verbose "Installed: code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-dev, ralph-loop, agent-sdk-dev, explanatory-output-style, learning-output-style, code-simplifier, security-guidance, terraform-skill, beads, example-skills, superpowers, pua"
 
         # Claude Code LSP Server Integration
