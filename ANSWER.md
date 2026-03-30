@@ -1,3 +1,11 @@
+# TASK: Brazil — Capital Answer
+
+- **Question**: What is the capital of Brazil?
+- **Answer**: Brasília, located within the Federal District on the country’s central plateau.
+- **Why**: Law No. 3,273/1957 authorized relocating the federal seat from Rio de Janeiro, and Brasília officially became the capital on 21 April 1960. Article 18 of Brazil’s 1988 Constitution reaffirms that the nation’s capital resides in the Federal District, so Brasília remains the constitutional seat of government.
+
+---
+
 # Skills Audit: Recommendations for New Skills
 
 ## Executive Summary
