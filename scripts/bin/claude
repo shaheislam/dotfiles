@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # Event-driven Claude wrapper for tmux agent state tracking.
 #
-# When running inside tmux, exports TMUX_AGENT_TARGET (stable window ID)
-# so lifecycle hooks in settings.json can color the correct tmux window.
-# Falls through transparently when not in tmux or for non-interactive
-# subcommands (mcp, config, plugin, etc.).
+# Default behavior runs the CLI via bunx (`@anthropic-ai/claude-code@latest`).
+# When `--resume`/`-r` is present we pin the CLI to 2.1.30 to avoid the
+# context cache bug introduced in later builds. Set CLAUDE_RUNNER=native to
+# fall back to the standalone binary if absolutely necessary.
 #
-# PATH priority: ~/dotfiles/scripts/bin comes before ~/.local/bin/claude
-# (set in paths.fish:44), so this wrapper intercepts `claude` invocations.
+# Inside tmux we still export TMUX_AGENT_TARGET so hooks can color the pane.
 
 set -euo pipefail
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+CLAUDE_RUNNER="${CLAUDE_RUNNER:-bunx}"
+PASSTHRU_CMDS=(mcp config plugin auth doctor update api-key logout migrate-installer)
 
-# --- Find real claude binary (skip own directory in PATH) ---
 find_real_claude() {
     local IFS=':'
     for dir in $PATH; do
@@ -24,32 +24,89 @@ find_real_claude() {
             return 0
         fi
     done
-    echo "claude: real binary not found in PATH" >&2
+    echo "claude wrapper: real binary not found in PATH" >&2
     return 1
 }
 
-REAL_CLAUDE=$(find_real_claude) || exit 1
+is_passthrough_command() {
+    for arg in "$@"; do
+        case "$arg" in
+            -*) continue ;;
+            *)
+                for cmd in "${PASSTHRU_CMDS[@]}"; do
+                    if [[ "$arg" == "$cmd" ]]; then
+                        return 0
+                    fi
+                done
+                break
+                ;;
+        esac
+    done
+    return 1
+}
 
-# --- Pass through if not in tmux ---
-if [[ -z "${TMUX:-}" ]]; then
-    exec "$REAL_CLAUDE" "$@"
+uses_resume_flag() {
+    for arg in "$@"; do
+        case "$arg" in
+            --resume|--resume=*|-r|-r*)
+                return 0
+                ;;
+        esac
+    done
+    return 1
+}
+
+run_native() {
+    local real
+    real=$(find_real_claude) || exit 1
+
+    if [[ -z "${TMUX:-}" ]]; then
+        exec "$real" "$@"
+    fi
+
+    if is_passthrough_command "$@"; then
+        exec "$real" "$@"
+    fi
+
+    export TMUX_AGENT_TARGET
+    TMUX_AGENT_TARGET=$(tmux display-message -p '#{window_id}' 2>/dev/null) || true
+    exec "$real" "$@"
+}
+
+run_bunx() {
+    local bunx_bin
+    bunx_bin="${CLAUDE_BUNX_BIN:-$(command -v bunx 2>/dev/null || true)}"
+    if [[ -z "$bunx_bin" ]]; then
+        echo "claude wrapper: bunx not found (install bun via Homebrew)" >&2
+        exit 1
+    fi
+
+    local latest_pkg="${CLAUDE_PACKAGE_LATEST:-@anthropic-ai/claude-code@latest}"
+    local resume_pkg="${CLAUDE_PACKAGE_RESUME:-@anthropic-ai/claude-code@2.1.30}"
+    local package="$latest_pkg"
+
+    if uses_resume_flag "$@" && [[ "${CLAUDE_RESUME_ROUTING:-on}" != "off" ]]; then
+        package="$resume_pkg"
+        if [[ -z "${CLAUDE_WRAPPER_QUIET:-}" ]]; then
+            >&2 echo "claude wrapper: routing --resume via $package to avoid cache rebuilds"
+        fi
+    fi
+
+    if [[ -z "${TMUX:-}" ]]; then
+        exec "$bunx_bin" "$package" "$@"
+    fi
+
+    if is_passthrough_command "$@"; then
+        exec "$bunx_bin" "$package" "$@"
+    fi
+
+    export TMUX_AGENT_TARGET
+    TMUX_AGENT_TARGET=$(tmux display-message -p '#{window_id}' 2>/dev/null) || true
+    exec "$bunx_bin" "$package" "$@"
+}
+
+if [[ "$CLAUDE_RUNNER" == "native" ]]; then
+    run_native "$@"
+else
+    run_bunx "$@"
 fi
-
-# --- Pass through for non-interactive subcommands ---
-for arg in "$@"; do
-    case "$arg" in
-        -*) continue ;; # skip flags
-        mcp|config|plugin|auth|doctor|update|api-key|logout|migrate-installer)
-            exec "$REAL_CLAUDE" "$@"
-            ;;
-        *) break ;; # first non-flag arg isn't a passthrough command
-    esac
-done
-
-# --- Export tmux target (stable window ID like @42) ---
-# #{window_id} survives window reordering unlike session:index.
-# Hook scripts in settings.json read $TMUX_AGENT_TARGET to know which window to color.
-export TMUX_AGENT_TARGET
-TMUX_AGENT_TARGET=$(tmux display-message -p '#{window_id}' 2>/dev/null) || true
-
-exec "$REAL_CLAUDE" "$@"

@@ -1106,6 +1106,15 @@ Our dotfiles configure `teammateMode: "auto"` in `~/.claude.json`. For different
 
 ## Our Dotfiles Integration
 
+### CLI Runner Strategy
+
+- `scripts/bin/claude` wraps the official CLI and routes every call through `bunx @anthropic-ai/claude-code@latest` so we completely avoid the native binary's hidden billing attribution replacement bug.
+- When a command includes `--resume` / `-r` we automatically pin the CLI to `@anthropic-ai/claude-code@2.1.30`, the last version that keeps attachment ordering stable. This prevents Claude Code from blowing away the entire prompt cache on resume.
+- `scripts/setup.sh` pre-warms both packages via bunx so subsequent launches (including `claude doctor`) are instant, and the wrapper exposes overrides:
+  - `CLAUDE_PACKAGE_LATEST` / `CLAUDE_PACKAGE_RESUME` – change which package versions are used.
+  - `CLAUDE_RESUME_ROUTING=off` – force the latest build even for resume if you are debugging a regression.
+  - `CLAUDE_RUNNER=native` – temporarily re-enable the standalone binary (not recommended; leaves both cache bugs in place).
+
 ### Fish Functions Using Claude CLI
 
 | Function | File | Claude Flags Used | Purpose |

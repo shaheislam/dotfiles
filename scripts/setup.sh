@@ -525,15 +525,13 @@ phase_4_cloud_tools() {
         return 0
     fi
 
-    # Claude Code CLI - native installer (auto-updates, no Node.js dependency)
-    # Reference: https://code.claude.com/docs/en/setup
-    print_step "Checking Claude Code CLI..."
+    # Claude Code CLI now runs via bunx wrapper (avoids billing + resume bugs)
+    print_step "Configuring Claude Code CLI (bunx runner)..."
 
-    # Migrate from Homebrew to native installer (one-time cleanup)
     if brew list --cask claude-code >/dev/null 2>&1; then
-        print_step "Migrating Claude Code from Homebrew to native installer..."
+        print_step "Removing deprecated Claude Code cask..."
         brew uninstall --cask claude-code >/dev/null 2>&1 || true
-        print_success "Homebrew Claude Code removed (migrating to native)"
+        print_success "Homebrew Claude Code removed"
     fi
 
     # Clean up legacy installations (only if remnants exist — skip slow npm/bun scans otherwise)
@@ -550,20 +548,25 @@ phase_4_cloud_tools() {
     rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
     # scripts/bin/claude is now the event-driven tmux wrapper — do not remove
 
-    # Always install/upgrade via native installer on latest channel
-    # The installer is idempotent — safe to run every time
-    print_step "Installing/updating Claude Code (latest channel)..."
-    # Close stdin (</dev/null) so the piped bash can't consume the parent script's input stream
-    if curl -fsSL https://claude.ai/install.sh | bash -s -- latest </dev/null 2>&1; then
-        print_success "Claude Code installed (latest channel): $(claude --version 2>/dev/null || echo 'version check failed')"
+    if command_exists bunx; then
+        print_step "Pre-warming Claude Code bunx packages..."
+        if bunx @anthropic-ai/claude-code@latest --version >/dev/null 2>&1; then
+            print_success "Cached @anthropic-ai/claude-code@latest for default sessions"
+        else
+            print_warning "Failed to cache @anthropic-ai/claude-code@latest"
+        fi
+        if bunx @anthropic-ai/claude-code@2.1.30 --version >/dev/null 2>&1; then
+            print_success "Cached @anthropic-ai/claude-code@2.1.30 for --resume sessions"
+        else
+            print_warning "Failed to cache @anthropic-ai/claude-code@2.1.30"
+        fi
     else
-        print_warning "Failed to install Claude Code - install manually: curl -fsSL https://claude.ai/install.sh | sh -s -- latest"
+        print_warning "bunx not found. Install bun so claude wrapper can run via bunx"
     fi
 
-    # Verify installation health
     if command_exists claude; then
         claude doctor >/dev/null 2>&1 &&
-            print_success "Claude Code doctor check passed" ||
+            print_success "Claude Code doctor check passed (bunx runner)" ||
             log_verbose "Claude Code doctor reported warnings (non-fatal)"
     fi
 
