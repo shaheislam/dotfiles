@@ -773,6 +773,7 @@ test_opencode() {
 	run_test "OpenCode project env plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/project-env.ts' ]"
 	run_test "OpenCode project env plugin sets CLAUDE_PROJECT_DIR" "grep -q 'CLAUDE_PROJECT_DIR' '$DOTFILES_ROOT/.opencode/plugins/project-env.ts'"
 	run_test "OpenCode tmux status plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/tmux-status.ts' ]"
+	run_test "OpenCode SSE recorder plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/sse-recorder.ts' ]"
 
 	run_test "OpenCode model routing config exists" "[ -f '$DOTFILES_ROOT/.opencode/model-routing.json' ]"
 	run_test "OpenCode model routing config is valid JSON" "jq empty '$DOTFILES_ROOT/.opencode/model-routing.json'"
@@ -810,6 +811,13 @@ test_opencode() {
 	run_test "OpenCode rotation test script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-rotation.sh' ]"
 	run_test "OpenCode rotation test script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/opencode/test-rotation.sh'"
 	run_test "OpenCode rotation harness passes" "'$DOTFILES_ROOT/scripts/opencode/test-rotation.sh' >/dev/null"
+	run_test "OpenCode SSE recorder harness exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/test-sse-recorder.ts' ]"
+	run_test "OpenCode SSE recorder harness executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-sse-recorder.ts' ]"
+	run_test "OpenCode SSE recorder harness passes" "bun '$DOTFILES_ROOT/scripts/opencode/test-sse-recorder.ts' >/dev/null"
+	run_test "OpenCode diffview helper exists" "[ -x '$DOTFILES_ROOT/scripts/opencode/diffview-latest.sh' ]"
+	run_test "OpenCode Neovim health script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/test-nvim-health.sh' ]"
+	run_test "OpenCode Neovim health script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-nvim-health.sh' ]"
+	run_test "OpenCode Neovim health checks pass" "'$DOTFILES_ROOT/scripts/opencode/test-nvim-health.sh' >/dev/null"
 
 	run_test "OpenCode accounts fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish' ]"
 	run_test "OpenCode accounts fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish'"

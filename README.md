@@ -244,6 +244,10 @@ make clean && make
 - **Development Tools**: Complete toolchain for multiple languages
 - **Consistent Theming**: Tokyo Night theme across applications
 
+## AI Assistants
+
+- **OpenCode workflows**: [docs/opencode-nvim.md](docs/opencode-nvim.md) covers the hybrid `opencode.nvim` + `codecompanion.nvim` setup, SSE logging into Entire via `.opencode/plugins/sse-recorder.ts`, Diffview replay tooling, and the `wrapped.nvim` dashboard for Neovim-config analytics.
+
 ## Customization
 
 - **Shell aliases**: Edit `.config/fish/config.fish`
