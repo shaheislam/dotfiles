@@ -246,7 +246,7 @@ make clean && make
 
 ## AI Assistants
 
-- **OpenCode workflows**: [docs/opencode-nvim.md](docs/opencode-nvim.md) explains how to keep the tmux side pane while adopting the `opencode.nvim` plugin for context-aware prompts, edit review, and LSP hooks inside Neovim.
+- **OpenCode workflows**: [docs/opencode-nvim.md](docs/opencode-nvim.md) covers the hybrid `opencode.nvim` + `codecompanion.nvim` setup, SSE logging into Entire via `.opencode/plugins/sse-recorder.ts`, Diffview replay tooling, and the `wrapped.nvim` dashboard for Neovim-config analytics.
 
 ## Customization
 

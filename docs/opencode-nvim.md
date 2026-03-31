@@ -38,3 +38,104 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 5. Continue to use the tmux pane when you need a dedicated transcript view or when Neovim is not open—both entry points can coexist because they talk to the same OpenCode backend.
 
 By moving repetitive prompt + context work into Neovim we remove most of the friction highlighted in this ticket while leaving the tmux bindings available for workflows outside the editor.
+
+## Hybrid workflow with CodeCompanion
+
+`codecompanion.nvim` stays in the config as the “chat + workflow” orchestrator while `opencode.nvim` owns buffer-aware operators and edit review. The shared adapter stack looks like this:
+
+- `codecompanion.nvim` adapters target OpenCode via the built-in ACP helper, so you can open a standalone chat buffer, trigger slash commands (e.g., `/review`, `/explain`, `/diff`), or launch workflows that gather buffers/diagnostics before sending them through OpenCode.
+- `opencode.nvim` handles inline asks (`ask`, `select`, `operator`) plus the diff-based permission workflow. Both plugins can point to the same running OpenCode instance by sharing a port in `vim.g.opencode_opts.server` and the CodeCompanion adapter config.
+- Keymap coexistence: keep the CodeCompanion palette on `<leader>a*` (multi-buffer chat) and reserve `<C-a>/<C-x>/go` for `opencode.nvim`. The two layers stay orthogonal.
+
+### Reference Lua snippets
+
+```lua
+-- lazy.nvim spec excerpt (~/neovim/lua/plugins/opencode.lua)
+return {
+  "nickjvandyke/opencode.nvim",
+  dependencies = { "folke/snacks.nvim" },
+  config = function()
+    vim.g.opencode_opts = {
+      server = {
+        port = tonumber(vim.env.OPENCODE_PORT or 3333),
+      },
+      prompts = {
+        diagnostics = { name = "diagnostics", prompt = "Explain @diagnostics" },
+        refactor = { name = "refactor", prompt = "Refactor @this for readability" },
+      },
+    }
+    vim.keymap.set({ "n", "x" }, "<C-a>", function()
+      require("opencode").ask("@this: ", { submit = true })
+    end, { desc = "Ask OpenCode" })
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "OpencodeEvent:*",
+      callback = function(args)
+        require("opencode.status").update(args.data.event)
+      end,
+    })
+  end,
+}
+```
+
+```lua
+-- CodeCompanion adapter excerpt (~/neovim/lua/plugins/codecompanion.lua)
+return {
+  "olimorris/codecompanion.nvim",
+  opts = {
+    adapters = {
+      opencode = function()
+        return require("codecompanion.adapters").extend("opencode", {
+          schema = { model = { default = "openai/gpt-5.4" } },
+        })
+      end,
+    },
+    strategies = {
+      chat = { adapter = "opencode" },
+      inline = { adapter = "opencode" },
+    },
+    slash_commands = {
+      diff = {
+        opts = {
+          prompt = "Review the following git diff for correctness and readability: @diff",
+        },
+      },
+    },
+  },
+}
+```
+
+With this split you can define explicit workflows:
+
+- **Diagnostics review** – `:CodeCompanion /diagnostics` to summarize errors, then `:lua require("opencode").prompt("fix")` for the focused buffer patch.
+- **Refactor selection** – visual select code, hit `go` to enqueue via the operator, then accept/reject hunks in the diff tab.
+- **Diff review** – `CodeCompanion` slash command builds high-level TODOs, while `opencode.nvim`’s `prompt("diff")` opens the same git diff with accept/reject controls.
+
+## SSE logging + Entire checkpoints
+
+- `.opencode/plugins/sse-recorder.ts` listens to every OpenCode SSE event, writes a JSONL audit log under `.entire/opencode/sse/events.jsonl`, and mirrors summary payloads into `entire hooks opencode sse-event` so checkpoints capture turn-by-turn metadata.
+- Whenever an event contains a diff/patch payload, the plugin stores a timestamped snapshot inside `.entire/opencode/sse/diffs/` and emits a secondary `sse-diff` hook with the file path.
+- The harness `scripts/opencode/test-sse-recorder.ts` exercises the plugin in isolation to guarantee log + diff files are produced.
+- Use `scripts/opencode/diffview-latest.sh --cat` (or `--meta`) to inspect the newest AI patch. Diffview can read those patch files through its existing tmux/Zsh discovery hooks, so you can replay AI-generated edits even after closing the OpenCode TUI.
+
+## Diffview integration pointers
+
+1. Keep `.config/fish/conf.d/diffview-follow.fish` enabled so every `cd` notifies Neovim’s Diffview window about repo changes.
+2. When the SSE recorder drops a new patch, run `scripts/opencode/diffview-latest.sh` to get the file path, then inside Neovim run `:DiffviewFileHistory <patch>` or open it in a scratch buffer for review.
+3. Because the recorder stores metadata (`*.patch.json`), you can show the originating session/message in statuslines or in Entire checkpoints.
+
+## Automated validation
+
+`scripts/test-filter.sh opencode` now covers the new surfaces:
+
+- `scripts/opencode/test-sse-recorder.ts` (Bun harness) ensures the recorder plugin logs events/diffs.
+- `scripts/opencode/test-nvim-health.sh` runs `nvim --headless` → `luafile` (module probes) → `:checkhealth opencode` → `:checkhealth codecompanion` so CI flags missing plugins immediately. Set `OPENCODE_NVIM_APPNAME` if you use a non-default Neovim profile.
+- `scripts/opencode/diffview-latest.sh` gives tooling + tests a stable entry point for the most recent diff snapshot.
+
+Together these cover the “hybrid UI + SSE logging + Diffview replay” workflow discussed in the ticket.
+
+## Wrapped.nvim dashboard
+
+- `aikhe/wrapped.nvim` is installed (Lazy spec in `~/neovim/lua/plugins/wrapped.lua`) with `nvzone/volt` so you can launch a dashboard of repo activity via `:WrappedNvim` or the shortcut `<leader>aw`.
+- The dashboard pulls git stats from `vim.fn.stdpath("config")` (override with `NVIM_WRAPPED_PATH`) and renders commit heatmaps, plugin growth charts, and large-file summaries. Size/border are tuned for tmux panes via rounded border + 75% of current editor dimensions.
+- Use `<` / `>` to cycle years, `r` to refresh after new commits, and `q` to close. Because data collection is async, a loading screen appears until git/file/plugin tasks finish.
+- Pairing this dashboard with the SSE recorder means Entire checkpoints capture both AI session history and evolving Neovim configuration history (for example, referencing the most active month when reviewing opencode usage).
