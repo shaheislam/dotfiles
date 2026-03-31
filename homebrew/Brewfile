@@ -126,8 +126,8 @@ brew "gemini-cli"
 brew "mas"  # Mac App Store CLI
 
 # AI Tools
-# claude-code: installed via native installer (auto-updates, no Homebrew cask needed)
-# Install: curl -fsSL https://claude.ai/install.sh | bash
+# claude-code: provided via bunx runner (see scripts/bin/claude)
+# Install handled by bunx cache warmup in scripts/setup.sh (no installer)
 # devcontainer.vim - Neovim in any devcontainer (installed via go install in setup.sh)
 cask "1password-cli"  # 1Password CLI for tmux-1password plugin
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
