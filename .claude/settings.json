@@ -5,6 +5,7 @@
     "pr": ""
   },
   "autoUpdatesChannel": "latest",
+  "effortLevel": "medium",
   "enabledPlugins": {
     "agent-sdk-dev@claude-code-plugins": true,
     "beads@steveyegge/beads": true,
