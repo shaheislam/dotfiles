@@ -100,7 +100,7 @@ cc-lsp install   # (Re)install all plugins
 
 | Plugin | Binary | Language | Nix Package |
 |--------|--------|----------|-------------|
-| `pyright` | `pyright-langserver` | Python | `basedpyright` (unstable) |
+| `pyright` | `pyright-langserver` | Python | `basedpyright` (unstable, via `scripts/bin/pyright-langserver` fallback wrapper) |
 | `typescript` | `typescript-language-server` | TypeScript/JS | `nodePackages.typescript-language-server` |
 | `gopls` | `gopls` | Go | `gopls` |
 | `rust-analyzer` | `rust-analyzer` | Rust | `rust-analyzer` |
@@ -115,6 +115,11 @@ cc-lsp install   # (Re)install all plugins
 A lightweight `lsp-status.sh` hook runs at SessionStart to inject available LSP
 servers into Claude's context. This ensures Claude knows to use the LSP tool
 for code navigation instead of grep-based searching.
+
+For Python, this repo exposes `pyright-langserver` through `scripts/bin/pyright-langserver`.
+If the real `pyright-langserver` is not installed, the wrapper falls back to
+`basedpyright-langserver` so Claude/OpenCode still see Python LSP support on the
+standard Nix setup.
 
 **Output example**: `LSP servers active: Bash/Shell Go Nix Python Rust TypeScript/JavaScript. Use the LSP tool for code intelligence.`
 

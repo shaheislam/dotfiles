@@ -22,16 +22,16 @@
     "gutterLight": "#c0c6d8",
     "borderDim": "#4a5275",
     "borderDimLight": "#c7cbda",
-    "panel": "#1f233580",
-    "panelLight": "#edf1ffcc",
-    "element": "#24283b66",
-    "elementLight": "#e4e9f7cc",
+    "panel": "#1f233533",
+    "panelLight": "#edf1ff33",
+    "element": "#24283b33",
+    "elementLight": "#e4e9f733",
     "diffAddBg": "#20303b",
     "diffAddBgLight": "#dff3e4",
     "diffRemoveBg": "#3a2230",
     "diffRemoveBgLight": "#f8e1e7",
-    "diffContextBg": "#1a1f3088",
-    "diffContextBgLight": "#eef2fbcc"
+    "diffContextBg": "#1a1f3033",
+    "diffContextBgLight": "#eef2fb33"
   },
   "theme": {
     "primary": {

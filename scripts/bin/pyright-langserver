@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+
+find_real_binary() {
+    local name="$1"
+    local IFS=':'
+    for dir in $PATH; do
+        [[ "$dir" == "$SELF_DIR" ]] && continue
+        local candidate="$dir/$name"
+        if [[ -x "$candidate" && ! -d "$candidate" ]]; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
+if real_pyright=$(find_real_binary "pyright-langserver"); then
+    exec "$real_pyright" "$@"
+fi
+
+if real_basedpyright=$(find_real_binary "basedpyright-langserver"); then
+    exec "$real_basedpyright" "$@"
+fi
+
+echo "pyright-langserver: neither pyright-langserver nor basedpyright-langserver found in PATH" >&2
+exit 127
