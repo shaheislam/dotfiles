@@ -52,6 +52,7 @@ cat >"$HARNESS" <<'EOF'
 const fs = await import("node:fs/promises")
 const pluginUrl = new URL(`file://${process.env.OPENCODE_ROTATE_PLUGIN}`)
 const { OpenAIRotatePlugin } = await import(pluginUrl.href)
+const providerID = process.env.OPENCODE_ROTATE_PROVIDER_ID || "openai"
 
 const calls = []
 const hooks = await OpenAIRotatePlugin({
@@ -67,7 +68,7 @@ const hooks = await OpenAIRotatePlugin({
 })
 
 await hooks["chat.message"](
-  { sessionID: "session-1", agent: "build", model: { providerID: "openai", modelID: "gpt-5.4" } },
+  { sessionID: "session-1", agent: "build", model: { providerID, modelID: "gpt-5.4" } },
   {
     message: {
       id: "user-1",
@@ -75,7 +76,7 @@ await hooks["chat.message"](
       role: "user",
       time: { created: Date.now() },
       agent: "build",
-      model: { providerID: "openai", modelID: "gpt-5.4" },
+      model: { providerID, modelID: "gpt-5.4" },
       system: "system-note",
       variant: "default",
     },
@@ -88,7 +89,7 @@ const errorEvent = {
     type: "session.error",
     properties: {
       sessionID: "session-1",
-      error: { name: "APIError", data: { statusCode: 429, message: "usage.limit reached" } },
+      error: { name: "APIError", data: { statusCode: 429, message: "usage.limit reached", providerID } },
     },
   },
 }
@@ -106,6 +107,7 @@ run_case() {
     local expected_access="$3"
     local expected_toast_variant="$4"
     local expected_prompt_count="$5"
+    local provider_id="${6:-openai}"
 
     local case_dir="$TMPDIR/$case_name"
     write_case "$case_dir" "$spare_token"
@@ -115,6 +117,7 @@ run_case() {
         OPENCODE_AUTH_FILE="$case_dir/auth/auth.json" \
         OPENCODE_ACCOUNTS_DIR="$case_dir/accounts" \
         OPENCODE_USAGE_CHECK_SCRIPT="$case_dir/usage-check.sh" \
+        OPENCODE_ROTATE_PROVIDER_ID="$provider_id" \
         bun "$HARNESS")" || fail "$case_name execution failed"
 
     local actual_access
@@ -136,7 +139,8 @@ run_case() {
     pass "$case_name"
 }
 
-run_case success good-token good-token warning 1
-run_case exhausted bad-spare bad-token error 0
+run_case success-openai good-token good-token warning 1 openai
+run_case exhausted bad-spare bad-token error 0 openai
+run_case success-codex good-token good-token warning 1 codex
 
 pass "rotation validation complete"

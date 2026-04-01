@@ -41,6 +41,14 @@ const ACCOUNTS_FILE = join(ACCOUNTS_DIR, ".accounts")
 const CURRENT_FILE = join(ACCOUNTS_DIR, ".current")
 const USAGE_CHECK_SCRIPT = process.env.OPENCODE_USAGE_CHECK_SCRIPT || join(DOTFILES_ROOT, "scripts", "opencode", "usage-check.sh")
 const DEBUG_LOG = process.env.OPENCODE_ROTATE_DEBUG_LOG
+const OPENAI_PROVIDER_IDS = new Set(["openai", "codex"])
+
+function isOpenAIProvider(providerID?: string | null) {
+  if (!providerID) {
+    return true
+  }
+  return OPENAI_PROVIDER_IDS.has(providerID)
+}
 
 async function debugLog(message: string) {
   if (!DEBUG_LOG) {
@@ -76,11 +84,11 @@ function isOpenAIUsageLimit(error: unknown) {
   const providerID = candidate.data?.providerID
   const statusCode = candidate.statusCode ?? candidate.data?.statusCode
 
-  if (candidate.name === "ProviderAuthError" && providerID !== "openai") {
+  if (candidate.name === "ProviderAuthError" && providerID && !isOpenAIProvider(providerID)) {
     return false
   }
 
-  if (providerID && providerID !== "openai") {
+  if (providerID && !isOpenAIProvider(providerID)) {
     return false
   }
 
@@ -328,7 +336,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
   return {
     "chat.message": async (input, output) => {
       await debugLog(`chat.message provider=${output.message.model.providerID} message=${output.message.id}`)
-      if (output.message.model.providerID !== "openai") {
+      if (!isOpenAIProvider(output.message.model.providerID)) {
         pendingPrompts.delete(input.sessionID)
         return
       }
@@ -371,7 +379,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
 
       const pending = pendingPrompts.get(sessionID)
       await debugLog(`session.error pending=${Boolean(pending)} session=${sessionID}`)
-      if (!pending || pending.model.providerID !== "openai") {
+      if (!pending || !isOpenAIProvider(pending.model.providerID)) {
         return
       }
 
