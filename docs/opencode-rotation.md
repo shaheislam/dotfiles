@@ -71,6 +71,7 @@ Environment knobs:
 
 - **Enroll accounts** – `opencode-accounts add personal`, repeat for each subscription. Use `opencode-accounts status` to confirm the rotation order and active profile.
 - **Pre-flight** – `gwt-ticket` automatically runs `opencode-accounts check-and-rotate`, but you can run it manually if you expect to hammer the API outside that workflow.
+- **Keyboard-only tmux panes** – If you launch OpenCode via our tmux binding (`Ctrl-s O`), the wrapper `scripts/opencode/tmux-open.sh` disables the terminal’s alternate screen so tmux copy-mode (`Ctrl-s v`, `h/j/k/l`, `Ctrl-u/d`) retains the full scrollback. When OpenCode exits the wrapper re-enables alternate screen, so other panes keep their default behavior.
 - **During rotation failures** – If you see the “Save another account with opencode-accounts” toast, either capture a fresh login (`opencode-accounts capture new-name`) or prune stale profiles so `.accounts` matches reality.
 - **Observability** – Set `OPENCODE_ROTATE_DEBUG_LOG=/tmp/opencode-rotate.log` before launching OpenCode to capture every detection/rotation decision.
 
