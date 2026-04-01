@@ -18,8 +18,8 @@ HOOKIFY_BASE="${HOME}/.claude/plugins/cache/claude-code-plugins/hookify"
 
 # Find the latest version directory
 if [[ ! -d "$HOOKIFY_BASE" ]]; then
-    echo "hookify plugin not found at $HOOKIFY_BASE - skipping"
-    exit 0
+	echo "hookify plugin not found at $HOOKIFY_BASE - skipping"
+	exit 0
 fi
 
 HOOKIFY_VERSION=$(ls -1 "$HOOKIFY_BASE" | sort -V | tail -1)
@@ -27,29 +27,28 @@ HOOKIFY_ROOT="${HOOKIFY_BASE}/${HOOKIFY_VERSION}"
 HOOKS_DIR="${HOOKIFY_ROOT}/hooks"
 
 if [[ ! -d "$HOOKS_DIR" ]]; then
-    echo "hookify hooks directory not found at $HOOKS_DIR - skipping"
-    exit 0
+	echo "hookify hooks directory not found at $HOOKS_DIR - skipping"
+	exit 0
 fi
 
-patched=0
-skipped=0
+patched_imports=0
+skipped_imports=0
+patched_stdin=0
 
 for hook_file in "$HOOKS_DIR"/*.py; do
-    [[ -f "$hook_file" ]] || continue
+	[[ -f "$hook_file" ]] || continue
 
-    # Skip files that don't import from hookify (e.g. __init__.py)
-    if ! grep -q "from hookify\." "$hook_file" 2>/dev/null; then
-        continue
-    fi
+	# Skip files that don't import from hookify (e.g. __init__.py)
+	if ! grep -q "from hookify\." "$hook_file" 2>/dev/null; then
+		continue
+	fi
 
-    # Skip if already has v2 fix (__file__-based)
-    if grep -q "os.path.dirname(os.path.dirname(os.path.abspath(__file__)))" "$hook_file" 2>/dev/null; then
-        skipped=$((skipped + 1))
-        continue
-    fi
-
-    # Apply the patch using Python with file path as argument
-    python3 - "$hook_file" << 'PYEOF'
+	# Skip if already has v2 fix (__file__-based)
+	if grep -q "os.path.dirname(os.path.dirname(os.path.abspath(__file__)))" "$hook_file" 2>/dev/null; then
+		skipped_imports=$((skipped_imports + 1))
+	else
+		# Apply the import patch using Python with file path as argument
+		python3 - "$hook_file" <<'PYEOF'
 import sys
 
 hook_file = sys.argv[1]
@@ -122,14 +121,76 @@ if not replaced:
 with open(hook_file, 'w') as f:
     f.write(content)
 PYEOF
+		patched_imports=$((patched_imports + 1))
+	fi
 
-    patched=$((patched + 1))
+	# Harden stdin handling so missing stdin doesn't throw JSON errors
+	stdin_result=$(
+		python3 - "$hook_file" <<'PYEOF'
+import json
+import sys
+
+hook_file = sys.argv[1]
+
+with open(hook_file, 'r') as f:
+    content = f.read()
+
+if 'json.load(sys.stdin)' not in content:
+    sys.exit(0)
+
+helper_name = '_hookify_safe_json_load'
+helper_block = '''
+def _hookify_safe_json_load():
+    """Return JSON from stdin or an empty dict if unavailable."""
+    try:
+        raw_data = sys.stdin.read()
+    except Exception:
+        return {}
+    if not raw_data.strip():
+        return {}
+    try:
+        return json.loads(raw_data)
+    except json.JSONDecodeError:
+        return {}
+'''.strip('\n')
+
+changed = False
+
+if helper_name not in content:
+    marker = 'import json\n'
+    insertion = f"{marker}\n{helper_block}\n\n"
+    if marker in content:
+        content = content.replace(marker, insertion, 1)
+    else:
+        content = f"{helper_block}\n\n" + content
+    changed = True
+
+if 'json.load(sys.stdin)' in content:
+    content = content.replace('json.load(sys.stdin)', f'{helper_name}()')
+    changed = True
+
+if changed:
+    with open(hook_file, 'w') as f:
+        f.write(content)
+    print('patched')
+PYEOF
+	)
+
+	if [[ -n "${stdin_result}" ]]; then
+		patched_stdin=$((patched_stdin + 1))
+	fi
 done
 
-if [[ $patched -gt 0 ]]; then
-    echo "hookify: patched $patched hook scripts (v$HOOKIFY_VERSION)"
-elif [[ $skipped -gt 0 ]]; then
-    echo "hookify: already patched ($skipped scripts, v$HOOKIFY_VERSION)"
+if [[ $patched_imports -gt 0 ]]; then
+	echo "hookify: patched $patched_imports hook scripts (imports, v$HOOKIFY_VERSION)"
+elif [[ $skipped_imports -gt 0 ]]; then
+	echo "hookify: import fixes already present ($skipped_imports scripts, v$HOOKIFY_VERSION)"
 else
-    echo "hookify: no scripts needed patching"
+	echo "hookify: no import patches applied"
+fi
+
+if [[ $patched_stdin -gt 0 ]]; then
+	echo "hookify: added safe stdin handling to $patched_stdin scripts (v$HOOKIFY_VERSION)"
+else
+	echo "hookify: safe stdin handling already present"
 fi

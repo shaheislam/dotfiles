@@ -63,6 +63,7 @@
 .claude/setup-panes.fish
 .claude/start-claude-pane.fish
 .claude/*.local.md
+!.claude/hookify.*.local.md
 .claude/ralph-loop.local.md
 .plan.md
 .plan.md.bak
