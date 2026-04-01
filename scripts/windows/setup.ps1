@@ -217,7 +217,7 @@ After WSL Ubuntu is installed, run these commands in WSL terminal:
    ln -s /mnt/c/Users/$env:USERNAME/Documents/PokerData ~/poker-data
 
 7. Install Claude Code CLI:
-   npm install -g @anthropic-ai/claude-code
+   claude install
 
 Your terminal-first workflow will then be ready!
 "@

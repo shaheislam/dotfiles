@@ -44,7 +44,7 @@ A collection of useful development tools, libraries, and resources used in this 
   - Using LazyVim distribution
 
 ### AI & Code Assistance
-- **[Claude Code CLI](https://claude.ai/download)** - Official Claude AI command-line interface (run via `bunx @anthropic-ai/claude-code` wrapper with pinned `--resume` fallback)
+- **[Claude Code CLI](https://claude.ai/download)** - Official Claude AI command-line interface (installed via `claude install`, wrapper auto-falls back to bunx only if native missing)
 - **[Gemini CLI](https://github.com/google/generative-ai-cli)** - Google Gemini command-line interface
 
 ### Version Control

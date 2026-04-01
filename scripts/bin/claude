@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Event-driven Claude wrapper for tmux agent state tracking.
 #
-# Default behavior runs the CLI via bunx (`@anthropic-ai/claude-code@latest`).
-# When `--resume`/`-r` is present we pin the CLI to 2.1.30 to avoid the
-# context cache bug introduced in later builds. Set CLAUDE_RUNNER=native to
-# fall back to the standalone binary if absolutely necessary.
+# Default behavior prefers the native Claude install (via `claude install`). If
+# the native binary is missing we fall back to bunx (`@anthropic-ai/claude-code`).
+# Set CLAUDE_RUNNER=bunx to force the package runner, or CLAUDE_RUNNER=native to
+# skip the auto-detection logic entirely.
 #
 # Inside tmux we still export TMUX_AGENT_TARGET so hooks can color the pane.
 
 set -euo pipefail
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd -P)"
-CLAUDE_RUNNER="${CLAUDE_RUNNER:-bunx}"
+CLAUDE_RUNNER="${CLAUDE_RUNNER:-auto}"
 PASSTHRU_CMDS=(mcp config plugin auth doctor update api-key logout migrate-installer)
 
 find_real_claude() {
@@ -58,7 +58,11 @@ uses_resume_flag() {
 
 run_native() {
     local real
-    real=$(find_real_claude) || exit 1
+    if [[ -n "${CLAUDE_NATIVE_PATH:-}" ]]; then
+        real="$CLAUDE_NATIVE_PATH"
+    else
+        real=$(find_real_claude) || exit 1
+    fi
 
     if [[ -z "${TMUX:-}" ]]; then
         exec "$real" "$@"
@@ -105,8 +109,21 @@ run_bunx() {
     exec "$bunx_bin" "$package" "$@"
 }
 
-if [[ "$CLAUDE_RUNNER" == "native" ]]; then
-    run_native "$@"
-else
-    run_bunx "$@"
-fi
+case "$CLAUDE_RUNNER" in
+    native)
+        run_native "$@"
+        ;;
+    bunx)
+        run_bunx "$@"
+        ;;
+    auto)
+        if CLAUDE_NATIVE_PATH=$(find_real_claude 2>/dev/null); then
+            CLAUDE_NATIVE_PATH="$CLAUDE_NATIVE_PATH" run_native "$@"
+        else
+            run_bunx "$@"
+        fi
+        ;;
+    *)
+        run_bunx "$@"
+        ;;
+esac

@@ -1108,12 +1108,12 @@ Our dotfiles configure `teammateMode: "auto"` in `~/.claude.json`. For different
 
 ### CLI Runner Strategy
 
-- `scripts/bin/claude` wraps the official CLI and routes every call through `bunx @anthropic-ai/claude-code@latest` so we completely avoid the native binary's hidden billing attribution replacement bug.
-- When a command includes `--resume` / `-r` we automatically pin the CLI to `@anthropic-ai/claude-code@2.1.30`, the last version that keeps attachment ordering stable. This prevents Claude Code from blowing away the entire prompt cache on resume.
-- `scripts/setup.sh` pre-warms both packages via bunx so subsequent launches (including `claude doctor`) are instant, and the wrapper exposes overrides:
-  - `CLAUDE_PACKAGE_LATEST` / `CLAUDE_PACKAGE_RESUME` – change which package versions are used.
+- `scripts/bin/claude` now defaults to the native Claude binary that ships via `claude install`. If the native build is missing (fresh machine, CI tarball, etc.) it automatically falls back to `bunx @anthropic-ai/claude-code@latest` so bootstrap flows still succeed.
+- When we do fall back to bunx (either explicitly via `CLAUDE_RUNNER=bunx` or because the native binary is absent) any command that includes `--resume` / `-r` is pinned to `@anthropic-ai/claude-code@2.1.30`, the last version that kept attachment ordering stable.
+- `scripts/setup.sh` calls `claude install` to provision/refresh the native binary, then runs `claude doctor` to verify the install. The wrapper still exposes the same overrides:
+  - `CLAUDE_PACKAGE_LATEST` / `CLAUDE_PACKAGE_RESUME` – change which package versions are used when bunx is in play.
   - `CLAUDE_RESUME_ROUTING=off` – force the latest build even for resume if you are debugging a regression.
-  - `CLAUDE_RUNNER=native` – temporarily re-enable the standalone binary (not recommended; leaves both cache bugs in place).
+  - `CLAUDE_RUNNER=bunx` or `CLAUDE_RUNNER=native` – bypass auto-detection (useful for debugging installers).
 
 ### Fish Functions Using Claude CLI
 
