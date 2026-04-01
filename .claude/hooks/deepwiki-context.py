@@ -70,6 +70,22 @@ EXTENSION_MAP = {
 }
 
 
+def _safe_json_from_stdin() -> dict:
+    """Return parsed JSON data from stdin or an empty dict if unavailable."""
+    try:
+        raw_data = sys.stdin.read()
+    except Exception:
+        return {}
+
+    if not raw_data.strip():
+        return {}
+
+    try:
+        return json.loads(raw_data)
+    except json.JSONDecodeError:
+        return {}
+
+
 def get_language_from_path(file_path: str) -> str | None:
     """Detect language from file path."""
     path = Path(file_path)
@@ -92,8 +108,8 @@ def get_language_from_path(file_path: str) -> str | None:
 
 def main():
     try:
-        # Read input data from stdin
-        input_data = json.load(sys.stdin)
+        # Read input data from stdin (default to empty payload when missing)
+        input_data = _safe_json_from_stdin()
 
         tool_input = input_data.get("tool_input", {})
         file_path = tool_input.get("file_path", "")
