@@ -56,6 +56,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
             _opencode_accounts_show_info "$acct_dir/openai-auth.json" "$name"
             echo "Account '$name' enrolled successfully."
+            _ai_accounts_sync to-codex "$name" "$acct_dir/openai-auth.json"
 
         case capture refresh
             if test (count $argv) -lt 1
@@ -87,6 +88,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
             _opencode_accounts_show_info "$acct_dir/openai-auth.json" "$name"
             echo "Account '$name' captured from current OpenCode session."
+            _ai_accounts_sync to-codex "$name" "$acct_dir/openai-auth.json"
 
         case remove rm
             if test (count $argv) -lt 1
@@ -108,6 +110,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
                 mv "$tmp" "$accounts_file"
             end
             echo "Account '$name' removed."
+            _ai_accounts_sync remove-codex "$name"
 
         case list ls
             if not test -f "$accounts_file"
@@ -291,6 +294,10 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
                 echo "Login successful. Save this account with:"
                 echo "  opencode-accounts capture <name>"
             end
+
+        case sync-codex
+            echo "Syncing opencode accounts to codex..."
+            _ai_accounts_sync all --to-codex
 
         case help --help -h ''
             echo "Usage: opencode-accounts <command> [args]"
