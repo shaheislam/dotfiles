@@ -205,7 +205,7 @@ async function switchAccount(name: string, openai: OpenAIAuth) {
 }
 
 export function toPromptParts(parts: Part[]) {
-  return parts.flatMap((part) => {
+  return (parts ?? []).flatMap((part) => {
     switch (part.type) {
       case "text":
         return [{

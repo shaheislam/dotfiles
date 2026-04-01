@@ -326,6 +326,12 @@ phase_1_core_packages() {
     pm_update
     pm_upgrade
 
+    # Reconcile Brewfile — installs missing, upgrades outdated
+    if command_exists brew && [[ -f "$DOTFILES_ROOT/homebrew/Brewfile" ]]; then
+        print_step "Reconciling Brewfile..."
+        brew bundle --file="$DOTFILES_ROOT/homebrew/Brewfile" --no-lock 2>&1 || log_verbose "Brewfile reconciliation completed with warnings"
+    fi
+
     install_packages_from_profile "$PROFILE" "core"
 
     # Enable Homebrew background auto-updates (daily update + upgrade + cleanup)
@@ -2344,6 +2350,15 @@ main() {
     phase_10_advanced_features
 
     phase_11_optional_features
+
+    # Ensure Homebrew background auto-updates are configured (runs every time, not gated by phase)
+    if command_exists brew && brew tap | grep -q "domt4/autoupdate" 2>/dev/null; then
+        if [[ "$DRY_RUN" != "true" ]]; then
+            brew autoupdate start --upgrade --cleanup --immediate 2>/dev/null &&
+                print_success "Homebrew auto-update enabled (24h interval)" ||
+                log_verbose "Homebrew auto-update configuration skipped"
+        fi
+    fi
 
     # Success
     local elapsed=$((SECONDS - start_time))
