@@ -10,7 +10,7 @@
       "Stage a .fish file and verify fish_indent runs",
       "Verify secret detection catches test patterns"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "id": "session-report",
