@@ -56,6 +56,15 @@ log_banner() { echo "${C_CYAN}${C_BOLD}=== $1 ===${C_RESET}" >&2; }
 
 # Use codex plugin companion if available (structured review with app server)
 CODEX_COMPANION="${HOME}/.claude/plugins/marketplaces/openai-codex/plugins/codex/scripts/codex-companion.mjs"
+CODEX_AUTOROTATE_RUNNER="${CODEX_AUTOROTATE_RUNNER:-$HOME/dotfiles/scripts/codex/run-with-rotation.sh}"
+
+run_codex() {
+    if [ -n "$CODEX_AUTOROTATE_RUNNER" ] && [ -x "$CODEX_AUTOROTATE_RUNNER" ]; then
+        "$CODEX_AUTOROTATE_RUNNER" "$@"
+    else
+        codex "$@"
+    fi
+}
 
 run_review_via_companion() {
     local mode="$1"
@@ -262,7 +271,7 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
 
         # First run: use original codex args
         codex_exit=0
-        codex "${CODEX_ARGS[@]}" || codex_exit=$?
+        run_codex "${CODEX_ARGS[@]}" || codex_exit=$?
         if [ "$codex_exit" -ne 0 ]; then
             log "${C_RED}Codex failed (exit $codex_exit)${C_RESET}"
             exit "$codex_exit"
@@ -278,7 +287,7 @@ while [ $iteration -lt "$MAX_ITERATIONS" ]; do
         # Extract flags (all but last arg which was the prompt)
         local_args=("${CODEX_ARGS[@]:0:${#CODEX_ARGS[@]}-1}")
         codex_exit=0
-        codex "${local_args[@]}" "$local_prompt" || codex_exit=$?
+        run_codex "${local_args[@]}" "$local_prompt" || codex_exit=$?
         if [ "$codex_exit" -ne 0 ]; then
             log "${C_RED}Codex fix pass failed (exit $codex_exit)${C_RESET}"
             break
