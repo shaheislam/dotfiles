@@ -186,7 +186,7 @@ with open('$profile_dir/.claude.json', 'w') as f:
     echo ""
 
     # Launch Claude with the new profile for one-time OAuth login
-    env CLAUDE_CONFIG_DIR="$profile_dir" claude
+    env CLAUDE_ROTATE_DISABLE=1 CLAUDE_CONFIG_DIR="$profile_dir" command claude
 
     # After login, show what we got
     echo ""
@@ -213,7 +213,7 @@ function _claude_sub_login --description "Re-authenticate a subscription profile
     echo "Complete the OAuth login in your browser."
     echo ""
 
-    env CLAUDE_CONFIG_DIR="$profile_dir" claude
+    env CLAUDE_ROTATE_DISABLE=1 CLAUDE_CONFIG_DIR="$profile_dir" command claude
 
     echo ""
     if test -f "$profile_dir/.claude.json"

@@ -3,426 +3,677 @@
     "AWS": {
       "level": "expert",
       "years": 7,
-      "keywords": ["aws", "amazon", "ec2", "s3", "lambda", "cloudformation", "eks"],
-      "certifications": ["AWS Certified Solutions Architect", "AWS Certified DevOps Engineer"],
+      "keywords": [
+        "aws",
+        "amazon",
+        "ec2",
+        "s3",
+        "lambda",
+        "cloudformation",
+        "eks"
+      ],
+      "certifications": [
+        "AWS Certified Solutions Architect",
+        "AWS Certified DevOps Engineer"
+      ],
       "relevance_boost": 10
     },
     "Google Cloud Platform": {
       "level": "advanced",
       "years": 4,
-      "keywords": ["gcp", "google cloud", "gke", "bigquery", "cloud run"],
+      "keywords": [
+        "gcp",
+        "google cloud",
+        "gke",
+        "bigquery",
+        "cloud run"
+      ],
       "certifications": [],
       "relevance_boost": 5
     },
     "Azure": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["azure", "microsoft", "aks", "azure devops"],
+      "keywords": [
+        "azure",
+        "microsoft",
+        "aks",
+        "azure devops"
+      ],
       "certifications": [],
       "relevance_boost": 3
     },
     "VMware vSphere": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["vmware", "vsphere", "vcenter", "esxi", "private cloud"],
+      "keywords": [
+        "vmware",
+        "vsphere",
+        "vcenter",
+        "esxi",
+        "private cloud"
+      ],
       "certifications": [],
       "relevance_boost": 2
     },
     "OpenStack": {
       "level": "intermediate",
       "years": 2,
-      "keywords": ["openstack", "private cloud", "nova", "neutron"],
+      "keywords": [
+        "openstack",
+        "private cloud",
+        "nova",
+        "neutron"
+      ],
       "certifications": [],
       "relevance_boost": 2
     }
   },
-  
   "container_orchestration": {
     "Kubernetes": {
       "level": "expert",
       "years": 6,
-      "keywords": ["kubernetes", "k8s", "kubectl", "helm", "container orchestration"],
-      "certifications": ["CKA"],
+      "keywords": [
+        "kubernetes",
+        "k8s",
+        "kubectl",
+        "helm",
+        "container orchestration"
+      ],
+      "certifications": [
+        "CKA",
+        "KCNA",
+        "KCSA"
+      ],
       "relevance_boost": 15
     },
     "Amazon EKS": {
       "level": "expert",
       "years": 5,
-      "keywords": ["eks", "elastic kubernetes", "aws kubernetes"],
+      "keywords": [
+        "eks",
+        "elastic kubernetes",
+        "aws kubernetes"
+      ],
       "certifications": [],
       "relevance_boost": 12
     },
     "Google GKE": {
       "level": "advanced",
       "years": 3,
-      "keywords": ["gke", "google kubernetes engine"],
+      "keywords": [
+        "gke",
+        "google kubernetes engine"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "OpenShift": {
       "level": "advanced",
       "years": 3,
-      "keywords": ["openshift", "ocp", "red hat kubernetes"],
+      "keywords": [
+        "openshift",
+        "ocp",
+        "red hat kubernetes"
+      ],
       "certifications": [],
       "relevance_boost": 7
     },
     "Docker": {
       "level": "expert",
       "years": 7,
-      "keywords": ["docker", "container", "dockerfile", "docker-compose"],
+      "keywords": [
+        "docker",
+        "container",
+        "dockerfile",
+        "docker-compose"
+      ],
       "certifications": [],
       "relevance_boost": 10
     },
     "Containerd": {
       "level": "advanced",
       "years": 3,
-      "keywords": ["containerd", "container runtime"],
+      "keywords": [
+        "containerd",
+        "container runtime"
+      ],
       "certifications": [],
       "relevance_boost": 5
     }
   },
-  
   "infrastructure_as_code": {
     "Terraform": {
       "level": "expert",
       "years": 6,
-      "keywords": ["terraform", "hcl", "infrastructure as code", "iac"],
-      "certifications": ["HashiCorp Certified: Terraform Associate"],
+      "keywords": [
+        "terraform",
+        "hcl",
+        "infrastructure as code",
+        "iac"
+      ],
+      "certifications": [
+        "HashiCorp Certified: Terraform Associate"
+      ],
       "relevance_boost": 12
     },
     "AWS CloudFormation": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["cloudformation", "cfn", "aws infrastructure"],
+      "keywords": [
+        "cloudformation",
+        "cfn",
+        "aws infrastructure"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "Ansible": {
       "level": "expert",
       "years": 6,
-      "keywords": ["ansible", "playbook", "automation", "configuration management"],
+      "keywords": [
+        "ansible",
+        "playbook",
+        "automation",
+        "configuration management"
+      ],
       "certifications": [],
       "relevance_boost": 10
     },
     "Pulumi": {
       "level": "intermediate",
       "years": 2,
-      "keywords": ["pulumi", "infrastructure as code"],
+      "keywords": [
+        "pulumi",
+        "infrastructure as code"
+      ],
       "certifications": [],
       "relevance_boost": 4
     },
     "AWS CDK": {
       "level": "intermediate",
       "years": 2,
-      "keywords": ["cdk", "cloud development kit"],
+      "keywords": [
+        "cdk",
+        "cloud development kit"
+      ],
       "certifications": [],
       "relevance_boost": 5
     }
   },
-  
   "ci_cd_tools": {
     "Jenkins": {
       "level": "expert",
       "years": 7,
-      "keywords": ["jenkins", "ci/cd", "pipeline", "groovy"],
+      "keywords": [
+        "jenkins",
+        "ci/cd",
+        "pipeline",
+        "groovy"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "GitLab CI": {
       "level": "expert",
       "years": 5,
-      "keywords": ["gitlab", "gitlab-ci", ".gitlab-ci.yml"],
+      "keywords": [
+        "gitlab",
+        "gitlab-ci",
+        ".gitlab-ci.yml"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "GitHub Actions": {
       "level": "advanced",
       "years": 3,
-      "keywords": ["github actions", "gha", "workflows"],
+      "keywords": [
+        "github actions",
+        "gha",
+        "workflows"
+      ],
       "certifications": [],
       "relevance_boost": 7
     },
     "ArgoCD": {
       "level": "expert",
       "years": 4,
-      "keywords": ["argocd", "gitops", "continuous deployment"],
+      "keywords": [
+        "argocd",
+        "gitops",
+        "continuous deployment"
+      ],
       "certifications": [],
       "relevance_boost": 10
     },
     "CircleCI": {
       "level": "intermediate",
       "years": 2,
-      "keywords": ["circleci", "continuous integration"],
+      "keywords": [
+        "circleci",
+        "continuous integration"
+      ],
       "certifications": [],
       "relevance_boost": 4
     },
     "TeamCity": {
       "level": "intermediate",
       "years": 2,
-      "keywords": ["teamcity", "jetbrains"],
+      "keywords": [
+        "teamcity",
+        "jetbrains"
+      ],
       "certifications": [],
       "relevance_boost": 3
     },
     "Azure DevOps": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["azure devops", "azure pipelines", "ado"],
+      "keywords": [
+        "azure devops",
+        "azure pipelines",
+        "ado"
+      ],
       "certifications": [],
       "relevance_boost": 5
     },
     "Bamboo": {
       "level": "intermediate",
       "years": 2,
-      "keywords": ["bamboo", "atlassian"],
+      "keywords": [
+        "bamboo",
+        "atlassian"
+      ],
       "certifications": [],
       "relevance_boost": 3
     }
   },
-  
   "monitoring_observability": {
     "Prometheus": {
       "level": "expert",
       "years": 6,
-      "keywords": ["prometheus", "metrics", "monitoring", "promql"],
+      "keywords": [
+        "prometheus",
+        "metrics",
+        "monitoring",
+        "promql"
+      ],
       "certifications": [],
       "relevance_boost": 12
     },
     "Grafana": {
       "level": "expert",
       "years": 6,
-      "keywords": ["grafana", "dashboards", "visualization"],
+      "keywords": [
+        "grafana",
+        "dashboards",
+        "visualization"
+      ],
       "certifications": [],
       "relevance_boost": 12
     },
     "Elastic Stack (ELK)": {
       "level": "expert",
       "years": 5,
-      "keywords": ["elastic", "elasticsearch", "logstash", "kibana", "elk"],
+      "keywords": [
+        "elastic",
+        "elasticsearch",
+        "logstash",
+        "kibana",
+        "elk"
+      ],
       "certifications": [],
       "relevance_boost": 10
     },
     "OpenSearch": {
       "level": "advanced",
       "years": 3,
-      "keywords": ["opensearch", "open distro"],
+      "keywords": [
+        "opensearch",
+        "open distro"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "Loki": {
       "level": "expert",
       "years": 4,
-      "keywords": ["loki", "log aggregation", "grafana loki"],
+      "keywords": [
+        "loki",
+        "log aggregation",
+        "grafana loki"
+      ],
       "certifications": [],
       "relevance_boost": 9
     },
     "Mimir": {
       "level": "advanced",
       "years": 2,
-      "keywords": ["mimir", "grafana mimir", "metrics"],
+      "keywords": [
+        "mimir",
+        "grafana mimir",
+        "metrics"
+      ],
       "certifications": [],
       "relevance_boost": 7
     },
     "Tempo": {
       "level": "advanced",
       "years": 2,
-      "keywords": ["tempo", "tracing", "grafana tempo"],
+      "keywords": [
+        "tempo",
+        "tracing",
+        "grafana tempo"
+      ],
       "certifications": [],
       "relevance_boost": 7
     },
     "New Relic": {
       "level": "advanced",
       "years": 4,
-      "keywords": ["new relic", "apm", "application monitoring"],
+      "keywords": [
+        "new relic",
+        "apm",
+        "application monitoring"
+      ],
       "certifications": [],
       "relevance_boost": 6
     },
     "Datadog": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["datadog", "monitoring", "apm"],
+      "keywords": [
+        "datadog",
+        "monitoring",
+        "apm"
+      ],
       "certifications": [],
       "relevance_boost": 6
     },
     "Splunk": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["splunk", "log analysis"],
+      "keywords": [
+        "splunk",
+        "log analysis"
+      ],
       "certifications": [],
       "relevance_boost": 5
     }
   },
-  
   "programming_languages": {
     "Python": {
       "level": "expert",
       "years": 7,
-      "keywords": ["python", "py", "scripting", "automation"],
+      "keywords": [
+        "python",
+        "py",
+        "scripting",
+        "automation"
+      ],
       "certifications": [],
       "relevance_boost": 10
     },
     "Go": {
       "level": "advanced",
       "years": 4,
-      "keywords": ["golang", "go", "cloud native"],
+      "keywords": [
+        "golang",
+        "go",
+        "cloud native"
+      ],
       "certifications": [],
       "relevance_boost": 9
     },
     "Bash": {
       "level": "expert",
       "years": 8,
-      "keywords": ["bash", "shell", "scripting", "linux"],
+      "keywords": [
+        "bash",
+        "shell",
+        "scripting",
+        "linux"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "JavaScript/TypeScript": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["javascript", "typescript", "node.js", "nodejs"],
+      "keywords": [
+        "javascript",
+        "typescript",
+        "node.js",
+        "nodejs"
+      ],
       "certifications": [],
       "relevance_boost": 6
     },
     "Java": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["java", "jvm", "spring"],
+      "keywords": [
+        "java",
+        "jvm",
+        "spring"
+      ],
       "certifications": [],
       "relevance_boost": 4
     },
     "Ruby": {
       "level": "intermediate",
       "years": 2,
-      "keywords": ["ruby", "rails"],
+      "keywords": [
+        "ruby",
+        "rails"
+      ],
       "certifications": [],
       "relevance_boost": 3
     }
   },
-  
   "security_compliance": {
     "AWS Security": {
       "level": "expert",
       "years": 6,
-      "keywords": ["aws security", "iam", "security groups", "kms", "secrets manager"],
-      "certifications": ["AWS Certified Security - Specialty"],
+      "keywords": [
+        "aws security",
+        "iam",
+        "security groups",
+        "kms",
+        "secrets manager"
+      ],
+      "certifications": [
+        "AWS Certified Security - Specialty"
+      ],
       "relevance_boost": 10
     },
     "Kubernetes Security": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["pod security", "rbac", "network policies", "admission controllers"],
+      "keywords": [
+        "pod security",
+        "rbac",
+        "network policies",
+        "admission controllers"
+      ],
       "certifications": [],
       "relevance_boost": 9
     },
     "HashiCorp Vault": {
       "level": "advanced",
       "years": 4,
-      "keywords": ["vault", "secrets management", "hashicorp vault"],
+      "keywords": [
+        "vault",
+        "secrets management",
+        "hashicorp vault"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "OWASP": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["owasp", "application security", "security scanning"],
+      "keywords": [
+        "owasp",
+        "application security",
+        "security scanning"
+      ],
       "certifications": [],
       "relevance_boost": 7
     }
   },
-  
   "networking": {
     "AWS Networking": {
       "level": "expert",
       "years": 6,
-      "keywords": ["vpc", "route53", "elb", "alb", "nlb", "cloudfront"],
-      "certifications": ["AWS Certified Advanced Networking - Specialty"],
+      "keywords": [
+        "vpc",
+        "route53",
+        "elb",
+        "alb",
+        "nlb",
+        "cloudfront"
+      ],
+      "certifications": [
+        "AWS Certified Advanced Networking - Specialty"
+      ],
       "relevance_boost": 9
     },
     "Kubernetes Networking": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["service mesh", "ingress", "network policies", "cni"],
+      "keywords": [
+        "service mesh",
+        "ingress",
+        "network policies",
+        "cni"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "Istio": {
       "level": "advanced",
       "years": 3,
-      "keywords": ["istio", "service mesh", "envoy"],
+      "keywords": [
+        "istio",
+        "service mesh",
+        "envoy"
+      ],
       "certifications": [],
       "relevance_boost": 7
     },
     "NGINX": {
       "level": "expert",
       "years": 6,
-      "keywords": ["nginx", "reverse proxy", "load balancer", "ingress controller"],
+      "keywords": [
+        "nginx",
+        "reverse proxy",
+        "load balancer",
+        "ingress controller"
+      ],
       "certifications": [],
       "relevance_boost": 8
     },
     "HAProxy": {
       "level": "advanced",
       "years": 4,
-      "keywords": ["haproxy", "load balancing"],
+      "keywords": [
+        "haproxy",
+        "load balancing"
+      ],
       "certifications": [],
       "relevance_boost": 6
     }
   },
-  
   "databases": {
     "PostgreSQL": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["postgresql", "postgres", "rds", "aurora"],
+      "keywords": [
+        "postgresql",
+        "postgres",
+        "rds",
+        "aurora"
+      ],
       "certifications": [],
       "relevance_boost": 7
     },
     "MySQL": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["mysql", "mariadb", "rds"],
+      "keywords": [
+        "mysql",
+        "mariadb",
+        "rds"
+      ],
       "certifications": [],
       "relevance_boost": 6
     },
     "MongoDB": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["mongodb", "nosql", "documentdb"],
+      "keywords": [
+        "mongodb",
+        "nosql",
+        "documentdb"
+      ],
       "certifications": [],
       "relevance_boost": 5
     },
     "Redis": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["redis", "cache", "elasticache"],
+      "keywords": [
+        "redis",
+        "cache",
+        "elasticache"
+      ],
       "certifications": [],
       "relevance_boost": 7
     },
     "DynamoDB": {
       "level": "advanced",
       "years": 4,
-      "keywords": ["dynamodb", "nosql", "aws"],
+      "keywords": [
+        "dynamodb",
+        "nosql",
+        "aws"
+      ],
       "certifications": [],
       "relevance_boost": 7
     }
   },
-  
   "agile_methodologies": {
     "Scrum": {
       "level": "expert",
       "years": 7,
-      "keywords": ["scrum", "agile", "sprint", "standup"],
+      "keywords": [
+        "scrum",
+        "agile",
+        "sprint",
+        "standup"
+      ],
       "certifications": [],
       "relevance_boost": 5
     },
     "Kanban": {
       "level": "advanced",
       "years": 5,
-      "keywords": ["kanban", "continuous flow"],
+      "keywords": [
+        "kanban",
+        "continuous flow"
+      ],
       "certifications": [],
       "relevance_boost": 4
     },
     "SAFe": {
       "level": "intermediate",
       "years": 3,
-      "keywords": ["safe", "scaled agile"],
+      "keywords": [
+        "safe",
+        "scaled agile"
+      ],
       "certifications": [],
       "relevance_boost": 3
     }

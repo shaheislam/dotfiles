@@ -215,6 +215,8 @@
 - HashiCorp Certified: Terraform Associate
 - Azure Fundamentals
 - Azure AI Fundamentals
+- Kubernetes and Cloud Native Associate (KCNA)
+- Kubernetes and Cloud Native Security Associate (KCSA)
 
 ## Education
 

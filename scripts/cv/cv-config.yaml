@@ -117,6 +117,8 @@ certifications:
     - "Certified Kubernetes Administrator (CKA)"
     - "Google Cloud Professional Cloud Architect"
     - "Azure Solutions Architect Expert"
+    - "Kubernetes and Cloud Native Associate (KCNA)"
+    - "Kubernetes and Cloud Native Security Associate (KCSA)"
   
   max_display: 5
   group_aws: true  # Group AWS certs together

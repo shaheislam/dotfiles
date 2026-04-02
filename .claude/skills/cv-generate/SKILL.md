@@ -44,16 +44,16 @@ Default location: `/jobapps/` directory (working files)
 ### 3. CV Generation
 - **CRITICAL: Maintain fixed employment structure** - preserve all company names, position titles, and employment dates exactly as in template
 - **PAGE LENGTH REQUIREMENTS**: 
+  - Default to 3 pages (fully fleshed out with detailed bullet points)
   - Maximum 3 pages allowed
-  - Prefer 2 pages when possible
-  - If using 3 pages, the third page MUST be at least 70% filled
+  - The third page MUST be at least 70% filled
   - Never leave a mostly empty final page
+  - Use `--length 2` to override and compress to 2 pages
 - **Content Optimization Strategy**:
   - Prioritize most impactful achievements and skills
   - Use concise bullet points (1-2 lines each)
-  - Adjust content based on available space
-  - If content fits well in 2 pages, keep it at 2
-  - Only expand to 3 pages if you have substantial content
+  - Flesh out each role with 4-8 bullets for recent roles, 2-4 for older roles
+  - Adjust content based on available space to fill 3 pages well
 - Select most relevant bullet points for each role based on job requirements
 - **Skill Distribution Strategy**:
   - Most recent roles: Populate with highly relevant, cutting-edge skills matching job description
@@ -129,7 +129,7 @@ Generate CV for Lorien recruiter, date 01/04/25, permanent role, 70k salary
 ### Optimization Options
 - `--focus <keywords>` - Comma-separated priority keywords
 - `--style <type>` - CV style: technical, executive, creative, academic
-- `--length <pages>` - Target CV length (2-3 pages, default: 2, 3rd page must be 70% filled)
+- `--length <pages>` - Target CV length (2-3 pages, default: 3, 3rd page must be 70% filled)
 - `--ats` - Optimize for Applicant Tracking Systems
 
 ### Enhancement Options
@@ -283,12 +283,11 @@ Email: | Phone: | LinkedIn: | GitHub:
    - Create tailored professional summary (3-4 lines)
    - **IMPORTANT: Preserve employment chronology** - Keep all companies, positions, and dates unchanged
    - **PAGE LENGTH MANAGEMENT**:
-     - Target 2 pages when possible
-     - Allow up to 3 pages if content warrants it
+     - Default to 3 pages with fully fleshed out content
      - If using 3rd page, ensure it's at least 70% filled
      - Adjust bullet points per role based on total length:
-       * 2-page CV: 3-5 bullets per recent role, 2-3 for older
-       * 3-page CV: 4-6 bullets per recent role, 3-4 for older
+       * 3-page CV (default): 6-8 bullets per recent role, 3-4 for older
+       * 2-page CV (--length 2): 3-5 bullets per recent role, 2-3 for older
    - **Intelligently distribute achievements**:
      - Recent positions: Insert most relevant job-matching bullet points
      - Earlier positions: Include foundational and supporting experiences
@@ -340,7 +339,7 @@ Email: | Phone: | LinkedIn: | GitHub:
 4. **Keyword Research**: Add industry-specific terms to skills database
 5. **Quantify Achievements**: Include metrics in CV template for stronger impact
 6. **Employment Structure**: Template must include all employment positions with dates - the generator will only modify bullet points, not the structure
-7. **Page Length Management**: CV will be 2 pages by default, expanding to 3 only if content justifies it (3rd page must be 70% filled)
+7. **Page Length Management**: CV defaults to 3 pages with detailed bullet points. Use `--length 2` to compress. 3rd page must be at least 70% filled
 
 ## Example Implementation
 
