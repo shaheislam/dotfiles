@@ -129,6 +129,25 @@ test_claude() {
 	run_test "Root AGENTS.md exists" "[ -f '$DOTFILES_ROOT/AGENTS.md' ]"
 	run_test "settings.json exists" "[ -f '$DOTFILES_ROOT/.claude/settings.json' ]"
 	run_test "settings.json is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.claude/settings.json'))\""
+	run_test "Claude wrapper fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/claude.fish' ]"
+	run_test "Claude rotation script exists" "[ -f '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh' ]"
+	run_test "Claude rotation script executable" "[ -x '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh' ]"
+	run_test "Claude rotation script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
+	run_test "Claude rotation uses usage checker" "grep -q 'CLAUDE_USAGE_CHECK_SCRIPT' '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
+	run_test "Claude rotation tracks last profile" "grep -q 'last-profile' '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
+	run_test "Claude rotation detects limit message" "grep -q '/extra-usage' '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
+	run_test "Claude wrapper delegates to rotation script" "grep -q 'run-with-rotation.sh' '$DOTFILES_ROOT/.config/fish/functions/claude.fish'"
+	run_test "Claude wrapper keeps print mode passthrough" "grep -q '\-p --print' '$DOTFILES_ROOT/.config/fish/functions/claude.fish'"
+	run_test "claude-sub login bypasses rotation" "grep -q 'CLAUDE_ROTATE_DISABLE=1 CLAUDE_CONFIG_DIR=.*command claude' '$DOTFILES_ROOT/.config/fish/functions/claude-sub.fish'"
+	if command -v fish &>/dev/null; then
+		run_test "Claude wrapper fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/claude.fish'"
+		run_test "Claude wrapper loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/claude.fish && functions -q claude'"
+		run_test "Claude wrapper smoke test" "fish -c 'set -gx CLAUDE_BIN /usr/bin/true; set -gx CLAUDE_USAGE_CHECK_SCRIPT /no/such/script; source $DOTFILES_ROOT/.config/fish/functions/claude.fish; claude test-prompt' >/dev/null"
+	fi
+	if command -v shellcheck &>/dev/null; then
+		run_test "Claude rotation script passes ShellCheck" "shellcheck '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
+		run_test "test-filter.sh passes ShellCheck" "shellcheck '$DOTFILES_ROOT/scripts/test-filter.sh'"
+	fi
 }
 
 test_setup_syntax() {

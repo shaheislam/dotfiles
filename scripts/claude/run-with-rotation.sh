@@ -80,14 +80,51 @@ usage_available() {
 	return 0
 }
 
+profile_score() {
+	local dir="$1"
+	local usage_json
+
+	if [[ ! -x "$USAGE_CHECK_SCRIPT" ]]; then
+		return 1
+	fi
+
+	usage_json=$("$USAGE_CHECK_SCRIPT" --json --config-dir "$dir" 2>/dev/null) || return 1
+
+	python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+windows = [
+    float((data.get("five_hour") or {}).get("utilization", 0) or 0),
+    float((data.get("seven_day") or {}).get("utilization", 0) or 0),
+    float((data.get("seven_day_opus") or {}).get("utilization", 0) or 0),
+]
+print(max(windows))
+' <<<"$usage_json" 2>/dev/null
+}
+
 choose_start_profile() {
 	local dir
+	local best_dir=""
+	local best_score=""
+	local score
 	while IFS= read -r dir; do
 		if usage_available "$dir"; then
-			printf '%s\n' "$dir"
-			return 0
+			score="$(profile_score "$dir" 2>/dev/null || true)"
+			if [[ -n "$score" ]]; then
+				if [[ -z "$best_score" ]] || python3 -c "import sys; sys.exit(0 if float(sys.argv[1]) < float(sys.argv[2]) else 1)" "$score" "$best_score" 2>/dev/null; then
+					best_dir="$dir"
+					best_score="$score"
+				fi
+			elif [[ -z "$best_dir" ]]; then
+				best_dir="$dir"
+			fi
 		fi
 	done < <(profile_dirs)
+
+	if [[ -n "$best_dir" ]]; then
+		printf '%s\n' "$best_dir"
+		return 0
+	fi
 
 	if [[ -n "${CLAUDE_CONFIG_DIR:-}" && -d "${CLAUDE_CONFIG_DIR:-}" ]]; then
 		printf '%s\n' "$CLAUDE_CONFIG_DIR"
