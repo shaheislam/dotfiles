@@ -91,3 +91,6 @@ work/**/CLAUDE.md
 
 # Entire checkpoints
 .entire/
+
+# AI session plan files
+.plan.md
