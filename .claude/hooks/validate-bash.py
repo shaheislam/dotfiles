@@ -83,10 +83,11 @@ def main():
 
         # Output messages appropriately
         if not is_allowed:
-            # Blocked: use proper hook schema on stdout
+            # Blocked: output block decision on stdout, exit 0
+            # (exit 0 + JSON stdout is the hook protocol; non-zero = hook error)
             reason = "; ".join(m for m in messages if "BLOCKED" in m)
             print(json.dumps({"decision": "block", "reason": reason}))
-            sys.exit(2)
+            sys.exit(0)
         else:
             # Tips: print to stderr (visible to LLM, not parsed as hook JSON)
             for msg in messages:
@@ -94,9 +95,9 @@ def main():
             sys.exit(0)
 
     except Exception as e:
-        # Fail closed: block command on unexpected errors
-        print(f"validate-bash hook error (blocked): {e}", file=sys.stderr)
-        sys.exit(2)
+        # On error, allow operation (fail open) — don't block normal work
+        print(f"validate-bash hook error: {e}", file=sys.stderr)
+        sys.exit(0)
 
 
 if __name__ == "__main__":

@@ -27,8 +27,7 @@ COMMAND="$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); 
 case "$COMMAND" in
 git\ commit* | git\ push*) ;;
 *)
-    # Not a commit/push — allow immediately
-    echo '{"decision":"allow"}'
+    # Not a commit/push — allow (silent exit = allow)
     exit 0
     ;;
 esac
@@ -37,8 +36,7 @@ esac
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 if ! "$CI_HOOKS_DIR/ci-local.sh" --check-only "$PROJECT_DIR" >/dev/null 2>&1; then
-    # Not in a watched path — allow
-    echo '{"decision":"allow"}'
+    # Not in a watched path — allow (silent exit = allow)
     exit 0
 fi
 
@@ -46,8 +44,7 @@ fi
 CI_OUTPUT="$("$CI_HOOKS_DIR/ci-local.sh" "$PROJECT_DIR" 2>&1)" || {
     EXIT_CODE=$?
     if [[ $EXIT_CODE -eq 2 ]]; then
-        # Not watched — allow
-        echo '{"decision":"allow"}'
+        # Not watched — allow (silent exit = allow)
         exit 0
     fi
     # CI failed — block with reason
@@ -58,6 +55,5 @@ CI_OUTPUT="$("$CI_HOOKS_DIR/ci-local.sh" "$PROJECT_DIR" 2>&1)" || {
     exit 0
 }
 
-# CI passed — allow
-echo '{"decision":"allow"}'
+# CI passed — allow (silent exit = allow)
 exit 0
