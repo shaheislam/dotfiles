@@ -33,6 +33,7 @@ set -g fish_color_escape bryellow
 set -g fish_color_operator green
 set -g fish_color_quote yellow
 set -g fish_color_autosuggestion brblack
+set -g fish_color_normal normal
 set -g fish_color_valid_path --underline
 
 # History substring search (Fish has this built-in with up/down arrows)
