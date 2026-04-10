@@ -1456,6 +1456,15 @@ phase_8_dotfiles() {
                 print_success "Git scheduled maintenance enabled" ||
                 log_verbose "Git maintenance setup skipped"
         fi
+
+        # PERF: Dotfiles-local git performance settings
+        # macOS APFS F_FULLFSYNC adds ~500ms per index write — disable for local repos
+        git -C "$DOTFILES_ROOT" config core.fsync none
+        git -C "$DOTFILES_ROOT" config core.fsyncMethod batch
+        # Skip submodule diff checks (tmux plugins managed by TPM, not git)
+        git -C "$DOTFILES_ROOT" config diff.ignoreSubmodules all
+        git -C "$DOTFILES_ROOT" config status.submoduleSummary false
+        log_verbose "Git performance settings applied to dotfiles repo"
     fi
 
     # Setup local git excludes (.gitignore_local symlinks) for existing repos
