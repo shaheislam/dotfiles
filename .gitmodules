@@ -1,39 +1,52 @@
 [submodule ".tmux/plugins/tpm"]
 	path = .tmux/plugins/tpm
 	url = https://github.com/tmux-plugins/tpm.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-sensible"]
 	path = .tmux/plugins/tmux-sensible
 	url = https://github.com/tmux-plugins/tmux-sensible.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-resurrect"]
 	path = .tmux/plugins/tmux-resurrect
 	url = https://github.com/tmux-plugins/tmux-resurrect.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-continuum"]
 	path = .tmux/plugins/tmux-continuum
 	url = https://github.com/tmux-plugins/tmux-continuum.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-yank"]
 	path = .tmux/plugins/tmux-yank
 	url = https://github.com/tmux-plugins/tmux-yank.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-prefix-highlight"]
 	path = .tmux/plugins/tmux-prefix-highlight
 	url = https://github.com/tmux-plugins/tmux-prefix-highlight.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-which-key"]
 	path = .tmux/plugins/tmux-which-key
 	url = https://github.com/alexwforsythe/tmux-which-key.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-open"]
 	path = .tmux/plugins/tmux-open
 	url = https://github.com/tmux-plugins/tmux-open.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-copycat"]
 	path = .tmux/plugins/tmux-copycat
 	url = https://github.com/tmux-plugins/tmux-copycat.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-pain-control"]
 	path = .tmux/plugins/tmux-pain-control
 	url = https://github.com/tmux-plugins/tmux-pain-control.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-sidebar"]
 	path = .tmux/plugins/tmux-sidebar
 	url = https://github.com/tmux-plugins/tmux-sidebar.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-fingers"]
 	path = .tmux/plugins/tmux-fingers
 	url = https://github.com/Morantron/tmux-fingers.git
+	ignore = all
 [submodule ".tmux/plugins/tmux-battery"]
 	path = .tmux/plugins/tmux-battery
 	url = https://github.com/tmux-plugins/tmux-battery.git
+	ignore = all
