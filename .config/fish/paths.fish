@@ -49,14 +49,26 @@ if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
     fish_add_path "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 end
 
-# Clean leaked container paths from fish_user_paths (devcontainer sessions
-# can persist /home/node/* paths into universal variables)
+# Clean stale paths from fish_user_paths: non-existent dirs, container leaks, duplicates.
+# Reduces PATH size → faster command -q scans on every command lookup.
 if set -q fish_user_paths
     set -l cleaned
+    set -l seen
     for p in $fish_user_paths
-        if not string match -q '/home/node/*' $p
-            set -a cleaned $p
+        # Skip container paths leaked from devcontainer sessions
+        if string match -q '/home/node/*' $p
+            continue
         end
+        # Skip non-existent directories
+        if not test -d "$p"
+            continue
+        end
+        # Skip duplicates
+        if contains -- $p $seen
+            continue
+        end
+        set -a cleaned $p
+        set -a seen $p
     end
     if test (count $cleaned) -ne (count $fish_user_paths)
         set -U fish_user_paths $cleaned
