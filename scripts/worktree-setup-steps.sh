@@ -84,6 +84,7 @@ fi
 # --- Step definitions ---
 # Each step: step_N() function + STEP_NAMES[N] description
 declare -a STEP_NAMES
+# shellcheck disable=SC2034
 declare -a STEP_FUNCS
 
 STEP_NAMES[1]="Trust mise config"
@@ -167,7 +168,7 @@ if $SHOW_STATUS; then
     ensure_state
     echo "Setup status for: $WORKTREE_PATH"
     echo ""
-    for i in $(seq 1 $TOTAL_STEPS); do
+    for ((i = 1; i <= TOTAL_STEPS; i++)); do
         local_status=$(step_status "$i")
         case "$local_status" in
         done) icon="[done]" ;;
@@ -188,7 +189,7 @@ passed=0
 failed=0
 skipped=0
 
-for i in $(seq 1 $TOTAL_STEPS); do
+for ((i = 1; i <= TOTAL_STEPS; i++)); do
     # Skip if not the requested step
     if [ -n "$ONLY_STEP" ] && [ "$i" != "$ONLY_STEP" ]; then
         continue

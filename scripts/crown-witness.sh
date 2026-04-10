@@ -44,6 +44,7 @@ DO_CLEANUP=true
 
 # Colors
 RED='\033[0;31m'
+# shellcheck disable=SC2034
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
@@ -180,7 +181,7 @@ monitor_loop() {
         local done_count=0
         local failed_count=0
 
-        for i in $(seq 1 "$CONTESTANT_COUNT"); do
+        for ((i = 1; i <= CONTESTANT_COUNT; i++)); do
             if [[ -f "$CROWN_DIR/done-$i" ]]; then
                 done_count=$((done_count + 1))
             elif [[ -f "$CROWN_DIR/failed-$i" ]]; then
@@ -232,11 +233,12 @@ monitor_loop() {
 
 # Run crown evaluation with completed contestants
 run_evaluation() {
+    # shellcheck disable=SC2034
     local expected_done="$1"
 
     # Collect branch names from done files
     local branches=()
-    for i in $(seq 1 "$CONTESTANT_COUNT"); do
+    for ((i = 1; i <= CONTESTANT_COUNT; i++)); do
         if [[ -f "$CROWN_DIR/done-$i" ]]; then
             local branch
             branch=$(cat "$CROWN_DIR/done-$i")
@@ -312,7 +314,7 @@ on_winner() {
 
     # Find winner's worktree path
     local winner_worktree=""
-    for i in $(seq 1 "$CONTESTANT_COUNT"); do
+    for ((i = 1; i <= CONTESTANT_COUNT; i++)); do
         if [[ -f "$CROWN_DIR/done-$i" ]]; then
             local branch
             branch=$(cat "$CROWN_DIR/done-$i")
@@ -354,6 +356,7 @@ on_winner() {
     local mail_script="$SCRIPT_DIR/agent-mail.sh"
     if [[ -x "$mail_script" ]]; then
         local issue_key
+        # shellcheck disable=SC2034
         issue_key=$(basename "$CROWN_DIR" | sed 's/^crown-//')
         "$mail_script" send all -s "Crown Winner: $winner_branch" \
             -m "Tournament complete. Winner: $winner_branch (judge: $JUDGE_PRESET)" \
@@ -377,7 +380,7 @@ cleanup_losers() {
     log "Cleanup scheduled for losers in ${grace_period}s"
     sleep "$grace_period"
 
-    for i in $(seq 1 "$CONTESTANT_COUNT"); do
+    for ((i = 1; i <= CONTESTANT_COUNT; i++)); do
         if [[ -f "$CROWN_DIR/done-$i" ]]; then
             local branch
             branch=$(cat "$CROWN_DIR/done-$i")

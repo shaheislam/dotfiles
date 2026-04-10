@@ -100,7 +100,8 @@ ensure_queue() {
 
 # Log with timestamp
 log() {
-    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+    local msg
+    msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
     echo "$msg" >>"$LOG_FILE"
     # Rotate log if too large
     if [[ -f "$LOG_FILE" ]] && [[ $(stat -f%z "$LOG_FILE" 2>/dev/null || stat --printf=%s "$LOG_FILE" 2>/dev/null || echo 0) -gt $MAX_LOG_SIZE ]]; then
@@ -127,7 +128,7 @@ cmd_add() {
     local skip_next=false
     local positional_index=0
 
-    for i in $(seq 1 $#); do
+    for ((i = 1; i <= $#; i++)); do
         if $skip_next; then
             skip_next=false
             continue

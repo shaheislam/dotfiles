@@ -76,7 +76,7 @@ fi
 # 2. Analyze failure telemetry patterns
 # ─────────────────────────────────────────────────────
 recent_failures=""
-for i in $(seq 0 6); do
+for ((i = 0; i <= 6; i++)); do
     date_str=$(date -v-"${i}d" "+%Y-%m-%d" 2>/dev/null || date -d "$i days ago" "+%Y-%m-%d" 2>/dev/null)
     f="$LOG_DIR/tool-failures-${date_str}.jsonl"
     [ -f "$f" ] && recent_failures="$recent_failures $f"
