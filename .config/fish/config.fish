@@ -174,6 +174,20 @@ if status is-interactive
         # call. They must also be defined AFTER __cache_tool_init sources the
         # cached upstream init so our definitions replace the upstream ones.
         #
+        # Walk up from PWD to find the nearest .envrc (pure Fish, no subprocess).
+        # Used by the direnv scope-tracking hooks below and by `denv`.
+        function _find_nearest_envrc --description "Find nearest .envrc by walking up from PWD"
+            set -l dir "$PWD"
+            while test -n "$dir" -a "$dir" != /
+                if test -f "$dir/.envrc"
+                    echo "$dir/.envrc"
+                    return 0
+                end
+                set dir (string replace -r '/[^/]+$' '' -- "$dir")
+            end
+            return 1
+        end
+
         # Overrides __direnv_export_eval from `direnv hook fish`.
         # Verified: direnv 2.37.1 outputs this pattern (2026-02-15).
         function __direnv_export_eval --on-event fish_prompt
@@ -185,15 +199,7 @@ if status is-interactive
                 # .envrc (e.g. ~/dotfiles/.envrc) even when we're in a different
                 # worktree (e.g. ~/dotfiles-inputdelay). Using the walk-up path
                 # keeps the scope check in the preexec handler consistent.
-                set -g __direnv_last_envrc ""
-                set -l dir "$PWD"
-                while test -n "$dir" -a "$dir" != /
-                    if test -f "$dir/.envrc"
-                        set -g __direnv_last_envrc "$dir/.envrc"
-                        break
-                    end
-                    set dir (string replace -r '/[^/]+$' '' -- "$dir")
-                end
+                set -g __direnv_last_envrc (_find_nearest_envrc; or echo "")
             end
         end
 
@@ -215,16 +221,7 @@ if status is-interactive
         function __direnv_export_eval_2 --on-event fish_preexec
             if set -q __direnv_export_again
                 set -e __direnv_export_again
-                # Find nearest .envrc by walking up from PWD (no subprocess)
-                set -l dir "$PWD"
-                set -l found_envrc ""
-                while test -n "$dir" -a "$dir" != /
-                    if test -f "$dir/.envrc"
-                        set found_envrc "$dir/.envrc"
-                        break
-                    end
-                    set dir (string replace -r '/[^/]+$' '' -- "$dir")
-                end
+                set -l found_envrc (_find_nearest_envrc; or echo "")
                 # Skip expensive direnv if same .envrc scope as last evaluation
                 if test "$found_envrc" = "$__direnv_last_envrc"
                     : # Same scope — no re-evaluation needed
@@ -241,15 +238,7 @@ if status is-interactive
         # between worktrees that share identical .envrc content.
         function denv --description 'Force direnv reload and reset scope cache'
             /opt/homebrew/bin/direnv export fish | source
-            set -g __direnv_last_envrc ""
-            set -l dir "$PWD"
-            while test -n "$dir" -a "$dir" != /
-                if test -f "$dir/.envrc"
-                    set -g __direnv_last_envrc "$dir/.envrc"
-                    break
-                end
-                set dir (string replace -r '/[^/]+$' '' -- "$dir")
-            end
+            set -g __direnv_last_envrc (_find_nearest_envrc; or echo "")
             # Also reset mise scope cache so next preexec re-evaluates.
             # Use empty string — won't match any "dir:mtime" value.
             set -g __mise_last_config ""
@@ -951,15 +940,15 @@ if status is-interactive
             --bind='ctrl-d:execute(echo delete {})+abort')
 
         if test -n "$selected"
-            set -l gist_id (echo $selected | awk '{print $1}')
+            set -l gist_id (string split ' ' -- $selected)[1]
 
             # Check if user wants to edit or delete
             if string match -q "edit *" "$selected"
-                set gist_id (echo $selected | awk '{print $2}' | awk '{print $1}')
+                set gist_id (string split ' ' -- $selected)[2]
                 echo "Editing gist: $gist_id"
                 gh gist edit $gist_id
             else if string match -q "delete *" "$selected"
-                set gist_id (echo $selected | awk '{print $2}' | awk '{print $1}')
+                set gist_id (string split ' ' -- $selected)[2]
                 read -P "Delete gist $gist_id? (y/N): " confirm
                 if test "$confirm" = y
                     gh gist delete $gist_id
@@ -984,7 +973,7 @@ if status is-interactive
 
         if test -n "$selected"
             for gist in $selected
-                set -l gist_id (echo $gist | awk '{print $1}')
+                set -l gist_id (string split ' ' -- $gist)[1]
                 read -P "Delete gist $gist_id? (y/N): " confirm
                 if test "$confirm" = y
                     gh gist delete $gist_id
@@ -1163,6 +1152,16 @@ if status is-interactive
         end
     end
 
+    # Parse and export AWS/Granted env vars captured from bash
+    function _parse_granted_env --description "Set AWS/Granted env vars from bash output"
+        for line in $argv
+            set -l parts (string split -m 1 "=" $line)
+            if test (count $parts) -eq 2
+                set -gx $parts[1] $parts[2]
+            end
+        end
+    end
+
     # Granted AWS credential management function for Fish shell
     # Properly handles environment variable propagation from bash to Fish
     function assume --description "Assume AWS role using Granted"
@@ -1172,12 +1171,7 @@ if status is-interactive
             if test -n "$profile"
                 # First assume the profile using bash with suppressed interactive prompts
                 set -l env_vars (printf 'n\n' | bash -c "source /opt/homebrew/bin/assume $profile >/dev/null 2>&1 && env | grep -E '^(AWS_|GRANTED_)'")
-                for line in $env_vars
-                    set -l parts (string split -m 1 "=" $line)
-                    if test (count $parts) -eq 2
-                        set -gx $parts[1] $parts[2]
-                    end
-                end
+                _parse_granted_env $env_vars
 
                 # Then open console with profile-specific container names and colors
                 switch $profile
@@ -1215,12 +1209,7 @@ if status is-interactive
             if test -n "$selected_profile"
                 # Assume the selected profile
                 set -l env_vars (printf 'n\n' | bash -c "source /opt/homebrew/bin/assume $selected_profile >/dev/null 2>&1 && env | grep -E '^(AWS_|GRANTED_)'")
-                for line in $env_vars
-                    set -l parts (string split -m 1 "=" $line)
-                    if test (count $parts) -eq 2
-                        set -gx $parts[1] $parts[2]
-                    end
-                end
+                _parse_granted_env $env_vars
             else
                 echo "No profile selected"
             end
@@ -1230,14 +1219,7 @@ if status is-interactive
         # Regular assume functionality with specific profile
         # Execute assume command in bash and capture AWS environment variables
         set -l env_vars (printf 'n\n' | bash -c "source /opt/homebrew/bin/assume $argv >/dev/null 2>&1 && env | grep -E '^(AWS_|GRANTED_)'")
-
-        # Parse and set each environment variable in the current Fish session
-        for line in $env_vars
-            set -l parts (string split -m 1 "=" $line)
-            if test (count $parts) -eq 2
-                set -gx $parts[1] $parts[2]
-            end
-        end
+        _parse_granted_env $env_vars
 
     end
 
@@ -1875,11 +1857,11 @@ if status is-interactive
             set -l stash_id (echo $selected | command cut -d: -f1)
 
             if string match -q "pop *" "$selected"
-                set stash_id (echo $selected | awk '{print $2}' | command cut -d: -f1)
+                set stash_id (string split ':' -- (string split ' ' -- $selected)[2])[1]
                 echo "Popping stash: $stash_id"
                 git stash pop $stash_id
             else if string match -q "drop *" "$selected"
-                set stash_id (echo $selected | awk '{print $2}' | command cut -d: -f1)
+                set stash_id (string split ':' -- (string split ' ' -- $selected)[2])[1]
                 read -P "Drop stash $stash_id? (y/N): " confirm
                 if test "$confirm" = y
                     git stash drop $stash_id
@@ -1924,18 +1906,18 @@ if status is-interactive
             --bind='ctrl-d:execute(echo delete {})+abort')
 
         if test -n "$selected"
-            set -l container_id (echo $selected | awk '{print $1}')
+            set -l container_id (string split ' ' -- $selected)[1]
 
             if string match -q "shell *" "$selected"
-                set container_id (echo $selected | awk '{print $2}')
+                set container_id (string split ' ' -- $selected)[2]
                 echo "Opening shell in container: $container_id"
                 docker exec -it $container_id sh
             else if string match -q "restart *" "$selected"
-                set container_id (echo $selected | awk '{print $2}')
+                set container_id (string split ' ' -- $selected)[2]
                 echo "Restarting container: $container_id"
                 docker restart $container_id
             else if string match -q "delete *" "$selected"
-                set container_id (echo $selected | awk '{print $2}')
+                set container_id (string split ' ' -- $selected)[2]
                 read -P "Delete container $container_id? (y/N): " confirm
                 if test "$confirm" = y
                     docker rm -f $container_id
@@ -1971,7 +1953,7 @@ if status is-interactive
             if string match -q "delete *" "$selected"
                 # Handle deletion
                 for img in (echo $selected | tail -n +2)
-                    set -l image_id (echo $img | awk '{print $1}')
+                    set -l image_id (string split ' ' -- $img)[1]
                     read -P "Delete image $image_id? (y/N): " confirm
                     if test "$confirm" = y
                         docker rmi $image_id
@@ -1981,7 +1963,7 @@ if status is-interactive
             else
                 # Default action: run container
                 for img in $selected
-                    set -l image_name (echo $img | awk '{print $2}')
+                    set -l image_name (string split ' ' -- $img)[2]
                     echo "Running container from image: $image_name"
                     docker run -it --rm $image_name
                 end
@@ -2049,7 +2031,7 @@ if status is-interactive
             end
 
             # Use string join for fzf input, split output by newlines into array
-            set selected_list (string join \n $worktrees | fzf --height=40% --reverse --prompt="Remove worktree(s): " --header="TAB to multi-select, ENTER to confirm" | while read -l line; echo (echo $line | awk '{print $1}'); end)
+            set selected_list (string join \n $worktrees | fzf --height=40% --reverse --prompt="Remove worktree(s): " --header="TAB to multi-select, ENTER to confirm" | while read -l line; echo (string split ' ' -- $line)[1]; end)
         end
 
         if test (count $selected_list) -eq 0
@@ -2146,110 +2128,48 @@ if status is-interactive
         end
     end
 
-    # Custom Atuin wrapper functions for different filter modes
+    # Parameterized Atuin search — directory/session/global wrappers below
+    function _atuin_search --argument-names filter_mode --description "Atuin search with configurable filter"
+        set -l keymap_mode
+        switch $fish_key_bindings
+            case fish_vi_key_bindings
+                switch $fish_bind_mode
+                    case default
+                        set keymap_mode vim-normal
+                    case insert
+                        set keymap_mode vim-insert
+                end
+            case '*'
+                set keymap_mode emacs
+        end
+
+        set -l ATUIN_H (ATUIN_SHELL_FISH=t ATUIN_LOG=error ATUIN_QUERY=(commandline -b) atuin search --keymap-mode=$keymap_mode --filter-mode=$filter_mode -i 3>&1 1>&2 2>&3 | string collect)
+
+        if test -n "$ATUIN_H"
+            if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
+                set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
+                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
+                set -l sanitized (printf '%s' "$ATUIN_HIST" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+                commandline -r "$sanitized"
+                commandline -f repaint
+                commandline -f execute
+                return
+            else
+                commandline -r (printf '%s' "$ATUIN_H" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
+            end
+        end
+
+        commandline -f repaint
+    end
+
     function _atuin_search_directory --description "Atuin search with directory filter"
-        set -l keymap_mode
-        switch $fish_key_bindings
-            case fish_vi_key_bindings
-                switch $fish_bind_mode
-                    case default
-                        set keymap_mode vim-normal
-                    case insert
-                        set keymap_mode vim-insert
-                end
-            case '*'
-                set keymap_mode emacs
-        end
-
-        set -l ATUIN_H (ATUIN_SHELL_FISH=t ATUIN_LOG=error ATUIN_QUERY=(commandline -b) atuin search --keymap-mode=$keymap_mode --filter-mode=directory -i 3>&1 1>&2 2>&3 | string collect)
-
-        if test -n "$ATUIN_H"
-            if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
-                set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
-                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
-                set -l sanitized_hist (printf '%s' "$ATUIN_HIST" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
-                commandline -r "$sanitized_hist"
-                commandline -f repaint
-                commandline -f execute
-                return
-            else
-                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
-                set -l sanitized_h (printf '%s' "$ATUIN_H" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
-                commandline -r "$sanitized_h"
-            end
-        end
-
-        commandline -f repaint
+        _atuin_search directory
     end
-
     function _atuin_search_session --description "Atuin search with session filter"
-        set -l keymap_mode
-        switch $fish_key_bindings
-            case fish_vi_key_bindings
-                switch $fish_bind_mode
-                    case default
-                        set keymap_mode vim-normal
-                    case insert
-                        set keymap_mode vim-insert
-                end
-            case '*'
-                set keymap_mode emacs
-        end
-
-        set -l ATUIN_H (ATUIN_SHELL_FISH=t ATUIN_LOG=error ATUIN_QUERY=(commandline -b) atuin search --keymap-mode=$keymap_mode --filter-mode=session -i 3>&1 1>&2 2>&3 | string collect)
-
-        if test -n "$ATUIN_H"
-            if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
-                set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
-                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
-                set -l sanitized_hist (printf '%s' "$ATUIN_HIST" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
-                commandline -r "$sanitized_hist"
-                commandline -f repaint
-                commandline -f execute
-                return
-            else
-                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
-                set -l sanitized_h (printf '%s' "$ATUIN_H" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
-                commandline -r "$sanitized_h"
-            end
-        end
-
-        commandline -f repaint
+        _atuin_search session
     end
-
     function _atuin_search_global --description "Atuin search with global filter"
-        set -l keymap_mode
-        switch $fish_key_bindings
-            case fish_vi_key_bindings
-                switch $fish_bind_mode
-                    case default
-                        set keymap_mode vim-normal
-                    case insert
-                        set keymap_mode vim-insert
-                end
-            case '*'
-                set keymap_mode emacs
-        end
-
-        set -l ATUIN_H (ATUIN_SHELL_FISH=t ATUIN_LOG=error ATUIN_QUERY=(commandline -b) atuin search --keymap-mode=$keymap_mode --filter-mode=global -i 3>&1 1>&2 2>&3 | string collect)
-
-        if test -n "$ATUIN_H"
-            if string match --quiet '__atuin_accept__:*' "$ATUIN_H"
-                set -l ATUIN_HIST (string replace "__atuin_accept__:" "" -- "$ATUIN_H" | string collect)
-                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
-                set -l sanitized_hist (printf '%s' "$ATUIN_HIST" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
-                commandline -r "$sanitized_hist"
-                commandline -f repaint
-                commandline -f execute
-                return
-            else
-                # Sanitize UTF-8 to prevent Rust panics on invalid bytes
-                set -l sanitized_h (printf '%s' "$ATUIN_H" | iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null)
-                commandline -r "$sanitized_h"
-            end
-        end
-
-        commandline -f repaint
+        _atuin_search global
     end
 
     # Carapace FZF completion binding (Alt+Tab)
