@@ -24,19 +24,20 @@ ALLOWLIST_PREFIXES = [
 
 # Dangerous patterns to block
 DANGEROUS_PATTERNS = [
-    (r'\brm\s+-rf\s+/', "Dangerous rm -rf command detected"),
-    (r'\bsudo\s+rm', "Sudo rm command detected - requires manual confirmation"),
-    (r'>\s*/dev/sd[a-z]', "Direct disk write detected"),
-    (r'\bdd\s+.*of=/dev/', "Dangerous dd command to device"),
+    (r"\brm\s+-rf\s+/", "Dangerous rm -rf command detected"),
+    (r"\bsudo\s+rm", "Sudo rm command detected - requires manual confirmation"),
+    (r">\s*/dev/sd[a-z]", "Direct disk write detected"),
+    (r"\bdd\s+.*of=/dev/", "Dangerous dd command to device"),
 ]
 
 # Optimization suggestions
 OPTIMIZATION_PATTERNS = [
-    (r'\bgrep\b(?!.*\|)', "Consider using 'rg' (ripgrep) instead of 'grep' for better performance"),
-    (r'\bfind\s+.*-name', "Consider using 'fd' instead of 'find' for faster file searching"),
-    (r'\bcat\s+.*\|\s*grep', "Use 'rg' directly on the file instead of cat | grep"),
-    (r'\bls\s+.*\|\s*grep', "Use 'ls pattern*' or 'fd pattern' instead of ls | grep"),
+    (r"\bgrep\b(?!.*\|)", "Consider using 'rg' (ripgrep) instead of 'grep' for better performance"),
+    (r"\bfind\s+.*-name", "Consider using 'fd' instead of 'find' for faster file searching"),
+    (r"\bcat\s+.*\|\s*grep", "Use 'rg' directly on the file instead of cat | grep"),
+    (r"\bls\s+.*\|\s*grep", "Use 'ls pattern*' or 'fd pattern' instead of ls | grep"),
 ]
+
 
 def validate_command(command: str) -> tuple[bool, list[str]]:
     """Validate a bash command and return (is_allowed, messages)"""
@@ -62,6 +63,7 @@ def validate_command(command: str) -> tuple[bool, list[str]]:
 
     return not blocked, messages
 
+
 def main():
     try:
         # Read input from stdin
@@ -79,24 +81,23 @@ def main():
         # Validate the command
         is_allowed, messages = validate_command(command)
 
-        # Output any messages
-        if messages:
-            output = {
-                "messages": messages,
-                "command": command
-            }
-            print(json.dumps(output, indent=2))
-
-        # Exit with appropriate code
+        # Output messages appropriately
         if not is_allowed:
-            sys.exit(2)  # Block the command
+            # Blocked: use proper hook schema on stdout
+            reason = "; ".join(m for m in messages if "BLOCKED" in m)
+            print(json.dumps({"decision": "block", "reason": reason}))
+            sys.exit(2)
         else:
-            sys.exit(0)  # Allow the command
+            # Tips: print to stderr (visible to LLM, not parsed as hook JSON)
+            for msg in messages:
+                print(msg, file=sys.stderr)
+            sys.exit(0)
 
     except Exception as e:
         # Fail closed: block command on unexpected errors
         print(f"validate-bash hook error (blocked): {e}", file=sys.stderr)
         sys.exit(2)
+
 
 if __name__ == "__main__":
     main()
