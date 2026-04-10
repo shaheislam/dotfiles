@@ -1,0 +1,17 @@
+{
+  "name": "linkedin-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright scripts for LinkedIn networking automation",
+  "scripts": {
+    "save-session": "node save-session.mjs",
+    "connect-commenters": "node connect-post-engagers.mjs --type=commenters",
+    "connect-likers": "node connect-post-engagers.mjs --type=likers",
+    "connect-viewers": "node connect-profile-viewers.mjs",
+    "connect-all": "node connect-all.mjs",
+    "dry-run": "DRY_RUN=1 node connect-all.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.59.0"
+  }
+}
