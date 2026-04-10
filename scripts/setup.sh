@@ -531,45 +531,75 @@ phase_4_cloud_tools() {
         return 0
     fi
 
-    # Claude Code CLI now uses the native installer (falls back to bunx only if needed)
+    # Claude Code CLI — native installer (idempotent: install → clean legacy → verify)
     print_step "Configuring Claude Code CLI (native installer)..."
 
-    if brew list --cask claude-code >/dev/null 2>&1; then
-        print_step "Removing deprecated Claude Code cask..."
-        brew uninstall --cask claude-code >/dev/null 2>&1 || true
-        print_success "Homebrew Claude Code removed"
+    # Step 1: Install/update native binary using any available claude
+    local native_claude="$HOME/.local/bin/claude"
+    local any_claude=""
+    if [[ -x "$native_claude" ]]; then
+        any_claude="$native_claude"
+    elif command_exists claude; then
+        any_claude="$(command -v claude)"
     fi
 
-    # Clean up legacy installations (only if remnants exist — skip slow npm/bun scans otherwise)
-    if [[ -d "$HOME/.claude/local" ]]; then
-        rm -rf "$HOME/.claude/local" 2>/dev/null || true
-    fi
-    if [[ -d "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code" ]]; then
-        npm uninstall -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
-        rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code 2>/dev/null || true
-    fi
-    if command_exists bun && bun pm ls -g 2>/dev/null | grep -q "@anthropic-ai/claude-code"; then
-        bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
-    fi
-    rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
-    # scripts/bin/claude is now the event-driven tmux wrapper — do not remove
-
-    local claude_wrapper="$DOTFILES_ROOT/scripts/bin/claude"
-    if [[ -x "$claude_wrapper" ]]; then
+    if [[ -n "$any_claude" ]]; then
         print_step "Installing/updating Claude Code native CLI..."
-        if CLAUDE_RUNNER=auto "$claude_wrapper" install >/dev/null 2>&1; then
-            print_success "Claude Code native CLI installed"
+        if "$any_claude" install >/dev/null 2>&1; then
+            print_success "Claude Code native CLI installed ($native_claude)"
         else
             print_warning "Claude Code native installer failed (check CLI output)"
         fi
+    else
+        # No claude binary at all — bootstrap via bunx
+        if command_exists bunx; then
+            print_step "Bootstrapping Claude Code via bunx..."
+            if bunx @anthropic-ai/claude-code@latest install >/dev/null 2>&1; then
+                print_success "Claude Code native CLI bootstrapped ($native_claude)"
+            else
+                print_warning "Claude Code bootstrap failed"
+            fi
+        else
+            print_warning "No claude or bunx found; skip native CLI install"
+        fi
+    fi
 
-        if CLAUDE_RUNNER=auto "$claude_wrapper" doctor >/dev/null 2>&1; then
+    # Step 2: Clean up ALL legacy installations (only after native is in place)
+    if [[ -x "$native_claude" ]]; then
+        # Homebrew cask
+        if brew list --cask claude-code >/dev/null 2>&1; then
+            print_step "Removing deprecated Claude Code cask..."
+            brew uninstall --cask claude-code >/dev/null 2>&1 || true
+            print_success "Homebrew Claude Code cask removed"
+        fi
+
+        # npm global install (directory + bin symlink)
+        if [[ -d "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code" ]]; then
+            print_step "Removing npm-installed Claude Code..."
+            rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code 2>/dev/null || true
+            rm -f /opt/homebrew/bin/claude 2>/dev/null || true
+            print_success "npm Claude Code removed"
+        fi
+
+        # bun global install
+        if command_exists bun && bun pm ls -g 2>/dev/null | grep -q "@anthropic-ai/claude-code"; then
+            bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+            print_success "bun Claude Code removed"
+        fi
+
+        # Stale caches and local installs
+        rm -rf "$HOME/.claude/local" 2>/dev/null || true
+        rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
+    fi
+    # scripts/bin/claude is the event-driven tmux wrapper — do not remove
+
+    # Step 3: Verify
+    if [[ -x "$native_claude" ]]; then
+        if "$native_claude" doctor >/dev/null 2>&1; then
             print_success "Claude Code doctor check passed"
         else
             log_verbose "Claude Code doctor reported warnings (non-fatal)"
         fi
-    else
-        print_warning "claude wrapper missing; skip native CLI install"
     fi
 
     # Install independent CLI tools
