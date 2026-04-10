@@ -49,33 +49,6 @@ base = "#1e1e2e"
 mantle = "#181825"
 crust = "#11111b"
 
-[os]
-disabled = true
-style = "bg:peach fg:base"
-
-[os.symbols]
-Windows = "󰍲"
-Ubuntu = "󰕈"
-SUSE = ""
-Raspbian = "󰐿"
-Mint = "󰣭"
-Macos = "󰀵"
-Manjaro = ""
-Linux = "󰌽"
-Gentoo = "󰣨"
-Fedora = "󰣛"
-Alpine = ""
-Amazon = ""
-Android = ""
-Arch = "󰣇"
-Artix = "󰣇"
-EndeavourOS = ""
-CentOS = ""
-Debian = "󰣚"
-Redhat = "󱄛"
-RedHatEnterprise = "󱄛"
-Pop = ""
-
 [username]
 show_always = false
 style_user = "fg:mauve"
@@ -110,28 +83,10 @@ behind = '⇣${count}'
 format = '[$all_status$ahead_behind]($style) '
 ignore_submodules = true
 
-[nodejs]
-symbol = " "
-style = "fg:green"
-format = '[$symbol($version)]($style) '
-disabled = true
-
 [c]
 symbol = " "
 style = "fg:blue"
 format = '[$symbol($version)]($style) '
-
-[rust]
-symbol = " "
-style = "fg:peach"
-format = '[$symbol($version)]($style) '
-disabled = true
-
-[golang]
-symbol = " "
-style = "fg:sky bold"
-format = '[$symbol($version)]($style) '
-disabled = true
 
 [php]
 symbol = " "
@@ -152,18 +107,6 @@ format = '[$symbol($version)]($style) '
 symbol = " "
 style = "fg:mauve"
 format = '[$symbol($version)]($style) '
-
-[python]
-symbol = " "
-style = "fg:yellow"
-format = '[$symbol($version)]($style) '
-disabled = true
-
-[docker_context]
-symbol = " "
-style = "fg:sapphire"
-format = '[$symbol$context]($style) '
-disabled = true
 
 [conda]
 style = "fg:green"
@@ -213,18 +156,6 @@ format = '[$symbol$context(\($namespace\))]($style) '
 # Enable per-project via: set -gx KUBECONFIG ~/.kube/config
 # or set [kubernetes] disabled = false in a project-local starship.toml
 disabled = true
-
-[terraform]
-symbol = " "
-style = "fg:mauve"
-format = '[$symbol($version)]($style) '
-disabled = true
-
-[time]
-disabled = true
-time_format = "%R"
-style = "fg:overlay1"
-format = '[$time]($style) '
 
 [cmd_duration]
 format = "[$duration]($style) "
