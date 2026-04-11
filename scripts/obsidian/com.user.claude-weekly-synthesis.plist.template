@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.claude-weekly-synthesis</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__HOME__/dotfiles/scripts/obsidian/weekly-synthesis.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <!-- Sunday at 09:00 local time (Weekday=0 is Sunday on macOS) -->
+        <key>Weekday</key>
+        <integer>0</integer>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/claude-weekly-synthesis.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/claude-weekly-synthesis.log</string>
+
+    <!-- Do NOT run immediately on launchctl load — only on schedule -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>__HOME__</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>OBSIDIAN_VAULT</key>
+        <string>__HOME__/obsidian</string>
+    </dict>
+</dict>
+</plist>
