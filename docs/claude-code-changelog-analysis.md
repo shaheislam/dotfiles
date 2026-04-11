@@ -40,6 +40,7 @@ The most significant changes since this dotfiles repo was last updated:
 | 2.1.33 | `memory` agent frontmatter | Persistent memory for agents (user/project/local scope) | **Add to custom agents** - enables agents to remember across sessions |
 | 2.1.33 | `Task(agent_type)` in agent tools | Restrict which sub-agents an agent can spawn | Useful for tightly-scoped agents in `.claude/agents/` |
 | 2.1.32 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` | Multi-agent collaboration | **Already enabled** in setup.sh |
+| 2.1.89 | `CLAUDE_CODE_NO_FLICKER=1` | Fullscreen renderer research preview | Enabled here to stabilize fullscreen sessions |
 | 2.1.23 | `spinnerVerbs` | Customizable spinner text | Low priority - cosmetic |
 | 2.1.9 | `plansDirectory` | Custom plan file location | Could set to `.claude/plans/` for consistency |
 | 2.1.9 | `showTurnDuration` (2.1.7) | Hide turn duration messages | Personal preference |

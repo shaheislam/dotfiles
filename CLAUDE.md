@@ -129,6 +129,9 @@ Four browser tools for AI agents, each with different strengths:
 - Permission rules: deny → ask → allow (first match wins)
 
 **Model**: Opus 4.6 default, `CLAUDE_CODE_EFFORT_LEVEL=max`, `--effort max` CLI flag on all launch commands, `/model opusplan` for plan→execute split.
+**Fullscreen Stability**: `CLAUDE_CODE_NO_FLICKER=1` enables the fullscreen rendering research preview (requires Claude Code ≥ 2.1.89) across host shells and devcontainers.
+  - tmux: keep `set -g mouse on` (already in `.tmux.conf`) so wheel scrolling reaches Claude Code. Fullscreen rendering is not supported inside `tmux -CC` (iTerm2 integration mode), so stick to regular tmux sessions when launching Claude in fullscreen.
+  - Native selection: when mouse capture is disruptive (copy-on-select workflows, tmux copy-mode, etc.) launch with `CLAUDE_CODE_DISABLE_MOUSE=1` to retain terminal-native selection while still keeping the flicker-free renderer (`CLAUDE_CODE_NO_FLICKER=1 CLAUDE_CODE_DISABLE_MOUSE=1 claude`).
 
 ### Claude Code Hooks
 Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `docs/claude-code-hooks.md`.

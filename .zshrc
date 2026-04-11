@@ -177,3 +177,6 @@ export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
 # OpenTelemetry observability (harness engineering)
 export CLAUDE_CODE_ENABLE_TELEMETRY=1
 export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
+
+# Claude Code fullscreen rendering (research preview)
+export CLAUDE_CODE_NO_FLICKER=1

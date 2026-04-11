@@ -1214,6 +1214,8 @@ These official flags are available but not yet integrated in our dotfiles:
 | `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS` | Disable background tasks | `0` |
 | `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION` | Prompt suggestions | `true` |
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | Enable agent teams | Off |
+| `CLAUDE_CODE_NO_FLICKER` | Opt-in fullscreen renderer (requires v2.1.89+) | `1` (enabled here) |
+| `CLAUDE_CODE_DISABLE_MOUSE` | Disable mouse capture to keep native selection | `0` (set to `1` when you need tmux/terminal-driven selection) |
 | `CLAUDE_CODE_TASK_LIST_ID` | Named shared task list | None |
 | `DISABLE_TELEMETRY` | Opt out of usage tracking | Off |
 | `DISABLE_AUTOUPDATER` | Disable auto-updates | Off |
@@ -1450,3 +1452,7 @@ Flags and features from official docs not yet leveraged in our setup:
 - [Official Permissions](https://code.claude.com/docs/en/permissions) — permission system
 - [Official Subagents](https://code.claude.com/docs/en/sub-agents) — subagent documentation
 - [Official Skills](https://code.claude.com/docs/en/skills) — skills documentation
+#### Fullscreen UX Notes
+
+- **tmux**: Mouse-wheel scrolling requires tmux mouse mode (`set -g mouse on`, already present in `.tmux.conf`). Avoid iTerm2 integration mode (`tmux -CC`) because fullscreen rendering cannot capture the alternate screen buffer or mouse events there; use standard tmux sessions instead.
+- **Native selection**: If you need tmux copy-mode, OSC 52, or Kitty hints to own the mouse, launch with `CLAUDE_CODE_NO_FLICKER=1 CLAUDE_CODE_DISABLE_MOUSE=1 claude`. This keeps the flicker-free renderer while delegating selection/scroll to the terminal (you lose click-to-focus + wheel scrolling inside Claude Code, but PgUp/PgDn/Ctrl+Home/End still work).
