@@ -4,9 +4,14 @@
 #
 # Usage: nvim-open-file.sh <file-path> [--target SESSION:WINDOW]
 #
-# Searches the current window first, then falls back to any nvim pane
-# in the session. Exits 0 silently if not in tmux or no nvim pane
-# exists (best-effort, never blocks callers).
+# Window-local only — never reaches across to other windows.
+# If nvim is running in the current window, sends :edit to it.
+# If not, opens a horizontal split with nvim showing the file.
+# Exits 0 silently if not in tmux.
+#
+# Detection: matches nvim process ttys against tmux pane ttys.
+# This handles nvim at any depth in the process tree (fish → fish → nvim)
+# and works around macOS pgrep -t being unreliable.
 
 set -euo pipefail
 
@@ -47,32 +52,32 @@ if [[ -z "$target" ]]; then
     target=$(tmux display-message -p '#{session_name}:#{window_index}')
 fi
 
-# Find nvim pane — grep returns non-zero when no match, so use || true
-nvim_pane=$(tmux list-panes -t "$target" -F '#{pane_index} #{pane_current_command}' 2>/dev/null |
-    grep -i nvim | head -1 | awk '{print $1}' || true)
+# Detect nvim by matching tty: get all nvim process ttys, then check
+# which pane in the current window has a matching tty.
+nvim_pane=""
+nvim_pids=$(pgrep nvim 2>/dev/null | tr '\n' ',' | sed 's/,$//' || true)
 
-# Fallback: search all windows in the session for an nvim pane
-if [[ -z "$nvim_pane" ]]; then
-    session=$(tmux display-message -p '#{session_name}')
-    nvim_hit=$(tmux list-panes -s -t "$session" -F '#{window_index}:#{pane_index} #{pane_current_command}' 2>/dev/null |
-        grep -i nvim | head -1 || true)
-    if [[ -n "$nvim_hit" ]]; then
-        win_pane="${nvim_hit%% *}"
-        target="${session}:${win_pane%%:*}"
-        nvim_pane="${win_pane##*:}"
-    fi
+if [[ -n "$nvim_pids" ]]; then
+    nvim_ttys=$(ps -o tty= -p "$nvim_pids" 2>/dev/null | sort -u || true)
+
+    while IFS=: read -r idx tty; do
+        tty_short="${tty##*/}"
+        if echo "$nvim_ttys" | grep -q "$tty_short"; then
+            nvim_pane="$idx"
+            break
+        fi
+    done < <(tmux list-panes -t "$target" -F '#{pane_index}:#{pane_tty}' 2>/dev/null)
 fi
 
-if [[ -z "$nvim_pane" ]]; then
-    echo "No nvim pane found in session, skipping" >&2
-    exit 0
+if [[ -n "$nvim_pane" ]]; then
+    # nvim already running — open file as a buffer
+    tmux send-keys -t "${target}.${nvim_pane}" Escape Enter
+    sleep 0.3
+    tmux send-keys -t "${target}.${nvim_pane}" \
+        ":lua vim.cmd('edit ' .. [[${file_path}]]); vim.cmd('checktime')" Enter
+    echo "Opened ${file_path} in nvim pane ${nvim_pane} (${target})"
+else
+    # No nvim — split the window and launch nvim with the file
+    tmux split-window -h -t "$target" "nvim '${file_path}'"
+    echo "Opened nvim split with ${file_path} (${target})"
 fi
-
-# Ensure normal mode, then open the file
-tmux send-keys -t "${target}.${nvim_pane}" Escape Enter
-sleep 0.3
-# Use Lua [[ ]] long strings to avoid quoting issues with file paths
-tmux send-keys -t "${target}.${nvim_pane}" \
-    ":lua vim.cmd('edit ' .. [[${file_path}]]); vim.cmd('checktime')" Enter
-
-echo "Opened ${file_path} in nvim pane ${nvim_pane} (${target})"
