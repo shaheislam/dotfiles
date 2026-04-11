@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SYNC_SCRIPT="$SCRIPT_DIR/sync-career-ops.sh"
+CV_GENERATE="$SCRIPT_DIR/cv-generate"
+CAREER_OPS_DIR="${CAREER_OPS_DIR:-$HOME/career-ops}"
+
+RUN_DOCTOR=0
+SYNC_ONLY=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --doctor)
+      RUN_DOCTOR=1
+      shift
+      ;;
+    --sync-only)
+      SYNC_ONLY=1
+      shift
+      ;;
+    --help|-h)
+      cat <<'EOF'
+Usage: career-ops-bridge [--doctor] [--sync-only] --recruiter NAME --type perm|contract --salary VALUE [cv-generate options]
+
+Syncs shared jobapps data into ~/career-ops, optionally validates doctor, then
+hands off to scripts/cv/cv-generate for authoritative LaTeX rendering.
+EOF
+      exit 0
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+SYNC_ARGS=()
+[[ "$RUN_DOCTOR" -eq 1 ]] && SYNC_ARGS+=(--doctor)
+"$SYNC_SCRIPT" "${SYNC_ARGS[@]}"
+
+if [[ "$SYNC_ONLY" -eq 1 ]]; then
+  echo "Career-Ops context synced at $CAREER_OPS_DIR"
+  exit 0
+fi
+
+DOTFILES_ROOT_VALUE="${DOTFILES_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+JOBAPPS_DIR_VALUE="${JOBAPPS_DIR:-$DOTFILES_ROOT_VALUE/jobapps}"
+
+DOTFILES_ROOT="$DOTFILES_ROOT_VALUE" JOBAPPS_DIR="$JOBAPPS_DIR_VALUE" "$CV_GENERATE" "$@"

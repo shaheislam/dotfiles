@@ -57,7 +57,13 @@
 3. **Share tracker data**: Export `/cv-generate` runs (recruiter/date metadata) into the Career-Ops TSV merge script to keep a single source of truth without abandoning the lightweight command.
 4. **Progressive adoption**: Start with `/cv-generate` for individual applications; when pipeline volume grows, drop the same inputs (CV, narrative, proof points) into Career-Ops to unlock scanning + batch workflows.
 
+## Implemented Bridge
+
+- `scripts/cv/sync-career-ops.sh` now derives `~/career-ops/cv.md`, `~/career-ops/config/profile.yml`, and `~/career-ops/portals.yml` from the canonical `jobapps` data without symlinks.
+- `scripts/cv/career-ops-bridge` syncs those files, optionally runs Career-Ops doctor, then hands off to `scripts/cv/cv-generate` so LaTeX/PDF generation still uses the existing strict renderer.
+- `scripts/cv/cv-generate`, `scripts/cv/cv-generator-unified.py`, and `scripts/cv/compile-cv.sh` are now worktree-aware via `DOTFILES_ROOT` / `JOBAPPS_DIR`, so the pipeline works from this repo instead of assuming `~/dotfiles`.
+
 ## Recommendation
 
 - For this ticket, keep `/cv-generate` as the fast-path résumé generator embedded in dotfiles.
-- Adopt Career-Ops when you need an end-to-end agentic pipeline; document the handoff points outlined above so future tickets can wire automation between the two systems.
+- Adopt Career-Ops when you need an end-to-end agentic pipeline; use the bridge scripts above when you want Career-Ops context and discovery without giving up the LaTeX layout guarantees in `/cv-generate`.
