@@ -9,6 +9,50 @@ import { chromium } from "playwright";
 import { existsSync } from "node:fs";
 import { CONFIG, humanDelay } from "./config.mjs";
 
+const SOURCE_PRIORITY = {
+  commenter: 3,
+  profileViewer: 2,
+  liker: 1,
+  unknown: 0,
+};
+
+function getSourcePriority(source) {
+  return SOURCE_PRIORITY[source] ?? SOURCE_PRIORITY.unknown;
+}
+
+function getFirstName(name) {
+  const [firstName] = (name || "").trim().split(/\s+/);
+  return firstName || "there";
+}
+
+function buildConnectionNote(source, name) {
+  const templates = CONFIG.connectionNotes || {};
+  const template = templates[source] ?? templates.default;
+
+  if (!template) return null;
+
+  return template.replaceAll("{firstName}", getFirstName(name));
+}
+
+function normalizeProfile(profile) {
+  if (typeof profile === "string") {
+    return { url: profile, source: "unknown" };
+  }
+
+  return {
+    url: profile.url,
+    source: profile.source || "unknown",
+  };
+}
+
+export function mergeProfiles(existingProfile, nextProfile) {
+  if (!existingProfile) return nextProfile;
+
+  return getSourcePriority(nextProfile.source) > getSourcePriority(existingProfile.source)
+    ? nextProfile
+    : existingProfile;
+}
+
 /**
  * Launches a browser with a saved LinkedIn session.
  * Returns { context, page }.
@@ -74,8 +118,9 @@ export async function scrollToLoadMore(page) {
  * Sends a connection request to a LinkedIn profile URL.
  * Returns { success, name, reason }.
  */
-export async function sendConnectionRequest(page, profileUrl) {
-  const result = { success: false, name: "", reason: "" };
+export async function sendConnectionRequest(page, profile) {
+  const { url: profileUrl, source } = normalizeProfile(profile);
+  const result = { success: false, name: "", reason: "", source };
 
   try {
     await page.goto(profileUrl, { waitUntil: "domcontentloaded" });
@@ -84,6 +129,28 @@ export async function sendConnectionRequest(page, profileUrl) {
     // Extract the person's name
     const nameEl = page.locator("h1.text-heading-xlarge").first();
     result.name = (await nameEl.textContent().catch(() => "Unknown")).trim();
+
+    const isPending = await page
+      .locator('button:has-text("Pending")')
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (isPending) {
+      result.reason = "already-pending";
+      return result;
+    }
+
+    const isConnected = await page
+      .locator('button:has-text("Message")')
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (isConnected) {
+      result.reason = "already-connected";
+      return result;
+    }
 
     if (CONFIG.dryRun) {
       result.success = true;
@@ -121,29 +188,6 @@ export async function sendConnectionRequest(page, profileUrl) {
 
         await dropdownConnect.click();
       } else {
-        // Check if already connected or pending
-        const isPending = await page
-          .locator('button:has-text("Pending")')
-          .first()
-          .isVisible()
-          .catch(() => false);
-
-        if (isPending) {
-          result.reason = "already-pending";
-          return result;
-        }
-
-        const isConnected = await page
-          .locator('button:has-text("Message")')
-          .first()
-          .isVisible()
-          .catch(() => false);
-
-        if (isConnected) {
-          result.reason = "already-connected";
-          return result;
-        }
-
         result.reason = "no-connect-button";
         return result;
       }
@@ -161,7 +205,9 @@ export async function sendConnectionRequest(page, profileUrl) {
       .catch(() => false);
 
     if (dialogVisible) {
-      if (CONFIG.connectionNote) {
+      const connectionNote = buildConnectionNote(source, result.name);
+
+      if (connectionNote) {
         const addNoteBtn = page.locator('button:has-text("Add a note")').first();
         const addNoteVisible = await addNoteBtn.isVisible().catch(() => false);
 
@@ -172,7 +218,7 @@ export async function sendConnectionRequest(page, profileUrl) {
           const noteTextarea = page.locator(
             'textarea[name="message"], textarea#custom-message'
           );
-          await noteTextarea.fill(CONFIG.connectionNote);
+          await noteTextarea.fill(connectionNote);
           await humanDelay(page, CONFIG.delays.beforeClick);
         }
       }
@@ -223,7 +269,7 @@ export async function extractProfileUrls(page, selector) {
  */
 export async function processProfiles(page, profileUrls, source) {
   const limit = CONFIG.maxConnectionsPerRun;
-  const toProcess = profileUrls.slice(0, limit);
+  const toProcess = profileUrls.slice(0, limit).map(normalizeProfile);
   const results = { sent: 0, skipped: 0, errors: 0, details: [] };
 
   console.log(
@@ -233,11 +279,13 @@ export async function processProfiles(page, profileUrls, source) {
   );
 
   for (let i = 0; i < toProcess.length; i++) {
-    const url = toProcess[i];
-    console.log(`  [${i + 1}/${toProcess.length}] ${url}`);
+    const profile = toProcess[i];
+    console.log(
+      `  [${i + 1}/${toProcess.length}] ${profile.url} (${profile.source})`
+    );
 
-    const result = await sendConnectionRequest(page, url);
-    results.details.push({ url, ...result });
+    const result = await sendConnectionRequest(page, profile);
+    results.details.push({ url: profile.url, ...result });
 
     if (result.success) {
       results.sent++;

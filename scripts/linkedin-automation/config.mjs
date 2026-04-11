@@ -28,9 +28,17 @@ export const CONFIG = {
   // Dry run mode — logs what would happen without sending requests
   dryRun: process.env.DRY_RUN === "1",
 
-  // Optional: custom note for connection requests (max 300 chars)
-  // Set to null to send without a note
-  connectionNote: null,
+  // Optional: custom notes for connection requests (max 300 chars)
+  // Use {firstName} to personalize the note, or set a value to null to skip it.
+  connectionNotes: {
+    commenter:
+      "Hey {firstName}, thanks for engaging with my post. I'm looking to connect with people who have like-minded views on AI and tech to bounce ideas off. Would love to connect.",
+    liker:
+      "Hey {firstName}, thanks for engaging with my post. I'm looking to connect with people who have like-minded views on AI and tech to bounce ideas off. Would love to connect.",
+    profileViewer:
+      "Hi {firstName}, I noticed you checked out my profile. Let me know if you'd be interested in connecting.",
+    default: null,
+  },
 };
 
 /**

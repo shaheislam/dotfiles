@@ -21,8 +21,16 @@ import {
   verifyLoggedIn,
   scrollToLoadMore,
   extractProfileUrls,
+  mergeProfiles,
   processProfiles,
 } from "./linkedin-helpers.mjs";
+
+function addProfiles(profileMap, urls, source) {
+  for (const url of urls) {
+    const nextProfile = { url, source };
+    profileMap.set(url, mergeProfiles(profileMap.get(url), nextProfile));
+  }
+}
 
 const { values: args } = parseArgs({
   options: {
@@ -158,7 +166,7 @@ async function main() {
       return;
     }
 
-    const allProfiles = new Set();
+    const allProfiles = new Map();
 
     for (const postUrl of postUrls) {
       console.log(`\nProcessing post: ${postUrl}`);
@@ -166,25 +174,25 @@ async function main() {
       if (type === "commenters" || type === "all") {
         const commenters = await getCommentersFromPost(page, postUrl);
         console.log(`  Found ${commenters.length} commenters.`);
-        commenters.forEach((url) => allProfiles.add(url));
+        addProfiles(allProfiles, commenters, "commenter");
       }
 
       if (type === "likers" || type === "all") {
         const likers = await getLikersFromPost(page, postUrl);
         console.log(`  Found ${likers.length} likers.`);
-        likers.forEach((url) => allProfiles.add(url));
+        addProfiles(allProfiles, likers, "liker");
       }
     }
 
-    const profileUrls = [...allProfiles];
-    console.log(`\nTotal unique profiles found: ${profileUrls.length}`);
+    const profiles = [...allProfiles.values()];
+    console.log(`\nTotal unique profiles found: ${profiles.length}`);
 
-    if (profileUrls.length === 0) {
+    if (profiles.length === 0) {
       console.log("No profiles to connect with. Exiting.");
       return;
     }
 
-    await processProfiles(page, profileUrls, `post-engagers (${type})`);
+    await processProfiles(page, profiles, `post-engagers (${type})`);
   } finally {
     await context.close();
   }

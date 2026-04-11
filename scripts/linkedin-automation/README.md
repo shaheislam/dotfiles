@@ -60,7 +60,10 @@ Edit `config.mjs` to adjust:
 - `maxConnectionsPerRun` — limit per execution (default: 20, LinkedIn weekly cap ~100)
 - `delays.*` — timing between actions (randomized within range)
 - `browser.headless` — set `true` for background execution
-- `connectionNote` — optional message with requests (max 300 chars, null = no note)
+- `connectionNotes.commenter` — note for post commenters, supports `{firstName}`
+- `connectionNotes.liker` — note for post likers, supports `{firstName}`
+- `connectionNotes.profileViewer` — note for profile viewers, supports `{firstName}`
+- `connectionNotes.default` — fallback note when no source-specific template exists
 
 ## Rate Limiting
 

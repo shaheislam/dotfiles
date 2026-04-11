@@ -19,8 +19,16 @@ import {
   verifyLoggedIn,
   scrollToLoadMore,
   extractProfileUrls,
+  mergeProfiles,
   processProfiles,
 } from "./linkedin-helpers.mjs";
+
+function addProfiles(profileMap, urls, source) {
+  for (const url of urls) {
+    const nextProfile = { url, source };
+    profileMap.set(url, mergeProfiles(profileMap.get(url), nextProfile));
+  }
+}
 
 async function getRecentPostUrls(page, maxPosts = 5) {
   await page.goto("https://www.linkedin.com/in/me/recent-activity/all/", {
@@ -121,7 +129,7 @@ async function getProfileViewers(page) {
 
 async function main() {
   const { context, page } = await launchWithSession();
-  const allProfiles = new Set();
+  const allProfiles = new Map();
 
   try {
     await verifyLoggedIn(page);
@@ -136,30 +144,30 @@ async function main() {
 
       const commenters = await getCommentersFromPost(page, postUrl);
       console.log(`  Commenters: ${commenters.length}`);
-      commenters.forEach((url) => allProfiles.add(url));
+      addProfiles(allProfiles, commenters, "commenter");
 
       const likers = await getLikersFromPost(page, postUrl);
       console.log(`  Likers: ${likers.length}`);
-      likers.forEach((url) => allProfiles.add(url));
+      addProfiles(allProfiles, likers, "liker");
     }
 
     // Phase 2: Profile viewers
     console.log("\n=== Phase 2: Profile Viewers ===");
     const viewers = await getProfileViewers(page);
     console.log(`Profile viewers: ${viewers.length}`);
-    viewers.forEach((url) => allProfiles.add(url));
+    addProfiles(allProfiles, viewers, "profileViewer");
 
     // Phase 3: Send connection requests
-    const profileUrls = [...allProfiles];
+    const profiles = [...allProfiles.values()];
     console.log(`\n=== Phase 3: Sending Connections ===`);
-    console.log(`Total unique profiles: ${profileUrls.length}`);
+    console.log(`Total unique profiles: ${profiles.length}`);
 
-    if (profileUrls.length === 0) {
+    if (profiles.length === 0) {
       console.log("No profiles to connect with.");
       return;
     }
 
-    await processProfiles(page, profileUrls, "all-sources");
+    await processProfiles(page, profiles, "all-sources");
   } finally {
     await context.close();
   }

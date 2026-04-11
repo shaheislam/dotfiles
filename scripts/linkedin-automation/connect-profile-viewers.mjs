@@ -89,7 +89,12 @@ async function main() {
       return;
     }
 
-    await processProfiles(page, viewerUrls, "profile-viewers");
+    const viewerProfiles = viewerUrls.map((url) => ({
+      url,
+      source: "profileViewer",
+    }));
+
+    await processProfiles(page, viewerProfiles, "profile-viewers");
   } finally {
     await context.close();
   }
