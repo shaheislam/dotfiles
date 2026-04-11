@@ -117,6 +117,14 @@ if (cd "$WORKTREE_PATH" && git status --porcelain 2>/dev/null | grep -q .); then
     exit 0
 fi
 
+# Synthesize session to Obsidian before destroying the worktree
+SYNTHESIZE_SCRIPT="$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"
+if [[ -x "$SYNTHESIZE_SCRIPT" ]]; then
+    log "Synthesizing session for worktree: $WORKTREE_PATH"
+    timeout 90 bash "$SYNTHESIZE_SCRIPT" --worktree "$WORKTREE_PATH" --cwd "$WORKTREE_PATH" \
+        2>>"$LOG_FILE" || log "WARNING: Session synthesis failed (non-fatal)"
+fi
+
 # Stop any running devcontainer for this worktree
 INSTANCE_NAME=$(echo "${REPO_NAME}-${BRANCH_NAME}" | tr '/' '-')
 INSTANCE_BASE="$HOME/.devcontainer/instances"
