@@ -200,6 +200,28 @@ async function probeToken(token: string) {
   return await proc.exited
 }
 
+async function refreshProfile(name: string, refreshToken: string) {
+  const refreshScript = join(DOTFILES_ROOT, "scripts", "opencode", "refresh-token.sh")
+  if (!existsSync(refreshScript)) {
+    return null
+  }
+
+  try {
+    const proc = Bun.spawn([refreshScript, "--token", refreshToken, "--quiet"], {
+      stdout: "pipe",
+      stderr: "ignore",
+    })
+    const output = await new Response(proc.stdout).text()
+    const status = await proc.exited
+    if (status !== 0) {
+      return null
+    }
+    return JSON.parse(output) as OpenAIAuth & { refresh: string }
+  } catch {
+    return null
+  }
+}
+
 async function switchAccount(name: string, openai: OpenAIAuth) {
   const auth = (await readJsonFile<AuthFile>(AUTH_FILE)) || {}
   auth.openai = openai
@@ -213,30 +235,38 @@ async function switchAccount(name: string, openai: OpenAIAuth) {
 }
 
 export function toPromptParts(parts: Part[]) {
-  return (parts ?? []).flatMap((part) => {
+  const result: any[] = []
+  if (!parts || !Array.isArray(parts)) {
+    return result
+  }
+
+  for (const part of parts) {
     switch (part.type) {
       case "text":
-        return [{
+        result.push({
           id: part.id,
           type: "text" as const,
           text: part.text,
-        }]
+        })
+        break
       case "file":
-        return [{
+        result.push({
           id: part.id,
           type: "file" as const,
           mime: part.mime,
           filename: part.filename,
           url: part.url,
-        }]
+        })
+        break
       case "agent":
-        return [{
+        result.push({
           id: part.id,
           type: "agent" as const,
           name: part.name,
-        }]
+        })
+        break
       case "subtask":
-        return [{
+        result.push({
           id: part.id,
           type: "subtask" as const,
           prompt: part.prompt,
@@ -244,11 +274,11 @@ export function toPromptParts(parts: Part[]) {
           agent: part.agent,
           model: part.model,
           command: part.command,
-        }]
-      default:
-        return []
+        })
+        break
     }
-  })
+  }
+  return result
 }
 
 export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
@@ -301,14 +331,49 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
     }
 
     for (const name of rotateFrom(accountNames, activeName)) {
-      const saved = await readJsonFile<OpenAIAuth>(join(ACCOUNTS_DIR, name, "openai-auth.json"))
+      let saved = await readJsonFile<OpenAIAuth & { refresh?: string }>(join(ACCOUNTS_DIR, name, "openai-auth.json"))
       if (!saved?.access || authKey(saved) === currentKey) {
         await debugLog(`rotateAccount skip=${name}`)
         continue
       }
 
-      const status = await probeToken(saved.access)
+      // Check for expiration
+      const now = Date.now()
+      if (saved.expires && now > saved.expires && saved.refresh) {
+        await debugLog(`rotateAccount expired=${name} attempting refresh`)
+        const refreshed = await refreshProfile(name, saved.refresh)
+        if (refreshed) {
+          await writeJsonFile(join(ACCOUNTS_DIR, name, "openai-auth.json"), refreshed)
+          // Sync to codex via shell command (since we can't easily import the fish function here)
+          const proc = Bun.spawn(["fish", "-c", `_ai_accounts_sync to-codex "${name}" "${join(ACCOUNTS_DIR, name, "openai-auth.json")}"`], {
+            stdout: "ignore",
+            stderr: "ignore",
+          })
+          await proc.exited
+          saved = refreshed
+        }
+      }
+
+      let status = await probeToken(saved.access)
       await debugLog(`rotateAccount probe=${name} status=${status}`)
+
+      // If probe failed due to auth (401/403) and we have a refresh token, try refreshing once
+      if (status === 2 && saved.refresh) {
+        await debugLog(`rotateAccount probe auth failed for ${name}, attempting refresh`)
+        const refreshed = await refreshProfile(name, saved.refresh)
+        if (refreshed) {
+          await writeJsonFile(join(ACCOUNTS_DIR, name, "openai-auth.json"), refreshed)
+          const proc = Bun.spawn(["fish", "-c", `_ai_accounts_sync to-codex "${name}" "${join(ACCOUNTS_DIR, name, "openai-auth.json")}"`], {
+            stdout: "ignore",
+            stderr: "ignore",
+          })
+          await proc.exited
+          saved = refreshed
+          status = await probeToken(saved.access)
+          await debugLog(`rotateAccount probe after refresh status=${status}`)
+        }
+      }
+
       if (status !== 0) {
         continue
       }
