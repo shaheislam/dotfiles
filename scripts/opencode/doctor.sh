@@ -121,7 +121,8 @@ try:
     payload = '$access_token'.split('.')[1]
     payload += '=' * (-len(payload) % 4)
     claims = json.loads(base64.urlsafe_b64decode(payload))
-    print(claims.get('email', 'unknown'))
+    profile = claims.get('https://api.openai.com/profile', {})
+    print(profile.get('email') or claims.get('email') or 'unknown')
 except Exception:
     print('unknown')
 " 2>/dev/null || echo "unknown")"
