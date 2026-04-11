@@ -362,6 +362,10 @@
             "type": "command"
           },
           {
+            "command": "timeout 120 python3 ~/.claude/hooks/jfdi/session-end-extract.py 2>/dev/null || true",
+            "type": "command"
+          },
+          {
             "command": "bash ~/.claude/skills/dream/dream-hook.sh 2>/dev/null || true",
             "type": "command"
           }
@@ -404,6 +408,10 @@
           },
           {
             "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-prompt.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "timeout 5 python3 ~/.claude/hooks/jfdi/prompt-inject-context.py 2>/dev/null || true",
             "type": "command"
           }
         ],
