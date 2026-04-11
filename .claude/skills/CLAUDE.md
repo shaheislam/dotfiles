@@ -78,6 +78,12 @@
 | `unfreeze` | `/unfreeze` | Remove freeze restriction |
 | `guard` | `/guard` | Maximum safety (careful + freeze) |
 
+### Context & Vault Management
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `context-health` | `/context-health` | Audit Obsidian vault and context infrastructure |
+| `morning-brief` | `/morning-brief` | Daily briefing from Obsidian vault (vault-reference pattern) |
+
 ### Browser & Automation
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
