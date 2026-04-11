@@ -58,7 +58,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             echo "Account '$name' enrolled successfully."
             _ai_accounts_sync to-codex "$name" "$acct_dir/openai-auth.json"
 
-        case capture refresh
+        case capture
             if test (count $argv) -lt 1
                 echo "Usage: opencode-accounts capture <name>" >&2
                 return 1
@@ -89,6 +89,14 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             _opencode_accounts_show_info "$acct_dir/openai-auth.json" "$name"
             echo "Account '$name' captured from current OpenCode session."
             _ai_accounts_sync to-codex "$name" "$acct_dir/openai-auth.json"
+
+        case refresh
+            if test (count $argv) -lt 1
+                echo "Usage: opencode-accounts refresh <name>" >&2
+                return 1
+            end
+            set -l name $argv[1]
+            _opencode_refresh_profile "$name"
 
         case remove rm
             if test (count $argv) -lt 1
@@ -258,6 +266,19 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
                     if not test -f "$acct_auth"
                         continue
                     end
+                    
+                    # Check if expired and try refresh
+                    set -l expires (jq -r '.expires // 0' "$acct_auth" 2>/dev/null)
+                    set -l now (date +%s)"000"
+                    if test "$expires" -gt 0; and test "$now" -gt "$expires"
+                        echo "  Account '$name' is expired. Attempting refresh..." >&2
+                        if _opencode_refresh_profile "$name" --quiet
+                            echo "  Account '$name' refreshed." >&2
+                        else
+                            echo "  Account '$name' refresh failed." >&2
+                        end
+                    end
+
                     set -l token (jq -r '.access // empty' "$acct_auth" 2>/dev/null)
                     if test -z "$token"
                         continue
@@ -361,4 +382,46 @@ function _opencode_accounts_show_info --description "Display profile info after 
     set -l info (_opencode_accounts_decode_jwt "$acct_auth")
     echo "  Profile: $name"
     echo "  Account: $info"
+end
+
+function _opencode_refresh_profile --description "Refresh an OpenAI profile using its refresh_token"
+    set -l name $argv[1]
+    set -l quiet false
+    if test "$argv[2]" = "--quiet"
+        set quiet true
+    end
+
+    set -l accounts_dir "$HOME/.opencode/accounts"
+    set -l acct_dir "$accounts_dir/$name"
+    set -l acct_auth "$acct_dir/openai-auth.json"
+    set -l refresh_script "$HOME/dotfiles/scripts/opencode/refresh-token.sh"
+
+    if not test -f "$acct_auth"
+        if not $quiet; echo "Error: Profile '$name' not found." >&2; end
+        return 1
+    end
+
+    set -l refresh_token (jq -r '.refresh // empty' "$acct_auth" 2>/dev/null)
+    if test -z "$refresh_token"
+        if not $quiet; echo "Error: Profile '$name' has no refresh token." >&2; end
+        return 1
+    end
+
+    if not $quiet; echo "Refreshing profile '$name'..." >&2; end
+    set -l refresh_args "--token" "$refresh_token"
+    if $quiet; set -a refresh_args "--quiet"; end
+    
+    set -l new_auth (bash "$refresh_script" $refresh_args)
+    if test $status -ne 0
+        if not $quiet; echo "Error: Refresh failed for '$name'." >&2; end
+        return 1
+    end
+
+    # Save new auth and sync to codex
+    echo "$new_auth" >"$acct_auth"
+    chmod 600 "$acct_auth"
+    _ai_accounts_sync to-codex "$name" "$acct_auth"
+    
+    if not $quiet; echo "Profile '$name' refreshed successfully." >&2; end
+    return 0
 end
