@@ -138,16 +138,18 @@ if [[ -n "$EMBED_TARGET" ]]; then
 fi
 ```
 
-## Step 5: Open in Neovim (optional)
+## Step 5: Open in Neovim (best-effort)
 
-If user asks to open the diagram:
-
-```bash
-nvim ~/obsidian/Excalidraw/${FILENAME}.excalidraw.md
-```
-
-Or to open the target note with the embed:
+Open the saved diagram in the Neovim pane if running in tmux:
 
 ```bash
-nvim "$TARGET_NOTE"
+bash ~/dotfiles/scripts/nvim-open-file.sh ~/obsidian/Excalidraw/${FILENAME}.excalidraw.md
 ```
+
+Or if `--embed` was used, open the target note instead:
+
+```bash
+bash ~/dotfiles/scripts/nvim-open-file.sh "$TARGET_NOTE"
+```
+
+This is best-effort — if not in tmux or no nvim pane exists, the script exits silently.

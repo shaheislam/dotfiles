@@ -148,6 +148,16 @@ Report:
 - Number of key takeaways extracted
 - Source URL
 
+## Step 8.5: Open in Neovim (best-effort)
+
+Open the saved file in the Neovim pane if running in tmux:
+
+```bash
+bash ~/dotfiles/scripts/nvim-open-file.sh "{SAVED_FILE_PATH}"
+```
+
+This is best-effort — if not in tmux or no nvim pane exists, the script exits silently and the workflow continues.
+
 ## Step 9: Emit Chain Data (for downstream skills)
 
 After confirmation, output a structured chain data block that downstream skills (e.g., `/gap-analysis`) can detect in conversation context. This block is always emitted — it is harmless when no downstream skill is listening.

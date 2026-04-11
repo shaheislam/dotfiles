@@ -128,6 +128,16 @@ Confirm with:
 - Tags applied
 - Source URL
 
+## Step 7.5: Open in Neovim (best-effort)
+
+Open the saved file in the Neovim pane if running in tmux:
+
+```bash
+bash ~/dotfiles/scripts/nvim-open-file.sh "{SAVED_FILE_PATH}"
+```
+
+This is best-effort — if not in tmux or no nvim pane exists, the script exits silently.
+
 ## Error Handling
 
 - **Invalid URL**: Ask user to provide valid URL
