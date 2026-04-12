@@ -9,6 +9,7 @@
  *   node connect-post-engagers.mjs --type=commenters
  *   node connect-post-engagers.mjs --type=likers
  *   node connect-post-engagers.mjs --type=all
+ *   node connect-post-engagers.mjs --type=all --days=30
  *   node connect-post-engagers.mjs --post-url=https://www.linkedin.com/feed/update/urn:li:activity:XXXXX
  *
  * Requires: Run save-session.mjs first to authenticate.
@@ -37,36 +38,144 @@ const { values: args } = parseArgs({
     type: { type: "string", default: "all" },
     "post-url": { type: "string" },
     "max-posts": { type: "string", default: "5" },
+    days: { type: "string", default: "30" },
   },
 });
 
-async function getRecentPostUrls(page, maxPosts) {
-  // Navigate to your own profile's activity page
-  await page.goto("https://www.linkedin.com/in/me/recent-activity/all/", {
+function parseLinkedInAgeLabel(label) {
+  const text = (label || "").trim().toLowerCase();
+  const match = text.match(/(\d+)\s*(mo|m(?:in)?|h(?:r)?|d|w(?:k)?|yr|y)/);
+
+  if (!match) return Number.POSITIVE_INFINITY;
+
+  const value = Number.parseInt(match[1], 10);
+  const unit = match[2];
+
+  if (unit.startsWith("m") && unit !== "mo") return value / (24 * 60);
+  if (unit.startsWith("h")) return value / 24;
+  if (unit === "d") return value;
+  if (unit.startsWith("w")) return value * 7;
+  if (unit === "mo") return value * 30;
+  if (unit === "yr" || unit === "y") return value * 365;
+
+  return Number.POSITIVE_INFINITY;
+}
+
+function parseAbsoluteDateLabel(label) {
+  const text = (label || "").trim();
+
+  if (!text) return Number.POSITIVE_INFINITY;
+
+  const parsed = Date.parse(text);
+  if (Number.isNaN(parsed)) return Number.POSITIVE_INFINITY;
+
+  const ageMs = Date.now() - parsed;
+  return ageMs / (24 * 60 * 60 * 1000);
+}
+
+function parseAgeDays(label) {
+  const relativeDays = parseLinkedInAgeLabel(label);
+  if (relativeDays !== Number.POSITIVE_INFINITY) return relativeDays;
+
+  return parseAbsoluteDateLabel(label);
+}
+
+function normalizeLinkedInPath(href) {
+  if (!href) return null;
+
+  try {
+    const url = new URL(href, "https://www.linkedin.com");
+    return url.pathname.replace(/\/$/, "");
+  } catch {
+    return null;
+  }
+}
+
+async function getOwnProfilePath(page) {
+  await page.goto("https://www.linkedin.com/in/me/", {
+    waitUntil: "domcontentloaded",
+  });
+  await humanDelay(page, CONFIG.delays.afterPageLoad);
+  return normalizeLinkedInPath(page.url());
+}
+
+async function getRecentPostUrls(page, maxPosts, maxAgeDays) {
+  // Navigate to your own posts page, not the broader activity feed.
+  await page.goto("https://www.linkedin.com/in/me/recent-activity/shares/", {
     waitUntil: "domcontentloaded",
   });
   await humanDelay(page, CONFIG.delays.afterPageLoad);
 
-  // Scroll to load enough posts
-  for (let i = 0; i < 3; i++) {
+  const ownProfilePath = await getOwnProfilePath(page);
+
+  await page.goto("https://www.linkedin.com/in/me/recent-activity/shares/", {
+    waitUntil: "domcontentloaded",
+  });
+  await humanDelay(page, CONFIG.delays.afterPageLoad);
+
+  // Scroll to load enough posts within the requested date window.
+  for (let i = 0; i < 8; i++) {
     const loaded = await scrollToLoadMore(page);
     if (!loaded) break;
+
+    const ageLabels = await page.locator('span[aria-hidden="true"]').allTextContents();
+    const oldestLoadedDays = ageLabels.reduce((oldest, label) => {
+      return Math.max(oldest, parseAgeDays(label));
+    }, 0);
+
+    if (oldestLoadedDays >= maxAgeDays) break;
   }
 
-  // Extract post activity URLs
-  const postLinks = await page.locator('a[href*="/feed/update/"]').all();
-  const urls = [];
+  const candidatePosts = await page.locator('div.feed-shared-update-v2[data-urn]').evaluateAll(
+    (nodes) => {
+      return nodes.map((node) => {
+        const urn = node.getAttribute("data-urn");
+        const actorLink = node.querySelector(
+          'a.update-components-actor__meta-link[href*="/in/"], a.feed-shared-actor__container-link[href*="/in/"]'
+        );
+        const ageCandidates = Array.from(
+          node.querySelectorAll(
+            '.update-components-actor__sub-description span[aria-hidden="true"], .feed-shared-actor__sub-description span[aria-hidden="true"]'
+          )
+        ).map((element) => (element.textContent || "").trim());
 
-  for (const link of postLinks) {
-    const href = await link.getAttribute("href").catch(() => null);
-    if (href && href.includes("/feed/update/")) {
-      const url = new URL(href, "https://www.linkedin.com");
-      const clean = `${url.origin}${url.pathname}`.replace(/\/$/, "");
-      if (!urls.includes(clean)) urls.push(clean);
+        return {
+          urn,
+          actorHref: actorLink?.getAttribute("href") || null,
+          ageLabel: ageCandidates.find((candidate) => candidate) || null,
+        };
+      });
+    }
+  );
+
+  const recentOwnUrls = [];
+
+  for (const candidatePost of candidatePosts) {
+    if (!candidatePost.urn?.includes("urn:li:activity:")) {
+      continue;
+    }
+
+    const authorPath = normalizeLinkedInPath(candidatePost.actorHref);
+    const ageDays = parseAgeDays(candidatePost.ageLabel);
+
+    if (authorPath && authorPath !== ownProfilePath) {
+      continue;
+    }
+
+    if (ageDays > maxAgeDays) {
+      continue;
+    }
+
+    const activityId = candidatePost.urn.split(":").pop();
+    const postUrl = `https://www.linkedin.com/feed/update/urn:li:activity:${activityId}`;
+    recentOwnUrls.push(postUrl);
+
+    if (recentOwnUrls.length >= maxPosts) {
+      break;
     }
   }
 
-  return urls.slice(0, maxPosts);
+  return recentOwnUrls;
 }
 
 async function getCommentersFromPost(page, postUrl) {
@@ -100,7 +209,7 @@ async function getLikersFromPost(page, postUrl) {
   // Click the reactions/likes count to open the likers modal
   const reactionsBtn = page
     .locator(
-      'button[aria-label*="reaction"], span.social-details-social-counts__reactions-count, button.social-details-social-counts__count-value'
+      'button.social-details-social-counts__count-value[aria-label*=" and "], button.social-details-social-counts__count-value[aria-label*="others"], button[aria-label*="reaction"]'
     )
     .first();
   const reactionsVisible = await reactionsBtn.isVisible().catch(() => false);
@@ -119,18 +228,60 @@ async function getLikersFromPost(page, postUrl) {
     .waitForSelector('div[role="dialog"]', { timeout: 5000 })
     .catch(() => null);
 
-  // Scroll the modal to load more likers
-  const modal = page.locator('div[role="dialog"]').first();
-  for (let i = 0; i < 5; i++) {
-    await modal.evaluate("el => el.scrollTop = el.scrollHeight").catch(() => {});
+  const modalContent = page
+    .locator('div[role="dialog"] .artdeco-modal__content, div[role="dialog"] .social-details-reactors-modal__content')
+    .first();
+
+  // Scroll the actual modal content and accumulate liker profiles as more rows load.
+  const seenUrls = new Set();
+  let previousCount = 0;
+  let stableIterations = 0;
+  for (let i = 0; i < 20; i++) {
+    const urls = await extractProfileUrls(
+      page,
+      'div[role="dialog"] a[href*="/in/"]'
+    );
+    for (const url of urls) {
+      seenUrls.add(url);
+    }
+
+    await modalContent
+      .evaluate(
+        "el => { el.scrollTop = Math.min(el.scrollTop + el.clientHeight, el.scrollHeight); }"
+      )
+      .catch(() => {});
     await humanDelay(page, CONFIG.delays.scrollPause);
+
+    const currentCount = seenUrls.size;
+    if (currentCount === previousCount) {
+      stableIterations += 1;
+      if (stableIterations >= 2) {
+        break;
+      }
+      continue;
+    }
+
+    stableIterations = 0;
+    previousCount = currentCount;
+
+    const reachedBottom = await modalContent
+      .evaluate(
+        "el => el.scrollTop + el.clientHeight >= el.scrollHeight - 5"
+      )
+      .catch(() => false);
+    if (reachedBottom && stableIterations >= 1) {
+      break;
+    }
   }
 
   // Extract liker profile links from the modal
-  const urls = await extractProfileUrls(
+  const finalUrls = await extractProfileUrls(
     page,
     'div[role="dialog"] a[href*="/in/"]'
   );
+  for (const url of finalUrls) {
+    seenUrls.add(url);
+  }
 
   // Close the modal
   const closeBtn = page
@@ -138,7 +289,7 @@ async function getLikersFromPost(page, postUrl) {
     .first();
   await closeBtn.click().catch(() => {});
 
-  return urls;
+  return [...seenUrls];
 }
 
 async function main() {
@@ -149,6 +300,7 @@ async function main() {
 
     const type = args.type || "all";
     const maxPosts = parseInt(args["max-posts"], 10);
+    const maxAgeDays = parseInt(args.days, 10);
 
     // Get post URLs
     let postUrls;
@@ -156,8 +308,10 @@ async function main() {
       postUrls = [args["post-url"]];
       console.log(`Using provided post URL.`);
     } else {
-      console.log(`Finding your ${maxPosts} most recent posts...`);
-      postUrls = await getRecentPostUrls(page, maxPosts);
+      console.log(
+        `Finding up to ${maxPosts} posts from the last ${maxAgeDays} days...`
+      );
+      postUrls = await getRecentPostUrls(page, maxPosts, maxAgeDays);
       console.log(`Found ${postUrls.length} posts.`);
     }
 
@@ -192,7 +346,7 @@ async function main() {
       return;
     }
 
-    await processProfiles(page, profiles, `post-engagers (${type})`);
+    await processProfiles(context, page, profiles, `post-engagers (${type})`);
   } finally {
     await context.close();
   }

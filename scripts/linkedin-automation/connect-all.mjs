@@ -167,7 +167,7 @@ async function main() {
       return;
     }
 
-    await processProfiles(page, profiles, "all-sources");
+    await processProfiles(context, page, profiles, "all-sources");
   } finally {
     await context.close();
   }

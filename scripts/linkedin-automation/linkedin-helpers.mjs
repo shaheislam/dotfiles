@@ -45,6 +45,60 @@ function normalizeProfile(profile) {
   };
 }
 
+function isPageClosedError(error) {
+  return /Target page, context or browser has been closed/i.test(
+    error?.message || ""
+  );
+}
+
+async function ensureActivePage(context, currentPage) {
+  if (currentPage && !currentPage.isClosed()) {
+    return currentPage;
+  }
+
+  const availablePage = context.pages().find((page) => !page.isClosed());
+  return availablePage || context.newPage();
+}
+
+async function clickFirstVisible(locator) {
+  const count = await locator.count().catch(() => 0);
+
+  for (let i = 0; i < count; i++) {
+    const candidate = locator.nth(i);
+    const visible = await candidate.isVisible().catch(() => false);
+    if (!visible) continue;
+
+    await candidate.click();
+    return true;
+  }
+
+  return false;
+}
+
+async function getProfileName(page) {
+  const selectors = [
+    "h1.text-heading-xlarge",
+    "main h1",
+    ".pv-text-details__left-panel h1",
+  ];
+
+  for (const selector of selectors) {
+    const text = await page.locator(selector).first().textContent().catch(() => null);
+    if (text?.trim()) return text.trim();
+  }
+
+  return "Unknown";
+}
+
+async function hasVisibleAction(page, selectors) {
+  for (const selector of selectors) {
+    const visible = await page.locator(selector).first().isVisible().catch(() => false);
+    if (visible) return true;
+  }
+
+  return false;
+}
+
 export function mergeProfiles(existingProfile, nextProfile) {
   if (!existingProfile) return nextProfile;
 
@@ -127,28 +181,46 @@ export async function sendConnectionRequest(page, profile) {
     await humanDelay(page, CONFIG.delays.afterPageLoad);
 
     // Extract the person's name
-    const nameEl = page.locator("h1.text-heading-xlarge").first();
-    result.name = (await nameEl.textContent().catch(() => "Unknown")).trim();
+    result.name = await getProfileName(page);
 
-    const isPending = await page
-      .locator('button:has-text("Pending")')
-      .first()
-      .isVisible()
-      .catch(() => false);
+    const isPending = await hasVisibleAction(page, [
+      'button:has-text("Pending")',
+      'button[aria-label*="Pending"]',
+    ]);
 
     if (isPending) {
       result.reason = "already-pending";
       return result;
     }
 
-    const isConnected = await page
-      .locator('button:has-text("Message")')
-      .first()
-      .isVisible()
-      .catch(() => false);
+    const hasConnectAction = await hasVisibleAction(page, [
+      'main button:has-text("Connect")',
+      'button[aria-label^="Invite "]',
+      'button[aria-label*="invite"]',
+    ]);
+
+    const isConnected =
+      !hasConnectAction &&
+      (await hasVisibleAction(page, [
+        'main button:has-text("Message")',
+        'main a:has-text("Message")',
+        'button[aria-label^="Message "]',
+      ]));
 
     if (isConnected) {
       result.reason = "already-connected";
+      return result;
+    }
+
+    const isFollowOnly =
+      !hasConnectAction &&
+      (await hasVisibleAction(page, [
+        'main button:has-text("Follow")',
+        'main button:has-text("Following")',
+      ]));
+
+    if (isFollowOnly) {
+      result.reason = "follow-only";
       return result;
     }
 
@@ -159,13 +231,17 @@ export async function sendConnectionRequest(page, profile) {
     }
 
     // Look for the Connect button in the main profile actions
-    const connectButton = page.locator('button:has-text("Connect")').first();
-    const connectVisible = await connectButton.isVisible().catch(() => false);
+    const connectButton = page.locator(
+      'main button:has-text("Connect"), button[aria-label^="Invite "], button[aria-label*="invite"]'
+    );
+    const connectVisible = await connectButton.first().isVisible().catch(() => false);
 
     if (!connectVisible) {
       // Try the "More" dropdown — Connect might be hidden there
       const moreButton = page
-        .locator('button[aria-label="More actions"], button:has-text("More")')
+        .locator(
+          'main button[aria-label="More actions"], main button[aria-label*="More actions for"], main button:has-text("More")'
+        )
         .first();
       const moreVisible = await moreButton.isVisible().catch(() => false);
 
@@ -174,67 +250,73 @@ export async function sendConnectionRequest(page, profile) {
         await moreButton.click();
         await humanDelay(page, CONFIG.delays.beforeClick);
 
-        const dropdownConnect = page
-          .locator('div[data-test-icon="connect"] span, span:has-text("Connect")')
-          .first();
-        const dropdownConnectVisible = await dropdownConnect
-          .isVisible()
-          .catch(() => false);
+        const clickedConnect = await clickFirstVisible(
+          page.locator(
+            '[role="menu"] div[role="button"]:has-text("Connect"), [role="menu"] span:has-text("Connect"), div.artdeco-dropdown__content-inner span:has-text("Connect")'
+          )
+        );
 
-        if (!dropdownConnectVisible) {
+        if (!clickedConnect) {
           result.reason = "no-connect-button";
           return result;
         }
-
-        await dropdownConnect.click();
       } else {
         result.reason = "no-connect-button";
         return result;
       }
     } else {
       await humanDelay(page, CONFIG.delays.beforeClick);
-      await connectButton.click();
+      await connectButton.first().click();
     }
 
     // Handle the "Add a note" dialog if it appears
-    await page.waitForTimeout(1000);
+    await humanDelay(page, CONFIG.delays.beforeClick);
 
     const dialogVisible = await page
       .locator('div[role="dialog"], div[data-test-modal]')
       .isVisible()
       .catch(() => false);
 
-    if (dialogVisible) {
-      const connectionNote = buildConnectionNote(source, result.name);
+    if (!dialogVisible) {
+      result.reason = "invite-dialog-missing";
+      return result;
+    }
 
-      if (connectionNote) {
-        const addNoteBtn = page.locator('button:has-text("Add a note")').first();
-        const addNoteVisible = await addNoteBtn.isVisible().catch(() => false);
+    const connectionNote = buildConnectionNote(source, result.name);
 
-        if (addNoteVisible) {
-          await addNoteBtn.click();
-          await humanDelay(page, CONFIG.delays.beforeClick);
+    if (connectionNote) {
+      const addNoteBtn = page.locator('button:has-text("Add a note")').first();
+      const addNoteVisible = await addNoteBtn.isVisible().catch(() => false);
 
-          const noteTextarea = page.locator(
-            'textarea[name="message"], textarea#custom-message'
-          );
+      if (addNoteVisible) {
+        await addNoteBtn.click();
+        await humanDelay(page, CONFIG.delays.beforeClick);
+
+        const noteTextarea = page.locator(
+          'textarea[name="message"], textarea#custom-message'
+        );
+        const noteVisible = await noteTextarea.isVisible().catch(() => false);
+        if (noteVisible) {
           await noteTextarea.fill(connectionNote);
           await humanDelay(page, CONFIG.delays.beforeClick);
         }
       }
-
-      // Click Send
-      const sendBtn = page
-        .locator(
-          'button[aria-label="Send invitation"], button[aria-label="Send now"], button:has-text("Send")'
-        )
-        .first();
-      const sendVisible = await sendBtn.isVisible().catch(() => false);
-
-      if (sendVisible) {
-        await sendBtn.click();
-      }
     }
+
+    const sendBtn = page
+      .locator(
+        'div[role="dialog"] button[aria-label="Send invitation"], div[role="dialog"] button[aria-label="Send now"], div[role="dialog"] button:has-text("Send")'
+      )
+      .first();
+    const sendVisible = await sendBtn.isVisible().catch(() => false);
+
+    if (!sendVisible) {
+      result.reason = "send-button-missing";
+      return result;
+    }
+
+    await sendBtn.click();
+    await humanDelay(page, CONFIG.delays.beforeClick);
 
     result.success = true;
     result.reason = "sent";
@@ -254,7 +336,7 @@ export async function extractProfileUrls(page, selector) {
 
   for (const link of links) {
     const href = await link.getAttribute("href").catch(() => null);
-    if (href && href.includes("linkedin.com/in/") && !href.includes("/in/ACo")) {
+    if (href && href.includes("/in/")) {
       const url = new URL(href, "https://www.linkedin.com");
       hrefs.push(`${url.origin}${url.pathname}`.replace(/\/$/, ""));
     }
@@ -267,7 +349,7 @@ export async function extractProfileUrls(page, selector) {
  * Processes a list of profile URLs and sends connection requests.
  * Respects rate limits and provides a summary.
  */
-export async function processProfiles(page, profileUrls, source) {
+export async function processProfiles(context, page, profileUrls, source) {
   const limit = CONFIG.maxConnectionsPerRun;
   const toProcess = profileUrls.slice(0, limit).map(normalizeProfile);
   const results = { sent: 0, skipped: 0, errors: 0, details: [] };
@@ -280,6 +362,7 @@ export async function processProfiles(page, profileUrls, source) {
 
   for (let i = 0; i < toProcess.length; i++) {
     const profile = toProcess[i];
+    page = await ensureActivePage(context, page);
     console.log(
       `  [${i + 1}/${toProcess.length}] ${profile.url} (${profile.source})`
     );
@@ -303,7 +386,13 @@ export async function processProfiles(page, profileUrls, source) {
     }
 
     if (i < toProcess.length - 1) {
-      await humanDelay(page, CONFIG.delays.betweenConnections);
+      try {
+        await humanDelay(page, CONFIG.delays.betweenConnections);
+      } catch (error) {
+        if (!isPageClosedError(error)) {
+          throw error;
+        }
+      }
     }
   }
 

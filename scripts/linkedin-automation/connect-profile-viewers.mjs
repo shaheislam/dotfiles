@@ -94,7 +94,7 @@ async function main() {
       source: "profileViewer",
     }));
 
-    await processProfiles(page, viewerProfiles, "profile-viewers");
+    await processProfiles(context, page, viewerProfiles, "profile-viewers");
   } finally {
     await context.close();
   }

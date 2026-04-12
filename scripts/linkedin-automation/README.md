@@ -32,6 +32,9 @@ node connect-post-engagers.mjs --type=likers
 # Both commenters and likers
 node connect-post-engagers.mjs --type=all
 
+# Limit to the last 30 days of posts
+node connect-post-engagers.mjs --type=all --days=30
+
 # Target a specific post
 node connect-post-engagers.mjs --post-url=https://www.linkedin.com/feed/update/urn:li:activity:XXXXX
 ```
@@ -58,6 +61,7 @@ DRY_RUN=1 node connect-all.mjs   # Logs actions without sending requests
 Edit `config.mjs` to adjust:
 
 - `maxConnectionsPerRun` — limit per execution (default: 20, LinkedIn weekly cap ~100)
+- `--days` — only scan posts from the last N days (default: 30)
 - `delays.*` — timing between actions (randomized within range)
 - `browser.headless` — set `true` for background execution
 - `connectionNotes.commenter` — note for post commenters, supports `{firstName}`
