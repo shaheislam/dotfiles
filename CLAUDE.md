@@ -9,6 +9,12 @@
 - ALWAYS verify new dependencies are in the Brewfile and setup script
 - ALWAYS ensure PATH configs are added to both Fish and Zsh configs
 
+### Fish Shell First
+- Fish is the primary shell for this repo and this machine; default to Fish-compatible guidance for shell commands
+- Do not suggest `unset` for interactive shell usage; use `set -e VAR` in Fish
+- One-off env removal with `env -u VAR command` is still valid and works from Fish
+- If Bash/Zsh syntax is required for a command example, label it explicitly instead of presenting it as the default
+
 ### File Location Constraints
 - NEVER create or modify files outside `~/dotfiles` (EXCEPT `~/neovim` for Neovim config)
 - ALWAYS ensure tools/configs can be installed via stow or setup script

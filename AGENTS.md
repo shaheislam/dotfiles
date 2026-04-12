@@ -17,6 +17,9 @@ This file documents specific behaviors and constraints for AI agents working on 
 - Fish is the primary shell. Write new shell functions in Fish syntax, not Bash.
 - When modifying `config.fish`, it is 2800+ lines. Read the relevant section first, do not rewrite the entire file.
 - Fish shell uses `set` not `export`. Fish uses `; and` not `&&`. Fish uses `test` not `[[ ]]`.
+- For interactive Fish guidance, do not suggest `unset`; use `set -e VAR`.
+- `env -u VAR command` is acceptable for one-off commands launched from Fish.
+- If a Bash/Zsh-only snippet is necessary, label it explicitly as Bash/Zsh instead of implying it works as Fish.
 - All new CLI tools must be added to BOTH `homebrew/Brewfile` AND `scripts/setup.sh`.
 - PATH additions must go in both Fish config AND `scripts/setup.sh` (Zsh section) for compatibility.
 

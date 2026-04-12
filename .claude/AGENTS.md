@@ -2,6 +2,13 @@
 
 Specialized agent system for Claude Code with 15 subagent files (12 domain specialists + 3 project-specific).
 
+## Shell Reminder
+
+- Fish is the primary shell for this machine.
+- Do not suggest `unset` for interactive shell usage; use `set -e VAR` in Fish.
+- `env -u VAR command` is acceptable for one-off commands started from Fish.
+- If an example requires Bash or Zsh syntax, label it explicitly.
+
 ## Overview
 
 Each agent is a **Claude Code subagent file** (`.claude/agents/*.md`) with YAML frontmatter defining name, description, tool access, model, and optional features. Claude auto-delegates to subagents based on their description fields. Each subagent runs in its own context window with a custom system prompt.
