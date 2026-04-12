@@ -15,6 +15,11 @@
 - CRITICAL: tmux config must ONLY exist at `~/dotfiles/.tmux.conf` — never `.config/tmux/`
 - Neovim config lives in `~/neovim` (separate repo, NOT part of dotfiles)
 
+### Canonical Data Strategy
+- Keep user-owned canonical data, reusable templates, and integration scripts in `~/dotfiles`
+- Treat third-party repos (for example `~/career-ops`) as disposable runtime engines that are recloned and repopulated from dotfiles
+- Prefer env-driven sync/generation into external repos over cross-repo symlinks so workflows remain portable across machines and worktrees
+
 ### Symlink Management
 - ALWAYS use GNU Stow for all configuration symlinking
 - NEVER manually create symlinks or copy config files to home directory
