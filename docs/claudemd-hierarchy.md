@@ -6,6 +6,7 @@ How Claude Code discovers, loads, and prioritizes CLAUDE.md instruction files.
 
 - CLAUDE.md does **not** need to live inside a git repo
 - A shared `~/work/CLAUDE.md` applies to **all** projects within `~/work/`
+- This workspace also keeps a parallel `~/work/AGENTS.md` for tools that read `AGENTS.md`
 - `~/work/repoA/CLAUDE.md` takes **precedence** over `~/work/CLAUDE.md`
 - All ancestor files are loaded (additive), with deeper files overriding conflicts
 
@@ -48,6 +49,32 @@ When you run `claude` in `/Users/shahe/work/repoA/src/`, Claude Code walks **up*
 All found files are loaded. When instructions conflict, **deeper (more specific) files win**.
 
 ## Practical Example: Shared Workspace
+
+### Parallel Workspace Convention: `CLAUDE.md` + `AGENTS.md`
+
+In this setup, `~/work/CLAUDE.md` is the shared ancestor file for Claude Code, and
+`~/work/AGENTS.md` is the matching shared ancestor file for tools that discover
+`AGENTS.md`.
+
+Use the same layering strategy for both:
+
+- keep shared defaults in `~/work/CLAUDE.md` and `~/work/AGENTS.md`
+- add repo-specific overrides in `~/work/repoA/CLAUDE.md` and `~/work/repoA/AGENTS.md`
+- avoid duplicating long guidance across both files unless both toolchains need it
+
+### Example directory structure with both conventions
+
+```
+~/work/
+  CLAUDE.md              <-- shared Claude Code rules
+  AGENTS.md              <-- shared rules for AGENTS.md-aware tools
+  repoA/
+    CLAUDE.md            <-- repoA-specific Claude overrides
+    AGENTS.md            <-- repoA-specific agent overrides
+  repoB/
+    CLAUDE.md
+    AGENTS.md
+```
 
 ### Directory structure
 ```
@@ -94,6 +121,10 @@ All found files are loaded. When instructions conflict, **deeper (more specific)
 When Claude Code runs in `~/work/repoA/`, it loads **both** files. The shared workspace
 rules provide baseline standards, and repoA's CLAUDE.md adds project-specific context.
 Where they conflict (e.g., test commands), repoA's instructions take precedence.
+
+If you maintain both file types, keep the content aligned at the workspace level. For
+example, shell guidance that applies to every repo can live in both `~/work/CLAUDE.md`
+and `~/work/AGENTS.md`, while repo-only instructions stay in the repo-local files.
 
 ## The @import Syntax
 

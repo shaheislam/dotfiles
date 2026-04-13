@@ -145,6 +145,11 @@ scripts/tests/
 work/
 !skills/work/
 
+# Tracked workspace-level Claude docs (override global ignore rules)
+!workspace/
+!workspace/CLAUDE.md
+!workspace/AGENTS.md
+
 # SSH keys and sensitive test data
 **/ssh_host_*_key
 **/ssh_host_*_key.pub

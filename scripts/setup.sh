@@ -236,6 +236,33 @@ load_modules() {
     source "$SCRIPT_DIR/lib/dotfiles-manager.sh"
 }
 
+ensure_symlink_target() {
+    local source_path="$1"
+    local target_path="$2"
+
+    mkdir -p "$(dirname "$target_path")"
+
+    if [[ -L "$target_path" ]] && [[ "$(readlink "$target_path")" == "$source_path" ]]; then
+        return 0
+    fi
+
+    rm -rf "$target_path"
+    ln -s "$source_path" "$target_path"
+}
+
+sync_managed_file() {
+    local source_path="$1"
+    local target_path="$2"
+
+    mkdir -p "$(dirname "$target_path")"
+
+    if [[ -f "$target_path" ]] && cmp -s "$source_path" "$target_path"; then
+        return 0
+    fi
+
+    cp "$source_path" "$target_path"
+}
+
 # ============================================================================
 # Preflight Checks
 # ============================================================================
@@ -1389,6 +1416,13 @@ phase_8_dotfiles() {
     fi
 
     stow_dotfiles
+
+    print_step "Synchronizing shared Claude and agent docs..."
+    ensure_symlink_target "$DOTFILES_ROOT/CLAUDE.md" "$HOME/CLAUDE.md"
+    ensure_symlink_target "$DOTFILES_ROOT/AGENTS.md" "$HOME/AGENTS.md"
+    sync_managed_file "$DOTFILES_ROOT/workspace/CLAUDE.md" "$HOME/work/CLAUDE.md"
+    sync_managed_file "$DOTFILES_ROOT/workspace/AGENTS.md" "$HOME/work/AGENTS.md"
+    log_verbose "Shared Claude and agent docs synchronized"
 
     # Configure git template directory for auto-setup hooks (e.g., .gitignore_local)
     if command_exists git; then
