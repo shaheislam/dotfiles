@@ -84,3 +84,4 @@ shopt -s histappend
 
 # Added by sonarqube-cli installer
 export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
+. "$HOME/.cargo/env"
