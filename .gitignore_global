@@ -89,6 +89,9 @@ work/**/CLAUDE.md
 # Beads agent memory (always local, never committed)
 .beads/
 
+# Granted (AWS credential broker)
+.granted/
+
 # Entire checkpoints
 .entire/
 
