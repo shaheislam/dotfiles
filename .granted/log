@@ -89,3 +89,81 @@
 {"level":"debug","ts":"2026-04-14T18:23:46Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Vivaldi/NativeMessagingHosts/io.commonfate.granted.json"}
 {"level":"info","ts":"2026-04-14T18:23:46Z","logger":"clio.success","msg":"ZSH autocompletions generated successfully"}
 {"level":"warn","ts":"2026-04-14T18:23:46Z","msg":"A shell restart is required to apply changes, please open a new terminal to test that autocomplete is working"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Arc/User Data/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Chromium/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:55:34Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Vivaldi/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"info","ts":"2026-04-14T22:55:34Z","logger":"clio.success","msg":"ZSH autocompletions generated successfully"}
+{"level":"warn","ts":"2026-04-14T22:55:34Z","msg":"A shell restart is required to apply changes, please open a new terminal to test that autocomplete is working"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Arc/User Data/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Chromium/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T22:59:43Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Vivaldi/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"info","ts":"2026-04-14T22:59:43Z","logger":"clio.success","msg":"ZSH autocompletions generated successfully"}
+{"level":"warn","ts":"2026-04-14T22:59:43Z","msg":"A shell restart is required to apply changes, please open a new terminal to test that autocomplete is working"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Arc/User Data/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Chromium/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:04:30Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Vivaldi/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"info","ts":"2026-04-14T23:04:30Z","logger":"clio.success","msg":"ZSH autocompletions generated successfully"}
+{"level":"warn","ts":"2026-04-14T23:04:30Z","msg":"A shell restart is required to apply changes, please open a new terminal to test that autocomplete is working"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Arc/User Data/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Chromium/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:06:58Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Vivaldi/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"info","ts":"2026-04-14T23:06:58Z","logger":"clio.success","msg":"ZSH autocompletions generated successfully"}
+{"level":"warn","ts":"2026-04-14T23:06:58Z","msg":"A shell restart is required to apply changes, please open a new terminal to test that autocomplete is working"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Arc/User Data/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Chromium/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:08:59Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Vivaldi/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"info","ts":"2026-04-14T23:08:59Z","logger":"clio.success","msg":"ZSH autocompletions generated successfully"}
+{"level":"warn","ts":"2026-04-14T23:08:59Z","msg":"A shell restart is required to apply changes, please open a new terminal to test that autocomplete is working"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Arc/User Data/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Chromium/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Beta/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Canary/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Microsoft Edge Dev/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"debug","ts":"2026-04-14T23:09:04Z","msg":"wrote native messaging manifest: /Users/shahe.islam/Library/Application Support/Vivaldi/NativeMessagingHosts/io.commonfate.granted.json"}
+{"level":"info","ts":"2026-04-14T23:09:04Z","logger":"clio.success","msg":"ZSH autocompletions generated successfully"}
+{"level":"warn","ts":"2026-04-14T23:09:04Z","msg":"A shell restart is required to apply changes, please open a new terminal to test that autocomplete is working"}

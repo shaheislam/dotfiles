@@ -1018,8 +1018,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     end
 
     if test -z "$title"
-        echo "Error: Title required"
-        return 1
+        if $edit_mode; and test -n "$issue_key"
+            set title "$issue_key"
+        else
+            echo "Error: Title required"
+            return 1
+        end
     end
 
     if test -z "$description"
