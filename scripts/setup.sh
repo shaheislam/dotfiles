@@ -638,7 +638,9 @@ phase_4_cloud_tools() {
                 print_success "recall installed" ||
                 print_warning "Failed to install recall"
         else
-            print_success "recall already installed"
+            brew upgrade zippoxer/tap/recall >/dev/null 2>&1 &&
+                print_success "recall upgraded" ||
+                print_success "recall already latest"
         fi
     }
 
@@ -648,7 +650,9 @@ phase_4_cloud_tools() {
                 print_success "dolt installed" ||
                 print_warning "Failed to install dolt"
         else
-            print_success "dolt already installed"
+            brew upgrade dolt >/dev/null 2>&1 &&
+                print_success "dolt upgraded" ||
+                print_success "dolt already latest"
         fi
     }
 
@@ -659,7 +663,9 @@ phase_4_cloud_tools() {
                 print_success "beads installed" ||
                 print_warning "Failed to install beads"
         else
-            print_success "beads CLI already installed"
+            brew upgrade beads >/dev/null 2>&1 &&
+                print_success "beads upgraded" ||
+                print_success "beads CLI already latest"
         fi
     }
 
@@ -670,23 +676,22 @@ phase_4_cloud_tools() {
                 print_success "entire installed" ||
                 print_warning "Failed to install entire"
         else
-            print_success "entire CLI already installed"
+            brew upgrade entireio/tap/entire >/dev/null 2>&1 &&
+                print_success "entire upgraded" ||
+                print_success "entire CLI already latest"
         fi
     }
 
     _install_ccr() {
-        if ! command_exists ccr; then
-            if command_exists bun; then
-                bun install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
-                    print_success "Claude Code Router installed" ||
-                    print_warning "Failed to install Claude Code Router"
-            elif command_exists npm; then
-                npm install -g @musistudio/claude-code-router >/dev/null 2>&1 &&
-                    print_success "Claude Code Router installed" ||
-                    print_warning "Failed to install Claude Code Router"
-            fi
-        else
-            print_success "Claude Code Router already installed"
+        # Always run with @latest to install or upgrade
+        if command_exists bun; then
+            bun install -g @musistudio/claude-code-router@latest >/dev/null 2>&1 &&
+                print_success "Claude Code Router installed/updated" ||
+                print_warning "Failed to install Claude Code Router"
+        elif command_exists npm; then
+            npm install -g @musistudio/claude-code-router@latest >/dev/null 2>&1 &&
+                print_success "Claude Code Router installed/updated" ||
+                print_warning "Failed to install Claude Code Router"
         fi
     }
 
@@ -723,21 +728,24 @@ phase_4_cloud_tools() {
         if ! command_exists openclaw; then
             brew install openclaw-cli >/dev/null 2>&1 ||
                 log_verbose "OpenClaw CLI installation skipped (optional)"
+        else
+            brew upgrade openclaw-cli >/dev/null 2>&1 ||
+                log_verbose "OpenClaw CLI already latest"
         fi
     }
 
     _install_sonar() {
-        if ! command_exists sonar; then
-            print_step "Installing SonarQube CLI..."
-            if curl -o- https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.sh | bash </dev/null 2>&1; then
-                # Ensure PATH includes sonar for current session
-                export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
-                print_success "SonarQube CLI installed: $(sonar --version 2>/dev/null || echo 'installed')"
+        print_step "Installing/updating SonarQube CLI..."
+        if curl -o- https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.sh | bash </dev/null 2>&1; then
+            # Ensure PATH includes sonar for current session
+            export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
+            print_success "SonarQube CLI installed/updated: $(sonar --version 2>/dev/null || echo 'installed')"
+        else
+            if command_exists sonar; then
+                print_success "SonarQube CLI already installed"
             else
                 print_warning "Failed to install SonarQube CLI"
             fi
-        else
-            print_success "SonarQube CLI already installed"
         fi
     }
 
@@ -842,16 +850,16 @@ EAEOF
         fi
     fi
 
-    # Install iximiuz labctl CLI
-    if ! command_exists labctl; then
-        print_step "Installing iximiuz labctl CLI..."
-        if curl -sf https://labs.iximiuz.com/cli/install.sh | sh </dev/null >/dev/null 2>&1; then
-            print_success "iximiuz labctl CLI installed"
+    # Install/update iximiuz labctl CLI
+    print_step "Installing/updating iximiuz labctl CLI..."
+    if curl -sf https://labs.iximiuz.com/cli/install.sh | sh </dev/null >/dev/null 2>&1; then
+        print_success "iximiuz labctl CLI installed/updated at: $(which labctl 2>/dev/null || echo 'labctl')"
+    else
+        if command_exists labctl; then
+            print_success "iximiuz labctl CLI already installed at: $(which labctl)"
         else
             log_verbose "iximiuz labctl installation skipped (optional)"
         fi
-    else
-        print_success "iximiuz labctl CLI already installed at: $(which labctl)"
     fi
 
     # Configure Claude Code MCP servers
@@ -952,13 +960,15 @@ NMHEOF
 
         # PinchTab - Multi-instance Chrome orchestrator for AI agents
         # Provides persistent profiles, multi-agent coordination, dashboard, stealth mode
-        if ! command_exists pinchtab; then
-            print_step "Installing PinchTab..."
-            curl -fsSL https://pinchtab.com/install.sh | bash >/dev/null 2>&1 &&
-                print_success "PinchTab installed" ||
-                print_warning "PinchTab install failed (run 'curl -fsSL https://pinchtab.com/install.sh | bash' manually)"
+        print_step "Installing/updating PinchTab..."
+        if curl -fsSL https://pinchtab.com/install.sh | bash >/dev/null 2>&1; then
+            print_success "PinchTab installed/updated"
         else
-            print_success "PinchTab already installed"
+            if command_exists pinchtab; then
+                print_success "PinchTab already installed"
+            else
+                print_warning "PinchTab install failed (run 'curl -fsSL https://pinchtab.com/install.sh | bash' manually)"
+            fi
         fi
 
         # Configure PinchTab defaults
@@ -1132,33 +1142,41 @@ PTEOF
         fi
     fi
 
-    # Install Kubernetes/Helm plugins
+    # Install/update Kubernetes/Helm plugins
     if command_exists helm; then
         if ! helm plugin list 2>/dev/null | grep -q "^diff"; then
             print_step "Installing helm-diff plugin..."
-            # Use v3.8.1 for compatibility with Helm 3.15.x
             helm plugin install https://github.com/databus23/helm-diff --version v3.8.1 >/dev/null 2>&1 &&
                 print_success "helm-diff plugin installed" ||
                 log_verbose "helm-diff plugin installation skipped"
         else
-            log_verbose "helm-diff plugin already installed"
+            print_step "Updating helm-diff plugin..."
+            helm plugin update diff >/dev/null 2>&1 &&
+                print_success "helm-diff plugin updated" ||
+                print_success "helm-diff plugin already latest"
         fi
     fi
 
-    # Install krew kubectl plugins
+    # Install/update krew kubectl plugins
     if command_exists kubectl && kubectl krew version >/dev/null 2>&1; then
-        print_step "Installing kubectl krew plugins..."
+        print_step "Installing/updating kubectl krew plugins..."
+        # Upgrade krew index first
+        kubectl krew update >/dev/null 2>&1 || true
         # get-all plugin for listing all namespace resources
         if ! kubectl krew list 2>/dev/null | grep -q "get-all"; then
             kubectl krew install get-all >/dev/null 2>&1 &&
                 print_success "kubectl get-all plugin installed" ||
                 log_verbose "get-all plugin installation skipped"
+        else
+            kubectl krew upgrade get-all >/dev/null 2>&1 || true
         fi
         # lineage plugin for resource ownership tree
         if ! kubectl krew list 2>/dev/null | grep -q "lineage"; then
             kubectl krew install lineage >/dev/null 2>&1 &&
                 print_success "kubectl lineage plugin installed" ||
                 log_verbose "lineage plugin installation skipped"
+        else
+            kubectl krew upgrade lineage >/dev/null 2>&1 || true
         fi
     fi
 
@@ -2403,6 +2421,10 @@ main() {
     load_modules
     preflight_checks
     show_summary
+
+    # Clear step completion state so every run re-evaluates all phases.
+    # State files are for resuming interrupted runs, not skipping across sessions.
+    clear_state
 
     # Run installation phases
     # Phases 1-4: sequential (each may depend on packages from earlier phases)
