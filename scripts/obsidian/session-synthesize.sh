@@ -46,7 +46,7 @@ RECONCILE=false
 FORCE_SESSION_ID=""
 
 show_help() {
-    cat <<'EOF'
+	cat <<'EOF'
 session-synthesize.sh - Synthesize Claude session into Obsidian
 
 USAGE:
@@ -77,57 +77,57 @@ EOF
 }
 
 while [[ $# -gt 0 ]]; do
-    case $1 in
-    --worktree)
-        WORKTREE_PATH="$2"
-        shift 2
-        ;;
-    --cwd)
-        PROJECT_CWD="$2"
-        shift 2
-        ;;
-    --ticket)
-        TICKET_ID="$2"
-        shift 2
-        ;;
-    --session-id)
-        FORCE_SESSION_ID="$2"
-        shift 2
-        ;;
-    --reconcile)
-        RECONCILE=true
-        shift
-        ;;
-    --dry-run)
-        DRY_RUN=true
-        shift
-        ;;
-    --verbose)
-        VERBOSE=true
-        shift
-        ;;
-    --help | -h)
-        show_help
-        exit 0
-        ;;
-    *)
-        echo -e "${RED}Error: Unknown option $1${NC}" >&2
-        exit 1
-        ;;
-    esac
+	case $1 in
+	--worktree)
+		WORKTREE_PATH="$2"
+		shift 2
+		;;
+	--cwd)
+		PROJECT_CWD="$2"
+		shift 2
+		;;
+	--ticket)
+		TICKET_ID="$2"
+		shift 2
+		;;
+	--session-id)
+		FORCE_SESSION_ID="$2"
+		shift 2
+		;;
+	--reconcile)
+		RECONCILE=true
+		shift
+		;;
+	--dry-run)
+		DRY_RUN=true
+		shift
+		;;
+	--verbose)
+		VERBOSE=true
+		shift
+		;;
+	--help | -h)
+		show_help
+		exit 0
+		;;
+	*)
+		echo -e "${RED}Error: Unknown option $1${NC}" >&2
+		exit 1
+		;;
+	esac
 done
 
 # Resolve working directory
 if [[ -n "$WORKTREE_PATH" ]]; then
-    PROJECT_CWD="$WORKTREE_PATH"
+	PROJECT_CWD="$WORKTREE_PATH"
 elif [[ -z "$PROJECT_CWD" ]]; then
-    PROJECT_CWD="${PWD}"
+	PROJECT_CWD="${PWD}"
 fi
 
 # Ensure Obsidian vault exists
 if [[ ! -d "$OBSIDIAN_VAULT" ]]; then
-    echo -e "${RED}Error: Obsidian vault not found at $OBSIDIAN_VAULT${NC}" >&2
-    exit 1
+	echo -e "${RED}Error: Obsidian vault not found at $OBSIDIAN_VAULT${NC}" >&2
+	exit 1
 fi
 
 mkdir -p "$CLAUDE_SESSIONS_DIR"
@@ -135,74 +135,74 @@ mkdir -p "$CLAUDE_SESSIONS_DIR"
 # --- Utilities ---
 
 slugify() {
-    local text="$1"
-    text=$(echo "$text" | tr '[:upper:]' '[:lower:]')
-    text=$(echo "$text" | sed 's/[^a-z0-9 _-]//g')
-    text=$(echo "$text" | sed 's/[ _]/-/g')
-    text=$(echo "$text" | sed 's/-\{2,\}/-/g')
-    text=$(echo "$text" | sed 's/^-//;s/-$//')
-    echo "${text:0:60}"
+	local text="$1"
+	text=$(echo "$text" | tr '[:upper:]' '[:lower:]')
+	text=$(echo "$text" | sed 's/[^a-z0-9 _-]//g')
+	text=$(echo "$text" | sed 's/[ _]/-/g')
+	text=$(echo "$text" | sed 's/-\{2,\}/-/g')
+	text=$(echo "$text" | sed 's/^-//;s/-$//')
+	echo "${text:0:60}"
 }
 
 redact_secrets() {
-    sed \
-        -e 's/sk-[a-zA-Z0-9_-]\{10,\}/[REDACTED_API_KEY]/g' \
-        -e 's/ghp_[a-zA-Z0-9]\{36,\}/[REDACTED_GH_TOKEN]/g' \
-        -e 's/AKIA[A-Z0-9]\{16\}/[REDACTED_AWS_KEY]/g' \
-        -e 's/Bearer [a-zA-Z0-9._-]\{20,\}/[REDACTED_BEARER]/g' \
-        -e 's/-----BEGIN.*PRIVATE KEY-----/[REDACTED_PRIVATE_KEY]/g' \
-        -e 's/-----END.*PRIVATE KEY-----//g'
+	sed \
+		-e 's/sk-[a-zA-Z0-9_-]\{10,\}/[REDACTED_API_KEY]/g' \
+		-e 's/ghp_[a-zA-Z0-9]\{36,\}/[REDACTED_GH_TOKEN]/g' \
+		-e 's/AKIA[A-Z0-9]\{16\}/[REDACTED_AWS_KEY]/g' \
+		-e 's/Bearer [a-zA-Z0-9._-]\{20,\}/[REDACTED_BEARER]/g' \
+		-e 's/-----BEGIN.*PRIVATE KEY-----/[REDACTED_PRIVATE_KEY]/g' \
+		-e 's/-----END.*PRIVATE KEY-----//g'
 }
 
 truncate_to() {
-    local max_bytes="$1"
-    local input
-    input=$(cat)
-    if [[ ${#input} -gt $max_bytes ]]; then
-        echo "${input:0:$max_bytes}"
-        echo ""
-        echo "[... truncated at ${max_bytes} bytes ...]"
-    else
-        echo "$input"
-    fi
+	local max_bytes="$1"
+	local input
+	input=$(cat)
+	if [[ ${#input} -gt $max_bytes ]]; then
+		echo "${input:0:$max_bytes}"
+		echo ""
+		echo "[... truncated at ${max_bytes} bytes ...]"
+	else
+		echo "$input"
+	fi
 }
 
 # Validate a synthesis output file has required frontmatter.
 # Returns 0 if valid, 1 if corrupt/incomplete.
 validate_output() {
-    local output="$1"
+	local output="$1"
 
-    if [[ "$output" != ---* ]]; then
-        echo "missing frontmatter delimiters" >&2
-        return 1
-    fi
+	if [[ "$output" != ---* ]]; then
+		echo "missing frontmatter delimiters" >&2
+		return 1
+	fi
 
-    local missing=""
-    for field in "type:" "session_id:" "date:" "project:" "title:"; do
-        if ! echo "$output" | head -20 | grep -q "$field"; then
-            missing="${missing} ${field}"
-        fi
-    done
+	local missing=""
+	for field in "type:" "session_id:" "date:" "project:" "title:"; do
+		if ! echo "$output" | head -20 | grep -q "$field"; then
+			missing="${missing} ${field}"
+		fi
+	done
 
-    if [[ -n "$missing" ]]; then
-        echo "missing required fields:${missing}" >&2
-        return 1
-    fi
+	if [[ -n "$missing" ]]; then
+		echo "missing required fields:${missing}" >&2
+		return 1
+	fi
 
-    local delim_count
-    delim_count=$(echo "$output" | head -25 | grep -c '^---$' || true)
-    if [[ "$delim_count" -lt 2 ]]; then
-        echo "frontmatter not closed" >&2
-        return 1
-    fi
+	local delim_count
+	delim_count=$(echo "$output" | head -25 | grep -c '^---$' || true)
+	if [[ "$delim_count" -lt 2 ]]; then
+		echo "frontmatter not closed" >&2
+		return 1
+	fi
 
-    # Body must have at least one heading after frontmatter
-    if ! echo "$output" | tail -n +3 | grep -q '^#' 2>/dev/null; then
-        echo "no headings in body (likely truncated)" >&2
-        return 1
-    fi
+	# Body must have at least one heading after frontmatter
+	if ! echo "$output" | tail -n +3 | grep -q '^#' 2>/dev/null; then
+		echo "no headings in body (likely truncated)" >&2
+		return 1
+	fi
 
-    return 0
+	return 0
 }
 
 # --- Session ID Resolution ---
@@ -211,46 +211,46 @@ validate_output() {
 # cases where the JSONL is unavailable (non-Claude sessions, early exit).
 
 resolve_session_id() {
-    # Override: caller supplied a specific session ID (e.g., reconcile mode)
-    if [[ -n "$FORCE_SESSION_ID" ]]; then
-        echo "$FORCE_SESSION_ID"
-        return
-    fi
+	# Override: caller supplied a specific session ID (e.g., reconcile mode)
+	if [[ -n "$FORCE_SESSION_ID" ]]; then
+		echo "$FORCE_SESSION_ID"
+		return
+	fi
 
-    # Try 1: Find a JSONL for this project that was modified recently (last 2h).
-    # This reduces the chance of picking a stale session from the same project.
-    # Claude stores sessions at ~/.claude/projects/<slug>/<uuid>.jsonl
-    local project_slug
-    project_slug=$(echo "$PROJECT_CWD" | tr '/' '-')
-    local jsonl_dir="$CLAUDE_PROJECTS_DIR/$project_slug"
+	# Try 1: Find a JSONL for this project that was modified recently (last 2h).
+	# This reduces the chance of picking a stale session from the same project.
+	# Claude stores sessions at ~/.claude/projects/<slug>/<uuid>.jsonl
+	local project_slug
+	project_slug=$(echo "$PROJECT_CWD" | tr '/' '-')
+	local jsonl_dir="$CLAUDE_PROJECTS_DIR/$project_slug"
 
-    if [[ -d "$jsonl_dir" ]]; then
-        # -mmin -120: modified in last 2 hours (likely the current session)
-        local recent_jsonl
-        recent_jsonl=$(find "$jsonl_dir" -maxdepth 1 -name '*.jsonl' -type f -mmin -120 -print0 2>/dev/null |
-            xargs -0 ls -t 2>/dev/null | head -1)
-        if [[ -n "$recent_jsonl" ]]; then
-            local uuid
-            uuid=$(basename "$recent_jsonl" .jsonl)
-            if [[ "$uuid" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
-                echo "$uuid"
-                return
-            fi
-        fi
-    fi
+	if [[ -d "$jsonl_dir" ]]; then
+		# -mmin -120: modified in last 2 hours (likely the current session)
+		local recent_jsonl
+		recent_jsonl=$(find "$jsonl_dir" -maxdepth 1 -name '*.jsonl' -type f -mmin -120 -print0 2>/dev/null |
+			xargs -0 ls -t 2>/dev/null | head -1)
+		if [[ -n "$recent_jsonl" ]]; then
+			local uuid
+			uuid=$(basename "$recent_jsonl" .jsonl)
+			if [[ "$uuid" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+				echo "$uuid"
+				return
+			fi
+		fi
+	fi
 
-    # Try 2: Deterministic content-based hash (no epoch).
-    # Same project/branch/commit always produces the same ID, so later
-    # synthesis overwrites earlier (correct: later = more complete data).
-    local branch=""
-    local head_sha=""
-    if git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null; then
-        branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || echo "detached")
-        head_sha=$(git -C "$PROJECT_CWD" rev-parse --short HEAD 2>/dev/null || echo "unknown")
-    fi
-    local project
-    project=$(basename "$PROJECT_CWD")
-    echo -n "${head_sha}:${branch}:${project}" | md5sum | cut -c1-12
+	# Try 2: Deterministic content-based hash (no epoch).
+	# Same project/branch/commit always produces the same ID, so later
+	# synthesis overwrites earlier (correct: later = more complete data).
+	local branch=""
+	local head_sha=""
+	if git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null; then
+		branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || echo "detached")
+		head_sha=$(git -C "$PROJECT_CWD" rev-parse --short HEAD 2>/dev/null || echo "unknown")
+	fi
+	local project
+	project=$(basename "$PROJECT_CWD")
+	echo -n "${head_sha}:${branch}:${project}" | md5sum | cut -c1-12
 }
 
 SESSION_ID=$(resolve_session_id)
@@ -259,57 +259,57 @@ OUTPUT_FILE="$CLAUDE_SESSIONS_DIR/${TODAY}-synth-${SESSION_ID}.md"
 # --- Idempotency Check ---
 # If the file exists AND is valid, skip. If it exists but is corrupt, replace it.
 if [[ -f "$OUTPUT_FILE" ]] && ! $DRY_RUN && ! $RECONCILE; then
-    existing_content=$(cat "$OUTPUT_FILE")
-    if validate_output "$existing_content" 2>/dev/null; then
-        echo -e "${YELLOW}Session already synthesized (valid): $OUTPUT_FILE${NC}"
-        exit 0
-    else
-        echo -e "${YELLOW}Existing file is corrupt, will replace: $OUTPUT_FILE${NC}"
-        # Fall through to regenerate
-    fi
+	existing_content=$(cat "$OUTPUT_FILE")
+	if validate_output "$existing_content" 2>/dev/null; then
+		echo -e "${YELLOW}Session already synthesized (valid): $OUTPUT_FILE${NC}"
+		exit 0
+	else
+		echo -e "${YELLOW}Existing file is corrupt, will replace: $OUTPUT_FILE${NC}"
+		# Fall through to regenerate
+	fi
 fi
 
 # --- Reconcile Mode ---
 # Scans for recent JSONL sessions that lack a corresponding synthesis note.
 # Attempts synthesis for reachable projects (CWD still exists).
 if $RECONCILE; then
-    echo -e "${BLUE}=== Reconcile: scanning for missed sessions ===${NC}"
-    missing=0
-    synthesized=0
-    for jsonl_dir in "$CLAUDE_PROJECTS_DIR"/*/; do
-        [[ -d "$jsonl_dir" ]] || continue
-        for jsonl_file in "$jsonl_dir"*.jsonl; do
-            [[ -f "$jsonl_file" ]] || continue
-            local_uuid=$(basename "$jsonl_file" .jsonl)
-            # Only process files from the last 7 days
-            if [[ $(find "$jsonl_file" -mtime -7 2>/dev/null) ]]; then
-                local_date=$(date -r "$jsonl_file" -u +%Y-%m-%d 2>/dev/null || date -u +%Y-%m-%d)
-                # Check for existing synthesis (compgen -G expands globs correctly)
-                if ! compgen -G "$CLAUDE_SESSIONS_DIR"/*-synth-"${local_uuid}".md >/dev/null 2>&1; then
-                    missing=$((missing + 1))
-                    # Reconstruct CWD from slug: -Users-shahe-project → /Users/shahe/project
-                    reconcile_slug=$(basename "$jsonl_dir")
-                    reconcile_cwd=$(echo "$reconcile_slug" | sed 's/^-/\//' | sed 's/-/\//g')
-                    if [[ -d "$reconcile_cwd" ]]; then
-                        echo -e "  Synthesizing: ${local_uuid} (${local_date}) → ${reconcile_cwd}"
-                        if timeout 60 bash "$0" --cwd "$reconcile_cwd" --session-id "$local_uuid" 2>/dev/null; then
-                            synthesized=$((synthesized + 1))
-                        else
-                            echo -e "  ${YELLOW}Failed: ${local_uuid}${NC}"
-                        fi
-                    else
-                        echo -e "  Skipped: ${local_uuid} (${local_date}) — project dir gone: ${reconcile_cwd}"
-                    fi
-                fi
-            fi
-        done
-    done
-    if [[ $missing -eq 0 ]]; then
-        echo -e "${GREEN}All recent sessions have synthesis notes.${NC}"
-    else
-        echo -e "${YELLOW}Found $missing missing, synthesized $synthesized.${NC}"
-    fi
-    exit 0
+	echo -e "${BLUE}=== Reconcile: scanning for missed sessions ===${NC}"
+	missing=0
+	synthesized=0
+	for jsonl_dir in "$CLAUDE_PROJECTS_DIR"/*/; do
+		[[ -d "$jsonl_dir" ]] || continue
+		for jsonl_file in "$jsonl_dir"*.jsonl; do
+			[[ -f "$jsonl_file" ]] || continue
+			local_uuid=$(basename "$jsonl_file" .jsonl)
+			# Only process files from the last 7 days
+			if [[ $(find "$jsonl_file" -mtime -7 2>/dev/null) ]]; then
+				local_date=$(date -r "$jsonl_file" -u +%Y-%m-%d 2>/dev/null || date -u +%Y-%m-%d)
+				# Check for existing synthesis (compgen -G expands globs correctly)
+				if ! compgen -G "$CLAUDE_SESSIONS_DIR"/*-synth-"${local_uuid}".md >/dev/null 2>&1; then
+					missing=$((missing + 1))
+					# Reconstruct CWD from slug: -Users-shahe-project → /Users/shahe/project
+					reconcile_slug=$(basename "$jsonl_dir")
+					reconcile_cwd=$(echo "$reconcile_slug" | sed 's/^-/\//' | sed 's/-/\//g')
+					if [[ -d "$reconcile_cwd" ]]; then
+						echo -e "  Synthesizing: ${local_uuid} (${local_date}) → ${reconcile_cwd}"
+						if timeout 60 bash "$0" --cwd "$reconcile_cwd" --session-id "$local_uuid" 2>/dev/null; then
+							synthesized=$((synthesized + 1))
+						else
+							echo -e "  ${YELLOW}Failed: ${local_uuid}${NC}"
+						fi
+					else
+						echo -e "  Skipped: ${local_uuid} (${local_date}) — project dir gone: ${reconcile_cwd}"
+					fi
+				fi
+			fi
+		done
+	done
+	if [[ $missing -eq 0 ]]; then
+		echo -e "${GREEN}All recent sessions have synthesis notes.${NC}"
+	else
+		echo -e "${YELLOW}Found $missing missing, synthesized $synthesized.${NC}"
+	fi
+	exit 0
 fi
 
 # --- Field-Level Context Extraction ---
@@ -317,126 +317,327 @@ fi
 # This bounds the data to session-relevant content and reduces leak surface.
 
 extract_plan_fields() {
-    local plan_file="$PROJECT_CWD/.plan.md"
-    [[ -f "$plan_file" ]] || plan_file="$PROJECT_CWD/.claude/plan.md"
-    [[ -f "$plan_file" ]] || return 0
+	local plan_file="$PROJECT_CWD/.plan.md"
+	[[ -f "$plan_file" ]] || plan_file="$PROJECT_CWD/.claude/plan.md"
+	[[ -f "$plan_file" ]] || return 0
 
-    # Extract YAML frontmatter fields only (between first --- and second ---)
-    local frontmatter
-    frontmatter=$(sed -n '2,/^---$/p' "$plan_file" | sed '/^---$/d')
-    local field value
-    for field in "ticket" "title"; do
-        value=$(echo "$frontmatter" | { grep "^${field}:" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
-        [[ -n "$value" ]] && echo "plan_${field}: ${value}"
-    done
+	# Extract YAML frontmatter fields only (between first --- and second ---)
+	local frontmatter
+	frontmatter=$(sed -n '2,/^---$/p' "$plan_file" | sed '/^---$/d')
+	local field value
+	for field in "ticket" "title"; do
+		value=$(echo "$frontmatter" | { grep "^${field}:" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
+		[[ -n "$value" ]] && echo "plan_${field}: ${value}"
+	done
 
-    # Extract section contents by header, excluding the next ## header line
-    for section in "Objective" "Approach" "Progress" "Key Decisions" "Failed Approaches" "Current State"; do
-        local content
-        content=$(sed -n "/^## ${section}/,/^## /p" "$plan_file" | grep -v '^## ' | head -20 | sed '/^$/d')
-        if [[ -n "$content" && "$content" != _* ]]; then
-            echo ""
-            echo "### Plan: ${section}"
-            echo "$content" | redact_secrets
-        fi
-    done
+	# Extract section contents by header, excluding the next ## header line
+	for section in "Objective" "Approach" "Progress" "Key Decisions" "Failed Approaches" "Current State"; do
+		local content
+		content=$(sed -n "/^## ${section}/,/^## /p" "$plan_file" | grep -v '^## ' | head -20 | sed '/^$/d')
+		if [[ -n "$content" && "$content" != _* ]]; then
+			echo ""
+			echo "### Plan: ${section}"
+			echo "$content" | redact_secrets
+		fi
+	done
 }
 
 extract_changelog_entries() {
-    local changelog="$PROJECT_CWD/.claude/CHANGELOG.md"
-    [[ -f "$changelog" ]] || return 0
+	local changelog="$PROJECT_CWD/.claude/CHANGELOG.md"
+	[[ -f "$changelog" ]] || return 0
 
-    # Extract only typed entries (PROGRESS, DECISION, FAILED, METRIC, DISCOVERY)
-    # These are the structured entries, not free-form text
-    { grep -E '^\[.*\] (PROGRESS|DECISION|FAILED|METRIC|DISCOVERY):' "$changelog" 2>/dev/null || true; } |
-        tail -30 |
-        redact_secrets
+	# Extract only typed entries (PROGRESS, DECISION, FAILED, METRIC, DISCOVERY)
+	# These are the structured entries, not free-form text
+	{ grep -E '^\[.*\] (PROGRESS|DECISION|FAILED|METRIC|DISCOVERY):' "$changelog" 2>/dev/null || true; } |
+		tail -30 |
+		redact_secrets
 }
 
 extract_git_context() {
-    git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null || return 0
+	git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null || return 0
 
-    local branch
-    branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || echo "(detached)")
-    echo "branch: ${branch}"
+	local branch
+	branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || echo "(detached)")
+	echo "branch: ${branch}"
 
-    # Scope commits to current branch only
-    local main_branch merge_base
-    main_branch=$(git -C "$PROJECT_CWD" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
-    merge_base=$(git -C "$PROJECT_CWD" merge-base "$main_branch" HEAD 2>/dev/null || true)
+	# Scope commits to current branch only
+	local main_branch merge_base
+	main_branch=$(git -C "$PROJECT_CWD" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
+	merge_base=$(git -C "$PROJECT_CWD" merge-base "$main_branch" HEAD 2>/dev/null || true)
 
-    echo ""
-    echo "commits:"
-    if [[ -n "$merge_base" ]]; then
-        git -C "$PROJECT_CWD" log --oneline "$merge_base..HEAD" 2>/dev/null | head -30 | redact_secrets
-    else
-        git -C "$PROJECT_CWD" log --oneline -10 2>/dev/null | redact_secrets
-    fi
+	echo ""
+	echo "commits:"
+	if [[ -n "$merge_base" ]]; then
+		git -C "$PROJECT_CWD" log --oneline "$merge_base..HEAD" 2>/dev/null | head -30 | redact_secrets
+	else
+		git -C "$PROJECT_CWD" log --oneline -10 2>/dev/null | redact_secrets
+	fi
 
-    echo ""
-    echo "diffstat:"
-    if [[ -n "$merge_base" ]]; then
-        git -C "$PROJECT_CWD" diff --stat "$merge_base" HEAD 2>/dev/null | tail -20 | redact_secrets
-    else
-        git -C "$PROJECT_CWD" diff --stat HEAD~5 HEAD 2>/dev/null | tail -20 | redact_secrets
-    fi
+	echo ""
+	echo "diffstat:"
+	if [[ -n "$merge_base" ]]; then
+		git -C "$PROJECT_CWD" diff --stat "$merge_base" HEAD 2>/dev/null | tail -20 | redact_secrets
+	else
+		git -C "$PROJECT_CWD" diff --stat HEAD~5 HEAD 2>/dev/null | tail -20 | redact_secrets
+	fi
 }
 
 extract_beads_fields() {
-    command -v bd &>/dev/null || return 0
-    [[ -d "$PROJECT_CWD/.beads" ]] || return 0
+	command -v bd &>/dev/null || return 0
+	[[ -d "$PROJECT_CWD/.beads" ]] || return 0
 
-    echo "open_issues:"
-    (cd "$PROJECT_CWD" && bd list --status=open 2>/dev/null | head -10 | redact_secrets) || true
+	echo "open_issues:"
+	(cd "$PROJECT_CWD" && bd list --status=open 2>/dev/null | head -10 | redact_secrets) || true
 
-    echo ""
-    echo "closed_issues:"
-    (cd "$PROJECT_CWD" && bd list --status=closed 2>/dev/null | head -10 | redact_secrets) || true
+	echo ""
+	echo "closed_issues:"
+	(cd "$PROJECT_CWD" && bd list --status=closed 2>/dev/null | head -10 | redact_secrets) || true
 
-    echo ""
-    echo "decisions:"
-    (cd "$PROJECT_CWD" && bd comments list 2>/dev/null | head -15 | redact_secrets) || true
+	echo ""
+	echo "decisions:"
+	(cd "$PROJECT_CWD" && bd comments list 2>/dev/null | head -15 | redact_secrets) || true
 }
 
 extract_ticket_fields() {
-    local state_file="$PROJECT_CWD/.claude/ticket-execute.local.md"
-    [[ -f "$state_file" ]] || return 0
+	local state_file="$PROJECT_CWD/.claude/ticket-execute.local.md"
+	[[ -f "$state_file" ]] || return 0
 
-    # Extract frontmatter block only (between first --- and second ---)
-    local frontmatter
-    frontmatter=$(sed -n '2,/^---$/p' "$state_file" | sed '/^---$/d')
+	# Extract frontmatter block only (between first --- and second ---)
+	local frontmatter
+	frontmatter=$(sed -n '2,/^---$/p' "$state_file" | sed '/^---$/d')
 
-    # Extract only named safe fields from frontmatter, not body text
-    local field value
-    for field in "issue_key" "title" "ticketing_system" "active" "started_at" "completed_at" "agent_harness" "sub_profile"; do
-        value=$(echo "$frontmatter" | { grep "^${field}:" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
-        [[ -n "$value" ]] && echo "${field}: ${value}"
-    done
+	# Extract only named safe fields from frontmatter, not body text
+	local field value
+	for field in "issue_key" "title" "ticketing_system" "active" "started_at" "completed_at" "agent_harness" "sub_profile"; do
+		value=$(echo "$frontmatter" | { grep "^${field}:" || true; } | head -1 | sed "s/^${field}: *//" | tr -d '"')
+		[[ -n "$value" ]] && echo "${field}: ${value}"
+	done
+}
+
+locate_source_jsonl() {
+	local project_slug
+	project_slug=$(echo "$PROJECT_CWD" | tr '/' '-')
+	local jsonl_dir="$CLAUDE_PROJECTS_DIR/$project_slug"
+	[[ -d "$jsonl_dir" ]] || return 0
+
+	local candidate
+	while IFS= read -r candidate; do
+		[[ -n "$candidate" ]] || continue
+		if grep -q 'Session Synthesis Task' "$candidate" 2>/dev/null; then
+			continue
+		fi
+		if grep -q 'Weekly Synthesis Task' "$candidate" 2>/dev/null; then
+			continue
+		fi
+		if grep -q 'Memory Extraction Task' "$candidate" 2>/dev/null; then
+			continue
+		fi
+		if grep -q 'You are performing a dream' "$candidate" 2>/dev/null; then
+			continue
+		fi
+		echo "$candidate"
+		return 0
+	done < <(find "$jsonl_dir" -maxdepth 1 -name '*.jsonl' -type f -mmin -720 -print0 2>/dev/null |
+		xargs -0 ls -t 2>/dev/null)
+}
+
+extract_session_activity() {
+	local source_jsonl="$1"
+	[[ -f "$source_jsonl" ]] || return 0
+	command -v jq &>/dev/null || return 0
+
+	local user_prompts assistant_notes assistant_insights tool_calls tool_records tool_results
+	local shell_commands inspected_paths edited_files
+
+	user_prompts=$(jq -r '
+        select(.type == "user" and .message.role == "user") |
+        (if (.message.content | type) == "string"
+         then .message.content
+         else ([.message.content[]? | select(.type == "text") | .text] | join(" "))
+         end) |
+        gsub("[[:space:]]+"; " ") |
+        select(length > 0) |
+        select((startswith("# Session Synthesis Task") | not)) |
+        select((startswith("[Request interrupted by user]") | not)) |
+        .[0:320]
+    ' "$source_jsonl" 2>/dev/null | head -8 | redact_secrets)
+
+	assistant_notes=$(jq -r '
+        select(.type == "assistant" and .message.role == "assistant") |
+        ([.message.content[]? | select(.type == "text") | .text] | join(" ")) |
+        gsub("[[:space:]]+"; " ") |
+        select(length > 0) |
+        .[0:320]
+    ' "$source_jsonl" 2>/dev/null | head -6 | redact_secrets)
+
+	assistant_insights=$(jq -r '
+        select(.type == "assistant" and .message.role == "assistant") |
+        ([.message.content[]? | select(.type == "text") | .text] | join(" ")) |
+        gsub("[[:space:]]+"; " ") |
+        select(length > 0) |
+        select(test("(root cause|because|decid|prefer|chose|resolved|fixed|updated|added|validated|confirmed|found|missing|issue|problem)"; "i")) |
+        .[0:320]
+    ' "$source_jsonl" 2>/dev/null | head -8 | redact_secrets)
+
+	tool_calls=$(jq -r '
+        select(.type == "assistant" and .message.role == "assistant") |
+        .message.content[]? |
+        select(.type == "tool_use") |
+        (.name + ": " + (.input.description // .input.command // "")) |
+        gsub("[[:space:]]+"; " ") |
+        .[0:240]
+    ' "$source_jsonl" 2>/dev/null | head -12 | redact_secrets)
+
+	tool_records=$(jq -r '
+        select(.type == "assistant" and .message.role == "assistant") |
+        .message.content[]? |
+        select(.type == "tool_use") |
+        [
+          .name,
+          (.input.description // ""),
+          (.input.command // ""),
+          (.input.filePath // .input.path // .input.workdir // ""),
+          (.input.patchText // "")
+        ] | @tsv
+    ' "$source_jsonl" 2>/dev/null)
+
+	shell_commands=$(
+		printf '%s\n' "$tool_records" |
+			awk -F '\t' '
+				$1 == "Bash" {
+					desc = $2
+					cmd = $3
+					if (desc != "" && cmd != "") {
+						print desc ": " cmd
+					} else if (cmd != "") {
+						print cmd
+					}
+				}
+			' |
+			head -8 |
+			sed 's/^/- /' |
+			redact_secrets
+	)
+
+	inspected_paths=$(
+		printf '%s\n' "$tool_records" |
+			awk -F '\t' '
+				$4 != "" { print $4 }
+			' |
+			grep -E '^(/|\.|~)' 2>/dev/null |
+			sort -u |
+			head -12 |
+			sed 's/^/- /' |
+			redact_secrets
+	)
+
+	edited_files=$(
+		printf '%s\n' "$tool_records" |
+			awk -F '\t' '
+				$1 == "ApplyPatch" && $5 != "" {
+					n = split($5, lines, "\n")
+					for (i = 1; i <= n; i++) {
+						if (lines[i] ~ /^\*\*\* (Add|Update|Delete) File: /) {
+							sub(/^\*\*\* (Add|Update|Delete) File: /, "", lines[i])
+							print lines[i]
+						}
+					}
+				}
+			' |
+			sort -u |
+			head -12 |
+			sed 's/^/- /' |
+			redact_secrets
+	)
+
+	tool_results=$(jq -r '
+        if .type == "user" and (.toolUseResult? != null) then
+          (.toolUseResult.stdout // .toolUseResult.stderr // "")
+        elif .type == "user" and (.message.role == "user") and ((.message.content | type) == "array") then
+          ([.message.content[]? | select(.type == "tool_result") | .content] | join(" "))
+        else empty end |
+        gsub("[[:space:]]+"; " ") |
+        select(length > 0) |
+        select(test("(error|failed|invalid|missing|not found|no .* found|no .* dir|not supported|root cause|authentication|rate limit|confirmed|resolved)"; "i")) |
+        .[0:280]
+    ' "$source_jsonl" 2>/dev/null | head -8 | redact_secrets)
+
+	[[ -z "$user_prompts" && -z "$assistant_notes" && -z "$assistant_insights" && -z "$tool_calls" && -z "$shell_commands" && -z "$inspected_paths" && -z "$edited_files" && -z "$tool_results" ]] && return 0
+
+	echo "source_jsonl: $(basename "$source_jsonl")"
+
+	if [[ -n "$user_prompts" ]]; then
+		echo ""
+		echo "conversation_highlights:"
+		echo "$user_prompts" | sed 's/^/- /'
+	fi
+
+	if [[ -n "$assistant_notes" ]]; then
+		echo ""
+		echo "assistant_findings:"
+		echo "$assistant_notes" | sed 's/^/- /'
+	fi
+
+	if [[ -n "$assistant_insights" ]]; then
+		echo ""
+		echo "decisions_and_outcomes:"
+		echo "$assistant_insights" | sed 's/^/- /'
+	fi
+
+	if [[ -n "$tool_calls" ]]; then
+		echo ""
+		echo "tool_activity:"
+		echo "$tool_calls" | sed 's/^/- /'
+	fi
+
+	if [[ -n "$shell_commands" ]]; then
+		echo ""
+		echo "commands_run:"
+		echo "$shell_commands"
+	fi
+
+	if [[ -n "$inspected_paths" ]]; then
+		echo ""
+		echo "inspected_paths:"
+		echo "$inspected_paths"
+	fi
+
+	if [[ -n "$edited_files" ]]; then
+		echo ""
+		echo "edited_files:"
+		echo "$edited_files"
+	fi
+
+	if [[ -n "$tool_results" ]]; then
+		echo ""
+		echo "evidence_and_errors:"
+		echo "$tool_results" | sed 's/^/- /'
+	fi
 }
 
 derive_title() {
-    local state_file="$PROJECT_CWD/.claude/ticket-execute.local.md"
-    if [[ -f "$state_file" ]]; then
-        local title
-        title=$({ grep '^title:' "$state_file" || true; } | head -1 | sed 's/^title: *//' | tr -d '"')
-        [[ -n "$title" ]] && echo "$title" && return 0
-    fi
+	local state_file="$PROJECT_CWD/.claude/ticket-execute.local.md"
+	if [[ -f "$state_file" ]]; then
+		local title
+		title=$({ grep '^title:' "$state_file" || true; } | head -1 | sed 's/^title: *//' | tr -d '"')
+		[[ -n "$title" ]] && echo "$title" && return 0
+	fi
 
-    local plan_file="$PROJECT_CWD/.plan.md"
-    [[ -f "$plan_file" ]] || plan_file="$PROJECT_CWD/.claude/plan.md"
-    if [[ -f "$plan_file" ]]; then
-        local plan_title
-        plan_title=$({ grep '^title:' "$plan_file" || true; } | head -1 | sed 's/^title: *//' | tr -d '"')
-        [[ -n "$plan_title" ]] && echo "$plan_title" && return 0
-    fi
+	local plan_file="$PROJECT_CWD/.plan.md"
+	[[ -f "$plan_file" ]] || plan_file="$PROJECT_CWD/.claude/plan.md"
+	if [[ -f "$plan_file" ]]; then
+		local plan_title
+		plan_title=$({ grep '^title:' "$plan_file" || true; } | head -1 | sed 's/^title: *//' | tr -d '"')
+		[[ -n "$plan_title" ]] && echo "$plan_title" && return 0
+	fi
 
-    if git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null; then
-        local branch
-        branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || true)
-        [[ -n "$branch" && "$branch" != "main" && "$branch" != "master" ]] && echo "$branch" && return 0
-    fi
+	if git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null; then
+		local branch
+		branch=$(git -C "$PROJECT_CWD" branch --show-current 2>/dev/null || true)
+		[[ -n "$branch" && "$branch" != "main" && "$branch" != "master" ]] && echo "$branch" && return 0
+	fi
 
-    basename "$PROJECT_CWD"
+	basename "$PROJECT_CWD"
 }
 
 # --- Gather Extracted Fields ---
@@ -444,38 +645,46 @@ derive_title() {
 # which is expected when optional fields/files are absent.
 
 PLAN_FIELDS=$(
-    set +e +o pipefail
-    extract_plan_fields
+	set +e +o pipefail
+	extract_plan_fields
 ) || true
 CHANGELOG_ENTRIES=$(
-    set +e +o pipefail
-    extract_changelog_entries
+	set +e +o pipefail
+	extract_changelog_entries
 ) || true
 GIT_CONTEXT=$(
-    set +e +o pipefail
-    extract_git_context
+	set +e +o pipefail
+	extract_git_context
 ) || true
 BEADS_FIELDS=$(
-    set +e +o pipefail
-    extract_beads_fields
+	set +e +o pipefail
+	extract_beads_fields
 ) || true
 TICKET_FIELDS=$(
-    set +e +o pipefail
-    extract_ticket_fields
+	set +e +o pipefail
+	extract_ticket_fields
+) || true
+SOURCE_JSONL=$(
+	set +e +o pipefail
+	locate_source_jsonl
+) || true
+SESSION_ACTIVITY=$(
+	set +e +o pipefail
+	extract_session_activity "$SOURCE_JSONL"
 ) || true
 SESSION_TITLE=$(
-    set +e +o pipefail
-    derive_title
+	set +e +o pipefail
+	derive_title
 ) || true
 
 # Derive project/repo name
 PROJECT_NAME=$(basename "$PROJECT_CWD")
 REPO_NAME=""
 if git -C "$PROJECT_CWD" rev-parse --is-inside-work-tree &>/dev/null; then
-    local_common=$(git -C "$PROJECT_CWD" rev-parse --git-common-dir 2>/dev/null || true)
-    if [[ -n "$local_common" ]]; then
-        REPO_NAME=$(cd "$PROJECT_CWD" && cd "$local_common/.." && basename "$(pwd)" 2>/dev/null || echo "$PROJECT_NAME")
-    fi
+	local_common=$(git -C "$PROJECT_CWD" rev-parse --git-common-dir 2>/dev/null || true)
+	if [[ -n "$local_common" ]]; then
+		REPO_NAME=$(cd "$PROJECT_CWD" && cd "$local_common/.." && basename "$(pwd)" 2>/dev/null || echo "$PROJECT_NAME")
+	fi
 fi
 REPO_NAME="${REPO_NAME:-$PROJECT_NAME}"
 
@@ -489,21 +698,21 @@ HAS_GIT_COMMITS=false
 [[ -n "$PLAN_FIELDS" ]] && HAS_PLAN=true
 [[ -n "$CHANGELOG_ENTRIES" ]] && HAS_CHANGELOG=true
 if echo "$GIT_CONTEXT" | grep -q '^[a-f0-9]\{7,\} ' 2>/dev/null; then
-    HAS_GIT_COMMITS=true
+	HAS_GIT_COMMITS=true
 fi
 
 if ! $HAS_PLAN && ! $HAS_CHANGELOG && ! $HAS_GIT_COMMITS; then
-    echo -e "${YELLOW}No substantive context (need plan, changelog, or branch commits). Skipping.${NC}" >&2
-    exit 0
+	echo -e "${YELLOW}No substantive context (need plan, changelog, or branch commits). Skipping.${NC}" >&2
+	exit 0
 fi
 
 if $VERBOSE; then
-    echo -e "${BLUE}=== Context ===${NC}"
-    echo -e "Session ID: $SESSION_ID"
-    echo -e "Title: $SESSION_TITLE"
-    echo -e "Project: $REPO_NAME"
-    echo -e "Sources: plan=$HAS_PLAN changelog=$HAS_CHANGELOG git=$HAS_GIT_COMMITS"
-    echo ""
+	echo -e "${BLUE}=== Context ===${NC}"
+	echo -e "Session ID: $SESSION_ID"
+	echo -e "Title: $SESSION_TITLE"
+	echo -e "Project: $REPO_NAME"
+	echo -e "Sources: plan=$HAS_PLAN changelog=$HAS_CHANGELOG git=$HAS_GIT_COMMITS"
+	echo ""
 fi
 
 # --- Build Synthesis Prompt ---
@@ -534,6 +743,11 @@ ${BEADS_FIELDS:-No beads data}
 ### Ticket Metadata
 \`\`\`
 ${TICKET_FIELDS:-No ticket state}
+\`\`\`
+
+### Session Activity Summary
+\`\`\`
+${SESSION_ACTIVITY:-No transcript summary}
 \`\`\`"
 
 CAPPED_CONTEXT=$(echo "$RAW_CONTEXT" | truncate_to "$MAX_PROMPT_BYTES")
@@ -575,6 +789,8 @@ Generate ONLY markdown (no wrapping code fences). Structure:
 
 ## Rules
 - Be specific and concrete, reference actual files/commits
+- For investigation or debugging sessions, capture findings, inspected files, and tool activity even if no code changed
+- Do not leave sections empty when transcript, tool, or git context can support a summary
 - If context is sparse, write a shorter document
 - Do NOT include any secrets, tokens, or credentials
 - Do NOT wrap output in a code block"
@@ -582,31 +798,31 @@ Generate ONLY markdown (no wrapping code fences). Structure:
 # --- Execute Synthesis ---
 
 if $DRY_RUN; then
-    echo -e "${BLUE}=== Dry Run ===${NC}"
-    echo "$SYNTHESIS_PROMPT"
-    echo ""
-    echo -e "${BLUE}Output: $OUTPUT_FILE${NC}"
-    exit 0
+	echo -e "${BLUE}=== Dry Run ===${NC}"
+	echo "$SYNTHESIS_PROMPT"
+	echo ""
+	echo -e "${BLUE}Output: $OUTPUT_FILE${NC}"
+	exit 0
 fi
 
 echo -e "${BLUE}Synthesizing session (id: $SESSION_ID)...${NC}"
 
 SYNTHESIS_OUTPUT=""
 if command -v claude &>/dev/null; then
-    SYNTHESIS_OUTPUT=$(claude --print -p "$SYNTHESIS_PROMPT" 2>/dev/null) || {
-        echo -e "${YELLOW}Claude synthesis failed, using template${NC}" >&2
-        SYNTHESIS_OUTPUT=""
-    }
+	SYNTHESIS_OUTPUT=$(claude --print -p "$SYNTHESIS_PROMPT" 2>/dev/null) || {
+		echo -e "${YELLOW}Claude synthesis failed, using template${NC}" >&2
+		SYNTHESIS_OUTPUT=""
+	}
 fi
 
 # Fallback template
 if [[ -z "$SYNTHESIS_OUTPUT" ]]; then
-    PLAN_OBJECTIVE=""
-    if [[ -n "$PLAN_FIELDS" ]]; then
-        PLAN_OBJECTIVE=$(echo "$PLAN_FIELDS" | sed -n '/^### Plan: Objective/,/^### /p' | tail -n +2 | head -10)
-    fi
+	PLAN_OBJECTIVE=""
+	if [[ -n "$PLAN_FIELDS" ]]; then
+		PLAN_OBJECTIVE=$(echo "$PLAN_FIELDS" | sed -n '/^### Plan: Objective/,/^### /p' | tail -n +2 | head -10)
+	fi
 
-    SYNTHESIS_OUTPUT="---
+	SYNTHESIS_OUTPUT="---
 type: \"claude-session-synthesis\"
 session_id: \"$SESSION_ID\"
 date: \"$TODAY\"
@@ -625,13 +841,35 @@ status: \"completed\"
 
 ${PLAN_OBJECTIVE:-_See plan fields below._}
 
+## Approach
+
+Used the available session artifacts in priority order: plan fields, git activity, ticket metadata, and any recoverable transcript/tool activity from the Claude JSONL.
+
 ## What Was Done
 
-### Commits
+### Session Activity
+${SESSION_ACTIVITY:-_No transcript summary captured._}
+
+### Git Activity
 ${GIT_CONTEXT:-_No git context._}
 
 ### Issues
 ${BEADS_FIELDS:-_No beads data._}
+
+## Key Decisions
+
+_No explicit decision log was captured in the available sources._
+
+## Outcomes
+
+- Synthesized a session note from the available artifacts.
+- $(if [[ -n "$SOURCE_JSONL" ]]; then echo "Recovered transcript context from $(basename "$SOURCE_JSONL")."; else echo "No recoverable transcript context was found for this session."; fi)
+- $(if echo "$GIT_CONTEXT" | grep -q '^[a-f0-9]\{7,\} '; then echo "Git history contributed concrete change data."; else echo "No branch commits were available to enrich the note."; fi)
+
+## Lessons & Insights
+
+- Session syntheses are only as rich as the captured inputs; plan-only sessions need transcript extraction to avoid bare summaries.
+- When $(claude --print) is unavailable, the fallback template still needs to preserve investigation context, not just git metadata.
 
 ## Changelog
 ${CHANGELOG_ENTRIES:-_No entries._}
@@ -642,8 +880,8 @@ fi
 
 VALIDATION_ERROR=""
 if ! VALIDATION_ERROR=$(validate_output "$SYNTHESIS_OUTPUT"); then
-    echo -e "${YELLOW}Validation failed (${VALIDATION_ERROR}), injecting frontmatter${NC}" >&2
-    SYNTHESIS_OUTPUT="---
+	echo -e "${YELLOW}Validation failed (${VALIDATION_ERROR}), injecting frontmatter${NC}" >&2
+	SYNTHESIS_OUTPUT="---
 type: \"claude-session-synthesis\"
 session_id: \"$SESSION_ID\"
 date: \"$TODAY\"
@@ -673,16 +911,16 @@ echo -e "${GREEN}Synthesized: $OUTPUT_FILE${NC}"
 # --- Add Wikilink (no file copies) ---
 
 add_project_link() {
-    local project_dir="$1"
-    local sessions_index="$project_dir/Sessions/_index.md"
-    local note_basename
-    note_basename=$(basename "$OUTPUT_FILE" .md)
-    local link_line="- [[Claude/Sessions/${note_basename}|${SESSION_TITLE} ($TODAY)]]"
+	local project_dir="$1"
+	local sessions_index="$project_dir/Sessions/_index.md"
+	local note_basename
+	note_basename=$(basename "$OUTPUT_FILE" .md)
+	local link_line="- [[Claude/Sessions/${note_basename}|${SESSION_TITLE} ($TODAY)]]"
 
-    mkdir -p "$project_dir/Sessions"
+	mkdir -p "$project_dir/Sessions"
 
-    if [[ ! -f "$sessions_index" ]]; then
-        cat >"$sessions_index" <<EOF
+	if [[ ! -f "$sessions_index" ]]; then
+		cat >"$sessions_index" <<EOF
 ---
 type: session-index
 project: $REPO_NAME
@@ -691,27 +929,27 @@ project: $REPO_NAME
 # Session Log
 
 EOF
-    fi
+	fi
 
-    grep -qF "$note_basename" "$sessions_index" 2>/dev/null && return
-    echo "$link_line" >>"$sessions_index"
-    echo -e "${GREEN}Linked: $sessions_index${NC}"
+	grep -qF "$note_basename" "$sessions_index" 2>/dev/null && return
+	echo "$link_line" >>"$sessions_index"
+	echo -e "${GREEN}Linked: $sessions_index${NC}"
 }
 
 PROJECT_VAULT_DIR="$OBSIDIAN_VAULT/$REPO_NAME"
 if [[ -d "$PROJECT_VAULT_DIR" ]]; then
-    add_project_link "$PROJECT_VAULT_DIR"
+	add_project_link "$PROJECT_VAULT_DIR"
 fi
 
 PROJECTS_DIR="$OBSIDIAN_VAULT/Projects"
 if [[ -d "$PROJECTS_DIR" ]]; then
-    for proj_dir in "$PROJECTS_DIR"/*/; do
-        proj_name=$(basename "$proj_dir")
-        if [[ "${proj_name,,}" == "${REPO_NAME,,}" ]]; then
-            add_project_link "$proj_dir"
-            break
-        fi
-    done
+	for proj_dir in "$PROJECTS_DIR"/*/; do
+		proj_name=$(basename "$proj_dir")
+		if [[ "${proj_name,,}" == "${REPO_NAME,,}" ]]; then
+			add_project_link "$proj_dir"
+			break
+		fi
+	done
 fi
 
 echo -e "${GREEN}Done (id: $SESSION_ID)${NC}"
