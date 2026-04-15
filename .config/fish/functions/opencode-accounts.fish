@@ -24,7 +24,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
             echo "Logging in for account '$name'..."
             echo "A browser window will open. Sign in with the OpenAI account for '$name'."
-            opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
+            env BROWSER="$HOME/dotfiles/scripts/bin/open-url" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
             if test $status -ne 0
                 echo "Login failed." >&2
                 return 1
@@ -100,8 +100,11 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
         case remove rm
             if test (count $argv) -lt 1
-                echo "Usage: opencode-accounts remove <name>" >&2
-                return 1
+                set -l picked (_opencode_accounts_fzf_pick "Remove")
+                if test -z "$picked"
+                    return 1
+                end
+                set argv $picked
             end
             set -l name $argv[1]
             set -l acct_dir "$accounts_dir/$name"
@@ -171,8 +174,11 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
         case switch sw
             if test (count $argv) -lt 1
-                echo "Usage: opencode-accounts switch <name>" >&2
-                return 1
+                set -l picked (_opencode_accounts_fzf_pick "Switch to")
+                if test -z "$picked"
+                    return 1
+                end
+                set argv $picked
             end
             set -l name $argv[1]
             set -l acct_dir "$accounts_dir/$name"
@@ -210,6 +216,12 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
         case check
             # Check usage for a profile or current auth
+            if test (count $argv) -lt 1; and command -q fzf; and test -f "$accounts_file"
+                set -l picked (_opencode_accounts_fzf_pick "Check")
+                if test -n "$picked"
+                    set argv $picked
+                end
+            end
             set -l target_token ""
             if test (count $argv) -ge 1
                 set -l name $argv[1]
@@ -266,7 +278,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
                     if not test -f "$acct_auth"
                         continue
                     end
-                    
+
                     # Check if expired and try refresh
                     set -l expires (jq -r '.expires // 0' "$acct_auth" 2>/dev/null)
                     set -l now (date +%s)"000"
@@ -301,7 +313,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             echo "All saved accounts are rate-limited." >&2
             echo "Opening OpenCode login to authenticate a new account..." >&2
             echo "" >&2
-            opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
+            env BROWSER="$HOME/dotfiles/scripts/bin/open-url" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
             if test $status -eq 0
                 echo ""
                 echo "Login successful. You may want to save this account:"
@@ -309,7 +321,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             end
 
         case login
-            opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
+            env BROWSER="$HOME/dotfiles/scripts/bin/open-url" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
             if test $status -eq 0
                 echo ""
                 echo "Login successful. Save this account with:"
@@ -384,10 +396,57 @@ function _opencode_accounts_show_info --description "Display profile info after 
     echo "  Account: $info"
 end
 
+function _opencode_accounts_fzf_pick --description "Interactive fzf picker for enrolled accounts"
+    set -l header $argv[1]
+    set -l accounts_dir "$HOME/.opencode/accounts"
+    set -l accounts_file "$accounts_dir/.accounts"
+    set -l current_file "$accounts_dir/.current"
+    set -l auth_file "$HOME/.local/share/opencode/auth.json"
+
+    if not command -q fzf
+        echo "fzf not installed. Pass account name as argument." >&2
+        return 1
+    end
+
+    if not test -f "$accounts_file"
+        echo "No accounts enrolled." >&2
+        return 1
+    end
+
+    set -l current_idx 0
+    if test -f "$current_file"
+        set current_idx (string trim (cat "$current_file"))
+    end
+
+    set -l lines
+    set -l idx 0
+    for name in (cat "$accounts_file")
+        set -l acct_auth "$accounts_dir/$name/openai-auth.json"
+        set -l info ""
+        if test -f "$acct_auth"
+            set info (_opencode_accounts_decode_jwt "$acct_auth")
+        end
+        set -l marker "  "
+        if test "$idx" = "$current_idx"
+            set marker "> "
+        end
+        set -a lines "$marker$name\t$info"
+        set idx (math $idx + 1)
+    end
+
+    set -l picked (printf '%s\n' $lines | fzf --ansi --header="$header account:" --delimiter='\t' --with-nth=1,2 --no-sort | string trim)
+    if test -z "$picked"
+        return 1
+    end
+
+    # Extract just the account name (strip marker, take first column)
+    echo $picked | string replace -r '^\s*>\s*' '' | string replace -r '\t.*' '' | string trim
+end
+
 function _opencode_refresh_profile --description "Refresh an OpenAI profile using its refresh_token"
     set -l name $argv[1]
     set -l quiet false
-    if test "$argv[2]" = "--quiet"
+    if test "$argv[2]" = --quiet
         set quiet true
     end
 
@@ -397,23 +456,33 @@ function _opencode_refresh_profile --description "Refresh an OpenAI profile usin
     set -l refresh_script "$HOME/dotfiles/scripts/opencode/refresh-token.sh"
 
     if not test -f "$acct_auth"
-        if not $quiet; echo "Error: Profile '$name' not found." >&2; end
+        if not $quiet
+            echo "Error: Profile '$name' not found." >&2
+        end
         return 1
     end
 
     set -l refresh_token (jq -r '.refresh // empty' "$acct_auth" 2>/dev/null)
     if test -z "$refresh_token"
-        if not $quiet; echo "Error: Profile '$name' has no refresh token." >&2; end
+        if not $quiet
+            echo "Error: Profile '$name' has no refresh token." >&2
+        end
         return 1
     end
 
-    if not $quiet; echo "Refreshing profile '$name'..." >&2; end
-    set -l refresh_args "--token" "$refresh_token"
-    if $quiet; set -a refresh_args "--quiet"; end
-    
+    if not $quiet
+        echo "Refreshing profile '$name'..." >&2
+    end
+    set -l refresh_args --token "$refresh_token"
+    if $quiet
+        set -a refresh_args --quiet
+    end
+
     set -l new_auth (bash "$refresh_script" $refresh_args)
     if test $status -ne 0
-        if not $quiet; echo "Error: Refresh failed for '$name'." >&2; end
+        if not $quiet
+            echo "Error: Refresh failed for '$name'." >&2
+        end
         return 1
     end
 
@@ -421,7 +490,9 @@ function _opencode_refresh_profile --description "Refresh an OpenAI profile usin
     echo "$new_auth" >"$acct_auth"
     chmod 600 "$acct_auth"
     _ai_accounts_sync to-codex "$name" "$acct_auth"
-    
-    if not $quiet; echo "Profile '$name' refreshed successfully." >&2; end
+
+    if not $quiet
+        echo "Profile '$name' refreshed successfully." >&2
+    end
     return 0
 end
