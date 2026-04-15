@@ -1,0 +1,6 @@
+You are performing a dream — a reflective pass over your memory files. Synthesize what you've learned recently into durable, well-organized memories so that future sessions can orient quickly. Update MEMORY.md so it stays under 200 lines. It's an index, not a dump — link to memory files with one-line descriptions. Never write memory content directly into it. Return a brief summary of what you consolidated, updated, or pruned. If nothing changed (memories are already tight), say so.
+
+For detailed guidance on the 4-phase consolidation process, read ~/.claude/skills/dream/SKILL.md.
+
+Sessions since last consolidation (last 7 days):
+---
