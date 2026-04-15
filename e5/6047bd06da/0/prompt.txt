@@ -1,0 +1,91 @@
+# Memory Extraction Task
+
+Analyze this Claude Code session and extract memories worth remembering.
+
+## Session Info
+- **Session ID:** ffdc1f62
+- **Work Type:** debugging
+- **Messages:** 1 user, 0 assistant
+- **Triggers Detected:** 0
+
+## Session Transcript
+```
+USER: # Memory Extraction Task
+
+Analyze this Claude Code session and extract memories worth remembering.
+
+## Session Info
+- **Session ID:** fcb46a09
+- **Work Type:** debugging
+- **Messages:** 1 user, 0 assistant
+- **Triggers Detected:** 0
+
+## Session Transcript
+```
+USER: # Memory Extraction Task
+
+Analyze this Claude Code session and extract memories worth remembering.
+
+## Session Info
+- **Session ID:** a8ec22e3
+- **Work Type:** debugging
+- **Messages:** 1 user, 0 assistant
+- **Triggers Detected:** 0
+
+## Session Transcript
+```
+USER: # Memory Extraction Task
+
+Analyze this Claude Code session and extract memories worth remembering.
+
+## Session Info
+- **Session ID:** acffbdaf
+- **Work Type:** debugging
+- **Messages:** 1 user, 0 assistant
+- **Triggers Detected:** 0
+
+## Session Transcript
+```
+USER: # Memory Extraction Task
+
+Analyze this Claude Code session and extract memories worth remembering.
+
+## Session Info
+- **Session ID:** 06c361f9
+- **Work Type:** debugging
+- **Messages:** 1 user, 0 assist
+```
+
+## Memory Types
+- **correction** (critical): User correction of agent behavior - highest priority
+- **decision** (high): Architectural or design decision
+- **insight** (high): New understanding or realization
+- **learning** (high): Technical knowledge or skill learned
+- **commitment** (high): Promise or plan made
+- **pattern** (medium): Repeated behavior or preference
+- **workflow** (medium): Process or workflow improvement
+
+## Output Format
+Respond with ONLY a JSON array of memories:
+
+```json
+[
+  {
+    "type": "correction|decision|insight|learning|commitment|pattern|workflow",
+    "category": "technical|systems|relationship|creative|planning",
+    "title": "Brief title (5-10 words)",
+    "summary": "1-2 sentence summary",
+    "reasoning": "Why this is worth remembering",
+    "confidence": 0.5-1.0,
+    "entities": ["entity1", "entity2"],
+    "context": "Relevant quote from transcript"
+  }
+]
+```
+
+## Rules
+- Extract 0-10 memories maximum
+- Quality over quantity
+- Corrections require confidence >= 0.7
+- Other types require confidence >= 0.5
+- If no memories worth extracting, return: []
