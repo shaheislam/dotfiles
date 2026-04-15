@@ -1,7 +1,7 @@
 ---
 description: Investigate repo, tmux, worktree, and OpenCode integration issues without broad edits
 mode: subagent
-model: openai/gpt-5.1-codex
+model: openai/gpt-5.4
 temperature: 0.1
 steps: 8
 tools:

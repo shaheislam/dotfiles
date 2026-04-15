@@ -1,7 +1,7 @@
 ---
 description: Implement a dotfiles change end-to-end with repo-aware validation
 agent: build
-model: openai/gpt-5.1-codex
+model: openai/gpt-5.4
 ---
 
 Implement the following change in this dotfiles repository end-to-end:

@@ -1,7 +1,7 @@
 ---
 description: Investigate an integration or workflow issue without broad edits
 agent: dotfiles-debug
-model: openai/gpt-5.1-codex
+model: openai/gpt-5.4
 ---
 
 Investigate the following issue in this repository:

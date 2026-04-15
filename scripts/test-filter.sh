@@ -776,7 +776,7 @@ test_opencode() {
 	run_test "OpenCode config is valid JSON" "jq empty '$DOTFILES_ROOT/.config/opencode/opencode.json'"
 	run_test "OpenCode permissions are blanket allow" "[ \"\$(jq -r '.permission' '$DOTFILES_ROOT/.config/opencode/opencode.json')\" = 'allow' ]"
 	run_test "OpenCode config has openai provider" "jq -e '.provider.openai' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
-	run_test "OpenCode config has gpt-5.1-codex model" "jq -e '.provider.openai.models[\"gpt-5.1-codex\"]' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+	run_test "OpenCode config has gpt-5.4 model" "jq -e '.provider.openai.models[\"gpt-5.4\"]' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
 
 	run_test "OpenCode command directory exists" "[ -d '$DOTFILES_ROOT/.opencode/command' ]"
 	run_test "OpenCode doctor command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/doctor.md' ]"

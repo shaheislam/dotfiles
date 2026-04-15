@@ -59,7 +59,7 @@ if [ -f "$CONFIG_FILE" ]; then
 	permissions="$(jq -r '.permission | if type == "string" then . else "custom" end' "$CONFIG_FILE" 2>/dev/null || true)"
 	configured_providers="$(jq -r '.provider | keys | join(", ")' "$CONFIG_FILE" 2>/dev/null || true)"
 	has_openai_provider="$(jq -r 'has("provider") and (.provider | has("openai"))' "$CONFIG_FILE" 2>/dev/null || true)"
-	has_openai_model="$(jq -r '.provider.openai.models | has("gpt-5.1-codex")' "$CONFIG_FILE" 2>/dev/null || true)"
+	has_openai_model="$(jq -r '.provider.openai.models | has("gpt-5.4")' "$CONFIG_FILE" 2>/dev/null || true)"
 
 	[ -n "$default_model" ] && print_result PASS "default model" "$default_model"
 	[ -n "$small_model" ] && print_result PASS "small model" "$small_model"
@@ -83,9 +83,9 @@ if [ -f "$CONFIG_FILE" ]; then
 	fi
 
 	if [ "$has_openai_model" = "true" ]; then
-		print_result PASS "OpenAI codex model" "gpt-5.1-codex configured"
+		print_result PASS "OpenAI codex model" "gpt-5.4 configured"
 	else
-		print_result FAIL "OpenAI codex model" "Missing gpt-5.1-codex model config"
+		print_result FAIL "OpenAI codex model" "Missing gpt-5.4 model config"
 	fi
 fi
 

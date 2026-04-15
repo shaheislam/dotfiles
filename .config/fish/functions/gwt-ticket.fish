@@ -483,7 +483,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set use_codex true
                     set skip_next true
                 else
-                    echo "Error: --opencode-model requires a model id (e.g., openai/gpt-5.1-codex)"
+                    echo "Error: --opencode-model requires a model id (e.g., openai/gpt-5.4)"
                     return 1
                 end
             case --codex-model
@@ -781,9 +781,9 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge-cooldown S  Cooldown seconds after rate limit (default: 300)"
         echo "  --bridge-profiles P  Claude subscription profiles for auto-rotation (e.g., work,personal)"
         echo "  --bridge-codex-profiles P  Codex profiles for auto-rotation (uses ~/.codex-<name>)"
-        echo "  --opencode-model M   OpenCode model override (implies --codex; e.g., openai/gpt-5.1-codex)"
+        echo "  --opencode-model M   OpenCode model override (implies --codex; e.g., openai/gpt-5.4)"
         echo "  --codex              Use OpenCode on the right-hand side instead of Claude Code on the left"
-        echo "  --codex-model M      Codex/OpenAI model override for OpenCode (implies --codex; e.g., gpt-5.1-codex)"
+        echo "  --codex-model M      Codex/OpenAI model override for OpenCode (implies --codex; e.g., gpt-5.4)"
         echo "  --codex-profile P    Legacy compatibility flag; OpenCode auth comes from its own config"
         echo "  --review-gate        Enable Codex stop-time review gate (blocks session end until Codex approves)"
         echo "  --crown [N]          Tournament mode: N agents compete, LLM judge picks winner (default: 3)"
@@ -872,11 +872,11 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/lib-a ~/lib-b"
         echo ""
         echo "  # Run OpenCode on the right with an OpenAI/Codex model"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --opencode-model openai/gpt-5.1-codex"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --opencode-model openai/gpt-5.4"
         echo ""
         echo "  # Run OpenCode instead of Claude Code"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model gpt-5.1-codex"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model gpt-5.4"
         echo ""
         echo "  # Crown tournament mode (N agents compete, LLM judges)"
         echo "  gwt-ticket --crown TICKET-123 \"Fix auth\" \"Description\""
@@ -941,7 +941,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set opencode_model "openai/$codex_model"
                 end
             else
-                set opencode_model "openai/gpt-5.1-codex"
+                set opencode_model "openai/gpt-5.4"
             end
         end
         if not command -q opencode
