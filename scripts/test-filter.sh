@@ -206,6 +206,14 @@ test_tmux() {
 	run_test "tmux scripts directory exists" "[ -d '$DOTFILES_ROOT/scripts/tmux' ]"
 	run_test "Claude watcher script exists" "[ -f '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
 	run_test "Claude watcher is executable" "[ -x '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
+	run_test "tmux-resurrect plugin configured" \
+		"grep -q \"tmux-plugins/tmux-resurrect\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-continuum plugin configured" \
+		"grep -q \"tmux-plugins/tmux-continuum\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-continuum auto-restore enabled" \
+		"grep -q \"@continuum-restore 'on'\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-continuum remains last plugin" \
+		"awk '/^set -g @plugin / { last=\$0 } END { exit(last != \"set -g @plugin '\''tmux-plugins/tmux-continuum'\''\") }' '$DOTFILES_ROOT/.tmux.conf'"
 
 	# Session close behavior: closing last window should switch to another session, not detach
 	run_test "detach-on-destroy set to off (switch session on close)" \
