@@ -165,7 +165,7 @@ Remaining gap: suggestions are generated but not auto-applied (requires human re
 
 | # | Threat | Mitigation |
 |---|--------|------------|
-| T1 | **Complexity ceiling** | 25+ hooks, 15 agents, 24 skills — onboarding friction. Mitigate: use harness to self-document |
+| T1 | **Complexity ceiling** | 25+ hooks, 18 agents, 59 skills — onboarding friction. Mitigate: use harness to self-document |
 | T2 | **State file proliferation** | Multiple YAML/JSON/JSONL formats. Mitigate: standardize on JSONL + query interface |
 | T3 | **Single point of failure** | macOS machine is SPOF. Mitigate: git-backed state (beads), stow reproducibility |
 | T4 | **Harness maintenance burden** | More harness = more maintenance. Mitigate: harness should self-validate (meta-tests) |

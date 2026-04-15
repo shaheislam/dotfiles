@@ -1,6 +1,6 @@
 # Skills Index
 
-46 skills organized by function. Each skill is a directory containing `SKILL.md` (and optionally reference files). Invoke with `/skill-name` or by telling Claude to use the skill.
+59 skills organized by function. Each skill is a directory containing `SKILL.md` (and optionally reference files). Invoke with `/skill-name` or by telling Claude to use the skill.
 
 ## Categories
 
@@ -26,9 +26,12 @@
 |-------|---------|---------|
 | `ship` | `/ship` | Pre-flight, sync, validate, commit, push, PR |
 | `fix` | `/fix` | Diagnose and fix dotfiles breakage |
+| `verify` | `/verify` | Run targeted validation for current dotfiles changes |
+| `build-fix` | `/build-fix` | Diagnose and repair failing checks or setup flows |
 | `dotfiles-sync` | `/dotfiles-sync` | Sync dotfiles with stow |
 | `security-audit` | `/security-audit` | OWASP + STRIDE security audit |
 | `retro` | `/retro` | Git history retrospective |
+| `audit` | `/audit` | Compatibility wrapper for broader audit workflows |
 
 ### Research & Analysis
 | Skill | Trigger | Purpose |
@@ -52,11 +55,23 @@
 ### Ticket & Project Management
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
+| `ticket` | `/ticket` | Compatibility wrapper for ticket workflows |
 | `todo` | `/todo` | Quick ticket creation (Linear/Jira) |
 | `ticket-execute` | `/ticket-execute` | Execute ticket autonomously |
 | `jira` | `/jira` | Jira ticket CRUD |
 | `jira-batch` | `/jira-batch` | Batch create Jira tickets from markdown |
 | `cv-generate` | `/cv-generate` | Generate optimized LaTeX CV |
+
+### Git & Compatibility
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `commit` | `/commit` | Compatibility wrapper around `/wrap-up` |
+| `review-pr` | `/review-pr` | Compatibility wrapper around review workflows |
+| `full-review` | `/full-review` | Compatibility wrapper around `/autoplan` |
+| `deploy-check` | `/deploy-check` | Compatibility wrapper for pre-flight checks |
+| `handoff` | `/handoff` | Compatibility wrapper for session handoff |
+| `checkpoint` | `/checkpoint` | Save resumable session state in `.plan.md` |
+| `rebase` | `/rebase` | Safe non-interactive rebase workflow |
 
 ### Infrastructure & Tools
 | Skill | Trigger | Purpose |

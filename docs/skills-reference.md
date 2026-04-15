@@ -148,9 +148,11 @@ Claude Code extends the standard with: `disable-model-invocation`, `user-invocab
 
 ## Currently Installed (This Dotfiles)
 
-### Custom Skills (25 in .claude/skills/)
+### Custom Skills (59 in .claude/skills/)
 
-article, aws-profile, best-practice, claude-cleanup, commit-mode, confluence, cross-ref, cv-generate, diagram, dotfiles-sync, fish-reload, gap-analysis, git-config-fix, jfdi (+ extract, recall, sync, synthesis), jira (+ batch), mcp-restart, s3-search, s3-upload, ticket-execute, todo.
+Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `agent-browser`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
+
+Compatibility wrappers cover common external slash-command names that the screenshot expects: `commit`, `review-pr`, `full-review`, `deploy-check`, `build-fix`, `verify`, `handoff`, `ticket`, `checkpoint`, `rebase`, and `audit`.
 
 ### Plugin Skills (14 plugins)
 
@@ -167,7 +169,7 @@ code-review, pr-review-toolkit, hookify, feature-dev, frontend-design, plugin-de
 
 ## Migration: Commands to Skills (Completed)
 
-All 24 custom commands have been migrated from `.claude/commands/` to `.claude/skills/`. The migration was a 1:1 move — frontmatter is identical between formats.
+The repo's custom command surface has been migrated from `.claude/commands/` to `.claude/skills/`, and compatibility wrappers now preserve common slash-command names used by other Claude setups.
 
 **What changed**: `commands/foo.md` → `skills/foo/SKILL.md`
 
