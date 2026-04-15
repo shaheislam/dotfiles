@@ -8,7 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>__HOME__/dotfiles/scripts/obsidian/weekly-synthesis.sh</string>
+        <string>__DOTFILES_ROOT__/scripts/obsidian/weekly-synthesis.sh</string>
     </array>
 
     <key>StartCalendarInterval</key>
