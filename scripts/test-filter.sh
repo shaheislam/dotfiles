@@ -216,6 +216,12 @@ test_tmux() {
 		"grep -q \"tmux-plugins/tmux-continuum\" '$DOTFILES_ROOT/scripts/setup.sh'"
 	run_test "tmux-continuum auto-restore enabled" \
 		"grep -q \"@continuum-restore 'on'\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-resurrect restores Neovim sessions" \
+		"grep -q \"@resurrect-processes 'nvim vim'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-nvim 'session'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-vim 'session'\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-resurrect captures pane contents" \
+		"grep -q \"@resurrect-capture-pane-contents 'on'\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-resurrect avoids auto-restoring agent CLIs" \
+		"! grep -q \"@resurrect-processes '.*claude\|@resurrect-processes '.*opencode\" '$DOTFILES_ROOT/.tmux.conf'"
 	run_test "tmux-continuum remains last plugin" \
 		"awk '/^set -g @plugin / { last=\$0 } END { exit(last != \"set -g @plugin '\''tmux-plugins/tmux-continuum'\''\") }' '$DOTFILES_ROOT/.tmux.conf'"
 	run_test "setup keeps tmux-continuum last" \
