@@ -1295,9 +1295,9 @@ phase_6_multiplexer() {
 			"tmux-plugins/tmux-yank"
 			"tmux-plugins/tmux-prefix-highlight"
 			"tmux-plugins/tmux-open"
-			"tmux-plugins/tmux-copycat"
 			"tmux-plugins/tmux-pain-control"
 			"tmux-plugins/tmux-sidebar"
+			"tmux-plugins/tmux-resurrect"
 			"tmux-plugins/tmux-cpu"
 			"christoomey/vim-tmux-navigator" # Vim/tmux seamless navigation
 			"fcsonline/tmux-thumbs"          # Rust-based text hints
@@ -1306,8 +1306,8 @@ phase_6_multiplexer() {
 			"yardnsm/tmux-1password"         # 1Password integration
 			"roosta/tmux-fuzzback"           # FZF scrollback search
 			"sainnhe/tmux-fzf"               # FZF integration for tmux
-			"azorng/tmux-smooth-scroll"      # Smooth scrolling
 			"fabioluciano/tmux-powerkit"     # Status bar powerline theme
+			"tmux-plugins/tmux-continuum"    # Auto-save and restore across tmux restarts; keep last
 		)
 
 		# Clone missing plugins in parallel

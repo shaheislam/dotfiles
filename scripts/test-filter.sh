@@ -210,10 +210,26 @@ test_tmux() {
 		"grep -q \"tmux-plugins/tmux-resurrect\" '$DOTFILES_ROOT/.tmux.conf'"
 	run_test "tmux-continuum plugin configured" \
 		"grep -q \"tmux-plugins/tmux-continuum\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "setup installs tmux-resurrect plugin" \
+		"grep -q \"tmux-plugins/tmux-resurrect\" '$DOTFILES_ROOT/scripts/setup.sh'"
+	run_test "setup installs tmux-continuum plugin" \
+		"grep -q \"tmux-plugins/tmux-continuum\" '$DOTFILES_ROOT/scripts/setup.sh'"
 	run_test "tmux-continuum auto-restore enabled" \
 		"grep -q \"@continuum-restore 'on'\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-resurrect restores Neovim sessions" \
+		"grep -q \"@resurrect-processes 'nvim vim'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-nvim 'session'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-vim 'session'\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-resurrect captures pane contents" \
+		"grep -q \"@resurrect-capture-pane-contents 'on'\" '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "tmux-resurrect avoids auto-restoring agent CLIs" \
+		"! grep -q \"@resurrect-processes '.*claude\|@resurrect-processes '.*opencode\" '$DOTFILES_ROOT/.tmux.conf'"
 	run_test "tmux-continuum remains last plugin" \
 		"awk '/^set -g @plugin / { last=\$0 } END { exit(last != \"set -g @plugin '\''tmux-plugins/tmux-continuum'\''\") }' '$DOTFILES_ROOT/.tmux.conf'"
+	run_test "setup keeps tmux-continuum last" \
+		"awk 'BEGIN { in_array=0 } /local tmux_plugins=\(/ { in_array=1; next } in_array && /^[[:space:]]*\)/ { exit(last !~ /tmux-plugins\\/tmux-continuum/) } in_array && /^[[:space:]]*\".*\"/ { last=\$0 }' '$DOTFILES_ROOT/scripts/setup.sh'"
+	run_test "setup omits stale tmux-copycat plugin" \
+		"! grep -q \"tmux-plugins/tmux-copycat\" '$DOTFILES_ROOT/scripts/setup.sh'"
+	run_test "setup omits stale tmux-smooth-scroll plugin" \
+		"! grep -q \"azorng/tmux-smooth-scroll\" '$DOTFILES_ROOT/scripts/setup.sh'"
 
 	# Session close behavior: closing last window should switch to another session, not detach
 	run_test "detach-on-destroy set to off (switch session on close)" \
