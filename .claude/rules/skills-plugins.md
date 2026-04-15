@@ -8,7 +8,7 @@ paths:
 # Skills & Plugins
 
 ## Skills
-All custom commands migrated to `.claude/skills/` (24 skills). See `docs/skills-reference.md`.
+All custom commands migrated to `.claude/skills/` and the repo now includes compatibility wrapper skills for common external setups (59 skills total). See `docs/skills-reference.md`.
 
 **Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification)
