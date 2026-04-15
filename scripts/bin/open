@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Wrapper around /usr/bin/open that properly quotes URL arguments.
+# Prevents & in OAuth URLs from being interpreted as shell background operator.
+# Only intercepts URL-like arguments; passes everything else through unchanged.
+if [[ $# -eq 1 && "$1" =~ ^https?:// ]]; then
+    exec /usr/bin/open "$1"
+fi
+exec /usr/bin/open "$@"

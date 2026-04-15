@@ -24,7 +24,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
             echo "Logging in for account '$name'..."
             echo "A browser window will open. Sign in with the OpenAI account for '$name'."
-            env BROWSER="$HOME/dotfiles/scripts/bin/open-url" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
+            env PATH="$HOME/dotfiles/scripts/bin:$PATH" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
             if test $status -ne 0
                 echo "Login failed." >&2
                 return 1

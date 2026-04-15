@@ -29,7 +29,7 @@ capture_urls() {
 
     # Extract scheme-qualified URLs and bare domains with common TLDs
     # Bare domains (e.g. google.com, bbc.co.uk) are normalized to https:// when opened
-    grep -Eoi "(https?://[a-zA-Z0-9./?=_:%+#\-~]+|[a-zA-Z0-9][a-zA-Z0-9.-]*\.(com|org|net|io|dev|co\.uk|gov\.uk|edu|info|me|app)\b[/a-zA-Z0-9./?=_:%+#\-~]*)" "$temp_file" | sort | uniq || true
+    grep -Eoi "(https?://[a-zA-Z0-9./?=_:%+#&\-~@]+|[a-zA-Z0-9][a-zA-Z0-9.-]*\.(com|org|net|io|dev|co\.uk|gov\.uk|edu|info|me|app)\b[/a-zA-Z0-9./?=_:%+#&\-~@]*)" "$temp_file" | sort | uniq || true
 }
 
 # Smart capture: try visible pane first, fall back to full scrollback if no URLs found
