@@ -12,6 +12,7 @@
     "coworkScheduledTasksEnabled": true,
     "ccdScheduledTasksEnabled": true,
     "sidebarMode": "chat",
-    "coworkWebSearchEnabled": true
+    "coworkWebSearchEnabled": true,
+    "floatingAtollActive": true
   }
 }
