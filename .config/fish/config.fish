@@ -495,8 +495,10 @@ if status is-interactive
     #   - Manual detach (prefix+d) returns to Fish, which then exits cleanly
     #   - No nested shells (Fish exits immediately after tmux returns)
     if test -z "$TMUX" -a "$TERM_PROGRAM" = WezTerm
-        tmux new-session -A -s main
-        exit
+        tmux-main
+        if test $status -eq 0
+            exit
+        end
     end
 
     # Enhanced aliases combining both configs

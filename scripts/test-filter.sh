@@ -77,7 +77,7 @@ test_fish() {
 	run_test "Fish config.fish has no bare export statements" "! grep -qE '^[[:space:]]*export ' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
 	# Check key functions exist
-	for func in gwt-dev gwt-ticket gwt-parallel gwt-status devcon pihole; do
+	for func in gwt-dev gwt-ticket gwt-parallel gwt-status devcon pihole tmux-main; do
 		run_test "Fish function $func exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/$func.fish' ]"
 	done
 
@@ -104,12 +104,20 @@ test_fish() {
 		for func in _cd_fzf_tab_complete _fifc_or_fzf; do
 			run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
 		done
-		for func in _codex_workspace_id codex-accounts codex-rotate; do
+		for func in _codex_workspace_id codex-accounts codex-rotate tmux-main; do
 			run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
 		done
 		# Validate _cd_fzf_tab_complete loads and is queryable
 		run_test "Fish _cd_fzf_tab_complete loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/_cd_fzf_tab_complete.fish && functions -q _cd_fzf_tab_complete'"
+		run_test "Fish tmux-main loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/tmux-main.fish && functions -q tmux-main'"
 	fi
+
+	run_test "WezTerm auto-attach uses tmux-main helper" \
+		"grep -q 'tmux-main' '$DOTFILES_ROOT/.config/fish/config.fish'"
+	run_test "WezTerm auto-attach exits only after tmux-main succeeds" \
+		"grep -A3 'tmux-main' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'if test .*status -eq 0'"
+	run_test "tmux-main removes stale default socket before retry" \
+		"grep -q 'socket_path' '$DOTFILES_ROOT/.config/fish/functions/tmux-main.fish' && grep -q 'rm -f \"' '$DOTFILES_ROOT/.config/fish/functions/tmux-main.fish' && grep -q 'tmux ls >/dev/null 2>&1' '$DOTFILES_ROOT/.config/fish/functions/tmux-main.fish'"
 }
 
 test_stow() {

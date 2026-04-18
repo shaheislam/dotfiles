@@ -3,6 +3,17 @@
 # Smart tmux launcher that can force a manual resurrect restore
 # Useful when you want to restore on demand instead of waiting for server start
 
+cleanup_stale_socket() {
+	local socket_path
+	socket_path="/tmp/tmux-$(id -u)/default"
+
+	if [ -S "$socket_path" ] && ! tmux ls >/dev/null 2>&1; then
+		rm -f "$socket_path"
+	fi
+}
+
+cleanup_stale_socket
+
 # Check if tmux server is already running
 if tmux has-session 2>/dev/null; then
 	# Server is running, just attach to main or create it
