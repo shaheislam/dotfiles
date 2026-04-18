@@ -11,11 +11,13 @@
 SESSION_NAME="${1:-}"
 WINDOW_NAME="${2:-}"
 WINDOW_PANES="${3:-1}"
+LOG_FILE="/tmp/tmux-worktree-cleanup.log"
 
 # Kill the pane first (this is what the user expects)
 tmux kill-pane
 
 # If it was the last pane, the window is now gone - run cleanup in background
 if [ "$WINDOW_PANES" = "1" ]; then
-    ~/dotfiles/scripts/tmux/tmux-worktree-cleanup.sh "$SESSION_NAME" "$WINDOW_NAME" &
+	nohup ~/dotfiles/scripts/tmux/tmux-worktree-cleanup.sh "$SESSION_NAME" "$WINDOW_NAME" \
+		</dev/null >>"$LOG_FILE" 2>&1 &
 fi
