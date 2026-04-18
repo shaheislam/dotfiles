@@ -59,7 +59,6 @@ work/**/CLAUDE.md
 # Claude Code - session data and cache (ignore in all repos)
 # But allow specific directories to be tracked
 .claude/*
-!.claude/agents/
 !.claude/rules/
 !.claude/skills/
 !.claude/hooks/
