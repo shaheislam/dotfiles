@@ -37,7 +37,7 @@ for pair in "${pairs[@]}"; do
     for ((i = lf; i >= 0; i--)); do
         ch="${line:$i:1}"
         if [[ "$ch" == "$close" ]]; then
-            ((depth++))
+            ((depth++)) || true
         elif [[ "$ch" == "$open" ]]; then
             if ((depth > 0)); then
                 ((depth--))
@@ -54,7 +54,7 @@ for pair in "${pairs[@]}"; do
     for ((i = s + 1; i < len; i++)); do
         ch="${line:$i:1}"
         if [[ "$ch" == "$open" ]]; then
-            ((depth++))
+            ((depth++)) || true
         elif [[ "$ch" == "$close" ]]; then
             if ((depth > 0)); then
                 ((depth--))
@@ -87,7 +87,7 @@ depth=0
 for ((i = content_start; i < cursor_x && i <= content_end; i++)); do
     ch="${line:$i:1}"
     case "$ch" in
-    '(' | '[' | '{') ((depth++)) ;;
+    '(' | '[' | '{') ((depth++)) || true ;;
     ')' | ']' | '}') ((depth > 0)) && ((depth--)) ;;
     ',') ((depth == 0)) && arg_start=$((i + 1)) ;;
     esac
@@ -99,7 +99,7 @@ depth=0
 for ((i = cursor_x; i <= content_end; i++)); do
     ch="${line:$i:1}"
     case "$ch" in
-    '(' | '[' | '{') ((depth++)) ;;
+    '(' | '[' | '{') ((depth++)) || true ;;
     ')' | ']' | '}') ((depth > 0)) && ((depth--)) ;;
     ',')
         if ((depth == 0)); then
@@ -113,7 +113,7 @@ done
 if [[ "$mode" == "inside" ]]; then
     # Trim whitespace
     while ((arg_start <= arg_end)) && [[ "${line:$arg_start:1}" == " " ]]; do
-        ((arg_start++))
+        ((arg_start++)) || true
     done
     while ((arg_end >= arg_start)) && [[ "${line:$arg_end:1}" == " " ]]; do
         ((arg_end--))
@@ -123,7 +123,7 @@ else
     next=$((arg_end + 1))
     if ((next <= content_end)) && [[ "${line:$next:1}" == "," ]]; then
         arg_end=$next
-        ((arg_end + 1 <= content_end)) && [[ "${line:$((arg_end + 1)):1}" == " " ]] && ((arg_end++))
+        ((arg_end + 1 <= content_end)) && [[ "${line:$((arg_end + 1)):1}" == " " ]] && ((arg_end++)) || true
     else
         prev=$((arg_start - 1))
         if ((prev >= content_start)) && [[ "${line:$prev:1}" == " " ]]; then

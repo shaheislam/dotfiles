@@ -38,7 +38,7 @@ fi
 # Scan right for end of number
 end=$cursor_x
 while ((end + 1 < len)) && [[ "${line:$((end + 1)):1}" =~ [0-9.] ]]; do
-    ((end++))
+    ((end++)) || true
 done
 
 # Strip trailing dots (likely sentence punctuation, not decimal)
@@ -48,7 +48,7 @@ done
 
 # For around mode, include one trailing space
 if [[ "$mode" == "around" ]] && ((end + 1 < len)); then
-    [[ "${line:$((end + 1)):1}" == " " ]] && ((end++))
+    [[ "${line:$((end + 1)):1}" == " " ]] && ((end++)) || true
 fi
 
 tmux send-keys -X start-of-line

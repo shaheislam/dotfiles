@@ -18,12 +18,7 @@ fi
 INPUT="$(cat)"
 
 # Extract the file path that was modified
-FILE_PATH="$(echo "$INPUT" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-ti = d.get('tool_input', {})
-print(ti.get('file_path', ti.get('filePath', '')))
-" 2>/dev/null)" || FILE_PATH=""
+FILE_PATH="$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.filePath // ""' 2>/dev/null)" || FILE_PATH=""
 
 [[ -z "$FILE_PATH" ]] && exit 0
 
@@ -64,9 +59,9 @@ sh | bash)
 esac
 
 if [[ -n "$LINT_OUTPUT" ]]; then
-    # Escape for JSON
-    LINT_OUTPUT="$(echo "$LINT_OUTPUT" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" 2>/dev/null)" || exit 0
-    # Remove outer quotes from json.dumps
-    LINT_OUTPUT="${LINT_OUTPUT:1:-1}"
-    echo "{\"systemMessage\":\"[CI lint] ${LINT_OUTPUT}\"}"
+    # Escape for JSON using jq
+    LINT_JSON_ESCAPED="$(echo "$LINT_OUTPUT" | jq -Rs .)" || exit 0
+    # Remove outer quotes from jq -Rs output
+    LINT_CONTENT="${LINT_JSON_ESCAPED:1:-1}"
+    echo "{\"systemMessage\":\"[CI lint] ${LINT_CONTENT}\"}"
 fi

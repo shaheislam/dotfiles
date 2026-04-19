@@ -241,31 +241,34 @@ if [[ "$QUIET" != "true" ]]; then
     echo ""
 fi
 
-# Build gwt-ticket command with proper escaping
-GWT_CMD="gwt-ticket '$ISSUE_KEY' '$TITLE' '$DESCRIPTION' --max $MAX_ITERATIONS"
+# Execute gwt-ticket safely using environment variables to pass string arguments
+# This avoids command injection from single quotes in TITLE or DESCRIPTION
+export ISSUE_KEY TITLE DESCRIPTION SESSION_NAME TICKETING_SYSTEM SLASH_COMMAND PROMPT_TEMPLATE PROMPT_PREFIX PROMPT_SUFFIX
+
+GWT_CMD="gwt-ticket \"\$ISSUE_KEY\" \"\$TITLE\" \"\$DESCRIPTION\" --max $MAX_ITERATIONS"
 
 if [[ -n "$SESSION_NAME" ]]; then
-    GWT_CMD="$GWT_CMD --session '$SESSION_NAME'"
+    GWT_CMD="$GWT_CMD --session \"\$SESSION_NAME\""
 fi
 
 if [[ -n "$TICKETING_SYSTEM" ]]; then
-    GWT_CMD="$GWT_CMD --system $TICKETING_SYSTEM"
+    GWT_CMD="$GWT_CMD --system \"\$TICKETING_SYSTEM\""
 fi
 
 if [[ -n "$SLASH_COMMAND" ]]; then
-    GWT_CMD="$GWT_CMD --command '$SLASH_COMMAND'"
+    GWT_CMD="$GWT_CMD --command \"\$SLASH_COMMAND\""
 fi
 
 if [[ -n "$PROMPT_TEMPLATE" ]]; then
-    GWT_CMD="$GWT_CMD --prompt-template '$PROMPT_TEMPLATE'"
+    GWT_CMD="$GWT_CMD --prompt-template \"\$PROMPT_TEMPLATE\""
 fi
 
 if [[ -n "$PROMPT_PREFIX" ]]; then
-    GWT_CMD="$GWT_CMD --prompt-prefix '$PROMPT_PREFIX'"
+    GWT_CMD="$GWT_CMD --prompt-prefix \"\$PROMPT_PREFIX\""
 fi
 
 if [[ -n "$PROMPT_SUFFIX" ]]; then
-    GWT_CMD="$GWT_CMD --prompt-suffix '$PROMPT_SUFFIX'"
+    GWT_CMD="$GWT_CMD --prompt-suffix \"\$PROMPT_SUFFIX\""
 fi
 
 if [[ "$USE_DEVCON" == "true" ]]; then
@@ -273,8 +276,9 @@ if [[ "$USE_DEVCON" == "true" ]]; then
 fi
 
 for mount in "${MOUNTS[@]}"; do
+    # Mounts are handled via positional args or could be added to env too
     GWT_CMD="$GWT_CMD --mount '$mount'"
 done
 
-# Execute gwt-ticket
+# Execute gwt-ticket via fish
 fish -c "$GWT_CMD"

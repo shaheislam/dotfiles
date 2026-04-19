@@ -21,7 +21,7 @@ fi
 INPUT="$(cat)"
 
 # Extract the bash command
-COMMAND="$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('command',''))" 2>/dev/null)" || COMMAND=""
+COMMAND="$(echo "$INPUT" | jq -r '.tool_input.command // ""' 2>/dev/null)" || COMMAND=""
 
 # Only care about git commit and git push
 case "$COMMAND" in

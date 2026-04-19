@@ -83,7 +83,7 @@ while IFS= read -r url; do
     # Create a simple command that will work
     menu_items+=("$clean_url" "$index" "run-shell 'open -a Firefox \"$normalized_url\" >/dev/null 2>&1 & tmux display-message \"#[fg=green,bold]$name: Opened $normalized_url\"'")
 
-    ((index++))
+    ((index++)) || true
     if [ "$index" -gt 9 ]; then
         break
     fi

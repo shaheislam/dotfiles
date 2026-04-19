@@ -143,9 +143,7 @@ alias kn="kubens"
 export BAT_THEME="Catppuccin Mocha"
 
 # thefuck
-if command -v thefuck > /dev/null 2>&1; then
-  eval $(thefuck --alias)
-fi
+command -v thefuck >/dev/null && _cache_tool_init thefuck "thefuck --alias"
 
 # VSCode and Cursor functions removed
 

@@ -225,23 +225,6 @@
           }
         ],
         "matcher": ""
-      },
-      {
-        "hooks": [
-          {
-            "command": "timeout 10 entire hooks claude-code session-end 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-end.sh 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "bash \"$CLAUDE_PROJECT_DIR\"/scripts/harness/session-report.sh --json 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
       }
     ],
     "SessionStart": [
@@ -262,41 +245,25 @@
           {
             "command": "bash ~/.claude/hooks/plugin-chmod-fix.sh 2>/dev/null || true",
             "type": "command"
-          }
-        ],
-        "matcher": ""
-      },
-      {
-        "hooks": [
+          },
           {
             "command": "bd prime 2>/dev/null || true",
             "type": "command"
-          }
-        ],
-        "matcher": ""
-      },
-      {
-        "hooks": [
+          },
           {
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/work-detect.sh 2>/dev/null || true",
             "type": "command"
-          }
-        ],
-        "matcher": ""
-      },
-      {
-        "hooks": [
+          },
           {
             "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true",
             "type": "command"
-          }
-        ],
-        "matcher": ""
-      },
-      {
-        "hooks": [
+          },
           {
             "command": "bash ~/.claude/hooks/plan-resume.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/skills/dream/count-session.sh 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -310,39 +277,9 @@
           }
         ],
         "matcher": "compact"
-      },
-      {
-        "hooks": [
-          {
-            "command": "bash ~/.claude/skills/dream/count-session.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
       }
     ],
     "Stop": [
-      {
-        "hooks": [
-          {
-            "command": "bash ~/.claude/hooks/cross-provider-bridge.sh 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "timeout 10 entire hooks claude-code stop 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "bash ~/dotfiles/scripts/tmux/hooks/tmux-agent-stop.sh 2>/dev/null || true",
-            "type": "command"
-          },
-          {
-            "command": "bash ~/.claude/skills/dream/dream-hook.sh 2>/dev/null || true",
-            "type": "command"
-          }
-        ],
-        "matcher": ""
-      },
       {
         "hooks": [
           {

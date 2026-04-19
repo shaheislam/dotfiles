@@ -17,8 +17,8 @@ INPUT=$(cat)
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
 # Parse notification type and message using Python
-NOTIFICATION_TYPE=$(echo "$INPUT" | python3 -c "import json, sys; print(json.load(sys.stdin).get('notification_type', 'unknown'))" 2>/dev/null || echo "parse_error")
-MESSAGE=$(echo "$INPUT" | python3 -c "import json, sys; print(json.load(sys.stdin).get('message', '')[:100])" 2>/dev/null || echo "parse_error")
+NOTIFICATION_TYPE=$(echo "$INPUT" | jq -r '.notification_type // "unknown"' 2>/dev/null || echo "parse_error")
+MESSAGE=$(echo "$INPUT" | jq -r '(.message // "")[0:100]' 2>/dev/null || echo "parse_error")
 
 # Log to file
 echo "[$TIMESTAMP] Type: $NOTIFICATION_TYPE | Message: $MESSAGE" >>"$LOG_FILE"

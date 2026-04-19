@@ -335,7 +335,7 @@ echo ""
 # Calculate overall pass rate
 pass_count=0
 for result in "${CATEGORY_RESULTS[@]}"; do
-	[[ "$result" == "PASS" ]] && ((pass_count++))
+	[[ "$result" == "PASS" ]] && ((pass_count++)) || true
 done
 
 pass_rate=$(calc_percentage $pass_count ${#CATEGORY_RESULTS[@]})

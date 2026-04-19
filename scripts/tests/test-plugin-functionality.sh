@@ -20,8 +20,8 @@ if check_fish_function fisher; then
         "fish -c 'fisher list' 2>&1 | grep -q 'jorgebucaran/fisher\\|patrickf1'"
 else
     print_skip "Fisher not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test fzf.fish plugin functionality
@@ -89,8 +89,8 @@ if check_fish_function __history_previous_command; then
         "fish -c 'functions __history_previous_command' | grep -q 'history'"
 else
     print_skip "Bang-bang plugin not active"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test kubectl completions
@@ -99,8 +99,8 @@ if check_command kubectl; then
         "fish -c 'complete -C \"kubectl get \"' | head -1 | grep -q 'pods\\|services\\|deployments' || echo 'Completions available'"
 else
     print_skip "kubectl not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # ============================================
@@ -114,8 +114,8 @@ if check_dir "$HOME/.oh-my-zsh"; then
         "zsh -c 'echo \$ZSH' | grep -q 'oh-my-zsh'"
 else
     print_skip "Oh My Zsh not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test git plugin aliases
@@ -145,8 +145,8 @@ if [[ -d "$HOME/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting" ]]; then
         "grep -q 'zsh-syntax-highlighting' ~/.zshrc"
 else
     print_skip "zsh-syntax-highlighting not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test zsh-history-substring-search
@@ -155,8 +155,8 @@ if [[ -d "$HOME/.oh-my-zsh/custom/plugins/zsh-history-substring-search" ]]; then
         "grep -q 'zsh-history-substring-search' ~/.zshrc"
 else
     print_skip "zsh-history-substring-search not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # ============================================
@@ -183,8 +183,8 @@ if check_dir "$HOME/.tmux/plugins/tmux-sensible"; then
         "check_file ~/.tmux/plugins/tmux-sensible/sensible.tmux"
 else
     print_skip "tmux-sensible not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test tmux-yank plugin
@@ -207,8 +207,8 @@ if check_dir "$HOME/.tmux/plugins/tmux-pain-control"; then
         "check_file ~/.tmux/plugins/tmux-pain-control/pain_control.tmux"
 else
     print_skip "tmux-pain-control not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test tmux can actually start with plugins

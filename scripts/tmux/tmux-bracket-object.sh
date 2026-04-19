@@ -50,7 +50,7 @@ for pair in "${pairs[@]}"; do
     for ((i = left_from; i >= 0; i--)); do
         ch="${line:$i:1}"
         if [[ "$ch" == "$close" ]]; then
-            ((depth++))
+            ((depth++)) || true
         elif [[ "$ch" == "$open" ]]; then
             if ((depth > 0)); then
                 ((depth--))
@@ -69,7 +69,7 @@ for pair in "${pairs[@]}"; do
     for ((i = start + 1; i < len; i++)); do
         ch="${line:$i:1}"
         if [[ "$ch" == "$open" ]]; then
-            ((depth++))
+            ((depth++)) || true
         elif [[ "$ch" == "$close" ]]; then
             if ((depth > 0)); then
                 ((depth--))

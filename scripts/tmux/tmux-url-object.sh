@@ -40,7 +40,7 @@ end=$cursor_x
 while ((end + 1 < len)); do
     next="${line:$((end + 1)):1}"
     is_url_char "$next" || break
-    ((end++))
+    ((end++)) || true
 done
 
 candidate="${line:$start:$((end - start + 1))}"
@@ -61,8 +61,8 @@ opens=0
 closes=0
 for ((i = 0; i < ${#candidate}; i++)); do
     case "${candidate:$i:1}" in
-    '(') ((opens++)) ;;
-    ')') ((closes++)) ;;
+    '(') ((opens++)) || true ;;
+    ')') ((closes++)) || true ;;
     esac
 done
 while ((closes > opens && end > start)) && [[ "${line:$end:1}" == ")" ]]; do
@@ -71,7 +71,7 @@ while ((closes > opens && end > start)) && [[ "${line:$end:1}" == ")" ]]; do
 done
 
 if [[ "$mode" == "around" ]] && ((end + 1 < len)); then
-    [[ "${line:$((end + 1)):1}" == " " ]] && ((end++))
+    [[ "${line:$((end + 1)):1}" == " " ]] && ((end++)) || true
 fi
 
 tmux send-keys -X start-of-line

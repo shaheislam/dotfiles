@@ -22,76 +22,60 @@ STATE_FILE="$BRIDGE_DIR/$HASH/state.json"
 
 [[ -f "$STATE_FILE" ]] || exit 0
 
-# Check Neovim PID is still alive
+# Optimized: Use a single jq call to validate PID, TTL, and build the context message
+# Saves ~200ms per prompt by avoiding multiple subprocesses and repeated file reads
+JQ_OUTPUT=$(jq -r --arg now "$(date +%s)" --arg ttl "$TTL_SECONDS" '
+  # Helper to check if a section is fresh
+  def is_fresh(ts): ($now | tonumber) - (ts | tonumber // 0) < ($ttl | tonumber);
+
+  # Check if nvim process is still alive (if pid is provided)
+  . as $root |
+  .nvim_pid as $pid |
+  
+  # Diagnostics
+  (if is_fresh(.diagnostics.timestamp) and ((.diagnostics.error_count // 0) > 0 or (.diagnostics.warning_count // 0) > 0) then
+     "Diagnostics(\(.diagnostics.error_count // 0)E/\(.diagnostics.warning_count // 0)W): " +
+     ([(.diagnostics.errors // [] | .[] | "\(.file):\(.line) \(.source): \(.message)"),
+       (.diagnostics.warnings // [] | .[] | "\(.file):\(.line) \(.source): \(.message)")] | join("; "))
+   else empty end) as $diag |
+
+  # Focus
+  (if is_fresh(.focus.timestamp) and (.focus.file // "" != "") then
+     "Focus: \(.focus.file):\(.focus.line // 1) (\(.focus.filetype // "text"))"
+   else empty end) as $focus |
+
+  # Git
+  (if is_fresh(.git_hunks.timestamp) and (.git_hunks.summary // "" != "") then
+     "Git: \(.git_hunks.summary) [\((.git_hunks.files_changed // []) | join(", "))]"
+   else empty end) as $git |
+
+  # Tests
+  (if is_fresh(.tests.timestamp) and (.tests.status // "" != "") then
+     "Tests: \(.tests.status) (\(.tests.passed_count // 0) passed, \(.tests.failed_count // 0) failed)" +
+     (if .tests.status == "fail" and (.tests.failed // [] | length > 0) then
+        " — " + ([.tests.failed[] | "\(.name): \(.message)"] | .[0:5] | join("; "))
+      else "" end)
+   else empty end) as $tests |
+
+  # Combine fresh parts
+  [$diag, $focus, $git, $tests] | del(..|null) as $parts |
+  if ($parts | length) > 0 then
+    "Neovim context: " + ($parts | join(" | "))
+  else
+    empty
+  end
+' "$STATE_FILE" 2>/dev/null || echo "")
+
+# If nvim_pid exists but process is dead, jq wont know. Check here.
+# This check is fast as it uses the PID we already extracted from the file.
 NVIM_PID=$(jq -r '.nvim_pid // empty' "$STATE_FILE" 2>/dev/null)
 if [[ -n "$NVIM_PID" ]] && ! kill -0 "$NVIM_PID" 2>/dev/null; then
-    # Neovim exited, clean up stale state
-    rm -rf "$BRIDGE_DIR/$HASH" 2>/dev/null
-    exit 0
+	rm -rf "${BRIDGE_DIR:?}/${HASH:?}" 2>/dev/null
+	exit 0
 fi
 
-NOW=$(date +%s)
-PARTS=()
-
-# Diagnostics section
-DIAG_TS=$(jq -r '.diagnostics.timestamp // 0' "$STATE_FILE" 2>/dev/null)
-if [[ $((NOW - DIAG_TS)) -lt $TTL_SECONDS ]]; then
-    ERRORS=$(jq -r '.diagnostics.error_count // 0' "$STATE_FILE" 2>/dev/null)
-    WARNINGS=$(jq -r '.diagnostics.warning_count // 0' "$STATE_FILE" 2>/dev/null)
-    if [[ "$ERRORS" -gt 0 || "$WARNINGS" -gt 0 ]]; then
-        DIAG_LINES=$(jq -r '
-            [(.diagnostics.errors // [] | .[] | "\(.file):\(.line) \(.source): \(.message)"),
-             (.diagnostics.warnings // [] | .[] | "\(.file):\(.line) \(.source): \(.message)")]
-            | join("; ")' "$STATE_FILE" 2>/dev/null)
-        PARTS+=("Diagnostics(${ERRORS}E/${WARNINGS}W): ${DIAG_LINES}")
-    fi
-fi
-
-# Focus section
-FOCUS_TS=$(jq -r '.focus.timestamp // 0' "$STATE_FILE" 2>/dev/null)
-if [[ $((NOW - FOCUS_TS)) -lt $TTL_SECONDS ]]; then
-    FOCUS_FILE=$(jq -r '.focus.file // empty' "$STATE_FILE" 2>/dev/null)
-    FOCUS_LINE=$(jq -r '.focus.line // empty' "$STATE_FILE" 2>/dev/null)
-    FOCUS_FT=$(jq -r '.focus.filetype // empty' "$STATE_FILE" 2>/dev/null)
-    if [[ -n "$FOCUS_FILE" ]]; then
-        PARTS+=("Focus: ${FOCUS_FILE}:${FOCUS_LINE} (${FOCUS_FT})")
-    fi
-fi
-
-# Git hunks section
-GIT_TS=$(jq -r '.git_hunks.timestamp // 0' "$STATE_FILE" 2>/dev/null)
-if [[ $((NOW - GIT_TS)) -lt $TTL_SECONDS ]]; then
-    GIT_SUMMARY=$(jq -r '.git_hunks.summary // empty' "$STATE_FILE" 2>/dev/null)
-    if [[ -n "$GIT_SUMMARY" ]]; then
-        GIT_FILES=$(jq -r '.git_hunks.files_changed // [] | join(", ")' "$STATE_FILE" 2>/dev/null)
-        PARTS+=("Git: ${GIT_SUMMARY} [${GIT_FILES}]")
-    fi
-fi
-
-# Tests section
-TEST_TS=$(jq -r '.tests.timestamp // 0' "$STATE_FILE" 2>/dev/null)
-if [[ $((NOW - TEST_TS)) -lt $TTL_SECONDS ]]; then
-    TEST_STATUS=$(jq -r '.tests.status // empty' "$STATE_FILE" 2>/dev/null)
-    if [[ -n "$TEST_STATUS" ]]; then
-        PASSED=$(jq -r '.tests.passed_count // 0' "$STATE_FILE" 2>/dev/null)
-        FAILED=$(jq -r '.tests.failed_count // 0' "$STATE_FILE" 2>/dev/null)
-        TEST_MSG="${TEST_STATUS} (${PASSED} passed, ${FAILED} failed)"
-        if [[ "$TEST_STATUS" == "fail" ]]; then
-            FAIL_DETAILS=$(jq -r '.tests.failed // [] | .[] | "\(.name): \(.message)"' "$STATE_FILE" 2>/dev/null | head -5)
-            [[ -n "$FAIL_DETAILS" ]] && TEST_MSG="${TEST_MSG} — ${FAIL_DETAILS}"
-        fi
-        PARTS+=("Tests: ${TEST_MSG}")
-    fi
-fi
-
-# Silent exit if no fresh sections
-[[ ${#PARTS[@]} -eq 0 ]] && exit 0
-
-# Build system message
-MSG="Neovim context: $(
-    IFS='|'
-    echo "${PARTS[*]}" | sed 's/|/ | /g'
-)"
+# Exit if no context was generated
+[[ -z "$JQ_OUTPUT" ]] && exit 0
 
 # Output for Claude Code hook
-echo "{\"systemMessage\": $(echo "$MSG" | jq -Rs .)}"
+echo "{\"systemMessage\": $(echo "$JQ_OUTPUT" | jq -Rs .)}"

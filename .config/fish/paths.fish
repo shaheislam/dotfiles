@@ -1,9 +1,12 @@
 # Centralized PATH Management for Fish Shell
 # This file contains all PATH configurations for the Fish shell
 
-# PERF: Cache uname result to avoid two subprocess calls (~5ms each).
-# fish_add_path deduplicates, so repeated entries are harmless but wasteful.
-set -l _os (uname -s)
+# PERF: Use built-in $system variable instead of uname subprocess (~5ms savings).
+# $system contains e.g. "aarch64-darwin" or "x86_64-linux".
+set -l _os Linux
+if string match -q "*darwin*" "$system"
+    set _os Darwin
+end
 
 # OS-specific core paths
 # PERF: --move ensures Homebrew comes before /usr/bin (from /etc/paths).

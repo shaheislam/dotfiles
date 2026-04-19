@@ -68,7 +68,7 @@ else
 fi
 
 EOF
-            ((repo_count++))
+            ((repo_count++)) || true
         else
             echo "⚠️  Skipping $repo_name (no remote origin found)"
         fi

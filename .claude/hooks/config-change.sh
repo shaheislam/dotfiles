@@ -3,7 +3,7 @@ set -euo pipefail
 # ConfigChange hook - log configuration changes for audit trail
 
 INPUT=$(cat)
-SOURCE=$(echo "$INPUT" | python3 -c "import json, sys; print(json.load(sys.stdin).get('source', 'unknown'))" 2>/dev/null || echo "unknown")
+SOURCE=$(echo "$INPUT" | jq -r '.source // "unknown"' 2>/dev/null || echo "unknown")
 
 LOG_DIR="$HOME/.claude/hooks/logs"
 mkdir -p "$LOG_DIR"

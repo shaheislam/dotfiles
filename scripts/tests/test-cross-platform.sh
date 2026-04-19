@@ -262,8 +262,8 @@ if check_file "$HOME/dotfiles/scripts/setup/obsidian-sync-setup.sh"; then
     fi
 else
     print_skip "Obsidian sync script not present (optional)"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # ============================================

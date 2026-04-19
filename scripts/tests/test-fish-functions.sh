@@ -158,8 +158,8 @@ if [[ -d "/Applications/Cursor.app" ]] || check_command cursor; then
         "fish -c 'source ~/.config/fish/functions/cursor.fish && functions cursor' | grep -q 'open\\|cursor'"
 else
     print_skip "Cursor not installed"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # ============================================
@@ -215,8 +215,8 @@ if check_fish_function __abbr_tips_init; then
         "fish -c 'functions __abbr_tips_init'"
 else
     print_skip "Abbreviation tips plugin not active"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # ============================================

@@ -8,7 +8,7 @@ SESSION="$1"
 WINDOW="$2"
 
 # Debug logging
-echo "$(date '+%H:%M:%S') Called: session=$SESSION window=$WINDOW" >> /tmp/claude-monitor.log
+echo "$(date '+%H:%M:%S') Called: session=$SESSION window=$WINDOW" >>/tmp/claude-monitor.log
 
 # Skip if window 1 (that's typically where you're working, not Claude)
 # This prevents false triggers from your main work window
@@ -19,8 +19,8 @@ echo "$(date '+%H:%M:%S') Called: session=$SESSION window=$WINDOW" >> /tmp/claud
 STATE_DIR="/tmp/tmux-claude-activity"
 STATE_FILE="$STATE_DIR/${SESSION}-${WINDOW}.state"
 LOCK_FILE="$STATE_DIR/${SESSION}-${WINDOW}.lock"
-POLL_INTERVAL=3  # Seconds between checks
-MAX_POLLS=20     # Max polls before giving up (60 seconds)
+POLL_INTERVAL=3 # Seconds between checks
+MAX_POLLS=20    # Max polls before giving up (60 seconds)
 
 # Notification indicator
 NEEDS_INPUT_INDICATOR="🟢"
@@ -30,40 +30,40 @@ mkdir -p "$STATE_DIR"
 
 # Find Claude pane in this window
 find_claude_pane() {
-    for pane in $(tmux list-panes -t "${SESSION}:${WINDOW}" -F "#{pane_index}" 2>/dev/null); do
-        local tty
-        tty=$(tmux display-message -t "${SESSION}:${WINDOW}.$pane" -p '#{pane_tty}' 2>/dev/null)
-        if ps -o args= -t "$tty" 2>/dev/null | grep -q '/claude'; then
-            echo "$pane"
-            return 0
-        fi
-    done
-    return 1
+	for pane in $(tmux list-panes -t "${SESSION}:${WINDOW}" -F "#{pane_index}" 2>/dev/null); do
+		local tty
+		tty=$(tmux display-message -t "${SESSION}:${WINDOW}.$pane" -p '#{pane_tty}' 2>/dev/null)
+		if pgrep -f -t "$tty" '/claude' >/dev/null 2>&1; then
+			echo "$pane"
+			return 0
+		fi
+	done
+	return 1
 }
 
 # Check if Claude is idle (no active non-MCP child processes)
 is_claude_idle() {
-    local pane="$1"
-    local tty claude_pid
+	local pane="$1"
+	local tty claude_pid
 
-    tty=$(tmux display-message -t "${SESSION}:${WINDOW}.$pane" -p '#{pane_tty}' 2>/dev/null)
-    [[ -z "$tty" ]] && return 0
+	tty=$(tmux display-message -t "${SESSION}:${WINDOW}.$pane" -p '#{pane_tty}' 2>/dev/null)
+	[[ -z "$tty" ]] && return 0
 
-    claude_pid=$(ps -o pid=,args= -t "$tty" 2>/dev/null | grep -E '/claude( |$)' | head -1 | awk '{print $1}')
-    [[ -z "$claude_pid" ]] && return 0
+	claude_pid=$(pgrep -f -t "$tty" '/claude( |$)' | head -1)
+	[[ -z "$claude_pid" ]] && return 0
 
-    # Check for non-MCP child processes
-    local has_active=false
-    for pid in $(pgrep -P "$claude_pid" 2>/dev/null); do
-        local cmd
-        cmd=$(ps -o args= -p "$pid" 2>/dev/null)
-        if ! echo "$cmd" | grep -qE 'mcp|/private/tmp/bunx'; then
-            has_active=true
-            break
-        fi
-    done
+	# Check for non-MCP child processes
+	local has_active=false
+	for pid in $(pgrep -P "$claude_pid" 2>/dev/null); do
+		local cmd
+		cmd=$(ps -o args= -p "$pid" 2>/dev/null)
+		if ! echo "$cmd" | grep -qE 'mcp|/private/tmp/bunx'; then
+			has_active=true
+			break
+		fi
+	done
 
-    [[ "$has_active" == "false" ]]
+	[[ "$has_active" == "false" ]]
 }
 
 # Exit if no Claude in this window
@@ -71,46 +71,49 @@ CLAUDE_PANE=$(find_claude_pane)
 [[ -z "$CLAUDE_PANE" ]] && exit 0
 
 # Update timestamp (activity detected)
-echo "$(date +%s)" > "$STATE_FILE"
+date +%s >"$STATE_FILE"
 
 # Exit if already monitoring this window
 [[ -f "$LOCK_FILE" ]] && exit 0
 
 # Start background monitor
 (
-    echo $$ > "$LOCK_FILE"
-    trap "rm -f '$LOCK_FILE'" EXIT
+	echo $$ >"$LOCK_FILE"
+	trap 'rm -f "$LOCK_FILE"' EXIT
 
-    polls=0
-    while [[ $polls -lt $MAX_POLLS ]]; do
-        sleep "$POLL_INTERVAL"
-        ((polls++))
+	polls=0
+	while [[ $polls -lt $MAX_POLLS ]]; do
+		sleep "$POLL_INTERVAL"
+		((polls++)) || true
 
-        # Stop if state file removed (manual clear)
-        [[ ! -f "$STATE_FILE" ]] && exit 0
+		# Stop if state file removed (manual clear)
+		[[ ! -f "$STATE_FILE" ]] && exit 0
 
-        # Stop if session/window gone
-        tmux has-session -t "${SESSION}" 2>/dev/null || exit 0
+		# Stop if session/window gone
+		tmux has-session -t "${SESSION}" 2>/dev/null || exit 0
 
-        # Check if window is now active (user switched to it)
-        active=$(tmux display-message -t "${SESSION}" -p "#{window_index}" 2>/dev/null)
-        [[ "$active" == "$WINDOW" ]] && { rm -f "$STATE_FILE"; exit 0; }
+		# Check if window is now active (user switched to it)
+		active=$(tmux display-message -t "${SESSION}" -p "#{window_index}" 2>/dev/null)
+		[[ "$active" == "$WINDOW" ]] && {
+			rm -f "$STATE_FILE"
+			exit 0
+		}
 
-        # Check if Claude is idle
-        if is_claude_idle "$CLAUDE_PANE"; then
-            # Add indicator if not present
-            current_name=$(tmux display-message -t "${SESSION}:${WINDOW}" -p "#{window_name}" 2>/dev/null)
-            if [[ "$current_name" != "${NEEDS_INPUT_INDICATOR}"* ]]; then
-                tmux rename-window -t "${SESSION}:${WINDOW}" "${NEEDS_INPUT_INDICATOR} ${current_name}"
-                tmux refresh-client -S
-            fi
-            rm -f "$STATE_FILE"
-            exit 0
-        fi
-    done
+		# Check if Claude is idle
+		if is_claude_idle "$CLAUDE_PANE"; then
+			# Add indicator if not present
+			current_name=$(tmux display-message -t "${SESSION}:${WINDOW}" -p "#{window_name}" 2>/dev/null)
+			if [[ "$current_name" != "${NEEDS_INPUT_INDICATOR}"* ]]; then
+				tmux rename-window -t "${SESSION}:${WINDOW}" "${NEEDS_INPUT_INDICATOR} ${current_name}"
+				tmux refresh-client -S
+			fi
+			rm -f "$STATE_FILE"
+			exit 0
+		fi
+	done
 
-    # Timed out - clean up
-    rm -f "$STATE_FILE"
+	# Timed out - clean up
+	rm -f "$STATE_FILE"
 ) &
 
 exit 0

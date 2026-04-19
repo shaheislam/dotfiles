@@ -88,7 +88,7 @@ function gwt-nudge --description "Nudge an idle or stuck agent (Gastown gt nudge
     end
 
     # Check ticket state
-    set -l ticket_state "$worktree_path/.claude/ticket-state.yaml"
+    set -l ticket_state "$worktree_path/.claude/ticket-execute.local.md"
     if not test -f "$ticket_state"
         echo "No active ticket in $worktree_path" >&2
         return 1
@@ -104,7 +104,7 @@ function gwt-nudge --description "Nudge an idle or stuck agent (Gastown gt nudge
         set -l agent_state_script "$HOME/dotfiles-gastown/scripts/agent-state.sh"
         if test -x "$agent_state_script"
             set -l state_json ("$agent_state_script" "$worktree_path" --json 2>/dev/null)
-            set -l current_state (echo "$state_json" | python3 -c "import sys,json; print(json.load(sys.stdin).get('state','unknown'))" 2>/dev/null)
+            set -l current_state (echo "$state_json" | jq -r '.state // "unknown"' 2>/dev/null)
             if test "$current_state" = running
                 echo "Agent is running (use --force to nudge anyway): $worktree_path"
                 return 0

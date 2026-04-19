@@ -3,7 +3,7 @@ set -euo pipefail
 # WorktreeRemove hook - cleanup when worktrees are removed
 
 INPUT=$(cat)
-WORKTREE_PATH=$(echo "$INPUT" | python3 -c "import json, sys; print(json.load(sys.stdin).get('worktree_path', ''))" 2>/dev/null || echo "")
+WORKTREE_PATH=$(echo "$INPUT" | jq -r '.worktree_path // ""' 2>/dev/null || echo "")
 
 LOG_DIR="$HOME/.claude/hooks/logs"
 mkdir -p "$LOG_DIR"

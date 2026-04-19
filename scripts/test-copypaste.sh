@@ -17,33 +17,33 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 
 assert_eq() {
-    local test_name="$1"
-    local expected="$2"
-    local actual="$3"
-    if [ "$expected" = "$actual" ]; then
-        echo -e "  ${GREEN}PASS${NC} $test_name"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} $test_name"
-        echo -e "    Expected: $(echo "$expected" | cat -v)"
-        echo -e "    Actual:   $(echo "$actual" | cat -v)"
-        ((FAIL++)) || true
-    fi
+	local test_name="$1"
+	local expected="$2"
+	local actual="$3"
+	if [ "$expected" = "$actual" ]; then
+		echo -e "  ${GREEN}PASS${NC} $test_name"
+		((PASS++)) || true || true
+	else
+		echo -e "  ${RED}FAIL${NC} $test_name"
+		echo -e "    Expected: $(echo "$expected" | cat -v)"
+		echo -e "    Actual:   $(echo "$actual" | cat -v)"
+		((FAIL++)) || true || true
+	fi
 }
 
 assert_contains() {
-    local test_name="$1"
-    local needle="$2"
-    local haystack="$3"
-    if echo "$haystack" | grep -qF "$needle"; then
-        echo -e "  ${GREEN}PASS${NC} $test_name"
-        ((PASS++)) || true
-    else
-        echo -e "  ${RED}FAIL${NC} $test_name"
-        echo -e "    Expected to contain: $needle"
-        echo -e "    Actual: $haystack"
-        ((FAIL++)) || true
-    fi
+	local test_name="$1"
+	local needle="$2"
+	local haystack="$3"
+	if echo "$haystack" | grep -qF "$needle"; then
+		echo -e "  ${GREEN}PASS${NC} $test_name"
+		((PASS++)) || true || true
+	else
+		echo -e "  ${RED}FAIL${NC} $test_name"
+		echo -e "    Expected to contain: $needle"
+		echo -e "    Actual: $haystack"
+		((FAIL++)) || true || true
+	fi
 }
 
 echo "=== Copy-Paste Line Break Fix Tests ==="
@@ -111,7 +111,6 @@ assert_eq "cfx -h: shows help" "cfx - Fix clipboard line breaks from terminal co
 
 # Test: Dry-run mode
 result=$(printf 'test\ncontent' | pbcopy && printf 'new\nstuff' | fish -c "source $CFX_FUNC; cfx -n" 2>&1)
-clipboard_after=$(pbpaste)
 # Clipboard should still have the original content after dry-run
 assert_contains "cfx -n: dry-run doesn't modify clipboard" "dry-run" "$result"
 
@@ -154,13 +153,13 @@ expected=$(printf 'Introduction text here.\n- item one\n- item two\n* bullet thr
 assert_eq "cfx -p: preserves list items" "$expected" "$result"
 
 # Test: Paragraph mode preserves fenced code blocks
-result=$(printf 'Some text\nthat wraps.\n```\ncode line 1\ncode line 2\n```\nAfter code\nalso wraps.' | fish -c "source $CFX_FUNC; cfx -p")
-expected=$(printf 'Some text that wraps.\n```\ncode line 1\ncode line 2\n```\nAfter code also wraps.')
+result=$(printf "Some text\nthat wraps.\n\`\`\`\ncode line 1\ncode line 2\n\`\`\`\nAfter code\nalso wraps." | fish -c "source $CFX_FUNC; cfx -p")
+expected=$(printf "Some text that wraps.\n\`\`\`\ncode line 1\ncode line 2\n\`\`\`\nAfter code also wraps.")
 assert_eq "cfx -p: preserves fenced code blocks" "$expected" "$result"
 
 # Test: Paragraph mode fenced block with language tag
-result=$(printf 'Run this:\n```bash\necho hello\necho world\n```\nThen check.' | fish -c "source $CFX_FUNC; cfx -p")
-expected=$(printf 'Run this:\n```bash\necho hello\necho world\n```\nThen check.')
+result=$(printf "Run this:\n\`\`\`bash\necho hello\necho world\n\`\`\`\nThen check." | fish -c "source $CFX_FUNC; cfx -p")
+expected=$(printf "Run this:\n\`\`\`bash\necho hello\necho world\n\`\`\`\nThen check.")
 assert_eq "cfx -p: fenced block with language tag" "$expected" "$result"
 
 # Test: Single line input (no-op)
@@ -181,80 +180,80 @@ echo -e "${YELLOW}Configuration files${NC}"
 
 # Test: Ghostty clipboard-trim-trailing-spaces
 if grep -q 'clipboard-trim-trailing-spaces = true' "$SCRIPT_DIR/../.config/ghostty/config"; then
-    echo -e "  ${GREEN}PASS${NC} ghostty: clipboard-trim-trailing-spaces enabled"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} ghostty: clipboard-trim-trailing-spaces enabled"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} ghostty: clipboard-trim-trailing-spaces not found"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} ghostty: clipboard-trim-trailing-spaces not found"
+	((FAIL++)) || true || true
 fi
 
 # Test: Ghostty tradeoff documented
 if grep -q 'Tradeoff' "$SCRIPT_DIR/../.config/ghostty/config"; then
-    echo -e "  ${GREEN}PASS${NC} ghostty: tradeoff documented"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} ghostty: tradeoff documented"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} ghostty: tradeoff not documented"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} ghostty: tradeoff not documented"
+	((FAIL++)) || true || true
 fi
 
 # Test: tmux clean copy Y binding
 if grep -q 'tmux-copy-cleanup.sh join' "$SCRIPT_DIR/../.tmux.conf"; then
-    echo -e "  ${GREEN}PASS${NC} tmux: Y clean-copy binding configured"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} tmux: Y clean-copy binding configured"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} tmux: Y clean-copy binding not found"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} tmux: Y clean-copy binding not found"
+	((FAIL++)) || true || true
 fi
 
 # Test: tmux smart copy uses M-y (not C-y which conflicts with scroll-up)
 if grep -q 'M-y.*tmux-copy-cleanup.sh smart' "$SCRIPT_DIR/../.tmux.conf"; then
-    echo -e "  ${GREEN}PASS${NC} tmux: M-y smart-copy binding (no C-y collision)"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} tmux: M-y smart-copy binding (no C-y collision)"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} tmux: M-y smart-copy binding not found"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} tmux: M-y smart-copy binding not found"
+	((FAIL++)) || true || true
 fi
 
 # Test: tmux does NOT use C-y (collision check)
 if ! grep -q 'C-y.*tmux-copy-cleanup' "$SCRIPT_DIR/../.tmux.conf"; then
-    echo -e "  ${GREEN}PASS${NC} tmux: no C-y collision with vi scroll-up"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} tmux: no C-y collision with vi scroll-up"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} tmux: C-y still bound (collides with vi scroll-up)"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} tmux: C-y still bound (collides with vi scroll-up)"
+	((FAIL++)) || true || true
 fi
 
 # Test: tmux documents cfx -p vs smart difference
 if grep -q 'cfx -p' "$SCRIPT_DIR/../.tmux.conf"; then
-    echo -e "  ${GREEN}PASS${NC} tmux: cfx -p vs smart difference documented"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} tmux: cfx -p vs smart difference documented"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} tmux: cfx -p vs smart difference not documented"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} tmux: cfx -p vs smart difference not documented"
+	((FAIL++)) || true || true
 fi
 
 # Test: tmux documents M-y portability
 if grep -q 'Alt/Meta key support' "$SCRIPT_DIR/../.tmux.conf"; then
-    echo -e "  ${GREEN}PASS${NC} tmux: M-y portability note present"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} tmux: M-y portability note present"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} tmux: M-y portability note missing"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} tmux: M-y portability note missing"
+	((FAIL++)) || true || true
 fi
 
 # Test: cleanup script is executable
 if [ -x "$CLEANUP_SCRIPT" ]; then
-    echo -e "  ${GREEN}PASS${NC} tmux-copy-cleanup.sh is executable"
-    ((PASS++)) || true
+	echo -e "  ${GREEN}PASS${NC} tmux-copy-cleanup.sh is executable"
+	((PASS++)) || true || true
 else
-    echo -e "  ${RED}FAIL${NC} tmux-copy-cleanup.sh is not executable"
-    ((FAIL++)) || true
+	echo -e "  ${RED}FAIL${NC} tmux-copy-cleanup.sh is not executable"
+	((FAIL++)) || true || true
 fi
 
 echo ""
 echo "─────────────────────────────────────"
-echo -e "Results: ${GREEN}${PASS} passed${NC}, ${RED}${FAIL} failed${NC} ($(($PASS + $FAIL)) total)"
+echo -e "Results: ${GREEN}${PASS} passed${NC}, ${RED}${FAIL} failed${NC} ($((PASS + FAIL)) total)"
 
 if [ "$FAIL" -gt 0 ]; then
-    exit 1
+	exit 1
 fi

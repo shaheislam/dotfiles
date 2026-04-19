@@ -58,8 +58,8 @@ if ! check_command fzf; then
         "fish -c 'functions _fzf_wrapper' 2>&1 || echo 'Gracefully skipped'"
 else
     print_skip "fzf is installed, cannot test missing fzf scenario"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test zoxide functions handle missing zoxide
@@ -68,8 +68,8 @@ if ! check_command zoxide; then
         "fish -c 'echo \$PATH' >/dev/null 2>&1"
 else
     print_skip "zoxide is installed, cannot test missing zoxide scenario"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # Test direnv handles missing binary
@@ -78,8 +78,8 @@ if ! check_command direnv; then
         "fish -c 'echo test' >/dev/null 2>&1"
 else
     print_skip "direnv is installed, cannot test missing direnv scenario"
-    ((TESTS_SKIPPED++))
-    ((TOTAL_TESTS++))
+    ((TESTS_SKIPPED++)) || true
+    ((TOTAL_TESTS++)) || true
 fi
 
 # ============================================

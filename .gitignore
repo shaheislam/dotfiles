@@ -169,6 +169,11 @@ work/
 # Version control
 .jj/
 
+# Tracked Binaries (personal tool binaries)
+scripts/bin/consul-template
+scripts/bin/pulse-client
+scripts/bin/pulse-server
+
 # Environment files
 # Note: The global .envrc at dotfiles root is tracked (for Nix global environment)
 # Project-specific .envrc files should not be committed

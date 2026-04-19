@@ -8,38 +8,40 @@ echo ""
 
 # Function to check if a command exists
 check_cmd() {
-    local cmd=$1
-    local name=$2
-    if command -v "$cmd" &> /dev/null; then
-        local path=$(which "$cmd")
-        local version=$($cmd --version 2>/dev/null | head -n 1 || echo "version unknown")
+	local cmd=$1
+	local name=$2
+	if command -v "$cmd" &>/dev/null; then
+		local path
+		local version
+		path=$(command -v "$cmd")
+		version=$($cmd --version 2>/dev/null | head -n 1 || echo "version unknown")
 
-        # Check if it's from Nix
-        if [[ "$path" == *"nix"* ]]; then
-            echo "✅ $name: $path (Nix)"
-            echo "   Version: $version"
-        else
-            echo "⚠️  $name: $path (Not from Nix)"
-            echo "   Version: $version"
-        fi
-    else
-        echo "❌ $name: Not installed"
-    fi
+		# Check if it's from Nix
+		if [[ "$path" == *"nix"* ]]; then
+			echo "✅ $name: $path (Nix)"
+			echo "   Version: $version"
+		else
+			echo "⚠️  $name: $path (Not from Nix)"
+			echo "   Version: $version"
+		fi
+	else
+		echo "❌ $name: Not installed"
+	fi
 }
 
 # Check direnv status
 echo "📦 Environment Management:"
-if command -v direnv &> /dev/null; then
-    echo "✅ direnv installed: $(which direnv)"
+if command -v direnv &>/dev/null; then
+	echo "✅ direnv installed: $(which direnv)"
 
-    # Check if direnv is hooked
-    if [[ "$DIRENV_DIFF" ]]; then
-        echo "   ✅ direnv is active in current shell"
-    else
-        echo "   ℹ️  direnv installed but not active in current directory"
-    fi
+	# Check if direnv is hooked
+	if [[ "$DIRENV_DIFF" ]]; then
+		echo "   ✅ direnv is active in current shell"
+	else
+		echo "   ℹ️  direnv installed but not active in current directory"
+	fi
 else
-    echo "❌ direnv not installed (needed for project overrides)"
+	echo "❌ direnv not installed (needed for project overrides)"
 fi
 
 echo ""
@@ -124,21 +126,21 @@ echo ""
 # Show Nix paths
 echo "Nix Profile Paths:"
 if [ -d "$HOME/.nix-profile/bin" ]; then
-    echo "✅ ~/.nix-profile/bin exists"
-    echo "   LSPs in profile: $(ls ~/.nix-profile/bin/*ls* 2>/dev/null | wc -l | tr -d ' ')"
+	echo "✅ ~/.nix-profile/bin exists"
+	echo "   LSPs in profile: $(find "$HOME/.nix-profile/bin" -maxdepth 1 -name '*ls*' 2>/dev/null | wc -l | tr -d ' ')"
 else
-    echo "❌ ~/.nix-profile/bin does not exist"
+	echo "❌ ~/.nix-profile/bin does not exist"
 fi
 
 echo ""
 
 # Check if in Nix shell
 if [ -n "$IN_NIX_SHELL" ]; then
-    echo "🐚 Currently in Nix shell"
+	echo "🐚 Currently in Nix shell"
 elif [ -n "$DIRENV_DIR" ]; then
-    echo "📁 direnv active in: $DIRENV_DIR"
+	echo "📁 direnv active in: $DIRENV_DIR"
 else
-    echo "ℹ️  Not in Nix shell or direnv environment"
+	echo "ℹ️  Not in Nix shell or direnv environment"
 fi
 
 echo ""
@@ -146,13 +148,13 @@ echo ""
 # Check PATH precedence
 echo "PATH precedence (first 5 entries):"
 echo "$PATH" | tr ':' '\n' | head -5 | while read -r p; do
-    if [[ "$p" == *"nix"* ]]; then
-        echo "  • $p (Nix)"
-    elif [[ "$p" == *"direnv"* ]]; then
-        echo "  • $p (direnv)"
-    else
-        echo "  • $p"
-    fi
+	if [[ "$p" == *"nix"* ]]; then
+		echo "  • $p (Nix)"
+	elif [[ "$p" == *"direnv"* ]]; then
+		echo "  • $p (direnv)"
+	else
+		echo "  • $p"
+	fi
 done
 
 echo ""
@@ -160,30 +162,30 @@ echo "=== Neovim Integration ==="
 echo ""
 
 # Check Neovim
-if command -v nvim &> /dev/null; then
-    echo "✅ Neovim installed: $(which nvim)"
-    echo "   Version: $(nvim --version | head -n 1)"
+if command -v nvim &>/dev/null; then
+	echo "✅ Neovim installed: $(which nvim)"
+	echo "   Version: $(nvim --version | head -n 1)"
 
-    # Check for LazyVim
-    if [ -d "$HOME/.config/nvim/lua/plugins" ]; then
-        echo "✅ LazyVim configuration detected"
+	# Check for LazyVim
+	if [ -d "$HOME/.config/nvim/lua/plugins" ]; then
+		echo "✅ LazyVim configuration detected"
 
-        # Check for our Nix LSP config
-        if [ -f "$HOME/.config/nvim/lua/plugins/nix-lsp.lua" ]; then
-            echo "✅ Nix LSP configuration found"
-        else
-            echo "⚠️  Nix LSP configuration not found"
-        fi
+		# Check for our Nix LSP config
+		if [ -f "$HOME/.config/nvim/lua/plugins/nix-lsp.lua" ]; then
+			echo "✅ Nix LSP configuration found"
+		else
+			echo "⚠️  Nix LSP configuration not found"
+		fi
 
-        # Check if Mason is disabled
-        if [ -f "$HOME/.config/nvim/lua/plugins/mason-disabled.lua" ]; then
-            echo "✅ Mason.nvim is disabled"
-        else
-            echo "⚠️  Mason.nvim might still be active"
-        fi
-    fi
+		# Check if Mason is disabled
+		if [ -f "$HOME/.config/nvim/lua/plugins/mason-disabled.lua" ]; then
+			echo "✅ Mason.nvim is disabled"
+		else
+			echo "⚠️  Mason.nvim might still be active"
+		fi
+	fi
 else
-    echo "❌ Neovim not installed"
+	echo "❌ Neovim not installed"
 fi
 
 echo ""
@@ -194,12 +196,12 @@ echo ""
 total_lsps=0
 nix_lsps=0
 for cmd in gopls basedpyright-langserver pyright-langserver ruff-lsp rust-analyzer typescript-language-server terraform-ls bash-language-server yaml-language-server marksman nil lua-language-server taplo; do
-    if command -v "$cmd" &> /dev/null; then
-        ((total_lsps++))
-        if [[ "$(which "$cmd")" == *"nix"* ]]; then
-            ((nix_lsps++))
-        fi
-    fi
+	if command -v "$cmd" &>/dev/null; then
+		((total_lsps++)) || true
+		if [[ "$(which "$cmd")" == *"nix"* ]]; then
+			((nix_lsps++)) || true
+		fi
+	fi
 done
 
 echo "📊 LSP Status:"
@@ -211,22 +213,22 @@ echo ""
 echo "💡 Recommendations:"
 
 if [ "$nix_lsps" -eq 0 ]; then
-    echo "   • Run: ./scripts/install-lsps-global.sh"
-    echo "     to install global baseline LSPs"
+	echo "   • Run: ./scripts/install-lsps-global.sh"
+	echo "     to install global baseline LSPs"
 fi
 
-if ! command -v direnv &> /dev/null; then
-    echo "   • Install direnv for project overrides:"
-    echo "     brew install direnv"
+if ! command -v direnv &>/dev/null; then
+	echo "   • Install direnv for project overrides:"
+	echo "     brew install direnv"
 fi
 
 if [ "$total_lsps" -lt 5 ]; then
-    echo "   • Few LSPs detected. Run:"
-    echo "     ./scripts/activate-nix-lsps.sh hybrid"
+	echo "   • Few LSPs detected. Run:"
+	echo "     ./scripts/activate-nix-lsps.sh hybrid"
 fi
 
 if [ "$nix_lsps" -eq "$total_lsps" ] && [ "$nix_lsps" -gt 0 ]; then
-    echo "   ✅ All LSPs are from Nix - setup looks good!"
+	echo "   ✅ All LSPs are from Nix - setup looks good!"
 fi
 
 echo ""

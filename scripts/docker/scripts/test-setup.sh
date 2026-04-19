@@ -83,9 +83,9 @@ for tool in "${CORE_TOOLS[@]}"; do
     mapped=$(pm_map_package_name "$tool")
 
     if [ -n "$mapped" ]; then
-        ((MAPPED_COUNT++))
+        ((MAPPED_COUNT++)) || true
         if [[ "$mapped" == BINARY_INSTALL:* ]]; then
-            ((BINARY_COUNT++))
+            ((BINARY_COUNT++)) || true
             echo "  ✓ $tool → $mapped (binary install)"
         else
             echo "  ✓ $tool → $mapped"
@@ -113,7 +113,7 @@ if [ -f "scripts/lib/binary-installer.sh" ]; then
     for binary in "${TEST_BINARIES[@]}"; do
         url=$(get_binary_download_url "$binary")
         if [ -n "$url" ]; then
-            ((URL_COUNT++))
+            ((URL_COUNT++)) || true
             echo "  ✓ $binary: URL generated"
         else
             echo "  ✗ $binary: No URL"
@@ -135,7 +135,7 @@ PROFILE_COUNT=0
 
 for profile in "${PROFILES[@]}"; do
     if [ -f "scripts/profiles/${profile}.sh" ]; then
-        ((PROFILE_COUNT++))
+        ((PROFILE_COUNT++)) || true
         echo "  ✓ Profile exists: $profile"
     else
         echo "  ✗ Profile missing: $profile"
@@ -169,7 +169,7 @@ SHELLS_FOUND=0
 if command -v fish &> /dev/null; then
     FISH_VERSION=$(fish --version 2>&1)
     echo "  ✓ Fish: $FISH_VERSION"
-    ((SHELLS_FOUND++))
+    ((SHELLS_FOUND++)) || true
 else
     echo "  ✗ Fish not installed"
 fi
@@ -177,7 +177,7 @@ fi
 if command -v zsh &> /dev/null; then
     ZSH_VERSION=$(zsh --version 2>&1 | head -1)
     echo "  ✓ Zsh: $ZSH_VERSION"
-    ((SHELLS_FOUND++))
+    ((SHELLS_FOUND++)) || true
 else
     echo "  ✗ Zsh not installed"
 fi
@@ -213,7 +213,7 @@ for tool in "${MODERN_TOOLS[@]}"; do
 
     if command -v "$actual_cmd" &> /dev/null; then
         echo "  ✓ $tool (as $actual_cmd)"
-        ((TOOLS_FOUND++))
+        ((TOOLS_FOUND++)) || true
     else
         echo "  ✗ $tool not found"
     fi
@@ -231,7 +231,7 @@ DEVOPS_FOUND=0
 for tool in "${DEVOPS_TOOLS[@]}"; do
     if command -v "$tool" &> /dev/null; then
         echo "  ✓ $tool"
-        ((DEVOPS_FOUND++))
+        ((DEVOPS_FOUND++)) || true
     else
         echo "  ℹ️  $tool not found (optional)"
     fi

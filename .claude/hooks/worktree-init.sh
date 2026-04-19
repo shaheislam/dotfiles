@@ -3,7 +3,7 @@ set -euo pipefail
 # WorktreeCreate hook - initialize new worktrees with beads + checkpoints
 
 INPUT=$(cat)
-WORKTREE_PATH=$(echo "$INPUT" | python3 -c "import json, sys; print(json.load(sys.stdin).get('worktree_path', ''))" 2>/dev/null || echo "")
+WORKTREE_PATH=$(echo "$INPUT" | jq -r '.worktree_path // ""' 2>/dev/null || echo "")
 
 if [ -z "$WORKTREE_PATH" ]; then
     exit 0

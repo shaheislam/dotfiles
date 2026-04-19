@@ -32,13 +32,13 @@ done
 # Scan right for WORD boundary
 end=$cursor_x
 while ((end + 1 < len)) && [[ ! "${line:$((end + 1)):1}" =~ [[:space:]] ]]; do
-    ((end++))
+    ((end++)) || true
 done
 
 # For around mode, include trailing whitespace
 if [[ "$mode" == "around" ]]; then
     while ((end + 1 < len)) && [[ "${line:$((end + 1)):1}" =~ [[:space:]] ]]; do
-        ((end++))
+        ((end++)) || true
     done
 fi
 
