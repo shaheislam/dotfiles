@@ -871,7 +871,6 @@ if status is-interactive
         bind \t _fifc_or_fzf
         bind -M insert \t _fifc_or_fzf
     end
-end
 
 # Mise shims for version-managed tools (must be early in PATH)
 fish_add_path $HOME/.local/share/mise/shims
