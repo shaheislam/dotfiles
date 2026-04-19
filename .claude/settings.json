@@ -379,6 +379,7 @@
     ]
   },
   "includeGitInstructions": false,
+  "model": "claude-opus-4-7",
   "permissions": {
     "allow": [
       "Bash(git status *)",

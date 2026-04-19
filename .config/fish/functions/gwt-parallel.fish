@@ -159,7 +159,7 @@ function gwt-parallel --description "Launch multiple worktree devcontainers in t
             # Use devcon claude (fixed devcontainer config, mounts worktree)
             # Build devcon up command (without --exec, we'll exec separately)
             # Pass Claude Code env vars into container for plugin auto-update and CLAUDE.md loading
-            set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 -E CLAUDE_CODE_NO_FLICKER=1 $worktree_path"
+            set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 -E CLAUDE_CODE_NO_FLICKER=0 $worktree_path"
             for mount in $mounts
                 set devcon_up_cmd "$devcon_up_cmd $mount"
             end

@@ -674,7 +674,7 @@ test_settings() {
 	run_test "Fish has CLAUDE_CODE_EFFORT_LEVEL" "grep -q 'CLAUDE_CODE_EFFORT_LEVEL' '$DOTFILES_ROOT/.config/fish/config.fish'"
 	run_test "Fish has FORCE_AUTOUPDATE_PLUGINS" "grep -q 'FORCE_AUTOUPDATE_PLUGINS' '$DOTFILES_ROOT/.config/fish/config.fish'"
 	run_test "Fish has CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD" "grep -q 'CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD' '$DOTFILES_ROOT/.config/fish/config.fish'"
-	run_test "Fish has CLAUDE_CODE_NO_FLICKER" "grep -q 'CLAUDE_CODE_NO_FLICKER' '$DOTFILES_ROOT/.config/fish/config.fish'"
+	run_test "Fish disables CLAUDE_CODE_NO_FLICKER by default" "grep -q 'CLAUDE_CODE_NO_FLICKER 0' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
 	# CLAUDE.md documentation
 	run_test "CLAUDE.md documents settings section" "grep -q 'Claude Code Settings & Security' '$DOTFILES_ROOT/CLAUDE.md'"

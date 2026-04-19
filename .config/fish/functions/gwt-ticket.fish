@@ -2222,7 +2222,7 @@ command --with-flags
     if $use_devcon
         # Build devcon up command - rebuild ensures fresh container with correct mounts
         # Without -r, devcontainer up reuses existing containers that may lack --mount binds
-        set -l devcon_up_cmd "devcon claude -i $instance_name -r -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 -E CLAUDE_CODE_NO_FLICKER=1"
+        set -l devcon_up_cmd "devcon claude -i $instance_name -r -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 -E CLAUDE_CODE_NO_FLICKER=0"
         # Pass CLAUDE_CONFIG_DIR env var into container for subscription profile
         if test -n "$sub_profile"
             set devcon_up_cmd "$devcon_up_cmd -E CLAUDE_CONFIG_DIR=/home/node/.claude-$sub_profile"

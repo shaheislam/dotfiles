@@ -139,10 +139,10 @@ Four browser tools for AI agents, each with different strengths:
 - Attribution: `commit: ""`, `pr: ""` (suppress AI trailers)
 - Permission rules: deny → ask → allow (first match wins)
 
-**Model**: Opus 4.6 default, `CLAUDE_CODE_EFFORT_LEVEL=max`, `--effort max` CLI flag on all launch commands, `/model opusplan` for plan→execute split.
-**Fullscreen Stability**: `CLAUDE_CODE_NO_FLICKER=1` enables the fullscreen rendering research preview (requires Claude Code ≥ 2.1.89) across host shells and devcontainers.
+**Model**: Opus 4.7 default via project settings (`model: claude-opus-4-7`), `CLAUDE_CODE_EFFORT_LEVEL=max`, `--effort max` CLI flag on launch commands, `/model opusplan` for plan→execute split.
+**Fullscreen Stability**: Default `CLAUDE_CODE_NO_FLICKER` to `0` in host shells and devcontainers to avoid redraw issues from inherited environments. Enable fullscreen rendering per session with `/tui fullscreen`, or flip `CLAUDE_CODE_NO_FLICKER=1` only as a temporary troubleshooting override on older Claude Code versions.
   - tmux: keep `set -g mouse on` (already in `.tmux.conf`) so wheel scrolling reaches Claude Code. Fullscreen rendering is not supported inside `tmux -CC` (iTerm2 integration mode), so stick to regular tmux sessions when launching Claude in fullscreen.
-  - Native selection: when mouse capture is disruptive (copy-on-select workflows, tmux copy-mode, etc.) launch with `CLAUDE_CODE_DISABLE_MOUSE=1` to retain terminal-native selection while still keeping the flicker-free renderer (`CLAUDE_CODE_NO_FLICKER=1 CLAUDE_CODE_DISABLE_MOUSE=1 claude`).
+  - Native selection: when mouse capture is disruptive (copy-on-select workflows, tmux copy-mode, etc.) combine fullscreen rendering with `CLAUDE_CODE_DISABLE_MOUSE=1` so the terminal keeps native selection.
 
 ### Claude Code Hooks
 Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `docs/claude-code-hooks.md`.

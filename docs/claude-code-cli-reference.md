@@ -1214,7 +1214,7 @@ These official flags are available but not yet integrated in our dotfiles:
 | `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS` | Disable background tasks | `0` |
 | `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION` | Prompt suggestions | `true` |
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | Enable agent teams | Off |
-| `CLAUDE_CODE_NO_FLICKER` | Opt-in fullscreen renderer (requires v2.1.89+) | `1` (enabled here) |
+| `CLAUDE_CODE_NO_FLICKER` | Opt-in fullscreen renderer (requires v2.1.89+) | `0` by default here |
 | `CLAUDE_CODE_DISABLE_MOUSE` | Disable mouse capture to keep native selection | `0` (set to `1` when you need tmux/terminal-driven selection) |
 | `CLAUDE_CODE_TASK_LIST_ID` | Named shared task list | None |
 | `DISABLE_TELEMETRY` | Opt out of usage tracking | Off |

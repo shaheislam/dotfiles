@@ -66,7 +66,7 @@ if status is-interactive
     set -gx FORCE_AUTOUPDATE_PLUGINS 1 # Auto-update plugins on session start
     set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1 # Load CLAUDE.md from --add-dir paths
     set -gx CLAUDE_CODE_EFFORT_LEVEL max # env var: low|medium|high|max|auto (max=Opus 4.6 only, session-scoped)
-    set -gx CLAUDE_CODE_NO_FLICKER 1 # Enable fullscreen research preview (requires v2.1.89+)
+    set -gx CLAUDE_CODE_NO_FLICKER 0 # Explicitly disable fullscreen renderer by default to avoid redraw issues
 
     # PinchTab - Multi-instance Chrome orchestrator for AI agents
     set -gx PINCHTAB_PORT 9867
