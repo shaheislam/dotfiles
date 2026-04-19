@@ -313,7 +313,7 @@ if status is-interactive
             if not set -q __mise_initialized
                 set -g __mise_initialized 1
                 /opt/homebrew/bin/mise hook-env -s fish | source
-                
+
                 # Initial mtime capture for current project scope
                 set -l config (_find_nearest_envrc 2>/dev/null) # mise often uses .envrc too
                 if test -z "$config"
@@ -329,7 +329,7 @@ if status is-interactive
                         test -n "$config"; and break
                     end
                 end
-                
+
                 if test -n "$config"
                     set -g __mise_last_mtime (stat -f %m "$config" 2>/dev/null)
                     set -g __mise_last_config "$config"
@@ -358,7 +358,7 @@ if status is-interactive
         function __mise_env_eval_2 --on-event fish_preexec
             if set -q __mise_env_again
                 set -e __mise_env_again
-                
+
                 # Performance optimization: check mtime of nearest config
                 set -l config ""
                 for f in .envrc mise.toml .mise.toml
@@ -611,266 +611,266 @@ if status is-interactive
         # Functions moved to separate files in functions/ for autoloading
     end
 
-        # Helper functions for highlighted command output
-        function gos --description "Run go command with highlighted search term"
-            if test (count $argv) -lt 2
-                echo "Usage: gos <search-term> <go-command>"
-                echo "Example: gos ERROR go test ./..."
-                return 1
-            end
-            set -l search_term $argv[1]
-            set -e argv[1]
-            command go $argv 2>&1 | splash -s "$search_term"
+    # Helper functions for highlighted command output
+    function gos --description "Run go command with highlighted search term"
+        if test (count $argv) -lt 2
+            echo "Usage: gos <search-term> <go-command>"
+            echo "Example: gos ERROR go test ./..."
+            return 1
         end
+        set -l search_term $argv[1]
+        set -e argv[1]
+        command go $argv 2>&1 | splash -s "$search_term"
+    end
 
-        function gor --description "Run go command with regex highlighting"
-            if test (count $argv) -lt 2
-                echo "Usage: gor <regex> <go-command>"
-                echo "Example: gor 'FAIL|ERROR' go test ./..."
-                return 1
-            end
-            set -l regex $argv[1]
-            set -e argv[1]
-            command go $argv 2>&1 | splash -r "$regex"
+    function gor --description "Run go command with regex highlighting"
+        if test (count $argv) -lt 2
+            echo "Usage: gor <regex> <go-command>"
+            echo "Example: gor 'FAIL|ERROR' go test ./..."
+            return 1
         end
+        set -l regex $argv[1]
+        set -e argv[1]
+        command go $argv 2>&1 | splash -r "$regex"
+    end
 
-        # Generic helper for any command with search highlighting
-        function runs --description "Run any command with splash search highlighting"
-            if test (count $argv) -lt 2
-                echo "Usage: runs <search-term> <command...>"
-                echo "Example: runs ERROR npm test"
-                return 1
-            end
-            set -l search_term $argv[1]
-            set -e argv[1]
-            $argv 2>&1 | splash -s "$search_term"
+    # Generic helper for any command with search highlighting
+    function runs --description "Run any command with splash search highlighting"
+        if test (count $argv) -lt 2
+            echo "Usage: runs <search-term> <command...>"
+            echo "Example: runs ERROR npm test"
+            return 1
         end
+        set -l search_term $argv[1]
+        set -e argv[1]
+        $argv 2>&1 | splash -s "$search_term"
+    end
 
-        function runr --description "Run any command with splash regex highlighting"
-            if test (count $argv) -lt 2
-                echo "Usage: runr <regex> <command...>"
-                echo "Example: runr '[45]\\d\\d' curl api.example.com"
-                return 1
-            end
-            set -l regex $argv[1]
-            set -e argv[1]
-            $argv 2>&1 | splash -r "$regex"
+    function runr --description "Run any command with splash regex highlighting"
+        if test (count $argv) -lt 2
+            echo "Usage: runr <regex> <command...>"
+            echo "Example: runr '[45]\\d\\d' curl api.example.com"
+            return 1
         end
+        set -l regex $argv[1]
+        set -e argv[1]
+        $argv 2>&1 | splash -r "$regex"
+    end
 
-        # Function to set splash arguments for the current session
-        function splash-set --description "Set splash arguments for automatic commands"
-            if test (count $argv) -eq 0
-                if set -q SPLASH_ARGS
-                    echo "Current SPLASH_ARGS: $SPLASH_ARGS"
-                else
-                    echo "No SPLASH_ARGS set"
-                end
-                echo ""
-                echo "Usage: splash-set <args>"
-                echo "Examples:"
-                echo "  splash-set -s ERROR        # Highlight ERROR in all auto-splash commands"
-                echo "  splash-set -r '[45]\\d\\d'  # Highlight 4xx and 5xx HTTP codes"
-                echo "  splash-set --dark          # Force dark theme"
-                echo "  splash-set ''              # Clear splash arguments"
-            else if test "$argv[1]" = ""
-                set -e SPLASH_ARGS
-                echo "SPLASH_ARGS cleared"
+    # Function to set splash arguments for the current session
+    function splash-set --description "Set splash arguments for automatic commands"
+        if test (count $argv) -eq 0
+            if set -q SPLASH_ARGS
+                echo "Current SPLASH_ARGS: $SPLASH_ARGS"
             else
-                set -gx SPLASH_ARGS $argv
-                echo "SPLASH_ARGS set to: $argv"
+                echo "No SPLASH_ARGS set"
             end
+            echo ""
+            echo "Usage: splash-set <args>"
+            echo "Examples:"
+            echo "  splash-set -s ERROR        # Highlight ERROR in all auto-splash commands"
+            echo "  splash-set -r '[45]\\d\\d'  # Highlight 4xx and 5xx HTTP codes"
+            echo "  splash-set --dark          # Force dark theme"
+            echo "  splash-set ''              # Clear splash arguments"
+        else if test "$argv[1]" = ""
+            set -e SPLASH_ARGS
+            echo "SPLASH_ARGS cleared"
+        else
+            set -gx SPLASH_ARGS $argv
+            echo "SPLASH_ARGS set to: $argv"
         end
-
-        # Alias for convenience
-        alias splash-clear="splash-set ''"
     end
 
-    alias n=nvim
-    alias nvm="env NVIM_APPNAME=nvim-mini nvim" # Minimal Neovim config
-    alias fixterm="stty sane"
-    alias footyres="$HOME/dotfiles/scripts/bin/footyres" # Football results CLI
+    # Alias for convenience
+    alias splash-clear="splash-set ''"
+end
 
-    # Obsidian and Productivity Aliases
-    # Moved to functions/: obs, todo, gis, gisls, gisdel, ssmc, f, gx, e, tb, aws-sso, assume, aws-whoami, s3grep, s3-logs, gd-view, ct-view, s3-dates, s3-browse, logs, gwtaf, gwtabf, gco, gstash, dps, dimg, gwtl, gwtr, _atuin_search*
-    
-    # Kubernetes aliases
-    alias kctx="kubie ctx"
-    alias kns="kubie ns"
+alias n=nvim
+alias nvm="env NVIM_APPNAME=nvim-mini nvim" # Minimal Neovim config
+alias fixterm="stty sane"
+alias footyres="$HOME/dotfiles/scripts/bin/footyres" # Football results CLI
 
-    # GitHub Gist aliases (enhanced with fzf functions below)
-    alias gispub="gis"
-    alias gispriv="gh gist create"
+# Obsidian and Productivity Aliases
+# Moved to functions/: obs, todo, gis, gisls, gisdel, ssmc, f, gx, e, tb, aws-sso, assume, aws-whoami, s3grep, s3-logs, gd-view, ct-view, s3-dates, s3-browse, logs, gwtaf, gwtabf, gco, gstash, dps, dimg, gwtl, gwtr, _atuin_search*
 
-    # System monitoring aliases
-    alias top="btop" # Use btop as default process viewer
-    alias htop="htop --tree" # Show htop with tree view by default
-    # alias ps="procs"  # Disabled - procs is not a drop-in ps replacement (-p means --pager, not PID filter)
-    alias pst="procs --tree" # Process tree view
-    alias psg="procs | grep" # Search processes
-    alias net="sudo bandwhich" # Network monitoring (requires sudo)
-    alias dig="doggo" # Modern DNS lookup
-    alias dns="doggo" # Alternative DNS alias
+# Kubernetes aliases
+alias kctx="kubie ctx"
+alias kns="kubie ns"
 
-    # Security & DevSecOps Tools
-    alias scan="trivy" # Vulnerability scanner
-    alias vuln="grype" # Container vulnerability scanner
-    alias sbom="syft" # Generate SBOM
-    alias tfscan="tfsec" # Terraform security scanner
-    alias iacscan="checkov" # IaC security scanner
-    alias semscan="semgrep" # Static analysis
-    alias dockerlint="hadolint" # Dockerfile linter
+# GitHub Gist aliases (enhanced with fzf functions below)
+alias gispub="gis"
+alias gispriv="gh gist create"
 
-    # Kubernetes & Container Tools
-    # Use kubecolor for colorized kubectl output if available
-    if test -x $_brew/kubecolor
-        alias kubectl="kubecolor"
-    end
-    alias k="kubectl" # Kubernetes CLI shorthand
-    alias kc="kubectx" # Quick context switching
-    alias kn="kubens" # Quick namespace switching
-    alias kx="kubie ctx" # Switch kubernetes context with kubie (alternative)
-    alias kns="kubie ns" # Switch namespace with kubie (alternative)
-    alias kdive="dive" # Docker image explorer
-    alias kctop="ctop" # Container metrics
+# System monitoring aliases
+alias top="btop" # Use btop as default process viewer
+alias htop="htop --tree" # Show htop with tree view by default
+# alias ps="procs"  # Disabled - procs is not a drop-in ps replacement (-p means --pager, not PID filter)
+alias pst="procs --tree" # Process tree view
+alias psg="procs | grep" # Search processes
+alias net="sudo bandwhich" # Network monitoring (requires sudo)
+alias dig="doggo" # Modern DNS lookup
+alias dns="doggo" # Alternative DNS alias
 
-    # Kubernetes shortcuts
-    alias kgp="kubectl get pods"
-    alias kgs="kubectl get svc"
-    alias kgd="kubectl get deployment"
-    alias kgn="kubectl get nodes"
-    alias kdp="kubectl describe pod"
-    alias kds="kubectl describe svc"
-    alias kdd="kubectl describe deployment"
-    alias kdn="kubectl describe node"
-    alias kaf="kubectl apply -f"
-    alias kdf="kubectl delete -f"
-    alias kl="kubectl logs"
-    alias klf="kubectl logs -f"
-    alias ke="kubectl exec -it"
+# Security & DevSecOps Tools
+alias scan="trivy" # Vulnerability scanner
+alias vuln="grype" # Container vulnerability scanner
+alias sbom="syft" # Generate SBOM
+alias tfscan="tfsec" # Terraform security scanner
+alias iacscan="checkov" # IaC security scanner
+alias semscan="semgrep" # Static analysis
+alias dockerlint="hadolint" # Dockerfile linter
 
-    # Local Kubernetes clusters (using Colima + k3d)
-    # k3d shortcuts
-    alias k3dc="k3d cluster"
-    alias k3dcreate="k3d cluster create"
-    alias k3dlist="k3d cluster list"
-    alias k3ddel="k3d cluster delete"
-    alias k3s="~/dotfiles/scripts/k3s-setup.sh"
+# Kubernetes & Container Tools
+# Use kubecolor for colorized kubectl output if available
+if test -x $_brew/kubecolor
+    alias kubectl="kubecolor"
+end
+alias k="kubectl" # Kubernetes CLI shorthand
+alias kc="kubectx" # Quick context switching
+alias kn="kubens" # Quick namespace switching
+alias kx="kubie ctx" # Switch kubernetes context with kubie (alternative)
+alias kns="kubie ns" # Switch namespace with kubie (alternative)
+alias kdive="dive" # Docker image explorer
+alias kctop="ctop" # Container metrics
 
-    # kind shortcuts
-    alias kindc="kind create cluster"
-    alias kindl="kind get clusters"
-    alias kindd="kind delete cluster"
+# Kubernetes shortcuts
+alias kgp="kubectl get pods"
+alias kgs="kubectl get svc"
+alias kgd="kubectl get deployment"
+alias kgn="kubectl get nodes"
+alias kdp="kubectl describe pod"
+alias kds="kubectl describe svc"
+alias kdd="kubectl describe deployment"
+alias kdn="kubectl describe node"
+alias kaf="kubectl apply -f"
+alias kdf="kubectl delete -f"
+alias kl="kubectl logs"
+alias klf="kubectl logs -f"
+alias ke="kubectl exec -it"
 
-    # Better File/System Tools
-    alias du="dust" # Better disk usage
-    alias ncdu="ncdu --color dark" # NCurses disk usage
-    # alias sed="sd"  # Disabled - breaks completion scripts that expect real sed
-    alias sedd="sd" # Use 'sedd' for the sd tool instead
-    # alias cut="choose"  # Disabled - choose-rust is not a drop-in replacement for cut (different CLI interface)
-    alias loc="tokei" # Code statistics
-    alias duf="duf" # Better df
+# Local Kubernetes clusters (using Colima + k3d)
+# k3d shortcuts
+alias k3dc="k3d cluster"
+alias k3dcreate="k3d cluster create"
+alias k3dlist="k3d cluster list"
+alias k3ddel="k3d cluster delete"
+alias k3s="~/dotfiles/scripts/k3s-setup.sh"
 
-    # Network Tools
-    alias http="xh" # Friendly HTTP client
-    alias grpc="grpcurl" # gRPC client
-    alias trace="mtr" # Better traceroute
-    alias ping="gping" # Ping with graph
-    alias bench="hyperfine" # Command benchmarking
-    alias load="oha" # HTTP load testing
+# kind shortcuts
+alias kindc="kind create cluster"
+alias kindl="kind get clusters"
+alias kindd="kind delete cluster"
 
-    # Infrastructure Tools
-    alias tf="terraform" # Terraform shorthand
-    alias tg="terragrunt" # Terragrunt shorthand
-    alias tfdoc="terraform-docs" # Terraform docs
-    alias tfcost="infracost" # Infrastructure cost
+# Better File/System Tools
+alias du="dust" # Better disk usage
+alias ncdu="ncdu --color dark" # NCurses disk usage
+# alias sed="sd"  # Disabled - breaks completion scripts that expect real sed
+alias sedd="sd" # Use 'sedd' for the sd tool instead
+# alias cut="choose"  # Disabled - choose-rust is not a drop-in replacement for cut (different CLI interface)
+alias loc="tokei" # Code statistics
+alias duf="duf" # Better df
 
-    # Monitoring & Performance
-    alias mon="glances" # System monitoring
-    alias lognav="lnav" # Log navigator
-    alias flame="flamegraph" # Performance visualization
+# Network Tools
+alias http="xh" # Friendly HTTP client
+alias grpc="grpcurl" # gRPC client
+alias trace="mtr" # Better traceroute
+alias ping="gping" # Ping with graph
+alias bench="hyperfine" # Command benchmarking
+alias load="oha" # HTTP load testing
 
-    # Development Tools
-    alias watch="watchexec" # Execute on file change
-    alias j="just" # Command runner
-    alias t="task" # Task runner
-    alias act="act --container-architecture linux/amd64" # GitHub Actions locally with ARM64 compatibility
+# Infrastructure Tools
+alias tf="terraform" # Terraform shorthand
+alias tg="terragrunt" # Terragrunt shorthand
+alias tfdoc="terraform-docs" # Terraform docs
+alias tfcost="infracost" # Infrastructure cost
 
-    # AI Tools
-    # Use 'ccr code' or just 'ccr' to start Claude Code Router
-    alias claude-router="command ccr code" # Alternative alias for Claude Code Router
+# Monitoring & Performance
+alias mon="glances" # System monitoring
+alias lognav="lnav" # Log navigator
+alias flame="flamegraph" # Performance visualization
 
-    # Utility aliases
-    alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
-    alias save="~/sesh.sh save"
-    alias rest="~/sesh.sh restore"
-    alias tr="clear; ~/dotfiles/scripts/tmux/tmux-smart-restore.sh"
-    alias ts="tmux run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'"
-    alias tk="~/dotfiles/scripts/tmux/tmux-safe-kill-server.sh" # Safe kill with auto-save
-    alias tkf="tmux kill-server" # Force kill without save (use with caution)
+# Development Tools
+alias watch="watchexec" # Execute on file change
+alias j="just" # Command runner
+alias t="task" # Task runner
+alias act="act --container-architecture linux/amd64" # GitHub Actions locally with ARM64 compatibility
 
-    # Security aliases
-    alias vetf="vet --force" # Force execution (use with caution)
+# AI Tools
+# Use 'ccr code' or just 'ccr' to start Claude Code Router
+alias claude-router="command ccr code" # Alternative alias for Claude Code Router
 
-    # Git worktree aliases
-    alias gwta="git worktree add"
-    alias gwtab="git worktree add -b"
-    # alias gwtl="git worktree list"  # Replaced with fzf function below
-    # alias gwtr="git worktree remove"  # Replaced with fzf function below
-    alias gwtp="git worktree prune"
-    alias gwtm="git worktree move"
+# Utility aliases
+alias wea="curl --silent wttr.in/Didsbury_uk | grep -v Follow"
+alias save="~/sesh.sh save"
+alias rest="~/sesh.sh restore"
+alias tr="clear; ~/dotfiles/scripts/tmux/tmux-smart-restore.sh"
+alias ts="tmux run-shell '~/.tmux/plugins/tmux-resurrect/scripts/save.sh'"
+alias tk="~/dotfiles/scripts/tmux/tmux-safe-kill-server.sh" # Safe kill with auto-save
+alias tkf="tmux kill-server" # Force kill without save (use with caution)
 
-    # Worktree + Devcontainer integration aliases
-    alias gwtd="gwt-dev" # Create worktree with devcontainer
-    alias gwtde="gwt-dev --exec" # Create and exec into
-    alias gwtc="gwt-claude" # Launch Claude in worktree
-    alias gwts="gwt-status" # Show worktree + devcontainer status
-    alias gwtclean="gwt-cleanup" # Cleanup stale devcontainer instances
-    alias gwtt="gwt-ticket" # Autonomous ticket execution
-    alias gwtq="gwt-queue" # Ticket queue management
-    alias gwtdoc="gwt-doctor" # Agent orchestration health check
-    alias csub="claude-sub" # Claude subscription profiles
-    alias cr="claude-resume" # FZF session picker for claude --resume
+# Security aliases
+alias vetf="vet --force" # Force execution (use with caution)
 
-    # Ticket execution aliases
-    alias tex="ticket-execute" # Execute ticket autonomously
-    alias texs="ticket-execute --status ." # Check status
-    alias texw="ticket-execute --watch ." # Watch for completion
+# Git worktree aliases
+alias gwta="git worktree add"
+alias gwtab="git worktree add -b"
+# alias gwtl="git worktree list"  # Replaced with fzf function below
+# alias gwtr="git worktree remove"  # Replaced with fzf function below
+alias gwtp="git worktree prune"
+alias gwtm="git worktree move"
 
-    # Graphite merge queue aliases
-    alias gtq="gt-queue" # Merge queue status
-    alias gtql="gt-queue list" # List queued PRs
-    alias gtqe="gt-queue enqueue" # Enqueue current PR
-    alias gtqd="gt-queue dequeue" # Dequeue current PR
-    alias gtqm="gt-queue merge" # Merge via Graphite
-    alias gtqs="gt-queue submit --stack" # Submit + merge-when-ready
-    alias gtqo="gt-queue open" # Open dashboard
-    alias gtqw="gt-queue watch" # Auto-refresh queue status
-    alias gtqr="gt-queue retry" # Re-enqueue failed PR
-    alias gts="gt-stack" # Stack viewer
-    alias gtsi="gt-stack --interactive" # Interactive stack viewer
-    alias gtss="gt submit --stack" # Submit entire stack
+# Worktree + Devcontainer integration aliases
+alias gwtd="gwt-dev" # Create worktree with devcontainer
+alias gwtde="gwt-dev --exec" # Create and exec into
+alias gwtc="gwt-claude" # Launch Claude in worktree
+alias gwts="gwt-status" # Show worktree + devcontainer status
+alias gwtclean="gwt-cleanup" # Cleanup stale devcontainer instances
+alias gwtt="gwt-ticket" # Autonomous ticket execution
+alias gwtq="gwt-queue" # Ticket queue management
+alias gwtdoc="gwt-doctor" # Agent orchestration health check
+alias csub="claude-sub" # Claude subscription profiles
+alias cr="claude-resume" # FZF session picker for claude --resume
 
-    # Git local exclude management
-    alias gls="gitlocal-setup"
-    alias glsf="gitlocal-setup --force"
-    alias glsd="gitlocal-setup --dry-run"
+# Ticket execution aliases
+alias tex="ticket-execute" # Execute ticket autonomously
+alias texs="ticket-execute --status ." # Check status
+alias texw="ticket-execute --watch ." # Watch for completion
 
-    # Functions moved to separate files in functions/ for autoloading
-    # AWS, Git, S3, and Atuin functions moved
+# Graphite merge queue aliases
+alias gtq="gt-queue" # Merge queue status
+alias gtql="gt-queue list" # List queued PRs
+alias gtqe="gt-queue enqueue" # Enqueue current PR
+alias gtqd="gt-queue dequeue" # Dequeue current PR
+alias gtqm="gt-queue merge" # Merge via Graphite
+alias gtqs="gt-queue submit --stack" # Submit + merge-when-ready
+alias gtqo="gt-queue open" # Open dashboard
+alias gtqw="gt-queue watch" # Auto-refresh queue status
+alias gtqr="gt-queue retry" # Re-enqueue failed PR
+alias gts="gt-stack" # Stack viewer
+alias gtsi="gt-stack --interactive" # Interactive stack viewer
+alias gtss="gt submit --stack" # Submit entire stack
 
-    # Note: Additional git+fzf functionality is provided in conf.d/plugins.fish
+# Git local exclude management
+alias gls="gitlocal-setup"
+alias glsf="gitlocal-setup --force"
+alias glsd="gitlocal-setup --dry-run"
 
-    # FZF-Atuin integration - Custom history search
-    # Override the default Ctrl-R binding from plugins.fish
-    bind \cr atuin_fzf_search
-    bind -M insert \cr atuin_fzf_search
+# Functions moved to separate files in functions/ for autoloading
+# AWS, Git, S3, and Atuin functions moved
 
-    # Ensure fifc Tab binding takes precedence over autopair.fish
-    # This rebinds Tab to the fifc/git/docker wrapper after all plugins have loaded
-    if functions -q _fifc_or_fzf
-        bind \t _fifc_or_fzf
-        bind -M insert \t _fifc_or_fzf
-    end
+# Note: Additional git+fzf functionality is provided in conf.d/plugins.fish
+
+# FZF-Atuin integration - Custom history search
+# Override the default Ctrl-R binding from plugins.fish
+bind \cr atuin_fzf_search
+bind -M insert \cr atuin_fzf_search
+
+# Ensure fifc Tab binding takes precedence over autopair.fish
+# This rebinds Tab to the fifc/git/docker wrapper after all plugins have loaded
+if functions -q _fifc_or_fzf
+    bind \t _fifc_or_fzf
+    bind -M insert \t _fifc_or_fzf
+end
 
 # Mise shims for version-managed tools (must be early in PATH)
 fish_add_path $HOME/.local/share/mise/shims
