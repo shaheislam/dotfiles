@@ -5,7 +5,13 @@ DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/dotfiles}"
 USAGE_CHECK_SCRIPT="${CLAUDE_USAGE_CHECK_SCRIPT:-$DOTFILES_ROOT/scripts/ticket-queue/claude-usage.sh}"
 STATE_DIR="${CLAUDE_ROTATE_STATE_DIR:-$HOME/.claude/rotation}"
 STATE_FILE="$STATE_DIR/last-profile"
-CLAUDE_BIN="${CLAUDE_BIN:-$(command -v claude)}"
+if [[ -n "${CLAUDE_BIN:-}" ]]; then
+	:
+elif [[ -x "$HOME/.local/bin/claude" ]]; then
+	CLAUDE_BIN="$HOME/.local/bin/claude"
+else
+	CLAUDE_BIN="$(command -v claude)"
+fi
 
 mkdir -p "$STATE_DIR"
 

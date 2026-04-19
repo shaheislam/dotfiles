@@ -593,6 +593,10 @@ phase_4_cloud_tools() {
 
 	# Step 2: Clean up ALL legacy installations (only after native is in place)
 	if [[ -x "$native_claude" ]]; then
+		local legacy_claude_module="/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code"
+		local legacy_claude_bin="/opt/homebrew/bin/claude"
+		local legacy_usr_local_bin="/usr/local/bin/claude"
+
 		# Homebrew cask
 		if brew list --cask claude-code >/dev/null 2>&1; then
 			print_step "Removing deprecated Claude Code cask..."
@@ -601,10 +605,10 @@ phase_4_cloud_tools() {
 		fi
 
 		# npm global install (directory + bin symlink)
-		if [[ -d "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code" ]]; then
+		if [[ -d "$legacy_claude_module" ]] || [[ -L "$legacy_claude_bin" ]] || [[ -L "$legacy_usr_local_bin" ]]; then
 			print_step "Removing npm-installed Claude Code..."
-			rm -rf /opt/homebrew/lib/node_modules/@anthropic-ai/claude-code 2>/dev/null || true
-			rm -f /opt/homebrew/bin/claude 2>/dev/null || true
+			rm -rf "$legacy_claude_module" 2>/dev/null || true
+			rm -f "$legacy_claude_bin" "$legacy_usr_local_bin" 2>/dev/null || true
 			print_success "npm Claude Code removed"
 		fi
 

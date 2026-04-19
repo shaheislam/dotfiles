@@ -53,7 +53,7 @@ plugins=(
 source $ZSH/oh-my-zsh.sh
 
 # Paths
-export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 # Homebrew auto-update: run `brew update` at most once per day when using any brew command
 export HOMEBREW_AUTO_UPDATE_SECS=86400

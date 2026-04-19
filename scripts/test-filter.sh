@@ -142,6 +142,7 @@ test_claude() {
 	run_test "Claude rotation script executable" "[ -x '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh' ]"
 	run_test "Claude rotation script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
 	run_test "Claude rotation uses usage checker" "grep -q 'CLAUDE_USAGE_CHECK_SCRIPT' '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
+	run_test "Claude rotation prefers native binary" "grep -q '\$HOME/.local/bin/claude' '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
 	run_test "Claude rotation tracks last profile" "grep -q 'last-profile' '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
 	run_test "Claude rotation detects limit message" "grep -q '/extra-usage' '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
 	run_test "Claude wrapper delegates to rotation script" "grep -q 'run-with-rotation.sh' '$DOTFILES_ROOT/.config/fish/functions/claude.fish'"
@@ -675,6 +676,8 @@ test_settings() {
 	run_test "Fish has FORCE_AUTOUPDATE_PLUGINS" "grep -q 'FORCE_AUTOUPDATE_PLUGINS' '$DOTFILES_ROOT/.config/fish/config.fish'"
 	run_test "Fish has CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD" "grep -q 'CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD' '$DOTFILES_ROOT/.config/fish/config.fish'"
 	run_test "Fish disables CLAUDE_CODE_NO_FLICKER by default" "grep -q 'CLAUDE_CODE_NO_FLICKER 0' '$DOTFILES_ROOT/.config/fish/config.fish'"
+	run_test "Fish PATH prefers ~/.local/bin" "grep -q 'fish_add_path --move \$HOME/.local/bin' '$DOTFILES_ROOT/.config/fish/paths.fish'"
+	run_test "Zsh PATH prefers ~/.local/bin" "python3 -c \"from pathlib import Path; assert 'export PATH=\\\"\\$HOME/.local/bin:\\$HOME/bin:/opt/homebrew/bin:/usr/local/bin:\\$PATH\\\"' in Path('$DOTFILES_ROOT/.zshrc').read_text()\""
 
 	# CLAUDE.md documentation
 	run_test "CLAUDE.md documents settings section" "grep -q 'Claude Code Settings & Security' '$DOTFILES_ROOT/CLAUDE.md'"

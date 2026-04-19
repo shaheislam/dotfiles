@@ -9,6 +9,11 @@ if string match -q "*darwin*" "$system"
 end
 
 # OS-specific core paths
+# Keep user-managed bins ahead of package-manager bins so native installers
+# (for example Claude Code in ~/.local/bin) win over legacy Homebrew/npm shims.
+fish_add_path --move $HOME/.local/bin # User local binaries
+fish_add_path --move $HOME/bin # User binaries
+
 # PERF: --move ensures Homebrew comes before /usr/bin (from /etc/paths).
 # Without this, macOS system git (2.39.5, ~1.2s git status) is used
 # instead of Homebrew git (2.49+, ~45ms git status).
@@ -20,10 +25,6 @@ else
     fish_add_path /usr/local/bin
     fish_add_path /usr/bin
 end
-
-# Universal user paths (both OS)
-fish_add_path $HOME/bin # User binaries
-fish_add_path $HOME/.local/bin # User local binaries
 
 # Development tools (universal)
 fish_add_path $HOME/.cargo/bin # Rust/Cargo binaries
