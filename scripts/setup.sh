@@ -633,6 +633,19 @@ phase_4_cloud_tools() {
 		fi
 	fi
 
+	# Gemini CLI is managed via Homebrew; verify the binary is available after package install.
+	print_step "Verifying Gemini CLI..."
+	if command_exists gemini; then
+		if gemini --version >/dev/null 2>&1; then
+			print_success "Gemini CLI available"
+		else
+			print_warning "Gemini CLI found but version check failed"
+		fi
+		log_verbose "Gemini auth/config remains machine-local; use Gemini CLI commands to complete login if needed"
+	else
+		print_warning "Gemini CLI not found; ensure homebrew/Brewfile installs gemini-cli"
+	fi
+
 	# Install independent CLI tools
 	print_step "Installing CLI tools..."
 

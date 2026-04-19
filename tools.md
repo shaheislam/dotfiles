@@ -45,7 +45,7 @@ A collection of useful development tools, libraries, and resources used in this 
 
 ### AI & Code Assistance
 - **[Claude Code CLI](https://claude.ai/download)** - Official Claude AI command-line interface (installed via `claude install`, wrapper auto-falls back to bunx only if native missing)
-- **[Gemini CLI](https://github.com/google/generative-ai-cli)** - Google Gemini command-line interface
+- **[Gemini CLI](https://github.com/google/generative-ai-cli)** - Google Gemini command-line interface, installed via Homebrew (`gemini-cli`) and governed in this repo by `GEMINI.md`
 
 ### Version Control
 - **[Git](https://git-scm.com/)** - Distributed version control system

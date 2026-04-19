@@ -1,6 +1,6 @@
 # Gemini CLI Rules for Dotfiles
 
-> Project context for Google Gemini CLI. NOT a symlink to CLAUDE.md — these tools have different capabilities and instruction formats.
+> Project context for Google Gemini CLI. Gemini follows `GEMINI.md` as its canonical instruction file. This is intentionally separate from `CLAUDE.md` because the tools have different capabilities, config surfaces, and instruction formats.
 
 ## Core Rules
 
@@ -8,6 +8,18 @@
 - ALWAYS check if `scripts/setup.sh` needs modification when adding new tools
 - ALWAYS verify new dependencies are in the Brewfile and setup script
 - ALWAYS ensure PATH configs are added to both Fish and Zsh configs
+
+### Instruction Source
+- Gemini CLI follows `GEMINI.md`
+- Claude Code follows `CLAUDE.md` plus `.claude/settings.json`
+- OpenCode follows `AGENTS.md` plus `CLAUDE.md` via `.config/opencode/opencode.json`
+- Do not assume Gemini should mirror Claude/OpenCode settings one-for-one; only align shared repo conventions and intentional operational defaults
+
+### Fish Shell First
+- Fish is the primary shell for this machine
+- Do not suggest `unset` for interactive shell usage; use `set -e VAR`
+- `env -u VAR command` is acceptable for one-off commands started from Fish
+- If an example requires Bash or Zsh syntax, label it explicitly
 
 ### File Location Constraints
 - NEVER create or modify files outside `~/dotfiles` (EXCEPT `~/neovim` for Neovim config)
@@ -48,6 +60,13 @@
 - ALWAYS use Fish shell syntax for primary shell configurations
 - ALWAYS include Zsh compatibility for broader system support
 - PATH management: add new tool paths to both Fish and setup script
+
+### Gemini CLI Runtime
+- `gemini-cli` is managed as a repo dependency via `homebrew/Brewfile`
+- `scripts/setup.sh` should verify that Gemini CLI is available after package installation
+- Keep Gemini auth and machine-local state out of git; never commit API keys, OAuth tokens, or local Gemini caches
+- This repo does not currently pin a Gemini default model in source control; when a workflow depends on a specific Gemini model, pass it explicitly on the command line instead of relying on ambient machine state
+- If the repo later adds `.gemini/` config, treat it as Gemini-specific configuration rather than a copy of `.claude/`
 
 ### Core Fish Functions (`.config/fish/functions/`)
 
@@ -105,6 +124,7 @@
 - Smoke test: `scripts/smoke-test.sh`
 - macOS validation: `scripts/validate-macos.sh`
 - Filtered tests: `scripts/test-filter.sh [group]` (run `--list` for groups)
+- Gemini-specific checks: `scripts/test-filter.sh gemini`
 - Full validation: `scripts/validate-comprehensive.sh`
 - For Fish functions, test by sourcing: `source .config/fish/functions/<name>.fish`
 - There are no unit test frameworks for shell scripts — test by execution
@@ -115,6 +135,7 @@
 - `scripts/setup.sh` is 1500+ lines with 11 phases. Read the relevant phase before editing.
 - Profiles: minimal, standard, comprehensive, dev, ops
 - New tool additions require: Brewfile entry + setup.sh phase + Fish/Zsh PATH config
+- Gemini CLI is installed from Homebrew (`brew "gemini-cli"`) and should be verified during setup
 - Test with `--dry-run` flag first
 
 ### Git Worktree Functions

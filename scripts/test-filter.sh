@@ -50,6 +50,7 @@ list_groups() {
 	echo "  fish          - Fish shell configuration and functions"
 	echo "  stow          - GNU Stow compatibility"
 	echo "  claude        - Claude Code configuration files"
+	echo "  gemini        - Gemini CLI docs, setup wiring, and package checks"
 	echo "  setup-syntax  - setup.sh bash syntax validation"
 	echo "  brewfile      - Brewfile structure and duplicates"
 	echo "  mcp           - MCP server configuration parity"
@@ -155,6 +156,20 @@ test_claude() {
 	fi
 	if command -v shellcheck &>/dev/null; then
 		run_test "Claude rotation script passes ShellCheck" "shellcheck '$DOTFILES_ROOT/scripts/claude/run-with-rotation.sh'"
+		run_test "test-filter.sh passes ShellCheck" "shellcheck '$DOTFILES_ROOT/scripts/test-filter.sh'"
+	fi
+}
+
+test_gemini() {
+	echo -e "${BLUE}--- Gemini CLI Tests ---${NC}"
+	run_test "GEMINI.md exists" "[ -f '$DOTFILES_ROOT/GEMINI.md' ]"
+	run_test "GEMINI.md documents canonical instruction source" "grep -q 'canonical instruction file' '$DOTFILES_ROOT/GEMINI.md'"
+	run_test "GEMINI.md distinguishes Claude and OpenCode sources" "grep -q 'OpenCode follows' '$DOTFILES_ROOT/GEMINI.md'"
+	run_test "Brewfile includes gemini-cli" "grep -q 'brew \"gemini-cli\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
+	run_test "setup.sh verifies Gemini CLI" "grep -q 'Verifying Gemini CLI' '$DOTFILES_ROOT/scripts/setup.sh'"
+	run_test "GEMINI.md references filtered Gemini tests" "grep -q 'scripts/test-filter.sh gemini' '$DOTFILES_ROOT/GEMINI.md'"
+	run_test "tools.md documents Gemini CLI" "grep -q 'Gemini CLI' '$DOTFILES_ROOT/tools.md'"
+	if command -v shellcheck &>/dev/null; then
 		run_test "test-filter.sh passes ShellCheck" "shellcheck '$DOTFILES_ROOT/scripts/test-filter.sh'"
 	fi
 }
@@ -1118,6 +1133,7 @@ case "$GROUP" in
 fish) test_fish ;;
 stow) test_stow ;;
 claude) test_claude ;;
+gemini) test_gemini ;;
 setup-syntax) test_setup_syntax ;;
 brewfile) test_brewfile ;;
 mcp) test_mcp ;;
@@ -1140,6 +1156,7 @@ all)
 	test_fish
 	test_stow
 	test_claude
+	test_gemini
 	test_setup_syntax
 	test_brewfile
 	test_mcp
