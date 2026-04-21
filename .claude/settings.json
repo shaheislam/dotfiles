@@ -6,9 +6,15 @@
   },
   "autoUpdatesChannel": "latest",
   "deniedMcpServers": [
-    "claude_ai_Notion",
-    "claude_ai_Linear",
-    "claude_ai_Invideo"
+    {
+      "serverName": "claude_ai_Notion"
+    },
+    {
+      "serverName": "claude_ai_Linear"
+    },
+    {
+      "serverName": "claude_ai_Invideo"
+    }
   ],
   "effortLevel": "medium",
   "enabledPlugins": {
