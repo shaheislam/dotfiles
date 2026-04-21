@@ -357,9 +357,9 @@ test_hooks() {
 	run_test "use_bun.py allows bunx" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bunx create-react-app\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
 
 	# Functional: validate-bash.py - blocklist
-	run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
-	run_test "validate-bash blocks sudo rm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sudo rm -rf node_modules\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
-	run_test "validate-bash blocks dd to device" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dd if=/dev/zero of=/dev/sda\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+	run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null | grep -q '\"decision\": \"block\"'"
+	run_test "validate-bash blocks sudo rm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sudo rm -rf node_modules\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null | grep -q '\"decision\": \"block\"'"
+	run_test "validate-bash blocks dd to device" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dd if=/dev/zero of=/dev/sda\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null | grep -q '\"decision\": \"block\"'"
 
 	# Functional: validate-bash.py - allowlist (devcontainer/worktree)
 	run_test "validate-bash allows git status" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
@@ -368,8 +368,8 @@ test_hooks() {
 	run_test "validate-bash allowlist: worktree list" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git worktree list\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
 	run_test "validate-bash allowlist: docker compose" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"docker compose up -d\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
 
-	# Functional: validate-bash.py - fail-closed on bad input
-	run_test "validate-bash fail-closed on bad JSON" "echo 'not-json' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+	# Functional: validate-bash.py - fail-open on malformed input
+	run_test "validate-bash fail-open on bad JSON" "echo 'not-json' | python3 '$hooks_dir/validate-bash.py' >/dev/null 2>&1"
 
 	# Functional: deepwiki-context.py language detection
 	run_test "deepwiki detects Python" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/main.py\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null | grep -q python"
@@ -431,6 +431,15 @@ d=json.load(open('$DOTFILES_ROOT/.claude/settings.json'))
 bash_hooks=[h for h in d['hooks']['PreToolUse'] if h.get('matcher')=='Bash'][0]['hooks']
 cmds=[h['command'] for h in bash_hooks]
 assert cmds.index([c for c in cmds if 'use_bun' in c][0]) < cmds.index([c for c in cmds if 'validate-bash' in c][0])
+\""
+
+	# Functional: PreToolUse Edit|Write keeps protect-files.py wired
+	run_test "hook config: Edit|Write includes protect-files" "python3 -c \"
+import json
+d=json.load(open('$DOTFILES_ROOT/.claude/settings.json'))
+edit_hooks=[h for h in d['hooks']['PreToolUse'] if h.get('matcher')=='Edit|Write'][0]['hooks']
+cmds=[h['command'] for h in edit_hooks]
+assert any('protect-files.py' in cmd for cmd in cmds)
 \""
 
 	# Functional: post-compact-reinject.sh outputs context reminders

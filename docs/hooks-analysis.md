@@ -19,7 +19,7 @@
 
 ## Part 1: How We Currently Use Hooks
 
-### Active Hooks (7 events, 11 hook instances)
+### Active Hooks (8 events, 14+ hook instances)
 
 | # | Event | Script | What It Does | Why It Matters |
 |---|-------|--------|-------------|----------------|
@@ -34,6 +34,9 @@
 | 9 | **UserPromptSubmit** | `checkpoint-pre-prompt.sh` | Captures transcript offset, untracked files, timestamp before each prompt | Pre-state for checkpoint diff extraction |
 | 10 | **Stop** | `checkpoint-capture.sh` (10s timeout) | Extracts transcript slice, files modified, summary after Claude responds | Creates checkpoint metadata tied to commits |
 | 11 | **Stop** | `cross-provider-bridge.sh` (180s timeout) | Sends last Claude response to Codex/Gemini/Ollama/DeepSeek/OpenCode for independent review. Iterative consensus loop. | Correlation-bias mitigation — an independent AI reviews Claude's work. Blocks stop if concerns remain. |
+| 12 | **PostToolUseFailure** | `log-tool-failure.py` | Records failed tool calls with redaction to `~/.claude/hooks/logs/tool-failures-YYYY-MM-DD.jsonl` | Preserves failure patterns for diagnosis without leaking secrets |
+| 13 | **PostToolUse** (Edit\|Write) | `file-modified.sh` | Runs lightweight syntax/structure validation after edits | Fast local feedback after file changes |
+| 14 | **PreToolUse** (Edit\|Write) | `protect-files.py` | Blocks edits to protected paths such as `.env`, private keys, lockfiles, `.git/`, and `node_modules/` | Adds an automatic safety gate before risky edits |
 
 ### Architecture Patterns We Use
 
@@ -48,7 +51,7 @@
 | Event | Status | Why Not |
 |-------|--------|---------|
 | `SessionEnd` | Not wired | JFDI `session-end-extract.py` exists but depends on `lib/` module not present |
-| `PostToolUseFailure` | Not wired | No error tracking for failed tool calls |
+| `PostToolUseFailure` | Wired | `log-tool-failure.py` logs failed tool calls with redaction |
 | `PermissionRequest` | Not wired | No auto-allow for read-only operations |
 | `SubagentStart` | Not wired | No subagent spawn tracking |
 | `SubagentStop` | Not wired | No subagent completion notification |
@@ -92,7 +95,7 @@
 | **Subagent task summarization** | SubagentStop | Uses Anthropic API to summarize what the subagent accomplished, then announces via TTS | Not implemented |
 | **PreCompact transcript backup** | PreCompact | Backs up full transcript before compaction | We sync Beads but don't back up transcript |
 | **PermissionRequest auto-allow** | PermissionRequest | Auto-approves Read, Glob, Grep, safe Bash commands | Not implemented — we approve manually |
-| **PostToolUseFailure logging** | PostToolUseFailure | Captures error details with full context for analysis | Not implemented |
+| **PostToolUseFailure logging** | PostToolUseFailure | Captures error details with full context for analysis | Implemented via `log-tool-failure.py` |
 | **Setup hook for repo init** | Setup | Fires during repo initialization, sets up dependencies | Not implemented |
 | **Builder/Validator agent pattern** | SubagentStart/Stop | Builder agent with full tools, Validator agent restricted to read-only | Not in hooks — done via pr-review-toolkit plugin |
 | **UV single-file scripts** | All | Each hook is a self-contained UV script with inline dependency declarations | We use shebang python3, no dependency management |
@@ -343,17 +346,17 @@ This would hook into `nix develop` or check `nix/global/flake.nix` for available
 
 ### Phase 1: Quick Wins (1-2 hours)
 
-1. **Wire `file-modified.sh`** to PostToolUse (Edit|Write) — already exists, just needs settings.json entry
-2. **Wire `add-context.py`** to UserPromptSubmit — already exists, adds git/timestamp context
-3. **Create `log-tool-failure.py`** for PostToolUseFailure — simple logging script
-4. **Add post-compact reinject** to SessionStart (compact matcher) — echoes critical rules
+1. **Wire `add-context.py`** to UserPromptSubmit — already exists, adds git/timestamp context
+2. **Add auto-allow-readonly** to PermissionRequest — reduce safe exploration friction
+3. **Add subagent lifecycle hooks** for visibility into spawned agent work
+4. **Expand hook coverage docs/tests** so settings.json assertions match active hooks
 
 ### Phase 2: Safety & Speed (2-4 hours)
 
-5. **Create `protect-files.py`** for PreToolUse (Edit|Write) — blocks edits to critical paths
-6. **Create `auto-allow-readonly.py`** for PermissionRequest — auto-approves Read/Glob/Grep
-7. **Create `pre-commit-quality.py`** for PreToolUse (Bash) — blocks bad commits
-8. **Create `auto-format.py`** for PostToolUse (Edit|Write) — language-aware formatting
+5. **Create `auto-allow-readonly.py`** for PermissionRequest — auto-approves Read/Glob/Grep
+6. **Create `pre-commit-quality.py`** for PreToolUse (Bash) — blocks bad commits
+7. **Add scoped security/path matchers** for especially sensitive directories
+8. **Add async test triggers** for high-signal file types after edits
 
 ### Phase 3: Agent Workflow Integration (4-8 hours)
 
@@ -380,7 +383,7 @@ This would hook into `nix develop` or check `nix/global/flake.nix` for available
 | UserPromptSubmit | 1 hook | 1 hook | 1 hook |
 | PreToolUse | 2 hooks (Bash) | 1 hook | 2 hooks |
 | PostToolUse | 1 hook (Read) | 1 hook | 3 hooks |
-| PostToolUseFailure | - | 1 hook | - |
+| PostToolUseFailure | 1 hook | 1 hook | - |
 | PermissionRequest | - | 1 hook | - |
 | Notification | 2 hooks | 1 hook (TTS) | - |
 | Stop | 2 hooks | 1 hook (TTS) | - |
@@ -389,8 +392,8 @@ This would hook into `nix develop` or check `nix/global/flake.nix` for available
 | PreCompact | 1 hook | 1 hook | - |
 | TeammateIdle | - | - | - |
 | TaskCompleted | - | - | - |
-| **Total hooks** | **11** | **13** | **6** |
-| **Events covered** | **7/15** | **13/15** | **3/15** |
+| **Total hooks** | **14+** | **13** | **6** |
+| **Events covered** | **8/15** | **13/15** | **3/15** |
 
 ---
 
