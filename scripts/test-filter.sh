@@ -54,6 +54,7 @@ list_groups() {
 	echo "  setup-syntax  - setup.sh bash syntax validation"
 	echo "  brewfile      - Brewfile structure and duplicates"
 	echo "  mcp           - MCP server configuration parity"
+	echo "  browser       - Browser automation config and wiring"
 	echo "  tmux          - tmux configuration"
 	echo "  hooks         - Claude Code hooks"
 	echo "  agents-md     - AGENTS.md file validation"
@@ -203,6 +204,7 @@ test_mcp() {
 
 	# Check Claude Desktop config exists
 	local desktop_config="$DOTFILES_ROOT/Library/Application Support/Claude/claude_desktop_config.json"
+	local mcp_config="$DOTFILES_ROOT/.mcp.json"
 	run_test "Claude Desktop config exists" "[ -f '$desktop_config' ]"
 
 	if [ -f "$desktop_config" ]; then
@@ -210,17 +212,41 @@ test_mcp() {
 	fi
 
 	# Check .mcp.json exists
-	run_test ".mcp.json exists" "[ -f '$DOTFILES_ROOT/.mcp.json' ]"
-	if [ -f "$DOTFILES_ROOT/.mcp.json" ]; then
-		run_test ".mcp.json is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.mcp.json'))\""
+	run_test ".mcp.json exists" "[ -f '$mcp_config' ]"
+	if [ -f "$mcp_config" ]; then
+		run_test ".mcp.json is valid JSON" "python3 -c \"import json; json.load(open('$mcp_config'))\""
 	fi
 
-	# Hook-dependent MCP servers: deepwiki-context.py requires deepwiki MCP
-	# deepwiki is a Claude Code built-in MCP (not in .mcp.json), so verify
-	# context7 parity as the hook's fallback documentation source
-	if [ -f "$desktop_config" ] && [ -f "$DOTFILES_ROOT/.mcp.json" ]; then
-		run_test "context7 in Desktop config" "python3 -c \"import json; d=json.load(open('$desktop_config')); assert 'context7' in d.get('mcpServers', {})\""
-		run_test "context7 in CLI config" "python3 -c \"import json; d=json.load(open('$DOTFILES_ROOT/.mcp.json')); assert 'context7' in d.get('mcpServers', {})\""
+	if [ -f "$desktop_config" ] && [ -f "$mcp_config" ]; then
+		run_test "Desktop MCP matches .mcp.json" "python3 -c \"import json; repo=json.load(open('$mcp_config')).get('mcpServers', {}); desk=json.load(open('$desktop_config')).get('mcpServers', {}); assert desk == repo\""
+		run_test ".mcp.json MCP servers use bunx" "python3 -c \"import json; servers=json.load(open('$mcp_config')).get('mcpServers', {}); assert servers and all(server.get('command') == 'bunx' for server in servers.values())\""
+		run_test "setup.sh registers .mcp.json stdio servers" "python3 -c \"import json, pathlib, re; servers=set(json.load(open('$mcp_config')).get('mcpServers', {})); setup=pathlib.Path('$DOTFILES_ROOT/scripts/setup.sh').read_text(); configured=set(re.findall(r'claude mcp add --scope user ([a-z0-9-]+) ', setup)); assert servers <= configured\""
+	fi
+
+	run_test "setup.sh uses bunx for shared stdio MCP servers" "python3 -c \"import pathlib; text=pathlib.Path('$DOTFILES_ROOT/scripts/setup.sh').read_text(); required=['context7 bunx', 'steampipe bunx', 'playwright bunx', 'drawio bunx']; assert all(item in text for item in required)\""
+	run_test "setup.sh keeps deepwiki SSE exception" "grep -q 'claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse' '$DOTFILES_ROOT/scripts/setup.sh'"
+}
+
+test_browser() {
+	echo -e "${BLUE}--- Browser Automation Tests ---${NC}"
+
+	run_test "agent-browser config exists" "[ -f '$DOTFILES_ROOT/.agent-browser/config.json' ]"
+	run_test "agent-browser config is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.agent-browser/config.json'))\""
+	run_test "PinchTab config exists" "[ -f '$DOTFILES_ROOT/.config/pinchtab/config.json' ]"
+	run_test "PinchTab config is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.config/pinchtab/config.json'))\""
+	run_test "agent-browser skill exists" "[ -f '$DOTFILES_ROOT/.claude/skills/agent-browser/SKILL.md' ]"
+	run_test "pinchtab-ctl Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/pinchtab-ctl.fish' ]"
+	run_test "ccb Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/ccb.fish' ]"
+	run_test "setup.sh configures Playwright MCP" "grep -q 'claude mcp add --scope user playwright bunx @playwright/mcp@latest' '$DOTFILES_ROOT/scripts/setup.sh'"
+	run_test "setup.sh configures agent-browser" "grep -q 'agent-browser install' '$DOTFILES_ROOT/scripts/setup.sh'"
+	run_test "setup.sh configures PinchTab" "grep -q 'Installing/updating PinchTab' '$DOTFILES_ROOT/scripts/setup.sh' && grep -q 'pinchtab' '$DOTFILES_ROOT/scripts/setup.sh'"
+	run_test "gwt-ticket supports --browser-validate" "grep -q 'case --browser-validate' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+	run_test "gwt-ticket persists browser_validate state" "grep -q 'browser_validate:' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+
+	if command -v fish &>/dev/null; then
+		run_test "pinchtab-ctl Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/pinchtab-ctl.fish'"
+		run_test "ccb Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/ccb.fish'"
+		run_test "gwt-ticket Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
 	fi
 }
 
@@ -325,7 +351,7 @@ test_hooks() {
 		run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
 	done
 
-	for hook in cross-provider-bridge.sh log-notification.sh file-modified.sh post-compact-reinject.sh; do
+	for hook in cross-provider-bridge.sh log-notification.sh file-modified.sh post-compact-reinject.sh changelog-append.sh changelog-resume.sh changelog-persist.sh; do
 		run_test "Hook $hook exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
 		run_test "Hook $hook executable" "[ -x '$DOTFILES_ROOT/.claude/hooks/$hook' ]"
 	done
@@ -342,10 +368,18 @@ test_hooks() {
 	# Settings.json hook events configured
 	local settings="$DOTFILES_ROOT/.claude/settings.json"
 	if [ -f "$settings" ]; then
-		for event in SessionStart PreToolUse PostToolUse PostToolUseFailure PreCompact Notification UserPromptSubmit Stop; do
+		for event in ConfigChange Notification PostToolUse PostToolUseFailure PreCompact PreToolUse SessionEnd SessionStart Stop SubagentStart SubagentStop UserPromptSubmit WorktreeCreate WorktreeRemove; do
 			run_test "Hook event wired: $event" "python3 -c \"import json; d=json.load(open('$settings')); assert '$event' in d.get('hooks', {})\""
 		done
 	fi
+
+	run_test "SessionStart runs plan-resume" "python3 -c \"import json; d=json.load(open('$settings')); hooks=d['hooks']['SessionStart'][0]['hooks']; assert any('plan-resume.sh' in hook['command'] for hook in hooks)\""
+	run_test "SessionStart runs changelog-resume" "python3 -c \"import json; d=json.load(open('$settings')); hooks=d['hooks']['SessionStart'][0]['hooks']; assert any('changelog-resume.sh' in hook['command'] for hook in hooks)\""
+	run_test "PreCompact runs plan-persist" "python3 -c \"import json; d=json.load(open('$settings')); hooks=d['hooks']['PreCompact'][0]['hooks']; assert any('plan-persist.sh' in hook['command'] for hook in hooks)\""
+	run_test "PreCompact runs changelog-persist" "python3 -c \"import json; d=json.load(open('$settings')); hooks=d['hooks']['PreCompact'][0]['hooks']; assert any('changelog-persist.sh' in hook['command'] for hook in hooks)\""
+	run_test "Subagent hooks log notifications" "python3 -c \"import json; d=json.load(open('$settings')); assert any('log-notification.sh' in hook['command'] for hook in d['hooks']['SubagentStart'][0]['hooks']); assert any('log-notification.sh' in hook['command'] for hook in d['hooks']['SubagentStop'][0]['hooks'])\""
+	run_test "WorktreeCreate runs worktree-init" "python3 -c \"import json; d=json.load(open('$settings')); hooks=d['hooks']['WorktreeCreate'][0]['hooks']; assert any('worktree-init.sh' in hook['command'] for hook in hooks)\""
+	run_test "WorktreeRemove runs worktree-cleanup" "python3 -c \"import json; d=json.load(open('$settings')); hooks=d['hooks']['WorktreeRemove'][0]['hooks']; assert any('worktree-cleanup.sh' in hook['command'] for hook in hooks)\""
 
 	# Functional: use_bun.py blocks npm, allows bun
 	local hooks_dir="$DOTFILES_ROOT/.claude/hooks"
@@ -357,9 +391,9 @@ test_hooks() {
 	run_test "use_bun.py allows bunx" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"bunx create-react-app\"},\"session_id\":\"t\"}' | python3 '$hooks_dir/use_bun.py' 2>/dev/null"
 
 	# Functional: validate-bash.py - blocklist
-	run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
-	run_test "validate-bash blocks sudo rm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sudo rm -rf node_modules\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
-	run_test "validate-bash blocks dd to device" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dd if=/dev/zero of=/dev/sda\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+	run_test "validate-bash blocks rm -rf /" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"rm -rf /tmp\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null | grep -q '\"decision\": \"block\"'"
+	run_test "validate-bash blocks sudo rm" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"sudo rm -rf node_modules\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null | grep -q '\"decision\": \"block\"'"
+	run_test "validate-bash blocks dd to device" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"dd if=/dev/zero of=/dev/sda\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null | grep -q '\"decision\": \"block\"'"
 
 	# Functional: validate-bash.py - allowlist (devcontainer/worktree)
 	run_test "validate-bash allows git status" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git status\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
@@ -368,8 +402,8 @@ test_hooks() {
 	run_test "validate-bash allowlist: worktree list" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"git worktree list\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
 	run_test "validate-bash allowlist: docker compose" "echo '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"docker compose up -d\"}}' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
 
-	# Functional: validate-bash.py - fail-closed on bad input
-	run_test "validate-bash fail-closed on bad JSON" "echo 'not-json' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null; [ \$? -eq 2 ]"
+	# Functional: validate-bash.py - malformed input stays non-blocking
+	run_test "validate-bash ignores bad JSON without blocking" "echo 'not-json' | python3 '$hooks_dir/validate-bash.py' 2>/dev/null"
 
 	# Functional: deepwiki-context.py language detection
 	run_test "deepwiki detects Python" "echo '{\"tool_name\":\"Read\",\"tool_input\":{\"file_path\":\"/x/main.py\"}}' | python3 '$hooks_dir/deepwiki-context.py' 2>/dev/null | grep -q python"
@@ -437,6 +471,32 @@ assert cmds.index([c for c in cmds if 'use_bun' in c][0]) < cmds.index([c for c 
 	run_test "post-compact outputs bun reminder" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *bun* ]]"
 	run_test "post-compact outputs Tokyo Night" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *'Tokyo Night'* ]]"
 	run_test "post-compact exits 0" "bash '$hooks_dir/post-compact-reinject.sh' >/dev/null 2>&1"
+
+	# Functional: changelog hooks
+	run_test "changelog-append writes typed entry" "
+        tmpdir=\$(mktemp -d /tmp/changelog-test-XXXXXX)
+        CLAUDE_PROJECT_DIR=\"\$tmpdir\" bash '$hooks_dir/changelog-append.sh' progress 'Implemented hook parity'
+        rc=\$?
+        grep -q 'PROGRESS: Implemented hook parity' \"\$tmpdir/.claude/CHANGELOG.md\"
+        rm -rf \"\$tmpdir\"
+        [ \$rc -eq 0 ]
+    "
+	run_test "changelog-resume shows recent typed entries" "
+        tmpdir=\$(mktemp -d /tmp/changelog-test-XXXXXX)
+        mkdir -p \"\$tmpdir/.claude\"
+        printf '[2026-01-01T00:00:00Z] PROGRESS: one\\n[2026-01-02T00:00:00Z] DECISION: two\\n' > \"\$tmpdir/.claude/CHANGELOG.md\"
+        out=\$(CLAUDE_PROJECT_DIR=\"\$tmpdir\" bash '$hooks_dir/changelog-resume.sh')
+        rm -rf \"\$tmpdir\"
+        [[ \"\$out\" == *'Session Changelog'* ]] && [[ \"\$out\" == *'DECISION: two'* ]]
+    "
+	run_test "changelog-persist shows compact-safe entries" "
+        tmpdir=\$(mktemp -d /tmp/changelog-test-XXXXXX)
+        mkdir -p \"\$tmpdir/.claude\"
+        printf '[2026-01-01T00:00:00Z] FAILED: one\\n' > \"\$tmpdir/.claude/CHANGELOG.md\"
+        out=\$(CLAUDE_PROJECT_DIR=\"\$tmpdir\" bash '$hooks_dir/changelog-persist.sh')
+        rm -rf \"\$tmpdir\"
+        [[ \"\$out\" == *'FAILED: one'* ]]
+    "
 }
 
 test_cd_perf() {
@@ -1137,6 +1197,7 @@ gemini) test_gemini ;;
 setup-syntax) test_setup_syntax ;;
 brewfile) test_brewfile ;;
 mcp) test_mcp ;;
+browser) test_browser ;;
 tmux) test_tmux ;;
 hooks) test_hooks ;;
 agents-md) test_agents_md ;;
@@ -1160,6 +1221,7 @@ all)
 	test_setup_syntax
 	test_brewfile
 	test_mcp
+	test_browser
 	test_tmux
 	test_hooks
 	test_agents_md

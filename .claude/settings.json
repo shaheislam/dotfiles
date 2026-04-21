@@ -162,6 +162,10 @@
           {
             "command": "bash ~/.claude/hooks/plan-persist.sh 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/hooks/changelog-persist.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
@@ -260,6 +264,10 @@
           },
           {
             "command": "bash ~/.claude/hooks/plan-resume.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/hooks/changelog-resume.sh 2>/dev/null || true",
             "type": "command"
           },
           {

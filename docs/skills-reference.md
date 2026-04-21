@@ -6,14 +6,15 @@
 
 Skills are the primary extension mechanism for Claude Code (and other AI coding agents). A skill is a directory containing a `SKILL.md` file with YAML frontmatter and markdown instructions. Claude loads skill descriptions at startup and activates the full content when relevant or explicitly invoked via `/skill-name`.
 
-As of Claude Code v2.1.3, **slash commands merged into skills**. `.claude/skills/` is the recommended format — skills support directories of supporting files, subagent execution (`context: fork`), and the cross-tool Agent Skills standard. All custom commands in this repo have been migrated to skills.
+As of Claude Code v2.1.3, **slash commands merged into skills**. `.claude/skills/` is the recommended activation format — skills support directories of supporting files, subagent execution (`context: fork`), and the cross-tool Agent Skills standard. In this repo, reusable skill source lives in `skills/`, while `.claude/skills/` is used for project-local skills and materialized manifest entries.
 
 ### Skill Locations
 
 | Location | Scope | Purpose |
 |----------|-------|---------|
+| `skills/<category>/<name>/SKILL.md` | Dotfiles library | Reusable checked-in source for shared/personal/work skill bundles |
 | `~/.claude/skills/<name>/SKILL.md` | Personal | Available in all projects |
-| `.claude/skills/<name>/SKILL.md` | Project | Checked into repo |
+| `.claude/skills/<name>/SKILL.md` | Project | Project-local or materialized skill for the active repo |
 | `<plugin>/skills/<name>/SKILL.md` | Plugin | Installed via marketplace |
 | `.claude/commands/<name>.md` | Legacy | Deprecated — migrate to skills format |
 
@@ -148,7 +149,14 @@ Claude Code extends the standard with: `disable-model-invocation`, `user-invocab
 
 ## Currently Installed (This Dotfiles)
 
-### Custom Skills (59 in .claude/skills/)
+### Project-Local And Reusable Skills
+
+This repo intentionally has two checked-in skill surfaces:
+
+- `skills/` is the reusable dotfiles library consumed by profiles and manifests.
+- `.claude/skills/` contains project-local skills plus materialized manifest entries used directly by this repo.
+
+Use `python3 scripts/validate-skills.py` to validate both surfaces together, and `scripts/test-skills-profile.sh` to validate the reusable library and manifests.
 
 Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `agent-browser`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
 

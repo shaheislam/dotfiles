@@ -8,10 +8,14 @@ paths:
 # Skills & Plugins
 
 ## Skills
-All custom commands migrated to `.claude/skills/` and the repo now includes compatibility wrapper skills for common external setups (59 skills total). See `docs/skills-reference.md`.
+The repo uses a two-tier skill model. Reusable dotfiles skills live in `skills/` (`shared/`, `personal/`, `work/`), while `.claude/skills/` holds project-local skills plus materialized manifest entries for the current repo. See `docs/skills-reference.md`.
 
-**Key locations**: Personal `~/.claude/skills/`, Project `.claude/skills/`
+**Key locations**: Reusable library `skills/`, project-local/materialized `.claude/skills/`, personal `~/.claude/skills/`
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification)
+
+**Validation**:
+- `python3 scripts/validate-skills.py` validates both `.claude/skills/` and the reusable `skills/` library.
+- `scripts/test-skills-profile.sh` validates profiles, manifests, and Agent Skills metadata across `skills/`.
 
 ## Plugins (18 total)
 Stored in `~/.claude/settings.json`, installation commands in `scripts/setup.sh`.

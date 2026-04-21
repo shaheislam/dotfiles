@@ -885,8 +885,10 @@ EAEOF
 
 		# Core MCP servers (sequential — all write to shared settings.json)
 		claude mcp add --scope user context7 bunx @upstash/context7-mcp >/dev/null 2>&1 || true
-		claude mcp add --scope user steampipe npx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
+		claude mcp add --scope user steampipe bunx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
 		claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
+		claude mcp add --scope user drawio bunx drawio-mcp-server >/dev/null 2>&1 || true
+		# deepwiki remains a Claude CLI-only SSE server; `.mcp.json` currently models stdio servers only.
 		claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse >/dev/null 2>&1 || true
 
 		# agent-browser - AI-optimized headless browser CLI (ref-based interaction model)

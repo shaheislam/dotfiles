@@ -16,9 +16,19 @@ Checks:
 import os
 import re
 import sys
-import yaml
 
-SKILLS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".claude", "skills")
+try:
+    import yaml  # type: ignore
+except ImportError:  # pragma: no cover - exercised in lightweight environments
+    yaml = None
+
+REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
+SKILL_ROOTS = [
+    os.path.join(REPO_ROOT, ".claude", "skills"),
+    os.path.join(REPO_ROOT, "skills", "shared"),
+    os.path.join(REPO_ROOT, "skills", "personal"),
+    os.path.join(REPO_ROOT, "skills", "work"),
+]
 
 # Agent Skills spec allowed keys
 SPEC_KEYS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
@@ -29,6 +39,53 @@ EXTENSION_KEYS = {"argument-hint", "arguments"}
 ALLOWED_KEYS = SPEC_KEYS | EXTENSION_KEYS
 
 NAME_PATTERN = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
+
+
+def parse_scalar(value):
+    value = value.strip()
+    if not value:
+        return ""
+    if value[0] == value[-1] and value[0] in {'"', "'"}:
+        return value[1:-1]
+    if value.lower() == "true":
+        return True
+    if value.lower() == "false":
+        return False
+    if re.fullmatch(r"-?\d+", value):
+        return int(value)
+    if value.startswith("[") and value.endswith("]"):
+        inner = value[1:-1].strip()
+        if not inner:
+            return []
+        return [parse_scalar(part.strip()) for part in inner.split(",")]
+    return value
+
+
+def parse_frontmatter(raw_text):
+    if yaml is not None:
+        return yaml.safe_load(raw_text)
+
+    data = {}
+    current_key = None
+
+    for line in raw_text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+
+        if line.startswith((" ", "\t")):
+            if current_key is not None and data.get(current_key) is None:
+                data[current_key] = {}
+            continue
+
+        if ":" not in line:
+            raise ValueError(f"Unsupported frontmatter line without key/value separator: {line}")
+
+        key, value = line.split(":", 1)
+        current_key = key.strip()
+        value = value.strip()
+        data[current_key] = None if value == "" else parse_scalar(value)
+
+    return data
 
 
 def validate_skill(skill_dir):
@@ -56,8 +113,8 @@ def validate_skill(skill_dir):
 
     # Parse YAML
     try:
-        frontmatter = yaml.safe_load(match.group(1))
-    except yaml.YAMLError as e:
+        frontmatter = parse_frontmatter(match.group(1))
+    except Exception as e:
         issues.append(("ERROR", f"Invalid YAML: {e}"))
         return issues
 
@@ -115,28 +172,42 @@ def validate_skill(skill_dir):
     return issues
 
 
+def iter_skill_dirs(root_dir):
+    if not os.path.isdir(root_dir):
+        return []
+
+    return sorted(
+        os.path.join(root_dir, d)
+        for d in os.listdir(root_dir)
+        if os.path.isdir(os.path.join(root_dir, d)) and not d.startswith(".")
+    )
+
+
 def main():
-    if not os.path.isdir(SKILLS_DIR):
-        print(f"Skills directory not found: {SKILLS_DIR}", file=sys.stderr)
+    available_roots = [root for root in SKILL_ROOTS if os.path.isdir(root)]
+    if not available_roots:
+        print("No skills directories found.", file=sys.stderr)
         sys.exit(1)
 
-    skills = sorted(
-        d for d in os.listdir(SKILLS_DIR) if os.path.isdir(os.path.join(SKILLS_DIR, d)) and not d.startswith(".")
-    )
+    skills = []
+    for root in available_roots:
+        for skill_dir in iter_skill_dirs(root):
+            skills.append((root, skill_dir))
 
     total = len(skills)
     errors = 0
     warnings = 0
     clean = 0
 
-    for skill in skills:
-        skill_dir = os.path.join(SKILLS_DIR, skill)
+    for root, skill_dir in skills:
+        skill = os.path.basename(skill_dir)
+        display_name = os.path.relpath(skill_dir, REPO_ROOT)
         issues = validate_skill(skill_dir)
 
         if not issues:
             clean += 1
             if "--verbose" in sys.argv:
-                print(f"  OK  {skill}")
+                print(f"  OK  {display_name}")
             continue
 
         has_error = any(level == "ERROR" for level, _ in issues)
@@ -153,7 +224,7 @@ def main():
             if level == "INFO" and "--verbose" not in sys.argv:
                 continue
             symbol = {"ERROR": "FAIL", "WARN": "WARN", "INFO": "INFO"}[level]
-            print(f"  {symbol}  {skill}: {msg}")
+            print(f"  {symbol}  {display_name}: {msg}")
 
     print(f"\n{total} skills validated: {clean} clean, {warnings} warnings, {errors} errors")
 

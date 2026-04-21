@@ -2199,10 +2199,31 @@ command --with-flags
 " >"$plan_file"
     end
 
+    set -l changelog_file "$worktree_path/.claude/CHANGELOG.md"
+    if not test -f "$changelog_file"
+        echo "# Session Changelog
+
+Append-only per-worktree history for Claude sessions.
+
+Format:
+
+\`\`\`text
+[2026-04-21T12:34:56Z] PROGRESS: Implemented hook parity tests.
+\`\`\`
+
+Allowed entry types: \`PROGRESS\`, \`DECISION\`, \`FAILED\`, \`METRIC\`, \`DISCOVERY\`.
+
+Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structured entries.
+" >"$changelog_file"
+    end
+
     # plan.md is the living document — make it the active buffer when nvim opens
     # (prompt.local.md and other files become hidden buffers accessible via :ls)
     if test -f "$plan_file"
         set nvim_ai_files "$plan_file" $nvim_ai_files
+    end
+    if test -f "$changelog_file"
+        set -a nvim_ai_files "$changelog_file"
     end
 
     # Common nvim launch flags: suppress messages + auto-reload timer for plan.md

@@ -235,67 +235,53 @@ MCP tools follow pattern `mcp__<server>__<tool>`:
 
 ### Active Hooks (in `.claude/settings.json`)
 
-| Event | Hook | Purpose |
-|-------|------|---------|
-| **SessionStart** | `bash ~/dotfiles/scripts/fix-hookify-imports.sh` | Fixes hookify plugin imports |
-| **SessionStart** | `bd prime` | Primes Beads agent memory |
-| **PreCompact** | `bd prime` | Re-injects Beads workflow context before compaction |
-| **Stop** | `bash ~/.claude/hooks/cross-provider-bridge.sh` (180s) | Cross-provider review via Codex/OpenCode |
+| Event | Matcher | Hook Chain | Purpose |
+|-------|---------|------------|---------|
+| **SessionStart** | `""` | `fix-hookify-imports.sh`, `entire ... session-start`, tmux start hook, `plugin-chmod-fix.sh`, `bd prime`, `work-detect.sh`, `lsp-status.sh`, `plan-resume.sh`, `changelog-resume.sh`, `dream/count-session.sh` | Startup repair, session recovery, memory/context injection |
+| **SessionStart** | `compact` | `post-compact-reinject.sh` | Re-inject high-signal reminders after compaction |
+| **PreToolUse** | `Task` | `entire ... pre-task` | Task/checkpoint lifecycle integration |
+| **PreToolUse** | `Bash` | `use_bun.py`, `validate-bash.py`, `ci-precommit.sh` | Bun enforcement, dangerous-command blocking, lightweight checks |
+| **PreToolUse** | `Edit\|Write` | `settings-edit-redirect.py` | Force settings edits through Bash + `jq` |
+| **PostToolUse** | `Read` | `deepwiki-context.py` | Language-aware docs suggestions |
+| **PostToolUse** | `Task`, `TodoWrite` | `entire ... post-task`, `entire ... post-todo` | Persist task transitions |
+| **PostToolUse** | `Edit\|Write` | `auto-format.py`, `file-modified.sh`, `ci-lint-on-save.sh` | Format, log edits, and lint changed files |
+| **PostToolUse** | `""` | `plan-watch.sh` | Keep `.plan.md` current after tool activity |
+| **PreCompact** | `""` | `bd prime`, `plan-persist.sh`, `changelog-persist.sh` | Preserve beads, plan, and recent changelog before compaction |
+| **Notification** | `""` | `macos_notification.py`, `log-notification.sh`, tmux notify hook | Local alerts and audit logging |
+| **UserPromptSubmit** | `""` | `nvim-bridge.sh`, `entire ... user-prompt-submit`, tmux prompt hook, `jfdi/prompt-inject-context.py` | Editor bridge, checkpointing, and prompt context enrichment |
+| **SubagentStart / SubagentStop** | `""` | `log-notification.sh` | Log subagent lifecycle events |
+| **Stop** | `""` | `cross-provider-bridge.sh`, `entire ... stop`, tmux stop hook, Obsidian synthesis, `jfdi/session-end-extract.py`, `dream-hook.sh` | End-of-response review and memory extraction |
+| **SessionEnd** | `""` | `entire ... session-end`, tmux end hook, `session-report.sh`, Obsidian synthesis | Final session reporting |
+| **WorktreeCreate / WorktreeRemove** | `""` | `worktree-init.sh`, `worktree-cleanup.sh` | Worktree lifecycle automation |
 
-> **Note**: Checkpoint hooks are now managed by the `entire` CLI (`entire enable`). See [entireio/cli](https://github.com/entireio/cli) for details.
+> **Note**: `entire` now owns the checkpoint lifecycle hooks; the repo adds plan/changelog and repo-specific integration hooks around it.
 
 ### Hook Scripts Inventory (`.claude/hooks/`)
 
-| Script | Type | Event Target | Status |
-|--------|------|-------------|--------|
-| `use_bun.py` | Python | PreToolUse (Bash) | **Active** |
-| `validate-bash.py` | Python | PreToolUse (Bash) | **Active** |
-| `deepwiki-context.py` | Python | PostToolUse (Read) | **Active** |
-| `macos_notification.py` | Python | Notification | **Active** |
-| `log-notification.sh` | Bash | Notification | **Active** |
-| `cross-provider-bridge.sh` | Bash | Stop | **Active** |
-| `add-context.py` | Python | UserPromptSubmit | Not wired |
-| `file-modified.sh` | Bash | PostToolUse (Edit/Write) | Not wired |
-| `log_pre_tool_use.py` | Python | PreToolUse | Not wired |
-| `ts_lint.py` | Python | PostToolUse | Not wired |
-| `play_audio.py` | Python | Notification | Not wired |
-| `jfdi/audit-log.py` | Python | Multiple | Not wired |
-| `jfdi/prompt-inject-context.py` | Python | UserPromptSubmit | Not wired |
-| `jfdi/session-end-extract.py` | Python | SessionEnd | Not wired |
+| Script | Type | Wiring |
+|--------|------|--------|
+| `use_bun.py` | Python | Active in `PreToolUse (Bash)` |
+| `validate-bash.py` | Python | Active in `PreToolUse (Bash)` |
+| `deepwiki-context.py` | Python | Active in `PostToolUse (Read)` |
+| `auto-format.py` | Python | Active in `PostToolUse (Edit\|Write)` |
+| `file-modified.sh` | Bash | Active in `PostToolUse (Edit\|Write)` |
+| `macos_notification.py` | Python | Active in `Notification` |
+| `log-notification.sh` | Bash | Active in `Notification`, `SubagentStart`, `SubagentStop` |
+| `plan-resume.sh` / `plan-persist.sh` | Bash | Active in `SessionStart`, `PreCompact` |
+| `changelog-resume.sh` / `changelog-persist.sh` / `changelog-append.sh` | Bash | Active in `SessionStart`, `PreCompact`, manual append helper |
+| `nvim-bridge.sh` | Bash | Active in `UserPromptSubmit` |
+| `work-detect.sh` | Bash | Active in `SessionStart` |
+| `post-compact-reinject.sh` | Bash | Active in `SessionStart (compact)` |
+| `jfdi/prompt-inject-context.py` | Python | Active in `UserPromptSubmit` |
+| `jfdi/session-end-extract.py` | Python | Active in `Stop` |
 
-### Checkpoint Hooks (managed by `entire` CLI)
+### Available But Currently Unwired
 
-Checkpoint hooks are now managed by the upstream `entire` CLI tool ([entireio/cli](https://github.com/entireio/cli)).
-Run `entire enable` in a repo to install session tracking hooks automatically.
-The custom `scripts/hooks/checkpoint-*.sh` scripts have been removed.
+These hooks still exist as optional building blocks, but they are not currently wired in project settings: `add-context.py`, `log_pre_tool_use.py`, `ts_lint.py`, `play_audio.py`, and `subagent-lifecycle.sh`.
 
----
+### Validation
 
-## Available But Unconfigured Hooks
-
-These scripts exist in `.claude/hooks/` but are not yet wired into `settings.json`.
-
-### Candidates for Future Wiring
-
-#### 1. Context Injection (`add-context.py`) — UserPromptSubmit
-
-**Why**: Adds timestamp, git info, Python version, and secret detection to every prompt. Useful for audit trails.
-
-#### 2. File Modification Tracking (`file-modified.sh`) — PostToolUse
-
-**Why**: Logs file modifications with Python/JSON syntax checking. Good for change auditing.
-
-#### 3. TypeScript Lint (`ts_lint.py`) — PostToolUse
-
-**Why**: Auto-runs linting after TypeScript file edits.
-
-#### 4. Audio Alerts (`play_audio.py`) — Notification
-
-**Why**: Plays audio cues for notifications. Alternative to `macos_notification.py`.
-
-#### 5. Pre-Tool Logging (`log_pre_tool_use.py`) — PreToolUse
-
-**Why**: Logs all tool invocations for debugging and audit purposes.
+Run `scripts/test-filter.sh hooks` after editing hook scripts or `.claude/settings.json`. The filtered suite checks executability, syntax, key wiring, ordering, and changelog/plan persistence smoke behavior.
 
 ---
 
@@ -338,7 +324,7 @@ Config:
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write 2>/dev/null || true"
+            "command": "jq -r '.tool_input.file_path' | xargs bunx prettier --write 2>/dev/null || true"
           }
         ]
       }

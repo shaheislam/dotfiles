@@ -1,10 +1,32 @@
 {
   "mcpServers": {
+    "playwright": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "steampipe": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "@turbot/steampipe-mcp",
+        "postgresql://steampipe@localhost:9193/steampipe"
+      ]
+    },
     "context7": {
       "command": "bunx",
       "args": [
         "-y",
         "@upstash/context7-mcp"
+      ]
+    },
+    "drawio": {
+      "command": "bunx",
+      "args": [
+        "-y",
+        "drawio-mcp-server"
       ]
     }
   },
