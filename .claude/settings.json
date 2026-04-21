@@ -430,6 +430,7 @@
       "Read(./.entire/metadata/**)"
     ]
   },
+  "skipAutoPermissionPrompt": true,
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "command": "bash ~/dotfiles/scripts/claude-statusline.sh",
