@@ -5,6 +5,11 @@
     "pr": ""
   },
   "autoUpdatesChannel": "latest",
+  "deniedMcpServers": [
+    "claude_ai_Notion",
+    "claude_ai_Linear",
+    "claude_ai_Invideo"
+  ],
   "effortLevel": "medium",
   "enabledPlugins": {
     "agent-sdk-dev@claude-code-plugins": true,
