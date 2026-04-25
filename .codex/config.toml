@@ -11,13 +11,14 @@
 #   codex -c model="o3" "prompt"
 #   codex -c 'sandbox_permissions=["disk-full-read-access"]' "prompt"
 
-model = "gpt-5.4"
-approval_policy = "on-failure"
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+approval_policy = "never"
+model_reasoning_effort = "xhigh"
 model_reasoning_summary = "detailed"
 service_tier = "fast"
 web_search = "cached"
 personality = "pragmatic"
+sandbox_mode = "workspace-write"
 
 [history]
 persistence = "save-all"
@@ -112,3 +113,6 @@ args = ["~/.claudecodebrowser/mcp-server/stdio_wrapper.py"]
 
 [notice]
 hide_rate_limit_model_nudge = true
+
+[sandbox_workspace_write]
+network_access = true

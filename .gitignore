@@ -157,14 +157,13 @@ work/
 **/sshd.pid
 **/sshd_config
 
-# Codex CLI - track config, ignore machine-specific data
-.codex/auth.json
-.codex/history.jsonl
-.codex/sessions/
-.codex/log/
-.codex/version.json
-.codex/*.db
-.codex/*.db-*
+# Codex CLI - keep shared config, ignore machine-specific runtime state
+# Codex now writes caches, sqlite state, temp files, plugins, and archived
+# sessions under .codex/. Only the repo-shared config/docs should remain visible.
+.codex/**
+!.codex/
+!.codex/config.toml
+!.codex/instructions.md
 
 # Version control
 .jj/
