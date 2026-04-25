@@ -95,7 +95,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
     if $do_reconcile; and not $do_prune
         set -l synth_script "$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"
         if test -x "$synth_script"
-            bash "$synth_script" --reconcile
+            bash "$synth_script" --reconcile --reason reconcile
         else
             echo "Error: session-synthesize.sh not found" >&2
             return 1
@@ -420,7 +420,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         if test -x "$synth_script"
             echo ""
             echo "Reconciling missed Obsidian session syntheses..."
-            bash "$synth_script" --reconcile; or true
+            bash "$synth_script" --reconcile --reason reconcile; or true
         end
     end
 

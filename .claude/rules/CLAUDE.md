@@ -25,6 +25,7 @@ Subsystem-specific rules loaded on-demand based on which files you're editing. E
 |------|-------|
 | `agent-orchestration.md` | Multi-agent lifecycle (Gastown patterns, gwt-* functions) |
 | `cross-provider.md` | Multi-provider LLM bridge (Codex, Gemini, Ollama, DeepSeek) |
+| `obsidian-synthesis.md` | Per-session Obsidian synthesis triggers, reason tags, dedup |
 | `ticket-execution.md` | Ticket workflow, queue management, gwt-ticket orchestration |
 | `worktree-devcontainer.md` | Devcontainer auto-login, credential binding |
 
