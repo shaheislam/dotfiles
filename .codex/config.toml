@@ -84,6 +84,15 @@ trust_level = "trusted"
 [projects."/Users/shahe/dotfiles-tokyo"]
 trust_level = "trusted"
 
+[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/explain-ipv6"]
+trust_level = "trusted"
+
+[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/what-is-tls-2"]
+trust_level = "trusted"
+
+[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/i-want-to-plan-a-6"]
+trust_level = "trusted"
+
 # --- MCP Servers (synced from .mcp.json) ---
 
 [mcp_servers.playwright]
@@ -118,7 +127,7 @@ hide_rate_limit_model_nudge = true
 network_access = true
 
 [marketplaces.openai-bundled]
-last_updated = "2026-04-25T14:35:55Z"
+last_updated = "2026-04-25T15:28:41Z"
 source_type = "local"
 source = "/Users/shahe.islam/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
