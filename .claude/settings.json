@@ -138,6 +138,10 @@
           {
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ci-lint-on-save.sh 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/nvim-open-edited.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": "Edit|Write"
