@@ -93,6 +93,9 @@ trust_level = "trusted"
 [projects."/Users/shahe.islam/Documents/Codex/2026-04-25/i-want-to-plan-a-6"]
 trust_level = "trusted"
 
+[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/github-plugin-github-openai-curated-inspect"]
+trust_level = "trusted"
+
 # --- MCP Servers (synced from .mcp.json) ---
 
 [mcp_servers.playwright]
@@ -132,4 +135,10 @@ source_type = "local"
 source = "/Users/shahe.islam/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [plugins."browser-use@openai-bundled"]
+enabled = true
+
+[plugins."gmail@openai-curated"]
+enabled = true
+
+[plugins."github@openai-curated"]
 enabled = true
