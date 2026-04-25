@@ -1,0 +1,5 @@
+on open theFiles
+  repeat with aFile in theFiles
+__OPEN_STATEMENT__
+  end repeat
+end open

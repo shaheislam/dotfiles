@@ -1719,6 +1719,15 @@ phase_9_fonts_and_apps() {
 					log_verbose "CopyQ setup completed with warnings"
 			fi
 		fi
+
+		# Install Codex default-open-destination proxy app
+		if [[ -f "$DOTFILES_ROOT/scripts/setup/install-codex-open-destination.sh" ]]; then
+			print_step "Setting up Codex open destination..."
+			bash "$DOTFILES_ROOT/scripts/setup/install-codex-open-destination.sh" >/dev/null 2>&1 &&
+				print_success "Codex open destination configured" ||
+				log_verbose "Codex open destination setup completed with warnings"
+		fi
+
 		# Install ClaudeUsage menu bar app (subscription usage tracker)
 		# https://github.com/linuxlewis/claude-usage
 		if [[ -d "/Applications/ClaudeUsage.app" ]]; then
