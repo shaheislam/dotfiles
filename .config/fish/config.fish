@@ -554,6 +554,18 @@ if status is-interactive
         end
     end
 
+    # Codex IDE integrated terminal: same auto-attach behavior.
+    # __CFBundleIdentifier is set by macOS when Codex.app spawns the shell.
+    # NOTE: do NOT key on $CODEX_COMPANION_SESSION_ID — that var is set by the
+    # codex-openai-codex Claude Code plugin (~/.claude/session-env/<id>/sessionstart-hook-*.sh)
+    # and would fire in every Claude Code session.
+    if test -z "$TMUX" -a "$__CFBundleIdentifier" = com.openai.codex
+        tmux-main
+        if test $status -eq 0
+            exit
+        end
+    end
+
     # Enhanced aliases combining both configs
     alias python=python3
     alias mkdir="mkdir -p"

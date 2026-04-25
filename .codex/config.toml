@@ -116,3 +116,11 @@ hide_rate_limit_model_nudge = true
 
 [sandbox_workspace_write]
 network_access = true
+
+[marketplaces.openai-bundled]
+last_updated = "2026-04-25T14:35:55Z"
+source_type = "local"
+source = "/Users/shahe.islam/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[plugins."browser-use@openai-bundled"]
+enabled = true
