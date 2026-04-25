@@ -1,26 +1,43 @@
-function gwt-cleanup --description "Clean up stale worktree devcontainer instances"
-    # Usage: gwt-cleanup [--prune] [--dry-run] [--force] [--reconcile]
+function gwt-cleanup --description "Clean up stale worktree devcontainer instances (archive-by-default)"
+    # Usage: gwt-cleanup [--prune | --purge-now | --restore NAME | --purge-trash]
     #
-    # Identifies and removes devcontainer instances for worktrees that
-    # no longer exist.
+    # Identifies and archives devcontainer instances for worktrees that
+    # no longer exist. Archive lives at ~/.devcontainer/.trash/<ts>-<name>/.
     #
-    # Options:
-    #   --prune, -p      Remove stale instances (default: just list)
-    #   --dry-run, -n    Show what would be removed without doing it
-    #   --force, -f      Skip confirmation prompts
-    #   --all, -a        Check all instances, not just current repo's
-    #   --reconcile, -r  Find and synthesize missed Obsidian session notes
+    # Default safety posture: --prune archives (matches tmux-session-trash
+    # and `entire` checkpoints). --purge-now is the explicit destructive flag.
 
     set -l do_prune false
+    set -l do_purge_now false
     set -l do_dry_run false
     set -l do_force false
     set -l do_all false
     set -l do_reconcile false
+    set -l do_restore false
+    set -l restore_name ""
+    set -l do_purge_trash false
+    set -l ttl_days 30
 
-    for arg in $argv
+    set -l trash_base "$HOME/.devcontainer/.trash"
+
+    set -l skip_next false
+    set -l argc (count $argv)
+    set -l indices
+    if test $argc -gt 0
+        set indices (seq 1 $argc)
+    end
+    for i in $indices
+        if $skip_next
+            set skip_next false
+            continue
+        end
+        set -l arg $argv[$i]
         switch $arg
-            case --prune -p
+            case --prune -p --archive
                 set do_prune true
+            case --purge-now
+                set do_prune true
+                set do_purge_now true
             case --dry-run -n
                 set do_dry_run true
             case --force -f
@@ -29,17 +46,47 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
                 set do_all true
             case --reconcile -r
                 set do_reconcile true
+            case --restore
+                set do_restore true
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set restore_name $argv[$next_i]
+                    set skip_next true
+                end
+            case --purge-trash
+                set do_purge_trash true
+            case --ttl-days
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set ttl_days $argv[$next_i]
+                    set skip_next true
+                end
             case --help -h
-                echo "Usage: gwt-cleanup [--prune] [--dry-run] [--force] [--all] [--reconcile]"
+                echo "Usage: gwt-cleanup [OPTIONS]"
                 echo ""
                 echo "Clean up devcontainer instances for deleted worktrees."
+                echo "Archive-by-default: --prune moves to ~/.devcontainer/.trash/, not rm -rf."
                 echo ""
-                echo "Options:"
-                echo "  --prune, -p      Remove stale instances"
-                echo "  --dry-run, -n    Show what would be removed"
-                echo "  --force, -f      Skip confirmation"
-                echo "  --all, -a        Check all instances, not just current repo"
-                echo "  --reconcile, -r  Find and synthesize missed Obsidian session notes"
+                echo "Operations:"
+                echo "  --prune, -p          Archive stale instances to .trash/ (safe default)"
+                echo "  --purge-now          rm -rf stale instances immediately (old --prune)"
+                echo "  --restore NAME       Restore archived instance from .trash/"
+                echo "  --purge-trash        Permanently delete .trash/ contents"
+                echo "  --reconcile, -r      Find and synthesize missed Obsidian session notes"
+                echo ""
+                echo "Modifiers:"
+                echo "  --dry-run, -n        Show what would happen without doing it"
+                echo "  --force, -f          Skip fzf picker / confirmation prompts"
+                echo "  --all, -a            Check all instances, not just current repo"
+                echo "  --ttl-days N         Age filter for --purge-trash (default: 30)"
+                echo "  --archive            Alias for --prune (explicit)"
+                echo ""
+                echo "Examples:"
+                echo "  gwt-cleanup                              # list stale instances"
+                echo "  gwt-cleanup --prune                      # archive (recoverable)"
+                echo "  gwt-cleanup --purge-now --force          # immediate hard delete"
+                echo "  gwt-cleanup --restore feature-x          # bring it back"
+                echo "  gwt-cleanup --purge-trash --ttl-days 30  # purge archives older than 30d"
                 return 0
         end
     end
@@ -58,6 +105,102 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
 
     set -l instance_base "$HOME/.devcontainer/instances"
     set -l workspace_base "$HOME/.devcontainer/workspaces"
+
+    # Standalone restore: bring an archived instance back from .trash/
+    if $do_restore
+        if test -z "$restore_name"
+            echo "Error: --restore requires a name" >&2
+            echo "  gwt-cleanup --restore <instance-name>" >&2
+            return 1
+        end
+        if not test -d "$trash_base"
+            echo "No archives found at $trash_base" >&2
+            return 1
+        end
+        # Find most recent archive matching *-<restore_name>
+        set -l matches
+        for entry in $trash_base/*-$restore_name
+            if test -d "$entry"
+                set -a matches $entry
+            end
+        end
+        if test (count $matches) -eq 0
+            echo "Error: no archive matches '$restore_name' in $trash_base" >&2
+            return 1
+        end
+        # Sort and take most recent (timestamp prefix means lexical = chronological)
+        set -l archive_dir (printf '%s\n' $matches | sort | tail -1)
+        set -l archive_name (basename -- $archive_dir)
+        echo "Restoring from: $archive_dir"
+        if test -d "$archive_dir/instance"
+            if test -d "$instance_base/$restore_name"
+                echo "Error: $instance_base/$restore_name already exists; remove it first" >&2
+                return 1
+            end
+            mkdir -p "$instance_base"
+            mv "$archive_dir/instance" "$instance_base/$restore_name"
+            echo "  → $instance_base/$restore_name"
+        end
+        if test -d "$archive_dir/workspace"
+            if test -d "$workspace_base/$restore_name"
+                echo "Error: $workspace_base/$restore_name already exists; remove it first" >&2
+                return 1
+            end
+            mkdir -p "$workspace_base"
+            mv "$archive_dir/workspace" "$workspace_base/$restore_name"
+            echo "  → $workspace_base/$restore_name"
+        end
+        rmdir "$archive_dir" 2>/dev/null
+        echo "Restored: $restore_name (from $archive_name)"
+        return 0
+    end
+
+    # Standalone purge-trash: hard-delete .trash/ contents (subject to --ttl-days)
+    if $do_purge_trash
+        if not test -d "$trash_base"
+            echo "No archives at $trash_base"
+            return 0
+        end
+        set -l candidates
+        if test "$ttl_days" -gt 0 2>/dev/null
+            for entry in (find "$trash_base" -mindepth 1 -maxdepth 1 -type d -mtime +$ttl_days 2>/dev/null)
+                set -a candidates $entry
+            end
+        else
+            for entry in $trash_base/*/
+                set -a candidates (string trim -r -c / -- $entry)
+            end
+        end
+        if test (count $candidates) -eq 0
+            echo "No archives older than $ttl_days days in $trash_base"
+            return 0
+        end
+        echo "Found "(count $candidates)" archive(s) eligible for purge:"
+        for c in $candidates
+            set -l size ""
+            if command -q du
+                set size (du -sh "$c" 2>/dev/null | cut -f1)
+            end
+            echo "  "(basename -- $c)" ($size)"
+        end
+        if $do_dry_run
+            echo ""
+            echo "Dry run - would rm -rf the above"
+            return 0
+        end
+        if not $do_force
+            read -P "Permanently delete "(count $candidates)" archive(s)? [y/N] " confirm
+            if not string match -qi y -- $confirm
+                echo Aborted
+                return 0
+            end
+        end
+        for c in $candidates
+            rm -rf "$c"
+        end
+        echo "Purged "(count $candidates)" archive(s)"
+        return 0
+    end
 
     if not test -d "$instance_base"
         echo "No devcontainer instances found at $instance_base"
@@ -158,11 +301,21 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
 
     # Dry run - just show what would be done
     if $do_dry_run
-        echo "Dry run - would remove:"
-        for instance in $stale_instances
-            echo "  rm -rf $instance_base/$instance"
-            if contains $instance $stale_workspaces
-                echo "  rm -rf $workspace_base/$instance"
+        if $do_purge_now
+            echo "Dry run - would PURGE (rm -rf):"
+            for instance in $stale_instances
+                echo "  rm -rf $instance_base/$instance"
+                if contains $instance $stale_workspaces
+                    echo "  rm -rf $workspace_base/$instance"
+                end
+            end
+        else
+            echo "Dry run - would archive to $trash_base/<ts>-<name>/:"
+            for instance in $stale_instances
+                echo "  $instance_base/$instance → $trash_base/<ts>-$instance/instance"
+                if contains $instance $stale_workspaces
+                    echo "  $workspace_base/$instance → $trash_base/<ts>-$instance/workspace"
+                end
             end
         end
         return 0
@@ -224,19 +377,41 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
             end
         end
 
-        # Remove selected instances and workspaces
-        for instance in $to_remove
-            echo "Removing: $instance"
-            rm -rf "$instance_base/$instance"
-            if contains $instance $stale_workspaces
-                rm -rf "$workspace_base/$instance"
+        if $do_purge_now
+            # Hard delete (old --prune behaviour)
+            for instance in $to_remove
+                echo "Purging: $instance"
+                rm -rf "$instance_base/$instance"
+                if contains $instance $stale_workspaces
+                    rm -rf "$workspace_base/$instance"
+                end
             end
+            echo ""
+            echo "Purged "(count $to_remove)" stale instance(s)"
+        else
+            # Archive to .trash/ (default --prune behaviour)
+            mkdir -p "$trash_base"
+            set -l ts (date +%Y%m%d_%H%M%S)
+            for instance in $to_remove
+                set -l archive_dir "$trash_base/$ts-$instance"
+                echo "Archiving: $instance → $archive_dir"
+                mkdir -p "$archive_dir"
+                if test -d "$instance_base/$instance"
+                    mv "$instance_base/$instance" "$archive_dir/instance"
+                end
+                if contains $instance $stale_workspaces
+                    if test -d "$workspace_base/$instance"
+                        mv "$workspace_base/$instance" "$archive_dir/workspace"
+                    end
+                end
+            end
+            echo ""
+            echo "Archived "(count $to_remove)" stale instance(s) to $trash_base/"
+            echo "Restore:  gwt-cleanup --restore <name>"
+            echo "Purge:    gwt-cleanup --purge-trash --ttl-days $ttl_days"
         end
-
-        echo ""
-        echo "Removed "(count $to_remove)" stale instance(s)"
     else
-        echo "Run with --prune to remove these instances"
+        echo "Run with --prune to archive these (or --purge-now to delete immediately)"
     end
 
     # Reconcile missed Obsidian session syntheses (explicit flag only)
@@ -250,6 +425,7 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
     end
 
     # Clean up orphaned claude-code-config-* Docker volumes from old per-container approach
+    # Note: Docker volumes can't be cheaply archived, so removal requires --purge-now.
     if command -q docker
         set -l orphaned_vols (docker volume ls -q --filter "name=claude-code-config-" 2>/dev/null)
         if test (count $orphaned_vols) -gt 0
@@ -258,14 +434,14 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
             for vol in $orphaned_vols
                 echo "  $vol"
             end
-            if $do_prune
+            if $do_purge_now
                 for vol in $orphaned_vols
                     echo "Removing orphaned volume: $vol"
                     docker volume rm $vol 2>/dev/null
                 end
                 echo "Removed "(count $orphaned_vols)" orphaned volume(s)"
             else
-                echo "Run with --prune to remove these volumes"
+                echo "Run with --purge-now to remove these volumes (volumes are not archivable)"
             end
         end
     end
