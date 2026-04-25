@@ -1,23 +1,28 @@
 function obsidian-session-sync --description "Synthesize Claude session into Obsidian documentation"
-    argparse 'w/worktree=' 'c/cwd=' 't/ticket=' d/dry-run v/verbose h/help -- $argv
+    argparse 'w/worktree=' 'c/cwd=' 't/ticket=' 'r/reason=' d/dry-run v/verbose f/force h/help -- $argv
     or return 1
 
     if set -q _flag_help
         echo "obsidian-session-sync (oss) - Synthesize Claude session into Obsidian"
         echo ""
         echo "USAGE:"
-        echo "  oss                        # Sync current directory session"
-        echo "  oss --worktree PATH        # Sync from a specific worktree"
-        echo "  oss --ticket ISSUE-123     # Associate with a ticket"
-        echo "  oss --dry-run              # Preview without writing"
+        echo "  oss                                # Sync current directory session"
+        echo "  oss --worktree PATH                # Sync from a specific worktree"
+        echo "  oss --ticket ISSUE-123             # Associate with a ticket"
+        echo "  oss --reason wrap-up               # Tag the synthesis with a trigger reason"
+        echo "  oss --force                        # Bypass dedup window"
+        echo "  oss --dry-run                      # Preview without writing"
         echo ""
         echo "OPTIONS:"
-        echo "  -w, --worktree PATH  Worktree path (for gwt-ticket sessions)"
-        echo "  -c, --cwd PATH      Project working directory"
-        echo "  -t, --ticket ID      Ticket/issue ID to associate"
-        echo "  -d, --dry-run        Print synthesis prompt without writing"
-        echo "  -v, --verbose        Show gathered context"
-        echo "  -h, --help           Show this help"
+        echo "  -w, --worktree PATH   Worktree path (for gwt-ticket sessions)"
+        echo "  -c, --cwd PATH        Project working directory"
+        echo "  -t, --ticket ID       Ticket/issue ID to associate"
+        echo "  -r, --reason TAG      Trigger reason: stop|pre-compact|session-end|"
+        echo "                        worktree-cleanup|wrap-up|handoff|ticket-done|manual"
+        echo "  -f, --force           Bypass dedup window (default 60s, env OBSIDIAN_SYNC_DEDUP_SEC)"
+        echo "  -d, --dry-run         Print synthesis prompt without writing"
+        echo "  -v, --verbose         Show gathered context"
+        echo "  -h, --help            Show this help"
         return 0
     end
 
@@ -36,6 +41,12 @@ function obsidian-session-sync --description "Synthesize Claude session into Obs
     end
     if set -q _flag_ticket
         set -a args --ticket "$_flag_ticket"
+    end
+    if set -q _flag_reason
+        set -a args --reason "$_flag_reason"
+    end
+    if set -q _flag_force
+        set -a args --force
     end
     if set -q _flag_dry_run
         set -a args --dry-run

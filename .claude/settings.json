@@ -181,18 +181,9 @@
           {
             "command": "bash ~/.claude/hooks/changelog-persist.sh 2>/dev/null || true",
             "type": "command"
-          }
-        ],
-        "matcher": ""
-      },
-      {
-        "hooks": [
-          {
-            "command": "bd prime",
-            "type": "command"
           },
           {
-            "command": "bash ~/.claude/hooks/plan-persist.sh 2>/dev/null || true",
+            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --cwd \"$CLAUDE_PROJECT_DIR\" --reason pre-compact --force 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -265,7 +256,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
+            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --reason session-end --force --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
             "type": "command"
           }
         ],
@@ -385,7 +376,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
+            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --reason stop --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
             "type": "command"
           },
           {

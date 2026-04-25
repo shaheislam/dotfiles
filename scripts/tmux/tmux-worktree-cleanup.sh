@@ -115,6 +115,7 @@ if [[ -x "$SYNTHESIZE_SCRIPT" ]]; then
     log "Synthesizing session for worktree: $WORKTREE_PATH"
     # Keep synthesis detached from the invoking tmux terminal while preserving logs.
     timeout 90 bash "$SYNTHESIZE_SCRIPT" --worktree "$WORKTREE_PATH" --cwd "$WORKTREE_PATH" \
+        --reason worktree-cleanup --force \
         </dev/null >>"$LOG_FILE" 2>&1 || log "WARNING: Session synthesis failed (non-fatal)"
 fi
 

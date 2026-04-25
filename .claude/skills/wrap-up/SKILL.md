@@ -131,7 +131,17 @@ bd close BEAD_ID
 bd show PARENT_ID 2>/dev/null
 ```
 
-### 7. Report Summary
+### 7. Synthesise Session to Obsidian
+
+Capture the wrap-up boundary as a tagged synthesis note (bypasses the 60s dedup gate so this always fires alongside the natural Stop hook):
+
+```bash
+obsidian-session-sync --reason wrap-up --force 2>&1 | tail -3
+```
+
+Non-fatal: if synthesis fails (Obsidian unavailable, no substantive context, etc.) continue with the summary step.
+
+### 8. Report Summary
 
 Output a wrap-up summary:
 
@@ -142,6 +152,7 @@ Tests: {PASS/FAIL/NONE}
 Codex Review: {ALLOW/BLOCK/SKIPPED}
 Commit: {commit hash} — {commit message}
 Bead: {BEAD_ID} closed
+Synthesis: {Obsidian note path or SKIPPED reason}
 Remaining: {count of open subtasks under parent, if any}
 ---
 ```

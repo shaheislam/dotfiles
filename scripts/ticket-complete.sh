@@ -389,7 +389,8 @@ SYNTHESIZE_SCRIPT="${SCRIPT_DIR}/obsidian/session-synthesize.sh"
 if [[ -x "$SYNTHESIZE_SCRIPT" ]]; then
     timeout 60 bash "$SYNTHESIZE_SCRIPT" \
         --worktree "$WORKTREE_PATH" \
-        --ticket "$ISSUE_KEY" 2>&1 || {
+        --ticket "$ISSUE_KEY" \
+        --reason ticket-done --force 2>&1 || {
         echo -e "${YELLOW}Session synthesis completed with warnings${NC}"
     }
 else
