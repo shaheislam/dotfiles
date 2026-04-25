@@ -130,7 +130,7 @@ hide_rate_limit_model_nudge = true
 network_access = true
 
 [marketplaces.openai-bundled]
-last_updated = "2026-04-25T15:28:41Z"
+last_updated = "2026-04-25T20:48:47Z"
 source_type = "local"
 source = "/Users/shahe.islam/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
