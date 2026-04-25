@@ -96,6 +96,9 @@ trust_level = "trusted"
 [projects."/Users/shahe.islam/Documents/Codex/2026-04-25/github-plugin-github-openai-curated-inspect"]
 trust_level = "trusted"
 
+[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/whats-the-difference-between-an-ast"]
+trust_level = "trusted"
+
 # --- MCP Servers (synced from .mcp.json) ---
 
 [mcp_servers.playwright]
