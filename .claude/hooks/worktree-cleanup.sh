@@ -16,4 +16,12 @@ if command -v bd &>/dev/null && [ -n "$WORKTREE_PATH" ]; then
     (cd "$WORKTREE_PATH" && bd sync 2>/dev/null) || true
 fi
 
+# Synthesize session into Obsidian before the worktree is gone.
+# Covers the manual `git worktree remove` path that bypasses tmux cleanup.
+SYNTHESIZE_SCRIPT="$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"
+if [ -x "$SYNTHESIZE_SCRIPT" ] && [ -n "$WORKTREE_PATH" ] && [ -d "$WORKTREE_PATH" ]; then
+    timeout 60 bash "$SYNTHESIZE_SCRIPT" --cwd "$WORKTREE_PATH" --worktree "$WORKTREE_PATH" \
+        </dev/null >>"$LOG_FILE" 2>&1 || true
+fi
+
 exit 0

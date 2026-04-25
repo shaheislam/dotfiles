@@ -440,6 +440,10 @@
           {
             "command": "timeout 5 python3 ~/.claude/hooks/jfdi/prompt-inject-context.py 2>/dev/null || true",
             "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/hooks/plan-watch.sh 2>/dev/null || true",
+            "type": "command"
           }
         ],
         "matcher": ""
