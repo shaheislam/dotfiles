@@ -110,7 +110,7 @@
       {
         "hooks": [
           {
-            "command": "timeout 5 entire hooks claude-code post-task 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 5 entire hooks claude-code post-task",
             "type": "command"
           }
         ],
@@ -119,7 +119,7 @@
       {
         "hooks": [
           {
-            "command": "timeout 5 entire hooks claude-code post-todo 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 5 entire hooks claude-code post-todo",
             "type": "command"
           }
         ],
@@ -183,7 +183,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --cwd \"$CLAUDE_PROJECT_DIR\" --reason pre-compact --force 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --cwd \"$CLAUDE_PROJECT_DIR\" --reason pre-compact --force",
             "type": "command"
           }
         ],
@@ -194,7 +194,7 @@
       {
         "hooks": [
           {
-            "command": "timeout 5 entire hooks claude-code pre-task 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 5 entire hooks claude-code pre-task",
             "type": "command"
           }
         ],
@@ -244,7 +244,7 @@
       {
         "hooks": [
           {
-            "command": "timeout 10 entire hooks claude-code session-end 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 10 entire hooks claude-code session-end",
             "type": "command"
           },
           {
@@ -256,7 +256,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --reason session-end --force --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --reason session-end --force --cwd \"$CLAUDE_PROJECT_DIR\"",
             "type": "command"
           }
         ],
@@ -271,7 +271,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 10 entire hooks claude-code session-start 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 10 entire hooks claude-code session-start",
             "type": "command"
           },
           {
@@ -325,7 +325,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 10 entire hooks claude-code session-start 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 10 entire hooks claude-code session-start",
             "type": "command"
           },
           {
@@ -368,7 +368,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 10 entire hooks claude-code stop 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 10 entire hooks claude-code stop",
             "type": "command"
           },
           {
@@ -376,11 +376,11 @@
             "type": "command"
           },
           {
-            "command": "timeout 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --reason stop --cwd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 60 bash ~/dotfiles/scripts/obsidian/session-synthesize.sh --reason stop --cwd \"$CLAUDE_PROJECT_DIR\"",
             "type": "command"
           },
           {
-            "command": "timeout 120 python3 ~/.claude/hooks/jfdi/session-end-extract.py 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 120 python3 ~/.claude/hooks/jfdi/session-end-extract.py",
             "type": "command"
           },
           {
@@ -421,7 +421,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 5 entire hooks claude-code user-prompt-submit 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 5 entire hooks claude-code user-prompt-submit",
             "type": "command"
           },
           {
@@ -429,7 +429,7 @@
             "type": "command"
           },
           {
-            "command": "timeout 5 python3 ~/.claude/hooks/jfdi/prompt-inject-context.py 2>/dev/null || true",
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 5 python3 ~/.claude/hooks/jfdi/prompt-inject-context.py",
             "type": "command"
           },
           {

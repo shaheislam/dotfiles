@@ -51,6 +51,7 @@ brew "git-delta"
 brew "eza"
 brew "zoxide"
 brew "fd"
+brew "coreutils"  # Provides gtimeout; macOS lacks GNU timeout. Hooks fall back to gtimeout.
 brew "stow"
 brew "direnv"
 brew "mise"

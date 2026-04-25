@@ -317,12 +317,34 @@ if $RECONCILE; then
                 # Check for existing synthesis (compgen -G expands globs correctly)
                 if ! compgen -G "$CLAUDE_SESSIONS_DIR"/*-synth-"${local_uuid}".md >/dev/null 2>&1; then
                     missing=$((missing + 1))
-                    # Reconstruct CWD from slug: -Users-shahe-project → /Users/shahe/project
-                    reconcile_slug=$(basename "$jsonl_dir")
-                    reconcile_cwd=$(echo "$reconcile_slug" | sed 's/^-/\//' | sed 's/-/\//g')
+                    # Read real cwd from the jsonl itself. Slug encoding is lossy
+                    # ('/', '.', and literal '-' all collapse to '-'), so a slug
+                    # cannot be round-tripped to a path. The jsonl carries a `cwd`
+                    # field on every message — take the first non-null one.
+                    reconcile_cwd=$(python3 -c "
+import json,sys
+with open('$jsonl_file') as f:
+    for line in f:
+        try:
+            d = json.loads(line)
+            cwd = d.get('cwd')
+            if cwd:
+                print(cwd); break
+        except Exception: pass
+" 2>/dev/null)
+                    if [[ -z "$reconcile_cwd" ]]; then
+                        # Fallback: lossy slug decode (best-effort for legacy sessions)
+                        reconcile_slug=$(basename "$jsonl_dir")
+                        reconcile_cwd=$(echo "$reconcile_slug" | sed 's/^-/\//' | sed 's/-/\//g')
+                    fi
                     if [[ -d "$reconcile_cwd" ]]; then
                         echo -e "  Synthesizing: ${local_uuid} (${local_date}) → ${reconcile_cwd}"
-                        if timeout 60 bash "$0" --cwd "$reconcile_cwd" --session-id "$local_uuid" 2>/dev/null; then
+                        # macOS lacks GNU `timeout` by default; degrade gracefully.
+                        timeout_cmd=""
+                        if command -v timeout >/dev/null 2>&1; then timeout_cmd="timeout 60"
+                        elif command -v gtimeout >/dev/null 2>&1; then timeout_cmd="gtimeout 60"
+                        fi
+                        if $timeout_cmd bash "$0" --cwd "$reconcile_cwd" --session-id "$local_uuid"; then
                             synthesized=$((synthesized + 1))
                         else
                             echo -e "  ${YELLOW}Failed: ${local_uuid}${NC}"
