@@ -4,15 +4,20 @@
 # Check if Nix is installed
 if test -e /nix
 
-    # Source Nix daemon for multi-user installation (macOS)
-    if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
-        source '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
-        # Alternative location for some installations
-    else if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix.fish'
-        source '/nix/var/nix/profiles/default/etc/profile.d/nix.fish'
-        # Single-user installation fallback
-    else if test -e "$HOME/.nix-profile/etc/profile.d/nix.fish"
-        source "$HOME/.nix-profile/etc/profile.d/nix.fish"
+    # Skip the daemon source if PATH already contains ~/.nix-profile/bin
+    # (means a parent shell or fish_user_paths already exported the env vars
+    # nix-daemon.fish would set — re-sourcing wastes ~10ms of stat() calls).
+    if not contains "$HOME/.nix-profile/bin" $PATH
+        # Source Nix daemon for multi-user installation (macOS)
+        if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
+            source '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
+            # Alternative location for some installations
+        else if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix.fish'
+            source '/nix/var/nix/profiles/default/etc/profile.d/nix.fish'
+            # Single-user installation fallback
+        else if test -e "$HOME/.nix-profile/etc/profile.d/nix.fish"
+            source "$HOME/.nix-profile/etc/profile.d/nix.fish"
+        end
     end
 
     # Append Nix profile bin to PATH so Homebrew's newer git/etc. win.
