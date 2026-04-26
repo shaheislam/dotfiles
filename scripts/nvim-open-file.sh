@@ -77,7 +77,16 @@ if [[ -n "$nvim_pane" ]]; then
         ":lua vim.cmd('edit ' .. [[${file_path}]]); vim.cmd('checktime')" Enter
     echo "Opened ${file_path} in nvim pane ${nvim_pane} (${target})"
 else
-    # No nvim — split the window and launch nvim with the file
-    tmux split-window -h -t "$target" "nvim '${file_path}'"
-    echo "Opened nvim split with ${file_path} (${target})"
+    # No nvim — open in a new pane using the same adaptive heuristic as
+    # `prefix Space` in .tmux.conf: vertical split when the source pane is
+    # tall, horizontal otherwise. Inherit the source pane's cwd.
+    pane_width=$(tmux display-message -p -t "$target" '#{pane_width}' 2>/dev/null || echo 0)
+    pane_height=$(tmux display-message -p -t "$target" '#{pane_height}' 2>/dev/null || echo 0)
+    if ((pane_width > 0 && pane_height > 0 && 8 * pane_width < 20 * pane_height)); then
+        orientation="-v"
+    else
+        orientation="-h"
+    fi
+    tmux split-window "$orientation" -c '#{pane_current_path}' -t "$target" "nvim '${file_path}'"
+    echo "Opened nvim split (${orientation}) with ${file_path} (${target})"
 fi
