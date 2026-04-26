@@ -20,8 +20,8 @@ tap "atlassian/homebrew-acli"
 # Tap for Splash log colorizer
 tap "joshi4/splash"
 
-# Tap for Opencode AI coding agent
-tap "sst/tap"
+# Tap for Opencode AI coding agent (anomalyco fork)
+tap "anomalyco/tap"
 
 # Tap for Recall - Claude Code conversation search
 tap "zippoxer/tap"
@@ -134,7 +134,7 @@ cask "1password-cli"  # 1Password CLI for tmux-1password plugin
 # Claude Code Router - installed via npm globally in setup script for alternative AI providers
 # OpenAI Codex CLI - installed via npm globally in setup script
 cask "kiro-cli"  # Kiro CLI (formerly Amazon Q Developer)
-brew "sst/tap/opencode"  # AI coding agent built for the terminal
+brew "anomalyco/tap/opencode"  # AI coding agent built for the terminal (anomalyco fork)
 brew "zippoxer/tap/recall"  # Search and resume Claude Code conversations
 brew "openclaw-cli"  # Self-hosted personal AI assistant gateway CLI
 brew "agent-browser"  # AI-optimized headless browser automation CLI (ref-based interaction model)
