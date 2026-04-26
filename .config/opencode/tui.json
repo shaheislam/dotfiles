@@ -5,5 +5,16 @@
   "scroll_acceleration": {
     "enabled": true
   },
-  "diff_style": "stacked"
+  "diff_style": "stacked",
+  "keybinds": {
+    "leader": "ctrl+x",
+    "tool_details": "<leader>d",
+    "session_list": "<leader>l",
+    "session_timeline": "<leader>g",
+    "messages_next": "]",
+    "messages_previous": "[",
+    "session_rename": "<leader>R",
+    "session_fork": "<leader>f",
+    "variant_list": "<leader>v"
+  }
 }
