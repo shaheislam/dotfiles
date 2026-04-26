@@ -15,17 +15,18 @@ if test -e /nix
         source "$HOME/.nix-profile/etc/profile.d/nix.fish"
     end
 
-    # Add Nix profile bin to PATH if not already there
+    # Append Nix profile bin to PATH so Homebrew's newer git/etc. win.
+    # (Prepending caused Starship to call /nix/store/...git-2.44.2 and time out.)
     if test -d "$HOME/.nix-profile/bin"
         if not contains "$HOME/.nix-profile/bin" $PATH
-            set -gx PATH "$HOME/.nix-profile/bin" $PATH
+            set -gx PATH $PATH "$HOME/.nix-profile/bin"
         end
     end
 
-    # Add Home Manager profile bin to PATH if it exists
+    # Append Home Manager profile bin (same reasoning as above)
     if test -d "$HOME/.local/state/nix/profiles/home-manager/home-path/bin"
         if not contains "$HOME/.local/state/nix/profiles/home-manager/home-path/bin" $PATH
-            set -gx PATH "$HOME/.local/state/nix/profiles/home-manager/home-path/bin" $PATH
+            set -gx PATH $PATH "$HOME/.local/state/nix/profiles/home-manager/home-path/bin"
         end
     end
 
