@@ -8,22 +8,14 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
 
     switch "$subcmd"
         case add
-            # Usage: codex-accounts add <name>
-            if test (count $argv) -lt 1
-                echo "Usage: codex-accounts add <name>" >&2
-                return 1
-            end
-            set -l name $argv[1]
-            set -l acct_dir "$accounts_dir/$name"
-
-            if test -d "$acct_dir"
-                echo "Account '$name' already exists. Use 'codex-accounts remove $name' first." >&2
-                return 1
+            # Optional name arg is treated as a sanity-check; canonical name is derived from auth.
+            set -l requested_name ""
+            if test (count $argv) -ge 1
+                set requested_name $argv[1]
             end
 
-            # Run codex login (opens browser OAuth flow)
-            echo "Logging in for account '$name'..."
-            echo "A browser window will open. Sign in with the account you want to use for '$name'."
+            echo "Logging in for Codex CLI..."
+            echo "A browser window will open. Sign in with the account you want to enroll."
             codex logout 2>/dev/null
             codex login
             if test $status -ne 0
@@ -31,30 +23,45 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
                 return 1
             end
 
-            # Copy auth.json to profile directory
-            mkdir -p "$acct_dir"
-            cp "$HOME/.codex/auth.json" "$acct_dir/auth.json"
+            set -l live_auth "$HOME/.codex/auth.json"
+            if not test -f "$live_auth"
+                echo "Error: auth.json not found after login." >&2
+                return 1
+            end
 
-            # Append to accounts list (if not already present)
+            set -l name (_ai_accounts_canonical_name "$live_auth")
+            if test -z "$name"
+                echo "Error: Could not derive canonical name from auth (missing email claim)." >&2
+                return 1
+            end
+
+            if test -n "$requested_name"; and test "$requested_name" != "$name"
+                echo "Error: Logged-in account is '$name', not '$requested_name'." >&2
+                echo "Profile names are derived from the account email — re-run as 'codex-accounts add' (no name) or 'codex-accounts add $name'." >&2
+                return 1
+            end
+
+            set -l acct_dir "$accounts_dir/$name"
+
+            if test -d "$acct_dir"
+                echo "Account '$name' already enrolled — refreshing its auth from the new login."
+            end
+
+            mkdir -p "$acct_dir"
+            cp "$live_auth" "$acct_dir/auth.json"
+
             mkdir -p "$accounts_dir"
             touch "$accounts_file"
             if not grep -qx "$name" "$accounts_file" 2>/dev/null
                 echo "$name" >>"$accounts_file"
             end
 
-            # Show confirmation with decoded JWT info
             _codex_accounts_show_info "$acct_dir/auth.json" "$name"
             _codex_accounts_warn_workspace_mismatch "$acct_dir/auth.json" "$name"
             echo "Account '$name' enrolled successfully."
             _ai_accounts_sync to-opencode "$name" "$acct_dir/auth.json"
 
         case capture refresh
-            if test (count $argv) -lt 1
-                echo "Usage: codex-accounts $subcmd <name>" >&2
-                return 1
-            end
-            set -l name $argv[1]
-            set -l acct_dir "$accounts_dir/$name"
             set -l live_auth "$HOME/.codex/auth.json"
 
             if not test -f "$live_auth"
@@ -67,6 +74,25 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
                 echo "Error: Live auth.json is invalid." >&2
                 return 1
             end
+
+            set -l requested_name ""
+            if test (count $argv) -ge 1
+                set requested_name $argv[1]
+            end
+
+            set -l name (_ai_accounts_canonical_name "$live_auth")
+            if test -z "$name"
+                echo "Error: Could not derive canonical name from auth (missing email claim)." >&2
+                return 1
+            end
+
+            if test -n "$requested_name"; and test "$requested_name" != "$name"
+                echo "Error: Current Codex session belongs to '$name', not '$requested_name'." >&2
+                echo "Profile names are derived from the account email — re-run as 'codex-accounts $subcmd' (no name) or 'codex-accounts $subcmd $name'." >&2
+                return 1
+            end
+
+            set -l acct_dir "$accounts_dir/$name"
 
             mkdir -p "$accounts_dir" "$acct_dir"
             cp "$live_auth" "$acct_dir/auth.json"
@@ -502,17 +528,23 @@ for i in json.load(sys.stdin):
             echo "Syncing codex accounts to opencode..."
             _ai_accounts_sync all --to-opencode
 
+        case dedupe
+            _codex_accounts_dedupe
+
         case '*'
             echo "Usage: codex-accounts <command> [args]" >&2
             echo "" >&2
+            echo "Profile names are derived from the OpenAI account email (local-part)." >&2
+            echo "" >&2
             echo "Commands:" >&2
-            echo "  add <name>        Enroll a new account (opens browser login)" >&2
-            echo "  capture <name>    Save the current ~/.codex/auth.json into rotation" >&2
-            echo "  refresh <name>    Alias for capture" >&2
+            echo "  add [<name>]      Enroll a new account (name auto-derived)" >&2
+            echo "  capture [<name>]  Save the current ~/.codex/auth.json into rotation" >&2
+            echo "  refresh [<name>]  Alias for capture" >&2
             echo "  remove <name>     Remove an enrolled account" >&2
             echo "  list              Show all enrolled accounts" >&2
             echo "  status            Show rotation state" >&2
             echo "  workspace ...     Discover or pin a workspace UUID" >&2
+            echo "  dedupe            Rename/remove profiles to canonical email-derived names" >&2
             echo "" >&2
             echo "1Password:" >&2
             echo "  1p-push <name>    Push account to 1Password" >&2
@@ -531,6 +563,66 @@ for i in json.load(sys.stdin):
 end
 
 # --- Helper functions ---
+
+function _codex_accounts_dedupe --description "Rename codex profiles to canonical email-derived names; remove identity duplicates"
+    set -l accounts_dir "$HOME/.codex/accounts"
+    set -l accounts_file "$accounts_dir/.accounts"
+
+    if not test -f "$accounts_file"
+        echo "No codex profiles to dedupe."
+        return 0
+    end
+
+    set -l renamed 0
+    set -l removed 0
+
+    for name in (cat "$accounts_file")
+        set -l auth "$accounts_dir/$name/auth.json"
+        if not test -f "$auth"
+            continue
+        end
+        set -l canonical (_ai_accounts_canonical_name "$auth")
+        if test -z "$canonical"; or test "$canonical" = "$name"
+            continue
+        end
+        set -l canonical_dir "$accounts_dir/$canonical"
+        if test -d "$canonical_dir"
+            continue
+        end
+        echo "  Renaming '$name' -> '$canonical'"
+        mv "$accounts_dir/$name" "$canonical_dir"
+        set -l tmp (mktemp)
+        sed "s|^$name\$|$canonical|" "$accounts_file" >"$tmp"
+        mv "$tmp" "$accounts_file"
+        _ai_accounts_sync remove-opencode "$name" >/dev/null 2>&1
+        _ai_accounts_sync to-opencode "$canonical" "$canonical_dir/auth.json" >/dev/null 2>&1
+        set renamed (math $renamed + 1)
+    end
+
+    for name in (cat "$accounts_file")
+        set -l auth "$accounts_dir/$name/auth.json"
+        if not test -f "$auth"
+            continue
+        end
+        set -l canonical (_ai_accounts_canonical_name "$auth")
+        if test -z "$canonical"; or test "$canonical" = "$name"
+            continue
+        end
+        set -l canonical_dir "$accounts_dir/$canonical"
+        if not test -d "$canonical_dir"
+            continue
+        end
+        echo "  Removing duplicate '$name' (identity matches '$canonical')"
+        rm -rf "$accounts_dir/$name"
+        set -l tmp (mktemp)
+        grep -vx "$name" "$accounts_file" >"$tmp"
+        mv "$tmp" "$accounts_file"
+        _ai_accounts_sync remove-opencode "$name" >/dev/null 2>&1
+        set removed (math $removed + 1)
+    end
+
+    echo "Dedupe complete: renamed=$renamed removed=$removed"
+end
 
 function _codex_accounts_decode_meta --description "Decode auth.json into tab-separated email, plan, org title, org id"
     set -l auth_file $argv[1]
@@ -610,7 +702,7 @@ function _codex_accounts_warn_workspace_mismatch --description "Warn when auth s
     set -l plan $fields[2]
     set -l org_title $fields[3]
 
-    if test "$org_title" = "Personal"; or test "$plan" = "free"
+    if test "$org_title" = Personal; or test "$plan" = free
         echo "  Warning: '$name' is still using the $org_title org on the $plan plan." >&2
         echo "  If you expected a workspace-backed plan, set a workspace pin with 'codex-accounts workspace set $name <workspace-id>'." >&2
         echo "  Use 'codex-accounts workspace discover' to list local workspace candidates." >&2

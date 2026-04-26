@@ -10,27 +10,20 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
 
     switch "$subcmd"
         case add
-            if test (count $argv) -lt 1
-                echo "Usage: opencode-accounts add <name>" >&2
-                return 1
-            end
-            set -l name $argv[1]
-            set -l acct_dir "$accounts_dir/$name"
-
-            if test -d "$acct_dir"
-                echo "Account '$name' already exists. Use 'opencode-accounts remove $name' first." >&2
-                return 1
+            # Optional name arg is treated as a sanity-check; canonical name is derived from auth.
+            set -l requested_name ""
+            if test (count $argv) -ge 1
+                set requested_name $argv[1]
             end
 
-            echo "Logging in for account '$name'..."
-            echo "A browser window will open. Sign in with the OpenAI account for '$name'."
-            env PATH="$HOME/dotfiles/scripts/bin:$PATH" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
+            echo "Logging in for OpenCode/OpenAI..."
+            echo "A browser window will open. Sign in with the OpenAI account you want to enroll."
+            bash "$HOME/dotfiles/scripts/opencode/auth-login-autoopen.sh"
             if test $status -ne 0
                 echo "Login failed." >&2
                 return 1
             end
 
-            # Wait briefly for auth.json to be written
             sleep 1
 
             if not test -f "$auth_file"
@@ -44,9 +37,29 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
                 return 1
             end
 
+            set -l name (_ai_accounts_canonical_name "$auth_file")
+            if test -z "$name"
+                echo "Error: Could not derive canonical name from auth (missing email claim)." >&2
+                return 1
+            end
+
+            if test -n "$requested_name"; and test "$requested_name" != "$name"
+                echo "Error: Logged-in account is '$name', not '$requested_name'." >&2
+                echo "Profile names are derived from the account email — re-run as 'opencode-accounts add' (no name) or 'opencode-accounts add $name'." >&2
+                return 1
+            end
+
+            set -l acct_dir "$accounts_dir/$name"
+            set -l login_required_file "$acct_dir/.login-required"
+
+            if test -d "$acct_dir"
+                echo "Account '$name' already enrolled — refreshing its auth from the new login."
+            end
+
             mkdir -p "$acct_dir"
             jq '.openai' "$auth_file" >"$acct_dir/openai-auth.json"
             chmod 600 "$acct_dir/openai-auth.json"
+            rm -f "$login_required_file"
 
             mkdir -p "$accounts_dir"
             touch "$accounts_file"
@@ -59,13 +72,6 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             _ai_accounts_sync to-codex "$name" "$acct_dir/openai-auth.json"
 
         case capture
-            if test (count $argv) -lt 1
-                echo "Usage: opencode-accounts capture <name>" >&2
-                return 1
-            end
-            set -l name $argv[1]
-            set -l acct_dir "$accounts_dir/$name"
-
             if not test -f "$auth_file"
                 echo "Error: No OpenCode auth found at $auth_file" >&2
                 return 1
@@ -77,9 +83,30 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
                 return 1
             end
 
+            set -l requested_name ""
+            if test (count $argv) -ge 1
+                set requested_name $argv[1]
+            end
+
+            set -l name (_ai_accounts_canonical_name "$auth_file")
+            if test -z "$name"
+                echo "Error: Could not derive canonical name from auth (missing email claim)." >&2
+                return 1
+            end
+
+            if test -n "$requested_name"; and test "$requested_name" != "$name"
+                echo "Error: Current OpenCode session belongs to '$name', not '$requested_name'." >&2
+                echo "Profile names are derived from the account email — re-run as 'opencode-accounts capture' (no name) or 'opencode-accounts capture $name'." >&2
+                return 1
+            end
+
+            set -l acct_dir "$accounts_dir/$name"
+            set -l login_required_file "$acct_dir/.login-required"
+
             mkdir -p "$accounts_dir" "$acct_dir"
             jq '.openai' "$auth_file" >"$acct_dir/openai-auth.json"
             chmod 600 "$acct_dir/openai-auth.json"
+            rm -f "$login_required_file"
 
             touch "$accounts_file"
             if not grep -qx "$name" "$accounts_file" 2>/dev/null
@@ -313,7 +340,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             echo "All saved accounts are rate-limited." >&2
             echo "Opening OpenCode login to authenticate a new account..." >&2
             echo "" >&2
-            env BROWSER="$HOME/dotfiles/scripts/bin/open-url" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
+            bash "$HOME/dotfiles/scripts/opencode/auth-login-autoopen.sh"
             if test $status -eq 0
                 echo ""
                 echo "Login successful. You may want to save this account:"
@@ -321,7 +348,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             end
 
         case login
-            env BROWSER="$HOME/dotfiles/scripts/bin/open-url" opencode auth login --provider openai --method "ChatGPT Pro/Plus (browser)"
+            bash "$HOME/dotfiles/scripts/opencode/auth-login-autoopen.sh"
             if test $status -eq 0
                 echo ""
                 echo "Login successful. Save this account with:"
@@ -332,12 +359,17 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             echo "Syncing opencode accounts to codex..."
             _ai_accounts_sync all --to-codex
 
+        case dedupe
+            _opencode_accounts_dedupe
+
         case help --help -h ''
             echo "Usage: opencode-accounts <command> [args]"
             echo ""
+            echo "Profile names are derived from the OpenAI account email (local-part)."
+            echo ""
             echo "Commands:"
-            echo "  add <name>            Login and save as a new profile"
-            echo "  capture <name>        Save current OpenAI auth to profile"
+            echo "  add [<name>]          Login and save as a profile (name auto-derived)"
+            echo "  capture [<name>]      Save current OpenAI auth to profile"
             echo "  switch <name>         Activate a saved profile"
             echo "  remove <name>         Delete a profile"
             echo "  list                  Show all profiles"
@@ -345,6 +377,7 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             echo "  check [<name>]        Test if a profile (or current) is rate-limited"
             echo "  check-and-rotate      Auto-rotate to an available profile"
             echo "  login                 Open OpenCode login for OpenAI"
+            echo "  dedupe                Rename/remove profiles to canonical email-derived names"
             echo ""
             echo "Profiles stored in: $accounts_dir"
 
@@ -377,6 +410,46 @@ try:
 except Exception as e:
     print(f'decode error: {e}')
 " 2>/dev/null; or echo "decode error"
+end
+
+function _opencode_accounts_identity --description "Return stable OpenAI account identity"
+    set -l auth_json $argv[1]
+    python3 -c "import base64, json; data=json.load(open('$auth_json')); data=data.get('openai', data) if isinstance(data, dict) else data; token=data.get('access','') if isinstance(data, dict) else ''; account_id=data.get('accountId','') if isinstance(data, dict) else ''; email='';
+if token:
+    payload=token.split('.')[1]; payload += '=' * (-len(payload) % 4); claims=json.loads(base64.urlsafe_b64decode(payload)); auth_meta=claims.get('https://api.openai.com/auth', {}); profile=claims.get('https://api.openai.com/profile', {}); account_id=account_id or auth_meta.get('chatgpt_account_id') or ''; email=profile.get('email') or claims.get('email') or ''
+print('|'.join([part for part in (account_id, email) if part]))" 2>/dev/null
+end
+
+function _opencode_accounts_find_matching_profile --description "Find another saved profile with same OpenAI identity"
+    set -l source_auth $argv[1]
+    set -l skip_name $argv[2]
+    set -l accounts_dir "$HOME/.opencode/accounts"
+    set -l accounts_file "$accounts_dir/.accounts"
+
+    if not test -f "$accounts_file"
+        return 0
+    end
+
+    set -l source_identity (_opencode_accounts_identity "$source_auth")
+    if test -z "$source_identity"
+        return 0
+    end
+
+    for existing_name in (cat "$accounts_file")
+        if test -n "$skip_name"; and test "$existing_name" = "$skip_name"
+            continue
+        end
+
+        set -l existing_auth "$accounts_dir/$existing_name/openai-auth.json"
+        if not test -f "$existing_auth"
+            continue
+        end
+
+        if test "$source_identity" = (_opencode_accounts_identity "$existing_auth")
+            echo "$existing_name"
+            return 0
+        end
+    end
 end
 
 function _opencode_accounts_decode_jwt_from_auth --description "Decode active auth.json OpenAI entry"
@@ -441,6 +514,74 @@ function _opencode_accounts_fzf_pick --description "Interactive fzf picker for e
 
     # Extract just the account name (strip marker, take first column)
     echo $picked | string replace -r '^\s*>\s*' '' | string replace -r '\t.*' '' | string trim
+end
+
+function _opencode_accounts_dedupe --description "Rename profiles to canonical email-derived names; remove identity duplicates"
+    set -l accounts_dir "$HOME/.opencode/accounts"
+    set -l accounts_file "$accounts_dir/.accounts"
+
+    if not test -f "$accounts_file"
+        echo "No opencode profiles to dedupe."
+        return 0
+    end
+
+    set -l renamed 0
+    set -l removed 0
+
+    # Pass 1: rename non-canonical to canonical when slot is free
+    for name in (cat "$accounts_file")
+        set -l auth "$accounts_dir/$name/openai-auth.json"
+        if not test -f "$auth"
+            continue
+        end
+        set -l canonical (_ai_accounts_canonical_name "$auth")
+        if test -z "$canonical"; or test "$canonical" = "$name"
+            continue
+        end
+
+        set -l canonical_dir "$accounts_dir/$canonical"
+        if test -d "$canonical_dir"
+            # Canonical slot is taken — leave for pass 2 to resolve as duplicate
+            continue
+        end
+
+        echo "  Renaming '$name' -> '$canonical'"
+        mv "$accounts_dir/$name" "$canonical_dir"
+        # Update accounts list
+        set -l tmp (mktemp)
+        sed "s|^$name\$|$canonical|" "$accounts_file" >"$tmp"
+        mv "$tmp" "$accounts_file"
+        # Cross-sync: rename codex side too
+        _ai_accounts_sync remove-codex "$name" >/dev/null 2>&1
+        _ai_accounts_sync to-codex "$canonical" "$canonical_dir/openai-auth.json" >/dev/null 2>&1
+        set renamed (math $renamed + 1)
+    end
+
+    # Pass 2: drop profiles whose canonical name is already enrolled under a different (canonical) name
+    for name in (cat "$accounts_file")
+        set -l auth "$accounts_dir/$name/openai-auth.json"
+        if not test -f "$auth"
+            continue
+        end
+        set -l canonical (_ai_accounts_canonical_name "$auth")
+        if test -z "$canonical"; or test "$canonical" = "$name"
+            continue
+        end
+        set -l canonical_dir "$accounts_dir/$canonical"
+        if not test -d "$canonical_dir"
+            continue
+        end
+
+        echo "  Removing duplicate '$name' (identity matches '$canonical')"
+        rm -rf "$accounts_dir/$name"
+        set -l tmp (mktemp)
+        grep -vx "$name" "$accounts_file" >"$tmp"
+        mv "$tmp" "$accounts_file"
+        _ai_accounts_sync remove-codex "$name" >/dev/null 2>&1
+        set removed (math $removed + 1)
+    end
+
+    echo "Dedupe complete: renamed=$renamed removed=$removed"
 end
 
 function _opencode_refresh_profile --description "Refresh an OpenAI profile using its refresh_token"
