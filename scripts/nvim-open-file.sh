@@ -87,6 +87,7 @@ else
     else
         orientation="-h"
     fi
-    tmux split-window "$orientation" -c '#{pane_current_path}' -t "$target" "nvim '${file_path}'"
+    quoted_path=$(printf '%q' "$file_path")
+    tmux split-window "$orientation" -c '#{pane_current_path}' -t "$target" "nvim $quoted_path"
     echo "Opened nvim split (${orientation}) with ${file_path} (${target})"
 fi
