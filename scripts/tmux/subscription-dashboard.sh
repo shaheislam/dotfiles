@@ -9,7 +9,8 @@ OPENCODE_USAGE_SCRIPT="$DOTFILES_ROOT/scripts/opencode/usage-check.sh"
 INTERVAL=30
 ONCE=false
 NO_COLOR=false
-COMPACT=false
+COMPACT=true
+INTERACTIVE_SESSION=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -29,6 +30,10 @@ while [[ $# -gt 0 ]]; do
             COMPACT=true
             shift
             ;;
+        --full)
+            COMPACT=false
+            shift
+            ;;
         --help|-h)
             cat <<'EOF'
 subscription-dashboard.sh - Claude + OpenAI subscription usage dashboard
@@ -39,6 +44,7 @@ Usage:
   subscription-dashboard.sh --interval 15
   subscription-dashboard.sh --no-color
   subscription-dashboard.sh --compact
+  subscription-dashboard.sh --full
 EOF
             exit 0
             ;;
@@ -104,7 +110,7 @@ colorize_state() {
         LIMITED|WARN|TRANSIENT)
             printf '%s%s%s' "$C_YELLOW" "$state" "$C_RESET"
             ;;
-        EXPIRED|ERROR|MISSING)
+        EXPIRED|ERROR|MISSING|LOGIN)
             printf '%s%s%s' "$C_RED" "$state" "$C_RESET"
             ;;
         *)
@@ -115,6 +121,12 @@ colorize_state() {
 
 colorize_pct() {
     local raw="$1"
+
+    if [[ ! "$raw" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+        printf '%s' "$raw"
+        return
+    fi
+
     local pct
     pct=$(printf '%.0f' "$raw" 2>/dev/null || printf '0')
 
@@ -174,6 +186,9 @@ OPENAI_AVAILABLE=0
 OPENAI_LIMITED=0
 OPENAI_EXPIRED=0
 OPENAI_OTHER=0
+CLAUDE_REPAIRS=()
+OPENAI_FIX_REPAIRS=()
+OPENAI_LOGIN_REPAIRS=()
 
 reset_summary_counters() {
     CLAUDE_TOTAL=0
@@ -186,6 +201,41 @@ reset_summary_counters() {
     OPENAI_LIMITED=0
     OPENAI_EXPIRED=0
     OPENAI_OTHER=0
+    CLAUDE_REPAIRS=()
+    OPENAI_FIX_REPAIRS=()
+    OPENAI_LOGIN_REPAIRS=()
+}
+
+append_unique() {
+    local var_name="$1"
+    local value="$2"
+    local current=()
+    local item
+
+    eval "current=(\"\${${var_name}[@]}\")"
+    for item in "${current[@]}"; do
+        if [[ "$item" == "$value" ]]; then
+            return 0
+        fi
+    done
+
+    eval "$var_name+=(\"\$value\")"
+}
+
+join_by() {
+    local delimiter="$1"
+    shift
+    local first=true
+    local item
+
+    for item in "$@"; do
+        if [[ "$first" == true ]]; then
+            printf '%s' "$item"
+            first=false
+        else
+            printf '%s%s' "$delimiter" "$item"
+        fi
+    done
 }
 
 classify_claude_error() {
@@ -254,6 +304,127 @@ render_summary() {
     fi
     printf '\n'
     printf '%sNote:%s OpenAI shows account health from probe results, not true subscription percentages.\n\n' "$C_DIM" "$C_RESET"
+}
+
+render_repairs() {
+    if (( ${#CLAUDE_REPAIRS[@]} == 0 && ${#OPENAI_FIX_REPAIRS[@]} == 0 && ${#OPENAI_LOGIN_REPAIRS[@]} == 0 )); then
+        return
+    fi
+
+    printf '%sRepairs:%s\n' "$C_BOLD" "$C_RESET"
+
+    if (( ${#OPENAI_FIX_REPAIRS[@]} > 0 )); then
+        printf '  OpenAI accounts needing attention: %s\n' "$(join_by ', ' "${OPENAI_FIX_REPAIRS[@]}")"
+        printf '  Run: %ssubdash fix%s\n' "$C_BOLD" "$C_RESET"
+    fi
+
+    if (( ${#OPENAI_LOGIN_REPAIRS[@]} > 0 )); then
+        local name
+        printf '  OpenAI accounts needing fresh login: %s\n' "$(join_by ', ' "${OPENAI_LOGIN_REPAIRS[@]}")"
+        for name in "${OPENAI_LOGIN_REPAIRS[@]}"; do
+            printf '    %ssubdash login openai %s%s\n' "$C_BOLD" "$name" "$C_RESET"
+        done
+    fi
+
+    if (( ${#CLAUDE_REPAIRS[@]} > 0 )); then
+        local name
+        printf '  Claude profiles needing browser reauth: %s\n' "$(join_by ', ' "${CLAUDE_REPAIRS[@]}")"
+        for name in "${CLAUDE_REPAIRS[@]}"; do
+            if [[ "$name" == "default" ]]; then
+                printf '    %ssubdash login claude%s\n' "$C_BOLD" "$C_RESET"
+            else
+                printf '    %ssubdash login claude %s%s\n' "$C_BOLD" "$name" "$C_RESET"
+            fi
+        done
+    fi
+
+    if [[ "$INTERACTIVE_SESSION" == true ]]; then
+        printf '  Press %sr%s to launch a repair/login action from this popup.\n' "$C_BOLD" "$C_RESET"
+    fi
+
+    printf '\n'
+}
+
+run_subdash_command() {
+    local cmd='source "$HOME/dotfiles/.config/fish/functions/subdash.fish"; subdash'
+    local arg
+
+    for arg in "$@"; do
+        cmd+=" $(printf '%q' "$arg")"
+    done
+
+    fish -lc "$cmd"
+}
+
+pause_for_key() {
+    printf '\nPress any key to return to the dashboard...'
+    read -r -s -n 1 _
+}
+
+launch_repair_menu() {
+    local entries=()
+    local choice
+    local idx=1
+    local label action provider name
+
+    for name in "${OPENAI_LOGIN_REPAIRS[@]}"; do
+        entries+=("OpenAI login: $name|login|openai|$name")
+    done
+
+    for name in "${CLAUDE_REPAIRS[@]}"; do
+        if [[ "$name" == "default" ]]; then
+            entries+=("Claude login: default|login|claude|")
+        else
+            entries+=("Claude login: $name|login|claude|$name")
+        fi
+    done
+
+    if (( ${#OPENAI_FIX_REPAIRS[@]} > 0 )); then
+        entries+=("Run OpenAI refresh fix|fix||")
+    fi
+
+    if (( ${#entries[@]} == 0 )); then
+        return
+    fi
+
+    while true; do
+        clear
+        printf '%sRepair Actions%s\n\n' "$C_BOLD$C_BLUE" "$C_RESET"
+
+        idx=1
+        for entry in "${entries[@]}"; do
+            IFS='|' read -r label _action _provider _name <<<"$entry"
+            printf '  [%d] %s\n' "$idx" "$label"
+            idx=$((idx + 1))
+        done
+
+        printf '  [q] Cancel\n\n'
+        read -r -p 'Select action: ' choice
+
+        if [[ "$choice" == "q" || "$choice" == "Q" || -z "$choice" ]]; then
+            return
+        fi
+
+        if [[ ! "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#entries[@]} )); then
+            continue
+        fi
+
+        IFS='|' read -r label action provider name <<<"${entries[choice-1]}"
+
+        clear
+        printf '%sRunning:%s %s\n\n' "$C_BOLD" "$C_RESET" "$label"
+
+        if [[ "$action" == "fix" ]]; then
+            run_subdash_command fix
+        elif [[ -n "$name" ]]; then
+            run_subdash_command "$action" "$provider" "$name"
+        else
+            run_subdash_command "$action" "$provider"
+        fi
+
+        pause_for_key
+        return
+    done
 }
 
 get_claude_profile_label() {
@@ -380,6 +551,14 @@ PY
 
 openai_probe_state() {
     local saved_auth="$1"
+    local login_required_file
+    login_required_file="$(dirname "$saved_auth")/.login-required"
+
+    if [[ -f "$login_required_file" ]]; then
+        printf 'LOGIN\tfresh login required\n'
+        return
+    fi
+
     local tmp_auth
     tmp_auth="$(mktemp)"
 
@@ -452,6 +631,26 @@ print(f"{rel} {local_dt.strftime('%b%d %H:%M')}")
 PY
 }
 
+humanize_openai_detail() {
+    local detail="$1"
+    python3 - "$detail" <<'PY'
+import datetime
+import re
+import sys
+
+text = sys.argv[1]
+match = re.search(r'expired at (\d{13})', text)
+if not match:
+    print(text)
+    raise SystemExit(0)
+
+value = int(match.group(1))
+dt = datetime.datetime.fromtimestamp(value / 1000, tz=datetime.timezone.utc).astimezone()
+replacement = f"expired at {dt.strftime('%a %d %b %Y %H:%M:%S %Z')}"
+print(text[:match.start()] + replacement + text[match.end():])
+PY
+}
+
 render_separator() {
     printf '%s\n' "-----------------------------------------------------------------------------------------------"
 }
@@ -466,7 +665,8 @@ state_rank() {
         claude:LIMITED|openai:LIMITED) printf '2' ;;
         claude:EXPIRED|openai:EXPIRED) printf '3' ;;
         claude:MISSING|openai:MISSING) printf '4' ;;
-        *) printf '5' ;;
+        openai:LOGIN) printf '5' ;;
+        *) printf '6' ;;
     esac
 }
 
@@ -492,7 +692,7 @@ render_claude_section() {
     fi
 
     if [[ "$COMPACT" == true ]]; then
-        printf '  %-16s %-10s %-7s %-7s %-10s %-30s\n' \
+        printf '  %-14s %-8s %-5s %-8s %-10s %-24s\n' \
             "Profile" "Plan" "Max" "State" "Reset" "Account"
     else
         printf '  %-16s %-10s %-7s %-7s %-7s %-15s %-15s %-10s %-26s\n' \
@@ -513,6 +713,9 @@ render_claude_section() {
 
         if [[ "$state_text" == ERROR:* ]]; then
             IFS=$'\t' read -r state_text email <<<"$(classify_claude_error "${state#ERROR:}")"
+            five="n/a"
+            seven="n/a"
+            opus="n/a"
             reset5="null"
             reset7="null"
         fi
@@ -529,6 +732,10 @@ render_claude_section() {
 
         count_claude_state "$state_text"
 
+        if [[ "$state_text" == "EXPIRED" || "$state_text" == "MISSING" || "$state_text" == "ERROR" ]]; then
+            append_unique CLAUDE_REPAIRS "$label"
+        fi
+
         rows+="$(state_rank claude "$state_text")|$label|$billing|$five|$seven|$opus|$reset5|$reset7|$state_text|$email"$'\n'
     done
 
@@ -536,18 +743,22 @@ render_claude_section() {
         [[ -n "$label" ]] || continue
         if [[ "$COMPACT" == true ]]; then
             local max_pct max_reset
-            max_pct=$(printf '%s\n%s\n%s\n' "$five" "$seven" "$opus" | sort -nr | awk 'NR==1{print; exit}')
+            if [[ "$five" =~ ^[0-9]+([.][0-9]+)?$ && "$seven" =~ ^[0-9]+([.][0-9]+)?$ && "$opus" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+                max_pct=$(printf '%s\n%s\n%s\n' "$five" "$seven" "$opus" | sort -nr | awk 'NR==1{print; exit}')
+            else
+                max_pct="n/a"
+            fi
             max_reset="$reset5"
-            if (( $(printf '%.0f' "$seven" 2>/dev/null || printf '0') >= $(printf '%.0f' "$five" 2>/dev/null || printf '0') )); then
+            if [[ "$five" =~ ^[0-9]+([.][0-9]+)?$ && "$seven" =~ ^[0-9]+([.][0-9]+)?$ ]] && (( $(printf '%.0f' "$seven" 2>/dev/null || printf '0') >= $(printf '%.0f' "$five" 2>/dev/null || printf '0') )); then
                 max_reset="$reset7"
             fi
-            printf '  %-16s %-10s %-7s %-7b %-10s %-30s\n' \
-                "$(shorten "$label" 16)" \
-                "$(shorten "$billing" 10)" \
+            printf '  %-14s %-8s %-5s %-8b %-10s %-24s\n' \
+                "$(shorten "$label" 14)" \
+                "$(shorten "$billing" 8)" \
                 "$(colorize_pct "$max_pct")" \
                 "$(colorize_state "$state_text")" \
                 "$(shorten "$(format_time "$max_reset")" 10)" \
-                "$(shorten "$email" 30)"
+                "$(shorten "$email" 24)"
         else
             printf '  %-16s %-10s %-7s %-7s %-7s %-15s %-15s %-10b %-26s\n' \
                 "$(shorten "$label" 16)" \
@@ -601,7 +812,7 @@ PY
     fi
 
     if [[ "$COMPACT" == true ]]; then
-        printf '  %-16s %-10s %-12s %-18s %-30s\n' \
+        printf '  %-14s %-8s %-10s %-16s %-24s\n' \
             "Profile" "Plan" "State" "Expires" "Account"
     else
         printf '  %-16s %-10s %-12s %-18s %-10s %-30s\n' \
@@ -623,6 +834,7 @@ PY
 
         if [[ ! -f "$acct_auth" ]]; then
             count_openai_state "MISSING"
+            append_unique OPENAI_LOGIN_REPAIRS "$name"
             rows+="$(state_rank openai MISSING)|${marker}${name}|-|-|n/a|MISSING|missing saved auth|missing saved auth"$'\n'
             idx=$((idx + 1))
             continue
@@ -638,7 +850,13 @@ PY
 
         count_openai_state "$state"
 
-        rows+="$(state_rank openai "$state")|${marker}${name}|$plan|$uid|$expires_text|$state|$email|$detail"$'\n'
+        if [[ "$state" == "LOGIN" || "$state" == "MISSING" ]]; then
+            append_unique OPENAI_LOGIN_REPAIRS "$name"
+        elif [[ "$state" == "EXPIRED" || "$state" == "MISSING" || "$state" == "ERROR" ]]; then
+            append_unique OPENAI_FIX_REPAIRS "$name"
+        fi
+
+        rows+="$(state_rank openai "$state")|${marker}${name}|$plan|$uid|$expires_text|$state|$email|$(humanize_openai_detail "$detail")"$'\n'
 
         idx=$((idx + 1))
     done <"$accounts_file"
@@ -646,12 +864,12 @@ PY
     while IFS='|' read -r _rank name plan uid expires_text state email detail; do
         [[ -n "$name" ]] || continue
         if [[ "$COMPACT" == true ]]; then
-            printf '  %-16s %-10s %-12b %-18s %-30s\n' \
-                "$(shorten "$name" 16)" \
-                "$(shorten "$plan" 10)" \
+            printf '  %-14s %-8s %-10b %-16s %-24s\n' \
+                "$(shorten "$name" 14)" \
+                "$(shorten "$plan" 8)" \
                 "$(colorize_state "$state")" \
-                "$(shorten "$expires_text" 18)" \
-                "$(shorten "$email" 30)"
+                "$(shorten "$expires_text" 16)" \
+                "$(shorten "$email" 24)"
         else
             printf '  %-16s %-10s %-12b %-18s %-10s %-30s\n' \
                 "$(shorten "$name" 16)" \
@@ -682,6 +900,7 @@ render_dashboard() {
     render_claude_section
     render_openai_section
     render_summary
+    render_repairs
 }
 
 run_once() {
@@ -689,15 +908,24 @@ run_once() {
 }
 
 run_interactive() {
+    INTERACTIVE_SESSION=true
+
     while true; do
         clear
         render_dashboard
-        printf '%sRefresh:%s %ss  %sKeys:%s q quit, any other key refresh now\n' \
-            "$C_DIM" "$C_RESET" "$INTERVAL" "$C_DIM" "$C_RESET"
+        if (( ${#CLAUDE_REPAIRS[@]} > 0 || ${#OPENAI_FIX_REPAIRS[@]} > 0 || ${#OPENAI_LOGIN_REPAIRS[@]} > 0 )); then
+            printf '%sRefresh:%s %ss  %sKeys:%s q quit, r repair/login, any other key refresh now\n' \
+                "$C_DIM" "$C_RESET" "$INTERVAL" "$C_DIM" "$C_RESET"
+        else
+            printf '%sRefresh:%s %ss  %sKeys:%s q quit, any other key refresh now\n' \
+                "$C_DIM" "$C_RESET" "$INTERVAL" "$C_DIM" "$C_RESET"
+        fi
 
         if read -r -s -t "$INTERVAL" -n 1 key; then
             if [[ "$key" == 'q' || "$key" == 'Q' ]]; then
                 break
+            elif [[ "$key" == 'r' || "$key" == 'R' ]]; then
+                launch_repair_menu
             fi
         fi
     done
