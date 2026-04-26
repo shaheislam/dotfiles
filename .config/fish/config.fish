@@ -287,111 +287,20 @@ if status is-interactive
         source /opt/homebrew/opt/asdf/libexec/asdf.fish
     end
 
-    # mise activation (idiomatic_version_file settings configured in scripts/setup.sh)
-    # PERF: Homebrew's vendor_conf.d/mise.fish runs `mise activate fish | source` (~112ms).
-    # Suppressed via MISE_FISH_AUTO_ACTIVATE=0 in conf.d/00-env.fish (must load before vendor conf.d).
-    # Our cached version avoids the subprocess on cache hit.
-    if test -x $_brew/mise
-        # PERF: eval_after_arrow defers mise re-evaluation until the next command
-        # after cd, instead of running `mise hook-env` synchronously on every cd (~154ms).
-        # Must be set BEFORE sourcing mise hook.
-        set -g mise_fish_mode eval_after_arrow
-        __cache_tool_init mise "mise activate fish"
-
-        # PERF: Override mise's fish_prompt handler. The default runs `mise hook-env`
-        # on every prompt (~45ms). This override only evaluates on first prompt.
-        #
-        # BUG FIX: Same as direnv — the upstream eval_after_arrow pattern's PWD
-        # hook was erased by fish_preexec before cd could fire it. Fix: define
-        # the PWD hook once (persistently) outside the prompt handler.
-        # See direnv section above for detailed explanation and justification
-        # for inline definition (event handlers require sourcing to register).
-        #
-        # Overrides __mise_env_eval from `mise activate fish`.
-        # Verified: mise 2025.11.5 outputs this pattern (2026-02-15).
-        function __mise_env_eval --on-event fish_prompt
-            if not set -q __mise_initialized
-                set -g __mise_initialized 1
-                /opt/homebrew/bin/mise hook-env -s fish | source
-
-                # Initial mtime capture for current project scope
-                set -l config (_find_nearest_envrc 2>/dev/null) # mise often uses .envrc too
-                if test -z "$config"
-                    for f in mise.toml .mise.toml
-                        set -l dir "$PWD"
-                        while test -n "$dir" -a "$dir" != /
-                            if test -f "$dir/$f"
-                                set config "$dir/$f"
-                                break
-                            end
-                            set dir (string replace -r '/[^/]+$' '' -- "$dir")
-                        end
-                        test -n "$config"; and break
-                    end
-                end
-
-                if test -n "$config"
-                    set -g __mise_last_mtime (stat -f %m "$config" 2>/dev/null)
-                    set -g __mise_last_config "$config"
-                end
-            end
-        end
-
-        # PERF: Persistent PWD hook for mise. Defined once (not per-prompt).
-        # Sets a flag so the preexec handler knows to check mise scope.
-        # This hook survives across the fish_preexec → cd → fish_prompt cycle.
-        function __mise_cd_hook --on-variable PWD
-            set -g __mise_env_again 0
-        end
-
-        # PERF: Override mise's preexec handler to skip re-evaluation when we're
-        # still in the same project scope. The cached version always runs
-        # `mise hook-env -s fish | source` (~63ms, outputs 73KB PATH) even when
-        # nothing changed. This override uses a walk-up check (pure Fish, ~1ms)
-        # plus mtime stat (~5ms) to detect if the nearest config has changed.
-        # Also removes the stray `echo` that outputs a blank line.
-        #
-        # Tracks "dir:mtime" so in-place config edits trigger re-evaluation.
-        # Project exit (found_config="" != stored "dir:mtime") also re-evaluates.
-        #
-        # Overrides __mise_env_eval_2 from `mise activate fish` (mise >=2024.x).
-        function __mise_env_eval_2 --on-event fish_preexec
-            if set -q __mise_env_again
-                set -e __mise_env_again
-
-                # Performance optimization: check mtime of nearest config
-                set -l config ""
-                for f in .envrc mise.toml .mise.toml
-                    set -l dir "$PWD"
-                    while test -n "$dir" -a "$dir" != /
-                        if test -f "$dir/$f"
-                            set config "$dir/$f"
-                            break
-                        end
-                        set dir (string replace -r '/[^/]+$' '' -- "$dir")
-                    end
-                    test -n "$config"; and break
-                end
-
-                if test -n "$config"
-                    set -l current_mtime (stat -f %m "$config" 2>/dev/null)
-                    if test "$config" = "$__mise_last_config"; and test "$current_mtime" = "$__mise_last_mtime"
-                        # No change in nearest config, skip expensive re-eval
-                        return
-                    end
-                    set -g __mise_last_mtime "$current_mtime"
-                    set -g __mise_last_config "$config"
-                else if test -n "$__mise_last_config"
-                    # Exited a mise project scope, re-eval to clear env
-                    set -g __mise_last_config ""
-                    set -g __mise_last_mtime ""
-                else
-                    # Still outside any project scope, skip
-                    return
-                end
-
-                /opt/homebrew/bin/mise hook-env -s fish | source
-            end
+    # mise — shims-based PATH integration. Replaced ~100 lines of cached
+    # activate-mode + custom prompt/preexec overrides because the cached script
+    # still ran `mise hook-env -s fish | source` synchronously at startup
+    # (~216ms, dominated total fish startup). Shims (~/.local/share/mise/shims)
+    # symlink each tool to the mise binary, which on first invocation reads
+    # the nearest mise.toml/.tool-versions and execs the project-pinned binary.
+    # PATH lookup cost: ~0ms.
+    #
+    # Trade-off: `[env]` blocks in mise.toml won't auto-export. None of the
+    # active worktrees use them (only [tools] in ~/neovim/mise.toml as of
+    # 2026-04-26). Re-add a hook-env-on-cd handler if that changes.
+    if test -d "$HOME/.local/share/mise/shims"
+        if not contains "$HOME/.local/share/mise/shims" $PATH
+            set -gx PATH "$HOME/.local/share/mise/shims" $PATH
         end
     end
 
@@ -528,9 +437,15 @@ if status is-interactive
     # Disable fish greeting
     set -g fish_greeting ""
 
-    # thefuck initialization (cached for ~557ms startup improvement)
+    # thefuck — lazy stub. Defining `fuck` upfront via `thefuck --alias` cost
+    # ~57ms on every shell start; <1% of shells ever invoke `fuck`. The stub
+    # self-deletes on first use, sources the real alias, then re-runs.
     if test -x $_brew/thefuck
-        __cache_tool_init thefuck "thefuck --alias"
+        function fuck
+            functions -e fuck
+            thefuck --alias | source
+            fuck $argv
+        end
     end
 
     # Carapace completions initialization (cached for ~230ms startup improvement)

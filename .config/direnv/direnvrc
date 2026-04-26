@@ -1,15 +1,1 @@
-# Source nix-direnv for cached flake evaluation
-# This dramatically speeds up direnv + nix flakes by caching the environment
-# and only rebuilding when flake.nix or flake.lock changes.
-#
-# Without this, every `cd` into a directory with `use flake` re-evaluates
-# the entire flake from scratch.
-#
-# Manual reload: nix-direnv-reload
-
-if [ -f ~/.nix-profile/share/nix-direnv/direnvrc ]; then
-  source ~/.nix-profile/share/nix-direnv/direnvrc
-elif [ -n "$(ls /nix/store/*nix-direnv*/share/nix-direnv/direnvrc 2>/dev/null | head -1)" ]; then
-  # Fallback to nix store location (glob pattern)
-  source "$(ls /nix/store/*nix-direnv*/share/nix-direnv/direnvrc 2>/dev/null | head -1)"
-fi
+source $HOME/.nix-profile/share/nix-direnv/direnvrc
