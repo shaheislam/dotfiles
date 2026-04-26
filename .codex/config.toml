@@ -102,6 +102,9 @@ trust_level = "trusted"
 [projects."/Users/shahe.islam/Documents/Codex/2026-04-26/https-pmc-ncbi-nlm-nih-gov"]
 trust_level = "trusted"
 
+[projects."/Users/shahe.islam/Documents/Codex/2026-04-26/landing-in-phuket-best-things-to"]
+trust_level = "trusted"
+
 # --- MCP Servers (synced from .mcp.json) ---
 
 [mcp_servers.playwright]
