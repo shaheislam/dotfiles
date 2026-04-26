@@ -117,6 +117,12 @@ function _subdash_check_openai --description "Check a saved OpenCode/OpenAI prof
     set -l acct_auth "$HOME/.opencode/accounts/$name/openai-auth.json"
     set -l usage_check "$HOME/dotfiles/scripts/opencode/usage-check.sh"
     set -l login_required_file "$HOME/.opencode/accounts/$name/.login-required"
+    set -l duplicate_name (_subdash_find_openai_duplicate "$name")
+
+    if test -n "$duplicate_name"
+        printf 'DUPLICATE|same as %s\n' "$duplicate_name"
+        return 0
+    end
 
     if not test -f "$acct_auth"
         printf 'MISSING|missing saved auth\n'
@@ -156,11 +162,71 @@ function _subdash_check_openai --description "Check a saved OpenCode/OpenAI prof
     end
 end
 
+function _subdash_openai_identity --description "Return stable OpenAI account identity"
+    set -l acct_auth $argv[1]
+    python3 -c "import base64, json; data=json.load(open('$acct_auth')); token=data.get('access',''); account_id=data.get('accountId',''); email='';
+if token:
+    payload=token.split('.')[1]; payload += '=' * (-len(payload) % 4); claims=json.loads(base64.urlsafe_b64decode(payload)); auth_meta=claims.get('https://api.openai.com/auth', {}); profile=claims.get('https://api.openai.com/profile', {}); account_id=account_id or auth_meta.get('chatgpt_account_id') or ''; email=profile.get('email') or claims.get('email') or ''
+print('|'.join([part for part in (account_id, email) if part]))" 2>/dev/null
+end
+
+function _subdash_find_openai_duplicate --description "Find another saved profile with same OpenAI identity"
+    set -l target_name $argv[1]
+    set -l target_auth "$HOME/.opencode/accounts/$target_name/openai-auth.json"
+
+    if not test -f "$target_auth"
+        return 0
+    end
+
+    set -l target_identity (_subdash_openai_identity "$target_auth")
+    if test -z "$target_identity"
+        return 0
+    end
+
+    set -l target_parts (string split '|' -- "$target_identity")
+    set -l target_email $target_parts[2]
+    set -l email_local (string split '@' -- "$target_email")[1]
+    set -l canonical_name "$target_name"
+    set -l canonical_score 2
+
+    if test "$target_name" = "$email_local"
+        set canonical_score 0
+    end
+
+    for other_name in (_subdash_opencode_profiles)
+        if test "$other_name" = "$target_name"
+            continue
+        end
+
+        set -l other_auth "$HOME/.opencode/accounts/$other_name/openai-auth.json"
+        if not test -f "$other_auth"
+            continue
+        end
+
+        if test "$target_identity" = (_subdash_openai_identity "$other_auth")
+            set -l other_score 2
+            if test "$other_name" = "$email_local"
+                set other_score 0
+            end
+
+            if test $other_score -lt $canonical_score
+                set canonical_name "$other_name"
+                set canonical_score $other_score
+            end
+        end
+    end
+
+    if test "$canonical_name" != "$target_name"
+        echo "$canonical_name"
+    end
+end
+
 function _subdash_doctor --description "Check all account states"
     set -l claude_repairs
     set -l openai_repairs
     set -l openai_login_repairs
     set -l openai_fix_repairs
+    set -l openai_duplicate_repairs
 
     echo "Subdash Doctor"
     echo ""
@@ -189,7 +255,9 @@ function _subdash_doctor --description "Check all account states"
 
         printf '  %-14s %-9s %s\n' "$name" "$state" "$detail"
 
-        if test "$state" = LOGIN; or test "$state" = MISSING
+        if test "$state" = DUPLICATE
+            set -a openai_duplicate_repairs "$name ($detail)"
+        else if test "$state" = LOGIN; or test "$state" = MISSING
             set -a openai_login_repairs $name
         else if test "$state" = EXPIRED; or test "$state" = ERROR
             set -a openai_fix_repairs $name
@@ -213,8 +281,13 @@ function _subdash_doctor --description "Check all account states"
                 echo "    subdash login openai $name"
             end
         end
+        if test (count $openai_duplicate_repairs) -gt 0
+            echo "  OpenAI duplicate profiles: "(string join ', ' $openai_duplicate_repairs)
+        end
     else if test (count $openai_fix_repairs) -gt 0
         echo "  Run: subdash fix"
+    else if test (count $openai_duplicate_repairs) -gt 0
+        echo "  OpenAI duplicate profiles: "(string join ', ' $openai_duplicate_repairs)
     else
         echo "  OpenAI accounts look good."
     end

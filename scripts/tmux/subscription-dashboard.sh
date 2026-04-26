@@ -110,7 +110,7 @@ colorize_state() {
         LIMITED|WARN|TRANSIENT)
             printf '%s%s%s' "$C_YELLOW" "$state" "$C_RESET"
             ;;
-        EXPIRED|ERROR|MISSING|LOGIN)
+        EXPIRED|ERROR|MISSING|LOGIN|DUPLICATE)
             printf '%s%s%s' "$C_RED" "$state" "$C_RESET"
             ;;
         *)
@@ -189,6 +189,7 @@ OPENAI_OTHER=0
 CLAUDE_REPAIRS=()
 OPENAI_FIX_REPAIRS=()
 OPENAI_LOGIN_REPAIRS=()
+OPENAI_DUPLICATE_REPAIRS=()
 
 reset_summary_counters() {
     CLAUDE_TOTAL=0
@@ -204,6 +205,7 @@ reset_summary_counters() {
     CLAUDE_REPAIRS=()
     OPENAI_FIX_REPAIRS=()
     OPENAI_LOGIN_REPAIRS=()
+    OPENAI_DUPLICATE_REPAIRS=()
 }
 
 append_unique() {
@@ -324,6 +326,10 @@ render_repairs() {
         for name in "${OPENAI_LOGIN_REPAIRS[@]}"; do
             printf '    %ssubdash login openai %s%s\n' "$C_BOLD" "$name" "$C_RESET"
         done
+    fi
+
+    if (( ${#OPENAI_DUPLICATE_REPAIRS[@]} > 0 )); then
+        printf '  OpenAI duplicate profiles: %s\n' "$(join_by ', ' "${OPENAI_DUPLICATE_REPAIRS[@]}")"
     fi
 
     if (( ${#CLAUDE_REPAIRS[@]} > 0 )); then
@@ -549,6 +555,92 @@ print("\t".join([email, plan, short_id, expires, access]))
 PY
 }
 
+openai_saved_auth_identity() {
+    local auth_file="$1"
+    python3 - "$auth_file" <<'PY'
+import base64
+import json
+import sys
+
+path = sys.argv[1]
+email = ''
+account_id = ''
+
+try:
+    with open(path, 'r', encoding='utf-8') as fh:
+        data = json.load(fh)
+except Exception:
+    print('')
+    raise SystemExit(0)
+
+token = data.get('access') or ''
+account_id = data.get('accountId') or ''
+if token:
+    try:
+        payload = token.split('.')[1]
+        payload += '=' * (-len(payload) % 4)
+        claims = json.loads(base64.urlsafe_b64decode(payload))
+        auth_meta = claims.get('https://api.openai.com/auth', {})
+        profile = claims.get('https://api.openai.com/profile', {})
+        account_id = account_id or auth_meta.get('chatgpt_account_id') or ''
+        email = profile.get('email') or claims.get('email') or ''
+    except Exception:
+        pass
+
+parts = [part for part in (account_id, email) if part]
+print('|'.join(parts))
+PY
+}
+
+find_openai_duplicate_profile() {
+    local target_name="$1"
+    local target_auth="$2"
+    local accounts_file="$3"
+    local target_identity
+    local target_email
+    local email_local
+    local canonical_name
+    local canonical_score=2
+    local other_name
+    local other_auth
+    local other_score
+
+    target_identity="$(openai_saved_auth_identity "$target_auth")"
+    if [[ -z "$target_identity" ]]; then
+        return
+    fi
+
+    target_email="$(printf '%s' "$target_identity" | awk -F'|' '{print $2}')"
+    email_local="${target_email%@*}"
+    canonical_name="$target_name"
+    if [[ "$target_name" == "$email_local" ]]; then
+        canonical_score=0
+    fi
+
+    while IFS= read -r other_name || [[ -n "$other_name" ]]; do
+        [[ -n "$other_name" ]] || continue
+        [[ "$other_name" == "$target_name" ]] && continue
+        other_auth="$HOME/.opencode/accounts/$other_name/openai-auth.json"
+        [[ -f "$other_auth" ]] || continue
+
+        if [[ "$target_identity" == "$(openai_saved_auth_identity "$other_auth")" ]]; then
+            other_score=2
+            if [[ "$other_name" == "$email_local" ]]; then
+                other_score=0
+            fi
+
+            if (( other_score < canonical_score )); then
+                canonical_name="$other_name"
+                canonical_score=$other_score
+            fi
+        fi
+    done <"$accounts_file"
+
+    if [[ "$canonical_name" != "$target_name" ]]; then
+        printf '%s' "$canonical_name"
+    fi
+}
+
 openai_probe_state() {
     local saved_auth="$1"
     local login_required_file
@@ -666,7 +758,8 @@ state_rank() {
         claude:EXPIRED|openai:EXPIRED) printf '3' ;;
         claude:MISSING|openai:MISSING) printf '4' ;;
         openai:LOGIN) printf '5' ;;
-        *) printf '6' ;;
+        openai:DUPLICATE) printf '6' ;;
+        *) printf '7' ;;
     esac
 }
 
@@ -824,7 +917,7 @@ PY
     while IFS= read -r name || [[ -n "$name" ]]; do
         local acct_auth="$accounts_dir/$name/openai-auth.json"
         local marker=" "
-        local email plan uid expires_ms access state detail expires_text
+        local email plan uid expires_ms access state detail expires_text duplicate_name
 
         [[ -n "$name" ]] || continue
 
@@ -841,7 +934,13 @@ PY
         fi
 
         IFS=$'\t' read -r email plan uid expires_ms access <<<"$(openai_saved_auth_info "$acct_auth")"
-        IFS=$'\t' read -r state detail <<<"$(openai_probe_state "$acct_auth")"
+        duplicate_name="$(find_openai_duplicate_profile "$name" "$acct_auth" "$accounts_file")"
+        if [[ -n "$duplicate_name" ]]; then
+            state="DUPLICATE"
+            detail="same as $duplicate_name"
+        else
+            IFS=$'\t' read -r state detail <<<"$(openai_probe_state "$acct_auth")"
+        fi
         expires_text="$(format_openai_expiry "$expires_ms")"
 
         if [[ -n "$live_access" && -n "$access" && "$live_access" == "$access" ]]; then
@@ -850,7 +949,9 @@ PY
 
         count_openai_state "$state"
 
-        if [[ "$state" == "LOGIN" || "$state" == "MISSING" ]]; then
+        if [[ "$state" == "DUPLICATE" ]]; then
+            append_unique OPENAI_DUPLICATE_REPAIRS "$name ($detail)"
+        elif [[ "$state" == "LOGIN" || "$state" == "MISSING" ]]; then
             append_unique OPENAI_LOGIN_REPAIRS "$name"
         elif [[ "$state" == "EXPIRED" || "$state" == "MISSING" || "$state" == "ERROR" ]]; then
             append_unique OPENAI_FIX_REPAIRS "$name"
