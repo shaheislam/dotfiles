@@ -13,6 +13,7 @@
 - Gemini CLI follows `GEMINI.md`
 - Claude Code follows `CLAUDE.md` plus `.claude/settings.json`
 - OpenCode follows `AGENTS.md` plus `CLAUDE.md` via `.config/opencode/opencode.json`
+- Shared skills are canonical in `skills/` and materialized into `.gemini/skills/` by `scripts/sync-skills-harnesses.sh`
 - Do not assume Gemini should mirror Claude/OpenCode settings one-for-one; only align shared repo conventions and intentional operational defaults
 
 ### Fish Shell First

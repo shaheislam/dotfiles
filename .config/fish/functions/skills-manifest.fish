@@ -10,85 +10,7 @@ function skills-manifest --description "Manage per-repo skill manifests"
                 echo "Create one with: skills-manifest init"
                 return 1
             end
-
-            echo "Syncing skill manifest"
-            echo "━━━━━━━━━━━━━━━━━━━━━━"
-
-            # Ensure .claude/skills/ exists
-            mkdir -p .claude/skills
-
-            set -l linked 0
-            set -l errors 0
-
-            # Parse [sources] section
-            set -l in_sources false
-            for line in (cat $manifest_file)
-                set -l trimmed (string trim $line)
-
-                # Detect section headers
-                if string match -q -- '[*]' "$trimmed"
-                    if test "$trimmed" = "[sources]"
-                        set in_sources true
-                    else
-                        set in_sources false
-                    end
-                    continue
-                end
-
-                # Skip comments and empty lines
-                if test -z "$trimmed"; or string match -q -- '#*' "$trimmed"
-                    continue
-                end
-
-                if test "$in_sources" = true
-                    # Parse: skill-name = "source:path"
-                    set -l key (echo $trimmed | string replace -r '\s*=.*$' '')
-                    set -l val (echo $trimmed | string replace -r '^[^=]*=\s*' '' | string replace -a '"' '' | string trim)
-
-                    if test -z "$key" -o -z "$val"
-                        continue
-                    end
-
-                    set -l target ".claude/skills/$key"
-
-                    # Already exists - skip
-                    if test -e "$target"
-                        if test -L "$target"
-                            echo "  ↔ $key (already linked)"
-                        else
-                            echo "  ⚠ $key (local directory, not managed)"
-                        end
-                        continue
-                    end
-
-                    # Resolve source
-                    set -l resolved_path ""
-                    if string match -q "dotfiles:*" "$val"
-                        # dotfiles:category/skill-name
-                        set -l rel (string replace "dotfiles:" "" $val)
-                        set resolved_path "$dotfiles_skills/$rel"
-                    else if string match -q "path:*" "$val"
-                        # path:~/some/path or path:/absolute/path
-                        set resolved_path (string replace "path:" "" $val | string replace "~" $HOME)
-                    else
-                        echo "  ✗ $key (unknown source format: $val)"
-                        set errors (math $errors + 1)
-                        continue
-                    end
-
-                    if test -d "$resolved_path" -a -f "$resolved_path/SKILL.md"
-                        ln -s (realpath $resolved_path) $target
-                        echo "  ✓ $key → $val"
-                        set linked (math $linked + 1)
-                    else
-                        echo "  ✗ $key (not found: $resolved_path)"
-                        set errors (math $errors + 1)
-                    end
-                end
-            end
-
-            echo "━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Linked $linked skill(s). Errors: $errors."
+            ~/dotfiles/scripts/sync-skills-harnesses.sh
 
         case init
             if test -f $manifest_file
@@ -98,8 +20,8 @@ function skills-manifest --description "Manage per-repo skill manifests"
 
             mkdir -p .claude
             echo '# Skill Manifest
-# Declares which skills this repo needs from the dotfiles library.
-# Run: skills-manifest sync  (to materialize symlinks into .claude/skills/)
+# Declares which skills this repo needs from the central dotfiles library.
+# Run: skills-manifest sync  (to materialize symlinks into all harness surfaces)
 
 [manifest]
 description = "Skills for this project"
@@ -115,22 +37,20 @@ description = "Skills for this project"
             echo "Edit it to add skill sources, then run: skills-manifest sync"
 
         case clean
-            if not test -d .claude/skills
-                echo "No .claude/skills/ directory."
-                return 0
-            end
-
             set -l cleaned 0
-            for item in .claude/skills/*/
-                test -L "$item"; or continue
-                set -l link_target (readlink "$item")
-                if string match -q "*dotfiles/skills/*" "$link_target"; or string match -q "*dotfiles-skillsperrepo/skills/*" "$link_target"
-                    rm "$item"
-                    echo "  Removed: "(basename $item)
-                    set cleaned (math $cleaned + 1)
+            for target_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills
+                test -d "$target_dir"; or continue
+                for item in $target_dir/*/
+                    test -L "$item"; or continue
+                    set -l link_target (readlink "$item")
+                    if string match -q "*skills/*" "$link_target"
+                        rm "$item"
+                        echo "  Removed: $item"
+                        set cleaned (math $cleaned + 1)
+                    end
                 end
             end
-            echo "Cleaned $cleaned manifest-managed skill(s)."
+            echo "Cleaned $cleaned harness skill link(s)."
 
         case status
             echo "Skill Manifest Status"
@@ -160,11 +80,22 @@ description = "Skills for this project"
                 echo "No .claude/skills/ directory. Run: skills-manifest sync"
             end
 
+            echo ""
+            echo "Harness targets:"
+            for target_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills
+                if test -d "$target_dir"
+                    set -l count (find "$target_dir" -name SKILL.md -maxdepth 2 2>/dev/null | wc -l | string trim)
+                    printf "  %-18s %s skill(s)\n" "$target_dir" "$count"
+                else
+                    printf "  %-18s missing\n" "$target_dir"
+                end
+            end
+
         case help '*'
             echo "Usage: skills-manifest <command>"
             echo ""
             echo "Commands:"
-            echo "  sync     Materialize skill manifest into .claude/skills/ symlinks"
+            echo "  sync     Materialize central skills into all harness skill surfaces"
             echo "  init     Create a new skill-manifest.toml in current repo"
             echo "  clean    Remove manifest-managed symlinks from .claude/skills/"
             echo "  status   Show current manifest and linked skills"

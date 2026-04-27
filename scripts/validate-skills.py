@@ -11,6 +11,7 @@ Checks:
   - description: non-empty, max 1024 chars, no angle brackets
   - Only allowed top-level keys (spec + Claude Code extensions)
   - compatibility: max 500 chars if present
+  - harness pickup directories contain symlinks back to central skills
 """
 
 import os
@@ -24,10 +25,16 @@ except ImportError:  # pragma: no cover - exercised in lightweight environments
 
 REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
 SKILL_ROOTS = [
-    os.path.join(REPO_ROOT, ".claude", "skills"),
     os.path.join(REPO_ROOT, "skills", "shared"),
     os.path.join(REPO_ROOT, "skills", "personal"),
     os.path.join(REPO_ROOT, "skills", "work"),
+]
+
+HARNESS_ROOTS = [
+    os.path.join(REPO_ROOT, ".claude", "skills"),
+    os.path.join(REPO_ROOT, ".agents", "skills"),
+    os.path.join(REPO_ROOT, ".gemini", "skills"),
+    os.path.join(REPO_ROOT, ".opencode", "skills"),
 ]
 
 # Agent Skills spec allowed keys
@@ -183,6 +190,34 @@ def iter_skill_dirs(root_dir):
     )
 
 
+def central_skill_map():
+    skills = {}
+    for root in SKILL_ROOTS:
+        for skill_dir in iter_skill_dirs(root):
+            skills[os.path.basename(skill_dir)] = os.path.realpath(skill_dir)
+    return skills
+
+
+def validate_harness_links(skills):
+    issues = []
+    for root in HARNESS_ROOTS:
+        rel_root = os.path.relpath(root, REPO_ROOT)
+        if not os.path.isdir(root):
+            issues.append(("ERROR", f"{rel_root} missing; run scripts/sync-skills-harnesses.sh"))
+            continue
+
+        for name, source in skills.items():
+            target = os.path.join(root, name)
+            rel_target = os.path.relpath(target, REPO_ROOT)
+            if not os.path.islink(target):
+                issues.append(("ERROR", f"{rel_target} is not a symlink to central skills"))
+                continue
+            if os.path.realpath(target) != source:
+                issues.append(("ERROR", f"{rel_target} points to {os.path.realpath(target)}, expected {source}"))
+
+    return issues
+
+
 def main():
     available_roots = [root for root in SKILL_ROOTS if os.path.isdir(root)]
     if not available_roots:
@@ -227,6 +262,17 @@ def main():
             print(f"  {symbol}  {display_name}: {msg}")
 
     print(f"\n{total} skills validated: {clean} clean, {warnings} warnings, {errors} errors")
+
+    harness_issues = validate_harness_links(central_skill_map())
+    if harness_issues:
+        print("\nHarness link validation:")
+        for level, msg in harness_issues:
+            symbol = {"ERROR": "FAIL", "WARN": "WARN", "INFO": "INFO"}.get(level, level)
+            print(f"  {symbol}  {msg}")
+            if level == "ERROR":
+                errors += 1
+    else:
+        print("Harness link validation: OK")
 
     if errors > 0:
         sys.exit(1)

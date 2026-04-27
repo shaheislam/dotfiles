@@ -3,7 +3,6 @@
 # Usage: scripts/test-skills-profile.sh [--verbose]
 set -euo pipefail
 
-VERBOSE="${1:-}"
 PASS=0
 FAIL=0
 SKIP=0
@@ -66,6 +65,14 @@ if [ -d "$SKILLS_DIR/work" ]; then
 else
     fail "skills/work/ directory missing"
 fi
+
+for harness_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills; do
+    if [ -d "$DOTFILES_DIR/$harness_dir" ]; then
+        pass "$harness_dir directory exists"
+    else
+        fail "$harness_dir directory missing"
+    fi
+done
 
 if [ -f "$SKILLS_DIR/README.md" ]; then
     pass "skills/README.md exists"
@@ -239,6 +246,12 @@ else
     fail "skills-manifest.fish missing"
 fi
 
+if [ -x "$DOTFILES_DIR/scripts/sync-skills-harnesses.sh" ]; then
+    pass "sync-skills-harnesses.sh exists and is executable"
+else
+    fail "sync-skills-harnesses.sh missing or not executable"
+fi
+
 # ── Manifest Tests ───────────────────────────────────
 
 section "Skill Manifest"
@@ -273,11 +286,12 @@ if [ -f "$manifest_file" ]; then
             continue
         fi
         if [ "$in_sources" = true ] && echo "$trimmed" | grep -q '=' && ! echo "$trimmed" | grep -q '^#'; then
-            key=$(echo "$trimmed" | sed 's/\s*=.*$//')
+            key="${trimmed%%=*}"
+            key="${key%"${key##*[![:space:]]}"}"
             val=$(echo "$trimmed" | sed 's/^[^=]*=\s*//' | tr -d '"' | xargs)
 
             if echo "$val" | grep -q '^dotfiles:'; then
-                rel=$(echo "$val" | sed 's/^dotfiles://')
+                rel="${val#dotfiles:}"
                 resolved="$SKILLS_DIR/$rel"
                 if [ -d "$resolved" ] && [ -f "$resolved/SKILL.md" ]; then
                     pass "manifest source '$key' → resolves to valid skill"
@@ -333,6 +347,24 @@ while IFS= read -r skill_file; do
         fail "$skill_name: description length $desc_len (must be 1-1024)"
     fi
 done < <(find "$SKILLS_DIR" -name "SKILL.md" -not -path "*/profiles/*" 2>/dev/null)
+
+# ── Harness Materialization ───────────────────────────
+
+section "Harness Materialization"
+
+if "$DOTFILES_DIR/scripts/sync-skills-harnesses.sh" --check >/dev/null 2>&1; then
+    pass "Harness skill surfaces are in sync"
+else
+    fail "Harness skill surfaces have drift" "Run scripts/sync-skills-harnesses.sh"
+fi
+
+for harness_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills; do
+    if [ -L "$DOTFILES_DIR/$harness_dir/dotfiles-sync" ]; then
+        pass "$harness_dir has central dotfiles-sync link"
+    else
+        fail "$harness_dir missing central dotfiles-sync link"
+    fi
+done
 
 # ── Summary ──────────────────────────────────────────
 

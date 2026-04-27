@@ -8,13 +8,14 @@ paths:
 # Skills & Plugins
 
 ## Skills
-The repo uses a two-tier skill model. Reusable dotfiles skills live in `skills/` (`shared/`, `personal/`, `work/`), while `.claude/skills/` holds project-local skills plus materialized manifest entries for the current repo. See `docs/skills-reference.md`.
+The repo uses `skills/` (`shared/`, `personal/`, `work/`) as the canonical skill library. Harness pickup directories are generated symlink surfaces: `.claude/skills/` for Claude, `.agents/skills/` for Codex, `.gemini/skills/` for Gemini, and `.opencode/skills/` for OpenCode. See `docs/skills-reference.md`.
 
-**Key locations**: Reusable library `skills/`, project-local/materialized `.claude/skills/`, personal `~/.claude/skills/`
+**Key locations**: Canonical library `skills/`, generated harness surfaces `.claude/skills/`, `.agents/skills/`, `.gemini/skills/`, `.opencode/skills/`, personal `~/.claude/skills/`
 **Cross-tool standard**: [agentskills.io](https://agentskills.io/specification)
 
 **Validation**:
 - `python3 scripts/validate-skills.py` validates both `.claude/skills/` and the reusable `skills/` library.
+- `scripts/sync-skills-harnesses.sh --check` validates that harness surfaces point back to the central library.
 - `scripts/test-skills-profile.sh` validates profiles, manifests, and Agent Skills metadata across `skills/`.
 
 ## Plugins (18 total)

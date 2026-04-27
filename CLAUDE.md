@@ -152,7 +152,7 @@ Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `do
 **Settings Edit Workaround** ([#37029](https://github.com/anthropics/claude-code/issues/37029)): `--dangerously-skip-permissions` still prompts for edits to `~/.claude/settings*.json`. A PreToolUse hook (`settings-edit-redirect.py`) blocks Edit/Write on these files and redirects to `jq` via Bash. When modifying Claude settings, ALWAYS use Bash + jq instead of Edit.
 
 ### Skills, Plugins & Subagents
-- **Skills**: 38 in `.claude/skills/`. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`. Workflow: `/start` (pick next task) and `/wrap-up` (validate + commit).
+- **Skills**: canonical source in `skills/`, materialized into `.claude/skills/` and other harness surfaces. Guide: `docs/skills-reference.md`. Details in `.claude/rules/skills-plugins.md`. Workflow: `/start` (pick next task) and `/wrap-up` (validate + commit).
 - **Plugins**: 18 plugins from 9 marketplaces + 9 LSP plugins. Managed via `claude plugin install|disable|enable|uninstall`. Includes `pua@pua-skills` for AI debugging persistence (L0-L4 pressure escalation) and `codex@openai-codex` for cross-provider code review and task delegation (`/codex:review`, `/codex:rescue`, `/codex:setup`).
 - **Subagents**: 15 agents in `.claude/agents/` (12 domain + 3 project-specific). Reference: `.claude/AGENTS.md`.
 

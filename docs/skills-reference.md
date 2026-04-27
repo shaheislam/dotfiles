@@ -151,14 +151,15 @@ Claude Code extends the standard with: `disable-model-invocation`, `user-invocab
 
 ### Project-Local And Reusable Skills
 
-This repo intentionally has two checked-in skill surfaces:
+This repo intentionally has one checked-in canonical skill library and generated harness pickup surfaces:
 
-- `skills/` is the reusable dotfiles library consumed by profiles and manifests.
-- `.claude/skills/` contains project-local skills plus materialized manifest entries used directly by this repo.
+- `skills/` is the reusable dotfiles library and source of truth.
+- `.claude/skills/`, `.agents/skills/`, `.gemini/skills/`, and `.opencode/skills/` are generated symlink surfaces for Claude, Codex, Gemini, and OpenCode.
+- `.claude/skill-manifest.toml` declares extra per-repo sources that are materialized alongside the central library.
 
-Use `python3 scripts/validate-skills.py` to validate both surfaces together, and `scripts/test-skills-profile.sh` to validate the reusable library and manifests.
+Use `python3 scripts/validate-skills.py` to validate skills, `scripts/sync-skills-harnesses.sh --check` to detect harness drift, and `scripts/test-skills-profile.sh` to validate profiles, manifests, and Agent Skills metadata.
 
-Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `agent-browser`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
+Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `petlab-aws`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `agent-browser`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
 
 Compatibility wrappers cover common external slash-command names that the screenshot expects: `commit`, `review-pr`, `full-review`, `deploy-check`, `build-fix`, `verify`, `handoff`, `ticket`, `checkpoint`, `rebase`, and `audit`.
 

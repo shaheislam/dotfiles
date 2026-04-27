@@ -1,6 +1,6 @@
 # Skills Library
 
-Curated skill library with device and repo-specific profiles.
+Canonical skill library for all AI harnesses used by this repo.
 
 ## Directory Structure
 
@@ -25,14 +25,29 @@ skills/
 
 ## How It Works
 
-1. **Skill Library** (`skills/`): All available skills organized by category
-2. **Profiles** (`skills/profiles/*.toml`): Named skill sets for different contexts
-3. **Activation**: `skills-profile activate <name>` symlinks skills into `~/.claude/skills/`
-4. **Per-Repo**: `.claude/skill-manifest.toml` declares repo-specific skill sources
+1. **Central library** (`skills/`): The source of truth for checked-in skills.
+2. **Harness surfaces**: Generated symlinks let each tool discover the same skill files.
+3. **Profiles** (`skills/profiles/*.toml`): Named skill sets for machine-wide personal Claude skills.
+4. **Per-repo manifest** (`.claude/skill-manifest.toml`): Extra repo-specific skill sources.
+
+Generated harness surfaces:
+
+| Harness | Generated path | Notes |
+|---------|----------------|-------|
+| Claude Code | `.claude/skills/` | Native project skills |
+| Codex CLI | `.agents/skills/` | Agent Skills standard |
+| Gemini CLI | `.gemini/skills/` | Agent Skills standard |
+| OpenCode | `.opencode/skills/` | Bridge surface plus `/skill` command |
 
 ## Commands
 
 ```bash
+# Sync central skills into every repo harness surface
+scripts/sync-skills-harnesses.sh
+
+# Check harness surfaces for drift
+scripts/sync-skills-harnesses.sh --check
+
 # Activate a profile (symlinks into ~/.claude/skills/)
 skills-profile activate personal
 
@@ -82,13 +97,14 @@ fish-reload = "dotfiles:shared/fish-reload"
 custom-skill = "path:~/my-skills/custom-skill"
 ```
 
-Run `skills-manifest sync` inside a repo to materialize these into `.claude/skills/`.
+Run `skills-manifest sync` inside a repo to materialize central and manifest skills into all harness pickup directories.
 
 ## Adding New Skills
 
-1. Create `skills/<category>/<skill-name>/SKILL.md`
-2. Add to relevant profile(s) in `skills/profiles/`
-3. Run `skills-profile activate <profile>` to refresh
+1. Create `skills/<category>/<skill-name>/SKILL.md`.
+2. Add to relevant profile(s) in `skills/profiles/` if it should be machine-wide.
+3. Run `scripts/sync-skills-harnesses.sh` to refresh project harness surfaces.
+4. Run `skills-profile activate <profile>` only when updating personal `~/.claude/skills/`.
 
 ## Cross-Tool Compatibility
 
