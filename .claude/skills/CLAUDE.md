@@ -77,6 +77,7 @@
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
 | `aws-profile` | `/aws-profile` | Switch AWS profile with granted |
+| `petlab-aws` | `/petlab-aws` | Petlab AWS SSO login (prod/management/logging/sec/labs) |
 | `s3-search` | `/s3-search` | Search S3 with s3grep |
 | `s3-upload` | `/s3-upload` | Upload to S3 |
 | `mcp-restart` | `/mcp-restart` | Restart MCP servers |
