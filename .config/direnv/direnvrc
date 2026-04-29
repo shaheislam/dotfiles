@@ -1,1 +1,2 @@
+export NIX_DIRENV_FALLBACK_NIX=/nix/var/nix/profiles/default/bin/nix
 source $HOME/.nix-profile/share/nix-direnv/direnvrc
