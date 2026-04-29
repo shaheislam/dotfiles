@@ -24,6 +24,10 @@ defaults write NSGlobalDomain NSAutomaticDashSubstitutionEnabled -bool false
 # Enable full keyboard access for all controls
 defaults write NSGlobalDomain AppleKeyboardUIMode -int 3
 
+# Set US keyboard layout (ABC) as default input source
+defaults write com.apple.HIToolbox AppleCurrentKeyboardLayoutInputSourceID -string "com.apple.keylayout.ABC"
+defaults write -g AppleCurrentKeyboardLayoutInputSourceID -string "com.apple.keylayout.ABC"
+
 # Fast keyboard repeat rate
 defaults write NSGlobalDomain KeyRepeat -int 1
 defaults write NSGlobalDomain InitialKeyRepeat -int 10
@@ -144,7 +148,7 @@ echo "⚠️  Some changes require logout/restart to take effect"
 
 # Restart affected apps
 for app in "Finder" "Dock" "SystemUIServer"; do
-    killall "${app}" &> /dev/null || true
+    killall "${app}" &>/dev/null || true
 done
 
 echo "🔄 Finder, Dock, and SystemUIServer restarted"
