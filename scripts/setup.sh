@@ -2103,6 +2103,14 @@ EOF
                 fi
             fi
 
+            # Install nix-direnv for direnv + Nix flake integration
+            print_step "Installing nix-direnv..."
+            if nix profile add nixpkgs#nix-direnv 2>/dev/null; then
+                log_verbose "nix-direnv installed via nix profile"
+            else
+                log_verbose "nix-direnv already installed or unavailable"
+            fi
+
             # Setup Home Manager
             print_step "Setting up Home Manager..."
             if [[ ! -f "$HOME/.config/home-manager/flake.nix" ]]; then
