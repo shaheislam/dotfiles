@@ -465,7 +465,7 @@
     ]
   },
   "includeGitInstructions": false,
-  "model": "claude-opus-4-7",
+  "model": "sonnet",
   "permissions": {
     "allow": [
       "Bash(git status *)",

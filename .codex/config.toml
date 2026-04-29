@@ -105,6 +105,9 @@ trust_level = "trusted"
 [projects."/Users/shahe.islam/Documents/Codex/2026-04-26/landing-in-phuket-best-things-to"]
 trust_level = "trusted"
 
+[projects."/Users/shahe.islam/Documents/Codex/2026-04-27/how-does-bik-tax-work-i"]
+trust_level = "trusted"
+
 # --- MCP Servers (synced from .mcp.json) ---
 
 [mcp_servers.playwright]
@@ -139,9 +142,14 @@ hide_rate_limit_model_nudge = true
 network_access = true
 
 [marketplaces.openai-bundled]
-last_updated = "2026-04-26T15:09:10Z"
+last_updated = "2026-04-27T15:00:14Z"
 source_type = "local"
 source = "/Users/shahe.islam/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-04-27T15:15:57Z"
+source_type = "local"
+source = "/Users/shahe.islam/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
 [plugins."browser-use@openai-bundled"]
 enabled = true
@@ -150,4 +158,13 @@ enabled = true
 enabled = true
 
 [plugins."github@openai-curated"]
+enabled = true
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
 enabled = true
