@@ -823,6 +823,14 @@ phase_4_cloud_tools() {
                 print_success "opencode upgraded" ||
                 print_success "opencode already latest"
         fi
+
+        if command_exists bun; then
+            bun install -g opencode-with-claude >/dev/null 2>&1 &&
+                print_success "opencode-with-claude installed" ||
+                print_warning "Failed to install opencode-with-claude"
+        else
+            print_warning "bun not found; skipping opencode-with-claude plugin install"
+        fi
     }
 
     _install_sonar() {

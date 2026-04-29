@@ -8,6 +8,10 @@
     },
     "anthropic": {
       "npm": "@ai-sdk/anthropic",
+      "options": {
+        "baseURL": "http://127.0.0.1:3456",
+        "apiKey": "dummy"
+      },
       "models": {
         "claude-opus-4-6": {
           "name": "Claude Opus 4.6"
@@ -56,6 +60,7 @@
     "@tarquinen/opencode-dcp@latest",
     "opencode-pty",
     "opencode-vibeguard",
+    "opencode-with-claude",
     "./plugin/nvim-open.ts"
   ],
   "autoupdate": false,
