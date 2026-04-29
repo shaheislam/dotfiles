@@ -6,6 +6,7 @@
     "enabled": true
   },
   "diff_style": "stacked",
+  "mouse": false,
   "keybinds": {
     "leader": "ctrl+x",
     "tool_details": "<leader>d",
