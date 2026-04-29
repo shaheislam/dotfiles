@@ -2033,7 +2033,7 @@ $prompt_suffix"
         for edir in $extra_dirs
             set extra_dir_flags "$extra_dir_flags --add-dir $edir"
         end
-        set -a _ls 'claude --dangerously-skip-permissions --effort max --remote-control --name '$window_name' --add-dir '$add_dir_path$extra_dir_flags$claude_budget_flags
+        set -a _ls 'claude --dangerously-skip-permissions --remote-control --name '$window_name' --add-dir '$add_dir_path$extra_dir_flags$claude_budget_flags
     end
 
     if not $use_devcon
