@@ -122,6 +122,7 @@ brew "shellcheck"
 brew "shfmt"
 brew "ruff"
 brew "gh"
+brew "glab"                    # GitLab CLI
 brew "pipx"
 brew "gemini-cli"
 brew "mas"  # Mac App Store CLI

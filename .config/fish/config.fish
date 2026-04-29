@@ -148,6 +148,10 @@ if status is-interactive
         __cache_tool_init zoxide "zoxide init fish"
     end
 
+    if test -x $_brew/glab
+        __cache_tool_init glab "glab completion --shell=fish"
+    end
+
     if test -x $_brew/direnv
         # Suppress direnv log messages (loading/unloading/using) for cleaner cd output
         set -gx DIRENV_LOG_FORMAT ""

@@ -466,6 +466,15 @@ phase_2_cli_tools() {
         fi
     fi
 
+    # GitLab CLI auth check
+    if command_exists glab; then
+        if ! glab config get -g token >/dev/null 2>&1; then
+            print_warning "GitLab CLI not authenticated. Run: glab auth login"
+        else
+            print_success "GitLab CLI authenticated"
+        fi
+    fi
+
     # Install gh-dash extension (GitHub dashboard TUI)
     if command_exists gh; then
         if ! gh extension list 2>/dev/null | grep -q "gh-dash"; then

@@ -75,6 +75,7 @@ command -v zoxide >/dev/null && _cache_tool_init zoxide "zoxide init zsh"
 export DIRENV_LOG_FORMAT=""
 command -v direnv >/dev/null && _cache_tool_init direnv "direnv hook zsh"
 command -v atuin >/dev/null && _cache_tool_init atuin "atuin init zsh"
+command -v glab >/dev/null && _cache_tool_init glab "glab completion --shell=zsh"
 
 # Override Atuin preexec to handle invalid UTF-8 gracefully (prevents panics)
 _atuin_preexec() {
