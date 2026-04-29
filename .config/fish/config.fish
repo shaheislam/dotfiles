@@ -150,6 +150,8 @@ if status is-interactive
 
     if test -x $_brew/glab
         __cache_tool_init glab "glab completion --shell=fish"
+        # Populate GITLAB_TOKEN from glab's stored auth so opencode can use GitLab Duo models
+        set -gx GITLAB_TOKEN (glab auth token --hostname gitlab.com 2>&1)
     end
 
     if test -x $_brew/direnv
