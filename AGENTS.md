@@ -79,7 +79,7 @@ This file documents specific behaviors and constraints for AI agents working on 
 
 ## When NOT to Use Agents for This Repo
 
-- Karabiner-Elements config: use the GUI app, the JSON is complex and auto-generated.
+
 - tmux plugin installation: TPM handles this, just add to `.tmux.conf`.
 - Brewfile sorting/organization: maintain the existing grouping structure.
 - LazyVim plugin config: this lives in `~/neovim`, not here.

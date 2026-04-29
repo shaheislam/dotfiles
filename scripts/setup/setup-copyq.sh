@@ -12,7 +12,6 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/dotfiles}"
 COMMANDS_FILE="$DOTFILES_DIR/.config/copyq/copyq-commands.ini"
 
@@ -143,20 +142,20 @@ fi
 
 # Add CopyQ to PATH if not already available
 COPYQ_BIN="/Applications/CopyQ.app/Contents/MacOS/copyq"
-if [[ -x "$COPYQ_BIN" ]] && ! command -v copyq &> /dev/null; then
+if [[ -x "$COPYQ_BIN" ]] && ! command -v copyq &>/dev/null; then
     export PATH="/Applications/CopyQ.app/Contents/MacOS:$PATH"
 fi
 
 # Start CopyQ if not running (needed for config commands)
-if ! pgrep -x "CopyQ" > /dev/null 2>&1; then
+if ! pgrep -x "CopyQ" >/dev/null 2>&1; then
     echo -e "${BLUE}Starting CopyQ...${NC}"
     open -a CopyQ
-    sleep 3  # Give it time to start
+    sleep 3 # Give it time to start
 fi
 
 # Wait for copyq CLI to be responsive
 echo -e "${BLUE}Waiting for CopyQ to be ready...${NC}"
-for i in {1..10}; do
+for _ in {1..10}; do
     if "$COPYQ_BIN" version &>/dev/null; then
         break
     fi
@@ -191,22 +190,21 @@ echo -e "${BLUE}Configuring CopyQ settings...${NC}"
 "$COPYQ_BIN" config check_clipboard true 2>/dev/null || true
 "$COPYQ_BIN" config confirm_exit false 2>/dev/null || true
 "$COPYQ_BIN" config autostart true 2>/dev/null || true
-"$COPYQ_BIN" config hide_toolbar_labels false 2>/dev/null || true  # Show text labels on toolbar
+"$COPYQ_BIN" config hide_toolbar_labels false 2>/dev/null || true # Show text labels on toolbar
 
 # Create Queue tab for paste queue feature
 "$COPYQ_BIN" tab Queue 2>/dev/null || true
 
 echo -e "${GREEN}CopyQ setup complete!${NC}"
 echo ""
-echo -e "${GREEN}Cmd+Shift+V shortcut configured via Karabiner-Elements${NC}"
+echo -e "${GREEN}CopyQ keyboard shortcuts configured${NC}"
 echo ""
 echo -e "${BLUE}Requirements:${NC}"
 echo "1. Grant Accessibility access:"
 echo "   System Settings → Privacy & Security → Accessibility → Enable CopyQ"
-echo "2. Ensure Karabiner-Elements is running"
 echo ""
 echo -e "${BLUE}Keyboard shortcuts available:${NC}"
-echo "  Cmd+Shift+V     - Open clipboard history (via Karabiner)"
+echo "  Cmd+Shift+V     - Open clipboard history (configure in CopyQ Preferences → Shortcuts)"
 echo "  Ctrl+1-5        - Quick paste from history slots"
 echo "  Ctrl+J          - Format JSON"
 echo "  Ctrl+B          - Base64 decode"

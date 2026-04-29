@@ -91,14 +91,6 @@
       ],
       "category": "monitoring"
     },
-    "karabiner-elements": {
-      "config_paths": [
-        ".config/karabiner/karabiner.json"
-      ],
-      "category": "system",
-      "notes": "Config should be edited via GUI only",
-      "skip": true
-    },
     "kubectl": {
       "priority": "high",
       "category": "devops",

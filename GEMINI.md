@@ -153,7 +153,7 @@
 - **Self-Hosted LLM**: Ollama + Open WebUI. Setup: `scripts/setup-selfhost-llm.sh`. Fish: `llm`, `llm-code`, `llm-chat`, `llm-status`
 - **Mobile Coding**: Mosh + Tailscale (`scripts/setup-mobile-coding.sh`)
 - **Pi-hole**: `scripts/pihole/`, Fish wrapper: `pihole start|stop|dns-on|dns-off|status`
-- **Karabiner**: `.config/karabiner/karabiner.json` (Caps Lock ↔ Escape, edit via GUI)
+
 - **K8s Manifests**: ALWAYS in `scripts/manifests/` with README updates
 
 ## Common Mistakes to Avoid
@@ -162,7 +162,7 @@
 - Do not add emojis to commit messages
 - Do not use `npx` — use `bunx` instead
 - Do not manually create symlinks — use stow
-- Do not modify Karabiner JSON directly — use the GUI
+
 - Do not sort/reorganize Brewfile — maintain existing grouping
 - Do not create README.md files unless explicitly asked
 - Do not add Tokyo Night theme configs without checking all tools for consistency

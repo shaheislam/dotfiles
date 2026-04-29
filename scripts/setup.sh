@@ -1785,17 +1785,6 @@ phase_9_fonts_and_apps() {
             fi
         fi
 
-        # Setup Karabiner-Elements (keyboard remapping)
-        print_step "Setting up Karabiner-Elements..."
-        if [[ -d "$DOTFILES_ROOT/.config/karabiner" ]]; then
-            mkdir -p "$HOME/.config/karabiner"
-            if [[ ! -f "$HOME/.config/karabiner/karabiner.json" ]]; then
-                ln -sf "$DOTFILES_ROOT/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json" 2>/dev/null &&
-                    print_success "Karabiner-Elements configuration linked" ||
-                    log_verbose "Karabiner config link skipped"
-            fi
-        fi
-
         # Setup CopyQ clipboard manager
         if command_exists copyq || [[ -d "/Applications/CopyQ.app" ]]; then
             print_step "Setting up CopyQ..."

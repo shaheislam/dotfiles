@@ -20,7 +20,6 @@ prevents context rot — each subagent only sees one tool's data.
 4. Skip tools where:
    - config_paths is empty (no local config to review)
    - Config lives outside this repo (neovim in ~/neovim)
-   - Changes require GUI (Karabiner-Elements)
    - Release is a pre-release
 
 ## Phase 1.5: AI-Powered Triage

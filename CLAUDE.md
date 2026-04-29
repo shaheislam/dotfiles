@@ -125,7 +125,7 @@ Four browser tools for AI agents, each with different strengths:
 - **Clawdbot**: WhatsApp/Telegram interface (`npm install -g clawdbot@latest`)
 - **DNS**: Cloudflare (1.1.1.1) in `scripts/setup/macos-defaults.sh`
 - **Pi-hole**: `scripts/pihole/`, Fish wrapper: `pihole start|stop|dns-on|dns-off|status`
-- **Karabiner**: `.config/karabiner/karabiner.json` (Caps Lock ↔ Escape, edit via GUI)
+
 - **K8s Manifests**: ALWAYS in `scripts/manifests/` with README updates
 
 ### Claude Code Settings & Security
@@ -202,7 +202,7 @@ Union merge for CLAUDE.md/AGENTS.md via `scripts/merge-driver-union.sh`. Prevent
 - **Single Agent Rule**: One background agent at a time
 
 ### When NOT to Use Agents
-- Karabiner-Elements config (use GUI), Brewfile organization, tmux plugin installation (TPM)
+- Brewfile organization, tmux plugin installation (TPM)
 - Theme consistency verification, 1Password/SSH setup, stow conflict resolution
 - LazyVim plugin config (lives in `~/neovim`)
 

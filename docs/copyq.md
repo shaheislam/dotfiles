@@ -59,7 +59,7 @@ The setup script performs these security checks before installation:
 
 ## Quick Start
 
-1. **Open clipboard history**: `Cmd+Shift+V` (configured via Karabiner-Elements)
+1. **Open clipboard history**: `Cmd+Shift+V` (in CopyQ Preferences → Shortcuts → Global)
 2. **Search history**: Just start typing when CopyQ window is open
 3. **Paste item**: Click or press Enter on selected item
 4. **Access via tmux**: `Ctrl+S + f` → select "clipboard"
@@ -69,7 +69,7 @@ The setup script performs these security checks before installation:
 ### Global Shortcuts
 | Shortcut | Action |
 |----------|--------|
-| `Cmd+Shift+V` | Open clipboard history (via Karabiner-Elements) |
+| `Cmd+Shift+V` | Open clipboard history |
 | `Ctrl+1` | Paste item at position 1 |
 | `Ctrl+2` | Paste item at position 2 |
 | `Ctrl+3` | Paste item at position 3 |
@@ -212,12 +212,11 @@ var item = str(read(0)); // First item
 3. Enable "Run automatically on system startup"
 
 ### Global shortcut not working
-The `Cmd+Shift+V` shortcut is configured via Karabiner-Elements (not CopyQ's native shortcuts).
+If `Cmd+Shift+V` doesn't work:
 
-1. **Ensure Karabiner-Elements is running**: Check menu bar for Karabiner icon
-2. **Verify the rule is enabled**: Open Karabiner-Elements → Complex Modifications → Check "CopyQ: Cmd+Shift+V" is enabled
-3. **Check CopyQ is running**: Look for CopyQ icon in menu bar
-4. **Manual test**: Run `/Applications/CopyQ.app/Contents/MacOS/copyq toggle` in terminal
+1. **Check CopyQ preferences**: CopyQ → Preferences → Shortcuts → Global → ensure `Cmd+Shift+V` is bound to `toggle()`
+2. **Check CopyQ is running**: Look for CopyQ icon in menu bar
+3. **Manual test**: Run `/Applications/CopyQ.app/Contents/MacOS/copyq toggle` in terminal
 
 ### Commands not appearing
 ```bash
