@@ -825,7 +825,7 @@ phase_4_cloud_tools() {
         fi
 
         if command_exists bun; then
-            bun install -g opencode-with-claude >/dev/null 2>&1 &&
+            bun add -g opencode-with-claude@latest >/dev/null 2>&1 &&
                 print_success "opencode-with-claude installed" ||
                 print_warning "Failed to install opencode-with-claude"
         else

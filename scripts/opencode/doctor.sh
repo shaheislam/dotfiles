@@ -36,6 +36,17 @@ count_files() {
 	fi
 }
 
+resolve_plugin_path() {
+	local plugin="$1"
+
+	case "$plugin" in
+	file://*) printf '%s\n' "${plugin#file://}" ;;
+	/*) printf '%s\n' "$plugin" ;;
+	./*) printf '%s\n' "$ROOT/${plugin#./}" ;;
+	*) return 1 ;;
+	esac
+}
+
 echo "OpenCode Doctor"
 echo "Repo:   $ROOT"
 echo "Config: $CONFIG_FILE"
@@ -155,9 +166,19 @@ if [ -f "$CONFIG_FILE" ]; then
 		print_result WARN "npm plugins" "No npm plugins in opencode.json"
 	fi
 
-	# Check npm plugin cache
+	# Check npm plugin cache and local file plugins
 	npm_cache="$HOME/.cache/opencode/node_modules"
 	for pkg in $(jq -r '.plugin // [] | .[]' "$CONFIG_FILE" 2>/dev/null); do
+		if plugin_path="$(resolve_plugin_path "$pkg")"; then
+			plugin_label="$(basename "$plugin_path")"
+			if [ -f "$plugin_path" ]; then
+				print_result PASS "file plugin: $plugin_label" "$plugin_path"
+			else
+				print_result WARN "file plugin: $plugin_label" "Missing $plugin_path"
+			fi
+			continue
+		fi
+
 		# Strip @latest or version tags for cache lookup
 		pkg_name="$(echo "$pkg" | sed 's/@latest$//' | sed 's/@[0-9].*$//')"
 		if [ -d "$npm_cache/$pkg_name" ]; then
@@ -166,6 +187,15 @@ if [ -f "$CONFIG_FILE" ]; then
 			print_result WARN "cached: $pkg_name" "Not cached (will install on next run)"
 		fi
 	done
+
+	if jq -e '.plugin[]? | select(contains("opencode-with-claude"))' "$CONFIG_FILE" >/dev/null 2>&1; then
+		claude_plugin="$HOME/.bun/install/global/node_modules/opencode-with-claude/dist/index.js"
+		if [ -f "$claude_plugin" ]; then
+			print_result PASS "Claude subscription plugin" "Bun global install available"
+		else
+			print_result WARN "Claude subscription plugin" "Run: bun add -g opencode-with-claude@latest"
+		fi
+	fi
 fi
 
 # DCP config
