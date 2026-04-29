@@ -108,30 +108,23 @@ trust_level = "trusted"
 [projects."/Users/shahe.islam/Documents/Codex/2026-04-27/how-does-bik-tax-work-i"]
 trust_level = "trusted"
 
-# --- MCP Servers (synced from .mcp.json) ---
-
 [mcp_servers.playwright]
-type = "stdio"
 command = "bunx"
-args = ["-y", "@playwright/mcp@latest"]
+args = ["@playwright/mcp@latest"]
 
 [mcp_servers.steampipe]
-type = "stdio"
 command = "bunx"
 args = ["-y", "@turbot/steampipe-mcp", "postgresql://steampipe@localhost:9193/steampipe"]
 
 [mcp_servers.context7]
-type = "stdio"
 command = "bunx"
-args = ["-y", "@upstash/context7-mcp"]
+args = ["@upstash/context7-mcp"]
 
 [mcp_servers.drawio]
-type = "stdio"
 command = "bunx"
 args = ["-y", "drawio-mcp-server"]
 
 [mcp_servers.claudecodebrowser]
-type = "stdio"
 command = "python3"
 args = ["~/.claudecodebrowser/mcp-server/stdio_wrapper.py"]
 

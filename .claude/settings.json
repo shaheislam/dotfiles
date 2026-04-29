@@ -17,6 +17,7 @@
       "serverName": "claude_ai_Invideo"
     }
   ],
+  "editorMode": "vim",
   "effortLevel": "medium",
   "enabledPlugins": {
     "agent-sdk-dev@claude-code-plugins": true,
@@ -503,10 +504,10 @@
       "Read(./.entire/metadata/**)"
     ]
   },
-  "skipAutoPermissionPrompt": true,
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "command": "bash ~/dotfiles/scripts/claude-statusline.sh",
     "type": "command"
-  }
+  },
+  "teammateMode": "auto"
 }
