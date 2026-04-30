@@ -60,8 +60,8 @@
     "@tarquinen/opencode-dcp@latest",
     "opencode-pty",
     "opencode-vibeguard",
-    "/Users/shaheislam/dotfiles/.config/opencode/plugin/opencode-with-claude.ts",
-    "/Users/shaheislam/dotfiles/.config/opencode/plugin/nvim-open.ts"
+    "/Users/shahe.islam/dotfiles/.config/opencode/plugin/opencode-with-claude.ts",
+    "/Users/shahe.islam/dotfiles/.config/opencode/plugin/nvim-open.ts"
   ],
   "autoupdate": false,
   "share": "disabled",

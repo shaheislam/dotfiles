@@ -773,13 +773,15 @@ test_settings() {
     run_test "Fish has CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD" "grep -q 'CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD' '$DOTFILES_ROOT/.config/fish/config.fish'"
     run_test "Fish disables CLAUDE_CODE_NO_FLICKER by default" "grep -q 'CLAUDE_CODE_NO_FLICKER 0' '$DOTFILES_ROOT/.config/fish/config.fish'"
     run_test "Fish PATH prefers ~/.local/bin" "grep -q 'fish_add_path --move \$HOME/.local/bin' '$DOTFILES_ROOT/.config/fish/paths.fish'"
-    run_test "Zsh PATH prefers ~/.local/bin" "python3 -c \"from pathlib import Path; assert 'export PATH=\\\"\\$HOME/.local/bin:\\$HOME/bin:/opt/homebrew/bin:/usr/local/bin:\\$PATH\\\"' in Path('$DOTFILES_ROOT/.zshrc').read_text()\""
+    run_test "Fish PATH includes dotfiles scripts bin" "grep -q 'fish_add_path --move \$HOME/dotfiles/scripts/bin' '$DOTFILES_ROOT/.config/fish/paths.fish'"
+    run_test "Zsh PATH prefers ~/.local/bin" "grep -q 'export PATH=\"\$HOME/.local/bin:\$HOME/bin:/opt/homebrew/bin:/usr/local/bin:\$PATH\"' '$DOTFILES_ROOT/.zshrc'"
+    run_test "Zsh PATH includes dotfiles scripts bin" "grep -q 'export PATH=\"\$HOME/dotfiles/scripts/bin:\$PATH\"' '$DOTFILES_ROOT/.zshrc'"
 
     # CLAUDE.md documentation
     run_test "CLAUDE.md documents settings section" "grep -q 'Claude Code Settings & Security' '$DOTFILES_ROOT/CLAUDE.md'"
-    run_test "CLAUDE.md documents permission rules" "grep -q 'Permission Rules' '$DOTFILES_ROOT/CLAUDE.md'"
-    run_test "CLAUDE.md documents sandbox config" "grep -q 'Sandbox Configuration' '$DOTFILES_ROOT/CLAUDE.md'"
-    run_test "CLAUDE.md documents attribution" "grep -q 'attribution.commit' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md documents permission rules" "grep -q 'Permission rules' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md documents sandbox config" "grep -q 'Sandbox:' '$DOTFILES_ROOT/CLAUDE.md'"
+    run_test "CLAUDE.md documents attribution" "grep -q 'Attribution:' '$DOTFILES_ROOT/CLAUDE.md' && grep -q 'commit: \"\"' '$DOTFILES_ROOT/CLAUDE.md'"
 }
 
 test_nvim_bridge() {
@@ -908,6 +910,17 @@ test_opencode() {
     run_test "OpenCode permissions are blanket allow" "[ \"\$(jq -r '.permission' '$DOTFILES_ROOT/.config/opencode/opencode.json')\" = 'allow' ]"
     run_test "OpenCode config has openai provider" "jq -e '.provider.openai' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode config has gpt-5.4 model" "jq -e '.provider.openai.models[\"gpt-5.4\"]' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode Vim tap configured" "grep -q 'tap \"leohenon/tap\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
+    run_test "OpenCode Vim formula configured" "grep -q 'brew \"leohenon/tap/ocv\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
+    run_test "Legacy anomalyco OpenCode formula removed" "! grep -q 'anomalyco/tap/opencode' '$DOTFILES_ROOT/homebrew/Brewfile'"
+    run_test "OpenCode compatibility shim exists" "[ -f '$DOTFILES_ROOT/scripts/bin/opencode' ]"
+    run_test "OpenCode compatibility shim executable" "[ -x '$DOTFILES_ROOT/scripts/bin/opencode' ]"
+    run_test "OpenCode compatibility shim delegates to ocv" "grep -q 'exec ocv \"\$@\"' '$DOTFILES_ROOT/scripts/bin/opencode'"
+    run_test "OpenCode tmux launcher uses shim" "grep -q 'exec \"\$HOME/dotfiles/scripts/bin/opencode\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
+    run_test "OpenCode TUI enables Vim system clipboard" "jq -e '.vim_system_clipboard_register == true' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
+    run_test "OpenCode TUI keeps insert Enter as newline" "jq -e '.vim_enter_submit == false' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
+    run_test "OpenCode TUI has force-submit key" "jq -e '.keybinds.input_force_submit == \"alt+return\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
+    run_test "OpenCode TUI copy mode avoids variant conflict" "jq -e '.keybinds.copy_mode == \"<leader>v\" and .keybinds.variant_list == \"<leader>V\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
 
     run_test "OpenCode command directory exists" "[ -d '$DOTFILES_ROOT/.opencode/command' ]"
     run_test "OpenCode doctor command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/doctor.md' ]"
@@ -980,6 +993,8 @@ test_opencode() {
     run_test "OpenCode DCP plugin configured" "jq -e '.plugin[] | select(contains(\"dcp\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode PTY plugin configured" "jq -e '.plugin[] | select(contains(\"pty\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode VibeGuard plugin configured" "jq -e '.plugin[] | select(contains(\"vibeguard\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode Claude subscription plugin configured" "jq -e '.plugin[] | select(contains(\"opencode-with-claude\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode Neovim opener plugin configured" "jq -e '.plugin[] | select(contains(\"nvim-open\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode DCP config exists" "[ -f '$DOTFILES_ROOT/.opencode/dcp.jsonc' ]"
     run_test "OpenCode VibeGuard config exists" "[ -f '$DOTFILES_ROOT/.opencode/vibeguard.config.json' ]"
     run_test "OpenCode VibeGuard enabled" "jq -e '.enabled == true' '$DOTFILES_ROOT/.opencode/vibeguard.config.json' >/dev/null 2>&1"

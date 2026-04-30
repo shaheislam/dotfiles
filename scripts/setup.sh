@@ -813,15 +813,33 @@ phase_4_cloud_tools() {
     }
 
     _install_opencode() {
-        brew tap anomalyco/tap >/dev/null 2>&1 || true
-        if ! command_exists opencode; then
-            brew install anomalyco/tap/opencode >/dev/null 2>&1 &&
-                print_success "opencode installed" ||
-                print_warning "Failed to install opencode"
+        if brew list --formula opencode >/dev/null 2>&1; then
+            brew uninstall opencode >/dev/null 2>&1 &&
+                print_success "legacy opencode formula removed" ||
+                print_warning "Failed to remove legacy opencode formula"
+        fi
+
+        brew tap leohenon/tap >/dev/null 2>&1 || true
+
+        local ocv_works=false
+        if command_exists ocv && ocv --version >/dev/null 2>&1; then
+            ocv_works=true
+        fi
+
+        if [[ "$ocv_works" != "true" ]]; then
+            brew install leohenon/tap/ocv >/dev/null 2>&1 &&
+                print_success "ocv installed" ||
+                print_warning "Failed to install ocv via Homebrew"
         else
-            brew upgrade anomalyco/tap/opencode >/dev/null 2>&1 &&
-                print_success "opencode upgraded" ||
-                print_success "opencode already latest"
+            brew upgrade leohenon/tap/ocv >/dev/null 2>&1 &&
+                print_success "ocv upgraded" ||
+                print_success "ocv already latest"
+        fi
+
+        if command_exists ocv && ocv --version >/dev/null 2>&1; then
+            print_success "opencode compatibility shim uses ocv"
+        else
+            print_warning "ocv unavailable; install with: brew install leohenon/tap/ocv"
         fi
 
         if command_exists bun; then

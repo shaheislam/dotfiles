@@ -29,15 +29,27 @@ function fail(message) {
 
 const calls = []
 
-function makeCommand(strings, ...values) {
-  const hookName = values[2]
-  const payload = JSON.parse(values[0])
-  return {
-    quiet() { return this },
-    nothrow: async () => {
-      calls.push([hookName, payload])
-    },
-  }
+function hookNameFromCommand(cmd) {
+  const shellCommand = Array.isArray(cmd) ? cmd.at(-1) : String(cmd)
+  return shellCommand.trim().split(/\s+/).at(-1)
+}
+
+async function payloadFromStdin(stdin) {
+  if (!stdin) return {}
+  if (typeof stdin.text === "function") return JSON.parse(await stdin.text())
+  return JSON.parse(new TextDecoder().decode(stdin))
+}
+
+Bun.spawn = (cmd, options = {}) => ({
+  exited: (async () => {
+    calls.push([hookNameFromCommand(cmd), await payloadFromStdin(options.stdin)])
+    return 0
+  })(),
+})
+
+Bun.spawnSync = (cmd, options = {}) => {
+  calls.push([hookNameFromCommand(cmd), JSON.parse(new TextDecoder().decode(options.stdin))])
+  return { exitCode: 0 }
 }
 
 const hooks = await EntirePlugin({
@@ -46,56 +58,41 @@ const hooks = await EntirePlugin({
   client: {},
   project: {},
   serverUrl: new URL("http://localhost"),
-  $: makeCommand,
 })
 
 await hooks.event({ event: { type: "session.created", properties: { info: { id: "ses_1" } } } })
-await hooks.event({ event: { type: "todo.updated", properties: { sessionID: "ses_1", todos: [{ content: "A", status: "pending", priority: "high" }] } } })
-await hooks.event({ event: { type: "command.executed", properties: { sessionID: "ses_1", name: "review", arguments: "--fast", messageID: "msg_1" } } })
-await hooks.event({ event: { type: "worktree.ready", properties: { name: "feat-test", branch: "feature/test" } } })
-await hooks.event({ event: { type: "worktree.failed", properties: { message: "cleanup needed" } } })
-
-await hooks["tool.execute.before"](
-  { tool: "task", args: { description: "run subagent", prompt: "/check", subagent_type: "explore" } },
-  { args: { description: "run subagent", prompt: "/check", subagent_type: "explore" } },
-)
-
-await hooks["tool.execute.after"](
-  { tool: "task", args: { description: "run subagent", prompt: "/check", subagent_type: "explore" } },
-  { output: "done" },
-)
-
-await hooks["tool.execute.after"](
-  { tool: "todowrite", args: { todos: [{ content: "B", status: "completed", priority: "medium" }] } },
-  { output: "ok" },
-)
+await hooks.event({ event: { type: "message.updated", properties: { info: { id: "msg_1", sessionID: "ses_1", role: "assistant", modelID: "gpt-5.4" } } } })
+await hooks.event({ event: { type: "message.updated", properties: { info: { id: "msg_2", sessionID: "ses_1", role: "user" } } } })
+await hooks.event({ event: { type: "message.part.updated", properties: { part: { messageID: "msg_2", type: "text", text: "hello" } } } })
+await hooks.event({ event: { type: "session.status", properties: { sessionID: "ses_1", status: { type: "idle" } } } })
+await hooks.event({ event: { type: "session.compacted", properties: { sessionID: "ses_1" } } })
+await hooks.event({ event: { type: "server.instance.disposed", properties: {} } })
 
 const hookNames = calls.map(([name]) => name)
-for (const expected of ["session-start", "post-todo", "post-task", "worktree-create", "worktree-remove", "pre-task"]) {
+for (const expected of ["session-start", "turn-start", "turn-end", "compaction", "session-end"]) {
   if (!hookNames.includes(expected)) {
     fail(`missing hook ${expected}`)
   }
 }
 
-const preTask = calls.find(([name]) => name === "pre-task")?.[1]
-if (preTask?.subagent_type !== "explore") {
-  fail("pre-task payload missing subagent_type")
+const turnStart = calls.find(([name]) => name === "turn-start")?.[1]
+if (turnStart?.prompt !== "hello" || turnStart?.model !== "gpt-5.4") {
+  fail("turn-start payload missing prompt or model")
 }
 
-const worktreeCreate = calls.find(([name]) => name === "worktree-create")?.[1]
-if (worktreeCreate?.branch !== "feature/test") {
-  fail("worktree-create payload missing branch")
+const turnEnd = calls.find(([name]) => name === "turn-end")?.[1]
+if (turnEnd?.session_id !== "ses_1") {
+  fail("turn-end payload missing session_id")
 }
 
-const postTodoCalls = calls.filter(([name]) => name === "post-todo")
-if (postTodoCalls.length < 2) {
-  fail("expected post-todo to fire for todo.updated and todowrite")
+const sessionEnd = calls.find(([name]) => name === "session-end")?.[1]
+if (sessionEnd?.session_id !== "ses_1") {
+  fail("session-end payload missing session_id")
 }
 
 console.log("PASS entire session hooks")
-console.log("PASS entire todo hooks")
-console.log("PASS entire task hooks")
-console.log("PASS entire worktree hooks")
+console.log("PASS entire turn hooks")
+console.log("PASS entire compaction hooks")
 console.log("PASS entire hook validation complete")
 EOF
 

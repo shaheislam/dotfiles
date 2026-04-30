@@ -945,7 +945,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             end
         end
         if not command -q opencode
-            echo "Error: OpenCode not found. Install: brew install opencode"
+            echo "Error: OpenCode not found. Install: brew install leohenon/tap/ocv"
             return 1
         end
         set opencode_provider (string split -m1 '/' -- $opencode_model)[1]

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+for ocv_bin in /opt/homebrew/bin/ocv /usr/local/bin/ocv "$HOME/.local/bin/ocv" "$HOME/.bun/bin/ocv"; do
+	if [ -x "$ocv_bin" ]; then
+		exec "$ocv_bin" "$@"
+	fi
+done
+
+if ! command -v ocv >/dev/null 2>&1; then
+	printf 'opencode shim: ocv is not installed. Run: brew install leohenon/tap/ocv\n' >&2
+	exit 127
+fi
+
+exec ocv "$@"

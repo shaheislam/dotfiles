@@ -7,8 +7,15 @@
   },
   "diff_style": "stacked",
   "mouse": false,
+  "vim_system_clipboard_register": true,
+  "vim_enter_submit": false,
+  "prompt_max_height": 35,
+  "prompt_scrollbar": true,
   "keybinds": {
     "leader": "ctrl+x",
+    "copy_mode": "<leader>v",
+    "prompt_copy_selection": "<leader>y",
+    "input_force_submit": "alt+return",
     "tool_details": "<leader>d",
     "session_list": "<leader>l",
     "session_timeline": "<leader>g",
@@ -24,6 +31,6 @@
     "messages_previous": "[",
     "session_rename": "<leader>R",
     "session_fork": "<leader>f",
-    "variant_list": "<leader>v"
+    "variant_list": "<leader>V"
   }
 }

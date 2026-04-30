@@ -3,7 +3,7 @@ function opencode-local --description "Run OpenCode with local Ollama models"
     # Ensures Ollama is running, then launches OpenCode.
     # OpenCode config at ~/.config/opencode/opencode.json defines the Ollama provider.
 
-    if test "$argv[1]" = "--help"; or test "$argv[1]" = "-h"
+    if test "$argv[1]" = --help; or test "$argv[1]" = -h
         echo "Usage: opencode-local [opencode args...]"
         echo ""
         echo "Run OpenCode with local Ollama as the AI backend."
@@ -24,7 +24,7 @@ function opencode-local --description "Run OpenCode with local Ollama models"
     # Check if opencode is installed
     if not command -q opencode
         echo "Error: opencode is not installed"
-        echo "Install with: brew install opencode"
+        echo "Install with: brew install leohenon/tap/ocv"
         return 1
     end
 

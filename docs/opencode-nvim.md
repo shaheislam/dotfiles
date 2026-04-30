@@ -1,6 +1,6 @@
 # opencode.nvim vs tmux Side Pane
 
-OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the TUI in a dedicated pane where we manually copy/paste context. The [`opencode.nvim`](https://github.com/nickjvandyke/opencode.nvim) plugin keeps the same backend assistant but embeds it directly in Neovim, which buys us tighter editor awareness, faster iteration, and better review UX.
+OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the TUI in a dedicated pane. The terminal binary is `ocv` from [`leohenon/opencode-vim`](https://github.com/leohenon/opencode-vim), exposed through the repo-managed `scripts/bin/opencode` shim so existing launchers keep working while the TUI gains Vim motions, copy mode, and clipboard-register support. The [`opencode.nvim`](https://github.com/nickjvandyke/opencode.nvim) plugin is the complementary Neovim integration layer: it keeps the same backend assistant but embeds editor context directly in Neovim, which buys us tighter editor awareness, faster iteration, and better review UX.
 
 ## Why the plugin is a material upgrade
 
@@ -13,7 +13,7 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 
 ## What stays the same
 
-- The backend assistant is still OpenCode, so authentication, model routing, hooks, and all `.opencode/` scripts remain unchanged.
+- The backend assistant is still OpenCode-compatible (`opencode` resolves to `ocv`), so authentication, model routing, hooks, and all `.opencode/` scripts remain unchanged.
 - You can connect the plugin to any running OpenCode instance via the `server.port` option, which means the tmux binding can keep a long-lived side pane if you want a dedicated transcript while Neovim handles buffer-aware asks.
 - Permissions and hooks still flow through the existing `.opencode/plugins/claude-compat.ts` stack—`opencode.nvim` just surfaces them in-editor.
 
@@ -36,6 +36,14 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 3. Reuse the recommended keymaps (`<C-a>` ask, `<C-x>` select, `go` operator) or map them under `<leader>o` to avoid conflicts with tmux bindings.
 4. Run `:checkhealth opencode` after wiring it up; the check validates that OpenCode is discoverable and events are flowing.
 5. Continue to use the tmux pane when you need a dedicated transcript view or when Neovim is not open—both entry points can coexist because they talk to the same OpenCode backend.
+
+## opencode-vim and opencode.nvim together
+
+- `ocv` replaces the terminal TUI and provides full Vim-mode ergonomics when OpenCode runs in tmux or a standalone shell.
+- `scripts/bin/opencode` preserves the command name expected by `gwt-ticket`, tmux launchers, auth rotation, cross-provider hooks, and `opencode.nvim`.
+- `opencode.nvim` keeps using `opencode --port`; the shim routes that to `ocv --port`, so editor-native prompts inherit the same binary and plugin stack.
+- `.config/opencode/tui.json` owns TUI Vim settings such as system clipboard register sync, prompt scrolling, copy mode, and force-submit bindings.
+- Copy mode is a session-view mode, not prompt insert mode: press `Esc`, then `Ctrl-x`, then `v`; select with `v` or `V`, yank with `y`, copy to the system clipboard with `Enter`, and exit with `q`.
 
 By moving repetitive prompt + context work into Neovim we remove most of the friction highlighted in this ticket while leaving the tmux bindings available for workflows outside the editor.
 

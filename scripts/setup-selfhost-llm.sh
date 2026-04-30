@@ -26,7 +26,6 @@ set -euo pipefail
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DOTFILES_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Source common utilities
 source "$SCRIPT_DIR/lib/common.sh"
@@ -349,13 +348,12 @@ configure_opencode() {
 
     if ! command -v opencode &>/dev/null; then
         print_warning "OpenCode not installed - skipping configuration"
-        print_step "Install with: brew install opencode"
+        print_step "Install with: brew install leohenon/tap/ocv"
         return 0
     fi
 
     local config_dir="$HOME/.config/opencode"
     local config_file="$config_dir/opencode.json"
-    local dotfiles_config="$DOTFILES_ROOT/.config/opencode/opencode.json"
 
     # Config is managed by stow - just verify it's in place
     if [[ -f "$config_file" ]]; then

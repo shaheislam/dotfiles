@@ -45,7 +45,7 @@ else
 end
 
 # Dotfiles scripts
-fish_add_path $HOME/dotfiles/scripts/bin
+fish_add_path --move $HOME/dotfiles/scripts/bin
 
 # Application-specific paths (conditional)
 # Add VSCode bin to PATH if it exists

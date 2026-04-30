@@ -58,6 +58,17 @@ else
 	print_result FAIL "opencode binary" "OpenCode is not installed or not on PATH"
 fi
 
+if command -v ocv >/dev/null 2>&1; then
+	ocv_version="$(ocv --version 2>/dev/null || true)"
+	if [ -n "$ocv_version" ]; then
+		print_result PASS "ocv binary" "$(command -v ocv) ($ocv_version)"
+	else
+		print_result PASS "ocv binary" "$(command -v ocv)"
+	fi
+else
+	print_result FAIL "ocv binary" "Install with: brew install leohenon/tap/ocv"
+fi
+
 if [ -f "$CONFIG_FILE" ] && jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
 	print_result PASS "config JSON" "Valid opencode.json"
 else
