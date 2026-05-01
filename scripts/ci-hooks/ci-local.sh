@@ -124,6 +124,7 @@ _builtin_defaults() {
 # Run CI commands
 FAIL_FAST="$(ci_config_setting fail_fast true)"
 TIMEOUT="$(ci_config_setting timeout 120)"
+TIMEOUT_BIN="$(command -v timeout || command -v gtimeout || true)"
 
 commands="$(_get_ci_commands "$PROJECT_DIR")"
 if [[ -z "$commands" ]]; then
@@ -139,7 +140,13 @@ while IFS= read -r cmd; do
     total=$((total + 1))
 
     # Run with timeout in the project directory
-    if timeout "$TIMEOUT" bash -c "cd '$PROJECT_DIR' && $cmd" >/dev/null 2>&1; then
+    if [[ -n "$TIMEOUT_BIN" ]]; then
+        run_cmd=("$TIMEOUT_BIN" "$TIMEOUT" bash -c "cd '$PROJECT_DIR' && $cmd")
+    else
+        run_cmd=(bash -c "cd '$PROJECT_DIR' && $cmd")
+    fi
+
+    if "${run_cmd[@]}" >/dev/null 2>&1; then
         results+=("PASS: $cmd")
     else
         results+=("FAIL: $cmd")

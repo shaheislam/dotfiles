@@ -930,6 +930,10 @@ test_opencode() {
     run_test "OpenCode agents directory exists" "[ -d '$DOTFILES_ROOT/.opencode/agents' ]"
     run_test "OpenCode review agent exists" "[ -f '$DOTFILES_ROOT/.opencode/agents/dotfiles-review.md' ]"
     run_test "OpenCode debug agent exists" "[ -f '$DOTFILES_ROOT/.opencode/agents/dotfiles-debug.md' ]"
+    run_test "OpenCode style agents exist" "jq -e '.agent.precise and .agent.balanced and .agent.creative and .agent.wild' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode style agents are primary" "jq -e 'all([.agent.precise.mode, .agent.balanced.mode, .agent.creative.mode, .agent.wild.mode][]; . == \"primary\")' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode style agents are model-free" "jq -e 'all([.agent.precise, .agent.balanced, .agent.creative, .agent.wild][]; has(\"model\") | not)' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode style agent temperatures configured" "jq -e '.agent.precise.temperature == 0.1 and .agent.balanced.temperature == 0.35 and .agent.creative.temperature == 0.8 and .agent.wild.temperature == 1' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
 
     run_test "OpenCode entire plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/entire.ts' ]"
     run_test "OpenCode Claude compat plugin exists" "[ -f '$DOTFILES_ROOT/.opencode/plugins/claude-compat.ts' ]"

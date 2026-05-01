@@ -66,6 +66,34 @@
   "autoupdate": false,
   "share": "disabled",
   "permission": "allow",
+  "agent": {
+    "precise": {
+      "description": "Low-temperature deterministic reasoning for correctness-critical work",
+      "mode": "primary",
+      "temperature": 0.1,
+      "color": "secondary"
+    },
+    "balanced": {
+      "description": "Moderate-temperature default for implementation and explanation",
+      "mode": "primary",
+      "temperature": 0.35,
+      "color": "primary"
+    },
+    "creative": {
+      "description": "High-temperature brainstorming for alternatives, naming, workflows, and UX",
+      "mode": "primary",
+      "temperature": 0.8,
+      "top_p": 0.9,
+      "color": "accent"
+    },
+    "wild": {
+      "description": "Maximum-temperature divergent ideation when novelty matters more than precision",
+      "mode": "primary",
+      "temperature": 1,
+      "top_p": 0.95,
+      "color": "warning"
+    }
+  },
   "compaction": {
     "auto": true,
     "prune": true,
