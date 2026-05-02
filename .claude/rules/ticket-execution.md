@@ -8,13 +8,13 @@ paths:
 
 # Agentic Ticket Execution System
 
-Autonomously execute tickets from Linear/Jira using devcontainers + ralph-loop.
+Autonomously execute tickets from Linear/Jira using OpenCode-first worktrees, tmux, and nvim.
 
 | Command | Description |
 |---------|-------------|
 | `/todo <desc>` | Create ticket in Linear/Jira (auto-detected) |
 | `/ticket-execute [KEY]` | Execute ticket autonomously |
-| `gwt-ticket` | Core function: worktree + tmux + ralph-loop |
+| `gwt-ticket` | Core function: worktree + tmux + OpenCode + nvim (`--claude` fallback) |
 | `ticket-execute` / `tex` | High-level orchestrator |
 
 **Detection**: `.claude/settings.local.json` → `.linear.toml` → git remote patterns → default Linear.

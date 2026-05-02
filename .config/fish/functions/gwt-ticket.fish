@@ -1,15 +1,15 @@
-function gwt-ticket --description "Execute ticket autonomously with ralph-loop (Claude in devcontainer, nvim+terminal on host)"
+function gwt-ticket --description "Execute ticket autonomously with OpenCode, nvim, and tmux worktrees"
     # Usage: gwt-ticket [issue-key] <title> <description> [options]
     #
-    # Creates worktree via gwt-dev, sets up tmux window, and launches Claude
-    # with ralph-loop for autonomous ticket execution.
+    # Creates a git worktree, sets up a tmux window, and launches OpenCode by
+    # default with nvim and terminal panes aligned to that worktree.
     #
     # If issue-key is omitted (first arg doesn't match ABC-123 pattern),
     # auto-generates TASK-YYYYMMDD-HHMMSS as the key.
     #
     # Options:
     #   --max N         Max iterations (default: 20)
-    #   --max-turns N   Max agentic turns per Claude session (budget cap)
+    #   --max-turns N   Max agentic turns per Claude fallback session (budget cap)
     #   --max-budget N  Max API spend in USD before stopping (e.g., 5.00)
     #   --command C     Slash command to use (default: /ralph-loop:ralph-loop)
     #   --prompt-template F  File with custom prompt template
@@ -19,20 +19,22 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     #   --no-edit            Use title as description instead of prompt file
     #   --desc-file FILE     Read description from file (- for stdin; avoids quote issues)
     #   --skill NAME [...]  Invoke skill(s) at prompt start
-    #   --add-dir PATH [...] Additional directories for Claude --add-dir
+    #   --add-dir PATH [...] Additional directories for Claude fallback --add-dir
     #   --local         Use local Ollama model (default: qwen3-coder)
     #   --model MODEL   Use specific Ollama model (implies --local)
     #   --mount, -m     Additional mount (repeatable)
     #   --session S     Tmux session name (default: repo name)
     #   --devcon        Use devcontainer for isolation (default: local)
     #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
-    #   --provider P    API provider profile (bedrock, vertex, foundry, gateway, or custom)
+    #   --provider P    Claude fallback API provider profile (bedrock, vertex, foundry, gateway, or custom)
     #   --system S      Ticketing system: linear or jira
-    #   --opencode-model M  OpenCode model override (implies --codex)
-    #   --codex         Use OpenCode on the right-hand side instead of Claude Code on the left
-    #   --codex-model M Codex/OpenAI model override for OpenCode (implies --codex)
+    #   --opencode      Use OpenCode mode (default)
+    #   --claude        Use Claude Code fallback instead of OpenCode
+    #   --opencode-model M  OpenCode model override
+    #   --codex         Legacy alias for --opencode
+    #   --codex-model M Legacy OpenAI model alias for OpenCode
     #   --codex-profile P  Legacy compatibility flag; OpenCode auth comes from its own config
-    #   --bridge        Enable Claude's cross-provider review flow
+    #   --bridge        Enable cross-provider adversarial review flow
     #   --bridge-iterations N  Max bridge review cycles (default: 3)
     #   --bridge-mode M  Bridge review mode: review|redteam|steelman|assumptions
     #   --quiet, -q     Suppress verbose output (default, writes to .claude/gwt-ticket.log)
@@ -125,7 +127,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     set -l opencode_model ""
     set -l opencode_provider ""
     set -l provider_display ""
-    set -l use_codex false
+    set -l use_codex true
     set -l codex_model ""
     set -l codex_profile ""
     set -l crown_mode false
@@ -474,8 +476,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     echo "Error: --bridge-codex-profiles requires comma-separated profile names (e.g., work,personal)"
                     return 1
                 end
-            case --codex
+            case --opencode --codex
                 set use_codex true
+            case --claude
+                set use_codex false
             case --opencode-model
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -483,7 +487,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set use_codex true
                     set skip_next true
                 else
-                    echo "Error: --opencode-model requires a model id (e.g., openai/gpt-5.4)"
+                    echo "Error: --opencode-model requires a model id (e.g., openai/gpt-5.5)"
                     return 1
                 end
             case --codex-model
@@ -493,7 +497,7 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
                     set use_codex true
                     set skip_next true
                 else
-                    echo "Error: --codex-model requires a model name (e.g., o3, gpt-5.4)"
+                    echo "Error: --codex-model requires a model name (e.g., o3, gpt-5.5)"
                     return 1
                 end
             case --codex-profile
@@ -742,8 +746,8 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
     if $show_help
         echo "Usage: gwt-ticket [issue-key] <title> <description> [options]"
         echo ""
-        echo "Execute a ticket autonomously with ralph-loop."
-        echo "Runs locally by default. Use --devcon for devcontainer isolation."
+        echo "Execute a ticket autonomously with OpenCode, nvim, and tmux."
+        echo "Runs OpenCode locally by default. Use --claude --devcon for Claude devcontainer fallback."
         echo ""
         echo "Arguments:"
         echo "  issue-key     Issue key (e.g., ENG-123, DEVOPS-456)"
@@ -753,16 +757,16 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo ""
         echo "Options:"
         echo "  --max N              Max iterations (default: 20)"
-        echo "  --max-turns N        Max agentic turns per Claude session (budget cap)"
+        echo "  --max-turns N        Max agentic turns per Claude fallback session (budget cap)"
         echo "  --max-budget N       Max API spend in USD before stopping (e.g., 5.00)"
         echo "  --command C          Slash command (default: /ralph-loop:ralph-loop)"
         echo "  --prompt-template F  Custom prompt template file"
         echo "  --prompt-prefix P    Text to prepend to prompt"
         echo "  --prompt-suffix S    Text to append to prompt"
         echo "  --skill NAME [...]   Invoke skill(s) at start of prompt (e.g., --skill bestpractice tdd)"
-        echo "  --add-dir PATH [...] Additional directories for Claude --add-dir (e.g., --add-dir ~/other-repo)"
-        echo "  --sub NAME           Claude subscription profile (uses ~/.claude-NAME config dir)"
-        echo "  --provider NAME      API provider profile (bedrock, vertex, foundry, gateway, or custom)"
+        echo "  --add-dir PATH [...] Additional directories for Claude fallback --add-dir"
+        echo "  --sub NAME           Claude fallback subscription profile (uses ~/.claude-NAME config dir)"
+        echo "  --provider NAME      Claude fallback API provider profile (bedrock, vertex, foundry, gateway, or custom)"
         echo "  --local              Use local Ollama model (default: qwen3-coder)"
         echo "  --model MODEL        Use specific Ollama model (implies --local)"
         echo "  --mount, -m          Add directory mount (repeatable)"
@@ -770,10 +774,10 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --devcon             Use devcontainer for isolation (default: local)"
         echo "  --system S           Ticketing system: linear or jira"
         echo "  --bridge [N]         Enable cross-provider reasoning bridge (N=max iterations, default: 3)"
-        echo "  --bridge-providers P Comma-separated provider order (codex,gemini,ollama,deepseek,claude,opencode)"
+        echo "  --bridge-providers P Comma-separated provider order (default: opencode sidecar model)"
         echo "  --bridge-mode MODE   Review mode: review (default), redteam, steelman, assumptions"
         echo "  --bridge-verbose     Verbose bridge logging (level 1: prefix logs, use twice for level 2: banners)"
-        echo "  --bridge-model M     Model override for first provider in --bridge-providers order"
+        echo "  --bridge-model M     Reviewer model override (default swaps OpenAI<->Anthropic in OpenCode mode)"
         echo "  --bridge-models MAP  Per-provider model map (e.g., codex=o3,gemini=2.5-pro,ollama=qwen3-coder)"
         echo "  --bridge-timeout S   Per-provider timeout in seconds (default: 120)"
         echo "  --bridge-log FILE    Log bridge reviews to file"
@@ -781,13 +785,15 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  --bridge-cooldown S  Cooldown seconds after rate limit (default: 300)"
         echo "  --bridge-profiles P  Claude subscription profiles for auto-rotation (e.g., work,personal)"
         echo "  --bridge-codex-profiles P  Codex profiles for auto-rotation (uses ~/.codex-<name>)"
-        echo "  --opencode-model M   OpenCode model override (implies --codex; e.g., openai/gpt-5.4)"
-        echo "  --codex              Use OpenCode on the right-hand side instead of Claude Code on the left"
-        echo "  --codex-model M      Codex/OpenAI model override for OpenCode (implies --codex; e.g., gpt-5.4)"
+        echo "  --opencode           Use OpenCode mode (default)"
+        echo "  --claude             Use Claude Code fallback instead of OpenCode"
+        echo "  --opencode-model M   OpenCode model override (e.g., openai/gpt-5.5, anthropic/claude-opus-4-6)"
+        echo "  --codex              Legacy alias for --opencode"
+        echo "  --codex-model M      Legacy OpenAI model alias for OpenCode (e.g., gpt-5.5)"
         echo "  --codex-profile P    Legacy compatibility flag; OpenCode auth comes from its own config"
         echo "  --review-gate        Enable Codex stop-time review gate (blocks session end until Codex approves)"
         echo "  --crown [N]          Tournament mode: N agents compete, LLM judge picks winner (default: 3)"
-        echo "  --crown-agents LIST  Comma-separated agent types per contestant (e.g., claude,claude,codex)"
+        echo "  --crown-agents LIST  Comma-separated agent types per contestant (e.g., opencode,opencode,claude)"
         echo "  --crown-judge PRESET Judge mode: council|review|redteam (default: council)"
         echo "  --crown-subs LIST    Rotate subscription profiles across contestants (e.g., personal,work,backup)"
         echo "  --crown-timeout N    Max wait for all contestants in seconds (default: 7200)"
@@ -826,12 +832,12 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  # Standard ticket execution"
         echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Session tokens expire incorrectly\""
         echo ""
-        echo "  # Use a specific Claude subscription"
-        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --sub personal"
+        echo "  # Use Claude Code fallback with a specific subscription"
+        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --claude --sub personal"
         echo ""
-        echo "  # Use Bedrock instead of direct API"
-        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --provider bedrock"
-        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --provider vertex --sub work"
+        echo "  # Use Claude fallback with Bedrock/Vertex provider profiles"
+        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --claude --provider bedrock"
+        echo "  gwt-ticket ENG-123 \"Fix auth bug\" \"Details\" --claude --provider vertex --sub work"
         echo ""
         echo "  # Use feature-dev instead of ralph-loop"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Description\" --command /feature-dev:feature-dev"
@@ -867,21 +873,21 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "  # Enable Codex review gate (blocks session end until Codex approves)"
         echo "  gwt-ticket ENG-123 \"Add feature\" \"Details\" --review-gate"
         echo ""
-        echo "  # Add extra directories for Claude to access"
-        echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/other-repo"
-        echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --add-dir ~/lib-a ~/lib-b"
+        echo "  # Add extra directories for Claude fallback to access"
+        echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --claude --add-dir ~/other-repo"
+        echo "  gwt-ticket ENG-123 \"Fix\" \"Desc\" --claude --add-dir ~/lib-a ~/lib-b"
         echo ""
-        echo "  # Run OpenCode on the right with an OpenAI/Codex model"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --opencode-model openai/gpt-5.4"
+        echo "  # Run OpenCode with a specific model"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --opencode-model openai/gpt-5.5"
         echo ""
-        echo "  # Run OpenCode instead of Claude Code"
+        echo "  # Legacy OpenCode aliases still work"
         echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex"
-        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model gpt-5.4"
+        echo "  gwt-ticket ENG-123 \"Fix bug\" \"Details\" --codex-model gpt-5.5"
         echo ""
         echo "  # Crown tournament mode (N agents compete, LLM judges)"
         echo "  gwt-ticket --crown TICKET-123 \"Fix auth\" \"Description\""
         echo "  gwt-ticket --crown 5 TICKET-123 \"Fix auth\" \"Description\""
-        echo "  gwt-ticket --crown --crown-agents claude,claude,codex TICKET-123 \"Fix auth\" \"Desc\""
+        echo "  gwt-ticket --crown --crown-agents opencode,opencode,claude TICKET-123 \"Fix auth\" \"Desc\""
         echo "  gwt-ticket --crown --bridge TICKET-123 \"Fix auth\" \"Desc\"  # each contestant uses bridge"
         echo "  gwt-ticket --crown --crown-judge redteam TICKET-123 \"Fix auth\" \"Desc\""
         echo "  gwt-ticket --crown --crown-subs personal,work,backup TICKET-123 \"Fix auth\" \"Desc\""
@@ -926,22 +932,20 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             echo "Warning: --codex-profile is ignored in OpenCode mode; use 'opencode auth login' for the OpenAI account you want." >&2
         end
         if $use_devcon
-            echo "Warning: --devcon is ignored in --codex OpenCode mode." >&2
+            echo "Warning: --devcon is ignored in OpenCode mode. Use --claude --devcon for Claude devcontainer fallback." >&2
             set use_devcon false
         end
-        if $bridge_mode
-            echo "Warning: --bridge is ignored in --codex OpenCode mode." >&2
-            set bridge_mode false
-        end
         if test -z "$opencode_model"
-            if test -n "$codex_model"
+            if $use_local
+                set opencode_model "ollama/$local_model"
+            else if test -n "$codex_model"
                 if string match -q '*/*' -- "$codex_model"
                     set opencode_model "$codex_model"
                 else
                     set opencode_model "openai/$codex_model"
                 end
             else
-                set opencode_model "openai/gpt-5.4"
+                set opencode_model "openai/gpt-5.5"
             end
         end
         if not command -q opencode
@@ -1061,14 +1065,14 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         set -l crown_dir "/tmp/crown-$_crown_slug"
         mkdir -p "$crown_dir"
 
-        # Parse crown-agents list (default: all claude)
+        # Parse crown-agents list (default: all OpenCode)
         set -l agent_list
         if test -n "$crown_agents"
             set agent_list (string split ',' -- $crown_agents)
             # If fewer agents than crown_count, cycle through them
         else
             for _n in (seq 1 $crown_count)
-                set -a agent_list claude
+                set -a agent_list opencode
             end
         end
 
@@ -1111,12 +1115,16 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             set -a _sub_args --max $max_iterations
             set -a _sub_args --crown-signal "$crown_dir/done-$_ci"
 
-            # Agent type flag
-            if test "$_agent_type" = codex
-                set -a _sub_args --codex
-                if test -n "$codex_model"
+            # Agent type flag. "codex" remains a legacy alias for OpenCode.
+            if contains -- "$_agent_type" opencode codex
+                set -a _sub_args --opencode
+                if test -n "$opencode_model"
+                    set -a _sub_args --opencode-model $opencode_model
+                else if test -n "$codex_model"
                     set -a _sub_args --codex-model $codex_model
                 end
+            else if test "$_agent_type" = claude
+                set -a _sub_args --claude
             end
 
             # Pass through common flags
@@ -1282,12 +1290,22 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
             end
             if test -n "$bridge_providers"
                 set bridge_info "$bridge_info, providers: $bridge_providers"
+            else if $use_codex
+                set bridge_info "$bridge_info, provider: opencode sidecar"
             end
             if test -n "$bridge_review_mode"
                 set bridge_info "$bridge_info, mode: $bridge_review_mode"
             end
             if test -n "$bridge_model"
                 set bridge_info "$bridge_info, model: $bridge_model"
+            else if $use_codex
+                if test -z "$bridge_providers"; and test -z "$bridge_models"
+                    if string match -q 'anthropic/*' -- "$opencode_model"
+                        set bridge_info "$bridge_info, reviewer: openai/gpt-5.5"
+                    else
+                        set bridge_info "$bridge_info, reviewer: anthropic/claude-opus-4-6"
+                    end
+                end
             end
             if test -n "$bridge_models"
                 set bridge_info "$bridge_info, models: $bridge_models"
@@ -1573,9 +1591,13 @@ function gwt-ticket --description "Execute ticket autonomously with ralph-loop (
         echo "Created window: $window_name"
     end
 
-    # Step 4: Build and launch Claude
+    # Step 4: Build and launch the selected agent harness
     if not $quiet_mode
-        echo "[4/4] Launching Claude with $slash_command..."
+        if $use_codex
+            echo "[4/4] Launching OpenCode with $opencode_model..."
+        else
+            echo "[4/4] Launching Claude with $slash_command..."
+        end
     end
 
     # Harness preflight: verify harness features before launch
@@ -1899,16 +1921,32 @@ $prompt_suffix"
     # Set CROSS_PROVIDER_BRIDGE if bridge mode enabled
     if $bridge_mode
         set -a _ls "set -gx CROSS_PROVIDER_BRIDGE 1"
+        if $use_codex
+            set -a _ls "set -gx OPENCODE_PRIMARY_MODEL $opencode_model"
+        end
         if test -n "$bridge_iterations"
             set -a _ls "set -gx CROSS_PROVIDER_MAX_ITERATIONS $bridge_iterations"
         else
             set -a _ls "set -gx CROSS_PROVIDER_MAX_ITERATIONS 3"
         end
-        test -n "$bridge_providers"; and set -a _ls "set -gx CROSS_PROVIDER_ORDER $bridge_providers"
+        if test -n "$bridge_providers"
+            set -a _ls "set -gx CROSS_PROVIDER_ORDER $bridge_providers"
+        else if $use_codex
+            # OpenCode is the primary agent; review it with a different OpenCode model by default.
+            set -a _ls "set -gx CROSS_PROVIDER_ORDER opencode"
+        end
         $bridge_verbose; and set -a _ls "set -gx CROSS_PROVIDER_VERBOSE 2"
         test -n "$bridge_review_mode"; and set -a _ls "set -gx CROSS_PROVIDER_MODE $bridge_review_mode"
         if test -n "$bridge_model"
-            set -l first_provider (string split ',' -- (test -n "$bridge_providers"; and echo $bridge_providers; or echo "codex"))[1]
+            set -l default_bridge_provider codex
+            if $use_codex
+                set default_bridge_provider opencode
+            end
+            set -l provider_list $bridge_providers
+            if test -z "$provider_list"
+                set provider_list $default_bridge_provider
+            end
+            set -l first_provider (string split ',' -- $provider_list)[1]
             switch $first_provider
                 case codex
                     set -a _ls "set -gx CROSS_PROVIDER_CODEX_MODEL $bridge_model"
@@ -1922,6 +1960,14 @@ $prompt_suffix"
                     set -a _ls "set -gx CROSS_PROVIDER_CLAUDE_MODEL $bridge_model"
                 case opencode
                     set -a _ls "set -gx CROSS_PROVIDER_OPENCODE_MODEL $bridge_model"
+            end
+        else if $use_codex
+            if test -z "$bridge_providers"; and test -z "$bridge_models"
+                if string match -q 'anthropic/*' -- "$opencode_model"
+                    set -a _ls "set -gx CROSS_PROVIDER_OPENCODE_MODEL openai/gpt-5.5"
+                else
+                    set -a _ls "set -gx CROSS_PROVIDER_OPENCODE_MODEL anthropic/claude-opus-4-6"
+                end
             end
         end
         test -n "$bridge_models"; and set -a _ls "set -gx CROSS_PROVIDER_MODELS $bridge_models"
@@ -1962,12 +2008,15 @@ $prompt_suffix"
             "    echo 'Pulling model $local_model...'" \
             "    ollama pull $local_model" \
             end \
-            '' \
-            '# Bridge Claude Code to local Ollama' \
-            'set -gx ANTHROPIC_BASE_URL http://localhost:11434' \
-            'set -gx ANTHROPIC_API_KEY ollama' \
-            "set -gx ANTHROPIC_MODEL $local_model" \
             ''
+        if not $use_codex
+            set -a _ls \
+                '# Bridge Claude Code fallback to local Ollama' \
+                'set -gx ANTHROPIC_BASE_URL http://localhost:11434' \
+                'set -gx ANTHROPIC_API_KEY ollama' \
+                "set -gx ANTHROPIC_MODEL $local_model" \
+                ''
+        end
     end
 
     set -l prompt_cmd_file "$instance_env/prompt-cmd.txt"
@@ -1979,7 +2028,7 @@ $prompt_suffix"
 
     if $use_codex
         # --- OpenCode harness ---
-        # In --codex mode we launch OpenCode on the host and seed the TUI prompt.
+        # Launch OpenCode on the host and seed the TUI prompt.
         printf '%s' "$oneline_prompt" >$prompt_cmd_file
         set -l opencode_cmd opencode
         if test -n "$opencode_model"
@@ -2481,9 +2530,9 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         set -l agent_harness claude
         if $use_codex
             if $bridge_mode
-                set agent_harness codex-bridge
+                set agent_harness opencode-bridge
             else
-                set agent_harness codex
+                set agent_harness opencode
             end
         end
 

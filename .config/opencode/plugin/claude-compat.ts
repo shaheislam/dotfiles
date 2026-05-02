@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs"
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { Plugin } from "@opencode-ai/plugin"
 
@@ -67,9 +68,14 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
   const sessionContext = new Set<string>()
   const transientContext: string[] = []
   const messageRoles = new Map<string, string>()
+  const messageTexts = new Map<string, string>()
+  const messageOrder: string[] = []
   const seenPromptMessages = new Set<string>()
   let currentSessionID: string | null = null
   let shutdownHandled = false
+  let bridgeReviewRunning = false
+  let lastBridgeReviewedAssistant = ""
+  let currentOpenCodeModel = process.env.OPENCODE_PRIMARY_MODEL || process.env.OPENCODE_MODEL || ""
 
   function addSessionContext(text: string) {
     const normalized = normalizeMessage(text)
@@ -85,7 +91,11 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
   }
 
-  async function runScript(script: string, payload?: Record<string, unknown>): Promise<HookResult> {
+  async function runScript(
+    script: string,
+    payload?: Record<string, unknown>,
+    extraEnv: Record<string, string> = {},
+  ): Promise<HookResult> {
     if (!existsSync(script)) {
       return { stdout: "", stderr: "", exitCode: 0 }
     }
@@ -94,6 +104,7 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
       cwd: projectDir,
       env: {
         ...process.env,
+        ...extraEnv,
         CLAUDE_PROJECT_DIR: projectDir,
         PROJECT_ROOT: projectDir,
         REPO_ROOT: projectDir,
@@ -137,7 +148,11 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     return { stdout: stdout.trim(), stderr: stderr.trim(), exitCode }
   }
 
-  function runScriptSync(script: string, payload?: Record<string, unknown>): HookResult {
+  function runScriptSync(
+    script: string,
+    payload?: Record<string, unknown>,
+    extraEnv: Record<string, string> = {},
+  ): HookResult {
     if (!existsSync(script)) {
       return { stdout: "", stderr: "", exitCode: 0 }
     }
@@ -146,6 +161,7 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
       cwd: projectDir,
       env: {
         ...process.env,
+        ...extraEnv,
         CLAUDE_PROJECT_DIR: projectDir,
         PROJECT_ROOT: projectDir,
         REPO_ROOT: projectDir,
@@ -325,6 +341,125 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     await runScript(hookPath("log-tool-failure.py"), payload)
   }
 
+  function rememberMessage(id: string, role?: string, text?: string) {
+    if (!messageOrder.includes(id)) {
+      messageOrder.push(id)
+    }
+    if (role) {
+      messageRoles.set(id, role)
+    }
+    if (text !== undefined) {
+      messageTexts.set(id, text)
+    }
+  }
+
+  function lastAssistantText() {
+    for (let index = messageOrder.length - 1; index >= 0; index -= 1) {
+      const id = messageOrder[index]
+      if (messageRoles.get(id) !== "assistant") {
+        continue
+      }
+      const text = messageTexts.get(id)?.trim()
+      if (text) {
+        return text
+      }
+    }
+    return ""
+  }
+
+  function openCodeBridgeEnabled() {
+    return process.env.OPENCODE_CROSS_PROVIDER_BRIDGE === "1" || process.env.CROSS_PROVIDER_BRIDGE === "1"
+  }
+
+  function defaultOpenCodeReviewerModel() {
+    const executorModel = currentOpenCodeModel || process.env.OPENCODE_PRIMARY_MODEL || process.env.OPENCODE_MODEL || "openai/gpt-5.5"
+    if (executorModel.startsWith("anthropic/")) {
+      return process.env.OPENCODE_BRIDGE_OPENAI_MODEL || "openai/gpt-5.5"
+    }
+    return process.env.OPENCODE_BRIDGE_ANTHROPIC_MODEL || "anthropic/claude-opus-4-6"
+  }
+
+  function openCodeBridgeEnv() {
+    const env: Record<string, string> = {
+      CROSS_PROVIDER_BRIDGE: "1",
+    }
+
+    if (!process.env.CROSS_PROVIDER_ORDER) {
+      env.CROSS_PROVIDER_ORDER = process.env.OPENCODE_BRIDGE_ORDER || "opencode"
+    }
+    if (process.env.OPENCODE_BRIDGE_MODE && !process.env.CROSS_PROVIDER_MODE) {
+      env.CROSS_PROVIDER_MODE = process.env.OPENCODE_BRIDGE_MODE
+    }
+    if (!process.env.CROSS_PROVIDER_OPENCODE_MODEL && !process.env.CROSS_PROVIDER_MODELS) {
+      env.CROSS_PROVIDER_OPENCODE_MODEL = process.env.OPENCODE_BRIDGE_MODEL || defaultOpenCodeReviewerModel()
+    }
+    if (process.env.OPENCODE_BRIDGE_TIMEOUT && !process.env.CROSS_PROVIDER_TIMEOUT) {
+      env.CROSS_PROVIDER_TIMEOUT = process.env.OPENCODE_BRIDGE_TIMEOUT
+    }
+    if (process.env.OPENCODE_BRIDGE_LOG && !process.env.CROSS_PROVIDER_LOG) {
+      env.CROSS_PROVIDER_LOG = process.env.OPENCODE_BRIDGE_LOG
+    }
+
+    return env
+  }
+
+  function parseBridgeDecision(stdout: string) {
+    if (!stdout) {
+      return ""
+    }
+
+    try {
+      const parsed = JSON.parse(stdout) as { decision?: string; reason?: string }
+      if (parsed.decision === "block" && parsed.reason) {
+        return parsed.reason
+      }
+    } catch {
+      // Non-JSON bridge output is still useful context if the script emitted it.
+    }
+
+    return stdout
+  }
+
+  async function runOpenCodeBridgeReview() {
+    if (!openCodeBridgeEnabled() || bridgeReviewRunning) {
+      return
+    }
+
+    const assistantText = lastAssistantText()
+    if (!assistantText || assistantText === lastBridgeReviewedAssistant) {
+      return
+    }
+
+    bridgeReviewRunning = true
+    const bridgeDir = mkdtempSync(join(tmpdir(), "opencode-bridge-"))
+    const transcriptPath = join(bridgeDir, "transcript.jsonl")
+
+    try {
+      writeFileSync(transcriptPath, `${JSON.stringify({ role: "assistant", content: assistantText })}\n`, "utf8")
+      const result = await runScript(
+        hookPath("cross-provider-bridge.sh"),
+        {
+          session_id: currentSessionID ?? "opencode",
+          stop_hook_active: false,
+          transcript_path: transcriptPath,
+        },
+        openCodeBridgeEnv(),
+      )
+      lastBridgeReviewedAssistant = assistantText
+
+      const review = parseBridgeDecision(result.stdout)
+      if (review) {
+        addTransientContext(
+          `OpenCode adversarial bridge review returned concerns:\n\n${review}\n\nAddress these concerns before considering the task complete.`,
+        )
+        handleNotification("Adversarial bridge review returned concerns", "OpenCode Bridge", "warning")
+      }
+    } finally {
+      rmSync(bridgeDir, { recursive: true, force: true })
+      bridgeReviewRunning = false
+    }
+  }
+
   async function collectSessionStartContext() {
     await Promise.all([
       runScript(join(DOTFILES_ROOT, "scripts", "fix-hookify-imports.sh")),
@@ -384,12 +519,21 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
           transientContext.length = 0
           seenPromptMessages.clear()
           messageRoles.clear()
+          messageTexts.clear()
+          messageOrder.length = 0
+          lastBridgeReviewedAssistant = ""
           await collectSessionStartContext()
           break
         }
 
         case "message.updated": {
-          messageRoles.set(event.properties.info.id, event.properties.info.role)
+          const info = event.properties.info as { id?: string; role?: string; modelID?: string }
+          if (info?.id) {
+            rememberMessage(info.id, info.role)
+          }
+          if (typeof info?.modelID === "string" && info.modelID) {
+            currentOpenCodeModel = info.modelID
+          }
           break
         }
 
@@ -398,6 +542,8 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
           if (part.type !== "text") {
             break
           }
+
+          rememberMessage(part.messageID, undefined, part.text ?? "")
 
           if (messageRoles.get(part.messageID) !== "user") {
             break
@@ -433,6 +579,7 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
         case "session.status": {
           if (event.properties.status.type === "idle") {
             await runScript(tmuxHookPath("tmux-agent-stop.sh"))
+            await runOpenCodeBridgeReview()
           }
           break
         }

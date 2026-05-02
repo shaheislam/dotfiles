@@ -236,7 +236,7 @@ The persona-based agent system complements Claude Code's native **Agent Teams** 
 | Single-session domain expertise | Personas (`--persona-*` flags) |
 | Parallel same-repo collaboration | Agent Teams (teammates with shared task list) |
 | Isolated multi-branch work | `gwt-parallel` (devcontainer + worktree per branch) |
-| Autonomous ticket execution | `gwt-ticket` + ralph-loop |
+| Autonomous ticket execution | `gwt-ticket` + OpenCode + nvim |
 
 ### Combining Personas with Agent Teams
 Teammates spawned via Agent Teams load CLAUDE.md, so persona auto-activation works within each teammate's session. When creating teams, leverage this by assigning domain-specific context:

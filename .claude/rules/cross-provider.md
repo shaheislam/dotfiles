@@ -6,12 +6,12 @@ paths:
 
 # Cross-Provider Reasoning Bridge
 
-Stop hook for correlation-bias mitigation — sends reasoning to independent AI providers.
+Claude Stop hook and OpenCode advisory bridge for correlation-bias mitigation — sends reasoning to independent AI providers.
 
-**Enable**: `CROSS_PROVIDER_BRIDGE=1 claude`
+**Enable**: `CROSS_PROVIDER_BRIDGE=1 claude` or `gwtt --bridge` for OpenCode-first worktrees
 **Providers**: Codex, Gemini, Ollama, DeepSeek, Claude, OpenCode
-**Key env vars**: `CROSS_PROVIDER_ORDER` (default: `codex,opencode`), `CROSS_PROVIDER_MODE` (`review|redteam|steelman|assumptions`), `CROSS_PROVIDER_MAX_ITERATIONS` (default: 3)
-**Hook**: `.claude/hooks/cross-provider-bridge.sh` (command type, not prompt/agent)
+**Key env vars**: `CROSS_PROVIDER_ORDER` (Claude hook default: `codex,opencode`; OpenCode advisory default: `opencode` sidecar reviewer model), `CROSS_PROVIDER_MODE` (`review|redteam|steelman|assumptions`), `CROSS_PROVIDER_MAX_ITERATIONS` (default: 3)
+**Hook**: `.claude/hooks/cross-provider-bridge.sh` (blocking Stop hook in Claude; advisory context injection in OpenCode)
 
 ## Claude Pipeline (Multi-Model Reasoning Chains)
 `claude-pipeline` / `cpipe`. Default: opus→sonnet. Docs: `docs/claude-pipeline.md`.

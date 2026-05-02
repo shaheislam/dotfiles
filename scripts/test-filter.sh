@@ -953,6 +953,10 @@ test_opencode() {
     run_test "OpenCode Claude compat runs plan-watch" "grep -q 'plan-watch.sh' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
     run_test "OpenCode Claude compat injects JFDI prompt context" "grep -q 'prompt-inject-context.py' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
     run_test "OpenCode Claude compat handles multiedit" "grep -q 'multiedit' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat runs adversarial bridge" "grep -q 'cross-provider-bridge.sh' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat supports bridge env" "grep -q 'OPENCODE_CROSS_PROVIDER_BRIDGE' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat defaults bridge to OpenCode" "grep -q 'OPENCODE_BRIDGE_ORDER || \"opencode\"' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat sets sidecar reviewer model" "grep -q 'CROSS_PROVIDER_OPENCODE_MODEL' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
     run_test "OpenCode OpenAI rotate plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/openai-rotate.ts' ]"
     run_test "OpenCode project env plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/project-env.ts' ]"
     run_test "OpenCode project env plugin sets CLAUDE_PROJECT_DIR" "grep -q 'CLAUDE_PROJECT_DIR' '$DOTFILES_ROOT/.config/opencode/plugin/project-env.ts'"
@@ -973,6 +977,11 @@ test_opencode() {
     run_test "OpenCode doctor fish wrapper syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/opencode-doctor.fish'"
 
     run_test "gwt-ticket has OpenCode doctor preflight" "grep -q 'opencode/doctor.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket defaults to OpenCode" "grep -q 'set -l use_codex true' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket has OpenCode explicit flag" "grep -q -- 'case --opencode --codex' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket has Claude fallback flag" "grep -q -- 'case --claude' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket bridge defaults to OpenCode reviewer" "grep -q 'CROSS_PROVIDER_ORDER opencode' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket records OpenCode bridge harness" "grep -q 'opencode-bridge' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
 
     run_test "OpenCode usage-check script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/usage-check.sh' ]"
     run_test "OpenCode usage-check script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/usage-check.sh' ]"

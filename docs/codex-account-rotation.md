@@ -72,34 +72,34 @@ codex-accounts status
 
 ## Using with gwt-ticket
 
-### Basic Codex mode
+### OpenCode bridge reviewer
 
 ```fish
-# Uses Codex as primary agent (with account rotation)
-gwt-ticket TICKET-123 "Fix the bug" "Description of the fix" --codex
+# OpenCode is primary; Codex can be an adversarial bridge reviewer.
+gwt-ticket TICKET-123 "Fix the bug" "Description of the fix" --bridge --bridge-providers codex
 ```
 
-This launches Codex in a tmux pane using `codex-rotate exec --full-auto`, which automatically rotates through your enrolled accounts.
+This launches OpenCode in the worktree pane and uses Codex through the cross-provider bridge. Codex account rotation happens through `scripts/codex/run-with-rotation.sh` when the bridge invokes Codex.
 
-### Bridge review mode (Codex writes, Claude reviews)
+### Bridge review mode
 
 ```fish
-# Codex executes, Claude reviews the diff, iterates up to 3 times
-gwt-ticket TICKET-123 "Fix the bug" "Description" --codex --bridge
+# OpenCode executes, independent providers review, concerns return to OpenCode context.
+gwt-ticket TICKET-123 "Fix the bug" "Description" --bridge
 ```
 
 Bridge options:
 ```fish
 --bridge-iterations 5     # Max review cycles (default: 3)
---bridge-model claude-sonnet-4-6  # Claude model for reviews
+--bridge-model gpt-5.5     # Model override for the first bridge provider
 --bridge-mode redteam     # Review style: review|redteam|steelman|assumptions
 ```
 
 ### Crown tournament (multi-agent competition)
 
 ```fish
-# 3 contestants: 2 Claude + 1 Codex, competing on the same ticket
-gwt-ticket --crown 3 --crown-agents claude,claude,codex TICKET "Fix" "Desc"
+# 3 contestants: 2 OpenCode + 1 Claude fallback, competing on the same ticket
+gwt-ticket --crown 3 --crown-agents opencode,opencode,claude TICKET "Fix" "Desc"
 ```
 
 ## How Rotation Works

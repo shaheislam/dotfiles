@@ -89,6 +89,40 @@ printf '%s\n' "$*" >>"${TEST_OSASCRIPT_OUTPUT:?}"
 EOF
 chmod +x "$TMPDIR/bin/osascript"
 
+cat >"$TMPDIR/bin/opencode" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+if [ "${1:-}" = "run" ]; then
+	shift
+	model=""
+	if [ "${1:-}" = "--model" ]; then
+		model="${2:-}"
+		shift 2
+	fi
+	printf '%s\n' "$model" >"${TEST_OPENCODE_BRIDGE_MODEL_OUTPUT:?}"
+	printf 'CONCERNS: synthetic bridge concern from %s\n' "$model"
+	exit 0
+fi
+printf 'unexpected opencode invocation: %s\n' "$*" >&2
+exit 1
+EOF
+chmod +x "$TMPDIR/bin/opencode"
+
+cat >"$TMPDIR/bin/opencode-preflight" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+exit 0
+EOF
+chmod +x "$TMPDIR/bin/opencode-preflight"
+
+cat >"$TMPDIR/bin/timeout" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+shift
+exec "$@"
+EOF
+chmod +x "$TMPDIR/bin/timeout"
+
 HARNESS="$TMPDIR/harness.mjs"
 cat >"$HARNESS" <<'EOF'
 const pluginUrl = new URL(`file://${process.env.OPENCODE_CLAUDE_COMPAT_PLUGIN}`)
@@ -183,6 +217,16 @@ await hooks["tool.execute.error"](
   { error: "synthetic tool failure" },
 )
 
+await hooks.event({ event: { type: "message.updated", properties: { info: { id: "assistant-1", role: "assistant", modelID: "openai/gpt-5.5" } } } })
+await hooks.event({ event: { type: "message.part.updated", properties: { part: { type: "text", messageID: "assistant-1", text: "Implemented synthetic bridge target." } } } })
+await hooks.event({ event: { type: "session.status", properties: { status: { type: "idle" } } } })
+
+const bridgeTransform = { system: [] }
+await hooks["experimental.chat.system.transform"]({}, bridgeTransform)
+if (!bridgeTransform.system.some((entry) => entry.includes("synthetic bridge concern"))) {
+  fail("OpenCode bridge did not inject adversarial review context")
+}
+
 await hooks.event({ event: { type: "tui.toast.show", properties: { title: "Test", message: "toast", variant: "info" } } })
 await hooks.event({ event: { type: "server.instance.disposed", properties: {} } })
 
@@ -192,6 +236,7 @@ console.log("PASS protected file guard")
 console.log("PASS read context injection")
 console.log("PASS changelog context")
 console.log("PASS tool failure logging")
+console.log("PASS adversarial bridge context")
 console.log("PASS shutdown hooks")
 console.log("PASS claude compat validation complete")
 EOF
@@ -201,10 +246,19 @@ OPENCODE_CLAUDE_COMPAT_PLUGIN="$PLUGIN" \
 	TEST_SESSION_REPORT_OUTPUT="$TMPDIR/session-report.json" \
 	TEST_JFDI_OUTPUT="$TMPDIR/jfdi.log" \
 	TEST_OSASCRIPT_OUTPUT="$TMPDIR/osascript.log" \
+	TEST_OPENCODE_BRIDGE_MODEL_OUTPUT="$TMPDIR/opencode-bridge-model.log" \
 	OPENCODE_JFDI_PROJECT_DIR="$TMPDIR/jfdi" \
+	OPENCODE_CROSS_PROVIDER_BRIDGE=1 \
+	OPENCODE_BRIDGE_TIMEOUT=5 \
+	CROSS_PROVIDER_OPENCODE_PREFLIGHT="$TMPDIR/bin/opencode-preflight" \
 	PATH="$TMPDIR/bin:$PATH" \
 	HOME="$TEST_HOME" \
 	bun "$HARNESS"
+
+grep -q 'anthropic/claude-opus-4-6' "$TMPDIR/opencode-bridge-model.log" || {
+	echo "FAIL OpenCode bridge did not choose Anthropic reviewer for OpenAI executor" >&2
+	exit 1
+}
 
 grep -R -q 'synthetic tool failure' "$TEST_HOME/.claude/hooks/logs" || {
 	echo "FAIL tool failure hook did not write failure log" >&2

@@ -19,14 +19,14 @@ Isolated parallel dev environments: worktree name = devcontainer instance name â
 | `gwt-parallel` | - | Launch multiple worktrees in tmux windows |
 | `gwt-status` | `gwts` | Show worktree + devcontainer status table |
 | `gwt-cleanup` | `gwtclean` | Remove stale devcontainer instances |
-| `gwt-ticket` | - | Autonomous ticket execution (worktree + ralph-loop) |
+| `gwt-ticket` | - | Autonomous ticket execution (OpenCode-first worktree + nvim; `--claude --devcon` fallback) |
 | `gwt-doctor` | `gwtdoc` | Agent orchestration health check |
 
 Setup scripts run automatically: `.devcontainer/setup.sh` or `scripts/setup-worktree.sh`
 
 ## Subscription Profiles
 Multiple Claude Max subscriptions via `claude-sub` (`csub`). Profile dirs: `~/.claude-<name>/`.
-Usage: `gwtt --sub personal`, `gwtc --sub work`.
+Usage: `gwtt --claude --sub personal`, `gwtc --sub work`.
 
 ## Auto-Login
 Bind-mounts host `~/.claude` to `/home/node/.claude` in containers.

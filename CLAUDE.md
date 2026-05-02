@@ -70,7 +70,7 @@
 | `gwt-parallel` | - | Launch multiple worktrees in tmux windows |
 | `gwt-status` | `gwts` | Show worktree + devcontainer status table |
 | `gwt-cleanup` | `gwtclean` | Remove stale devcontainer instances |
-| `gwt-ticket` | `gwtt` | Autonomous ticket execution (worktree + ralph-loop). Supports `--codex` for Codex CLI, `--bridge` for iterative Codex→Claude review |
+| `gwt-ticket` | `gwtt` | Autonomous ticket execution (worktree + OpenCode + nvim). OpenCode is default; use `--claude` for Claude Code fallback and `--bridge` for adversarial review |
 | `gwt-doctor` | `gwtdoc` | Agent orchestration health check (detects Claude + Codex) |
 | `codex-accounts` | - | Manage Codex CLI OAuth account profiles (`add`, `remove`, `list`, `status`, `1p-push`, `1p-pull`, `1p-list`, `1p-sync`) |
 | `codex-rotate` | - | Codex wrapper with round-robin account rotation + usage-limit failover |
@@ -105,7 +105,7 @@ Per-worktree `.claude/CHANGELOG.md` — append-only progress log complementing p
 **CRITICAL**: ALWAYS maintain parity between Claude Desktop (`claude_desktop_config.json`) and CLI (`claude mcp add` in `setup.sh`). Use `bunx` not `npx`, `uvx` for AWS MCPs, `pipx run` for Python MCPs. Details in `.claude/rules/mcp-servers.md`.
 
 ### Ticket Execution & Queue
-`/todo` creates tickets, `/ticket-execute` runs them, `gwt-ticket` orchestrates worktree + ralph-loop. Queue: `gwt-queue add|list|start|stop|status`. Details in `.claude/rules/ticket-execution.md`.
+`/todo` creates tickets, `/ticket-execute` runs them, `gwt-ticket` orchestrates worktree + OpenCode + nvim by default. Queue: `gwt-queue add|list|start|stop|status`. Details in `.claude/rules/ticket-execution.md`.
 
 ### Docker Container Testing
 Test cross-platform via Colima + Docker. Location: `scripts/docker/`. ALWAYS test cross-platform changes in containers.
@@ -169,8 +169,8 @@ Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit`-compatible ho
 ### Claude Pipeline & Cross-Provider Bridge
 - **Pipeline**: `claude-pipeline` / `cpipe`. Presets: `review`, `cheap`, `local`, `council`, `redteam`. Docs: `docs/claude-pipeline.md`.
 - **Cross-Provider Bridge**: `CROSS_PROVIDER_BRIDGE=1 claude`. Providers: Codex, Gemini, Ollama, DeepSeek. Details in `.claude/rules/cross-provider.md`.
-- **Codex Bridge Review**: `gwtt --codex --bridge TICKET-123` runs iterative Codex→Claude review loop. Config: `.codex/config.toml`. Script: `scripts/codex-bridge-review.sh`.
-- **Codex Account Rotation**: `codex-rotate` wraps codex with round-robin rotation across multiple OAuth accounts. Profiles in `~/.codex/accounts/<name>/auth.json` (machine-local, gitignored). Enroll: `codex-accounts add <name>`. `gwt-ticket --codex` uses `codex-rotate` automatically.
+- **OpenCode Bridge Review**: `gwtt --bridge TICKET-123` runs OpenCode with an OpenCode sidecar reviewer model by default. OpenAI executors review with Anthropic; Anthropic executors review with OpenAI. Concerns are injected back into OpenCode context through `.config/opencode/plugin/claude-compat.ts`; use `--bridge-mode redteam` for hostile review or `--bridge-providers` for external harnesses.
+- **Codex Account Rotation**: `codex-rotate` wraps codex with round-robin rotation across multiple OAuth accounts. Profiles in `~/.codex/accounts/<name>/auth.json` (machine-local, gitignored). Enroll: `codex-accounts add <name>`. OpenCode bridge review can use Codex as an adversarial reviewer.
 - **Codex 1Password Sync**: `codex-accounts 1p-push|1p-pull|1p-list|1p-sync [--vault VAULT] [--force]`. Stores auth tokens as 1Password Secure Notes (tag: `codex-account`, vault: `Private`). Conflict detection via `.1p-meta` (content hash + remote timestamp). `1p-sync` is local-first: pushes local, pulls remote-only.
 - **DQS**: Council (`cpipe --preset council`), Red Team, First Principles. Docs: `docs/decision-quality-system.md`.
 
