@@ -2066,10 +2066,26 @@ phase_11_optional_features() {
     # Only run if explicitly enabled via environment variables
     if [[ "$DRY_RUN" == "true" ]]; then
         print_header "Phase 11: Optional Features"
-        print_warning "DRY RUN: Skipping optional Nix/Pulse installations"
+        print_warning "DRY RUN: Skipping optional Nix/Pulse/Caveman installations"
         mark_step_complete "optional_features"
         return 0
     fi
+
+    if [[ "${ENABLE_CAVEMAN:-false}" == "true" ]]; then
+        print_header "Phase 11: Optional Features - Caveman Compact Output"
+
+        if [[ -f "$DOTFILES_ROOT/scripts/setup-caveman.sh" ]]; then
+            print_step "Installing Caveman as an on-demand skill/plugin..."
+            if bash "$DOTFILES_ROOT/scripts/setup-caveman.sh"; then
+                print_success "Caveman configured for explicit use"
+            else
+                print_warning "Caveman setup had issues (non-critical)"
+            fi
+        else
+            print_warning "Caveman setup script not found"
+        fi
+    fi
+
     if [[ "${ENABLE_NIX:-false}" == "true" ]]; then
         print_header "Phase 11: Optional Features - Nix Package Manager"
 

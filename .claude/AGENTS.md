@@ -1,6 +1,6 @@
 # AGENTS.md - Claude Code Agent System Reference
 
-Specialized agent system for Claude Code with 15 subagent files (12 domain specialists + 3 project-specific).
+Specialized agent system for Claude Code with domain, project-specific, and compact-output subagent files.
 
 ## Shell Reminder
 
@@ -81,6 +81,18 @@ Each agent is a **Claude Code subagent file** (`.claude/agents/*.md`) with YAML 
 | [shell-expert](agents/shell-expert.md) | inherit | `skills: fish-reload, dotfiles-sync` | Shell functions, scripts, Fish/Zsh parity |
 | [test-runner](agents/test-runner.md) | haiku | `background: true`, `maxTurns: 10` | Running test suites, reporting results |
 | [dotfiles-doctor](agents/dotfiles-doctor.md) | haiku | `maxTurns: 15` | Stow validation, tool checks, theme consistency |
+
+### Compact Caveman Agents
+
+Use these when the task has a known shape and the parent context needs operational signal without prose. Do not use them for open-ended architecture, security threat modeling, mentoring, or requirements discovery.
+
+| Agent | Model | Extra Features | Primary Use Cases |
+|-------|-------|----------------|-------------------|
+| [caveman-investigator](agents/caveman-investigator.md) | haiku | `maxTurns: 8` | Root-cause evidence, file location, compact debug handoff |
+| [caveman-reviewer](agents/caveman-reviewer.md) | inherit | `maxTurns: 10` | Findings-only review with severity, file:line, fix |
+| [caveman-tester](agents/caveman-tester.md) | haiku | `background: true`, `maxTurns: 8` | Targeted validation receipts |
+| [caveman-builder](agents/caveman-builder.md) | inherit | `maxTurns: 12` | Surgical execution of already-defined small changes |
+| [caveman-checklist](agents/caveman-checklist.md) | haiku | `maxTurns: 6` | Terse execution checklist for already-scoped work |
 
 ## Agent Activation
 
