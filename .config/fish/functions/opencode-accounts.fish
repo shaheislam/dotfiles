@@ -302,6 +302,17 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
                 end
             end
 
+            # Probe current account first — only rotate if it's actually rate-limited
+            if test -f "$auth_file"
+                set -l current_token (jq -r '.openai.access // empty' "$auth_file" 2>/dev/null)
+                if test -n "$current_token"
+                    bash "$usage_check" --quiet --token "$current_token"
+                    if test $status -eq 0
+                        return 0
+                    end
+                end
+            end
+
             # Try each saved profile
             if test -f "$accounts_file"
                 for name in (cat "$accounts_file")
