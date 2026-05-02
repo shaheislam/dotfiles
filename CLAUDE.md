@@ -144,10 +144,10 @@ Four browser tools for AI agents, each with different strengths:
   - tmux: keep `set -g mouse on` (already in `.tmux.conf`) so wheel scrolling reaches Claude Code. Fullscreen rendering is not supported inside `tmux -CC` (iTerm2 integration mode), so stick to regular tmux sessions when launching Claude in fullscreen.
   - Native selection: when mouse capture is disruptive (copy-on-select workflows, tmux copy-mode, etc.) combine fullscreen rendering with `CLAUDE_CODE_DISABLE_MOUSE=1` so the terminal keeps native selection.
 
-### Claude Code Hooks
-Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `docs/claude-code-hooks.md`.
+### Agent Harness Hooks
+Lifecycle hooks live in `.claude/hooks/` for Claude Code compatibility and are also reused by OpenCode through `.config/opencode/plugin/claude-compat.ts`. Details in `.claude/rules/hooks.md`, `docs/claude-code-hooks.md`, and `docs/opencode-hook-parity.md`.
 
-**Adding hooks**: Create executable in `.claude/hooks/` → wire in `.claude/settings.json` → add tests → update docs.
+**Adding hooks**: Create executable in `.claude/hooks/` → wire Claude in `.claude/settings.json` and OpenCode in `.config/opencode/plugin/claude-compat.ts` when relevant → add tests → update docs.
 
 **Settings Edit Workaround** ([#37029](https://github.com/anthropics/claude-code/issues/37029)): `--dangerously-skip-permissions` still prompts for edits to `~/.claude/settings*.json`. A PreToolUse hook (`settings-edit-redirect.py`) blocks Edit/Write on these files and redirects to `jq` via Bash. When modifying Claude settings, ALWAYS use Bash + jq instead of Edit.
 
@@ -159,8 +159,8 @@ Lifecycle hooks in `.claude/hooks/`. Details in `.claude/rules/hooks.md` and `do
 ### LSP Integration
 9 LSP servers via `boostvolt/claude-code-lsps` (pyright, typescript, gopls, rust-analyzer, bash, yaml, terraform, lua, nix). Reuses Nix devShell binaries. Fish: `cc-lsp status|install|doctor`. Details in `.claude/rules/lsp-nix.md`.
 
-### Neovim-Claude Bridge
-Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit` hook. Fish: `cc-bridge status|cat|clean`. Docs: `docs/nvim-claude-bridge.md`.
+### Neovim Agent Bridge
+Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit`-compatible hook. OpenCode consumes it via `claude-compat.ts`; Claude Code consumes it via `.claude/settings.json`. Fish: `cc-bridge status|cat|clean`. Docs: `docs/nvim-claude-bridge.md`.
 
 ### Remote Control & Agent Teams
 - **Remote Control**: `cc-rc start|interactive|status|enable|disable`. Launch commands use `--remote-control` flag for deterministic per-session enablement. Config fallback via `enableRemoteControl` in `~/.claude.json`.

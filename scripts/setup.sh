@@ -23,6 +23,8 @@ SKIP_PACKAGES=false
 SKIP_DOTFILES=false
 SKIP_SHELLS=false
 SKIP_FONTS_APPS=false
+ENABLE_CLAUDE_CODE_BACKUP="${ENABLE_CLAUDE_CODE_BACKUP:-true}"
+ENABLE_CLAUDE_HEAVY_SETUP="${ENABLE_CLAUDE_HEAVY_SETUP:-false}"
 
 # ============================================================================
 # Help
@@ -82,6 +84,9 @@ EXAMPLES:
     # Enable optional features (Nix, Pulse, Pi-Hole, Self-Hosted LLM, SonarQube)
     ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true ENABLE_SELFHOST_LLM=true ENABLE_SONARQUBE=true $0 --profile comprehensive
 
+    # Enable Claude Code heavy backup ecosystem (OpenCode-first setups skip this by default)
+    ENABLE_CLAUDE_HEAVY_SETUP=true $0 --profile comprehensive
+
     # Clone personal repositories (set environment variables)
     OBSIDIAN_REPO=git@github.com:user/obsidian.git \\
     NVIM_REPO=git@github.com:user/nvim.git \\
@@ -93,6 +98,8 @@ ENVIRONMENT VARIABLES:
     ENABLE_PIHOLE=true      Enable Pi-hole DNS ad blocker via Colima + Docker (Phase 11)
     ENABLE_SELFHOST_LLM=true  Enable self-hosted LLM stack (Ollama + Open WebUI) (Phase 11)
     ENABLE_SONARQUBE=true   Enable SonarQube code quality server via Colima + Docker (Phase 11)
+    ENABLE_CLAUDE_CODE_BACKUP=true  Install/verify thin Claude Code CLI backup (Phase 4, default true)
+    ENABLE_CLAUDE_HEAVY_SETUP=true  Enable Claude MCPs/plugins/LSPs/router/Recall/Agent Teams (Phase 4, default false)
     OBSIDIAN_REPO=<url>     Clone Obsidian vault from repository (Phase 10)
     NVIM_REPO=<url>         Clone personal Neovim config (Phase 10)
 
@@ -209,6 +216,7 @@ parse_args() {
 
     # Export for child modules
     export PROFILE DRY_RUN NO_CONFIRM VERBOSE SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
+    export ENABLE_CLAUDE_CODE_BACKUP ENABLE_CLAUDE_HEAVY_SETUP
     export DOTFILES_ROOT SCRIPT_DIR
 }
 
@@ -408,7 +416,11 @@ phase_1_core_packages() {
     # Reconcile Brewfile — installs missing, upgrades outdated
     if command_exists brew && [[ -f "$DOTFILES_ROOT/homebrew/Brewfile" ]]; then
         print_step "Reconciling Brewfile..."
-        brew bundle --file="$DOTFILES_ROOT/homebrew/Brewfile" --no-lock 2>&1 || log_verbose "Brewfile reconciliation completed with warnings"
+        if [[ "$DRY_RUN" == "true" ]]; then
+            print_warning "DRY RUN: Would run brew bundle --file=$DOTFILES_ROOT/homebrew/Brewfile"
+        else
+            brew bundle --file="$DOTFILES_ROOT/homebrew/Brewfile" 2>&1 || log_verbose "Brewfile reconciliation completed with warnings"
+        fi
     fi
 
     install_packages_from_profile "$PROFILE" "core"
@@ -619,8 +631,11 @@ phase_4_cloud_tools() {
         return 0
     fi
 
-    # Claude Code CLI — native installer (idempotent: install → clean legacy → verify)
-    print_step "Configuring Claude Code CLI (native installer)..."
+    # Claude Code CLI remains a thin backup/auth path for OpenCode subscription routing.
+    if [[ "$ENABLE_CLAUDE_CODE_BACKUP" != "true" ]]; then
+        log_verbose "Skipping Claude Code CLI backup (ENABLE_CLAUDE_CODE_BACKUP=false)"
+    else
+        print_step "Configuring Claude Code CLI backup (native installer)..."
 
     # Step 1: Install/update native binary using any available claude
     local native_claude="$HOME/.local/bin/claude"
@@ -699,6 +714,7 @@ phase_4_cloud_tools() {
         else
             print_warning "Claude wrapper verification failed"
         fi
+    fi
     fi
 
     # Gemini CLI is managed via Homebrew; verify the binary is available after package install.
@@ -886,10 +902,18 @@ phase_4_cloud_tools() {
     }
 
     # Run tool installs sequentially (brew doesn't support parallel operations)
-    _install_recall
+    if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]]; then
+        _install_recall
+    else
+        log_verbose "Skipping Recall Claude conversation search (ENABLE_CLAUDE_HEAVY_SETUP=false)"
+    fi
     _install_beads
     _install_entire
-    _install_ccr
+    if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]]; then
+        _install_ccr
+    else
+        log_verbose "Skipping Claude Code Router (ENABLE_CLAUDE_HEAVY_SETUP=false)"
+    fi
     _install_codex
     _install_openclaw
     _install_opencode
@@ -917,7 +941,7 @@ phase_4_cloud_tools() {
     fi
 
     # Post-install: SonarQube Claude Code integration (secrets hooks + MCP server)
-    if command_exists sonar && command_exists claude; then
+    if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && command_exists sonar && command_exists claude; then
         if sonar auth status 2>&1 | grep -q "No saved connection"; then
             log_verbose "SonarQube: no auth configured. Run 'sonar auth login' then 'sonar integrate claude -g' to enable Claude Code integration"
         else
@@ -932,7 +956,7 @@ phase_4_cloud_tools() {
     fi
 
     # Setup Claude Code Router configuration
-    if [[ -f "$DOTFILES_ROOT/.config/claude-code-router/config.json" ]] && [[ ! -f "$HOME/.claude-code-router/config.json" ]]; then
+    if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && [[ -f "$DOTFILES_ROOT/.config/claude-code-router/config.json" ]] && [[ ! -f "$HOME/.claude-code-router/config.json" ]]; then
         print_step "Setting up Claude Code Router configuration..."
         mkdir -p "$HOME/.claude-code-router"
         ln -sf "$DOTFILES_ROOT/.config/claude-code-router/config.json" "$HOME/.claude-code-router/config.json"
@@ -999,46 +1023,34 @@ EAEOF
         fi
     fi
 
-    # Configure Claude Code MCP servers
-    if command_exists claude; then
-        print_step "Configuring Claude Code MCP servers..."
+    # agent-browser - AI-optimized headless browser CLI (ref-based interaction model)
+    # Complements Playwright MCP with persistent daemon + accessibility tree snapshots.
+    if command_exists agent-browser; then
+        print_step "Configuring agent-browser..."
+        agent-browser install </dev/null >/dev/null 2>&1 &&
+            print_success "agent-browser Chromium installed" ||
+            log_verbose "agent-browser Chromium install skipped (run 'agent-browser install' manually)"
+    fi
 
-        # Core MCP servers (sequential — all write to shared settings.json)
-        claude mcp add --scope user context7 bunx @upstash/context7-mcp >/dev/null 2>&1 || true
-        claude mcp add --scope user steampipe bunx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
-        claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user drawio bunx drawio-mcp-server >/dev/null 2>&1 || true
-        # deepwiki remains a Claude CLI-only SSE server; `.mcp.json` currently models stdio servers only.
-        claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse >/dev/null 2>&1 || true
-
-        # agent-browser - AI-optimized headless browser CLI (ref-based interaction model)
-        # Complements Playwright MCP with persistent daemon + accessibility tree snapshots
-        if command_exists agent-browser; then
-            print_step "Configuring agent-browser..."
-            agent-browser install </dev/null >/dev/null 2>&1 &&
-                print_success "agent-browser Chromium installed" ||
-                log_verbose "agent-browser Chromium install skipped (run 'agent-browser install' manually)"
-        fi
-
-        # PinchTab - Multi-instance Chrome orchestrator for AI agents
-        # Provides persistent profiles, multi-agent coordination, dashboard, stealth mode
-        print_step "Installing/updating PinchTab..."
-        if curl -fsSL https://pinchtab.com/install.sh | bash >/dev/null 2>&1; then
-            print_success "PinchTab installed/updated"
-        else
-            if command_exists pinchtab; then
-                print_success "PinchTab already installed"
-            else
-                print_warning "PinchTab install failed (run 'curl -fsSL https://pinchtab.com/install.sh | bash' manually)"
-            fi
-        fi
-
-        # Configure PinchTab defaults
+    # PinchTab - Multi-instance Chrome orchestrator for AI agents
+    # Provides persistent profiles, multi-agent coordination, dashboard, stealth mode.
+    print_step "Installing/updating PinchTab..."
+    if curl -fsSL https://pinchtab.com/install.sh | bash >/dev/null 2>&1; then
+        print_success "PinchTab installed/updated"
+    else
         if command_exists pinchtab; then
-            PINCHTAB_CONFIG_DIR="$HOME/.config/pinchtab"
-            mkdir -p "$PINCHTAB_CONFIG_DIR"
-            if [[ ! -f "$PINCHTAB_CONFIG_DIR/config.json" ]]; then
-                cat >"$PINCHTAB_CONFIG_DIR/config.json" <<'PTEOF'
+            print_success "PinchTab already installed"
+        else
+            print_warning "PinchTab install failed (run 'curl -fsSL https://pinchtab.com/install.sh | bash' manually)"
+        fi
+    fi
+
+    # Configure PinchTab defaults
+    if command_exists pinchtab; then
+        PINCHTAB_CONFIG_DIR="$HOME/.config/pinchtab"
+        mkdir -p "$PINCHTAB_CONFIG_DIR"
+        if [[ ! -f "$PINCHTAB_CONFIG_DIR/config.json" ]]; then
+            cat >"$PINCHTAB_CONFIG_DIR/config.json" <<'PTEOF'
 {
   "port": "9867",
   "headless": true,
@@ -1047,10 +1059,21 @@ EAEOF
   "navigateSec": 15
 }
 PTEOF
-                print_success "PinchTab config created at $PINCHTAB_CONFIG_DIR/config.json"
-            fi
-
+            print_success "PinchTab config created at $PINCHTAB_CONFIG_DIR/config.json"
         fi
+    fi
+
+    # Configure Claude Code heavy backup ecosystem only when explicitly requested.
+    if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && command_exists claude; then
+        print_step "Configuring Claude Code heavy backup integrations..."
+
+        # Core MCP servers (sequential — all write to shared settings.json)
+        claude mcp add --scope user context7 bunx @upstash/context7-mcp >/dev/null 2>&1 || true
+        claude mcp add --scope user steampipe bunx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
+        claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
+        claude mcp add --scope user drawio bunx drawio-mcp-server >/dev/null 2>&1 || true
+        # deepwiki remains a Claude CLI-only SSE server; `.mcp.json` currently models stdio servers only.
+        claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse >/dev/null 2>&1 || true
 
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"
@@ -1207,6 +1230,12 @@ PTEOF
                 ln -sf "$DOTFILES_ROOT/.claude/settings.json" "$target"
                 print_success "Claude Code settings linked (plugin preferences preserved)"
             fi
+        fi
+    else
+        if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]]; then
+            print_warning "Claude heavy setup requested but claude CLI is unavailable"
+        else
+            log_verbose "Skipping Claude MCPs/plugins/LSPs/router/Recall/Agent Teams (ENABLE_CLAUDE_HEAVY_SETUP=false)"
         fi
     fi
 
@@ -2006,7 +2035,7 @@ phase_10_advanced_features() {
     # Pre-export Claude Code credentials for devcontainer auto-login
     # Extracts OAuth tokens from macOS Keychain so devcontainers can authenticate automatically
     local export_script="$DOTFILES_ROOT/scripts/devcontainer/export-claude-credentials.sh"
-    if [[ -f "$export_script" ]] && [[ "$(uname)" == "Darwin" ]]; then
+    if [[ "$ENABLE_CLAUDE_CODE_BACKUP" == "true" ]] && [[ -f "$export_script" ]] && [[ "$(uname)" == "Darwin" ]]; then
         print_step "Exporting Claude Code credentials for devcontainer auto-login..."
         if bash "$export_script" 2>/dev/null; then
             print_success "Claude Code credentials exported to shared directory"
@@ -2029,13 +2058,13 @@ phase_10_advanced_features() {
     # This ensures Neovim-enabled devcontainer config persists across plugin updates
     local claude_plugins_devcontainer="$HOME/.claude/plugins/marketplaces/claude-code-plugins/.devcontainer"
     local dotfiles_devcontainer="$DOTFILES_ROOT/devcontainer/claude-code-plugins"
-    if [[ -d "$dotfiles_devcontainer" ]] && [[ ! -L "$claude_plugins_devcontainer" ]]; then
+    if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && [[ -d "$dotfiles_devcontainer" ]] && [[ ! -L "$claude_plugins_devcontainer" ]]; then
         print_step "Linking claude-code-plugins devcontainer config..."
         rm -rf "$claude_plugins_devcontainer" 2>/dev/null || true
         mkdir -p "$(dirname "$claude_plugins_devcontainer")"
         ln -sf "$dotfiles_devcontainer" "$claude_plugins_devcontainer"
         print_success "claude-code-plugins devcontainer linked from dotfiles"
-    elif [[ -L "$claude_plugins_devcontainer" ]]; then
+    elif [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && [[ -L "$claude_plugins_devcontainer" ]]; then
         log_verbose "claude-code-plugins devcontainer already linked"
     fi
 

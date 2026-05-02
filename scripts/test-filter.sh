@@ -56,11 +56,11 @@ list_groups() {
     echo "  mcp           - MCP server configuration parity"
     echo "  browser       - Browser automation config and wiring"
     echo "  tmux          - tmux configuration"
-    echo "  hooks         - Claude Code hooks"
+    echo "  hooks         - Agent harness hooks (Claude-compatible)"
     echo "  agents-md     - AGENTS.md file validation"
     echo "  cd-perf       - CD performance optimizations"
     echo "  lsp           - Claude Code LSP integration"
-    echo "  nvim-bridge   - Neovim-Claude Code bridge"
+    echo "  nvim-bridge   - Neovim Agent bridge"
     echo "  remote-control - Claude Code Remote Control"
     echo "  settings      - Claude Code settings validation"
     echo "  gitattributes - Gitattributes and custom diff/merge drivers"
@@ -787,7 +787,7 @@ test_settings() {
 }
 
 test_nvim_bridge() {
-    echo -e "${BLUE}--- Neovim-Claude Bridge Tests ---${NC}"
+    echo -e "${BLUE}--- Neovim Agent Bridge Tests ---${NC}"
 
     # Hook exists and is executable
     run_test "nvim-bridge.sh exists" "[ -f '$DOTFILES_ROOT/.claude/hooks/nvim-bridge.sh' ]"
@@ -946,6 +946,13 @@ test_opencode() {
 
     run_test "OpenCode entire plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/entire.ts' ]"
     run_test "OpenCode Claude compat plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts' ]"
+    run_test "OpenCode Claude compat mirrors protect-files" "grep -q 'protect-files.py' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat logs tool failures" "grep -q 'log-tool-failure.py' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat resumes changelog" "grep -q 'changelog-resume.sh' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat persists changelog" "grep -q 'changelog-persist.sh' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat runs plan-watch" "grep -q 'plan-watch.sh' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat injects JFDI prompt context" "grep -q 'prompt-inject-context.py' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
+    run_test "OpenCode Claude compat handles multiedit" "grep -q 'multiedit' '$DOTFILES_ROOT/.config/opencode/plugin/claude-compat.ts'"
     run_test "OpenCode OpenAI rotate plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/openai-rotate.ts' ]"
     run_test "OpenCode project env plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/project-env.ts' ]"
     run_test "OpenCode project env plugin sets CLAUDE_PROJECT_DIR" "grep -q 'CLAUDE_PROJECT_DIR' '$DOTFILES_ROOT/.config/opencode/plugin/project-env.ts'"
@@ -992,6 +999,10 @@ test_opencode() {
     run_test "OpenCode SSE recorder harness executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-sse-recorder.ts' ]"
     run_test "OpenCode SSE recorder harness passes" "bun '$DOTFILES_ROOT/scripts/opencode/test-sse-recorder.ts' >/dev/null"
     run_test "OpenCode diffview helper exists" "[ -x '$DOTFILES_ROOT/scripts/opencode/diffview-latest.sh' ]"
+    run_test "OpenCode Neovim opener harness exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/test-nvim-open.sh' ]"
+    run_test "OpenCode Neovim opener harness executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-nvim-open.sh' ]"
+    run_test "OpenCode Neovim opener harness syntax valid" "bash -n '$DOTFILES_ROOT/scripts/opencode/test-nvim-open.sh'"
+    run_test "OpenCode Neovim opener harness passes" "'$DOTFILES_ROOT/scripts/opencode/test-nvim-open.sh' >/dev/null"
     run_test "OpenCode Neovim health script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/test-nvim-health.sh' ]"
     run_test "OpenCode Neovim health script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/test-nvim-health.sh' ]"
     run_test "OpenCode Neovim health checks pass" "'$DOTFILES_ROOT/scripts/opencode/test-nvim-health.sh' >/dev/null"

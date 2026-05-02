@@ -1,4 +1,4 @@
-function dssmc --description "Connect to EC2 instance via SSM tunnel for distant.nvim"
+function dssmc --description "Open legacy optional SSM tunnel for distant.nvim"
     # Parse arguments
     set -l instance_id ""
     set -l profile "labs"
@@ -28,7 +28,8 @@ function dssmc --description "Connect to EC2 instance via SSM tunnel for distant
             case --help -h
                 echo "Usage: dssmc [instance-id] [options]"
                 echo ""
-                echo "Connect to EC2 instance via SSM tunnel for distant.nvim"
+                echo "Open an SSM tunnel for the legacy optional distant.nvim workflow"
+                echo "Requires distant.nvim to be re-enabled in ~/neovim."
                 echo ""
                 echo "Options:"
                 echo "  --profile, -p <profile>  AWS profile to use (default: labs)"

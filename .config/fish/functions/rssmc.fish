@@ -138,8 +138,8 @@ function rssmc --description "Connect to EC2 instance via SSM with convenient wo
     echo "📡 Starting SSM session..."
     echo ""
     echo "💡 Tips for remote editing:"
-    echo "  • For Neovim: Use distant.nvim (already configured)"
     echo "  • For quick edits: nano, vim, or vi"
+    echo "  • distant.nvim is legacy/optional; re-enable it in ~/neovim before use"
     echo "  • To copy files: Use 'aws s3 cp' to transfer via S3"
     echo ""
 

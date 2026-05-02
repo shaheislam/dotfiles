@@ -12,6 +12,7 @@ type ToolPayload = {
   tool_name: string
   tool_input: Record<string, unknown>
   tool_output?: string
+  error?: string
   session_id?: string
 }
 
@@ -46,6 +47,8 @@ function opencodeToolName(tool: string) {
       return "Write"
     case "edit":
       return "Edit"
+    case "multiedit":
+      return "MultiEdit"
     case "grep":
       return "Grep"
     case "glob":
@@ -53,6 +56,10 @@ function opencodeToolName(tool: string) {
     default:
       return tool
   }
+}
+
+function isWriteTool(tool: string) {
+  return ["write", "edit", "multiedit"].includes(tool.toLowerCase())
 }
 
 export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
@@ -185,8 +192,24 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
   }
 
+  function normalizeToolOutput(output: unknown) {
+    if (typeof output === "string") {
+      return output
+    }
+
+    if (output === undefined || output === null) {
+      return undefined
+    }
+
+    try {
+      return JSON.stringify(output)
+    } catch {
+      return String(output)
+    }
+  }
+
   function buildToolPayload(tool: string, args: Record<string, unknown>, toolOutput?: string): ToolPayload {
-    const filePath = args.filePath ?? args.file_path
+    const filePath = args.filePath ?? args.file_path ?? args.path
 
     return {
       tool_name: opencodeToolName(tool),
@@ -239,9 +262,10 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
   async function handleWritePreTool(tool: string, args: Record<string, unknown>) {
     const payload = buildToolPayload(tool, args)
     maybeBlock(await runScript(hookPath("settings-edit-redirect.py"), payload))
+    maybeBlock(await runScript(hookPath("protect-files.py"), payload))
   }
 
-  async function appendHookMessage(script: string, payload: ToolPayload, useSessionContext = false) {
+  async function appendHookMessage(script: string, payload: Record<string, unknown>, useSessionContext = false) {
     const result = await runScript(script, payload)
     const text = result.stdout || result.stderr
     if (!text) {
@@ -269,6 +293,38 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
   }
 
+  async function appendPromptContext(prompt: string) {
+    const result = await runScript(hookPath("jfdi", "prompt-inject-context.py"), {
+      hook_type: "UserPromptSubmit",
+      session_id: currentSessionID ?? undefined,
+      prompt,
+      cwd: projectDir,
+    })
+
+    if (!result.stdout) {
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(result.stdout) as { context?: string }
+      if (parsed.context) {
+        addTransientContext(parsed.context)
+      }
+    } catch {
+      // The JFDI hook is JSON-only; ignore malformed output rather than injecting noise.
+    }
+  }
+
+  async function logToolFailure(tool: string, args: Record<string, unknown>, error: unknown) {
+    const payload = buildToolPayload(tool, args)
+    try {
+      payload.error = typeof error === "string" ? error : JSON.stringify(error ?? "Tool execution failed")
+    } catch {
+      payload.error = String(error ?? "Tool execution failed")
+    }
+    await runScript(hookPath("log-tool-failure.py"), payload)
+  }
+
   async function collectSessionStartContext() {
     await Promise.all([
       runScript(join(DOTFILES_ROOT, "scripts", "fix-hookify-imports.sh")),
@@ -281,6 +337,7 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     await runContextScript(hookPath("work-detect.sh"))
     await runContextScript(hookPath("lsp-status.sh"))
     await runContextScript(hookPath("plan-resume.sh"))
+    await runContextScript(hookPath("changelog-resume.sh"))
   }
 
   function handleShutdown() {
@@ -301,11 +358,20 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
       title: title || "OpenCode",
       message,
       variant: variant || "info",
+      notification_type: variant || "info",
       session_id: currentSessionID ?? undefined,
     }
 
     runScriptSync(hookPath("log-notification.sh"), payload)
+    runScriptSync(hookPath("macos_notification.py"), payload)
     runScriptSync(tmuxHookPath("tmux-agent-notify.sh"), payload)
+  }
+
+  function appendCompactContext(output: { context: string[] }, result: HookResult) {
+    const text = result.stdout || result.stderr
+    if (text) {
+      output.context.push(text)
+    }
   }
 
   return {
@@ -342,12 +408,23 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
           }
 
           seenPromptMessages.add(part.messageID)
+          const prompt = part.text ?? ""
           await Promise.all([
             runScript(tmuxHookPath("tmux-agent-prompt.sh")),
             appendHookMessage(hookPath("nvim-bridge.sh"), {
               session_id: currentSessionID ?? undefined,
               tool_name: "UserPromptSubmit",
-              tool_input: {},
+              tool_input: { prompt },
+              prompt,
+              cwd: projectDir,
+            }),
+            appendPromptContext(prompt),
+            appendHookMessage(hookPath("plan-watch.sh"), {
+              session_id: currentSessionID ?? undefined,
+              tool_name: "UserPromptSubmit",
+              tool_input: { prompt },
+              prompt,
+              cwd: projectDir,
             }),
           ])
           break
@@ -365,6 +442,16 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
           break
         }
 
+        case "tool.execute.error":
+        case "tool.execute.failed":
+        case "tool.error": {
+          const properties = event.properties as Record<string, unknown>
+          const tool = String(properties.tool || properties.toolName || properties.name || "unknown")
+          const args = (properties.args || properties.tool_input || properties.input || {}) as Record<string, unknown>
+          await logToolFailure(tool, args, properties.error || properties.message || properties.reason || "Tool execution failed")
+          break
+        }
+
         case "server.instance.disposed":
         case "session.deleted": {
           handleShutdown()
@@ -374,32 +461,40 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     },
 
     "tool.execute.before": async (input, output) => {
-      const args = (output.args || {}) as Record<string, unknown>
+      const tool = input.tool.toLowerCase()
+      const args = (output?.args || input.args || {}) as Record<string, unknown>
 
-      if (input.tool === "bash") {
+      if (tool === "bash") {
         await handleBashPreTool(args)
         return
       }
 
-      if (input.tool === "write" || input.tool === "edit") {
-        await handleWritePreTool(input.tool, args)
+      if (isWriteTool(tool)) {
+        await handleWritePreTool(tool, args)
       }
     },
 
     "tool.execute.after": async (input, output) => {
+      const tool = input.tool.toLowerCase()
       const args = (input.args || {}) as Record<string, unknown>
-      const payload = buildToolPayload(input.tool, args, output.output)
+      const payload = buildToolPayload(tool, args, normalizeToolOutput(output.output))
 
-      if (input.tool === "read") {
+      if (tool === "read") {
         await appendHookMessage(hookPath("deepwiki-context.py"), payload)
-        return
       }
 
-      if (input.tool === "write" || input.tool === "edit") {
+      if (isWriteTool(tool)) {
         await appendHookMessage(hookPath("auto-format.py"), payload)
         await appendHookMessage(hookPath("file-modified.sh"), payload)
         await appendHookMessage(hookPath("ci-lint-on-save.sh"), payload)
       }
+
+      await appendHookMessage(hookPath("plan-watch.sh"), payload)
+    },
+
+    "tool.execute.error": async (input, output) => {
+      const args = (input.args || output?.args || {}) as Record<string, unknown>
+      await logToolFailure(input.tool.toLowerCase(), args, output?.error || output?.message || "Tool execution failed")
     },
 
     "experimental.chat.system.transform": async (_input, output) => {
@@ -416,10 +511,14 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     },
 
     "experimental.session.compacting": async (_input, output) => {
-      const result = runScriptSync(hookPath("plan-persist.sh"))
-      if (result.stdout) {
-        output.context.push(result.stdout)
+      try {
+        appendCompactContext(output, runCommandSync("bd", ["prime"]))
+      } catch {
+        // bd may be unavailable in minimal test or bootstrap environments.
       }
+
+      appendCompactContext(output, runScriptSync(hookPath("plan-persist.sh")))
+      appendCompactContext(output, runScriptSync(hookPath("changelog-persist.sh")))
     },
   }
 }

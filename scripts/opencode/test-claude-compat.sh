@@ -19,7 +19,7 @@ trap 'if [ "${OPENCODE_TEST_DEBUG:-0}" = "1" ]; then echo "DEBUG tmpdir preserve
 
 TEST_HOME="$TMPDIR/home"
 TEST_PROJECT="$TMPDIR/project"
-mkdir -p "$TEST_HOME" "$TEST_PROJECT/scripts/harness" "$TEST_HOME/obsidian" "$TMPDIR/bin"
+mkdir -p "$TEST_HOME" "$TEST_PROJECT/scripts/harness" "$TEST_PROJECT/.claude" "$TEST_HOME/obsidian" "$TMPDIR/bin"
 mkdir -p "$TEST_HOME/.claude"
 mkdir -p "$TMPDIR/jfdi/scripts"
 printf '{}\n' >"$TEST_HOME/.claude/settings.json"
@@ -29,6 +29,11 @@ Validate OpenCode shutdown synthesis.
 
 ## Progress
 - Synthetic harness setup complete.
+EOF
+cat >"$TEST_PROJECT/.claude/CHANGELOG.md" <<'EOF'
+# Session Changelog
+
+[2026-03-30T00:00:00Z] DISCOVERY: OpenCode changelog parity test entry.
 EOF
 ln -s "$ROOT" "$TEST_HOME/dotfiles"
 
@@ -76,6 +81,13 @@ set -euo pipefail
 printf '%s\n' "$*" >>"${TEST_JFDI_OUTPUT:?}"
 EOF
 chmod +x "$TMPDIR/bin/bunx"
+
+cat >"$TMPDIR/bin/osascript" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >>"${TEST_OSASCRIPT_OUTPUT:?}"
+EOF
+chmod +x "$TMPDIR/bin/osascript"
 
 HARNESS="$TMPDIR/harness.mjs"
 cat >"$HARNESS" <<'EOF'
@@ -126,6 +138,20 @@ if (!settingsBlocked) {
   fail("settings redirect hook did not block direct writes")
 }
 
+let protectedBlocked = false
+try {
+  await hooks["tool.execute.before"](
+    { tool: "write", args: { filePath: `${projectDir}/package-lock.json` } },
+    { args: { filePath: `${projectDir}/package-lock.json` } },
+  )
+} catch (error) {
+  protectedBlocked = String(error.message || error).toLowerCase().includes("protected file")
+}
+
+if (!protectedBlocked) {
+  fail("protect-files hook did not block protected writes")
+}
+
 await hooks["tool.execute.after"](
   { tool: "read", args: { filePath: `${projectDir}/fake.py` } },
   { output: "print('hello')" },
@@ -139,12 +165,33 @@ if (!transformOutput.system.some((entry) => entry.toLowerCase().includes("deepwi
 }
 
 await hooks.event({ event: { type: "session.created", properties: { info: { id: "ses_test" } } } })
+
+const sessionTransform = { system: [] }
+await hooks["experimental.chat.system.transform"]({}, sessionTransform)
+if (!sessionTransform.system.some((entry) => entry.includes("OpenCode changelog parity test entry"))) {
+  fail("session start did not inject changelog context")
+}
+
+const compactOutput = { context: [] }
+await hooks["experimental.session.compacting"]({}, compactOutput)
+if (!compactOutput.context.some((entry) => entry.includes("OpenCode changelog parity test entry"))) {
+  fail("compaction did not persist changelog context")
+}
+
+await hooks["tool.execute.error"](
+  { tool: "bash", args: { command: "false" } },
+  { error: "synthetic tool failure" },
+)
+
 await hooks.event({ event: { type: "tui.toast.show", properties: { title: "Test", message: "toast", variant: "info" } } })
 await hooks.event({ event: { type: "server.instance.disposed", properties: {} } })
 
 console.log("PASS npm guard")
 console.log("PASS settings guard")
+console.log("PASS protected file guard")
 console.log("PASS read context injection")
+console.log("PASS changelog context")
+console.log("PASS tool failure logging")
 console.log("PASS shutdown hooks")
 console.log("PASS claude compat validation complete")
 EOF
@@ -153,10 +200,21 @@ OPENCODE_CLAUDE_COMPAT_PLUGIN="$PLUGIN" \
 	OPENCODE_TEST_PROJECT="$TEST_PROJECT" \
 	TEST_SESSION_REPORT_OUTPUT="$TMPDIR/session-report.json" \
 	TEST_JFDI_OUTPUT="$TMPDIR/jfdi.log" \
+	TEST_OSASCRIPT_OUTPUT="$TMPDIR/osascript.log" \
 	OPENCODE_JFDI_PROJECT_DIR="$TMPDIR/jfdi" \
 	PATH="$TMPDIR/bin:$PATH" \
 	HOME="$TEST_HOME" \
 	bun "$HARNESS"
+
+grep -R -q 'synthetic tool failure' "$TEST_HOME/.claude/hooks/logs" || {
+	echo "FAIL tool failure hook did not write failure log" >&2
+	exit 1
+}
+
+grep -q 'display notification' "$TMPDIR/osascript.log" || {
+	echo "FAIL macOS notification hook was not invoked" >&2
+	exit 1
+}
 
 [ -f "$TMPDIR/session-report.json" ] || {
 	echo "FAIL shutdown hook did not write session report" >&2

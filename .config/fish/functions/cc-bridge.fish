@@ -1,10 +1,10 @@
-function cc-bridge --description "Manage Neovim-Claude Code bridge"
+function cc-bridge --description "Manage Neovim agent bridge"
     set -l cmd $argv[1]
     set -l bridge_dir /tmp/nvim-claude-bridge
 
     switch "$cmd"
         case status ''
-            echo "Neovim-Claude Bridge Status"
+            echo "Neovim Agent Bridge Status"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
             if not test -d $bridge_dir
@@ -101,10 +101,10 @@ function cc-bridge --description "Manage Neovim-Claude Code bridge"
             echo "  clean    Remove stale bridge dirs (dead Neovim PIDs)"
             echo "  help     Show this help"
             echo ""
-            echo "The bridge connects Neovim editor state to Claude Code."
+            echo "The bridge connects Neovim editor state to agent harnesses."
             echo "Neovim writes diagnostics, focus, git hunks, and test results"
             echo "to /tmp/nvim-claude-bridge/<hash>/state.json."
-            echo "Claude Code reads this via a UserPromptSubmit hook."
+            echo "Claude Code reads it via UserPromptSubmit; OpenCode reads it via claude-compat.ts."
             echo ""
             echo "See: docs/nvim-claude-bridge.md"
     end

@@ -1441,7 +1441,7 @@ Flags and features from official docs not yet leveraged in our setup:
 - [Skills Reference](skills-reference.md) — skill sources, format, migration guide
 - [Claude Code LSP Integration](claude-code-lsp.md) — LSP servers for Claude Code
 - [Claude Pipeline](claude-pipeline.md) — multi-model reasoning chains
-- [Neovim-Claude Bridge](nvim-claude-bridge.md) — editor state awareness
+- [Neovim Agent Bridge](nvim-claude-bridge.md) — editor state awareness shared with OpenCode compatibility hooks
 - [Official CLI Reference](https://code.claude.com/docs/en/cli-reference) — upstream source
 - [Official Hooks](https://code.claude.com/docs/en/hooks) — hook events and configuration
 - [Official Model Config](https://code.claude.com/docs/en/model-config) — model aliases and effort levels

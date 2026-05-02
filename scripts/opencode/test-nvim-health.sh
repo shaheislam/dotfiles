@@ -13,7 +13,7 @@ fi
 
 TMP_LUA=$(mktemp)
 cat <<'LUA' >"$TMP_LUA"
-local modules = {"opencode", "codecompanion", "wrapped"}
+local modules = {"opencode", "wrapped"}
 local missing = {}
 for _, mod in ipairs(modules) do
   local ok, err = pcall(require, mod)
@@ -32,7 +32,7 @@ if [ -n "${OPENCODE_NVIM_APPNAME:-}" ]; then
 fi
 
 set +euo pipefail
-OUTPUT=$("${NVIM_CMD[@]}" -c "luafile $TMP_LUA" -c "checkhealth opencode" -c "checkhealth codecompanion" -c "qa" 2>&1)
+OUTPUT=$("${NVIM_CMD[@]}" -c "luafile $TMP_LUA" -c "checkhealth opencode" -c "qa" 2>&1)
 STATUS=$?
 set -euo pipefail
 rm -f "$TMP_LUA"

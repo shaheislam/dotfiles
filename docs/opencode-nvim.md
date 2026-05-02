@@ -47,15 +47,11 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 
 By moving repetitive prompt + context work into Neovim we remove most of the friction highlighted in this ticket while leaving the tmux bindings available for workflows outside the editor.
 
-## Hybrid workflow with CodeCompanion
+## OpenCode-only Neovim workflow
 
-`codecompanion.nvim` stays in the config as the “chat + workflow” orchestrator while `opencode.nvim` owns buffer-aware operators and edit review. The shared adapter stack looks like this:
+`opencode.nvim` is now the primary in-editor AI layer. It owns buffer-aware prompts, visual selections, operator workflows, and the diff review loop. The tmux side pane remains useful for long transcripts and non-editor sessions; no secondary editor-assistant plugin is part of the active workflow.
 
-- `codecompanion.nvim` adapters target OpenCode via the built-in ACP helper, so you can open a standalone chat buffer, trigger slash commands (e.g., `/review`, `/explain`, `/diff`), or launch workflows that gather buffers/diagnostics before sending them through OpenCode.
-- `opencode.nvim` handles inline asks (`ask`, `select`, `operator`) plus the diff-based permission workflow. Both plugins can point to the same running OpenCode instance by sharing a port in `vim.g.opencode_opts.server` and the CodeCompanion adapter config.
-- Keymap coexistence: keep the CodeCompanion palette on `<leader>a*` (multi-buffer chat) and reserve `<C-a>/<C-x>/go` for `opencode.nvim`. The two layers stay orthogonal.
-
-### Reference Lua snippets
+### Reference Lua snippet
 
 ```lua
 -- lazy.nvim spec excerpt (~/neovim/lua/plugins/opencode.lua)
@@ -85,38 +81,11 @@ return {
 }
 ```
 
-```lua
--- CodeCompanion adapter excerpt (~/neovim/lua/plugins/codecompanion.lua)
-return {
-  "olimorris/codecompanion.nvim",
-  opts = {
-    adapters = {
-      opencode = function()
-        return require("codecompanion.adapters").extend("opencode", {
-          schema = { model = { default = "openai/gpt-5.4" } },
-        })
-      end,
-    },
-    strategies = {
-      chat = { adapter = "opencode" },
-      inline = { adapter = "opencode" },
-    },
-    slash_commands = {
-      diff = {
-        opts = {
-          prompt = "Review the following git diff for correctness and readability: @diff",
-        },
-      },
-    },
-  },
-}
-```
+With this setup you can define explicit workflows:
 
-With this split you can define explicit workflows:
-
-- **Diagnostics review** – `:CodeCompanion /diagnostics` to summarize errors, then `:lua require("opencode").prompt("fix")` for the focused buffer patch.
+- **Diagnostics review** – `:lua require("opencode").ask("Explain @diagnostics and propose the smallest fix", { submit = true })`.
 - **Refactor selection** – visual select code, hit `go` to enqueue via the operator, then accept/reject hunks in the diff tab.
-- **Diff review** – `CodeCompanion` slash command builds high-level TODOs, while `opencode.nvim`’s `prompt("diff")` opens the same git diff with accept/reject controls.
+- **Diff review** – `:lua require("opencode").ask("Review @diff for correctness, regressions, and missing tests", { submit = true })`.
 
 ## SSE logging + Entire checkpoints
 
@@ -136,7 +105,7 @@ With this split you can define explicit workflows:
 `scripts/test-filter.sh opencode` now covers the new surfaces:
 
 - `scripts/opencode/test-sse-recorder.ts` (Bun harness) ensures the recorder plugin logs events/diffs.
-- `scripts/opencode/test-nvim-health.sh` runs `nvim --headless` → `luafile` (module probes) → `:checkhealth opencode` → `:checkhealth codecompanion` so CI flags missing plugins immediately. Set `OPENCODE_NVIM_APPNAME` if you use a non-default Neovim profile.
+- `scripts/opencode/test-nvim-health.sh` runs `nvim --headless` → `luafile` (module probes for `opencode` and `wrapped`) → `:checkhealth opencode` so CI flags missing OpenCode editor integration immediately. Set `OPENCODE_NVIM_APPNAME` if you use a non-default Neovim profile.
 - `scripts/opencode/diffview-latest.sh` gives tooling + tests a stable entry point for the most recent diff snapshot.
 
 Together these cover the “hybrid UI + SSE logging + Diffview replay” workflow discussed in the ticket.

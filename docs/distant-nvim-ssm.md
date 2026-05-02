@@ -1,15 +1,15 @@
-# distant.nvim with AWS SSM
+# Legacy distant.nvim with AWS SSM
 
 ## Overview
-This setup allows you to use distant.nvim to edit files on EC2 instances through AWS SSM Session Manager.
+This is a legacy optional workflow for editing EC2 files through AWS SSM Session Manager with distant.nvim. The current `~/neovim` configuration no longer enables distant.nvim by default, so this document is retained as recovery/reference material rather than an active health requirement.
 
 ## Prerequisites
 1. AWS CLI configured with appropriate credentials
 2. Session Manager Plugin installed
-3. distant.nvim plugin installed in Neovim
+3. distant.nvim plugin re-enabled in `~/neovim`
 4. SSH keys distributed to EC2 instances
 
-## Setup Steps Completed
+## Legacy Setup Notes
 
 ### 1. SSH Key Distribution
 - Generated SSH key pair: `~/.ssh/shahe-distant-nvim`
@@ -17,14 +17,15 @@ This setup allows you to use distant.nvim to edit files on EC2 instances through
 - Script: `~/dotfiles/scripts/setup/setup-ec2-ssh-keys.sh`
 
 ### 2. distant.nvim Configuration
-- Plugin configured in: `~/.config/nvim/lua/plugins/distant.lua`
-- distant binary installed: `~/.local/share/nvim/distant/distant.bin`
+- Legacy plugin location: `~/.config/nvim/lua/plugins/distant.lua`
+- Legacy binary path: `~/.local/share/nvim/distant/distant.bin`
+- Current default: plugin absent from `~/neovim`; re-enable it there before relying on these commands.
 
 ### 3. SSM Tunnel Script
 - Created helper script: `~/dotfiles/scripts/aws/distant-ssm-tunnel.sh`
 - Creates port forwarding through SSM (port 2222 by default)
 
-## Usage
+## Usage When Re-Enabled
 
 ### Step 1: Start the SSM Tunnel
 ```bash
@@ -71,3 +72,4 @@ Keep this terminal open or run in tmux/screen.
 - Check instance has SSM agent running
 - Verify SSH key is on the instance
 - Try different users (ubuntu, ec2-user, admin)
+- Run `ENABLE_DISTANT_LEGACY_TEST=true scripts/test-distant.sh` only after re-enabling the Neovim plugin and binary.

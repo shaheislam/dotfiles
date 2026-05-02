@@ -26,28 +26,28 @@ STATE_FILE="$BRIDGE_DIR/$HASH/state.json"
 # Saves ~200ms per prompt by avoiding multiple subprocesses and repeated file reads
 JQ_OUTPUT=$(jq -r --arg now "$(date +%s)" --arg ttl "$TTL_SECONDS" '
   # Helper to check if a section is fresh
-  def is_fresh(ts): ($now | tonumber) - (ts | tonumber // 0) < ($ttl | tonumber);
+  def is_fresh(ts): ($now | tonumber) - ((ts // 0) | tonumber) < ($ttl | tonumber);
 
   # Check if nvim process is still alive (if pid is provided)
   . as $root |
   .nvim_pid as $pid |
-  
+
   # Diagnostics
   (if is_fresh(.diagnostics.timestamp) and ((.diagnostics.error_count // 0) > 0 or (.diagnostics.warning_count // 0) > 0) then
      "Diagnostics(\(.diagnostics.error_count // 0)E/\(.diagnostics.warning_count // 0)W): " +
      ([(.diagnostics.errors // [] | .[] | "\(.file):\(.line) \(.source): \(.message)"),
        (.diagnostics.warnings // [] | .[] | "\(.file):\(.line) \(.source): \(.message)")] | join("; "))
-   else empty end) as $diag |
+   else null end) as $diag |
 
   # Focus
   (if is_fresh(.focus.timestamp) and (.focus.file // "" != "") then
      "Focus: \(.focus.file):\(.focus.line // 1) (\(.focus.filetype // "text"))"
-   else empty end) as $focus |
+   else null end) as $focus |
 
   # Git
   (if is_fresh(.git_hunks.timestamp) and (.git_hunks.summary // "" != "") then
      "Git: \(.git_hunks.summary) [\((.git_hunks.files_changed // []) | join(", "))]"
-   else empty end) as $git |
+   else null end) as $git |
 
   # Tests
   (if is_fresh(.tests.timestamp) and (.tests.status // "" != "") then
@@ -55,10 +55,10 @@ JQ_OUTPUT=$(jq -r --arg now "$(date +%s)" --arg ttl "$TTL_SECONDS" '
      (if .tests.status == "fail" and (.tests.failed // [] | length > 0) then
         " — " + ([.tests.failed[] | "\(.name): \(.message)"] | .[0:5] | join("; "))
       else "" end)
-   else empty end) as $tests |
+   else null end) as $tests |
 
   # Combine fresh parts
-  [$diag, $focus, $git, $tests] | del(..|null) as $parts |
+  [$diag, $focus, $git, $tests] | map(select(. != null)) as $parts |
   if ($parts | length) > 0 then
     "Neovim context: " + ($parts | join(" | "))
   else
