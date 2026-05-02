@@ -15,7 +15,7 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 
 - The backend assistant is still OpenCode-compatible (`opencode` resolves to `ocv`), so authentication, model routing, hooks, and all `.opencode/` scripts remain unchanged.
 - You can connect the plugin to any running OpenCode instance via the `server.port` option, which means the tmux binding can keep a long-lived side pane if you want a dedicated transcript while Neovim handles buffer-aware asks.
-- Permissions and hooks still flow through the existing `.opencode/plugins/claude-compat.ts` stack—`opencode.nvim` just surfaces them in-editor.
+- Permissions and hooks still flow through the existing `.config/opencode/plugin/claude-compat.ts` stack—`opencode.nvim` just surfaces them in-editor.
 
 ## Comparison snapshot
 
@@ -120,7 +120,7 @@ With this split you can define explicit workflows:
 
 ## SSE logging + Entire checkpoints
 
-- `.opencode/plugins/sse-recorder.ts` listens to every OpenCode SSE event, writes a JSONL audit log under `.entire/opencode/sse/events.jsonl`, and mirrors summary payloads into `entire hooks opencode sse-event` so checkpoints capture turn-by-turn metadata.
+- `.config/opencode/plugin/sse-recorder.ts` listens to every OpenCode SSE event, writes a JSONL audit log under `.entire/opencode/sse/events.jsonl`, and mirrors summary payloads into `entire hooks opencode sse-event` so checkpoints capture turn-by-turn metadata.
 - Whenever an event contains a diff/patch payload, the plugin stores a timestamped snapshot inside `.entire/opencode/sse/diffs/` and emits a secondary `sse-diff` hook with the file path.
 - The harness `scripts/opencode/test-sse-recorder.ts` exercises the plugin in isolation to guarantee log + diff files are produced.
 - Use `scripts/opencode/diffview-latest.sh --cat` (or `--meta`) to inspect the newest AI patch. Diffview can read those patch files through its existing tmux/Zsh discovery hooks, so you can replay AI-generated edits even after closing the OpenCode TUI.

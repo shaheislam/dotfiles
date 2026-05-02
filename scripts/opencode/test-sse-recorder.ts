@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import assert from "node:assert/strict"
-import { OpencodeSseRecorderPlugin } from "../../.opencode/plugins/sse-recorder"
+import { OpencodeSseRecorderPlugin } from "../../.config/opencode/plugin/sse-recorder"
 
 async function run() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "opencode-sse-test-"))

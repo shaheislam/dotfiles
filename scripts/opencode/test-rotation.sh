@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PLUGIN="$ROOT/.opencode/plugins/openai-rotate.ts"
+PLUGIN="$ROOT/.config/opencode/plugin/openai-rotate.ts"
 
 if ! command -v bun >/dev/null 2>&1; then
     echo "FAIL bun is required for rotation validation" >&2

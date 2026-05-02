@@ -6,7 +6,7 @@ CONFIG_FILE="$ROOT/.config/opencode/opencode.json"
 AUTH_FILE="$HOME/.local/share/opencode/auth.json"
 COMMAND_DIR="$ROOT/.opencode/command"
 AGENT_DIR="$ROOT/.opencode/agents"
-PLUGIN_DIR="$ROOT/.opencode/plugins"
+PLUGIN_DIR="$ROOT/.config/opencode/plugin"
 FISH_FUNC="$ROOT/.config/fish/functions/opencode-doctor.fish"
 
 PASS_COUNT=0
@@ -199,7 +199,7 @@ if [ -f "$CONFIG_FILE" ]; then
 		fi
 	done
 
-	if jq -e '.plugin[]? | select(contains("opencode-with-claude"))' "$CONFIG_FILE" >/dev/null 2>&1; then
+	if [ -f "$PLUGIN_DIR/opencode-with-claude.ts" ]; then
 		claude_plugin="$HOME/.bun/install/global/node_modules/opencode-with-claude/dist/index.js"
 		if [ -f "$claude_plugin" ]; then
 			print_result PASS "Claude subscription plugin" "Bun global install available"
@@ -244,39 +244,39 @@ fi
 
 plugin_count="$(count_files "$PLUGIN_DIR")"
 if [ "$plugin_count" -gt 0 ]; then
-	print_result PASS "project plugins" "$plugin_count files in .opencode/plugins"
+	print_result PASS "global plugins" "$plugin_count files in .config/opencode/plugin"
 else
-	print_result WARN "project plugins" "No files in .opencode/plugins"
+	print_result WARN "global plugins" "No files in .config/opencode/plugin"
 fi
 
 if [ -f "$PLUGIN_DIR/entire.ts" ]; then
 	print_result PASS "entire plugin" "$PLUGIN_DIR/entire.ts"
 else
-	print_result WARN "entire plugin" "Missing .opencode/plugins/entire.ts"
+	print_result WARN "entire plugin" "Missing .config/opencode/plugin/entire.ts"
 fi
 
 if [ -f "$PLUGIN_DIR/claude-compat.ts" ]; then
 	print_result PASS "compat plugin" "$PLUGIN_DIR/claude-compat.ts"
 else
-	print_result WARN "compat plugin" "Missing .opencode/plugins/claude-compat.ts"
+	print_result WARN "compat plugin" "Missing .config/opencode/plugin/claude-compat.ts"
 fi
 
 if [ -f "$PLUGIN_DIR/openai-rotate.ts" ]; then
 	print_result PASS "rotate plugin" "$PLUGIN_DIR/openai-rotate.ts"
 else
-	print_result WARN "rotate plugin" "Missing .opencode/plugins/openai-rotate.ts"
+	print_result WARN "rotate plugin" "Missing .config/opencode/plugin/openai-rotate.ts"
 fi
 
 if [ -f "$PLUGIN_DIR/project-env.ts" ]; then
 	print_result PASS "env plugin" "$PLUGIN_DIR/project-env.ts"
 else
-	print_result WARN "env plugin" "Missing .opencode/plugins/project-env.ts"
+	print_result WARN "env plugin" "Missing .config/opencode/plugin/project-env.ts"
 fi
 
 if [ -f "$PLUGIN_DIR/tmux-status.ts" ]; then
 	print_result PASS "tmux plugin" "$PLUGIN_DIR/tmux-status.ts"
 else
-	print_result WARN "tmux plugin" "Missing .opencode/plugins/tmux-status.ts"
+	print_result WARN "tmux plugin" "Missing .config/opencode/plugin/tmux-status.ts"
 fi
 
 ROUTING_FILE="$ROOT/.opencode/model-routing.json"

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PLUGIN="$ROOT/.opencode/plugins/claude-compat.ts"
+PLUGIN="$ROOT/.config/opencode/plugin/claude-compat.ts"
 
 if ! command -v bun >/dev/null 2>&1; then
 	echo "FAIL bun is required for Claude compat validation" >&2

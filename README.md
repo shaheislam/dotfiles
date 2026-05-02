@@ -246,7 +246,7 @@ make clean && make
 
 ## AI Assistants
 
-- **OpenCode workflows**: [docs/opencode-nvim.md](docs/opencode-nvim.md) covers the hybrid `opencode.nvim` + `codecompanion.nvim` setup, SSE logging into Entire via `.opencode/plugins/sse-recorder.ts`, Diffview replay tooling, and the `wrapped.nvim` dashboard for Neovim-config analytics.
+- **OpenCode workflows**: [docs/opencode-nvim.md](docs/opencode-nvim.md) covers the hybrid `opencode.nvim` + `codecompanion.nvim` setup, SSE logging into Entire via `.config/opencode/plugin/sse-recorder.ts`, Diffview replay tooling, and the `wrapped.nvim` dashboard for Neovim-config analytics.
 
 ## Customization
 

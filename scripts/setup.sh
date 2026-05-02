@@ -654,6 +654,7 @@ phase_4_cloud_tools() {
 
     # Step 2: Clean up ALL legacy installations (only after native is in place)
     if [[ -x "$native_claude" ]]; then
+        local claude_wrapper="$HOME/dotfiles/scripts/bin/claude"
         local legacy_claude_module="/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code"
         local legacy_claude_bin="/opt/homebrew/bin/claude"
         local legacy_usr_local_bin="/usr/local/bin/claude"
@@ -691,6 +692,12 @@ phase_4_cloud_tools() {
             print_success "Claude Code doctor check passed"
         else
             log_verbose "Claude Code doctor reported warnings (non-fatal)"
+        fi
+
+        if [[ -x "$claude_wrapper" ]] && "$claude_wrapper" --version >/dev/null 2>&1; then
+            print_success "Claude wrapper resolves native CLI correctly"
+        else
+            print_warning "Claude wrapper verification failed"
         fi
     fi
 

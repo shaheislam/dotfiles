@@ -11,7 +11,7 @@ This note explains how the OpenCode ↔ OpenAI account rotation feature works fr
 
 1. **Enrollment** – Fish helper `opencode-accounts add|capture` ( `.config/fish/functions/opencode-accounts.fish`) logs in, saves each provider profile under `~/.opencode/accounts/<name>/openai-auth.json`, and mirrors the same payload into Codex via `_ai_accounts_sync`. The `.accounts` file preserves round-robin order and `.current` records the pointer that last worked.
 2. **Preflight guardrails** – Every launcher (`gwt-ticket`, `scripts/opencode/tmux-open.sh`, cross-provider bridge, dev panes, Neovim bridge) shells through `scripts/opencode/check-and-rotate.sh` before OpenCode starts. That script runs `scripts/opencode/usage-check.sh`, invokes `opencode-accounts check-and-rotate` when needed, and refuses to launch if no usable token exists.
-3. **Session capture** – The OpenAI rotation plugin (`.opencode/plugins/openai-rotate.ts`) watches `chat.message` events for any OpenAI/Codex provider, snapshots the outgoing prompt (agent, system, model, tool list, prompt parts), and waits for completion metadata.
+3. **Session capture** – The OpenAI rotation plugin (`.config/opencode/plugin/openai-rotate.ts`) watches `chat.message` events for any OpenAI/Codex provider, snapshots the outgoing prompt (agent, system, model, tool list, prompt parts), and waits for completion metadata.
 4. **Runtime failover** – When a `session.error` arrives with usage-limit hints, the plugin serializes rotation: it saves the current auth if missing, probes each stored account via `usage-check.sh`, switches the live `auth.json` to the first success, and replays the captured prompt through `client.session.prompt()` with a user-visible toast.
 5. **Observability + hygiene** – Environment flags (`OPENCODE_ROTATE_DEBUG_LOG`, `OPENCODE_USAGE_CHECK_SCRIPT`, `OPENCODE_ACCOUNTS_DIR`) keep traces, while harnesses (`scripts/opencode/test-rotation.sh`, `test-live-rotation.sh`, `scripts/test-filter.sh opencode`) and doctor scripts prove the flow end-to-end.
 
@@ -46,7 +46,7 @@ Path: `scripts/opencode/usage-check.sh`
 
 ### Rotation plugin
 
-Path: `.opencode/plugins/openai-rotate.ts`
+Path: `.config/opencode/plugin/openai-rotate.ts`
 
 - Hooks into `chat.message` events to capture the last prompt (`pendingPrompts`) scoped to each OpenCode session.
 - Watches `session.error` events. When an assistant message produces an error and `isOpenAIUsageLimit()` sees 429/usage-limit hints (including custom provider payloads), the plugin kicks off rotation.

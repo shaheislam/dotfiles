@@ -11,8 +11,13 @@
 set -euo pipefail
 
 SELF_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+SELF_PATH="$(python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$0")"
 CLAUDE_RUNNER="${CLAUDE_RUNNER:-auto}"
 PASSTHRU_CMDS=(mcp config plugin auth doctor update api-key logout migrate-installer)
+
+canonicalize_path() {
+    python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$1"
+}
 
 find_real_claude() {
     local IFS=':'
@@ -20,6 +25,9 @@ find_real_claude() {
         [[ "$dir" == "$SELF_DIR" ]] && continue
         local candidate="$dir/claude"
         if [[ -x "$candidate" && ! -d "$candidate" ]]; then
+            local candidate_real
+            candidate_real="$(canonicalize_path "$candidate")"
+            [[ "$candidate_real" == "$SELF_PATH" ]] && continue
             echo "$candidate"
             return 0
         fi
