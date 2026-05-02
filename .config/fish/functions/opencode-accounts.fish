@@ -222,9 +222,13 @@ function opencode-accounts --description "Manage OpenCode OpenAI account profile
             end
 
             # Merge: replace only the .openai key, preserve other providers
-            set -l openai_data (cat "$acct_auth")
+            # Use --slurpfile to read directly from file — avoids fish splitting multi-line JSON
             set -l tmp (mktemp)
-            jq --argjson openai "$openai_data" '.openai = $openai' "$auth_file" >"$tmp"
+            if not jq --slurpfile openai "$acct_auth" '.openai = $openai[0]' "$auth_file" >"$tmp"
+                rm -f "$tmp"
+                echo "Error: failed to merge auth for '$name'" >&2
+                return 1
+            end
             mv "$tmp" "$auth_file"
 
             # Update rotation pointer
