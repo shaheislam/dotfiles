@@ -843,9 +843,21 @@ phase_4_cloud_tools() {
         fi
 
         if command_exists bun; then
+            local npmrc_was_missing=false
+            if [ -f "$HOME/.npmrc" ] && grep -q "^registry=" "$HOME/.npmrc" 2>/dev/null; then
+                cp -p "$HOME/.npmrc" "$HOME/.npmrc.setup-bak" 2>/dev/null || true
+                rm -f "$HOME/.npmrc"
+            elif [ ! -f "$HOME/.npmrc" ]; then
+                npmrc_was_missing=true
+            fi
             bun add -g opencode-with-claude@latest >/dev/null 2>&1 &&
                 print_success "opencode-with-claude installed" ||
                 print_warning "Failed to install opencode-with-claude"
+            if [ -f "$HOME/.npmrc.setup-bak" ]; then
+                mv "$HOME/.npmrc.setup-bak" "$HOME/.npmrc"
+            elif $npmrc_was_missing && [ -f "$HOME/.npmrc" ]; then
+                rm -f "$HOME/.npmrc"
+            fi
         else
             print_warning "bun not found; skipping opencode-with-claude plugin install"
         fi

@@ -444,8 +444,8 @@ test_hooks() {
     # Functional: auto-format.py skips unknown extensions (non-blocking)
     run_test "auto-format skips unknown extension" "echo '{\"tool_input\":{\"file_path\":\"/tmp/data.xyz\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null"
 
-	# Functional: auto-format.py graceful on empty .sh file
-	run_test "auto-format graceful on empty sh" "
+    # Functional: auto-format.py graceful on empty .sh file
+    run_test "auto-format graceful on empty sh" "
         tmpsh=\$(mktemp /tmp/hook-test-XXXXXX.sh)
         echo '{\"tool_input\":{\"file_path\":\"'\"\$tmpsh\"'\"}}' | python3 '$hooks_dir/auto-format.py' 2>/dev/null
         rc=\$?; rm -f \"\$tmpsh\"; [ \$rc -eq 0 ]
@@ -505,8 +505,8 @@ assert cmds.index([c for c in cmds if 'use_bun' in c][0]) < cmds.index([c for c 
         rm -rf \"\$tmpdir\"
         [[ \"\$out\" == *'FAILED: one'* ]]
     "
-	# Functional: PreToolUse Edit|Write keeps protect-files.py wired
-	run_test "hook config: Edit|Write includes protect-files" "python3 -c \"
+    # Functional: PreToolUse Edit|Write keeps protect-files.py wired
+    run_test "hook config: Edit|Write includes protect-files" "python3 -c \"
 import json
 d=json.load(open('$DOTFILES_ROOT/.claude/settings.json'))
 edit_hooks=[h for h in d['hooks']['PreToolUse'] if h.get('matcher')=='Edit|Write'][0]['hooks']
@@ -514,10 +514,10 @@ cmds=[h['command'] for h in edit_hooks]
 assert any('protect-files.py' in cmd for cmd in cmds)
 \""
 
-	# Functional: post-compact-reinject.sh outputs context reminders
-	run_test "post-compact outputs bun reminder" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *bun* ]]"
-	run_test "post-compact outputs Tokyo Night" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *'Tokyo Night'* ]]"
-	run_test "post-compact exits 0" "bash '$hooks_dir/post-compact-reinject.sh' >/dev/null 2>&1"
+    # Functional: post-compact-reinject.sh outputs context reminders
+    run_test "post-compact outputs bun reminder" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *bun* ]]"
+    run_test "post-compact outputs Tokyo Night" "[[ \$(bash '$hooks_dir/post-compact-reinject.sh' 2>/dev/null) == *'Tokyo Night'* ]]"
+    run_test "post-compact exits 0" "bash '$hooks_dir/post-compact-reinject.sh' >/dev/null 2>&1"
 }
 
 test_cd_perf() {
@@ -998,6 +998,7 @@ test_opencode() {
     run_test "OpenCode PTY plugin configured" "jq -e '.plugin[] | select(contains(\"pty\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode VibeGuard plugin configured" "jq -e '.plugin[] | select(contains(\"vibeguard\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode Claude subscription plugin configured" "jq -e '.plugin[] | select(contains(\"opencode-with-claude\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode Claude subscription package installed" "[ -f '$HOME/.bun/install/global/node_modules/opencode-with-claude/dist/index.js' ]"
     run_test "OpenCode Neovim opener plugin configured" "jq -e '.plugin[] | select(contains(\"nvim-open\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode DCP config exists" "[ -f '$DOTFILES_ROOT/.opencode/dcp.jsonc' ]"
     run_test "OpenCode VibeGuard config exists" "[ -f '$DOTFILES_ROOT/.opencode/vibeguard.config.json' ]"
