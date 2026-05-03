@@ -25,6 +25,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     #   --mount, -m     Additional mount (repeatable)
     #   --session S     Tmux session name (default: repo name)
     #   --devcon        Use devcontainer for isolation (default: local)
+    #   --rebuild-devcon Rebuild devcontainer before launch (Claude fallback only)
     #   --sub NAME      Claude subscription profile (maps to ~/.claude-NAME config dir)
     #   --provider P    Claude fallback API provider profile (bedrock, vertex, foundry, gateway, or custom)
     #   --system S      Ticketing system: linear or jira
@@ -72,6 +73,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     set -l session_name ""
     set -l ticketing_system ""
     set -l use_devcon false
+    set -l rebuild_devcon false
     set -l mounts
     set -l show_help false
     set -l skip_next false
@@ -160,6 +162,8 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
                 set show_help true
             case --devcon
                 set use_devcon true
+            case --rebuild-devcon --rebuild
+                set rebuild_devcon true
             case --max
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -772,6 +776,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         echo "  --mount, -m          Add directory mount (repeatable)"
         echo "  --session S          Tmux session name (default: repo name)"
         echo "  --devcon             Use devcontainer for isolation (default: local)"
+        echo "  --rebuild-devcon     Rebuild devcontainer before launch (Claude fallback only)"
         echo "  --system S           Ticketing system: linear or jira"
         echo "  --bridge [N]         Enable cross-provider reasoning bridge (N=max iterations, default: 3)"
         echo "  --bridge-providers P Comma-separated provider order (default: opencode sidecar model)"
@@ -962,10 +967,10 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
             case ollama
                 set provider_display Ollama
         end
-        # Soft doctor preflight — warn but don't block launch
+        # Soft quick doctor preflight — warn but don't block launch
         set -l doctor_script "$HOME/dotfiles/scripts/opencode/doctor.sh"
         if test -x "$doctor_script"
-            set -l doctor_out (bash "$doctor_script" 2>&1)
+            set -l doctor_out (bash "$doctor_script" --quick 2>&1)
             set -l doctor_exit $status
             if test $doctor_exit -ne 0
                 echo "Warning: OpenCode doctor found issues:" >&2
@@ -2294,9 +2299,12 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
     chmod +x $nvim_launch_script
 
     if $use_devcon
-        # Build devcon up command - rebuild ensures fresh container with correct mounts
-        # Without -r, devcontainer up reuses existing containers that may lack --mount binds
-        set -l devcon_up_cmd "devcon claude -i $instance_name -r -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 -E CLAUDE_CODE_NO_FLICKER=0"
+        # Build devcon up command. Reuse existing containers by default; opt into
+        # rebuilds only when mounts/features need to be refreshed.
+        set -l devcon_up_cmd "devcon claude -i $instance_name -E FORCE_AUTOUPDATE_PLUGINS=1 -E CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1 -E CLAUDE_CODE_NO_FLICKER=0"
+        if $rebuild_devcon
+            set devcon_up_cmd "$devcon_up_cmd -r"
+        end
         # Pass CLAUDE_CONFIG_DIR env var into container for subscription profile
         if test -n "$sub_profile"
             set devcon_up_cmd "$devcon_up_cmd -E CLAUDE_CONFIG_DIR=/home/node/.claude-$sub_profile"
@@ -2412,7 +2420,6 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
             "    bash '$sandbox_script' default 2>/dev/null; or true" \
             '    exit 1' \
             end \
-            'sleep 2' \
             "set -l right_pane_id (tmux display-message -p '#{pane_id}')" \
             "set -l claude_pane_id (tmux split-window -t \"\$right_pane_id\" -hb -p 35 -P -F '#{pane_id}' 'fish $claude_pane_script')" \
             "tmux split-window -t \"\$right_pane_id\" -v -p 30 -c '$worktree_path'" \
