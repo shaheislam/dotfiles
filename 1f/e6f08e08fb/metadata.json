@@ -1,0 +1,56 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "1fe6f08e08fb",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 6,
+  "files_touched": [
+    ".config/fish/completions/assume.fish",
+    ".config/fish/completions/fisher.fish",
+    ".config/fish/completions/git.fish",
+    ".config/fish/completions/install-nvim-in-pod.fish",
+    ".config/fish/completions/kns.fish",
+    ".config/fish/completions/kubectl.fish",
+    ".config/fish/completions/kubectl.fish.full",
+    ".config/fish/completions/labctl.fish",
+    ".config/fish/conf.d/docker-fzf-keybindings.fish",
+    ".config/fish/conf.d/fzf-docker.fish",
+    ".config/fish/conf.d/kubectl-aliases-README.md",
+    ".config/fish/functions/__fish_complete_aws_profiles.fish",
+    ".config/fish/functions/__fish_complete_aws_s3_buckets.fish",
+    ".config/fish/functions/_claude_resume_fzf_tab_complete.fish",
+    ".config/fish/functions/_docker_fzf_tab_complete.fish",
+    ".config/fish/functions/_ecs_fzf_tab_complete.fish",
+    ".config/fish/functions/_git_fzf_tab_complete.fish",
+    ".config/fish/functions/_helm_fzf_native_full.fish",
+    ".config/fish/functions/_helm_fzf_tab_complete.fish",
+    ".config/fish/functions/_kubectl_fzf_native_full.fish",
+    ".config/fish/functions/_stern_fzf_tab_complete.fish",
+    ".config/fish/functions/_terraform_fzf_command.fish",
+    ".config/fish/functions/_terraform_fzf_tab_complete.fish",
+    ".config/fish/functions/carapace_fzf_complete.fish",
+    ".config/fish/functions/ct-view.fish",
+    ".config/fish/functions/docker.fish",
+    ".config/fish/functions/fish_command_not_found.fish",
+    ".config/fish/functions/helm_fzf_native.fish",
+    ".config/fish/functions/kns.fish",
+    ".config/fish/functions/kubectl-simple-README.md",
+    "docs/kubectl-container-completion.md",
+    "scripts/test-filter.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1f/e6f08e08fb/0/metadata.json",
+      "transcript": "/1f/e6f08e08fb/0/full.jsonl",
+      "content_hash": "/1f/e6f08e08fb/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4310403,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 11374592,
+    "output_tokens": 62611,
+    "api_call_count": 156
+  }
+}
