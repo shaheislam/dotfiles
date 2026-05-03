@@ -7,73 +7,96 @@ if status buildinfo | string match -qi "*darwin*"
     set _os Darwin
 end
 
-# OS-specific core paths
-# Keep user-managed bins ahead of package-manager bins so native installers
-# (for example Claude Code in ~/.local/bin) win over legacy Homebrew/npm shims.
-fish_add_path --move $HOME/.local/bin # User local binaries
-fish_add_path --move $HOME/bin # User binaries
+# Build PATH in memory, then update fish_user_paths once only if needed.
+# Repeated `fish_add_path --move` calls rewrite universal vars and trigger
+# __fish_reconstruct_path each time, which shows up on every new shell.
+set -l managed_paths
 
-# PERF: --move ensures Homebrew comes before /usr/bin (from /etc/paths).
-# Without this, macOS system git (2.39.5, ~1.2s git status) is used
-# instead of Homebrew git (2.49+, ~45ms git status).
+# Keep wrappers first so repo-owned shims win over package-manager installs.
+set -a managed_paths $HOME/dotfiles/scripts/bin
+
+# Homebrew must stay before /usr/bin so Homebrew git is used on macOS.
 if test "$_os" = Darwin
-    fish_add_path --move /opt/homebrew/bin # Homebrew on Apple Silicon — MUST be before /usr/bin
-    fish_add_path /usr/local/bin # Traditional Unix local binaries
-else
-    # Linux paths
-    fish_add_path /usr/local/bin
-    fish_add_path /usr/bin
+    set -a managed_paths /opt/homebrew/bin
 end
 
-# Development tools (universal)
-fish_add_path $HOME/.cargo/bin # Rust/Cargo binaries
-fish_add_path $HOME/.bun/bin # Bun JavaScript runtime
-fish_add_path $HOME/.rd/bin # Rancher Desktop
-fish_add_path $HOME/.local/share/sonarqube-cli/bin # SonarQube CLI
+# Preserve the current command-resolution order for user and system bins.
+set -a managed_paths \
+    $HOME/bin \
+    $HOME/.local/bin \
+    /usr/bin
 
-# Python (OS-aware)
+# Agent/dev workflow paths, ordered to match the previous resolved PATH.
+set -a managed_paths \
+    $HOME/.iximiuz/labctl/bin \
+    $HOME/.nix-profile/bin \
+    $HOME/.local/share/mise/shims \
+    $HOME/.bun/bin \
+    $HOME/.cargo/bin
+
 if test "$_os" = Darwin
-    fish_add_path $HOME/Library/Python/3.9/bin # macOS Python user packages
+    set -a managed_paths \
+        /usr/local/bin \
+        $HOME/Library/Python/3.9/bin
     set -x PYTHONPATH /opt/homebrew/lib/python3.11/site-packages
 else
+    set -a managed_paths /usr/local/bin
     # Linux Python path - use glob with fallback to avoid errors when no match
     for pypath in $HOME/.local/lib/python3.*/site-packages
-        test -d "$pypath" && fish_add_path "$pypath"
+        set -a managed_paths $pypath
     end
     set -x PYTHONPATH /usr/lib/python3/dist-packages
 end
 
-# Dotfiles scripts
-fish_add_path --move $HOME/dotfiles/scripts/bin
+set -a managed_paths \
+    $HOME/.rd/bin \
+    $HOME/.local/share/sonarqube-cli/bin \
+    $HOME/dotfiles/scripts
 
-# Application-specific paths (conditional)
-# Add VSCode bin to PATH if it exists
-if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-    fish_add_path "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+if set -q KREW_ROOT
+    set -a managed_paths $KREW_ROOT/.krew/bin
+else
+    set -a managed_paths $HOME/.krew/bin
 end
 
-# Clean stale paths from fish_user_paths: non-existent dirs, container leaks, duplicates.
-# Reduces PATH size → faster command -q scans on every command lookup.
-if set -q fish_user_paths
-    set -l cleaned
-    set -l seen
-    for p in $fish_user_paths
-        # Skip container paths leaked from devcontainer sessions
-        if string match -q '/home/node/*' $p
-            continue
-        end
-        # Skip non-existent directories
-        if not test -d "$p"
-            continue
-        end
-        # Skip duplicates
-        if contains -- $p $seen
-            continue
-        end
-        set -a cleaned $p
-        set -a seen $p
+set -a managed_paths $HOME/work/terraform-provision
+
+if test -d /opt/homebrew/opt/openjdk/bin
+    set -a managed_paths /opt/homebrew/opt/openjdk/bin
+end
+
+if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+    set -a managed_paths "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
+end
+
+set -l next_fish_user_paths
+set -l seen_paths
+
+for p in $managed_paths
+    set -l resolved (builtin realpath -s -- $p 2>/dev/null)
+    if test -z "$resolved"; or not test -d "$resolved"; or contains -- $resolved $seen_paths
+        continue
     end
-    if test (count $cleaned) -ne (count $fish_user_paths)
-        set -U fish_user_paths $cleaned
+    set -a next_fish_user_paths $resolved
+    set -a seen_paths $resolved
+end
+
+# Preserve any user-specific paths not managed above, while dropping stale paths,
+# container leaks, and duplicates.
+for p in $fish_user_paths
+    if string match -q '/home/node/*' $p
+        continue
     end
+    set -l resolved (builtin realpath -s -- $p 2>/dev/null)
+    if test -z "$resolved"; or not test -d "$resolved"; or contains -- $resolved $seen_paths
+        continue
+    end
+    set -a next_fish_user_paths $resolved
+    set -a seen_paths $resolved
+end
+
+set -l current_paths (string join \n -- $fish_user_paths)
+set -l desired_paths (string join \n -- $next_fish_user_paths)
+if test "$current_paths" != "$desired_paths"
+    set -U fish_user_paths $next_fish_user_paths
 end

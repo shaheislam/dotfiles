@@ -802,33 +802,7 @@ if functions -q _fifc_or_fzf
     bind -M insert \t _fifc_or_fzf
 end
 
-# Mise shims for version-managed tools (must be early in PATH)
-fish_add_path $HOME/.local/share/mise/shims
-
-# K9s kubectl-node-shell plugin
-fish_add_path $HOME/dotfiles/scripts
-
-# Krew kubectl plugin manager (with KREW_ROOT support)
-# PERF: Use fish_add_path for dedup (raw set -gx PATH appends duplicates on each shell)
-if set -q KREW_ROOT
-    fish_add_path $KREW_ROOT/.krew/bin
-else
-    fish_add_path $HOME/.krew/bin
-end
-
-# Nix profile for LSPs
-fish_add_path $HOME/.nix-profile/bin
-
-# Terraform provisioning tool
-fish_add_path $HOME/work/terraform-provision
-
-# iximiuz labctl CLI
-fish_add_path $HOME/.iximiuz/labctl/bin
-
-# OpenJDK (Homebrew) for Jenkins CLI
-if test -d /opt/homebrew/opt/openjdk/bin
-    fish_add_path /opt/homebrew/opt/openjdk/bin
-end
+# PATH is managed in .config/fish/paths.fish with one batched update.
 
 # Opencode LSP integration with Nix
 # Prevent Opencode from downloading its own LSP servers
