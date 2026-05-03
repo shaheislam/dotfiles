@@ -1020,7 +1020,7 @@ test_opencode() {
     run_test "OpenCode accounts fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish'"
     run_test "OpenCode accounts has check-and-rotate" "grep -q 'check-and-rotate' '$DOTFILES_ROOT/.config/fish/functions/opencode-accounts.fish'"
 
-    run_test "gwt-ticket has usage-check preflight" "grep -q 'usage-check.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket has optional usage-check preflight" "grep -q 'usage-check.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
 
     run_test "OpenCode npm plugins configured" "jq -e '.plugin | length > 0' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode DCP plugin configured" "jq -e '.plugin[] | select(contains(\"dcp\"))' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"

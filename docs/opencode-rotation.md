@@ -10,7 +10,7 @@ This note explains how the OpenCode ↔ OpenAI account rotation feature works fr
 ## End-to-End Timeline
 
 1. **Enrollment** – Fish helper `opencode-accounts add|capture` ( `.config/fish/functions/opencode-accounts.fish`) logs in, saves each provider profile under `~/.opencode/accounts/<name>/openai-auth.json`, and mirrors the same payload into Codex via `_ai_accounts_sync`. The `.accounts` file preserves round-robin order and `.current` records the pointer that last worked.
-2. **Preflight guardrails** – Every launcher (`gwt-ticket`, `scripts/opencode/tmux-open.sh`, cross-provider bridge, dev panes, Neovim bridge) shells through `scripts/opencode/check-and-rotate.sh` before OpenCode starts. That script runs `scripts/opencode/usage-check.sh`, invokes `opencode-accounts check-and-rotate` when needed, and refuses to launch if no usable token exists.
+2. **Preflight guardrails** – Non-interactive launchers can shell through `scripts/opencode/check-and-rotate.sh` before OpenCode starts. `gwt-ticket` leaves this off by default because the public API probe can disagree with OpenCode's ChatGPT subscription route; set `OPENCODE_GWTT_USAGE_PREFLIGHT=1` to enable the legacy launch-time check.
 3. **Session capture** – The OpenAI rotation plugin (`.config/opencode/plugin/openai-rotate.ts`) watches `chat.message` events for any OpenAI/Codex provider, snapshots the outgoing prompt (agent, system, model, tool list, prompt parts), and waits for completion metadata.
 4. **Runtime failover** – When a `session.error` arrives with usage-limit hints, the plugin serializes rotation: it saves the current auth if missing, probes each stored account via `usage-check.sh`, switches the live `auth.json` to the first success, and replays the captured prompt through `client.session.prompt()` with a user-visible toast.
 5. **Observability + hygiene** – Environment flags (`OPENCODE_ROTATE_DEBUG_LOG`, `OPENCODE_USAGE_CHECK_SCRIPT`, `OPENCODE_ACCOUNTS_DIR`) keep traces, while harnesses (`scripts/opencode/test-rotation.sh`, `test-live-rotation.sh`, `scripts/test-filter.sh opencode`) and doctor scripts prove the flow end-to-end.
@@ -24,7 +24,7 @@ Path: `.config/fish/functions/opencode-accounts.fish`
 - `add <name>` – runs `opencode auth login` and saves the resulting `.openai` entry to `~/.opencode/accounts/<name>/openai-auth.json`, updating `.accounts` and `.current` pointers.
 - `capture <name>` – records the currently active auth for quick refreshes.
 - `switch <name>` – rewrites `~/.local/share/opencode/auth.json` (OpenCode’s live credential) with a saved profile.
-- `check-and-rotate` – used in `gwt-ticket` before every launch to ensure a valid account. It auto-saves the live token if it isn’t in the rotation list, probes each saved profile via `scripts/opencode/usage-check.sh`, and if every profile is exhausted it falls back to an interactive login.
+- `check-and-rotate` – opt-in/manual preflight for ensuring a valid account. It auto-saves the live token if it isn’t in the rotation list, probes each saved profile via `scripts/opencode/usage-check.sh`, and if every profile is exhausted it falls back to an interactive login.
 - Helpers like `status`, `list`, and `check` expose rotation state for humans. `ai-accounts.fish` consumes these commands so `ai-accounts` shows OpenCode/Codex parity in one shot.
 
 Profiles live under `~/.opencode/accounts/`. The `.accounts` file stores display order, `.current` stores the numeric index of the last successful profile, and each profile keeps a trimmed-down `openai-auth.json` so Codex can stay in sync via `_ai_accounts_sync`.
@@ -33,7 +33,7 @@ Profiles live under `~/.opencode/accounts/`. The `.accounts` file stores display
 
 Path: `scripts/opencode/check-and-rotate.sh`
 
-- Wraps the usage probe so every host can call a single executable (Fish and Bash friendly). `gwt-ticket`, tmux bindings, Neovim bridge spawns, and `.claude/hooks/cross-provider-bridge.sh` all point at this script via `OPENCODE_PREFLIGHT_RUNNER`.
+- Wraps the usage probe so hosts can call a single executable (Fish and Bash friendly). tmux bindings, Neovim bridge spawns, and `.claude/hooks/cross-provider-bridge.sh` can point at this script via `OPENCODE_PREFLIGHT_RUNNER`; `gwt-ticket` only runs it when `OPENCODE_GWTT_USAGE_PREFLIGHT=1`.
 - Executes `scripts/opencode/usage-check.sh --quiet`; if it exits `1` (rate/usage limit) the script shells into Fish just long enough to run `opencode-accounts check-and-rotate`, re-runs the probe, and falls back to `opencode auth login --provider openai` if rotation cannot recover.
 - Honors `DOTFILES_ROOT`, `OPENCODE_USAGE_CHECK_SCRIPT`, and `FISH_BIN` so devcontainers/tests can inject temporary homes while still exercising the same logic.
 
@@ -72,14 +72,14 @@ Environment knobs:
 
 ## Host Integrations
 
-- **`gwt-*` workflows** – `gwt-ticket`, devpane bootstraps, and `codex-rotate` parity helpers source `opencode-accounts` plus `scripts/opencode/check-and-rotate.sh` before launching OpenCode, guaranteeing rotation is healthy before any CLI session.
+- **`gwt-*` workflows** – `gwt-ticket` relies on the OpenCode rotation plugin at runtime by default, avoiding false positives from the public API probe. For launch-time checking, run with `OPENCODE_GWTT_USAGE_PREFLIGHT=1`.
 - **tmux binding** – `scripts/opencode/tmux-open.sh` is the Ctrl-s `O` launcher. It disables `alternate-screen`, runs the same preflight helper in the pane, and restores tmux state after OpenCode exits so rotation status is visible in scrollback.
 - **Cross-provider bridge** – `.claude/hooks/cross-provider-bridge.sh` wires `OPENCODE_PREFLIGHT_RUNNER=$HOME/dotfiles/scripts/opencode/check-and-rotate.sh`. When `codex→opencode` fallbacks engage, both providers run their rotation helpers, so background automation inherits the same guardrails.
 - **Neovim + opencode.nvim** – The Neovim bridge (`docs/opencode-nvim.md`) inherits whichever harness spawned it (gwt-ticket or cross-provider). The plugin itself does not implement rotation; instead it relies on the CLI and plugin layers described above, keeping feature parity regardless of whether prompts originate from tmux or Neovim.
 
 ## Harness Coverage
 
-- **OpenCode hosts (gwt-ticket, dev panes, Neovim bridge launches)** call `scripts/opencode/check-and-rotate.sh` before the CLI boots. The helper runs `usage-check.sh`, invokes `opencode-accounts check-and-rotate` via fish if the current sub is exhausted, and re-checks before allowing the session to proceed.
+- **OpenCode hosts** can call `scripts/opencode/check-and-rotate.sh` before the CLI boots. The helper runs `usage-check.sh`, invokes `opencode-accounts check-and-rotate` via fish if the current sub is exhausted, and re-checks before allowing the session to proceed. `gwt-ticket` keeps this opt-in via `OPENCODE_GWTT_USAGE_PREFLIGHT=1`.
 - **Codex harnesses** (`.claude/hooks/cross-provider-bridge.sh`, `scripts/codex-bridge-review.sh`, and any other shell scripts) shell through `scripts/codex/run-with-rotation.sh`, which drops into fish long enough to execute `codex-rotate` with the requested args, then streams output back to the original process. This keeps cross-provider codex reviewers and automation runs alive without extra flags.
 - **Neovim plugin flows** inherit whatever harness launches them (gwt-ticket or cross-provider), so the same helpers guarantee autorotation even when prompts originate from inside Neovim.
 
@@ -94,7 +94,7 @@ Environment knobs:
 ## Operations Playbook
 
 - **Enroll accounts** – `opencode-accounts add personal`, repeat for each subscription. Use `opencode-accounts status` to confirm the rotation order and active profile.
-- **Pre-flight** – `gwt-ticket` automatically runs `opencode-accounts check-and-rotate`, but you can run it manually if you expect to hammer the API outside that workflow.
+- **Pre-flight** – `gwt-ticket` skips launch-time probing by default. If you need the legacy behavior, set `OPENCODE_GWTT_USAGE_PREFLIGHT=1` or run `opencode-accounts check-and-rotate` manually before a heavy session.
 - **Keyboard-only tmux panes** – If you launch OpenCode via our tmux binding (`Ctrl-s O`), the wrapper `scripts/opencode/tmux-open.sh` disables the terminal’s alternate screen so tmux copy-mode (`Ctrl-s v`, `h/j/k/l`, `Ctrl-u/d`) retains the full scrollback. When OpenCode exits the wrapper re-enables alternate screen, so other panes keep their default behavior.
 - **During rotation failures** – If you see the “Save another account with opencode-accounts” toast, either capture a fresh login (`opencode-accounts capture new-name`) or prune stale profiles so `.accounts` matches reality.
 - **Observability** – Set `OPENCODE_ROTATE_DEBUG_LOG=/tmp/opencode-rotate.log` before launching OpenCode to capture every detection/rotation decision.
