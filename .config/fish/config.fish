@@ -305,6 +305,7 @@ if status is-interactive
             set -gx PATH "$HOME/.local/share/mise/shims" $PATH
         end
     end
+    __dotfiles_clean_path_entries
 
     # Yazi file manager wrapper - q to stay, Q to cd to navigated directory
     function yazi

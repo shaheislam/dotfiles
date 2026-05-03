@@ -100,3 +100,32 @@ set -l desired_paths (string join \n -- $next_fish_user_paths)
 if test "$current_paths" != "$desired_paths"
     set -U fish_user_paths $next_fish_user_paths
 end
+
+function __dotfiles_clean_path_entries --description "Remove stale and duplicate active PATH entries"
+    # Clean inherited PATH entries after fish_user_paths is settled. Terminal
+    # launchers/Zsh can pass through stale dirs (asdf, cryptex, old global envs)
+    # that slow command lookup even though they are not in fish_user_paths.
+    set -l cleaned_path
+    set -l seen_path_entries
+    for p in $PATH
+        if test -z "$p"; or string match -q '/home/node/*' $p
+            continue
+        end
+
+        set -l resolved (builtin realpath -s -- $p 2>/dev/null)
+        if test -z "$resolved"; or not test -d "$resolved"; or contains -- $resolved $seen_path_entries
+            continue
+        end
+
+        set -a cleaned_path $resolved
+        set -a seen_path_entries $resolved
+    end
+
+    set -l current_path_entries (string join \n -- $PATH)
+    set -l desired_path_entries (string join \n -- $cleaned_path)
+    if test "$current_path_entries" != "$desired_path_entries"
+        set -gx PATH $cleaned_path
+    end
+end
+
+__dotfiles_clean_path_entries

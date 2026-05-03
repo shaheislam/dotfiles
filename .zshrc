@@ -49,8 +49,10 @@ plugins=(
   zsh-history-substring-search
 )
 
-# Source Oh My Zsh
-source $ZSH/oh-my-zsh.sh
+# Source Oh My Zsh when it is installed.
+if [ -f "$ZSH/oh-my-zsh.sh" ]; then
+  source "$ZSH/oh-my-zsh.sh"
+fi
 
 # Paths
 export PATH="$HOME/.local/bin:$HOME/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -173,6 +175,22 @@ fi
 
 # Added by sonarqube-cli installer
 export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
+
+# Clean stale PATH entries inherited from launchers or optional tools. This only
+# removes entries that do not currently exist and preserves first-seen order.
+typeset -a _clean_path_entries _seen_path_entries
+for _path_entry in $path; do
+  if [[ -z "$_path_entry" || "$_path_entry" == /home/node/* || ! -d "$_path_entry" ]]; then
+    continue
+  fi
+  if (( ${_seen_path_entries[(Ie)$_path_entry]} == 0 )); then
+    _clean_path_entries+=("$_path_entry")
+    _seen_path_entries+=("$_path_entry")
+  fi
+done
+path=("${_clean_path_entries[@]}")
+export PATH
+unset _clean_path_entries _seen_path_entries _path_entry
 
 # OpenTelemetry observability (harness engineering)
 export CLAUDE_CODE_ENABLE_TELEMETRY=1
