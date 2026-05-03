@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "6fb2d37bf000",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/fish/completions/git.fish",
+    ".config/fish/completions/stern.fish",
+    ".config/fish/functions/_helm_fzf_native_full.fish",
+    ".config/fish/functions/_stern_fzf_tab_complete.fish",
+    "scripts/test-filter.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/6f/b2d37bf000/0/metadata.json",
+      "transcript": "/6f/b2d37bf000/0/full.jsonl",
+      "content_hash": "/6f/b2d37bf000/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1254971,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 5549056,
+    "output_tokens": 14282,
+    "api_call_count": 42
+  }
+}
