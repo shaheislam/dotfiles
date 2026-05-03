@@ -3,7 +3,7 @@
   "checkpoint_id": "872a9da13dc1",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 16,
+  "checkpoints_count": 28,
   "files_touched": [
     ".config/fish/functions/gwt-ticket.fish"
   ],
@@ -19,13 +19,19 @@
       "transcript": "/87/2a9da13dc1/1/full.jsonl",
       "content_hash": "/87/2a9da13dc1/1/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/87/2a9da13dc1/2/metadata.json",
+      "transcript": "/87/2a9da13dc1/2/full.jsonl",
+      "content_hash": "/87/2a9da13dc1/2/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 7643208,
+    "input_tokens": 14012455,
     "cache_creation_tokens": 0,
-    "cache_read_tokens": 31630336,
-    "output_tokens": 92490,
-    "api_call_count": 365
+    "cache_read_tokens": 59960832,
+    "output_tokens": 191176,
+    "api_call_count": 667
   }
 }
