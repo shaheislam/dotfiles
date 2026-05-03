@@ -164,9 +164,10 @@ if status is-interactive
         __cache_tool_init direnv "direnv hook fish"
 
         # PERF: Override direnv's fish_prompt handler. The default runs
-        # `direnv export fish` on EVERY prompt (~660ms with Nix flakes).
-        # This override only evaluates on first prompt. After cd, the preexec
-        # handler re-evaluates before the next command.
+        # `direnv export fish` on prompt render, which makes new tmux panes in
+        # Nix-backed worktrees feel stuck. Defer the initial export until
+        # fish_preexec so the prompt appears immediately and the first real
+        # command pays the Nix/direnv cost instead.
         #
         # BUG FIX: The upstream eval_after_arrow pattern (direnv 2.34+) defines
         # the PWD hook inside fish_prompt and erases it in fish_preexec. But
@@ -200,13 +201,8 @@ if status is-interactive
         function __direnv_export_eval --on-event fish_prompt
             if not set -q __direnv_initialized
                 set -g __direnv_initialized 1
-                /opt/homebrew/bin/direnv export fish | source
-                # Track .envrc by walking up from PWD — NOT from $DIRENV_FILE.
-                # In git worktrees, $DIRENV_FILE points to the main worktree's
-                # .envrc (e.g. ~/dotfiles/.envrc) even when we're in a different
-                # worktree (e.g. ~/dotfiles-inputdelay). Using the walk-up path
-                # keeps the scope check in the preexec handler consistent.
-                set -g __direnv_last_envrc (_find_nearest_envrc; or echo "")
+                set -g __direnv_last_envrc ""
+                set -g __direnv_export_again 0
             end
         end
 

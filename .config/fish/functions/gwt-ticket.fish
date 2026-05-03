@@ -2423,14 +2423,19 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
             "set -l right_pane_id (tmux display-message -p '#{pane_id}')" \
             "set -l claude_pane_id (tmux split-window -t \"\$right_pane_id\" -hb -p 35 -P -F '#{pane_id}' 'fish $claude_pane_script')" \
             "tmux split-window -t \"\$right_pane_id\" -v -p 30 -c '$worktree_path'" \
-            "tmux send-keys -t \"\$right_pane_id\" 'fish $nvim_launch_script' Enter" \
             "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &" \
             disown \
-            'exec fish' >$setup_script
+            "exec fish $nvim_launch_script" >$setup_script
         chmod +x $setup_script
 
-        # Short send-keys payload immune to direnv interference
-        tmux send-keys -t "$session_name:$window_name" "fish $setup_script" Enter
+        # Start setup directly instead of typing into an interactive shell; this
+        # avoids Fish preexec/direnv work before the layout is created.
+        tmux respawn-pane -k -t "$session_name:$window_name" -c "$worktree_path" "fish $setup_script"
+        or begin
+            echo "Error: Failed to start devcontainer layout" >&2
+            builtin cd $_orig_pwd 2>/dev/null
+            return 1
+        end
     else
         if $use_codex
             # OpenCode layout:
@@ -2448,7 +2453,8 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
             end
             tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path"
             or echo "Warning: Failed to create terminal pane" >&2
-            tmux send-keys -t "$right_pane_id" "fish $nvim_launch_script" Enter
+            tmux respawn-pane -k -t "$right_pane_id" -c "$worktree_path" "fish $nvim_launch_script"
+            or echo "Warning: Failed to launch nvim pane" >&2
             tmux rename-window -t "$session_name:$window_name" "$window_name" 2>/dev/null
         else
             # Claude layout:
@@ -2466,7 +2472,8 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
             end
             tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path"
             or echo "Warning: Failed to create terminal pane" >&2
-            tmux send-keys -t "$right_pane_id" "fish $nvim_launch_script" Enter
+            tmux respawn-pane -k -t "$right_pane_id" -c "$worktree_path" "fish $nvim_launch_script"
+            or echo "Warning: Failed to launch nvim pane" >&2
             set -l rename_script "$HOME/dotfiles/scripts/gwt-rename-session.sh"
             if not test -x "$rename_script"
                 set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
