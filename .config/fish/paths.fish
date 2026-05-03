@@ -1,10 +1,9 @@
 # Centralized PATH Management for Fish Shell
 # This file contains all PATH configurations for the Fish shell
 
-# PERF: Use built-in $system variable instead of uname subprocess (~5ms savings).
-# $system contains e.g. "aarch64-darwin" or "x86_64-linux".
+# PERF: Use Fish's builtin build info instead of spawning uname.
 set -l _os Linux
-if string match -q "*darwin*" "$system"
+if status buildinfo | string match -qi "*darwin*"
     set _os Darwin
 end
 
