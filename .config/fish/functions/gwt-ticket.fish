@@ -32,6 +32,8 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     #   --opencode      Use OpenCode mode (default)
     #   --claude        Use Claude Code fallback instead of OpenCode
     #   --opencode-model M  OpenCode model override
+    #   --opencode-doctor Run OpenCode doctor preflight before launch
+    #   --opencode-auth-check Check/login OpenCode auth before launch
     #   --codex         Legacy alias for --opencode
     #   --codex-model M Legacy OpenAI model alias for OpenCode
     #   --codex-profile P  Legacy compatibility flag; OpenCode auth comes from its own config
@@ -129,6 +131,8 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     set -l opencode_model ""
     set -l opencode_provider ""
     set -l provider_display ""
+    set -l opencode_doctor false
+    set -l opencode_auth_preflight false
     set -l use_codex true
     set -l codex_model ""
     set -l codex_profile ""
@@ -482,6 +486,10 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
                 end
             case --opencode --codex
                 set use_codex true
+            case --opencode-doctor --doctor
+                set opencode_doctor true
+            case --opencode-auth-check --auth-check
+                set opencode_auth_preflight true
             case --claude
                 set use_codex false
             case --opencode-model
@@ -793,6 +801,8 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         echo "  --opencode           Use OpenCode mode (default)"
         echo "  --claude             Use Claude Code fallback instead of OpenCode"
         echo "  --opencode-model M   OpenCode model override (e.g., openai/gpt-5.5, anthropic/claude-opus-4-6)"
+        echo "  --opencode-doctor    Run OpenCode doctor preflight before launch (off by default)"
+        echo "  --opencode-auth-check Check/login OpenCode auth before launch (off by default)"
         echo "  --codex              Legacy alias for --opencode"
         echo "  --codex-model M      Legacy OpenAI model alias for OpenCode (e.g., gpt-5.5)"
         echo "  --codex-profile P    Legacy compatibility flag; OpenCode auth comes from its own config"
@@ -967,9 +977,10 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
             case ollama
                 set provider_display Ollama
         end
-        # Soft quick doctor preflight — warn but don't block launch
+        # Soft quick doctor preflight is opt-in; it costs ~2s on a healthy setup
+        # and OpenCode will still surface real auth/config failures at launch.
         set -l doctor_script "$HOME/dotfiles/scripts/opencode/doctor.sh"
-        if test -x "$doctor_script"
+        if test -x "$doctor_script"; and begin; $opencode_doctor; or test "$OPENCODE_GWTT_DOCTOR" = 1; end
             set -l doctor_out (bash "$doctor_script" --quick 2>&1)
             set -l doctor_exit $status
             if test $doctor_exit -ne 0
@@ -1605,9 +1616,16 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         end
     end
 
-    # Harness preflight: verify harness features before launch
+    # Harness preflight is useful diagnostics, but default quiet mode hides its
+    # output. Avoid paying the cost unless verbose mode or an explicit env asks.
     set -l harness_verify "$worktree_path/scripts/harness/verify-harness.sh"
-    if test -x "$harness_verify"
+    set -l run_harness_verify false
+    if not $quiet_mode
+        set run_harness_verify true
+    else if test "$GWTT_HARNESS_PREFLIGHT" = 1
+        set run_harness_verify true
+    end
+    if $run_harness_verify; and test -x "$harness_verify"
         set -l harness_status (bash "$harness_verify" --summary 2>/dev/null)
         if not $quiet_mode; and test -n "$harness_status"
             echo "  Harness: $harness_status"
@@ -2039,14 +2057,21 @@ $prompt_suffix"
         if test -n "$opencode_model"
             set opencode_cmd "$opencode_cmd --model $opencode_model"
         end
-        set -a _ls "set -l auth_list (opencode auth list 2>/dev/null | string collect)"
-        set -a _ls "if not string match -iq '*$provider_display*' -- \$auth_list"
-        set -a _ls "    echo 'OpenCode is not authenticated for $provider_display. Starting login...'"
-        set -a _ls "    opencode auth login --provider $opencode_provider"
-        set -a _ls "    set auth_list (opencode auth list 2>/dev/null | string collect)"
+        # Auth preflight is opt-in; `opencode auth list` is expensive enough to
+        # delay TUI startup, and OpenCode reports auth failures at runtime.
+        if $opencode_auth_preflight
+            set -a _ls 'set -gx OPENCODE_GWTT_AUTH_PREFLIGHT 1'
+        end
+        set -a _ls 'if test "$OPENCODE_GWTT_AUTH_PREFLIGHT" = 1'
+        set -a _ls "    set -l auth_list (opencode auth list 2>/dev/null | string collect)"
         set -a _ls "    if not string match -iq '*$provider_display*' -- \$auth_list"
-        set -a _ls "        echo 'OpenCode login for $provider_display did not complete.'"
-        set -a _ls '        exec fish'
+        set -a _ls "        echo 'OpenCode is not authenticated for $provider_display. Starting login...'"
+        set -a _ls "        opencode auth login --provider $opencode_provider"
+        set -a _ls "        set auth_list (opencode auth list 2>/dev/null | string collect)"
+        set -a _ls "        if not string match -iq '*$provider_display*' -- \$auth_list"
+        set -a _ls "            echo 'OpenCode login for $provider_display did not complete.'"
+        set -a _ls '            exec fish'
+        set -a _ls '        end'
         set -a _ls '    end'
         set -a _ls end
         # Usage limit preflight is opt-in: the public OpenAI API probe can
