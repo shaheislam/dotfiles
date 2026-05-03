@@ -4,20 +4,53 @@
 # Check if Nix is installed
 if test -e /nix
 
-    # Skip the daemon source if PATH already contains ~/.nix-profile/bin
-    # (means a parent shell or fish_user_paths already exported the env vars
-    # nix-daemon.fish would set — re-sourcing wastes ~10ms of stat() calls).
-    if not contains "$HOME/.nix-profile/bin" $PATH
-        # Source Nix daemon for multi-user installation (macOS)
-        if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
-            source '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.fish'
-            # Alternative location for some installations
-        else if test -e '/nix/var/nix/profiles/default/etc/profile.d/nix.fish'
-            source '/nix/var/nix/profiles/default/etc/profile.d/nix.fish'
-            # Single-user installation fallback
-        else if test -e "$HOME/.nix-profile/etc/profile.d/nix.fish"
-            source "$HOME/.nix-profile/etc/profile.d/nix.fish"
+    # Set the small Nix daemon environment subset directly. Sourcing
+    # nix-daemon.fish is slower and prepends Nix bins ahead of Homebrew.
+    set -l _nix_link "$HOME/.nix-profile"
+    if set -q XDG_STATE_HOME; and test -e "$XDG_STATE_HOME/nix/profile"
+        set _nix_link "$XDG_STATE_HOME/nix/profile"
+    else if test -e "$HOME/.local/state/nix/profile"
+        set _nix_link "$HOME/.local/state/nix/profile"
+    end
+
+    if not set -q NIX_PROFILES
+        set -gx NIX_PROFILES "/nix/var/nix/profiles/default $_nix_link"
+    end
+
+    if not set -q NIX_SSL_CERT_FILE
+        for _nix_cert in \
+            /etc/ssl/certs/ca-certificates.crt \
+            /etc/ssl/ca-bundle.pem \
+            /etc/ssl/certs/ca-bundle.crt \
+            /etc/pki/tls/certs/ca-bundle.crt \
+            "$_nix_link/etc/ssl/certs/ca-bundle.crt" \
+            "$_nix_link/etc/ca-bundle.crt" \
+            /nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt \
+            /nix/var/nix/profiles/default/etc/ca-bundle.crt
+            if test -e "$_nix_cert"
+                set -gx NIX_SSL_CERT_FILE "$_nix_cert"
+                break
+            end
         end
+    end
+
+    set -l _nix_xdg_entries "$_nix_link/share" /nix/var/nix/profiles/default/share
+    if set -q XDG_DATA_DIRS; and test -n "$XDG_DATA_DIRS"
+        set -l _xdg_data_dirs (string split : -- "$XDG_DATA_DIRS")
+        for _nix_xdg_entry in $_nix_xdg_entries
+            if test -d "$_nix_xdg_entry"; and not contains -- "$_nix_xdg_entry" $_xdg_data_dirs
+                set -a _xdg_data_dirs "$_nix_xdg_entry"
+            end
+        end
+        set -gx XDG_DATA_DIRS (string join : -- $_xdg_data_dirs)
+    else
+        set -l _xdg_data_dirs /usr/local/share /usr/share
+        for _nix_xdg_entry in $_nix_xdg_entries
+            if test -d "$_nix_xdg_entry"
+                set -a _xdg_data_dirs "$_nix_xdg_entry"
+            end
+        end
+        set -gx XDG_DATA_DIRS (string join : -- $_xdg_data_dirs)
     end
 
     # Append Nix profile bin to PATH so Homebrew's newer git/etc. win.
