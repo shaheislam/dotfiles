@@ -28,6 +28,14 @@ if test -e /nix
         end
     end
 
+    # Multi-user Nix keeps the nix binary in the default profile, not the user
+    # profile. Append it so `nix` works without taking precedence over Homebrew.
+    if test -d /nix/var/nix/profiles/default/bin
+        if not contains /nix/var/nix/profiles/default/bin $PATH
+            set -gx PATH $PATH /nix/var/nix/profiles/default/bin
+        end
+    end
+
     # Append Home Manager profile bin (same reasoning as above)
     if test -d "$HOME/.local/state/nix/profiles/home-manager/home-path/bin"
         if not contains "$HOME/.local/state/nix/profiles/home-manager/home-path/bin" $PATH

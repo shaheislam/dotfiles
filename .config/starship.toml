@@ -12,12 +12,9 @@ $kubernetes\
 $cmd_duration\
 """
 
-# PERF: 1000ms accommodates git command spikes under heavy load (concurrent
-# agents, multiple worktrees, disk I/O contention). Git modules typically
-# complete in ~30ms (with fsmonitor + untrackedCache), but spike to 300ms+
-# under load. Prior values: 100ms (frequent timeouts), 300ms (sporadic
-# timeouts in worktrees). Starship default is 500ms.
-command_timeout = 1000
+# PERF: Keep prompt commands bounded. `git_status` is disabled, so the remaining
+# modules should complete well under this even in worktrees.
+command_timeout = 200
 palette = 'catppuccin_mocha'
 
 [palettes.catppuccin_mocha]

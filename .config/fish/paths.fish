@@ -30,6 +30,7 @@ set -a managed_paths \
 set -a managed_paths \
     $HOME/.iximiuz/labctl/bin \
     $HOME/.nix-profile/bin \
+    /nix/var/nix/profiles/default/bin \
     $HOME/.local/share/mise/shims \
     $HOME/.bun/bin \
     $HOME/.cargo/bin
