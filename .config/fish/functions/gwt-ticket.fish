@@ -2330,6 +2330,45 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         "exec $nvim_cmd" >$nvim_launch_script
     chmod +x $nvim_launch_script
 
+    set -l terminal_warmup_script "$instance_env/warm-terminal.fish"
+    printf '%s\n' \
+        '#!/usr/bin/env fish' \
+        'set -l __gwtt_envrc ""' \
+        'if functions -q _find_nearest_envrc' \
+        '    set __gwtt_envrc (_find_nearest_envrc; or echo "")' \
+        'else' \
+        '    set -l __gwtt_dir "$PWD"' \
+        '    while test -n "$__gwtt_dir"' \
+        '        if test -f "$__gwtt_dir/.envrc"' \
+        '            set __gwtt_envrc "$__gwtt_dir/.envrc"' \
+        '            break' \
+        '        end' \
+        "        set -l __gwtt_next (string replace -r '/[^/]+\$' '' -- \"\$__gwtt_dir\")" \
+        '        if test "$__gwtt_next" = "$__gwtt_dir"' \
+        '            break' \
+        '        end' \
+        '        set __gwtt_dir "$__gwtt_next"' \
+        '    end' \
+        'end' \
+        'if test -n "$__gwtt_envrc"; and command -q direnv' \
+        '    direnv export fish 2>/dev/null | source' \
+        '    set -l __gwtt_direnv_status $pipestatus[1]' \
+        '    if test "$__gwtt_direnv_status" = 0' \
+        '        set -g __direnv_initialized 1' \
+        '        set -g __direnv_last_envrc "$__gwtt_envrc"' \
+        '        set -g __direnv_export_again 0' \
+        '    end' \
+        'end' >$terminal_warmup_script
+    chmod +x $terminal_warmup_script
+
+    set -l terminal_launch_script "$instance_env/open-terminal.fish"
+    set -l terminal_warmup_script_escaped (string escape -- $terminal_warmup_script)
+    printf '%s\n' \
+        '#!/usr/bin/env fish' \
+        '# Warm direnv/Nix in the interactive terminal pane before the first command.' \
+        "exec fish --init-command \"source $terminal_warmup_script_escaped\"" >$terminal_launch_script
+    chmod +x $terminal_launch_script
+
     if $use_devcon
         # Build devcon up command. Reuse existing containers by default; opt into
         # rebuilds only when mounts/features need to be refreshed.
@@ -2454,7 +2493,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
             end \
             "set -l right_pane_id (tmux display-message -p '#{pane_id}')" \
             "set -l claude_pane_id (tmux split-window -t \"\$right_pane_id\" -hb -p 35 -P -F '#{pane_id}' 'fish $claude_pane_script')" \
-            "tmux split-window -t \"\$right_pane_id\" -v -p 30 -c '$worktree_path'" \
+            "tmux split-window -t \"\$right_pane_id\" -v -p 30 -c '$worktree_path' 'fish $terminal_launch_script'" \
             "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' </dev/null >/dev/null 2>&1 &" \
             disown \
             "exec fish $nvim_launch_script" >$setup_script
@@ -2483,7 +2522,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
                 builtin cd $_orig_pwd 2>/dev/null
                 return 1
             end
-            tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path"
+            tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path" "fish $terminal_launch_script"
             or echo "Warning: Failed to create terminal pane" >&2
             tmux respawn-pane -k -t "$right_pane_id" -c "$worktree_path" "fish $nvim_launch_script"
             or echo "Warning: Failed to launch nvim pane" >&2
@@ -2502,7 +2541,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
                 builtin cd $_orig_pwd 2>/dev/null
                 return 1
             end
-            tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path"
+            tmux split-window -t "$right_pane_id" -v -p 30 -c "$worktree_path" "fish $terminal_launch_script"
             or echo "Warning: Failed to create terminal pane" >&2
             tmux respawn-pane -k -t "$right_pane_id" -c "$worktree_path" "fish $nvim_launch_script"
             or echo "Warning: Failed to launch nvim pane" >&2
