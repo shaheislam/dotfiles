@@ -1,0 +1,25 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "872a9da13dc1",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 15,
+  "files_touched": [
+    ".config/fish/functions/gwt-ticket.fish"
+  ],
+  "sessions": [
+    {
+      "metadata": "/87/2a9da13dc1/0/metadata.json",
+      "transcript": "/87/2a9da13dc1/0/full.jsonl",
+      "content_hash": "/87/2a9da13dc1/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 7088962,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 30597632,
+    "output_tokens": 86279,
+    "api_call_count": 344
+  }
+}
