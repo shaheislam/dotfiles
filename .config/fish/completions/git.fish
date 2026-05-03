@@ -2,8 +2,15 @@
 # Works alongside fzf-git.sh keybindings (CTRL-G CTRL-X)
 # Provides tab completion for natural git CLI usage
 
-# Erase any existing generic git completions that might interfere
-complete -c git -e
+# Preserve Fish's built-in git completion surface, then layer these workflow
+# shortcuts on top. Do not erase all git completions here.
+if not set -q __fish_dotfiles_git_builtin_loaded
+    set -g __fish_dotfiles_git_builtin_loaded 1
+    set -l builtin_git_completion "$__fish_data_dir/completions/git.fish"
+    if test -f "$builtin_git_completion"
+        source "$builtin_git_completion"
+    end
+end
 
 # =============================================================================
 # Helper Functions
@@ -18,12 +25,12 @@ function __fish_git_using_command
         return 1
     end
 
-    if test $cmd[1] != 'git'
+    if test "$cmd[1]" != git
         return 1
     end
 
     # Check if the second argument matches the requested subcommand
-    if test $cmd[2] = $argv[1]
+    if test "$cmd[2]" = "$argv[1]"
         return 0
     end
 
@@ -31,7 +38,7 @@ function __fish_git_using_command
 end
 
 # Check if a specific argument has been seen
-function __fish_seen_argument
+function __fish_git_seen_argument
     set -l cmd (commandline -opc) 2>/dev/null
 
     for arg in $argv
@@ -72,14 +79,14 @@ complete -c git -n '__fish_git_using_command add' -s v -l verbose -d 'Be verbose
 complete -c git -n '__fish_git_using_command branch' -f
 
 # Show local branches
-complete -c git -n '__fish_git_using_command branch; and not __fish_seen_argument -r --remote -a --all' -a '
+complete -c git -n '__fish_git_using_command branch; and not __fish_git_seen_argument -r --remote -a --all' -a '
     (
         git branch --format="%(refname:short)" 2>/dev/null
     )
 ' -d 'Local branch'
 
 # Show remote branches when -r is used
-complete -c git -n '__fish_git_using_command branch; and __fish_seen_argument -r --remote' -a '
+complete -c git -n '__fish_git_using_command branch; and __fish_git_seen_argument -r --remote' -a '
     (
         git branch -r --format="%(refname:short)" 2>/dev/null | sed "s/^origin\\///"
     )
@@ -98,7 +105,7 @@ complete -c git -n '__fish_git_using_command branch' -s m -l move -d 'Rename bra
 complete -c git -n '__fish_git_using_command checkout' -f
 
 # Show branches for checkout (current branch listed first)
-complete -c git -n '__fish_git_using_command checkout; and not __fish_seen_argument -- -b' -a '
+complete -c git -n '__fish_git_using_command checkout; and not __fish_git_seen_argument -- -b' -a '
     (
         set -l current (git branch --show-current 2>/dev/null)
         # Current branch first for priority ordering
@@ -119,7 +126,7 @@ complete -c git -n '__fish_git_using_command checkout; and not __fish_seen_argum
 ' -d 'Branch'
 
 # Show modified files after -- separator
-complete -c git -n '__fish_git_using_command checkout; and __fish_seen_argument --' -a '
+complete -c git -n '__fish_git_using_command checkout; and __fish_git_seen_argument --' -a '
     (
         git diff --name-only 2>/dev/null
     )
@@ -143,7 +150,7 @@ complete -c git -n '__fish_git_using_command commit' -l fixup -d 'Fixup commit f
 complete -c git -n '__fish_git_using_command commit' -l squash -d 'Squash commit for rebase' -x
 
 # Show recent commits for --fixup/--squash
-complete -c git -n '__fish_git_using_command commit; and __fish_seen_argument --fixup --squash' -a '
+complete -c git -n '__fish_git_using_command commit; and __fish_git_seen_argument --fixup --squash' -a '
     (
         git log --oneline --max-count=20 --format="%h" 2>/dev/null
     )
@@ -184,7 +191,7 @@ complete -c git -n '__fish_git_using_command diff' -l name-only -d 'Show only fi
 complete -c git -n '__fish_git_using_command show' -f
 
 # Show commits by default
-complete -c git -n '__fish_git_using_command show; and not __fish_seen_argument --stat --name-only' -a '
+complete -c git -n '__fish_git_using_command show; and not __fish_git_seen_argument --stat --name-only' -a '
     (
         git log --oneline --max-count=20 --format="%h" 2>/dev/null
         git branch --format="%(refname:short)" 2>/dev/null
@@ -247,14 +254,14 @@ complete -c git -n '__fish_git_using_command merge-base' -l octopus -d 'Compute 
 complete -c git -n '__fish_git_using_command merge-base' -l all -d 'Show all common ancestors'
 
 # After --is-ancestor: first arg = commit (hashes)
-complete -c git -n '__fish_git_using_command merge-base; and __fish_seen_argument --is-ancestor; and test (count (commandline -opc)) -eq 4' -a '
+complete -c git -n '__fish_git_using_command merge-base; and __fish_git_seen_argument --is-ancestor; and test (count (commandline -opc)) -eq 4' -a '
     (
         git log --oneline --max-count=30 --format="%h" 2>/dev/null
     )
 ' -d 'Commit'
 
 # After --is-ancestor: second arg = branch
-complete -c git -n '__fish_git_using_command merge-base; and __fish_seen_argument --is-ancestor; and test (count (commandline -opc)) -eq 5' -a '
+complete -c git -n '__fish_git_using_command merge-base; and __fish_git_seen_argument --is-ancestor; and test (count (commandline -opc)) -eq 5' -a '
     (
         git branch --format="%(refname:short)" 2>/dev/null
         git branch -r --format="%(refname:short)" 2>/dev/null | sed "s/^origin\\///"
@@ -262,7 +269,7 @@ complete -c git -n '__fish_git_using_command merge-base; and __fish_seen_argumen
 ' -d 'Branch'
 
 # Without --is-ancestor: show commits and branches for both args
-complete -c git -n '__fish_git_using_command merge-base; and not __fish_seen_argument --is-ancestor' -a '
+complete -c git -n '__fish_git_using_command merge-base; and not __fish_git_seen_argument --is-ancestor' -a '
     (
         git log --oneline --max-count=20 --format="%h" 2>/dev/null
         git branch --format="%(refname:short)" 2>/dev/null
@@ -296,14 +303,14 @@ complete -c git -n '__fish_git_using_command rebase' -l skip -d 'Skip current co
 complete -c git -n '__fish_git_using_command reset' -f
 
 # Show commits for reset operations with --hard/--soft/--mixed
-complete -c git -n '__fish_git_using_command reset; and __fish_seen_argument --hard --soft --mixed' -a '
+complete -c git -n '__fish_git_using_command reset; and __fish_git_seen_argument --hard --soft --mixed' -a '
     (
         git log --oneline --max-count=20 --format="%h" 2>/dev/null
     )
 ' -d 'Commit'
 
 # Show files for reset without mode flags
-complete -c git -n '__fish_git_using_command reset; and not __fish_seen_argument --hard --soft --mixed' -a '
+complete -c git -n '__fish_git_using_command reset; and not __fish_git_seen_argument --hard --soft --mixed' -a '
     (
         git diff --cached --name-only 2>/dev/null
     )
@@ -339,14 +346,14 @@ complete -c git -n '__fish_git_using_command rm' -l quiet -d 'Suppress output'
 complete -c git -n '__fish_git_using_command restore' -f
 
 # Show modified files for restore (unstaged changes)
-complete -c git -n '__fish_git_using_command restore; and not __fish_seen_argument --staged -S --source -s' -a '
+complete -c git -n '__fish_git_using_command restore; and not __fish_git_seen_argument --staged -S --source -s' -a '
     (
         git diff --name-only 2>/dev/null
     )
 ' -d 'Modified file'
 
 # Show staged files for restore --staged
-complete -c git -n '__fish_git_using_command restore; and __fish_seen_argument --staged -S' -a '
+complete -c git -n '__fish_git_using_command restore; and __fish_git_seen_argument --staged -S' -a '
     (
         git diff --cached --name-only 2>/dev/null
     )
@@ -443,7 +450,7 @@ complete -c git -n '__fish_git_using_command fetch' -l prune -d 'Prune deleted b
 complete -c git -n '__fish_git_using_command remote' -a 'add remove rm rename show prune' -d 'Subcommand'
 
 # Show existing remotes for operations like remove, rename, show
-complete -c git -n '__fish_git_using_command remote; and __fish_seen_argument remove rm rename show prune' -a '
+complete -c git -n '__fish_git_using_command remote; and __fish_git_seen_argument remove rm rename show prune' -a '
     (
         git remote 2>/dev/null
     )
@@ -455,7 +462,7 @@ complete -c git -n '__fish_git_using_command remote; and __fish_seen_argument re
 complete -c git -n '__fish_git_using_command stash' -a 'push pop apply drop list show clear' -d 'Subcommand'
 
 # Show stash entries for pop, apply, drop, show
-complete -c git -n '__fish_git_using_command stash; and __fish_seen_argument pop apply drop show' -a '
+complete -c git -n '__fish_git_using_command stash; and __fish_git_seen_argument pop apply drop show' -a '
     (
         git stash list 2>/dev/null | sed "s/:.*//g"
     )
@@ -467,7 +474,7 @@ complete -c git -n '__fish_git_using_command stash; and __fish_seen_argument pop
 complete -c git -n '__fish_git_using_command tag' -f
 
 # Show existing tags for deletion
-complete -c git -n '__fish_git_using_command tag; and __fish_seen_argument -d --delete' -a '
+complete -c git -n '__fish_git_using_command tag; and __fish_git_seen_argument -d --delete' -a '
     (
         git tag 2>/dev/null
     )
@@ -487,27 +494,27 @@ complete -c git -n '__fish_git_using_command worktree; and test (count (commandl
     -a 'add list lock move prune remove repair unlock' -d 'Worktree operation'
 
 # Show existing worktrees for operations like remove, move, lock, unlock, repair
-complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument remove move lock unlock repair' -a '
+complete -c git -n '__fish_git_using_command worktree; and __fish_git_seen_argument remove move lock unlock repair' -a '
     (
         git worktree list --porcelain 2>/dev/null | grep "^worktree" | cut -d" " -f2
     )
 ' -d 'Worktree path'
 
 # Show branches for 'worktree add' when path already specified
-complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add; and test (count (commandline -opc)) -ge 3' -a '
+complete -c git -n '__fish_git_using_command worktree; and __fish_git_seen_argument add; and test (count (commandline -opc)) -ge 3' -a '
     (
         git branch --format="%(refname:short)" 2>/dev/null
     )
 ' -d 'Branch'
 
 # Common flags for 'worktree add'
-complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add' -s b -d 'Create new branch'
-complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add' -s B -d 'Create/reset branch'
-complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument add' -l detach -d 'Detach HEAD'
+complete -c git -n '__fish_git_using_command worktree; and __fish_git_seen_argument add' -s b -d 'Create new branch'
+complete -c git -n '__fish_git_using_command worktree; and __fish_git_seen_argument add' -s B -d 'Create/reset branch'
+complete -c git -n '__fish_git_using_command worktree; and __fish_git_seen_argument add' -l detach -d 'Detach HEAD'
 
 # Common flags for 'worktree list'
-complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument list' -l porcelain -d 'Machine-readable output'
-complete -c git -n '__fish_git_using_command worktree; and __fish_seen_argument list' -s v -l verbose -d 'Show additional info'
+complete -c git -n '__fish_git_using_command worktree; and __fish_git_seen_argument list' -l porcelain -d 'Machine-readable output'
+complete -c git -n '__fish_git_using_command worktree; and __fish_git_seen_argument list' -s v -l verbose -d 'Show additional info'
 
 # =============================================================================
 # git reflog - Reflog operations
@@ -547,9 +554,9 @@ complete -c git -n '__fish_git_using_command cherry' -a '
 complete -c git -n '__fish_git_using_command submodule' -f
 complete -c git -n '__fish_git_using_command submodule; and test (count (commandline -opc)) -eq 2' \
     -a 'add update init deinit foreach status summary sync' -d 'Submodule operation'
-complete -c git -n '__fish_git_using_command submodule; and __fish_seen_argument add' -l branch -d 'Track branch' -x
-complete -c git -n '__fish_git_using_command submodule; and __fish_seen_argument update' -l init -d 'Initialize submodules'
-complete -c git -n '__fish_git_using_command submodule; and __fish_seen_argument update' -l recursive -d 'Recursive update'
+complete -c git -n '__fish_git_using_command submodule; and __fish_git_seen_argument add' -l branch -d 'Track branch' -x
+complete -c git -n '__fish_git_using_command submodule; and __fish_git_seen_argument update' -l init -d 'Initialize submodules'
+complete -c git -n '__fish_git_using_command submodule; and __fish_git_seen_argument update' -l recursive -d 'Recursive update'
 
 # =============================================================================
 # Common git subcommands

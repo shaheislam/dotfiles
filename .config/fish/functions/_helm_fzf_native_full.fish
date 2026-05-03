@@ -299,17 +299,20 @@ function helm_fzf_native --description "FZF-powered helm completion with Alt key
                     set fzf_prompt "Diff action: "
                 else
                     switch $sub_action
-                        case upgrade
+                        case upgrade release
                             if test -z "$resource"
-                                __helm_releases_fzf_select "diff upgrade"
+                                __helm_releases_fzf_select "diff $sub_action"
                                 return
                             else
                                 __helm_chart_select
                                 return
                             end
-                        case revision release rollback
+                        case revision rollback
                             if test -z "$resource"
                                 __helm_releases_fzf_select "diff $sub_action"
+                                return
+                            else
+                                __helm_revision_select $resource
                                 return
                             end
                     end

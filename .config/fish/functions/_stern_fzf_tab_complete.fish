@@ -28,11 +28,16 @@ function _stern_fzf_tab_complete -d "FZF tab completion for stern with no traili
             test (count $cmd) -eq 2; and not string match -q -- '-*' "$current_token"
         end
 
-        # Namespace switch command (persistent via kubie)
-        set -l ns_switch_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl get ns -o name | sed \"s|namespace/||\" | fzf --height=40% --prompt=\"Switch namespace: \"); [ -n \"\$ns\" ] && kubie ns \$ns && echo \"Switched to: \$ns\" && sleep 0.5'"
-
         # Reload command to refresh workloads in current namespace
         set -l reload_cmd "{ kubectl get namespaces -o name 2>/dev/null; kubectl get deployments,statefulsets,daemonsets,replicasets,jobs,services,replicationcontrollers -o name 2>/dev/null | sed 's/\\.apps\\//\\//; s/\\.batch\\//\\//' | sort -u; } | sort -u"
+
+        set -l header_text "Ctrl+R: reload | namespace/ -> all pods | workload -> pattern"
+        set -l fzf_binds "ctrl-r:reload($reload_cmd)"
+        if command -q kubie
+            set header_text "Alt+N: switch namespace | $header_text"
+            set -l ns_switch_cmd "bash -c 'exec </dev/tty >/dev/tty 2>&1; ns=\$(kubectl get ns -o name | sed \"s|namespace/||\" | fzf --height=40% --prompt=\"Switch namespace: \" ); [ -n \"\$ns\" ] && kubie ns \$ns && echo \"Switched to: \$ns\" && sleep 0.5'"
+            set -p fzf_binds "alt-n:execute($ns_switch_cmd)+reload($reload_cmd)"
+        end
 
         # Get all workloads that stern supports, formatted as type/name
         # Also include namespaces - selecting one expands to ". -n <namespace>"
@@ -46,9 +51,8 @@ function _stern_fzf_tab_complete -d "FZF tab completion for stern with no traili
             kubectl get services -o name 2>/dev/null | string replace "service/" "service/"
             kubectl get replicationcontrollers -o name 2>/dev/null | string replace "replicationcontroller/" "replicationcontroller/"
         end | sort -u | fzf --height=40% --reverse --prompt="stern > " \
-            --header="Alt+N: switch namespace | Ctrl+R: reload | namespace/ → all pods | workload → pattern" \
-            --bind "alt-n:execute($ns_switch_cmd)+reload($reload_cmd)" \
-            --bind "ctrl-r:reload($reload_cmd)")
+            --header="$header_text" \
+            --bind $fzf_binds)
 
         if test -n "$result"
             # Transform namespace selections to ". -n <namespace>" for tailing all pods
