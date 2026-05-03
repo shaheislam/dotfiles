@@ -2295,7 +2295,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
     printf '%s\n' \
         '#!/usr/bin/env fish' \
         "cd $worktree_path" \
-        "$nvim_cmd" >$nvim_launch_script
+        "exec $nvim_cmd" >$nvim_launch_script
     chmod +x $nvim_launch_script
 
     if $use_devcon
