@@ -6,7 +6,7 @@
 if status is-interactive
     function __docker_fzf_keybindings_init --on-event fish_prompt
         functions -e __docker_fzf_keybindings_init # run once then remove
-        if not type -q fzf; or not type -q docker
+        if not command -q fzf; or not command -q docker
             return
         end
         # CTRL-D ? for help

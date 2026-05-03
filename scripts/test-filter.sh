@@ -102,6 +102,9 @@ test_fish() {
     # Validate Fish syntax if fish is available
     if command -v fish &>/dev/null; then
         run_test "Fish config.fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/config.fish'"
+        run_test "Fish function syntax valid" "for f in '$DOTFILES_ROOT'/.config/fish/functions/*.fish; do fish -n \"\$f\" || exit 1; done"
+        run_test "Fish completion syntax valid" "for f in '$DOTFILES_ROOT'/.config/fish/completions/*.fish; do fish -n \"\$f\" || exit 1; done"
+        run_test "Fish conf.d syntax valid" "for f in '$DOTFILES_ROOT'/.config/fish/conf.d/*.fish; do fish -n \"\$f\" || exit 1; done"
         # Validate tab completion function syntax
         for func in _cd_fzf_tab_complete _fifc_or_fzf; do
             run_test "Fish function $func syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/$func.fish'"
@@ -112,6 +115,19 @@ test_fish() {
         # Validate _cd_fzf_tab_complete loads and is queryable
         run_test "Fish _cd_fzf_tab_complete loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/_cd_fzf_tab_complete.fish && functions -q _cd_fzf_tab_complete'"
         run_test "Fish tmux-main loads" "fish -c 'source $DOTFILES_ROOT/.config/fish/functions/tmux-main.fish && functions -q tmux-main'"
+        run_test "Fish kubectl lazy completion loads native helpers" "fish --no-config -c 'source $DOTFILES_ROOT/.config/fish/completions/kubectl.fish; complete -C \"kubectl get \" >/dev/null 2>&1; functions -q __fish_kubectl_print_resource_types'"
+        run_test "Fish kubectl FZF loads native helpers" "fish --no-config -c 'source $DOTFILES_ROOT/.config/fish/functions/_kubectl_fzf_native_full.fish; __kubectl_fzf_load_native_helpers; and functions -q __fish_kubectl_print_resource_types; and set -q FISH_KUBECTL_COMPLETION_COMPLETE_CRDS; and set -q __fish_kubectl_resources; and set -g FISH_KUBECTL_COMPLETION_COMPLETE_CRDS 0; and __fish_kubectl_print_resource_types >/dev/null'"
+        run_test "Fish Docker FZF handles missing helper" "fish --no-config -c 'set -l out (mktemp); set -l err (mktemp); set -g fish_function_path $DOTFILES_ROOT/.config/fish/functions \$fish_function_path; source $DOTFILES_ROOT/.config/fish/completions/docker-fzf.fish; source $DOTFILES_ROOT/.config/fish/functions/_docker_fzf_tab_complete.fish; complete -C \"docker ps \" >\$out 2>\$err; set -l rc \$status; set -l ok 1; test \$rc -eq 0; and not test -s \$err; and set ok 0; rm -f \$out \$err; exit \$ok'"
+        run_test "Fish git FZF helper lazy-loads" "fish --no-config -c 'set -g fish_function_path $DOTFILES_ROOT/.config/fish/functions \$fish_function_path; source $DOTFILES_ROOT/.config/fish/functions/_git_fzf_tab_complete.fish; functions -e __fzf_git_sh; __git_fzf_load_helper; and functions -q __fzf_git_sh'"
+        run_test "Fish git pull remote branch helper exists" "fish --no-config -c 'source $DOTFILES_ROOT/.config/fish/completions/git.fish; functions -q __fish_git_pull_remote_branches'"
+        run_test "Fish command-not-found fallback is safe" "fish --no-config -c 'source $DOTFILES_ROOT/.config/fish/functions/fish_command_not_found.fish; fish_command_not_found definitely_missing_command >/dev/null 2>&1; test \$status -eq 127'"
+        run_test "Fish helm lazy loader uses repo implementation" "grep -q '(status dirname)/_helm_fzf_native_full.fish' '$DOTFILES_ROOT/.config/fish/functions/helm_fzf_native.fish'"
+        run_test "Fish helm diff completion handled" "grep -q 'case diff' '$DOTFILES_ROOT/.config/fish/functions/_helm_fzf_native_full.fish' && grep -q 'upgrade revision release rollback' '$DOTFILES_ROOT/.config/fish/functions/_helm_fzf_native_full.fish'"
+        run_test "Fish ECS tab completion inserts selections" "grep -q '__ecs_fzf_insert' '$DOTFILES_ROOT/.config/fish/functions/_ecs_fzf_tab_complete.fish' && ! grep -nE '^[[:space:]]*echo \\$' '$DOTFILES_ROOT/.config/fish/functions/_ecs_fzf_tab_complete.fish'"
+        run_test "Fish Claude resume completion is read-only" "! grep -nE '(^|[[:space:]])(mkdir|ln -s)([[:space:]]|$)' '$DOTFILES_ROOT/.config/fish/functions/_claude_resume_fzf_tab_complete.fish'"
+        run_test "Fish labctl completion avoids eval" "! grep -nE '(^|[[:space:]])eval([[:space:]]|$)' '$DOTFILES_ROOT/.config/fish/completions/labctl.fish'"
+        run_test "Fish carapace FZF miss is quiet" "! grep -q 'No completions available' '$DOTFILES_ROOT/.config/fish/functions/carapace_fzf_complete.fish'"
+        run_test "Fish cloud completions guard dependencies" "grep -q 'command -q aws' '$DOTFILES_ROOT/.config/fish/functions/__fish_complete_aws_profiles.fish' && grep -q 'command -q aws' '$DOTFILES_ROOT/.config/fish/functions/__fish_complete_aws_s3_buckets.fish' && grep -q 'command -q kubectl' '$DOTFILES_ROOT/.config/fish/completions/kns.fish'"
     fi
 
     run_test "WezTerm auto-attach uses tmux-main helper" \

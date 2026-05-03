@@ -8,14 +8,15 @@ FZF-powered kubectl completions that leverage native `__fish_kubectl_*` function
 
 ```
 conf.d/kubectl-fzf.fish (startup loader)
-  ↓ Sources kubectl.fish for native functions
-  ↓ Sources kubectl_fzf_native.fish for FZF wrapper
-  ↓ Registers __kubectl_smart_complete() with -f flag (no files)
+  ↓ Sources kubectl.fish lazy stub
+  ↓ Sources kubectl_fzf_native.fish lazy FZF wrapper
+  ↓ TAB router sends kubectl/k/kubecolor/kctl to _kubectl_fzf_tab_complete
   ↓
 kubectl_fzf_native.fish (FZF wrapper)
-  ↓ Uses native __fish_kubectl_* functions
+  ↓ Sources _kubectl_fzf_native_full.fish on first use
+  ↓ Loads native __fish_kubectl_* functions on demand
   ↓
-kubectl.fish (native 226K comprehensive completions)
+kubectl.fish.full (native 226K comprehensive completions)
   ├── __fish_kubectl_print_resource
   ├── __fish_kubectl_print_pod_containers
   ├── __fish_kubectl_print_resource_ports
@@ -54,8 +55,10 @@ to prevent kubectl's native Go-based completions from overriding the FZF complet
 ## Files
 
 - `~/.config/fish/conf.d/kubectl-fzf.fish` - Startup loader and completion registration
-- `~/.config/fish/functions/kubectl_fzf_native.fish` - FZF wrapper
-- `~/.config/fish/completions/kubectl.fish` - Native completions (226K) with __fish_kubectl_* functions
+- `~/.config/fish/functions/kubectl_fzf_native.fish` - Lazy FZF wrapper
+- `~/.config/fish/functions/_kubectl_fzf_native_full.fish` - Full FZF completion implementation
+- `~/.config/fish/completions/kubectl.fish` - Lazy native completion stub
+- `~/.config/fish/completions/kubectl.fish.full` - Native completions (226K) with __fish_kubectl_* functions
 
 ## Usage
 

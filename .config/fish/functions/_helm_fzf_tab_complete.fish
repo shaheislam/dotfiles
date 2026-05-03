@@ -15,6 +15,8 @@ function _helm_fzf_tab_complete -d "FZF tab completion for helm"
         # Replace current token with selection(s)
         # Result is already space-separated for multiple selections
         commandline -t -- "$result "
+    else
+        _fifc 2>/dev/null
     end
 
     commandline -f repaint

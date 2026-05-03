@@ -1,10 +1,13 @@
 function _terraform_fzf_command --description "Build terraform command with FZF selection"
     set -l action $argv[1] # plan, apply, destroy, init, validate
 
+    if not command -q git; or not command -q find; or not command -q fzf
+        return 1
+    end
+
     # 1. Find git root (works from any subdirectory)
     set -l git_root (git rev-parse --show-toplevel 2>/dev/null)
     if test -z "$git_root"
-        echo "Not in a git repository"
         return 1
     end
 
@@ -19,7 +22,6 @@ function _terraform_fzf_command --description "Build terraform command with FZF 
         sed "s|$git_root/||")
 
     if test -z "$tf_dirs"
-        echo "No terraform files found in repository"
         return 1
     end
 

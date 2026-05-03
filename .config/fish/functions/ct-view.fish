@@ -55,8 +55,6 @@ function ct-view --description "Search and analyze AWS CloudTrail logs in S3 buc
                 echo "..."
             end
             echo ""
-        else
-            echo $line
         end
     end
 end

@@ -1,10 +1,10 @@
 #
-set -q FISH_KUBECTL_COMPLETION_TIMEOUT; or set FISH_KUBECTL_COMPLETION_TIMEOUT 5s
-set -q FISH_KUBECTL_COMPLETION_COMPLETE_CRDS; or set FISH_KUBECTL_COMPLETION_COMPLETE_CRDS 1
-set __fish_kubectl_timeout "--request-timeout=$FISH_KUBECTL_COMPLETION_TIMEOUT"
-set __fish_kubectl_all_namespaces_flags "--all-namespaces" "--all-namespaces=true"
-set __fish_kubectl_subresource_commands get describe delete edit label explain
-set __fish_kubectl_commands alpha \
+set -q FISH_KUBECTL_COMPLETION_TIMEOUT; or set -g FISH_KUBECTL_COMPLETION_TIMEOUT 5s
+set -q FISH_KUBECTL_COMPLETION_COMPLETE_CRDS; or set -g FISH_KUBECTL_COMPLETION_COMPLETE_CRDS 1
+set -g __fish_kubectl_timeout "--request-timeout=$FISH_KUBECTL_COMPLETION_TIMEOUT"
+set -g __fish_kubectl_all_namespaces_flags "--all-namespaces" "--all-namespaces=true"
+set -g __fish_kubectl_subresource_commands get describe delete edit label explain
+set -g __fish_kubectl_commands alpha \
   annotate \
   api-resources \
   api-versions \
@@ -114,7 +114,7 @@ function __fish_kubectl_get_commands
   echo wait\t'Experimental: Wait for a specific condition on one or many resources.'
 end
 
-set __fish_kubectl_resources        \
+set -g __fish_kubectl_resources        \
   all                               \
   certificatesigningrequests csr    \
   clusterrolebindings               \
@@ -154,12 +154,12 @@ set __fish_kubectl_resources        \
   statefulsets sts                  \
   storageclass storageclasses sc
 
-set __fish_kubectl_cached_crds ""
-set __fish_kubectl_last_crd_fetch ""
+set -g __fish_kubectl_cached_crds ""
+set -g __fish_kubectl_last_crd_fetch ""
 
 function __fish_kubectl_actually_get_crds
-  set __fish_kubectl_cached_crds (__fish_kubectl get crd -o jsonpath='{range .items[*]}{.spec.names.plural}{"\n"}{.spec.names.singular}{"\n"}{range .spec.names.shortNames[]}{@}{"\n"}{end}{end}' 2>/dev/null)
-  set __fish_kubectl_last_crd_fetch (__fish_kubectl_get_current_time)
+  set -g __fish_kubectl_cached_crds (__fish_kubectl get crd -o jsonpath='{range .items[*]}{.spec.names.plural}{"\n"}{.spec.names.singular}{"\n"}{range .spec.names.shortNames[]}{@}{"\n"}{end}{end}' 2>/dev/null)
+  set -g __fish_kubectl_last_crd_fetch (__fish_kubectl_get_current_time)
 	for i in $__fish_kubectl_cached_crds
 		echo $i
 	end

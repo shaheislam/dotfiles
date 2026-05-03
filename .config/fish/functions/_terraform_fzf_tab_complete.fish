@@ -1,8 +1,12 @@
 function _terraform_fzf_tab_complete -d "FZF tab completion for terraform"
     set -l cmd (commandline -opc) 2>/dev/null
-    set -l cmdline (commandline)
 
     if test (count $cmd) -lt 1
+        _fifc 2>/dev/null
+        return
+    end
+
+    if not command -q terraform; or not command -q fzf
         _fifc 2>/dev/null
         return
     end
@@ -16,8 +20,10 @@ function _terraform_fzf_tab_complete -d "FZF tab completion for terraform"
 
     # Check if -chdir is already specified
     set -l chdir_path ""
-    if string match -q '*-chdir=*' "$cmdline"
-        set chdir_path (string match -r -- '-chdir=([^ ]+)' "$cmdline" | tail -1)
+    for arg in $cmd
+        if string match -q -- '-chdir=*' $arg
+            set chdir_path (string replace -- '-chdir=' '' $arg)
+        end
     end
 
     # Detect subcommand (plan, apply, destroy, init, validate)

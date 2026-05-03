@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains auto-generated kubectl aliases from [ahmetb/kubectl-aliases](https://github.com/ahmetb/kubectl-aliases). The aliases work seamlessly with the existing fzf integration in `~/.config/fish/functions/kubectl.fish`.
+This directory contains auto-generated kubectl aliases from [ahmetb/kubectl-aliases](https://github.com/ahmetb/kubectl-aliases). The aliases work seamlessly with the existing fzf integration in `~/.config/fish/functions/kubectl_fzf_native.fish`.
 
 ## How It Works
 
@@ -11,9 +11,9 @@ This directory contains auto-generated kubectl aliases from [ahmetb/kubectl-alia
    - `kgdep` → `kubectl get deployment`
    - `ksysgpo` → `kubectl --namespace=kube-system get pod`
 
-2. **kubectl Wrapper Intercepts (Second)**: `~/.config/fish/functions/kubectl.fish` checks if command is `get`
-   - If `get` detected, triggers fzf interactive selection
-   - If `-o/--output` flag present, skips fzf (direct output mode)
+2. **TAB Router Intercepts (Second)**: `~/.config/fish/functions/_fifc_or_fzf.fish` routes kubectl-style commands
+   - `kubectl`, `k`, `kubecolor`, and `kctl` use `_kubectl_fzf_tab_complete.fish`
+   - Native kubectl helpers are loaded lazily from `~/.config/fish/completions/kubectl.fish.full`
 
 3. **fzf Integration Activates (Third)**:
    - Interactive resource selection via `kubectl-fzf-wrapper.sh`

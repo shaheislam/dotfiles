@@ -1,10 +1,7 @@
 # fish completion for labctl                               -*- shell-script -*-
 
 function __labctl_debug
-    set -l file "$BASH_COMP_DEBUG_FILE"
-    if test -n "$file"
-        echo "$argv" >> $file
-    end
+    return 0
 end
 
 function __labctl_perform_completion
@@ -12,17 +9,18 @@ function __labctl_perform_completion
 
     # Extract all args except the last one
     set -l args (commandline -opc)
-    # Extract the last arg and escape it in case it is a space
-    set -l lastArg (string escape -- (commandline -ct))
+    # Extract the last arg in case it is a space
+    set -l lastArg (commandline -ct)
 
     __labctl_debug "args: $args"
     __labctl_debug "last arg: $lastArg"
 
-    # Disable ActiveHelp which is not supported for fish shell
-    set -l requestComp "LABCTL_ACTIVE_HELP=0 $args[1] __complete $args[2..-1] $lastArg"
+    if test (count $args) -lt 1
+        return 1
+    end
 
-    __labctl_debug "Calling $requestComp"
-    set -l results (eval $requestComp 2> /dev/null)
+    __labctl_debug "Calling $args[1] __complete"
+    set -l results (env LABCTL_ACTIVE_HELP=0 $args[1] __complete $args[2..-1] "$lastArg" 2>/dev/null)
 
     # Some programs may output extra empty lines after the directive.
     # Let's ignore them or else it will break completion.

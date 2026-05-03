@@ -13,6 +13,10 @@ function helm_fzf_native --description "FZF-powered helm completion with Alt key
         return
     end
 
+    if not command -q helm; or not command -q fzf
+        return
+    end
+
     # Handle --flag completion: when current token starts with -
     if string match -q -- '-*' $current
         set -l cmdline (string join -- ' ' $cmd)
@@ -139,7 +143,7 @@ function helm_fzf_native --description "FZF-powered helm completion with Alt key
     # Handle subcommand-specific completions
     if test -z "$subcommand"
         # Show subcommands
-        set completions install upgrade uninstall list rollback history status get template lint package dependency repo search show pull env plugin
+        set completions install upgrade uninstall list rollback history status get template lint package dependency repo search show pull env plugin diff
         set fzf_prompt "Command: "
     else
         switch $subcommand
@@ -288,6 +292,29 @@ function helm_fzf_native --description "FZF-powered helm completion with Alt key
                     return
                 end
 
+            # === HELM DIFF PLUGIN ===
+            case diff
+                if test -z "$sub_action"
+                    set completions upgrade revision release rollback
+                    set fzf_prompt "Diff action: "
+                else
+                    switch $sub_action
+                        case upgrade
+                            if test -z "$resource"
+                                __helm_releases_fzf_select "diff upgrade"
+                                return
+                            else
+                                __helm_chart_select
+                                return
+                            end
+                        case revision release rollback
+                            if test -z "$resource"
+                                __helm_releases_fzf_select "diff $sub_action"
+                                return
+                            end
+                    end
+                end
+
             # === PLUGIN OPERATIONS ===
             case plugin
                 if test -z "$sub_action"
@@ -296,8 +323,7 @@ function helm_fzf_native --description "FZF-powered helm completion with Alt key
                 end
 
             case '*'
-                # Default: try release selection
-                __helm_releases_fzf_select "$subcommand"
+                # Unknown plugin/subcommand: let normal Fish/Helm completion handle it.
                 return
         end
     end

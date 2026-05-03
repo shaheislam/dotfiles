@@ -5,5 +5,10 @@
 # At runtime, mise's cached init overrides this with its own handler that
 # can suggest tool installation via `mise hook-not-found`.
 function fish_command_not_found
-    __fish_default_command_not_found_handler $argv
+    if functions -q __fish_default_command_not_found_handler
+        __fish_default_command_not_found_handler $argv
+    else
+        printf 'fish: Unknown command: %s\n' $argv[1] >&2
+        return 127
+    end
 end

@@ -1,4 +1,8 @@
 function carapace_fzf_complete --description "Use FZF to select from Carapace completions"
+    if not command -q carapace; or not command -q fzf
+        return 1
+    end
+
     # Get the current command line
     set -l cmd (commandline -p)
     set -l cursor_pos (commandline -C)
@@ -11,7 +15,7 @@ function carapace_fzf_complete --description "Use FZF to select from Carapace co
     set -l completions
     
     # Try to get completions using carapace's fish integration
-    if command -v carapace >/dev/null
+    if command -q carapace
         # Get the completions by simulating what would happen with tab completion
         set completions (complete -C"$cmd")
         
@@ -69,8 +73,7 @@ function carapace_fzf_complete --description "Use FZF to select from Carapace co
             end
         end
     else
-        # No completions available, maybe show a message
-        echo "No completions available" >&2
+        return 1
     end
     
     # Repaint the command line

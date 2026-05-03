@@ -2,6 +2,11 @@ function _stern_fzf_tab_complete -d "FZF tab completion for stern with no traili
     set -l cmd (commandline -opc) 2>/dev/null
     set -l current_token (commandline -ct)
 
+    if not command -q kubectl; or not command -q fzf
+        _fifc 2>/dev/null
+        return
+    end
+
     # Check if completing -n/--namespace flag value
     set -l prev_token ""
     if test (count $cmd) -ge 2

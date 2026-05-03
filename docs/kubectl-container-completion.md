@@ -41,14 +41,16 @@ kubectl logs <pod-name> -n <namespace> -c <TAB>
 
 ## Installation
 
-The feature is automatically included in the kubectl Fish completions at:
+The feature is included in the full kubectl Fish completions at:
 ```
-~/.config/fish/completions/kubectl.fish
+~/.config/fish/completions/kubectl.fish.full
 ```
+
+`~/.config/fish/completions/kubectl.fish` is a lazy stub that loads the full file on first kubectl completion.
 
 To reload the completions in your current shell:
 ```fish
-source ~/.config/fish/completions/kubectl.fish
+source ~/.config/fish/completions/kubectl.fish.full
 ```
 
 ## Technical Details
@@ -71,7 +73,7 @@ The feature is implemented via the `__fish_kubectl_print_pod_containers` functio
 
 ### Function Location
 
-The function is defined at approximately line 404 in `~/.config/fish/completions/kubectl.fish`
+The function is defined at approximately line 404 in `~/.config/fish/completions/kubectl.fish.full`
 
 ### Completion Definitions
 
@@ -89,7 +91,7 @@ Container completion is enabled for the following commands (approximate line num
 
 1. Ensure the completions are loaded:
    ```fish
-   source ~/.config/fish/completions/kubectl.fish
+   source ~/.config/fish/completions/kubectl.fish.full
    ```
 
 2. Verify the pod exists and you have access:

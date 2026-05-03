@@ -3,11 +3,13 @@
 
 # Helper function to get namespaces
 function __fish_install_nvim_get_namespaces
+    command -q kubectl; or return
     kubectl get namespaces --no-headers 2>/dev/null | awk '{print $1}'
 end
 
 # Helper function to get pods in a namespace
 function __fish_install_nvim_get_pods
+    command -q kubectl; or return
     set -l cmd (commandline -opc)
     set -l namespace "default"
 
@@ -21,6 +23,7 @@ end
 
 # Helper function to get containers in a pod
 function __fish_install_nvim_get_containers
+    command -q kubectl; or return
     set -l cmd (commandline -opc)
     set -l namespace "default"
     set -l pod ""

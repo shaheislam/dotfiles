@@ -398,9 +398,26 @@ complete -c git -n '__fish_git_using_command pull; and test (count (commandline 
 ' -d 'Remote'
 
 # Show branches after remote
+function __fish_git_pull_remote_branches
+    set -l cmd (commandline -opc)
+    if test (count $cmd) -lt 3
+        return
+    end
+
+    set -l remote $cmd[3]
+    if test -z "$remote"
+        return
+    end
+
+    set -l remote_regex (string escape --style=regex -- "$remote")
+    git branch -r --format="%(refname:short)" 2>/dev/null \
+        | string match -r "^$remote_regex/.+" \
+        | string replace -r "^$remote_regex/" ""
+end
+
 complete -c git -n '__fish_git_using_command pull; and test (count (commandline -opc)) -eq 3' -a '
     (
-        git branch -r --format="%(refname:short)" 2>/dev/null | grep "^$argv[1]/" | sed "s/^$argv[1]\\///"
+        __fish_git_pull_remote_branches
     )
 ' -d 'Remote branch'
 

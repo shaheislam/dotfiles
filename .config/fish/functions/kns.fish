@@ -1,6 +1,11 @@
 function kns --description "Switch Kubernetes namespace with fzf"
-    if not test -x /opt/homebrew/bin/kubectl
+    if not command -q kubectl
         echo "kubectl not installed"
+        return 1
+    end
+
+    if test (count $argv) -eq 0; and not command -q fzf
+        echo "fzf not installed"
         return 1
     end
 

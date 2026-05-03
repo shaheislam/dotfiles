@@ -6,7 +6,7 @@
 if status is-interactive
     function __fzf_docker_init --on-event fish_prompt
         functions -e __fzf_docker_init # run once then remove
-        if type -q fzf; and type -q docker
+        if command -q fzf; and command -q docker
             source ~/.config/fish/functions/fzf-docker.fish
         end
     end

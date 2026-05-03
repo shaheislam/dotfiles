@@ -4,10 +4,30 @@
 
 # Toggle for FZF mode
 set -g kubectl_use_fzf true
+set -g __kubectl_fzf_functions_dir (status dirname)
 
 # Cache configuration for kubectl-fzf-server integration
 set -g KUBECTL_FZF_CACHE "/tmp/kubectl_fzf_cache"
 set -g KUBECTL_FZF_CACHE_MAX_AGE 60  # seconds
+
+function __kubectl_fzf_load_native_helpers --description "Load native kubectl completion helpers on demand"
+    if functions -q __fish_kubectl_print_resource_types
+        return 0
+    end
+
+    set -l completion_file "$__kubectl_fzf_functions_dir/../completions/kubectl.fish.full"
+    if set -q __fish_kubectl_completion_full_path; and test -f "$__fish_kubectl_completion_full_path"
+        set completion_file "$__fish_kubectl_completion_full_path"
+    else if not test -f "$completion_file"
+        set completion_file "$HOME/.config/fish/completions/kubectl.fish.full"
+    end
+
+    if test -f "$completion_file"
+        source "$completion_file"
+    end
+
+    functions -q __fish_kubectl_print_resource_types
+end
 
 # Cache-aware resource fetching function
 # Checks kubectl-fzf-server cache first, falls back to API
@@ -52,6 +72,11 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
 
     # Skip if not kubectl command
     if not contains -- $cmd[1] kubectl k kubecolor kctl
+        return
+    end
+
+    if not __kubectl_fzf_load_native_helpers
+        _fifc 2>/dev/null
         return
     end
 

@@ -4,7 +4,16 @@
 
 function helm_fzf_native --description "FZF-powered helm completions (lazy-loaded)"
     # Load the full implementation
-    source ~/.config/fish/functions/_helm_fzf_native_full.fish
+    set -l full_impl (status dirname)/_helm_fzf_native_full.fish
+    if not test -f "$full_impl"
+        set full_impl "$HOME/.config/fish/functions/_helm_fzf_native_full.fish"
+    end
+
+    if not test -f "$full_impl"
+        return 1
+    end
+
+    source "$full_impl"
     # Call the now-loaded function with original arguments
     helm_fzf_native $argv
 end
