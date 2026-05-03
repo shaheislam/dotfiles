@@ -754,7 +754,8 @@ alias gwtde="gwt-dev --exec" # Create and exec into
 alias gwtc="gwt-claude" # Launch Claude in worktree
 alias gwts="gwt-status" # Show worktree + devcontainer status
 alias gwtclean="gwt-cleanup" # Cleanup stale devcontainer instances
-alias gwtt="gwt-ticket" # Autonomous ticket execution
+functions -q gwtt; and functions -e gwtt # Drop old alias function when reloading config.
+# gwtt is an autoloaded function so default launches can detach from the caller pane.
 alias gwtq="gwt-queue" # Ticket queue management
 alias gwtdoc="gwt-doctor" # Agent orchestration health check
 alias csub="claude-sub" # Claude subscription profiles

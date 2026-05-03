@@ -1414,9 +1414,9 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
             set gwt_args $gwt_args --new
         end
         if $quiet_mode
-            gwt-dev $gwt_args >/dev/null 2>&1
+            gwt-dev $gwt_args </dev/null >/dev/null 2>&1
         else
-            gwt-dev $gwt_args
+            gwt-dev $gwt_args </dev/null
         end
         if test $status -ne 0
             echo "Error: Failed to create worktree"
@@ -1434,7 +1434,14 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     # Harness init: activate pre-commit hooks and validate environment in worktree
     set -l harness_init "$worktree_path/scripts/harness/init.sh"
     if test -x "$harness_init"
-        bash "$harness_init" >/dev/null 2>&1; or true
+        if $quiet_mode
+            begin
+                bash "$harness_init" >/dev/null 2>&1; or true
+            end </dev/null &
+            disown 2>/dev/null
+        else
+            bash "$harness_init" </dev/null >/dev/null 2>&1; or true
+        end
     end
 
     # Now that worktree path is resolved, set up quiet mode log file
@@ -1626,7 +1633,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         set run_harness_verify true
     end
     if $run_harness_verify; and test -x "$harness_verify"
-        set -l harness_status (bash "$harness_verify" --summary 2>/dev/null)
+        set -l harness_status (bash "$harness_verify" --summary </dev/null 2>/dev/null)
         if not $quiet_mode; and test -n "$harness_status"
             echo "  Harness: $harness_status"
         end
@@ -2448,7 +2455,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
             "set -l right_pane_id (tmux display-message -p '#{pane_id}')" \
             "set -l claude_pane_id (tmux split-window -t \"\$right_pane_id\" -hb -p 35 -P -F '#{pane_id}' 'fish $claude_pane_script')" \
             "tmux split-window -t \"\$right_pane_id\" -v -p 30 -c '$worktree_path'" \
-            "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' &" \
+            "bash '$rename_script_devcon' \"\$claude_pane_id\" '$window_name' '$prompt_cmd_file' </dev/null >/dev/null 2>&1 &" \
             disown \
             "exec fish $nvim_launch_script" >$setup_script
         chmod +x $setup_script
@@ -2503,7 +2510,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
             if not test -x "$rename_script"
                 set rename_script "$HOME/dotfiles-rename/scripts/gwt-rename-session.sh"
             end
-            bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" &
+            bash "$rename_script" "$claude_pane_id" "$window_name" "$prompt_cmd_file" </dev/null >/dev/null 2>&1 &
             disown
         end
     end

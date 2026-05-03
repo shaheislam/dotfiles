@@ -54,6 +54,12 @@ skills/shared/dream/.last-dream
 .entire/
 !.entire/settings.json
 
+# Generated agent runtime surfaces (materialized per worktree)
+.claude/agents/entire-search.md
+.gemini/agents/
+.gemini/settings.json
+.opencode/plugins/
+
 # Entire CLI git hooks (regenerated per-worktree by `entire enable`)
 # Project-specific hooks in .githooks/ should still be committed
 .githooks/commit-msg
