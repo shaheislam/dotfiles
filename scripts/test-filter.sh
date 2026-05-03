@@ -319,13 +319,13 @@ test_tmux() {
     # Empty window fix: gwt-ticket should create session with named window directly
     local GWT_TICKET="$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish"
     run_test "gwt-ticket creates session with window name (-n flag)" \
-        "grep -q 'tmux new-session -d -s \$session_name -n \$window_name -c \$worktree_path' '$GWT_TICKET'"
+        "grep -q 'tmux new-session -d -s \$session_name -n \$window_name -c \"\$worktree_path\"' '$GWT_TICKET'"
     run_test "gwt-ticket tracks new session creation" \
         "grep -q 'created_new_session' '$GWT_TICKET'"
     run_test "gwt-ticket skips new-window when session just created" \
         "grep -q 'created_new_session.*false' '$GWT_TICKET'"
     run_test "gwt-ticket only creates extra window for existing sessions" \
-        "grep -A2 'test.*created_new_session.*false' '$GWT_TICKET' | grep -q 'tmux new-window'"
+        "grep -A6 'test.*created_new_session.*false' '$GWT_TICKET' | grep -q 'tmux new-window'"
 
     # --skill flag: invoke skills at prompt start
     run_test "gwt-ticket supports --skill flag" \
