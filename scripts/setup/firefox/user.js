@@ -7,8 +7,10 @@ user_pref("privacy.userContext.enabled", true);
 user_pref("privacy.userContext.ui.enabled", true);
 user_pref("privacy.userContext.longPressBehavior", 2);
 
-// Required for userChrome.css customizations, including hidden native tabs for Sidebery.
+// Required for userChrome.css/userContent.css customizations, including hidden native tabs for Sidebery.
 user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
+user_pref("svg.context-properties.content.enabled", true);
+user_pref("layout.css.backdrop-filter.enabled", true);
 
 // Keep startup/new-tab noise low without changing browsing data.
 user_pref("browser.shell.checkDefaultBrowser", false);

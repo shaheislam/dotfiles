@@ -1,4 +1,120 @@
 /* Dotfiles-managed Firefox chrome customizations. */
+/* Minimal Sidebery-first chrome with a small Tokyo Night-inspired surface layer. */
+
+:root {
+  --df-firefox-bg: rgba(26, 27, 38, 0.82);
+  --df-firefox-bg-solid: #1a1b26;
+  --df-firefox-bg-alt: rgba(36, 40, 59, 0.92);
+  --df-firefox-border: rgba(122, 162, 247, 0.22);
+  --df-firefox-border-strong: rgba(122, 162, 247, 0.42);
+  --df-firefox-fg: #c0caf5;
+  --df-firefox-muted: #565f89;
+  --df-firefox-accent: #7aa2f7;
+  --df-firefox-radius: 10px;
+  --df-firefox-blur: 14px;
+
+  --toolbar-bgcolor: transparent !important;
+  --toolbar-color: var(--df-firefox-fg) !important;
+  --arrowpanel-background: var(--df-firefox-bg-alt) !important;
+  --arrowpanel-color: var(--df-firefox-fg) !important;
+  --arrowpanel-border-color: var(--df-firefox-border) !important;
+}
+
+#navigator-toolbox {
+  background-color: var(--df-firefox-bg-solid) !important;
+  border-bottom: 1px solid var(--df-firefox-border) !important;
+}
+
+#nav-bar,
+#PersonalToolbar {
+  background-color: var(--df-firefox-bg) !important;
+  box-shadow: none !important;
+}
+
+.toolbarbutton-1 {
+  border-radius: 8px !important;
+}
+
+#urlbar-background {
+  background-color: rgba(36, 40, 59, 0.72) !important;
+  border: 1px solid var(--df-firefox-border) !important;
+  border-radius: var(--df-firefox-radius) !important;
+  box-shadow: none !important;
+}
+
+#urlbar[focused] > #urlbar-background,
+#urlbar[focused="true"] > #urlbar-background,
+#urlbar[open] > #urlbar-background {
+  background-color: var(--df-firefox-bg-alt) !important;
+  border-color: var(--df-firefox-border-strong) !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24) !important;
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  #urlbar[focused] > #urlbar-background,
+  #urlbar[focused="true"] > #urlbar-background,
+  #urlbar[open] > #urlbar-background,
+  panel[type="arrow"] {
+    backdrop-filter: blur(var(--df-firefox-blur)) saturate(1.15) !important;
+  }
+}
+
+.urlbarView {
+  background-color: transparent !important;
+  color: var(--df-firefox-fg) !important;
+}
+
+.urlbarView-row[selected] > .urlbarView-row-inner,
+.urlbarView-row:hover > .urlbarView-row-inner {
+  background-color: rgba(122, 162, 247, 0.16) !important;
+  border-radius: 8px !important;
+}
+
+panel[type="arrow"],
+#appMenu-popup,
+#customizationui-widget-panel,
+#downloadsPanel,
+#unified-extensions-panel,
+#widget-overflow {
+  --panel-background: var(--df-firefox-bg-alt) !important;
+  --panel-color: var(--df-firefox-fg) !important;
+  --panel-border-color: var(--df-firefox-border) !important;
+  --arrowpanel-background: var(--df-firefox-bg-alt) !important;
+  --arrowpanel-color: var(--df-firefox-fg) !important;
+  --arrowpanel-border-color: var(--df-firefox-border) !important;
+  --arrowpanel-border-radius: 12px !important;
+}
+
+#sidebar-box {
+  background-color: var(--df-firefox-bg-solid) !important;
+}
+
+#sidebar-header {
+  min-height: 28px !important;
+  padding: 2px 8px 2px 6px !important;
+  border-bottom: 1px solid var(--df-firefox-border) !important;
+  background-color: var(--df-firefox-bg) !important;
+  color: var(--df-firefox-fg) !important;
+  font-size: 0.95em !important;
+}
+
+#sidebar-header #sidebar-close {
+  padding: 3px !important;
+}
+
+#sidebar-header #sidebar-close .toolbarbutton-icon {
+  width: 14px !important;
+  height: 14px !important;
+  opacity: 0.6 !important;
+}
+
+#sidebar-splitter {
+  min-width: 1px !important;
+  max-width: 1px !important;
+  border-color: var(--df-firefox-border) !important;
+  background-color: transparent !important;
+}
+
 /* Hides the native horizontal tab strip when Sidebery is the tab UI. */
 /* Adapted from MrOtherGuy/firefox-csshacks hide_tabs_toolbar_v2.css (MPL-2.0). */
 

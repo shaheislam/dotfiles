@@ -49,7 +49,8 @@ Setup does the following:
 - Uses stow to sync `.granted/config` and `.granted/firefox-profiles` into `~/.granted`.
 - Applies `scripts/setup/firefox/policies.json` to the Firefox app bundle when writable.
 - Installs `scripts/setup/firefox/user.js` into the default local Firefox profile only.
-- Installs `scripts/setup/firefox/chrome/userChrome.css` into the default local profile to hide native horizontal tabs when using Sidebery.
+- Installs `scripts/setup/firefox/chrome/userChrome.css` into the default local profile to hide native horizontal tabs, compact the sidebar header, and apply a small minimal theme layer when using Sidebery.
+- Installs `scripts/setup/firefox/chrome/userContent.css` into the default local profile to keep blank/internal pages dark.
 
 The `user.js` syncs selected `about:config` preferences without taking ownership of cookies, history, sessions, logins, cache, or the full Firefox profile.
 
@@ -128,8 +129,18 @@ Default-profile `about:config` preferences:
 Default-profile Firefox chrome CSS:
 
 - Hides Firefox's native horizontal tab strip so Sidebery is the only tab UI.
+- Compacts the native Firefox sidebar header while keeping it visible.
+- Adds a small Tokyo Night-inspired URL bar and panel surface treatment.
 - Keeps macOS/window-control support from the upstream Firefox CSS hack.
 - Requires `toolkit.legacyUserProfileCustomizations.stylesheets=true`, which is set in `user.js`.
+- Requires a full Firefox restart after installation.
+
+### `scripts/setup/firefox/chrome/userContent.css`
+
+Default-profile Firefox content CSS:
+
+- Keeps `about:blank`, `about:home`, and `about:newtab` dark to avoid white flashes.
+- Does not style normal websites.
 - Requires a full Firefox restart after installation.
 
 ## Available Colors And Icons
@@ -203,6 +214,18 @@ Solution:
 4. Check that the default profile has `chrome/userChrome.css` under `~/Library/Application Support/Firefox/Profiles/<profile>/chrome/userChrome.css`.
 5. Confirm `toolkit.legacyUserProfileCustomizations.stylesheets` is `true` in `about:config`.
 
+### Minimal Theme Changes Did Not Apply
+
+Problem: URL bar/panels still look stock, the sidebar header is not compact, or blank pages still flash white.
+
+Solution:
+
+1. Quit Firefox completely.
+2. Run `~/dotfiles/scripts/setup/firefox-setup.sh`.
+3. Reopen Firefox.
+4. Check that the default profile has both `chrome/userChrome.css` and `chrome/userContent.css`.
+5. Confirm `layout.css.backdrop-filter.enabled` and `svg.context-properties.content.enabled` are `true` in `about:config`.
+
 ### Wrong Browser Opens
 
 Problem: Chrome or Safari opens instead of Firefox.
@@ -233,7 +256,7 @@ Use `~/dotfiles/scripts/setup/granted-setup.sh` for Granted config management:
 - `test-config` validates local Granted setup.
 - `list-colors` shows available options.
 
-Use `~/dotfiles/scripts/setup/firefox-setup.sh` for Firefox policy, `user.js`, and Sidebery `userChrome.css` setup. Use `~/dotfiles/scripts/setup/firefox-setup.sh --capture-current-prefs` to refresh the dotfiles-managed `user.js` from the current Firefox default profile.
+Use `~/dotfiles/scripts/setup/firefox-setup.sh` for Firefox policy, `user.js`, Sidebery `userChrome.css`, and minimal `userContent.css` setup. Use `~/dotfiles/scripts/setup/firefox-setup.sh --capture-current-prefs` to refresh the dotfiles-managed `user.js` from the current Firefox default profile.
 
 ## Links
 

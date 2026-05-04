@@ -1,0 +1,24 @@
+/* Dotfiles-managed Firefox page-surface defaults. */
+/* Keep blank/internal Firefox pages from flashing bright white in a dark setup. */
+
+@-moz-document url("about:blank"), url("about:home"), url("about:newtab") {
+  html,
+  body {
+    background-color: #1a1b26 !important;
+    color: #c0caf5 !important;
+  }
+}
+
+@-moz-document url("about:home"), url("about:newtab") {
+  :root {
+    --newtab-background-color: #1a1b26 !important;
+    --newtab-background-color-secondary: #24283b !important;
+    --newtab-text-primary-color: #c0caf5 !important;
+    --newtab-text-secondary-color: #a9b1d6 !important;
+  }
+
+  #root,
+  .outer-wrapper {
+    background-color: #1a1b26 !important;
+  }
+}

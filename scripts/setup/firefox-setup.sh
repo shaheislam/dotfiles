@@ -9,6 +9,7 @@ FIREFOX_ROOT="${FIREFOX_ROOT:-$HOME/Library/Application Support/Firefox}"
 POLICY_SOURCE="${FIREFOX_POLICY_SOURCE:-$SCRIPT_DIR/firefox/policies.json}"
 USER_JS_SOURCE="${FIREFOX_USER_JS_SOURCE:-$SCRIPT_DIR/firefox/user.js}"
 USER_CHROME_SOURCE="${FIREFOX_USER_CHROME_SOURCE:-$SCRIPT_DIR/firefox/chrome/userChrome.css}"
+USER_CONTENT_SOURCE="${FIREFOX_USER_CONTENT_SOURCE:-$SCRIPT_DIR/firefox/chrome/userContent.css}"
 CAPTURE_PREFS_HELPER="$SCRIPT_DIR/firefox-capture-prefs.py"
 
 BLUE='\033[0;34m'
@@ -220,7 +221,7 @@ install_user_js() {
         return 0
     fi
 
-    copy_managed_file "$USER_JS_SOURCE" "$profile_path/user.js" "Firefox default-profile user.js" || true
+    copy_managed_file "$USER_JS_SOURCE" "$profile_path/user.js" "Firefox default-profile user.js"
 }
 
 install_user_chrome() {
@@ -236,7 +237,23 @@ install_user_chrome() {
         return 0
     fi
 
-    copy_managed_file "$USER_CHROME_SOURCE" "$profile_path/chrome/userChrome.css" "Firefox Sidebery userChrome.css" || true
+    copy_managed_file "$USER_CHROME_SOURCE" "$profile_path/chrome/userChrome.css" "Firefox Sidebery userChrome.css"
+}
+
+install_user_content() {
+    local profile_path=""
+
+    if ! profile_path="$(find_default_profile)"; then
+        log_warning "No Firefox profile found; run Firefox once, then rerun setup to install userContent.css"
+        return 0
+    fi
+
+    if [[ ! -d "$profile_path" ]]; then
+        log_warning "Default Firefox profile directory does not exist: $profile_path"
+        return 0
+    fi
+
+    copy_managed_file "$USER_CONTENT_SOURCE" "$profile_path/chrome/userContent.css" "Firefox minimal userContent.css"
 }
 
 capture_current_prefs() {
@@ -277,15 +294,19 @@ self_test() {
     install_policy >/dev/null
     install_user_js >/dev/null
     install_user_chrome >/dev/null
+    install_user_content >/dev/null
     install_policy >/dev/null
     install_user_js >/dev/null
     install_user_chrome >/dev/null
+    install_user_content >/dev/null
 
     [[ -f "$FIREFOX_APP/Contents/Resources/distribution/policies.json" ]] || result=1
     [[ -f "$profile_dir/user.js" ]] || result=1
     [[ -f "$profile_dir/chrome/userChrome.css" ]] || result=1
+    [[ -f "$profile_dir/chrome/userContent.css" ]] || result=1
     compgen -G "$profile_dir/user.js.backup.*" >/dev/null && result=1
     compgen -G "$profile_dir/chrome/userChrome.css.backup.*" >/dev/null && result=1
+    compgen -G "$profile_dir/chrome/userContent.css.backup.*" >/dev/null && result=1
 
     FIREFOX_APP="$old_firefox_app"
     FIREFOX_ROOT="$old_firefox_root"
@@ -324,6 +345,7 @@ main() {
     install_policy || had_warnings=true
     install_user_js || had_warnings=true
     install_user_chrome || had_warnings=true
+    install_user_content || had_warnings=true
 
     if [[ "$had_warnings" == "true" ]]; then
         log_warning "Firefox dotfiles setup completed with warnings"
