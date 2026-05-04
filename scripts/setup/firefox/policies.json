@@ -1,0 +1,32 @@
+{
+  "policies": {
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "DisableTelemetry": true,
+    "DontCheckDefaultBrowser": true,
+    "EnterprisePoliciesEnabled": true,
+    "NoDefaultBookmarks": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "ExtensionSettings": {
+      "{b5e0e8de-ebfe-4306-9528-bcc18241a490}": {
+        "installation_mode": "force_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/granted/latest.xpi"
+      }
+    },
+    "Preferences": {
+      "privacy.userContext.enabled": {
+        "Value": true,
+        "Status": "default"
+      },
+      "privacy.userContext.ui.enabled": {
+        "Value": true,
+        "Status": "default"
+      },
+      "privacy.userContext.longPressBehavior": {
+        "Value": 2,
+        "Status": "default"
+      }
+    }
+  }
+}

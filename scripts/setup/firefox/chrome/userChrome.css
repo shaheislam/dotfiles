@@ -1,0 +1,29 @@
+/* Dotfiles-managed Firefox chrome customizations. */
+/* Hides the native horizontal tab strip when Sidebery is the tab UI. */
+/* Adapted from MrOtherGuy/firefox-csshacks hide_tabs_toolbar_v2.css (MPL-2.0). */
+
+@media not -moz-pref("sidebar.verticalTabs") {
+  #TabsToolbar:not([customizing]) {
+    visibility: collapse !important;
+  }
+
+  :root[sizemode="fullscreen"] #nav-bar > .titlebar-buttonbox-container,
+  :root[customtitlebar] #toolbar-menubar:is([autohide=""], [autohide="true"]) ~ #nav-bar > .titlebar-buttonbox-container {
+    display: flex !important;
+  }
+
+  :root[customtitlebar][sizemode="normal"] #toolbar-menubar:is([autohide=""], [autohide="true"]) ~ #nav-bar > .titlebar-spacer,
+  :root[customtitlebar][sizemode="maximized"] #toolbar-menubar:is([autohide=""], [autohide="true"]) ~ #nav-bar > .titlebar-spacer[type="post-tabs"] {
+    display: flex !important;
+  }
+
+  @media (-moz-platform: macos) {
+    :root[customtitlebar][sizemode="maximized"] #toolbar-menubar:is([autohide=""], [autohide="true"]) ~ #nav-bar > .titlebar-spacer[type="post-tabs"] {
+      display: none !important;
+    }
+
+    :root[customtitlebar][sizemode="maximized"] #toolbar-menubar:is([autohide=""], [autohide="true"]) ~ #nav-bar > .titlebar-spacer[type="pre-tabs"] {
+      display: flex !important;
+    }
+  }
+}

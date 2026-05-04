@@ -293,6 +293,7 @@ cask "font-hack-nerd-font"
 cask "font-iosevka-nerd-font"
 
 # GUI Applications
+cask "firefox"
 cask "nikitabobko/tap/aerospace"
 cask "wezterm"
 cask "session-manager-plugin"

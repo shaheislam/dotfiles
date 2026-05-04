@@ -1883,6 +1883,7 @@ phase_9_fonts_and_apps() {
         # Install GUI Applications (batch — single brew invocation)
         print_step "Installing GUI Applications..."
         local gui_apps=(
+            "firefox"
             "raycast"
             "wezterm"
             "nikitabobko/tap/aerospace"
@@ -1903,6 +1904,14 @@ phase_9_fonts_and_apps() {
             brew install --cask "${apps_to_install[@]}" >/dev/null 2>&1 &&
                 print_success "Installed ${#apps_to_install[@]} GUI applications" ||
                 log_verbose "Some GUI applications failed to install"
+        fi
+
+        # Firefox policies live in the app bundle; profile prefs and userChrome
+        # are copied into the local default profile without touching cookies or history.
+        if [[ -f "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ]]; then
+            print_step "Configuring Firefox for Granted..."
+            bash "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ||
+                log_verbose "Firefox setup completed with warnings"
         fi
 
         # Execute macOS defaults configuration
