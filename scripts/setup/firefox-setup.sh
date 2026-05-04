@@ -10,6 +10,7 @@ POLICY_SOURCE="${FIREFOX_POLICY_SOURCE:-$SCRIPT_DIR/firefox/policies.json}"
 USER_JS_SOURCE="${FIREFOX_USER_JS_SOURCE:-$SCRIPT_DIR/firefox/user.js}"
 USER_CHROME_SOURCE="${FIREFOX_USER_CHROME_SOURCE:-$SCRIPT_DIR/firefox/chrome/userChrome.css}"
 USER_CONTENT_SOURCE="${FIREFOX_USER_CONTENT_SOURCE:-$SCRIPT_DIR/firefox/chrome/userContent.css}"
+SIDEBERY_CSS_SOURCE="${FIREFOX_SIDEBERY_CSS_SOURCE:-$SCRIPT_DIR/firefox/chrome/sidebery.css}"
 CAPTURE_PREFS_HELPER="$SCRIPT_DIR/firefox-capture-prefs.py"
 
 BLUE='\033[0;34m'
@@ -193,10 +194,24 @@ find_default_profile() {
 }
 
 install_policy() {
+    local policy_dir="$FIREFOX_APP/Contents/Resources/distribution"
     local policy_target="$FIREFOX_APP/Contents/Resources/distribution/policies.json"
+    local resources_dir="$FIREFOX_APP/Contents/Resources"
 
     if [[ ! -d "$FIREFOX_APP" ]]; then
         log_warning "Firefox.app not found at $FIREFOX_APP; skipping enterprise policy"
+        return 0
+    fi
+
+    if [[ -d "$policy_dir" && ! -w "$policy_dir" ]]; then
+        log_info "Firefox app bundle policy directory is not writable; skipping enterprise policy"
+        log_info "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
+        return 0
+    fi
+
+    if [[ ! -d "$policy_dir" && -d "$resources_dir" && ! -w "$resources_dir" ]]; then
+        log_info "Firefox app bundle is not writable; skipping enterprise policy"
+        log_info "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
         return 0
     fi
 
@@ -256,6 +271,22 @@ install_user_content() {
     copy_managed_file "$USER_CONTENT_SOURCE" "$profile_path/chrome/userContent.css" "Firefox minimal userContent.css"
 }
 
+install_sidebery_css() {
+    local profile_path=""
+
+    if ! profile_path="$(find_default_profile)"; then
+        log_warning "No Firefox profile found; run Firefox once, then rerun setup to install sidebery.css"
+        return 0
+    fi
+
+    if [[ ! -d "$profile_path" ]]; then
+        log_warning "Default Firefox profile directory does not exist: $profile_path"
+        return 0
+    fi
+
+    copy_managed_file "$SIDEBERY_CSS_SOURCE" "$profile_path/chrome/sidebery.css" "Firefox Sidebery dark stylesheet"
+}
+
 capture_current_prefs() {
     if ! command -v python3 >/dev/null 2>&1; then
         log_warning "python3 is required to capture Firefox prefs"
@@ -294,18 +325,22 @@ self_test() {
     install_policy >/dev/null
     install_user_js >/dev/null
     install_user_chrome >/dev/null
+    install_sidebery_css >/dev/null
     install_user_content >/dev/null
     install_policy >/dev/null
     install_user_js >/dev/null
     install_user_chrome >/dev/null
+    install_sidebery_css >/dev/null
     install_user_content >/dev/null
 
     [[ -f "$FIREFOX_APP/Contents/Resources/distribution/policies.json" ]] || result=1
     [[ -f "$profile_dir/user.js" ]] || result=1
     [[ -f "$profile_dir/chrome/userChrome.css" ]] || result=1
+    [[ -f "$profile_dir/chrome/sidebery.css" ]] || result=1
     [[ -f "$profile_dir/chrome/userContent.css" ]] || result=1
     compgen -G "$profile_dir/user.js.backup.*" >/dev/null && result=1
     compgen -G "$profile_dir/chrome/userChrome.css.backup.*" >/dev/null && result=1
+    compgen -G "$profile_dir/chrome/sidebery.css.backup.*" >/dev/null && result=1
     compgen -G "$profile_dir/chrome/userContent.css.backup.*" >/dev/null && result=1
 
     FIREFOX_APP="$old_firefox_app"
@@ -345,6 +380,7 @@ main() {
     install_policy || had_warnings=true
     install_user_js || had_warnings=true
     install_user_chrome || had_warnings=true
+    install_sidebery_css || had_warnings=true
     install_user_content || had_warnings=true
 
     if [[ "$had_warnings" == "true" ]]; then

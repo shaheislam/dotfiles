@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
 import sys
@@ -36,10 +37,7 @@ SAFE_EXACT = {
     "browser.newtabpage.activity-stream.feeds.telemetry",
     "browser.newtabpage.activity-stream.weather.optInDisplayed",
     "browser.shell.checkDefaultBrowser",
-    "browser.shell.userDisabledDefaultCheck",
     "browser.startup.homepage",
-    "browser.startup.homepage_override.mstone",
-    "browser.theme.toolbar-theme",
     "browser.toolbars.bookmarks.visibility",
     "browser.uiCustomization.horizontalTabsBackup",
     "browser.uiCustomization.navBarWhenVerticalTabs",
@@ -49,7 +47,6 @@ SAFE_EXACT = {
     "devtools.toolbox.selectedTool",
     "dom.forms.autocomplete.formautofill",
     "dom.security.https_only_mode_ever_enabled",
-    "extensions.activeThemeID",
     "extensions.pictureinpicture.enable_picture_in_picture_overrides",
     "extensions.pocket.enabled",
     "extensions.webcompat.perform_injections",
@@ -61,7 +58,6 @@ SAFE_EXACT = {
     "pdfjs.enableAltTextForEnglish",
     "places.semanticHistory.distanceThreshold",
     "places.semanticHistory.featureGate",
-    "places.semanticHistory.initialized",
     "privacy.clearOnShutdown_v2.formdata",
     "privacy.userContext.enabled",
     "privacy.userContext.extension",
@@ -114,9 +110,13 @@ DENY_EXACT = {
     "browser.startup.lastColdStartupCheck",
     "browser.startup.homepage_override.buildID",
     "browser.startup.homepage_override.mstone",
+    "browser.theme.content-theme",
+    "browser.theme.toolbar-theme",
     "browser.urlbar.lastUrlbarSearchSeconds",
     "devtools.debugger.prefs-schema-version",
     "extensions.webextensions.uuids",
+    "extensions.activeThemeID",
+    "layout.css.prefers-color-scheme.content-override",
     "pdfjs.enabledCache.state",
     "pdfjs.migrationVersion",
     "places.semanticHistory.initialized",
@@ -315,6 +315,16 @@ def captured_block(captured: dict[str, str]) -> list[str]:
     return lines
 
 
+def write_text_atomically(path: Path, text: str) -> None:
+    tmp_path = path.with_name(f".{path.name}.tmp")
+    try:
+        tmp_path.write_text(text, encoding="utf-8")
+        os.replace(tmp_path, path)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+
+
 def merge_user_js(user_js: Path, captured: dict[str, str]) -> int:
     existing_lines = user_js.read_text(encoding="utf-8").splitlines()
     in_captured_block = False
@@ -350,7 +360,7 @@ def merge_user_js(user_js: Path, captured: dict[str, str]) -> int:
     new_text = "\n".join(new_lines)
     old_text = user_js.read_text(encoding="utf-8")
     if old_text != new_text:
-        user_js.write_text(new_text, encoding="utf-8")
+        write_text_atomically(user_js, new_text)
 
     return replaced_count
 

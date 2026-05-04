@@ -50,9 +50,11 @@ Setup does the following:
 - Applies `scripts/setup/firefox/policies.json` to the Firefox app bundle when writable.
 - Installs `scripts/setup/firefox/user.js` into the default local Firefox profile only.
 - Installs `scripts/setup/firefox/chrome/userChrome.css` into the default local profile to hide native horizontal tabs, compact the sidebar header, and apply a small minimal theme layer when using Sidebery.
-- Installs `scripts/setup/firefox/chrome/userContent.css` into the default local profile to keep blank/internal pages dark.
+- Installs `scripts/setup/firefox/chrome/userContent.css` and `scripts/setup/firefox/chrome/sidebery.css` into the default local profile to keep blank/internal pages and Sidebery dark/translucent.
 
 The `user.js` syncs selected `about:config` preferences without taking ownership of cookies, history, sessions, logins, cache, or the full Firefox profile.
+
+Sidebery itself should be set to `Appearance > Color scheme > dark`. The managed `user.js` sets `svg.context-properties.content.enabled=true` so Sidebery toolbar/browser-interface icons can inherit the Firefox theme color.
 
 To refresh `user.js` from the current Firefox default profile:
 
@@ -120,6 +122,7 @@ Machine-level Firefox enterprise policies:
 Default-profile `about:config` preferences:
 
 - Enables Firefox containers and the container UI.
+- Selects Firefox's built-in dark theme and dark website appearance preference.
 - Mirrors lightweight telemetry/new-tab defaults.
 - Includes a generated block of safe preferences captured from the current local Firefox default profile.
 - Does not manage profile databases such as `cookies.sqlite`, `places.sqlite`, `logins.json`, `key4.db`, or session restore files.
@@ -130,7 +133,8 @@ Default-profile Firefox chrome CSS:
 
 - Hides Firefox's native horizontal tab strip so Sidebery is the only tab UI.
 - Compacts the native Firefox sidebar header while keeping it visible.
-- Adds a small Tokyo Night-inspired URL bar and panel surface treatment.
+- Adds a small Tokyo Night-inspired translucent URL bar and panel surface treatment.
+- Declares a dark chrome color scheme so native controls match the theme.
 - Keeps macOS/window-control support from the upstream Firefox CSS hack.
 - Requires `toolkit.legacyUserProfileCustomizations.stylesheets=true`, which is set in `user.js`.
 - Requires a full Firefox restart after installation.
@@ -140,8 +144,19 @@ Default-profile Firefox chrome CSS:
 Default-profile Firefox content CSS:
 
 - Keeps `about:blank`, `about:home`, and `about:newtab` dark to avoid white flashes.
+- Imports the dotfiles-managed Sidebery stylesheet.
 - Does not style normal websites.
 - Requires a full Firefox restart after installation.
+
+### `scripts/setup/firefox/chrome/sidebery.css`
+
+Default-profile Sidebery CSS:
+
+- Targets Sidebery `moz-extension://*/sidebar/index.html` and group pages.
+- Complements Sidebery's built-in `Appearance > Color scheme > dark` setting.
+- Sets Sidebery's public color variables to a dark Tokyo Night palette when `userContent.css` can reach extension pages.
+- Makes Sidebery tabs, toolbar buttons, nav items, and popups translucent over a dark base.
+- Can be adapted for Sidebery Settings > Styles editor if Firefox stops applying `userContent.css` to extension pages; paste the rules inside the `@-moz-document` block.
 
 ## Available Colors And Icons
 
@@ -216,15 +231,17 @@ Solution:
 
 ### Minimal Theme Changes Did Not Apply
 
-Problem: URL bar/panels still look stock, the sidebar header is not compact, or blank pages still flash white.
+Problem: URL bar/panels still look stock, Sidebery tabs are opaque, the sidebar header is not compact, or blank pages still flash white.
 
 Solution:
 
 1. Quit Firefox completely.
 2. Run `~/dotfiles/scripts/setup/firefox-setup.sh`.
 3. Reopen Firefox.
-4. Check that the default profile has both `chrome/userChrome.css` and `chrome/userContent.css`.
-5. Confirm `layout.css.backdrop-filter.enabled` and `svg.context-properties.content.enabled` are `true` in `about:config`.
+4. Check that the default profile has `chrome/userChrome.css`, `chrome/userContent.css`, and `chrome/sidebery.css`.
+5. In Sidebery Settings > Appearance, set `Color scheme` to `dark`.
+6. Confirm `layout.css.backdrop-filter.enabled` and `svg.context-properties.content.enabled` are `true` in `about:config`.
+7. If only Sidebery remains opaque, paste the rules inside `chrome/sidebery.css`'s `@-moz-document` block into Sidebery Settings > Styles editor; Firefox may stop `userContent.css` from styling extension pages on some builds.
 
 ### Wrong Browser Opens
 

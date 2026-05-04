@@ -1,9 +1,12 @@
 /* Dotfiles-managed Firefox page-surface defaults. */
 /* Keep blank/internal Firefox pages from flashing bright white in a dark setup. */
 
+@import url("sidebery.css");
+
 @-moz-document url("about:blank"), url("about:home"), url("about:newtab") {
   html,
   body {
+    color-scheme: dark;
     background-color: #1a1b26 !important;
     color: #c0caf5 !important;
   }

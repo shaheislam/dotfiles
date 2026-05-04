@@ -1906,8 +1906,9 @@ phase_9_fonts_and_apps() {
                 log_verbose "Some GUI applications failed to install"
         fi
 
-        # Firefox policies live in the app bundle; profile prefs, userChrome, and
-        # userContent are copied into the local default profile without touching cookies or history.
+        # Firefox policies live in the app bundle; profile prefs, userChrome,
+        # userContent, and Sidebery CSS are copied into the local default profile
+        # without touching cookies or history.
         if [[ -f "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ]]; then
             print_step "Configuring Firefox for Granted..."
             bash "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ||
