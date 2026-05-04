@@ -3,7 +3,7 @@
   "checkpoint_id": "dcf16c68f7cb",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 1,
+  "checkpoints_count": 25,
   "files_touched": [
     "homebrew/Brewfile",
     "scripts/setup.sh"
@@ -14,13 +14,19 @@
       "transcript": "/dc/f16c68f7cb/0/full.jsonl",
       "content_hash": "/dc/f16c68f7cb/0/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/dc/f16c68f7cb/1/metadata.json",
+      "transcript": "/dc/f16c68f7cb/1/full.jsonl",
+      "content_hash": "/dc/f16c68f7cb/1/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
-    "input_tokens": 683797,
+    "input_tokens": 4026434,
     "cache_creation_tokens": 0,
-    "cache_read_tokens": 1228800,
-    "output_tokens": 5479,
-    "api_call_count": 31
+    "cache_read_tokens": 11460096,
+    "output_tokens": 56283,
+    "api_call_count": 181
   }
 }
