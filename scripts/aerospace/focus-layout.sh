@@ -22,9 +22,10 @@ if [[ "$app_id" == "com.github.wez.wezterm" || "$app_name" =~ [Gg]hostty ]]; the
 fi
 
 if [[ "$workspace" == "$terminal_workspace" && "$is_terminal" == "true" ]]; then
-    aero_clear_window_fullscreen "$focused_window_id"
-    aerospace layout --window-id "$focused_window_id" tiling >/dev/null 2>&1 || true
-    aerospace fullscreen on --window-id "$focused_window_id" --no-outer-gaps >/dev/null 2>&1 || true
+    aero_set_window_floating "$focused_window_id"
+    aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
+    aero_resize_focused_window_to_ratio 0.75 0.75
+    aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
     exit 0
 fi
 

@@ -205,7 +205,18 @@ aero_park_window() {
 }
 
 aero_resize_focused_window() {
-    osascript <<'APPLESCRIPT' >/dev/null 2>&1 || true
+    aero_resize_focused_window_to_ratio 0.92 0.88
+}
+
+aero_resize_focused_window_to_ratio() {
+    local width_ratio="${1:-0.92}"
+    local height_ratio="${2:-0.88}"
+
+    osascript - "$width_ratio" "$height_ratio" <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run argv
+set widthRatio to item 1 of argv as real
+set heightRatio to item 2 of argv as real
+
 tell application "Finder"
     set desktopBounds to bounds of window of desktop
 end tell
@@ -213,8 +224,8 @@ end tell
 set {screenLeft, screenTop, screenRight, screenBottom} to desktopBounds
 set screenWidth to screenRight - screenLeft
 set screenHeight to screenBottom - screenTop
-set targetWidth to (screenWidth * 0.92) as integer
-set targetHeight to (screenHeight * 0.88) as integer
+set targetWidth to (screenWidth * widthRatio) as integer
+set targetHeight to (screenHeight * heightRatio) as integer
 set targetLeft to (screenLeft + ((screenWidth - targetWidth) / 2)) as integer
 set targetTop to (screenTop + ((screenHeight - targetHeight) / 2)) as integer
 
@@ -233,6 +244,7 @@ tell application "System Events"
         set size of frontWindow to {targetWidth, targetHeight}
     end tell
 end tell
+end run
 APPLESCRIPT
 }
 

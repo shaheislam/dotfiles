@@ -33,7 +33,7 @@ default-root-container-orientation = 'auto'
 # Fallback value (if you omit the key): on-focused-monitor-changed = []
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
-# Layout keys: alt-1 floating stack, alt-3 three-pane, alt-4 two-pane, alt-2 terminal-only T.
+# Layout keys: alt-1 floating stack, alt-3 three-pane, alt-4 two-pane, alt-2 centered terminal T.
 on-focus-changed = ['exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh']
 
 # You can effectively turn off macOS "Hide application" (cmd-h) feature by toggling this flag
