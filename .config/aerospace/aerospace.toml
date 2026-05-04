@@ -186,7 +186,7 @@ alt-4 = 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/switch-wo
 alt-5 = ['workspace T', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh']
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
-alt-shift-1 = ['move-node-to-workspace 1 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh']
+alt-shift-1 = ['move-node-to-workspace 1 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh 1']
 alt-shift-2 = ['move-node-to-workspace 2 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh 2']
 alt-shift-3 = ['move-node-to-workspace 3 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh 3']
 alt-shift-4 = ['move-node-to-workspace 4 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh 4']

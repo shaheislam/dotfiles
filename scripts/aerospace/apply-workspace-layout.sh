@@ -1,37 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if ! command -v aerospace >/dev/null 2>&1; then
-    exit 0
-fi
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/aerospace/lib.sh
+source "$script_dir/lib.sh"
+
+aero_require
 
 workspace="${1:-}"
+preferred_focus_window_id="${2:-}"
 if [[ -z "$workspace" ]]; then
     workspace=$(aerospace list-workspaces --focused 2>/dev/null || true)
 fi
 
-case "$workspace" in
-    1 | 2 | 3 | 4)
-        ;;
-    *)
-        exit 0
-        ;;
-esac
-
-lock_dir="${TMPDIR:-/tmp}/aerospace-workspace-layout-${workspace}.lock"
-locked=false
-for _ in {1..40}; do
-    if mkdir "$lock_dir" 2>/dev/null; then
-        locked=true
-        break
-    fi
-    sleep 0.05
-done
-
-if [[ "$locked" != "true" ]]; then
+if ! aero_is_profile_workspace "$workspace"; then
     exit 0
 fi
-trap 'rmdir "$lock_dir"' EXIT
+
+aero_acquire_lock "aerospace-workspace-layout-${workspace}" 40
 
 focused_window_id=""
 focused=$(aerospace list-windows --focused --format '%{window-id}|%{workspace}' 2>/dev/null || true)
@@ -42,62 +28,30 @@ if [[ -n "$focused" ]]; then
     fi
 fi
 
+if [[ -n "$preferred_focus_window_id" ]]; then
+    focused_window_id="$preferred_focus_window_id"
+fi
+
 window_ids=()
-while IFS='|' read -r window_id app_id app_name; do
+window_pids=()
+while IFS='|' read -r window_id app_pid app_id app_name; do
     if [[ -z "$window_id" ]]; then
         continue
     fi
 
-    case "$app_id" in
-        com.macosgame.iwallpaper)
-            continue
-            ;;
-    esac
-
-    case "$app_name" in
-        MyWallpaper)
-            continue
-            ;;
-    esac
+    if aero_is_ignored_window "$app_id" "$app_name"; then
+        continue
+    fi
 
     window_ids+=("$window_id")
-done < <(aerospace list-windows --workspace "$workspace" --format '%{window-id}|%{app-bundle-id}|%{app-name}' 2>/dev/null || true)
+    if [[ -n "$app_pid" ]]; then
+        window_pids+=("$app_pid")
+    fi
+done < <(aerospace list-windows --workspace "$workspace" --format '%{window-id}|%{app-pid}|%{app-bundle-id}|%{app-name}' 2>/dev/null || true)
 
 if [[ "${#window_ids[@]}" -eq 0 ]]; then
     exit 0
 fi
-
-resize_focused_window() {
-    osascript <<'APPLESCRIPT' >/dev/null 2>&1 || true
-tell application "Finder"
-    set desktopBounds to bounds of window of desktop
-end tell
-
-set {screenLeft, screenTop, screenRight, screenBottom} to desktopBounds
-set screenWidth to screenRight - screenLeft
-set screenHeight to screenBottom - screenTop
-set targetWidth to (screenWidth * 0.92) as integer
-set targetHeight to (screenHeight * 0.88) as integer
-set targetLeft to (screenLeft + ((screenWidth - targetWidth) / 2)) as integer
-set targetTop to (screenTop + ((screenHeight - targetHeight) / 2)) as integer
-
-tell application "System Events"
-    set frontProcess to first process whose frontmost is true
-    tell frontProcess
-        if (count of windows) is 0 then return
-        set frontWindow to front window
-        try
-            set value of attribute "AXFullScreen" of frontWindow to false
-        end try
-        try
-            perform action "AXRaise" of frontWindow
-        end try
-        set position of frontWindow to {targetLeft, targetTop}
-        set size of frontWindow to {targetWidth, targetHeight}
-    end tell
-end tell
-APPLESCRIPT
-}
 
 if [[ "$workspace" == "1" ]]; then
     for window_id in "${window_ids[@]}"; do
@@ -106,13 +60,20 @@ if [[ "$workspace" == "1" ]]; then
         aerospace layout --window-id "$window_id" floating >/dev/null 2>&1 || true
     done
 
+    sleep 0.1
+    aero_resize_windows_for_pids "${window_pids[@]}"
+
     if [[ -n "$focused_window_id" ]]; then
-        aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
-    else
-        aerospace focus --window-id "${window_ids[0]}" >/dev/null 2>&1 || true
+        aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || focused_window_id=""
     fi
 
-    resize_focused_window
+    if [[ -z "$focused_window_id" ]]; then
+        focused_window_id="${window_ids[0]}"
+        aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
+    fi
+
+    aero_resize_focused_window
+    aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
     exit 0
 fi
 
@@ -145,7 +106,9 @@ fi
 aerospace balance-sizes --workspace "$workspace" >/dev/null 2>&1 || true
 
 if [[ -n "$focused_window_id" ]]; then
-    aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
-else
+    aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || focused_window_id=""
+fi
+
+if [[ -z "$focused_window_id" ]]; then
     aerospace focus --window-id "${window_ids[0]}" >/dev/null 2>&1 || true
 fi

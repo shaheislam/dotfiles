@@ -1,35 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if ! command -v aerospace >/dev/null 2>&1; then
-    exit 0
-fi
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/aerospace/lib.sh
+source "$script_dir/lib.sh"
+
+aero_require
 
 target_workspace="${1:-}"
-case "$target_workspace" in
-    1 | 2 | 3 | 4)
-        ;;
-    *)
-        exit 0
-        ;;
-esac
-
-lock_dir="${TMPDIR:-/tmp}/aerospace-profile-switch.lock"
-locked=false
-for _ in {1..40}; do
-    if mkdir "$lock_dir" 2>/dev/null; then
-        locked=true
-        break
-    fi
-    sleep 0.05
-done
-
-if [[ "$locked" != "true" ]]; then
+if ! aero_is_profile_workspace "$target_workspace"; then
     exit 0
 fi
-trap 'rmdir "$lock_dir"' EXIT
 
-state_file="${TMPDIR:-/tmp}/aerospace-active-layout-profile"
+aero_acquire_lock "aerospace-profile-switch" 40
+
+state_file=$(aero_state_file)
 source_workspace=""
 focused_window_id=""
 
@@ -38,20 +23,21 @@ if [[ -n "$focused" ]]; then
     IFS='|' read -r focused_id focused_workspace <<<"$focused"
 fi
 
-case "${focused_workspace:-}" in
-    1 | 2 | 3 | 4)
-        source_workspace="$focused_workspace"
-        focused_window_id="$focused_id"
-        ;;
-esac
+if aero_is_profile_workspace "${focused_workspace:-}"; then
+    source_workspace="$focused_workspace"
+    focused_window_id="$focused_id"
+fi
+
+if [[ "$source_workspace" == "$target_workspace" ]]; then
+    printf '%s\n' "$target_workspace" >"$state_file"
+    exit 0
+fi
 
 if [[ -z "$source_workspace" && -r "$state_file" ]]; then
     saved_workspace=$(<"$state_file")
-    case "$saved_workspace" in
-        1 | 2 | 3 | 4)
-            source_workspace="$saved_workspace"
-            ;;
-    esac
+    if aero_is_profile_workspace "$saved_workspace"; then
+        source_workspace="$saved_workspace"
+    fi
 fi
 
 if [[ -z "$source_workspace" ]]; then
@@ -70,17 +56,9 @@ if [[ -n "$source_workspace" && "$source_workspace" != "$target_workspace" ]]; t
             continue
         fi
 
-        case "$app_id" in
-            com.macosgame.iwallpaper)
-                continue
-                ;;
-        esac
-
-        case "$app_name" in
-            MyWallpaper)
-                continue
-                ;;
-        esac
+        if aero_is_ignored_window "$app_id" "$app_name"; then
+            continue
+        fi
 
         aerospace move-node-to-workspace --window-id "$window_id" "$target_workspace" >/dev/null 2>&1 || true
     done < <(aerospace list-windows --workspace "$source_workspace" --format '%{window-id}|%{app-bundle-id}|%{app-name}' 2>/dev/null || true)
@@ -93,4 +71,8 @@ fi
 
 printf '%s\n' "$target_workspace" >"$state_file"
 
-/Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh "$target_workspace"
+if [[ -n "$focused_window_id" ]]; then
+    "$script_dir/apply-workspace-layout.sh" "$target_workspace" "$focused_window_id"
+else
+    "$script_dir/apply-workspace-layout.sh" "$target_workspace"
+fi
