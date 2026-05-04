@@ -30,6 +30,9 @@ fi
 
 if [[ "$source_workspace" == "$target_workspace" ]]; then
     printf '%s\n' "$target_workspace" >"$state_file"
+    if [[ "$target_workspace" != "1" ]]; then
+        "$script_dir/apply-workspace-layout.sh" "$target_workspace" "$focused_window_id"
+    fi
     exit 0
 fi
 
@@ -41,16 +44,25 @@ if [[ -z "$source_workspace" && -r "$state_file" ]]; then
 fi
 
 if [[ -z "$source_workspace" ]]; then
-    for candidate in 1 2 3 4; do
+    while IFS= read -r candidate; do
         count=$(aerospace list-windows --workspace "$candidate" --count 2>/dev/null || true)
         if [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
             source_workspace="$candidate"
             break
         fi
-    done
+    done < <(aero_profile_workspaces)
 fi
 
+source_workspaces=()
 if [[ -n "$source_workspace" && "$source_workspace" != "$target_workspace" ]]; then
+    source_workspaces+=("$source_workspace")
+fi
+
+if [[ "$target_workspace" != "1" && "$source_workspace" != "1" ]]; then
+    source_workspaces+=("1")
+fi
+
+for workspace_to_move in "${source_workspaces[@]}"; do
     while IFS='|' read -r window_id app_id app_name; do
         if [[ -z "$window_id" ]]; then
             continue
@@ -61,15 +73,19 @@ if [[ -n "$source_workspace" && "$source_workspace" != "$target_workspace" ]]; t
         fi
 
         aerospace move-node-to-workspace --window-id "$window_id" "$target_workspace" >/dev/null 2>&1 || true
-    done < <(aerospace list-windows --workspace "$source_workspace" --format '%{window-id}|%{app-bundle-id}|%{app-name}' 2>/dev/null || true)
+    done < <(aerospace list-windows --workspace "$workspace_to_move" --format '%{window-id}|%{app-bundle-id}|%{app-name}' 2>/dev/null || true)
+done
+
+if [[ -z "$source_workspace" && "$target_workspace" == "1" ]]; then
+    aerospace workspace "$target_workspace" >/dev/null 2>&1 || exit 0
 fi
+
+printf '%s\n' "$target_workspace" >"$state_file"
 
 aerospace workspace "$target_workspace" >/dev/null 2>&1 || exit 0
 if [[ -n "$focused_window_id" ]]; then
     aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
 fi
-
-printf '%s\n' "$target_workspace" >"$state_file"
 
 if [[ -n "$focused_window_id" ]]; then
     "$script_dir/apply-workspace-layout.sh" "$target_workspace" "$focused_window_id"
