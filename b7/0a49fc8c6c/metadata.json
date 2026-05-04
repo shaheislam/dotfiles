@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "b70a49fc8c6c",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    ".granted/README.md",
+    "homebrew/Brewfile",
+    "scripts/setup.sh",
+    "scripts/setup/firefox-capture-prefs.py",
+    "scripts/setup/firefox-setup.sh",
+    "scripts/setup/firefox/policies.json",
+    "scripts/setup/firefox/user.js",
+    "scripts/test-filter.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b7/0a49fc8c6c/0/metadata.json",
+      "transcript": "/b7/0a49fc8c6c/0/full.jsonl",
+      "content_hash": "/b7/0a49fc8c6c/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1202441,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 5194752,
+    "output_tokens": 32618,
+    "api_call_count": 88
+  }
+}
