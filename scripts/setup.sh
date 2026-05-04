@@ -401,6 +401,143 @@ show_summary() {
 }
 
 # ============================================================================
+# Brewfile Reconciliation
+# ============================================================================
+
+brewfile_mas_skip_ids() {
+    local brewfile=$1
+    local line
+    local skip_ids=""
+
+    [[ -f "$brewfile" ]] || return 0
+
+    while IFS= read -r line; do
+        [[ "$line" =~ ^[[:space:]]*mas[[:space:]] ]] || continue
+
+        if [[ "$line" =~ id:[[:space:]]*([0-9]+) ]]; then
+            if [[ -z "$skip_ids" ]]; then
+                skip_ids="${BASH_REMATCH[1]}"
+            else
+                skip_ids="$skip_ids ${BASH_REMATCH[1]}"
+            fi
+        fi
+    done <"$brewfile"
+
+    printf '%s' "$skip_ids"
+}
+
+app_store_signed_in() {
+    command_exists mas && mas account >/dev/null 2>&1
+}
+
+run_brew_bundle() {
+    local brewfile=$1
+    local mas_skip_ids=${2:-}
+
+    if [[ -n "$mas_skip_ids" ]]; then
+        HOMEBREW_BUNDLE_MAS_SKIP="$mas_skip_ids" brew bundle --file="$brewfile" 2>&1 ||
+            log_verbose "Brewfile reconciliation completed with warnings"
+    else
+        brew bundle --file="$brewfile" 2>&1 ||
+            log_verbose "Brewfile reconciliation completed with warnings"
+    fi
+}
+
+prompt_app_store_sign_in() {
+    if [[ "$NO_CONFIRM" == "true" ]]; then
+        print_warning "Mac App Store is not signed in; --no-confirm set, skipping Mac App Store apps"
+        return 1
+    fi
+
+    if [[ ! -t 0 ]]; then
+        print_warning "Mac App Store is not signed in and setup is non-interactive; skipping Mac App Store apps"
+        return 1
+    fi
+
+    local answer
+    read -r -p "$(echo -e "${YELLOW}Mac App Store is not signed in. Open App Store now to sign in before installing Mac App Store apps? [y/N]${NC} ")" answer
+
+    case "$answer" in
+    [Yy]*)
+        open -a "App Store" 2>/dev/null || print_warning "Could not open App Store automatically"
+        read -r -p "$(echo -e "${YELLOW}Sign into the App Store, then press Enter to continue (or type s to skip): ${NC}")" answer
+
+        case "$answer" in
+        [Ss]*)
+            print_warning "Skipping Mac App Store apps"
+            return 1
+            ;;
+        esac
+
+        if app_store_signed_in; then
+            print_success "Mac App Store sign-in detected"
+            return 0
+        fi
+
+        print_warning "Mac App Store sign-in was not detected; skipping Mac App Store apps"
+        return 1
+        ;;
+    *)
+        print_warning "Skipping Mac App Store apps"
+        return 1
+        ;;
+    esac
+}
+
+reconcile_brewfile() {
+    local brewfile=$1
+    local mas_skip_ids
+    local reconciled_without_mas=false
+
+    mas_skip_ids=$(brewfile_mas_skip_ids "$brewfile")
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_warning "DRY RUN: Would run brew bundle --file=$brewfile"
+        if [[ -n "$mas_skip_ids" ]]; then
+            print_warning "DRY RUN: Would verify Mac App Store sign-in before installing MAS apps"
+        fi
+        return 0
+    fi
+
+    if [[ -z "$mas_skip_ids" ]]; then
+        run_brew_bundle "$brewfile"
+        return 0
+    fi
+
+    if [[ "${DETECTED_OS:-$(detect_os)}" != "macos" ]]; then
+        print_warning "Skipping Mac App Store apps on non-macOS"
+        run_brew_bundle "$brewfile" "$mas_skip_ids"
+        return 0
+    fi
+
+    if ! command_exists mas; then
+        print_step "Installing Brewfile dependencies before Mac App Store apps..."
+        run_brew_bundle "$brewfile" "$mas_skip_ids"
+        reconciled_without_mas=true
+    fi
+
+    if ! command_exists mas; then
+        print_warning "mas CLI is unavailable; skipping Mac App Store apps"
+        return 0
+    fi
+
+    if app_store_signed_in; then
+        print_success "Mac App Store sign-in detected"
+        run_brew_bundle "$brewfile"
+        return 0
+    fi
+
+    if prompt_app_store_sign_in; then
+        run_brew_bundle "$brewfile"
+        return 0
+    fi
+
+    if [[ "$reconciled_without_mas" != "true" ]]; then
+        run_brew_bundle "$brewfile" "$mas_skip_ids"
+    fi
+}
+
+# ============================================================================
 # Installation Phases
 # ============================================================================
 
@@ -416,11 +553,7 @@ phase_1_core_packages() {
     # Reconcile Brewfile — installs missing, upgrades outdated
     if command_exists brew && [[ -f "$DOTFILES_ROOT/homebrew/Brewfile" ]]; then
         print_step "Reconciling Brewfile..."
-        if [[ "$DRY_RUN" == "true" ]]; then
-            print_warning "DRY RUN: Would run brew bundle --file=$DOTFILES_ROOT/homebrew/Brewfile"
-        else
-            brew bundle --file="$DOTFILES_ROOT/homebrew/Brewfile" 2>&1 || log_verbose "Brewfile reconciliation completed with warnings"
-        fi
+        reconcile_brewfile "$DOTFILES_ROOT/homebrew/Brewfile"
     fi
 
     install_packages_from_profile "$PROFILE" "core"

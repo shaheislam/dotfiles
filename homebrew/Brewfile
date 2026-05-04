@@ -297,3 +297,4 @@ cask "wezterm"
 cask "session-manager-plugin"
 
 # Mac App Store Applications
+mas "iWallpaper - Live Wallpaper", id: 1552826194
