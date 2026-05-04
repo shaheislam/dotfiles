@@ -63,13 +63,23 @@ if [[ "$workspace" == "T" && "$is_terminal" == "true" ]]; then
 fi
 
 if [[ "$workspace" == "T" ]]; then
+    target_workspace="1"
+    state_file="${TMPDIR:-/tmp}/aerospace-active-layout-profile"
+    if [[ -r "$state_file" ]]; then
+        saved_workspace=$(<"$state_file")
+        if [[ "$saved_workspace" =~ ^[1-4]$ ]]; then
+            target_workspace="$saved_workspace"
+        fi
+    fi
+
     aerospace macos-native-fullscreen --window-id "$focused_window_id" off >/dev/null 2>&1 || true
     aerospace fullscreen off --window-id "$focused_window_id" >/dev/null 2>&1 || true
-    aerospace move-node-to-workspace 1 --focus-follows-window >/dev/null 2>&1 || exit 0
-    workspace="1"
+    aerospace move-node-to-workspace "$target_workspace" --focus-follows-window >/dev/null 2>&1 || exit 0
+    /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh "$target_workspace"
+    exit 0
 fi
 
-if [[ ! "$workspace" =~ ^[1-4]$ ]]; then
+if [[ "$workspace" != "1" ]]; then
     exit 0
 fi
 
