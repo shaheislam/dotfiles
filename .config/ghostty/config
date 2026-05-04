@@ -24,6 +24,7 @@ background-blur-radius = 20
 # Window padding (left/right = 2, top/bottom = 0)
 window-padding-x = 2
 window-padding-y = 0
+maximize = false
 
 # Window decorations (RESIZE equivalent)
 window-decoration = true
