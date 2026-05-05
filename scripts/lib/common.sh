@@ -71,7 +71,8 @@ log() {
 # ============================================================================
 
 detect_os() {
-    local os_type=$(uname -s)
+    local os_type
+    os_type=$(uname -s)
 
     case "$os_type" in
     Darwin*)
@@ -146,7 +147,8 @@ detect_linux_distro() {
 }
 
 detect_os_version() {
-    local os=$(detect_os)
+    local os
+    os=$(detect_os)
 
     case "$os" in
     macos)
@@ -171,7 +173,8 @@ detect_os_version() {
 # ============================================================================
 
 detect_arch() {
-    local arch=$(uname -m)
+    local arch
+    arch=$(uname -m)
 
     case "$arch" in
     x86_64 | amd64)
@@ -190,8 +193,9 @@ detect_arch() {
 }
 
 get_arch_suffix() {
-    local arch=$(detect_arch)
-    local os=$(detect_os)
+    local arch os
+    arch=$(detect_arch)
+    os=$(detect_os)
 
     case "$os" in
     macos)
@@ -255,7 +259,8 @@ check_disk_space() {
     local required_mb=${1:-500}
     local target_dir=${2:-$HOME}
 
-    local available_mb=$(df -m "$target_dir" | awk 'NR==2 {print $4}')
+    local available_mb
+    available_mb=$(df -m "$target_dir" | awk 'NR==2 {print $4}')
 
     if [[ $available_mb -lt $required_mb ]]; then
         print_error "Insufficient disk space: ${available_mb}MB available, ${required_mb}MB required"
@@ -267,7 +272,8 @@ check_disk_space() {
 }
 
 get_cpu_cores() {
-    local os=$(detect_os)
+    local os
+    os=$(detect_os)
 
     case "$os" in
     macos)
@@ -288,6 +294,26 @@ get_cpu_cores() {
 
 command_exists() {
     command -v "$1" &>/dev/null
+}
+
+run_noninteractive() {
+    env CI=1 NONINTERACTIVE=1 "$@" </dev/null
+}
+
+run_remote_shell_installer() {
+    local shell_cmd=$1
+    local url=$2
+    local installer status
+
+    installer=$(mktemp "${TMPDIR:-/tmp}/dotfiles-installer.XXXXXX") || return 1
+    if curl -fsSL "$url" -o "$installer"; then
+        run_noninteractive "$shell_cmd" "$installer"
+        status=$?
+    else
+        status=$?
+    fi
+    rm -f "$installer"
+    return $status
 }
 
 require_command() {
@@ -485,7 +511,7 @@ is_step_complete() {
 }
 
 clear_state() {
-    rm -rf "$STATE_DIR"/*
+    rm -rf "${STATE_DIR:?}"/*
     log "Cleared all state"
 }
 
@@ -522,7 +548,6 @@ cleanup_on_exit() {
 
 confirm() {
     local prompt=$1
-    local default=${2:-n}
 
     # Skip confirmation if NO_CONFIRM is set
     if [[ "${NO_CONFIRM:-false}" == "true" ]]; then
@@ -556,9 +581,10 @@ init_common() {
     setup_error_handling
 
     # Detect system information
-    export DETECTED_OS=$(detect_os)
-    export DETECTED_ARCH=$(detect_arch)
-    export DETECTED_MODE=$(detect_installation_mode)
+    DETECTED_OS=$(detect_os)
+    DETECTED_ARCH=$(detect_arch)
+    DETECTED_MODE=$(detect_installation_mode)
+    export DETECTED_OS DETECTED_ARCH DETECTED_MODE
 
     # Check sudo availability
     check_sudo

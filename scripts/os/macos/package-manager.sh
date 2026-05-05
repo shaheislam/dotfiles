@@ -60,7 +60,10 @@ pm_upgrade() {
 }
 
 pm_install() {
-    local package=$(pm_map_package_name "$1")
+    local package
+    local output status
+
+    package=$(pm_map_package_name "$1")
 
     if [[ -z "$package" ]]; then
         return 1
@@ -70,34 +73,73 @@ pm_install() {
         print_warning "DRY RUN: Would install $package via brew"
         return 0
     fi
-    brew install "$package" 2>&1 | grep -v "already installed" || return 0
+    if pm_is_cask_package "$1"; then
+        output=$(brew install --cask "$package" 2>&1)
+        status=$?
+        printf '%s\n' "$output" | grep -v "already installed" || true
+        return $status
+    fi
+
+    output=$(brew install "$package" 2>&1)
+    status=$?
+    printf '%s\n' "$output" | grep -v "already installed" || true
+    return $status
 }
 
 pm_install_batch() {
     local packages=("$@")
-    local mapped=()
+    local formulae=()
+    local casks=()
 
     for pkg in "${packages[@]}"; do
         local name
         name=$(pm_map_package_name "$pkg")
         # Skip packages that map to empty (not available on this OS)
-        [[ -n "$name" ]] && mapped+=("$name")
+        [[ -z "$name" ]] && continue
+        if pm_is_cask_package "$pkg"; then
+            casks+=("$name")
+        else
+            formulae+=("$name")
+        fi
     done
 
-    if [[ ${#mapped[@]} -eq 0 ]]; then
+    if [[ ${#formulae[@]} -eq 0 && ${#casks[@]} -eq 0 ]]; then
         return 0
     fi
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        print_warning "DRY RUN: Would install batch via brew: ${mapped[*]}"
+        print_warning "DRY RUN: Would install batch via brew: ${formulae[*]} ${casks[*]}"
         return 0
     fi
-    brew install "${mapped[@]}" 2>&1 | grep -v "already installed" || return 0
+
+    local status=0
+    if [[ ${#formulae[@]} -gt 0 ]]; then
+        local output formula_status
+        output=$(brew install "${formulae[@]}" 2>&1)
+        formula_status=$?
+        printf '%s\n' "$output" | grep -v "already installed" || true
+        status=$formula_status
+    fi
+    if [[ ${#casks[@]} -gt 0 ]]; then
+        local output cask_status
+        output=$(brew install --cask "${casks[@]}" 2>&1)
+        cask_status=$?
+        printf '%s\n' "$output" | grep -v "already installed" || true
+        [[ $cask_status -ne 0 ]] && status=$cask_status
+    fi
+
+    return $status
 }
 
 pm_is_installed() {
-    local package=$(pm_map_package_name "$1")
-    brew list "$package" &>/dev/null
+    local package
+    package=$(pm_map_package_name "$1")
+
+    if pm_is_cask_package "$1"; then
+        brew list --cask "$package" &>/dev/null
+    else
+        brew list "$package" &>/dev/null
+    fi
 }
 
 pm_search() {
@@ -105,7 +147,9 @@ pm_search() {
 }
 
 pm_remove() {
-    local package=$(pm_map_package_name "$1")
+    local package
+    package=$(pm_map_package_name "$1")
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         print_warning "DRY RUN: Would uninstall $package via brew"
         return 0
@@ -157,11 +201,18 @@ pm_map_package_name() {
     helm) echo "helm" ;;
     terraform) echo "terraform" ;;
 
-    # Casks (require --cask flag)
-    ollama) echo "--cask ollama" ;;
+    # Casks are still returned as package names; install/check functions add --cask.
+    ollama) echo "ollama" ;;
 
     # Default: return as-is
     *) echo "$generic" ;;
+    esac
+}
+
+pm_is_cask_package() {
+    case "$1" in
+    ollama) return 0 ;;
+    *) return 1 ;;
     esac
 }
 

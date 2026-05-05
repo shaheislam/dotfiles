@@ -1,5 +1,6 @@
 # nix-help - Nix LSP Inheritance System Reference
 function nix-help --description "Show Nix LSP inheritance system help and quick reference"
+    set -l dotfiles_nix_url "path:$HOME/dotfiles/nix/global"
     set -l help_text "
 ╭──────────────────────────────────────────────────────────────────────────╮
 │                   Nix LSP Inheritance System Guide                       │
@@ -92,7 +93,7 @@ PATTERN 1: DEFAULT INHERITANCE (Recommended)
 Use when: You want everything from global + a few extras
 
   {
-    inputs.dotfiles.url = \"path:/Users/shaheislam/dotfiles/nix/global\";
+    inputs.dotfiles.url = \"$dotfiles_nix_url\";
 
     devShells.default = pkgs.mkShell {
       inputsFrom = [ dotfiles.outputs.devShells.\${system}.default ];

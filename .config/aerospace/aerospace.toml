@@ -34,7 +34,7 @@ default-root-container-orientation = 'auto'
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
 # Layout keys: alt-1 floating stack, alt-3 three-pane, alt-4 two-pane, alt-2 centered terminal T.
-on-focus-changed = ['exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh']
+on-focus-changed = ['exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/focus-layout.sh"']
 
 # You can effectively turn off macOS "Hide application" (cmd-h) feature by toggling this flag
 # Useful if you don't use this macOS feature, but accidentally hit cmd-h or cmd-alt-h key
@@ -57,12 +57,12 @@ run = 'layout floating'
 [[on-window-detected]]
 if.app-id = 'com.github.wez.wezterm'
 check-further-callbacks = true
-run = ['move-node-to-workspace T --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh']
+run = ['move-node-to-workspace T --focus-follows-window', 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/focus-layout.sh"']
 
 [[on-window-detected]]
 if.app-name-regex-substring = 'ghostty'
 check-further-callbacks = true
-run = 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh'
+run = 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/focus-layout.sh"'
 
 [[on-window-detected]]
 if.app-name-regex-substring = 'finder'
@@ -179,16 +179,16 @@ alt-shift-minus = 'resize smart -50'
 alt-shift-equal = 'resize smart +50'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
-alt-1 = 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/switch-workspace-profile.sh 1'
-alt-2 = ['workspace T', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh']
-alt-3 = 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/switch-workspace-profile.sh 3'
-alt-4 = 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/switch-workspace-profile.sh 2'
+alt-1 = 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/switch-workspace-profile.sh 1"'
+alt-2 = ['workspace T', 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/focus-layout.sh"']
+alt-3 = 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/switch-workspace-profile.sh 3"'
+alt-4 = 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/switch-workspace-profile.sh 2"'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
-alt-shift-1 = ['move-node-to-workspace 1 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh 1']
-alt-shift-2 = ['move-node-to-workspace T --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/focus-layout.sh']
-alt-shift-3 = ['move-node-to-workspace 3 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh 3']
-alt-shift-4 = ['move-node-to-workspace 2 --focus-follows-window', 'exec-and-forget /Users/shahe.islam/dotfiles/scripts/aerospace/apply-workspace-layout.sh 2']
+alt-shift-1 = ['move-node-to-workspace 1 --focus-follows-window', 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/apply-workspace-layout.sh 1"']
+alt-shift-2 = ['move-node-to-workspace T --focus-follows-window', 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/focus-layout.sh"']
+alt-shift-3 = ['move-node-to-workspace 3 --focus-follows-window', 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/apply-workspace-layout.sh 3"']
+alt-shift-4 = ['move-node-to-workspace 2 --focus-follows-window', 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/apply-workspace-layout.sh 2"']
 
 alt-tab = 'workspace-back-and-forth'
 alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'

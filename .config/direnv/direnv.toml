@@ -17,5 +17,5 @@ hide_env_diff = true
 # Auto-allow direnv in your home directory and common project paths
 [whitelist]
 prefix = [
-  "/Users/shahe",
+  "~",
 ]

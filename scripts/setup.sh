@@ -781,7 +781,7 @@ phase_4_cloud_tools() {
 
     if [[ -n "$any_claude" ]]; then
         print_step "Installing/updating Claude Code native CLI..."
-        if "$any_claude" install >/dev/null 2>&1; then
+        if run_noninteractive "$any_claude" install >/dev/null 2>&1; then
             print_success "Claude Code native CLI installed ($native_claude)"
         else
             print_warning "Claude Code native installer failed (check CLI output)"
@@ -790,7 +790,7 @@ phase_4_cloud_tools() {
         # No claude binary at all — bootstrap via bunx
         if command_exists bunx; then
             print_step "Bootstrapping Claude Code via bunx..."
-            if bunx @anthropic-ai/claude-code@latest install >/dev/null 2>&1; then
+            if run_noninteractive bunx @anthropic-ai/claude-code@latest install >/dev/null 2>&1; then
                 print_success "Claude Code native CLI bootstrapped ($native_claude)"
             else
                 print_warning "Claude Code bootstrap failed"
@@ -836,13 +836,13 @@ phase_4_cloud_tools() {
 
     # Step 3: Verify
     if [[ -x "$native_claude" ]]; then
-        if "$native_claude" doctor >/dev/null 2>&1; then
+        if run_noninteractive "$native_claude" doctor >/dev/null 2>&1; then
             print_success "Claude Code doctor check passed"
         else
             log_verbose "Claude Code doctor reported warnings (non-fatal)"
         fi
 
-        if [[ -x "$claude_wrapper" ]] && "$claude_wrapper" --version >/dev/null 2>&1; then
+        if [[ -x "$claude_wrapper" ]] && run_noninteractive "$claude_wrapper" --version >/dev/null 2>&1; then
             print_success "Claude wrapper resolves native CLI correctly"
         else
             print_warning "Claude wrapper verification failed"
@@ -1021,11 +1021,38 @@ phase_4_cloud_tools() {
 
     _install_sonar() {
         print_step "Installing/updating SonarQube CLI..."
-        if curl -o- https://raw.githubusercontent.com/SonarSource/sonarqube-cli/refs/heads/master/user-scripts/install.sh | bash </dev/null 2>&1; then
-            # Ensure PATH includes sonar for current session
-            export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
+        local sonar_version="0.10.0.1266"
+        local sonar_platform=""
+        case "$(uname -s):$(uname -m)" in
+        Darwin:*) sonar_platform="macos-arm64" ;;
+        Linux:aarch64 | Linux:arm64) sonar_platform="linux-arm64" ;;
+        Linux:x86_64 | Linux:amd64) sonar_platform="linux-x86-64" ;;
+        esac
+
+        if [[ -z "$sonar_platform" ]]; then
+            print_warning "Unsupported SonarQube CLI platform: $(uname -s)/$(uname -m)"
+            return 0
+        fi
+
+        local sonar_install_dir="$HOME/.local/share/sonarqube-cli/bin"
+        local sonar_tmp
+        sonar_tmp=$(mktemp "${TMPDIR:-/tmp}/sonar.XXXXXX") || {
+            print_warning "Failed to create temporary file for SonarQube CLI"
+            return 0
+        }
+
+        local sonar_os sonar_url
+        sonar_os=$(detect_os)
+        sonar_url="https://binaries.sonarsource.com/Distribution/sonarqube-cli/$sonar_version/$sonar_os/sonarqube-cli-$sonar_version-$sonar_platform.exe"
+        if curl -fsSL "$sonar_url" -o "$sonar_tmp" >/dev/null 2>&1; then
+            mkdir -p "$sonar_install_dir"
+            mv "$sonar_tmp" "$sonar_install_dir/sonar"
+            chmod +x "$sonar_install_dir/sonar"
+            xattr -d com.apple.quarantine "$sonar_install_dir/sonar" 2>/dev/null || true
+            export PATH="$sonar_install_dir:$PATH"
             print_success "SonarQube CLI installed/updated: $(sonar --version 2>/dev/null || echo 'installed')"
         else
+            rm -f "$sonar_tmp"
             if command_exists sonar; then
                 print_success "SonarQube CLI already installed"
             else
@@ -1146,7 +1173,7 @@ EAEOF
 
     # Install/update iximiuz labctl CLI
     print_step "Installing/updating iximiuz labctl CLI..."
-    if curl -sf https://labs.iximiuz.com/cli/install.sh | sh </dev/null >/dev/null 2>&1; then
+    if run_remote_shell_installer sh https://labs.iximiuz.com/cli/install.sh >/dev/null 2>&1; then
         print_success "iximiuz labctl CLI installed/updated at: $(which labctl 2>/dev/null || echo 'labctl')"
     else
         if command_exists labctl; then
@@ -1160,7 +1187,7 @@ EAEOF
     # Complements Playwright MCP with persistent daemon + accessibility tree snapshots.
     if command_exists agent-browser; then
         print_step "Configuring agent-browser..."
-        agent-browser install </dev/null >/dev/null 2>&1 &&
+        run_noninteractive agent-browser install >/dev/null 2>&1 &&
             print_success "agent-browser Chromium installed" ||
             log_verbose "agent-browser Chromium install skipped (run 'agent-browser install' manually)"
     fi
@@ -1168,7 +1195,7 @@ EAEOF
     # PinchTab - Multi-instance Chrome orchestrator for AI agents
     # Provides persistent profiles, multi-agent coordination, dashboard, stealth mode.
     print_step "Installing/updating PinchTab..."
-    if curl -fsSL https://pinchtab.com/install.sh | bash >/dev/null 2>&1; then
+    if run_remote_shell_installer bash https://pinchtab.com/install.sh >/dev/null 2>&1; then
         print_success "PinchTab installed/updated"
     else
         if command_exists pinchtab; then
@@ -1575,9 +1602,28 @@ phase_6_multiplexer() {
         # Update plugins and clean stale ones via TPM (skip update if we just cloned fresh)
         if [[ ${#clone_pids[@]} -eq 0 ]]; then
             print_step "Updating tmux plugins..."
-            "$HOME/.tmux/plugins/tpm/bin/update_plugins" all >/dev/null 2>&1 &&
-                log_verbose "Tmux plugins updated" ||
-                log_verbose "Tmux plugin update completed with warnings"
+            local timeout_cmd=()
+            if command_exists gtimeout; then
+                timeout_cmd=(gtimeout 60)
+            elif command_exists timeout; then
+                timeout_cmd=(timeout 60)
+            fi
+
+            if env \
+                GIT_CONFIG_COUNT=1 \
+                GIT_CONFIG_KEY_0=core.fsmonitor \
+                GIT_CONFIG_VALUE_0=false \
+                "${timeout_cmd[@]}" \
+                "$HOME/.tmux/plugins/tpm/bin/update_plugins" all </dev/null >/dev/null 2>&1; then
+                log_verbose "Tmux plugins updated"
+            else
+                local update_status=$?
+                if [[ $update_status -eq 124 ]]; then
+                    print_warning "Tmux plugin update timed out after 60s; continuing setup"
+                else
+                    log_verbose "Tmux plugin update completed with warnings"
+                fi
+            fi
         else
             log_verbose "Skipping plugin update (just cloned fresh)"
         fi
@@ -1904,6 +1950,18 @@ phase_9_fonts_and_apps() {
             brew install --cask "${apps_to_install[@]}" >/dev/null 2>&1 &&
                 print_success "Installed ${#apps_to_install[@]} GUI applications" ||
                 log_verbose "Some GUI applications failed to install"
+        fi
+
+        if command_exists aerospace; then
+            print_step "Applying AeroSpace configuration..."
+            open -g -a AeroSpace >/dev/null 2>&1 || true
+            sleep 2
+            if aerospace reload-config >/dev/null 2>&1; then
+                print_success "AeroSpace configuration applied"
+            else
+                print_warning "AeroSpace is installed, but macOS Accessibility permission is required before config can be applied"
+                print_warning "Enable /Applications/AeroSpace.app in System Settings > Privacy & Security > Accessibility, then run: aerospace reload-config"
+            fi
         fi
 
         # Firefox policies live in the app bundle; profile prefs, userChrome,
