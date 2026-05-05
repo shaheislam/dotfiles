@@ -770,84 +770,84 @@ phase_4_cloud_tools() {
     else
         print_step "Configuring Claude Code CLI backup (native installer)..."
 
-    # Step 1: Install/update native binary using any available claude
-    local native_claude="$HOME/.local/bin/claude"
-    local any_claude=""
-    if [[ -x "$native_claude" ]]; then
-        any_claude="$native_claude"
-    elif command_exists claude; then
-        any_claude="$(command -v claude)"
-    fi
-
-    if [[ -n "$any_claude" ]]; then
-        print_step "Installing/updating Claude Code native CLI..."
-        if run_noninteractive "$any_claude" install >/dev/null 2>&1; then
-            print_success "Claude Code native CLI installed ($native_claude)"
-        else
-            print_warning "Claude Code native installer failed (check CLI output)"
+        # Step 1: Install/update native binary using any available claude
+        local native_claude="$HOME/.local/bin/claude"
+        local any_claude=""
+        if [[ -x "$native_claude" ]]; then
+            any_claude="$native_claude"
+        elif command_exists claude; then
+            any_claude="$(command -v claude)"
         fi
-    else
-        # No claude binary at all — bootstrap via bunx
-        if command_exists bunx; then
-            print_step "Bootstrapping Claude Code via bunx..."
-            if run_noninteractive bunx @anthropic-ai/claude-code@latest install >/dev/null 2>&1; then
-                print_success "Claude Code native CLI bootstrapped ($native_claude)"
+
+        if [[ -n "$any_claude" ]]; then
+            print_step "Installing/updating Claude Code native CLI..."
+            if run_noninteractive "$any_claude" install >/dev/null 2>&1; then
+                print_success "Claude Code native CLI installed ($native_claude)"
             else
-                print_warning "Claude Code bootstrap failed"
+                print_warning "Claude Code native installer failed (check CLI output)"
             fi
         else
-            print_warning "No claude or bunx found; skip native CLI install"
-        fi
-    fi
-
-    # Step 2: Clean up ALL legacy installations (only after native is in place)
-    if [[ -x "$native_claude" ]]; then
-        local claude_wrapper="$HOME/dotfiles/scripts/bin/claude"
-        local legacy_claude_module="/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code"
-        local legacy_claude_bin="/opt/homebrew/bin/claude"
-        local legacy_usr_local_bin="/usr/local/bin/claude"
-
-        # Homebrew cask
-        if brew list --cask claude-code >/dev/null 2>&1; then
-            print_step "Removing deprecated Claude Code cask..."
-            brew uninstall --cask claude-code >/dev/null 2>&1 || true
-            print_success "Homebrew Claude Code cask removed"
+            # No claude binary at all — bootstrap via bunx
+            if command_exists bunx; then
+                print_step "Bootstrapping Claude Code via bunx..."
+                if run_noninteractive bunx @anthropic-ai/claude-code@latest install >/dev/null 2>&1; then
+                    print_success "Claude Code native CLI bootstrapped ($native_claude)"
+                else
+                    print_warning "Claude Code bootstrap failed"
+                fi
+            else
+                print_warning "No claude or bunx found; skip native CLI install"
+            fi
         fi
 
-        # npm global install (directory + bin symlink)
-        if [[ -d "$legacy_claude_module" ]] || [[ -L "$legacy_claude_bin" ]] || [[ -L "$legacy_usr_local_bin" ]]; then
-            print_step "Removing npm-installed Claude Code..."
-            rm -rf "$legacy_claude_module" 2>/dev/null || true
-            rm -f "$legacy_claude_bin" "$legacy_usr_local_bin" 2>/dev/null || true
-            print_success "npm Claude Code removed"
-        fi
+        # Step 2: Clean up ALL legacy installations (only after native is in place)
+        if [[ -x "$native_claude" ]]; then
+            local claude_wrapper="$HOME/dotfiles/scripts/bin/claude"
+            local legacy_claude_module="/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code"
+            local legacy_claude_bin="/opt/homebrew/bin/claude"
+            local legacy_usr_local_bin="/usr/local/bin/claude"
 
-        # bun global install
-        if command_exists bun && bun pm ls -g 2>/dev/null | grep -q "@anthropic-ai/claude-code"; then
-            bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
-            print_success "bun Claude Code removed"
-        fi
+            # Homebrew cask
+            if brew list --cask claude-code >/dev/null 2>&1; then
+                print_step "Removing deprecated Claude Code cask..."
+                brew uninstall --cask claude-code >/dev/null 2>&1 || true
+                print_success "Homebrew Claude Code cask removed"
+            fi
 
-        # Stale caches and local installs
-        rm -rf "$HOME/.claude/local" 2>/dev/null || true
-        rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
-    fi
-    # scripts/bin/claude is the event-driven tmux wrapper — do not remove
+            # npm global install (directory + bin symlink)
+            if [[ -d "$legacy_claude_module" ]] || [[ -L "$legacy_claude_bin" ]] || [[ -L "$legacy_usr_local_bin" ]]; then
+                print_step "Removing npm-installed Claude Code..."
+                rm -rf "$legacy_claude_module" 2>/dev/null || true
+                rm -f "$legacy_claude_bin" "$legacy_usr_local_bin" 2>/dev/null || true
+                print_success "npm Claude Code removed"
+            fi
 
-    # Step 3: Verify
-    if [[ -x "$native_claude" ]]; then
-        if run_noninteractive "$native_claude" doctor >/dev/null 2>&1; then
-            print_success "Claude Code doctor check passed"
-        else
-            log_verbose "Claude Code doctor reported warnings (non-fatal)"
-        fi
+            # bun global install
+            if command_exists bun && bun pm ls -g 2>/dev/null | grep -q "@anthropic-ai/claude-code"; then
+                bun remove -g @anthropic-ai/claude-code >/dev/null 2>&1 || true
+                print_success "bun Claude Code removed"
+            fi
 
-        if [[ -x "$claude_wrapper" ]] && run_noninteractive "$claude_wrapper" --version >/dev/null 2>&1; then
-            print_success "Claude wrapper resolves native CLI correctly"
-        else
-            print_warning "Claude wrapper verification failed"
+            # Stale caches and local installs
+            rm -rf "$HOME/.claude/local" 2>/dev/null || true
+            rm -rf "$HOME/.npm/_npx/@anthropic-ai/claude-code" 2>/dev/null || true
         fi
-    fi
+        # scripts/bin/claude is the event-driven tmux wrapper — do not remove
+
+        # Step 3: Verify
+        if [[ -x "$native_claude" ]]; then
+            if run_noninteractive "$native_claude" doctor >/dev/null 2>&1; then
+                print_success "Claude Code doctor check passed"
+            else
+                log_verbose "Claude Code doctor reported warnings (non-fatal)"
+            fi
+
+            if [[ -x "$claude_wrapper" ]] && run_noninteractive "$claude_wrapper" --version >/dev/null 2>&1; then
+                print_success "Claude wrapper resolves native CLI correctly"
+            else
+                print_warning "Claude wrapper verification failed"
+            fi
+        fi
     fi
 
     # Gemini CLI is managed via Homebrew; verify the binary is available after package install.
@@ -1950,6 +1950,12 @@ phase_9_fonts_and_apps() {
             brew install --cask "${apps_to_install[@]}" >/dev/null 2>&1 &&
                 print_success "Installed ${#apps_to_install[@]} GUI applications" ||
                 log_verbose "Some GUI applications failed to install"
+        fi
+
+        # Cask installs the .app bundle but doesn't symlink the CLI — do it here
+        if [[ -f /Applications/AeroSpace.app/Contents/MacOS/AeroSpace ]] && [[ ! -f /opt/homebrew/bin/aerospace ]]; then
+            ln -sf /Applications/AeroSpace.app/Contents/MacOS/AeroSpace /opt/homebrew/bin/aerospace &&
+                print_success "AeroSpace CLI symlinked to /opt/homebrew/bin/aerospace"
         fi
 
         if command_exists aerospace; then

@@ -495,6 +495,7 @@
       "Read(./.entire/metadata/**)"
     ]
   },
+  "preferredNotifChannel": "terminal_bell",
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "command": "bash ~/dotfiles/scripts/claude-statusline.sh",
