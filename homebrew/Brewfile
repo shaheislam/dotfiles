@@ -145,7 +145,7 @@ brew "agent-browser"  # AI-optimized headless browser automation CLI (ref-based 
 # cask "openclaw"  # macOS app (optional - enable if you want the menu bar companion)
 
 # Self-Hosted LLM Tools (resilience if cloud AI goes down)
-cask "ollama"  # Local LLM runtime - runs Llama, DeepSeek, Codestral, etc.
+cask "ollama-app"  # Local LLM runtime - runs Llama, DeepSeek, Codestral, etc.
 # Open WebUI - installed via pip in scripts/setup-selfhost-llm.sh
 
 # File System Tools
