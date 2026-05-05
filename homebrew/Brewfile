@@ -227,6 +227,7 @@ brew "sd"
 brew "choose-rust"
 brew "tokei"
 brew "ncdu"
+brew "glow"              # Render markdown on the CLI
 
 # Terminal File Manager
 brew "yazi"              # Blazing fast terminal file manager (Rust)

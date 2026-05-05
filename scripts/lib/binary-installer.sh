@@ -41,163 +41,163 @@ get_binary_download_url() {
     arch_suffix=$(get_arch_suffix)
 
     case "$tool" in
-        # Original tools
-        starship)
-            echo "https://github.com/starship/starship/releases/latest/download/starship-${arch_suffix}.tar.gz"
-            ;;
-        eza)
-            if [[ "$os" == "macos" ]]; then
-                echo "" # Use Homebrew on macOS
-            else
-                echo "https://github.com/eza-community/eza/releases/latest/download/eza_${arch_suffix}.tar.gz"
-            fi
-            ;;
-        zoxide)
-            echo "https://github.com/ajeetdsouza/zoxide/releases/latest/download/zoxide-${arch_suffix}.tar.gz"
-            ;;
-        bat)
-            latest_tag=$(get_latest_release_tag "sharkdp/bat") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/sharkdp/bat/releases/download/${latest_tag}/bat-${latest_tag}-${arch_suffix}.tar.gz"
-            ;;
-        ripgrep)
-            latest_tag=$(get_latest_release_tag "BurntSushi/ripgrep") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/BurntSushi/ripgrep/releases/download/${latest_tag}/ripgrep-${latest_tag}-${arch_suffix}.tar.gz"
-            ;;
-        fd)
-            latest_tag=$(get_latest_release_tag "sharkdp/fd") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/sharkdp/fd/releases/download/${latest_tag}/fd-${latest_tag}-${arch_suffix}.tar.gz"
-            ;;
+    # Original tools
+    starship)
+        echo "https://github.com/starship/starship/releases/latest/download/starship-${arch_suffix}.tar.gz"
+        ;;
+    eza)
+        if [[ "$os" == "macos" ]]; then
+            echo "" # Use Homebrew on macOS
+        else
+            echo "https://github.com/eza-community/eza/releases/latest/download/eza_${arch_suffix}.tar.gz"
+        fi
+        ;;
+    zoxide)
+        echo "https://github.com/ajeetdsouza/zoxide/releases/latest/download/zoxide-${arch_suffix}.tar.gz"
+        ;;
+    bat)
+        latest_tag=$(get_latest_release_tag "sharkdp/bat") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/sharkdp/bat/releases/download/${latest_tag}/bat-${latest_tag}-${arch_suffix}.tar.gz"
+        ;;
+    ripgrep)
+        latest_tag=$(get_latest_release_tag "BurntSushi/ripgrep") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/BurntSushi/ripgrep/releases/download/${latest_tag}/ripgrep-${latest_tag}-${arch_suffix}.tar.gz"
+        ;;
+    fd)
+        latest_tag=$(get_latest_release_tag "sharkdp/fd") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/sharkdp/fd/releases/download/${latest_tag}/fd-${latest_tag}-${arch_suffix}.tar.gz"
+        ;;
 
-        # Additional Modern CLI Tools
-        bottom)
-            latest_tag=$(get_latest_release_tag "ClementTsang/bottom") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/ClementTsang/bottom/releases/download/${latest_tag}/bottom_${arch_suffix}.tar.gz"
-            ;;
-        btop)
-            latest_tag=$(get_latest_release_tag "aristocratos/btop") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/aristocratos/btop/releases/download/${latest_tag}/btop-${arch_suffix}.tbz"
-            ;;
-        procs)
-            latest_tag=$(get_latest_release_tag "dalance/procs") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/dalance/procs/releases/download/${latest_tag}/procs-${latest_tag}-${arch_suffix}.zip"
-            ;;
-        dust)
-            latest_tag=$(get_latest_release_tag "bootandy/dust") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/bootandy/dust/releases/download/${latest_tag}/dust-${latest_tag}-${arch_suffix}.tar.gz"
-            ;;
-        duf)
-            latest_tag=$(get_latest_release_tag "muesli/duf") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/muesli/duf/releases/download/${latest_tag}/duf_${latest_tag#v}_${os}_${arch_suffix}.tar.gz"
-            ;;
+    # Additional Modern CLI Tools
+    bottom)
+        latest_tag=$(get_latest_release_tag "ClementTsang/bottom") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/ClementTsang/bottom/releases/download/${latest_tag}/bottom_${arch_suffix}.tar.gz"
+        ;;
+    btop)
+        latest_tag=$(get_latest_release_tag "aristocratos/btop") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/aristocratos/btop/releases/download/${latest_tag}/btop-${arch_suffix}.tbz"
+        ;;
+    procs)
+        latest_tag=$(get_latest_release_tag "dalance/procs") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/dalance/procs/releases/download/${latest_tag}/procs-${latest_tag}-${arch_suffix}.zip"
+        ;;
+    dust)
+        latest_tag=$(get_latest_release_tag "bootandy/dust") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/bootandy/dust/releases/download/${latest_tag}/dust-${latest_tag}-${arch_suffix}.tar.gz"
+        ;;
+    duf)
+        latest_tag=$(get_latest_release_tag "muesli/duf") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/muesli/duf/releases/download/${latest_tag}/duf_${latest_tag#v}_${os}_${arch_suffix}.tar.gz"
+        ;;
 
-        # Kubernetes Tools
-        kubectl)
-            latest=$(curl -L -s https://dl.k8s.io/release/stable.txt) || return 1
-            echo "https://dl.k8s.io/release/${latest}/bin/${os}/$(uname -m)/kubectl"
-            ;;
-        helm)
-            latest_tag=$(get_latest_release_tag "helm/helm") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://get.helm.sh/helm-${latest_tag}-${os}-$(uname -m).tar.gz"
-            ;;
-        kubectx)
-            latest_tag=$(get_latest_release_tag "ahmetb/kubectx") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            # kubectx package includes both kubectx and kubens commands
-            echo "https://github.com/ahmetb/kubectx/releases/download/${latest_tag}/${tool}_${latest_tag}_${os}_$(uname -m).tar.gz"
-            ;;
+    # Kubernetes Tools
+    kubectl)
+        latest=$(curl -L -s https://dl.k8s.io/release/stable.txt) || return 1
+        echo "https://dl.k8s.io/release/${latest}/bin/${os}/$(uname -m)/kubectl"
+        ;;
+    helm)
+        latest_tag=$(get_latest_release_tag "helm/helm") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://get.helm.sh/helm-${latest_tag}-${os}-$(uname -m).tar.gz"
+        ;;
+    kubectx)
+        latest_tag=$(get_latest_release_tag "ahmetb/kubectx") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        # kubectx package includes both kubectx and kubens commands
+        echo "https://github.com/ahmetb/kubectx/releases/download/${latest_tag}/${tool}_${latest_tag}_${os}_$(uname -m).tar.gz"
+        ;;
 
-        # AWS Tools
-        granted)
-            latest_tag=$(get_latest_release_tag "common-fate/granted") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/common-fate/granted/releases/download/${latest_tag}/granted_${latest_tag#v}_${os}_$(uname -m).tar.gz"
-            ;;
+    # AWS Tools
+    granted)
+        latest_tag=$(get_latest_release_tag "common-fate/granted") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/common-fate/granted/releases/download/${latest_tag}/granted_${latest_tag#v}_${os}_$(uname -m).tar.gz"
+        ;;
 
-        # Terraform Tools
-        terraform-docs)
-            latest_tag=$(get_latest_release_tag "terraform-docs/terraform-docs") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/terraform-docs/terraform-docs/releases/download/${latest_tag}/terraform-docs-${latest_tag}-${os}-$(uname -m).tar.gz"
-            ;;
-        terragrunt)
-            latest_tag=$(get_latest_release_tag "gruntwork-io/terragrunt") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/gruntwork-io/terragrunt/releases/download/${latest_tag}/terragrunt_${os}_$(uname -m)"
-            ;;
-        tflint)
-            latest_tag=$(get_latest_release_tag "terraform-linters/tflint") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/terraform-linters/tflint/releases/download/${latest_tag}/tflint_${os}_$(uname -m).zip"
-            ;;
+    # Terraform Tools
+    terraform-docs)
+        latest_tag=$(get_latest_release_tag "terraform-docs/terraform-docs") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/terraform-docs/terraform-docs/releases/download/${latest_tag}/terraform-docs-${latest_tag}-${os}-$(uname -m).tar.gz"
+        ;;
+    terragrunt)
+        latest_tag=$(get_latest_release_tag "gruntwork-io/terragrunt") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/gruntwork-io/terragrunt/releases/download/${latest_tag}/terragrunt_${os}_$(uname -m)"
+        ;;
+    tflint)
+        latest_tag=$(get_latest_release_tag "terraform-linters/tflint") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/terraform-linters/tflint/releases/download/${latest_tag}/tflint_${os}_$(uname -m).zip"
+        ;;
 
-        # Container Tools
-        lazydocker)
-            latest_tag=$(get_latest_release_tag "jesseduffield/lazydocker") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/jesseduffield/lazydocker/releases/download/${latest_tag}/lazydocker_${latest_tag#v}_${os}_$(uname -m).tar.gz"
-            ;;
-        dive)
-            latest_tag=$(get_latest_release_tag "wagoodman/dive") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/wagoodman/dive/releases/download/${latest_tag}/dive_${latest_tag#v}_${os}_$(uname -m).tar.gz"
-            ;;
-        ctop)
-            latest_tag=$(get_latest_release_tag "bcicen/ctop") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/bcicen/ctop/releases/download/${latest_tag}/ctop-${latest_tag}-${os}-$(uname -m)"
-            ;;
+    # Container Tools
+    lazydocker)
+        latest_tag=$(get_latest_release_tag "jesseduffield/lazydocker") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/jesseduffield/lazydocker/releases/download/${latest_tag}/lazydocker_${latest_tag#v}_${os}_$(uname -m).tar.gz"
+        ;;
+    dive)
+        latest_tag=$(get_latest_release_tag "wagoodman/dive") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/wagoodman/dive/releases/download/${latest_tag}/dive_${latest_tag#v}_${os}_$(uname -m).tar.gz"
+        ;;
+    ctop)
+        latest_tag=$(get_latest_release_tag "bcicen/ctop") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/bcicen/ctop/releases/download/${latest_tag}/ctop-${latest_tag}-${os}-$(uname -m)"
+        ;;
 
-        # Security Tools
-        trivy)
-            latest_tag=$(get_latest_release_tag "aquasecurity/trivy") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/aquasecurity/trivy/releases/download/${latest_tag}/trivy_${latest_tag#v}_${os}-64bit.tar.gz"
-            ;;
-        syft)
-            latest_tag=$(get_latest_release_tag "anchore/syft") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/anchore/syft/releases/download/${latest_tag}/syft_${latest_tag#v}_${os}_$(uname -m).tar.gz"
-            ;;
-        grype)
-            latest_tag=$(get_latest_release_tag "anchore/grype") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/anchore/grype/releases/download/${latest_tag}/grype_${latest_tag#v}_${os}_$(uname -m).tar.gz"
-            ;;
+    # Security Tools
+    trivy)
+        latest_tag=$(get_latest_release_tag "aquasecurity/trivy") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/aquasecurity/trivy/releases/download/${latest_tag}/trivy_${latest_tag#v}_${os}-64bit.tar.gz"
+        ;;
+    syft)
+        latest_tag=$(get_latest_release_tag "anchore/syft") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/anchore/syft/releases/download/${latest_tag}/syft_${latest_tag#v}_${os}_$(uname -m).tar.gz"
+        ;;
+    grype)
+        latest_tag=$(get_latest_release_tag "anchore/grype") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/anchore/grype/releases/download/${latest_tag}/grype_${latest_tag#v}_${os}_$(uname -m).tar.gz"
+        ;;
 
-        # Other Tools
-        git-delta)
-            latest_tag=$(get_latest_release_tag "dandavison/delta") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/dandavison/delta/releases/download/${latest_tag}/delta-${latest_tag}-${arch_suffix}.tar.gz"
-            ;;
-        yazi)
-            latest_tag=$(get_latest_release_tag "sxyazi/yazi") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/sxyazi/yazi/releases/download/${latest_tag}/yazi-${arch_suffix}.zip"
-            ;;
-        atuin)
-            latest_tag=$(get_latest_release_tag "atuinsh/atuin") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/atuinsh/atuin/releases/download/${latest_tag}/atuin-${latest_tag}-${arch_suffix}.tar.gz"
-            ;;
-        glow)
-            latest_tag=$(get_latest_release_tag "charmbracelet/glow") || return 1
-            [[ -z "$latest_tag" ]] && return 1
-            echo "https://github.com/charmbracelet/glow/releases/download/${latest_tag}/glow_${os}_$(uname -m).tar.gz"
-            ;;
+    # Other Tools
+    git-delta)
+        latest_tag=$(get_latest_release_tag "dandavison/delta") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/dandavison/delta/releases/download/${latest_tag}/delta-${latest_tag}-${arch_suffix}.tar.gz"
+        ;;
+    yazi)
+        latest_tag=$(get_latest_release_tag "sxyazi/yazi") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/sxyazi/yazi/releases/download/${latest_tag}/yazi-${arch_suffix}.zip"
+        ;;
+    atuin)
+        latest_tag=$(get_latest_release_tag "atuinsh/atuin") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/atuinsh/atuin/releases/download/${latest_tag}/atuin-${latest_tag}-${arch_suffix}.tar.gz"
+        ;;
+    glow)
+        latest_tag=$(get_latest_release_tag "charmbracelet/glow") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/charmbracelet/glow/releases/download/${latest_tag}/glow_${os}_$(uname -m).tar.gz"
+        ;;
 
-        *)
-            echo ""
-            ;;
+    *)
+        echo ""
+        ;;
     esac
 }
 
@@ -275,11 +275,11 @@ install_binaries_from_profile() {
 
     # All tools supported by get_binary_download_url()
     local binaries=(
-        # Original modern CLI tools
-        "starship" "eza" "zoxide" "bat" "ripgrep" "fd"
+        # Original modern CLI tools (ripgrep→rg and fd are in Brewfile)
+        "starship" "eza" "zoxide" "bat"
 
-        # Additional modern CLI tools
-        "bottom" "btop" "procs" "dust" "duf"
+        # Additional modern CLI tools (bottom→btm is in Brewfile)
+        "btop" "procs" "dust" "duf"
 
         # Kubernetes tools
         "kubectl" "helm" "kubectx"
@@ -296,8 +296,8 @@ install_binaries_from_profile() {
         # Security tools
         "trivy" "syft" "grype"
 
-        # Other tools
-        "git-delta" "yazi" "atuin" "glow"
+        # Other tools (git-delta→delta and atuin are in Brewfile; glow moved to Brewfile)
+        "yazi"
     )
 
     for binary in "${binaries[@]}"; do

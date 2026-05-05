@@ -2369,12 +2369,22 @@ EOF
             if [[ "$DETECTED_OS" == "macos" ]]; then
                 local nix_custom_src="$DOTFILES_ROOT/nix/nix.custom.conf"
                 local nix_custom_dst="/etc/nix/nix.custom.conf"
+                local nix_machine_conf="/etc/nix/nix.machine.conf"
                 if [[ ! -L "$nix_custom_dst" ]] || [[ "$(readlink "$nix_custom_dst")" != "$nix_custom_src" ]]; then
                     print_step "Symlinking nix.custom.conf from dotfiles..."
                     sudo ln -sf "$nix_custom_src" "$nix_custom_dst"
                     if sudo launchctl list | grep -q "systems.determinate.nix-daemon"; then
                         sudo launchctl kickstart -k system/systems.determinate.nix-daemon
                     fi
+                fi
+                # Create machine-local config if absent (included by nix.custom.conf, not in dotfiles)
+                if [[ ! -f "$nix_machine_conf" ]]; then
+                    sudo tee "$nix_machine_conf" >/dev/null <<'MACHINE_CONF'
+# Machine-specific Nix settings — not tracked by dotfiles.
+# Example for corporate proxies that intercept TLS (e.g. Capgemini/zscaler):
+#   ssl-cert-file = /etc/ssl/cert.pem
+MACHINE_CONF
+                    print_success "Created $nix_machine_conf (edit for machine-specific settings)"
                 fi
             fi
 
