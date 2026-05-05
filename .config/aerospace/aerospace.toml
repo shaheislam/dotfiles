@@ -56,13 +56,11 @@ run = 'layout floating'
 
 [[on-window-detected]]
 if.app-id = 'com.github.wez.wezterm'
-check-further-callbacks = true
-run = ['move-node-to-workspace T --focus-follows-window', 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/focus-layout.sh"']
+run = 'move-node-to-workspace T'
 
 [[on-window-detected]]
 if.app-name-regex-substring = 'ghostty'
-check-further-callbacks = true
-run = 'exec-and-forget /bin/bash -lc "$HOME/dotfiles/scripts/aerospace/focus-layout.sh"'
+run = 'move-node-to-workspace T'
 
 [[on-window-detected]]
 if.app-name-regex-substring = 'finder'

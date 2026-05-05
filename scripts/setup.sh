@@ -1962,11 +1962,36 @@ phase_9_fonts_and_apps() {
             print_step "Applying AeroSpace configuration..."
             open -g -a AeroSpace >/dev/null 2>&1 || true
             sleep 2
-            if aerospace reload-config >/dev/null 2>&1; then
-                print_success "AeroSpace configuration applied"
+            # 0.19.x-Beta changed CLI interface; subcommands now route via Unix socket
+            local aero_sock
+            aero_sock="/tmp/bobko.aerospace-$(id -un).sock"
+            if [[ -S "$aero_sock" ]]; then
+                reload_out=$(printf '{"stdin":"","args":["reload-config"]}' | nc -w1 -U "$aero_sock" 2>/dev/null)
+                if echo "$reload_out" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+chunk = raw.split('}{')[0] + '}'
+d = json.loads(chunk)
+exit(0 if d.get('exitCode') == 0 else 1)
+" 2>/dev/null; then
+                    print_success "AeroSpace configuration applied"
+                else
+                    errors=$(echo "$reload_out" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
+chunk = raw.split('}{')[0] + '}'
+d = json.loads(chunk)
+print(d.get('stdout', '').split(chr(10))[0][:120])
+" 2>/dev/null || echo "")
+                    if [[ -n "$errors" ]]; then
+                        print_warning "AeroSpace config error: $errors"
+                    else
+                        print_warning "AeroSpace reload failed. Enable Accessibility in System Settings > Privacy & Security."
+                    fi
+                fi
             else
-                print_warning "AeroSpace is installed, but macOS Accessibility permission is required before config can be applied"
-                print_warning "Enable /Applications/AeroSpace.app in System Settings > Privacy & Security > Accessibility, then run: aerospace reload-config"
+                print_warning "AeroSpace socket not found. Accessibility permission may be required."
+                print_warning "Enable /Applications/AeroSpace.app in System Settings > Privacy & Security > Accessibility, then reload via keybinding (ESC) or re-run setup."
             fi
         fi
 
