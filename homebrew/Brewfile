@@ -257,6 +257,9 @@ brew "kind"      # Kubernetes in Docker
 brew "kubectx"   # Quick context/namespace switching (includes kubens)
 
 # Container Tools
+brew "docker"    # Docker CLI used with Colima
+brew "docker-compose"  # Docker Compose CLI plugin
+brew "docker-buildx"   # Docker Buildx CLI plugin
 brew "colima"    # Container runtime for macOS
 brew "qemu"      # CPU emulation support for cross-architecture Colima profiles
 brew "lima-additional-guestagents"  # x86_64 guest agent for amd64 Colima VMs on Apple Silicon
