@@ -82,6 +82,36 @@ if (!openCommands(commands).some((command) => command.includes("/tmp/project/edi
   fail("multiedit tool did not open edited file from path arg")
 }
 
+commands = await runCase({ tool: "apply_patch", args: { patchText: `*** Begin Patch
+*** Add File: /tmp/project/created-from-patch.txt
++hello
+*** Update File: /tmp/project/updated-from-patch.txt
+@@
+-old
++new
+*** Delete File: /tmp/project/deleted-from-patch.txt
+*** End Patch` } })
+if (!openCommands(commands).some((command) => command.includes("/tmp/project/created-from-patch.txt"))) {
+  fail("apply_patch tool did not open added file from patchText")
+}
+if (!openCommands(commands).some((command) => command.includes("/tmp/project/updated-from-patch.txt"))) {
+  fail("apply_patch tool did not open updated file from patchText")
+}
+if (openCommands(commands).some((command) => command.includes("/tmp/project/deleted-from-patch.txt"))) {
+  fail("apply_patch tool should not open deleted file from patchText")
+}
+
+commands = await runCase({ tool: "patch", args: { patch: `*** Begin Patch
+*** Update File: /tmp/project/old-name.txt
+*** Move to: /tmp/project/new-name.txt
+@@
+-old
++new
+*** End Patch` } })
+if (!openCommands(commands).some((command) => command.includes("/tmp/project/new-name.txt"))) {
+  fail("patch tool did not open moved file from patch payload")
+}
+
 commands = await runCase({ tool: "write", args: { filePath: "/tmp/project/skip/node_modules/pkg/index.js" } })
 if (openCommands(commands).length !== 0) {
   fail("node_modules write should not open a Neovim buffer")

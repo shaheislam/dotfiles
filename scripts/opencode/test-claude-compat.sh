@@ -186,6 +186,30 @@ if (!protectedBlocked) {
   fail("protect-files hook did not block protected writes")
 }
 
+let protectedPatchBlocked = false
+try {
+  await hooks["tool.execute.before"](
+    { tool: "apply_patch", args: { patchText: `*** Begin Patch
+*** Update File: ${projectDir}/package-lock.json
+@@
+-{}
++{"blocked":true}
+*** End Patch` } },
+    { args: { patchText: `*** Begin Patch
+*** Update File: ${projectDir}/package-lock.json
+@@
+-{}
++{"blocked":true}
+*** End Patch` } },
+  )
+} catch (error) {
+  protectedPatchBlocked = String(error.message || error).toLowerCase().includes("protected file")
+}
+
+if (!protectedPatchBlocked) {
+  fail("protect-files hook did not block protected apply_patch writes")
+}
+
 await hooks["tool.execute.after"](
   { tool: "read", args: { filePath: `${projectDir}/fake.py` } },
   { output: "print('hello')" },

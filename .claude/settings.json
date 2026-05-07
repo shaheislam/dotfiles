@@ -146,7 +146,7 @@
             "type": "command"
           }
         ],
-        "matcher": "Edit|Write"
+        "matcher": "Edit|Write|MultiEdit|ApplyPatch"
       },
       {
         "hooks": [
@@ -230,7 +230,7 @@
             "type": "command"
           }
         ],
-        "matcher": "Edit|Write"
+        "matcher": "Edit|Write|MultiEdit|ApplyPatch"
       }
     ],
     "SessionEnd": [

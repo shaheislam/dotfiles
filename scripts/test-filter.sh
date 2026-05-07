@@ -574,11 +574,11 @@ assert cmds.index([c for c in cmds if 'use_bun' in c][0]) < cmds.index([c for c 
         rm -rf \"\$tmpdir\"
         [[ \"\$out\" == *'FAILED: one'* ]]
     "
-    # Functional: PreToolUse Edit|Write keeps protect-files.py wired
-    run_test "hook config: Edit|Write includes protect-files" "python3 -c \"
+    # Functional: write-like PreToolUse keeps protect-files.py wired
+    run_test "hook config: write-like tools include protect-files" "python3 -c \"
 import json
 d=json.load(open('$DOTFILES_ROOT/.claude/settings.json'))
-edit_hooks=[h for h in d['hooks']['PreToolUse'] if h.get('matcher')=='Edit|Write'][0]['hooks']
+edit_hooks=[h for h in d['hooks']['PreToolUse'] if h.get('matcher')=='Edit|Write|MultiEdit|ApplyPatch'][0]['hooks']
 cmds=[h['command'] for h in edit_hooks]
 assert any('protect-files.py' in cmd for cmd in cmds)
 \""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PreToolUse hook: redirect Edit/Write on Claude settings files to Bash.
+PreToolUse hook: redirect Edit/Write/MultiEdit/ApplyPatch on Claude settings files to Bash.
 
 Workaround for https://github.com/anthropics/claude-code/issues/37029
 Even with --dangerously-skip-permissions, edits to ~/.claude/settings*.json
@@ -10,6 +10,7 @@ Claude to use jq or python3 via Bash instead.
 
 import json
 import os
+import re
 import sys
 
 
@@ -31,17 +32,48 @@ def is_settings_file(file_path: str) -> bool:
     return resolved in PROTECTED_REAL
 
 
+def patch_paths(patch_text):
+    if not isinstance(patch_text, str):
+        return []
+
+    paths = []
+    for line in patch_text.splitlines():
+        match = re.match(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", line)
+        if match:
+            paths.append(match.group(1))
+            continue
+
+        match = re.match(r"^\*\*\* Move to: (.+)$", line)
+        if match:
+            paths.append(match.group(1))
+
+    return paths
+
+
+def tool_paths(tool_input):
+    paths = []
+    for key in ("file_path", "filePath", "notebook_path", "path"):
+        value = tool_input.get(key)
+        if isinstance(value, str) and value:
+            paths.append(value)
+
+    for key in ("patchText", "patch_text", "patch"):
+        paths.extend(patch_paths(tool_input.get(key)))
+
+    return paths
+
+
 def main():
     try:
         data = json.load(sys.stdin)
         tool_name = data.get("tool_name", "")
         tool_input = data.get("tool_input", {})
 
-        if tool_name not in ("Edit", "Write"):
+        if tool_name not in ("Edit", "Write", "MultiEdit", "ApplyPatch"):
             sys.exit(0)
 
-        file_path = tool_input.get("file_path", "")
-        if not is_settings_file(file_path):
+        file_path = next((path for path in tool_paths(tool_input) if is_settings_file(path)), "")
+        if not file_path:
             sys.exit(0)
 
         resolved = os.path.realpath(os.path.expanduser(file_path))

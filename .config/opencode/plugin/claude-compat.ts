@@ -50,6 +50,10 @@ function opencodeToolName(tool: string) {
       return "Edit"
     case "multiedit":
       return "MultiEdit"
+    case "patch":
+    case "apply_patch":
+    case "apply-patch":
+      return "ApplyPatch"
     case "grep":
       return "Grep"
     case "glob":
@@ -60,7 +64,7 @@ function opencodeToolName(tool: string) {
 }
 
 function isWriteTool(tool: string) {
-  return ["write", "edit", "multiedit"].includes(tool.toLowerCase())
+  return ["write", "edit", "multiedit", "patch", "apply_patch", "apply-patch"].includes(tool.toLowerCase())
 }
 
 export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {

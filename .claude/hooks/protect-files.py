@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PreToolUse Hook (Edit|Write) — Block edits to protected files.
+PreToolUse Hook (Edit|Write|MultiEdit|ApplyPatch) — Block edits to protected files.
 
 Prevents accidental modification of critical configuration files.
 Uses exit code 2 to block the operation and suggest alternatives.
@@ -44,31 +44,62 @@ PROTECTED_PATTERNS = [
 ]
 
 
+def patch_paths(patch_text):
+    if not isinstance(patch_text, str):
+        return []
+
+    paths = []
+    for line in patch_text.splitlines():
+        match = re.match(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", line)
+        if match:
+            paths.append(match.group(1))
+            continue
+
+        match = re.match(r"^\*\*\* Move to: (.+)$", line)
+        if match:
+            paths.append(match.group(1))
+
+    return paths
+
+
+def tool_paths(tool_input):
+    paths = []
+    for key in ("file_path", "filePath", "notebook_path", "path"):
+        value = tool_input.get(key)
+        if isinstance(value, str) and value:
+            paths.append(value)
+
+    for key in ("patchText", "patch_text", "patch"):
+        paths.extend(patch_paths(tool_input.get(key)))
+
+    return paths
+
+
 def main():
     try:
         input_data = json.load(sys.stdin)
         tool_input = input_data.get("tool_input", {})
-        file_path = tool_input.get("file_path", "")
+        file_paths = tool_paths(tool_input)
 
-        if not file_path:
+        if not file_paths:
             sys.exit(0)
 
-        # Resolve to absolute path to prevent traversal tricks
-        file_path = os.path.realpath(file_path)
+        for file_path in file_paths:
+            # Resolve to absolute path to prevent traversal tricks
+            file_path = os.path.realpath(file_path)
 
-        # Allowlist check first — permitted files skip all guards
-        for pattern in ALLOWED_PATTERNS:
-            if re.search(pattern, file_path):
-                sys.exit(0)
+            # Allowlist check first — permitted files skip all guards
+            if any(re.search(pattern, file_path) for pattern in ALLOWED_PATTERNS):
+                continue
 
-        for pattern, reason in PROTECTED_PATTERNS:
-            if re.search(pattern, file_path):
-                print(
-                    f"BLOCKED: Cannot edit protected file: {file_path}",
-                    file=sys.stderr,
-                )
-                print(f"   Reason: {reason}", file=sys.stderr)
-                sys.exit(2)
+            for pattern, reason in PROTECTED_PATTERNS:
+                if re.search(pattern, file_path):
+                    print(
+                        f"BLOCKED: Cannot edit protected file: {file_path}",
+                        file=sys.stderr,
+                    )
+                    print(f"   Reason: {reason}", file=sys.stderr)
+                    sys.exit(2)
 
         sys.exit(0)
 
