@@ -7,7 +7,7 @@ function _cd_fzf_tab_complete -d "Zoxide fzf cd picker with scope switching (par
         return
     end
 
-    set -l scope Global
+    set -l scope Local
     set -l query (string trim -- "$token")
     set -l git_root (git rev-parse --show-toplevel 2>/dev/null; or echo "")
     set -l first_pass true
