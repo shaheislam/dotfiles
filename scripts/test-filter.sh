@@ -441,6 +441,13 @@ test_hooks() {
             run_test "Hook $name valid Python" "python3 -c \"import py_compile; py_compile.compile('$hook', doraise=True)\""
         fi
     done
+    for hook in "$DOTFILES_ROOT"/.claude/hooks/lib/*.py; do
+        if [ -f "$hook" ]; then
+            local name
+            name="lib/$(basename "$hook")"
+            run_test "Hook $name valid Python" "python3 -c \"import py_compile; py_compile.compile('$hook', doraise=True)\""
+        fi
+    done
 
     # Settings.json hook events configured
     local settings="$DOTFILES_ROOT/.claude/settings.json"
@@ -494,6 +501,7 @@ test_hooks() {
     run_test "protect-files blocks pnpm-lock.yaml" "echo '{\"tool_input\":{\"file_path\":\"/app/pnpm-lock.yaml\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files blocks node_modules" "echo '{\"tool_input\":{\"file_path\":\"/app/node_modules/foo/index.js\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
     run_test "protect-files allows normal files" "echo '{\"tool_input\":{\"file_path\":\"/app/src/main.py\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
+    run_test "protect-files blocks protected patch target" "python3 -c \"import json; print(json.dumps({'tool_input': {'patchText': '*** Begin Patch\\n*** Update File: /app/package-lock.json\\n*** End Patch'}}))\" | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
 
     # Functional: protect-files.py allowlist (avoid false positives)
     run_test "protect-files allows .env.example" "echo '{\"tool_input\":{\"file_path\":\"/app/.env.example\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
@@ -530,6 +538,28 @@ test_hooks() {
         md5_2=\$(md5 -q \"\$tmpjson\")
         rm -f \"\$tmpjson\"
         [ \"\$md5_1\" = \"\$md5_2\" ]
+    "
+
+    run_test "changed-files extracts direct and patch paths" "python3 - <<'PY'
+import sys
+sys.path.insert(0, '$hooks_dir')
+from lib.changed_files import changed_paths
+paths = changed_paths({
+    'filePath': '/tmp/direct.txt',
+    'patchText': '*** Begin Patch\n*** Add File: /tmp/add.txt\n*** Update File: /tmp/update.txt\n*** Delete File: /tmp/delete.txt\n*** Move to: /tmp/move.txt\n*** End Patch',
+})
+assert paths == ['/tmp/direct.txt', '/tmp/add.txt', '/tmp/update.txt', '/tmp/delete.txt', '/tmp/move.txt']
+PY
+    "
+
+    run_test "auto-format formats JSON from patch payload" "
+        tmpjson=\$(mktemp /tmp/hook-test-XXXXXX.json)
+        printf '{\"z\":1}' > \"\$tmpjson\"
+        python3 -c \"import json, sys; print(json.dumps({'tool_input': {'patchText': f'*** Begin Patch\\n*** Update File: {sys.argv[1]}\\n*** End Patch'}}))\" \"\$tmpjson\" | python3 '$hooks_dir/auto-format.py' 2>/dev/null
+        grep -q '^  \"z\": 1$' \"\$tmpjson\"
+        rc=\$?
+        rm -f \"\$tmpjson\"
+        [ \$rc -eq 0 ]
     "
 
     # Functional: protect-files.py path normalization (traversal prevention)

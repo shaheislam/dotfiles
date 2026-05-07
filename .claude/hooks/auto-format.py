@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PostToolUse Hook (Edit|Write) — Auto-format files after modification.
+PostToolUse Hook (Edit|Write|MultiEdit|ApplyPatch) — Auto-format files after modification.
 
 Detects file type and runs the appropriate formatter:
   .sh/.bash  → shfmt (if available)
@@ -18,6 +18,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from lib.changed_files import changed_existing_paths
 
 
 FORMATTERS = {
@@ -60,42 +62,43 @@ def main():
     try:
         input_data = json.load(sys.stdin)
         tool_input = input_data.get("tool_input", {})
-        file_path = tool_input.get("file_path", "")
 
-        if not file_path or not Path(file_path).exists():
-            sys.exit(0)
+        messages = []
+        for file_path in changed_existing_paths(tool_input):
+            suffix = Path(file_path).suffix.lower()
 
-        suffix = Path(file_path).suffix.lower()
+            # JSON special case — use built-in
+            if suffix == ".json":
+                if format_json(file_path):
+                    messages.append(f"Auto-formatted {Path(file_path).name} (json)")
+                continue
 
-        # JSON special case — use built-in
-        if suffix == ".json":
-            if format_json(file_path):
-                print(json.dumps({"systemMessage": f"Auto-formatted {Path(file_path).name} (json)"}))
-            sys.exit(0)
+            # Check for known formatters
+            formatter_info = FORMATTERS.get(suffix)
+            if not formatter_info:
+                continue
 
-        # Check for known formatters
-        formatter_info = FORMATTERS.get(suffix)
-        if not formatter_info:
-            sys.exit(0)
+            cmd, name = formatter_info
 
-        cmd, name = formatter_info
+            # Check if formatter is available via shutil.which
+            if not shutil.which(cmd[0]):
+                continue
 
-        # Check if formatter is available via shutil.which
-        if not shutil.which(cmd[0]):
-            sys.exit(0)
+            # Run formatter
+            try:
+                result = subprocess.run(
+                    cmd + [file_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if result.returncode == 0:
+                    messages.append(f"Auto-formatted {Path(file_path).name} ({name})")
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                pass  # Skip silently
 
-        # Run formatter
-        try:
-            result = subprocess.run(
-                cmd + [file_path],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            if result.returncode == 0:
-                print(json.dumps({"systemMessage": f"Auto-formatted {Path(file_path).name} ({name})"}))
-        except (subprocess.TimeoutExpired, FileNotFoundError):
-            pass  # Skip silently
+        if messages:
+            print(json.dumps({"systemMessage": "\n".join(messages)}))
 
     except Exception:
         pass  # Never block on formatter errors

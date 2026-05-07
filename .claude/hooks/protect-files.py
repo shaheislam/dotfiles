@@ -8,10 +8,11 @@ Uses exit code 2 to block the operation and suggest alternatives.
 Allowlist takes precedence over blocklist to avoid false positives.
 """
 
-import json
 import os
 import re
 import sys
+
+from lib.changed_files import changed_paths
 
 # Allowlist — these patterns are always permitted (checked first)
 ALLOWED_PATTERNS = [
@@ -44,42 +45,13 @@ PROTECTED_PATTERNS = [
 ]
 
 
-def patch_paths(patch_text):
-    if not isinstance(patch_text, str):
-        return []
-
-    paths = []
-    for line in patch_text.splitlines():
-        match = re.match(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", line)
-        if match:
-            paths.append(match.group(1))
-            continue
-
-        match = re.match(r"^\*\*\* Move to: (.+)$", line)
-        if match:
-            paths.append(match.group(1))
-
-    return paths
-
-
-def tool_paths(tool_input):
-    paths = []
-    for key in ("file_path", "filePath", "notebook_path", "path"):
-        value = tool_input.get(key)
-        if isinstance(value, str) and value:
-            paths.append(value)
-
-    for key in ("patchText", "patch_text", "patch"):
-        paths.extend(patch_paths(tool_input.get(key)))
-
-    return paths
-
-
 def main():
     try:
+        import json
+
         input_data = json.load(sys.stdin)
         tool_input = input_data.get("tool_input", {})
-        file_paths = tool_paths(tool_input)
+        file_paths = changed_paths(tool_input)
 
         if not file_paths:
             sys.exit(0)

@@ -6,20 +6,7 @@
 set -euo pipefail
 
 INPUT=$(cat)
-FILE_PATHS=$(echo "$INPUT" | jq -r '
-  [
-    .tool_input.file_path,
-    .tool_input.filePath,
-    .tool_input.notebook_path,
-    .tool_input.path
-  ]
-  + (
-    (.tool_input.patchText // .tool_input.patch_text // .tool_input.patch // "")
-    | [scan("(?m)^\\*\\*\\* (?:(?:Add|Update) File: (.+)|Move to: (.+))$")[]?]
-  )
-  | .[]
-  | select(. != null and . != "")
-' 2>/dev/null || true)
+FILE_PATHS=$(python3 "$(dirname "${BASH_SOURCE[0]}")/lib/changed_files.py" --exclude-deleted --existing-only <<<"$INPUT" 2>/dev/null || true)
 
 [[ -z "$FILE_PATHS" ]] && exit 0
 [[ -z "${TMUX:-}" ]] && exit 0
