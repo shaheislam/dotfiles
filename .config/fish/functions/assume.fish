@@ -3,8 +3,17 @@ function assume --description "Assume AWS role using Granted"
     if test "$argv[1]" = -c
         set -l profile $argv[2]
         if test -n "$profile"
+            if test "$profile" = sec
+                set profile security
+            end
+
             # First assume the profile using bash with suppressed interactive prompts
             set -l env_vars (printf 'n\n' | bash -c "source /opt/homebrew/bin/assume $profile >/dev/null 2>&1 && env | grep -E '^(AWS_|GRANTED_)'")
+            if test (count $env_vars) -eq 0
+                echo "Failed to assume AWS profile: $profile"
+                return 1
+            end
+
             _parse_granted_env $env_vars
 
             # Then open console with profile-specific container names and colors
