@@ -11,6 +11,7 @@ config.font = wezterm.font_with_fallback({
     weight = 'Medium',
     harfbuzz_features = { 'calt=1', 'liga=1' }, -- Standard ligatures only (dlig/ss* add shaping overhead)
   },
+  'Flog Symbols', -- Private-use glyphs for vim-flog v3 extended graph drawing
   'DankMono Nerd Font', -- Fallback
 })
 

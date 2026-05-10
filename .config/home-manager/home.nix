@@ -164,6 +164,12 @@
         allowUnfree = true;
       }
     '';
+
+    # Flog v3 extended Git graph glyphs for vim-flog.
+    "Library/Fonts/FlogSymbols.ttf" = {
+      source = ./fonts/FlogSymbols.ttf;
+      force = true;
+    };
   };
 
   # Activation scripts
