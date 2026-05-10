@@ -496,6 +496,7 @@
     ]
   },
   "preferredNotifChannel": "terminal_bell",
+  "remoteControlAtStartup": false,
   "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "command": "bash ~/dotfiles/scripts/claude-statusline.sh",
