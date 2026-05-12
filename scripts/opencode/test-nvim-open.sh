@@ -5,13 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PLUGIN="$ROOT/.config/opencode/plugin/nvim-open.ts"
 
 if ! command -v bun >/dev/null 2>&1; then
-	echo "FAIL bun is required for OpenCode Neovim opener validation" >&2
-	exit 1
+    echo "FAIL bun is required for OpenCode Neovim opener validation" >&2
+    exit 1
 fi
 
 if [ ! -f "$PLUGIN" ]; then
-	echo "FAIL missing plugin: $PLUGIN" >&2
-	exit 1
+    echo "FAIL missing plugin: $PLUGIN" >&2
+    exit 1
 fi
 
 TMPDIR="$(mktemp -d)"
@@ -134,5 +134,90 @@ console.log("PASS OpenCode Neovim opener validation complete")
 EOF
 
 OPENCODE_NVIM_OPEN_PLUGIN="$PLUGIN" \
-	OPENCODE_TEST_HOME="$TMPDIR/home" \
-	bun "$HARNESS"
+    OPENCODE_TEST_HOME="$TMPDIR/home" \
+    bun "$HARNESS"
+
+OPEN_SCRIPT="$ROOT/scripts/nvim-open-file.sh"
+FAKEBIN="$TMPDIR/fakebin"
+TMUX_LOG="$TMPDIR/tmux.log"
+export TMUX_LOG
+mkdir -p "$FAKEBIN"
+
+cat >"$FAKEBIN/tmux" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-}"
+if [ "$#" -gt 0 ]; then
+	shift
+fi
+
+printf '%s\n' "$cmd $*" >>"$TMUX_LOG"
+
+case "$cmd" in
+display-message)
+	target=""
+	format=""
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+		-t)
+			target="$2"
+			shift 2
+			;;
+		-p)
+			shift
+			;;
+		*)
+			format="$1"
+			shift
+			;;
+		esac
+	done
+
+	case "$format" in
+	*session_name*)
+		if [ "$target" = "%ai-pane" ]; then
+			printf 'ai-session:7\n'
+		else
+			printf 'active-session:3\n'
+		fi
+		;;
+	*pane_id*) printf '%s\n' "${target:-%active-pane}" ;;
+	*pane_width*) printf '120\n' ;;
+	*pane_height*) printf '30\n' ;;
+	esac
+	;;
+list-panes | split-window) ;;
+*) ;;
+esac
+EOF
+chmod +x "$FAKEBIN/tmux"
+
+cat >"$FAKEBIN/pgrep" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+chmod +x "$FAKEBIN/pgrep"
+
+: >"$TMUX_LOG"
+PATH="$FAKEBIN:$PATH" \
+    TMUX="/tmp/tmux-test,1,0" \
+    TMUX_PANE="%ai-pane" \
+    "$OPEN_SCRIPT" "$TMPDIR/created.txt" >/dev/null
+
+if ! grep -Fq -- 'display-message -p -t %ai-pane #{session_name}:#{window_index}' "$TMUX_LOG"; then
+    echo "FAIL nvim opener did not derive target window from TMUX_PANE" >&2
+    exit 1
+fi
+
+if grep -Fq -- 'display-message -p #{session_name}:#{window_index}' "$TMUX_LOG"; then
+    echo "FAIL nvim opener fell back to the active tmux window despite TMUX_PANE" >&2
+    exit 1
+fi
+
+if ! grep -Fq -- 'split-window -h -c #{pane_current_path} -t %ai-pane' "$TMUX_LOG"; then
+    echo "FAIL nvim opener did not split from the AI session pane" >&2
+    exit 1
+fi
+
+echo "PASS OpenCode Neovim tmux target validation complete"
