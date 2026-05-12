@@ -1017,9 +1017,12 @@ test_opencode() {
     run_test "OpenCode compatibility shim executable" "[ -x '$DOTFILES_ROOT/scripts/bin/opencode' ]"
     run_test "OpenCode compatibility shim delegates to ocv" "grep -q 'exec ocv \"\$@\"' '$DOTFILES_ROOT/scripts/bin/opencode'"
     run_test "OpenCode tmux launcher uses shim" "grep -q 'exec \"\$HOME/dotfiles/scripts/bin/opencode\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
+    run_test "OpenCode TUI uses transparent theme" "jq -e '.theme == \"transparent\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
+    run_test "OpenCode transparent theme exists" "[ -f '$DOTFILES_ROOT/.config/opencode/themes/transparent.json' ]"
+    run_test "OpenCode transparent theme avoids panel fill" "jq -e '.theme.background == \"none\" and .theme.backgroundPanel == \"none\" and .theme.backgroundElement == \"none\"' '$DOTFILES_ROOT/.config/opencode/themes/transparent.json' >/dev/null 2>&1"
     run_test "OpenCode TUI enables Vim system clipboard" "jq -e '.vim_system_clipboard_register == true' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
     run_test "OpenCode TUI keeps insert Enter as newline" "jq -e '.vim_enter_submit == false' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
-    run_test "OpenCode TUI has force-submit key" "jq -e '.keybinds.input_force_submit == \"alt+return\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
+    run_test "OpenCode TUI leaves Enter defaults" "jq -e '(.keybinds.input_submit? == null) and (.keybinds.input_newline? == null) and (.keybinds.input_force_submit? == null)' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
     run_test "OpenCode TUI copy mode avoids variant conflict" "jq -e '.keybinds.copy_mode == \"<leader>v\" and .keybinds.variant_list == \"<leader>V\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
 
     run_test "OpenCode command directory exists" "[ -d '$DOTFILES_ROOT/.opencode/command' ]"
