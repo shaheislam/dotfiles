@@ -1,0 +1,5 @@
+Why is our opencode config broken? The theme isn't showing as transparent, check ~/dotfiles and ensure all symlinks are present
+
+---
+
+▣ DCP | -74.4K removed, +21.5K summary — Compression #1
