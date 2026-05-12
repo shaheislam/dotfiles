@@ -611,6 +611,17 @@ phase_2_cli_tools() {
         fi
     fi
 
+    # grc is intentionally integrated through our Fish conf.d file instead of
+    # sourcing upstream grc.fish, which aliases too broadly for this config.
+    if command_exists grc; then
+        local grc_fish_config="$DOTFILES_ROOT/.config/fish/conf.d/grc.fish"
+        if [[ -f "$grc_fish_config" ]]; then
+            print_success "grc gap colorizer configured via Fish conf.d"
+        else
+            print_warning "grc installed but Fish gap alias config is missing"
+        fi
+    fi
+
     # GitLab CLI auth check
     if command_exists glab; then
         if ! glab config get -g token >/dev/null 2>&1; then

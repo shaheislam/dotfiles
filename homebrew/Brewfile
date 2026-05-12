@@ -71,6 +71,7 @@ brew "vhs"  # Terminal GIF recorder with code-based recording
 brew "carapace"  # Multi-shell completion generator
 # brew "lazygit"  # Removed - not using LazyGit
 brew "lazydocker"
+brew "grc"  # Gap-only command output colorizer; Fish aliases are managed in conf.d/grc.fish
 brew "splash"  # Log colorizer
 brew "fish"
 brew "fswatch"  # For Obsidian auto-sync

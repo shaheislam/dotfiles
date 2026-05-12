@@ -135,12 +135,12 @@ hide_rate_limit_model_nudge = true
 network_access = true
 
 [marketplaces.openai-bundled]
-last_updated = "2026-04-27T15:00:14Z"
+last_updated = "2026-05-11T13:43:36Z"
 source_type = "local"
 source = "/Users/shahe.islam/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-04-27T15:15:57Z"
+last_updated = "2026-05-11T14:13:46Z"
 source_type = "local"
 source = "/Users/shahe.islam/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
