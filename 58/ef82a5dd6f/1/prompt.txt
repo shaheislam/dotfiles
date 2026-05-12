@@ -1,0 +1,13 @@
+We deleted the transparent theme but now Opencode isn't fully transparent... also yank in copy mode isn't working
+
+---
+
+[Image 1] Not all of the elements are transparent which is what we want ideally
+
+---
+
+▣ DCP | -73.2K removed, +10.8K summary — Compression #1
+
+---
+
+▣ DCP | -175.1K removed, +12.3K summary — Compression #2
