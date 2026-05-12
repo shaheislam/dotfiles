@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "672ca419350e",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/fish/conf.d/grc.fish",
+    "homebrew/Brewfile",
+    "scripts/profiles/comprehensive.conf",
+    "scripts/profiles/dev.conf",
+    "scripts/profiles/minimal.conf",
+    "scripts/profiles/ops.conf",
+    "scripts/profiles/standard.conf",
+    "scripts/setup.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/67/2ca419350e/0/metadata.json",
+      "transcript": "/67/2ca419350e/0/full.jsonl",
+      "content_hash": "/67/2ca419350e/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 779395,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3006976,
+    "output_tokens": 9737,
+    "api_call_count": 49
+  }
+}

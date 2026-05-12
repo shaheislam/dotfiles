@@ -1,0 +1,53 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "672ca419350e",
+  "session_id": "ses_1e278cf35ffeXjQinhVNN18v3S",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-12T19:34:58.028313Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/fish/conf.d/grc.fish",
+    "homebrew/Brewfile",
+    "scripts/profiles/comprehensive.conf",
+    "scripts/profiles/dev.conf",
+    "scripts/profiles/minimal.conf",
+    "scripts/profiles/ops.conf",
+    "scripts/profiles/standard.conf",
+    "scripts/setup.sh"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-5.5",
+  "turn_id": "c28f5a22c09f",
+  "token_usage": {
+    "input_tokens": 779395,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3006976,
+    "output_tokens": 9737,
+    "api_call_count": 49
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-12T19:34:57.998203Z",
+    "agent_lines": 39,
+    "agent_removed": 0,
+    "human_added": 12,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 51,
+    "total_lines_changed": 53,
+    "agent_percentage": 73.58490566037736,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
