@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "8a05ac86c99d",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/nvim-open-file.sh",
+    "scripts/opencode/test-nvim-open.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/8a/05ac86c99d/0/metadata.json",
+      "transcript": "/8a/05ac86c99d/0/full.jsonl",
+      "content_hash": "/8a/05ac86c99d/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 552427,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1147904,
+    "output_tokens": 6089,
+    "api_call_count": 20
+  }
+}

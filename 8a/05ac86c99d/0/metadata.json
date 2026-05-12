@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.5.5",
+  "checkpoint_id": "8a05ac86c99d",
+  "session_id": "ses_1e278cf35ffeXjQinhVNN18v3S",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-12T19:48:53.276138Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/nvim-open-file.sh",
+    "scripts/opencode/test-nvim-open.sh"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-5.5",
+  "turn_id": "c28f5a22c09f",
+  "checkpoint_transcript_start": 54,
+  "transcript_lines_at_start": 54,
+  "token_usage": {
+    "input_tokens": 552427,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1147904,
+    "output_tokens": 6089,
+    "api_call_count": 20
+  },
+  "session_metrics": {
+    "turn_count": 6
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-12T19:48:53.240683Z",
+    "agent_lines": 122,
+    "agent_removed": 16,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 122,
+    "total_lines_changed": 138,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
