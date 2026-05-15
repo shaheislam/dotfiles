@@ -1,0 +1,1 @@
+That works perfectly, are there any other commands we could integrate into opencode, or flesh things out?
