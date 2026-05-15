@@ -2268,8 +2268,18 @@ $prompt_suffix"
     if test -n "$opencode_fork_session"
         set gwtfork_handoff_file "$worktree_path/.claude/gwtfork.local.md"
         set -l fork_source_branch ""
+        set -l fork_source_dirty false
+        set -l fork_source_status ""
+        set -l fork_source_unstaged_stat ""
+        set -l fork_source_staged_stat ""
         if test -n "$opencode_fork_source"
             set fork_source_branch (git -C "$opencode_fork_source" branch --show-current 2>/dev/null | string collect)
+            set fork_source_status (git -C "$opencode_fork_source" status --short 2>/dev/null | string collect)
+            set fork_source_unstaged_stat (git -C "$opencode_fork_source" diff --stat 2>/dev/null | string collect)
+            set fork_source_staged_stat (git -C "$opencode_fork_source" diff --cached --stat 2>/dev/null | string collect)
+            if test -n "$fork_source_status"
+                set fork_source_dirty true
+            end
         end
         printf '%s\n' \
             '# OpenCode Worktree Fork' \
@@ -2283,11 +2293,47 @@ $prompt_suffix"
             '' \
             '## User Note' \
             '' \
-            "$opencode_fork_note" \
+            "$opencode_fork_note" >$gwtfork_handoff_file
+        printf '%s\n' \
+            '' \
+            '## Source Dirty Context' \
+            '' \
+            "Dirty at fork: $fork_source_dirty" \
+            '' \
+            'The new worktree starts from git HEAD. Staged, unstaged, and untracked source changes are not copied into the fork.' >>$gwtfork_handoff_file
+        if test -n "$fork_source_status"
+            printf '%s\n' \
+                '' \
+                '```text' \
+                "$fork_source_status" \
+                '```' >>$gwtfork_handoff_file
+        end
+        if test -n "$fork_source_staged_stat" -o -n "$fork_source_unstaged_stat"
+            printf '%s\n' \
+                '' \
+                '### Diff Stat' \
+                '' >>$gwtfork_handoff_file
+            if test -n "$fork_source_staged_stat"
+                printf '%s\n' \
+                    'Staged:' \
+                    '```text' \
+                    "$fork_source_staged_stat" \
+                    '```' \
+                    '' >>$gwtfork_handoff_file
+            end
+            if test -n "$fork_source_unstaged_stat"
+                printf '%s\n' \
+                    'Unstaged:' \
+                    '```text' \
+                    "$fork_source_unstaged_stat" \
+                    '```' >>$gwtfork_handoff_file
+            end
+        end
+        printf '%s\n' \
             '' \
             '## Handoff' \
             '' \
-            'This worktree was created from an OpenCode session fork. Continue from the inherited conversation while keeping file changes isolated to this worktree.' >$gwtfork_handoff_file
+            'This worktree was created from an OpenCode session fork. Continue from the inherited conversation while keeping file changes isolated to this worktree.' >>$gwtfork_handoff_file
     end
 
     # Detect AI guidance files to auto-open in nvim buffers
@@ -2653,7 +2699,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
     # Print output immediately so user sees feedback before background ops
     if $quiet_mode
         # Log was already written before pane setup (for nvim buffer visibility)
-        echo "gwtt: $window_name → $session_name:$window_name (log: $gwt_log_file)"
+        echo "gwtt: $window_name → $session_name:$window_name (worktree: $worktree_path, log: $gwt_log_file)"
     else
         echo ""
         echo "=== Ticket execution started ==="

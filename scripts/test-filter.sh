@@ -1101,6 +1101,8 @@ test_opencode() {
     run_test "OpenCode forkworktree supports source dir" "grep -q -- '--source-dir' '$DOTFILES_ROOT/.config/fish/functions/opencode-forkworktree.fish'"
     run_test "OpenCode forkworktree allows dirty source" "! grep -q 'source worktree has uncommitted changes' '$DOTFILES_ROOT/.config/fish/functions/opencode-forkworktree.fish'"
     run_test "OpenCode forkworktree passes handoff metadata" "grep -q -- '--opencode-fork-source' '$DOTFILES_ROOT/.config/fish/functions/opencode-forkworktree.fish'"
+    run_test "OpenCode forkworktree runs gwtt foreground" "grep -q -- 'gwtt --foreground' '$DOTFILES_ROOT/.config/fish/functions/opencode-forkworktree.fish'"
+    run_test "OpenCode forkworktree switches tmux target" "grep -q 'tmux switch-client' '$DOTFILES_ROOT/.config/fish/functions/opencode-forkworktree.fish'"
 
     run_test "gwt-ticket has OpenCode doctor preflight" "grep -q 'opencode/doctor.sh' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     run_test "gwt-ticket defaults to OpenCode" "grep -q 'set -l use_codex true' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
@@ -1108,6 +1110,8 @@ test_opencode() {
     run_test "gwt-ticket supports OpenCode session fork" "grep -q -- '--opencode-fork-session' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     run_test "gwt-ticket supports OpenCode fork source metadata" "grep -q -- '--opencode-fork-source' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     run_test "gwt-ticket writes gwtfork handoff" "grep -q 'gwtfork.local.md' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket records dirty fork context" "grep -q 'Source Dirty Context' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+    run_test "gwt-ticket receipt includes worktree" "grep -q 'worktree: .*log:' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     run_test "gwt-ticket launches OpenCode fork" "grep -q -- '--session.*--fork' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     run_test "gwt-ticket has Claude fallback flag" "grep -q -- 'case --claude' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     run_test "gwt-ticket bridge defaults to OpenCode reviewer" "grep -q 'CROSS_PROVIDER_ORDER opencode' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"

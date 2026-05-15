@@ -112,5 +112,31 @@ function opencode-forkworktree --description "Launch a gwtt OpenCode worktree fr
         set prompt "$prompt User note: $note"
     end
 
-    gwtt "$worktree_name" "$prompt" --no-edit --opencode-fork-session "$source_session" --opencode-fork-source "$source_realpath" --opencode-fork-note "$note" $passthrough_args
+    set -l gwtt_output (gwtt --foreground "$worktree_name" "$prompt" --no-edit --opencode-fork-session "$source_session" --opencode-fork-source "$source_realpath" --opencode-fork-note "$note" $passthrough_args 2>&1 | string collect)
+    set -l gwtt_status $pipestatus[1]
+    if test -n "$gwtt_output"
+        printf '%s\n' "$gwtt_output"
+    end
+    if test $gwtt_status -ne 0
+        return $gwtt_status
+    end
+
+    set -l tmux_target ""
+    for line in (string split \n -- "$gwtt_output")
+        if string match -rq '^gwtt: .* → ' -- "$line"
+            set tmux_target (string replace -r '^gwtt: .* → ([^ ]+).*' '$1' -- "$line")
+            break
+        end
+    end
+
+    if test -n "$tmux_target"; and command -q tmux
+        if set -q TMUX
+            tmux switch-client -t "$tmux_target" 2>/dev/null; or tmux select-window -t "$tmux_target" 2>/dev/null
+        else
+            tmux select-window -t "$tmux_target" 2>/dev/null
+        end
+        if test $status -eq 0
+            echo "gwtfork: switched to $tmux_target"
+        end
+    end
 end
