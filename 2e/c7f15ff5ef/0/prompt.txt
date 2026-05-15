@@ -1,0 +1,5 @@
+https://github.com/earendil-works/pi inspect this and tell me if we can achieve our existing opencode setup with hooks etc in pi... I want a gap analysis, implementation effort doesn't need to be considered
+
+---
+
+▣ DCP | -127.3K removed, +9.7K summary — Compression #1
