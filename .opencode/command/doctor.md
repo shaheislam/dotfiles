@@ -1,8 +1,11 @@
 ---
 description: Run the repo's OpenCode doctor and explain only what matters
 agent: plan
-model: anthropic/claude-opus-4-6
 ---
+
+This command is normally intercepted by the OpenCode ops command plugin and run without a model call.
+
+If you see this text as an assistant response, the plugin did not load. Review the following OpenCode doctor output and summarize only the actionable items.
 
 Review the following OpenCode doctor output and summarize only the actionable items.
 

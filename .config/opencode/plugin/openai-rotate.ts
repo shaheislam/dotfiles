@@ -285,6 +285,7 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
   const pendingPrompts = new Map<string, PromptState>()
   const handledMessages = new Set<string>()
   const rotatingSessions = new Set<string>()
+  const preflightSessions = new Set<string>()
 
   async function showToast(message: string, variant: "info" | "success" | "warning" | "error") {
     try {
@@ -386,6 +387,37 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
     return { ok: false, reason: "All saved OpenAI accounts are currently unavailable" }
   }
 
+  async function preflightRotate(sessionID: string) {
+    if (process.env.OPENCODE_OPENAI_PREFLIGHT === "0" || preflightSessions.has(sessionID)) {
+      return
+    }
+
+    const auth = await readJsonFile<AuthFile>(AUTH_FILE)
+    if (!auth?.openai?.access) {
+      await debugLog("preflight skip: no active OpenAI access token")
+      return
+    }
+
+    preflightSessions.add(sessionID)
+    try {
+      const status = await probeToken(auth.openai.access)
+      await debugLog(`preflight probe status=${status}`)
+      if (status === 0) {
+        return
+      }
+
+      const result = await rotateAccount()
+      await debugLog(`preflight rotation result ok=${result.ok}`)
+      if (result.ok) {
+        await showToast(`Preflight switched to '${result.name}' before sending the prompt.`, "warning")
+      } else {
+        await showToast(`${result.reason}. Continuing with current account.`, "warning")
+      }
+    } finally {
+      preflightSessions.delete(sessionID)
+    }
+  }
+
   function buildReplayBody(pending: PromptState) {
     return {
       parts: toPromptParts(pending.parts),
@@ -417,6 +449,8 @@ export const OpenAIRotatePlugin: Plugin = async ({ client, directory }) => {
         parts: structuredClone(output.parts),
       })
       handledMessages.delete(output.message.id)
+
+      await preflightRotate(input.sessionID)
     },
 
     event: async ({ event }) => {

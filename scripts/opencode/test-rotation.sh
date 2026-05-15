@@ -84,18 +84,20 @@ await hooks["chat.message"](
   },
 )
 
-const errorEvent = {
-  event: {
-    type: "session.error",
-    properties: {
-      sessionID: "session-1",
-      error: { name: "APIError", data: { statusCode: 429, message: "usage.limit reached", providerID } },
+if (process.env.OPENCODE_ROTATE_SKIP_ERROR !== "1") {
+  const errorEvent = {
+    event: {
+      type: "session.error",
+      properties: {
+        sessionID: "session-1",
+        error: { name: "APIError", data: { statusCode: 429, message: "usage.limit reached", providerID } },
+      },
     },
-  },
-}
+  }
 
-await hooks.event(errorEvent)
-await hooks.event(errorEvent)
+  await hooks.event(errorEvent)
+  await hooks.event(errorEvent)
+}
 
 const auth = JSON.parse(await fs.readFile(process.env.OPENCODE_AUTH_FILE, "utf8"))
 console.log(JSON.stringify({ calls, activeAccess: auth.openai.access }))
@@ -118,6 +120,7 @@ run_case() {
         OPENCODE_ACCOUNTS_DIR="$case_dir/accounts" \
         OPENCODE_USAGE_CHECK_SCRIPT="$case_dir/usage-check.sh" \
         OPENCODE_ROTATE_PROVIDER_ID="$provider_id" \
+        OPENCODE_OPENAI_PREFLIGHT=0 \
         bun "$HARNESS")" || fail "$case_name execution failed"
 
     local actual_access
@@ -139,8 +142,38 @@ run_case() {
     pass "$case_name"
 }
 
+run_preflight_case() {
+    local case_name="$1"
+    local case_dir="$TMPDIR/$case_name"
+    write_case "$case_dir" good-token
+
+    local result
+    result="$(OPENCODE_ROTATE_PLUGIN="$PLUGIN" \
+        OPENCODE_AUTH_FILE="$case_dir/auth/auth.json" \
+        OPENCODE_ACCOUNTS_DIR="$case_dir/accounts" \
+        OPENCODE_USAGE_CHECK_SCRIPT="$case_dir/usage-check.sh" \
+        OPENCODE_ROTATE_PROVIDER_ID="openai" \
+        OPENCODE_ROTATE_SKIP_ERROR=1 \
+        bun "$HARNESS")" || fail "$case_name execution failed"
+
+    local actual_access
+    actual_access="$(printf '%s' "$result" | jq -r '.activeAccess')"
+    [ "$actual_access" = "good-token" ] || fail "$case_name expected preflight switch to good-token, got $actual_access"
+
+    local toast_variant
+    toast_variant="$(printf '%s' "$result" | jq -r '.calls[0][1].variant')"
+    [ "$toast_variant" = "warning" ] || fail "$case_name expected warning toast, got $toast_variant"
+
+    local prompt_count
+    prompt_count="$(printf '%s' "$result" | jq '[.calls[] | select(.[0] == "prompt")] | length')"
+    [ "$prompt_count" = "0" ] || fail "$case_name expected no retry prompt during preflight, got $prompt_count"
+
+    pass "$case_name"
+}
+
 run_case success-openai good-token good-token warning 1 openai
 run_case exhausted bad-spare bad-token error 0 openai
 run_case success-codex good-token good-token warning 1 codex
+run_preflight_case preflight-openai
 
 pass "rotation validation complete"

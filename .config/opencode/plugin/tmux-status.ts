@@ -6,6 +6,14 @@ import type { Plugin } from "@opencode-ai/plugin"
 export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
   let currentSessionID: string | null = null
   let currentModel: string | null = null
+  const tmuxPane = process.env.TMUX_PANE
+
+  const scopedKeys = {
+    OPENCODE_SESSION_ID: "@opencode_session_id",
+    OPENCODE_STATUS: "@opencode_status",
+    OPENCODE_MODEL: "@opencode_model",
+    OPENCODE_DIR: "@opencode_dir",
+  } as const
 
   async function setTmuxEnv(key: string, value: string) {
     try {
@@ -18,6 +26,28 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
   async function unsetTmuxEnv(key: string) {
     try {
       await $`tmux set-environment -g -u ${key}`.quiet().nothrow()
+    } catch {
+      // ignore
+    }
+  }
+
+  async function setTmuxScoped(key: keyof typeof scopedKeys, value: string) {
+    if (!tmuxPane) return
+    const option = scopedKeys[key]
+    try {
+      await $`tmux set-option -p -t ${tmuxPane} ${option} ${value}`.quiet().nothrow()
+      await $`tmux set-window-option -t ${tmuxPane} ${option} ${value}`.quiet().nothrow()
+    } catch {
+      // tmux may not support scoped user options in older sessions — ignore
+    }
+  }
+
+  async function unsetTmuxScoped(key: keyof typeof scopedKeys) {
+    if (!tmuxPane) return
+    const option = scopedKeys[key]
+    try {
+      await $`tmux set-option -p -u -t ${tmuxPane} ${option}`.quiet().nothrow()
+      await $`tmux set-window-option -u -t ${tmuxPane} ${option}`.quiet().nothrow()
     } catch {
       // ignore
     }
@@ -47,6 +77,59 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
     }
   }
 
+  function setTmuxScopedSync(key: keyof typeof scopedKeys, value: string) {
+    if (!tmuxPane) return
+    const option = scopedKeys[key]
+    try {
+      Bun.spawnSync(["tmux", "set-option", "-p", "-t", tmuxPane, option, value], {
+        cwd: directory,
+        stdout: "ignore",
+        stderr: "ignore",
+      })
+      Bun.spawnSync(["tmux", "set-window-option", "-t", tmuxPane, option, value], {
+        cwd: directory,
+        stdout: "ignore",
+        stderr: "ignore",
+      })
+    } catch {
+      // ignore
+    }
+  }
+
+  function unsetTmuxScopedSync(key: keyof typeof scopedKeys) {
+    if (!tmuxPane) return
+    const option = scopedKeys[key]
+    try {
+      Bun.spawnSync(["tmux", "set-option", "-p", "-u", "-t", tmuxPane, option], {
+        cwd: directory,
+        stdout: "ignore",
+        stderr: "ignore",
+      })
+      Bun.spawnSync(["tmux", "set-window-option", "-u", "-t", tmuxPane, option], {
+        cwd: directory,
+        stdout: "ignore",
+        stderr: "ignore",
+      })
+    } catch {
+      // ignore
+    }
+  }
+
+  async function setOpenCodeMetadata(key: keyof typeof scopedKeys, value: string) {
+    await setTmuxEnv(key, value)
+    await setTmuxScoped(key, value)
+  }
+
+  function setOpenCodeMetadataSync(key: keyof typeof scopedKeys, value: string) {
+    setTmuxEnvSync(key, value)
+    setTmuxScopedSync(key, value)
+  }
+
+  function unsetOpenCodeMetadataSync(key: keyof typeof scopedKeys) {
+    unsetTmuxEnvSync(key)
+    unsetTmuxScopedSync(key)
+  }
+
   return {
     event: async ({ event }) => {
       switch (event.type) {
@@ -54,9 +137,9 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           const session = (event as any).properties?.info
           if (!session?.id) break
           currentSessionID = session.id
-          await setTmuxEnv("OPENCODE_SESSION_ID", session.id)
-          await setTmuxEnv("OPENCODE_STATUS", "active")
-          await setTmuxEnv("OPENCODE_DIR", directory)
+          await setOpenCodeMetadata("OPENCODE_SESSION_ID", session.id)
+          await setOpenCodeMetadata("OPENCODE_STATUS", "active")
+          await setOpenCodeMetadata("OPENCODE_DIR", directory)
           break
         }
 
@@ -64,7 +147,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           const msg = (event as any).properties?.info
           if (msg?.role === "assistant" && msg?.modelID) {
             currentModel = msg.modelID
-            await setTmuxEnv("OPENCODE_MODEL", msg.modelID)
+            await setOpenCodeMetadata("OPENCODE_MODEL", msg.modelID)
           }
           break
         }
@@ -73,7 +156,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           const props = (event as any).properties
           const statusType = props?.status?.type
           if (statusType) {
-            setTmuxEnvSync("OPENCODE_STATUS", statusType)
+            setOpenCodeMetadataSync("OPENCODE_STATUS", statusType)
           }
           break
         }
@@ -82,10 +165,10 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
         case "server.instance.disposed": {
           currentSessionID = null
           currentModel = null
-          unsetTmuxEnvSync("OPENCODE_SESSION_ID")
-          unsetTmuxEnvSync("OPENCODE_STATUS")
-          unsetTmuxEnvSync("OPENCODE_MODEL")
-          unsetTmuxEnvSync("OPENCODE_DIR")
+          unsetOpenCodeMetadataSync("OPENCODE_SESSION_ID")
+          unsetOpenCodeMetadataSync("OPENCODE_STATUS")
+          unsetOpenCodeMetadataSync("OPENCODE_MODEL")
+          unsetOpenCodeMetadataSync("OPENCODE_DIR")
           break
         }
       }

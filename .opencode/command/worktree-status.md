@@ -1,8 +1,11 @@
 ---
 description: Show current worktree and agent orchestration status
 agent: plan
-model: anthropic/claude-haiku-4-5
 ---
+
+This command is normally intercepted by the OpenCode ops command plugin and run without a model call.
+
+If you see this text as an assistant response, the plugin did not load.
 
 Show the current worktree and agent status for this repository.
 
