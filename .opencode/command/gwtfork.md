@@ -11,8 +11,10 @@ Arguments:
 $ARGUMENTS
 ```
 
-Command output:
+This command is normally intercepted by the OpenCode fork command plugin and run without a model call.
 
-!`fish -c 'opencode-forkworktree $argv' -- $ARGUMENTS 2>&1`
+If you see this text as an assistant response, the plugin did not load; run this fallback from a shell:
 
-Report the resulting tmux/worktree launch line briefly. Do not inspect, plan, or make any other changes in this session.
+```fish
+opencode-forkworktree $ARGUMENTS
+```

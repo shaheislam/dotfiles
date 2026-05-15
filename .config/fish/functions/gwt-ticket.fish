@@ -131,6 +131,8 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     set -l opencode_model ""
     set -l opencode_provider ""
     set -l opencode_fork_session ""
+    set -l opencode_fork_source ""
+    set -l opencode_fork_note ""
     set -l provider_display ""
     set -l opencode_doctor false
     set -l opencode_auth_preflight false
@@ -513,6 +515,26 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
                     echo "Error: --opencode-fork-session requires an OpenCode session id"
                     return 1
                 end
+            case --opencode-fork-source
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set opencode_fork_source $argv[$next_i]
+                    set use_codex true
+                    set skip_next true
+                else
+                    echo "Error: --opencode-fork-source requires a source worktree path"
+                    return 1
+                end
+            case --opencode-fork-note
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set opencode_fork_note $argv[$next_i]
+                    set use_codex true
+                    set skip_next true
+                else
+                    echo "Error: --opencode-fork-note requires a note string"
+                    return 1
+                end
             case --codex-model
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -813,6 +835,8 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         echo "  --claude             Use Claude Code fallback instead of OpenCode"
         echo "  --opencode-model M   OpenCode model override (e.g., openai/gpt-5.5, anthropic/claude-opus-4-6)"
         echo "  --opencode-fork-session ID  Fork an existing OpenCode session into the new worktree"
+        echo "  --opencode-fork-source PATH Source worktree path for OpenCode fork handoff metadata"
+        echo "  --opencode-fork-note TEXT   User note for OpenCode fork handoff metadata"
         echo "  --opencode-doctor    Run OpenCode doctor preflight before launch (off by default)"
         echo "  --opencode-auth-check Check/login OpenCode auth before launch (off by default)"
         echo "  --codex              Legacy alias for --opencode"
@@ -2079,6 +2103,8 @@ $prompt_suffix"
             set opencode_cmd "$opencode_cmd --model $opencode_model"
         end
         set -l escaped_opencode_fork_session (string escape -- $opencode_fork_session)
+        set -l escaped_opencode_fork_source (string escape -- $opencode_fork_source)
+        set -l escaped_opencode_fork_note (string escape -- $opencode_fork_note)
         # Auth preflight is opt-in; `opencode auth list` is expensive enough to
         # delay TUI startup, and OpenCode reports auth failures at runtime.
         if $opencode_auth_preflight
@@ -2114,6 +2140,12 @@ $prompt_suffix"
         set -a _ls end
         if test -n "$opencode_fork_session"
             set -a _ls "set -gx OPENCODE_FORKED_FROM_SESSION $escaped_opencode_fork_session"
+            if test -n "$opencode_fork_source"
+                set -a _ls "set -gx OPENCODE_FORK_SOURCE $escaped_opencode_fork_source"
+            end
+            if test -n "$opencode_fork_note"
+                set -a _ls "set -gx OPENCODE_FORK_NOTE $escaped_opencode_fork_note"
+            end
             set -a _ls "$opencode_cmd --session $escaped_opencode_fork_session --fork"
         else
             set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
@@ -2196,6 +2228,15 @@ $prompt_suffix"
             "Tmux:      $session_name:$window_name" \
             "Max iter:  $max_iterations" \
             "$_cmd_label"
+        if test -n "$opencode_fork_session"
+            set -a _log "Forked from OpenCode session: $opencode_fork_session"
+            if test -n "$opencode_fork_source"
+                set -a _log "Fork source: $opencode_fork_source"
+            end
+            if test -n "$opencode_fork_note"
+                set -a _log "Fork note:   $opencode_fork_note"
+            end
+        end
         if test (count $skills) -gt 0
             set -a _log "Skills:    "(string join ', ' -- $skills)
         end
@@ -2223,6 +2264,32 @@ $prompt_suffix"
         '' \
         "$prompt" >$prompt_md_file
 
+    set -l gwtfork_handoff_file ""
+    if test -n "$opencode_fork_session"
+        set gwtfork_handoff_file "$worktree_path/.claude/gwtfork.local.md"
+        set -l fork_source_branch ""
+        if test -n "$opencode_fork_source"
+            set fork_source_branch (git -C "$opencode_fork_source" branch --show-current 2>/dev/null | string collect)
+        end
+        printf '%s\n' \
+            '# OpenCode Worktree Fork' \
+            '' \
+            "Created: "(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            "Source session: $opencode_fork_session" \
+            "Source worktree: $opencode_fork_source" \
+            "Source branch: $fork_source_branch" \
+            "Fork worktree: $worktree_path" \
+            "Fork branch: $branch_name" \
+            '' \
+            '## User Note' \
+            '' \
+            "$opencode_fork_note" \
+            '' \
+            '## Handoff' \
+            '' \
+            'This worktree was created from an OpenCode session fork. Continue from the inherited conversation while keeping file changes isolated to this worktree.' >$gwtfork_handoff_file
+    end
+
     # Detect AI guidance files to auto-open in nvim buffers
     # prompt.local.md shown first (active buffer), then reference files as hidden buffers
     # CLAUDE.md: AI rules/constraints. AGENTS.md: practical agent rules (editable per-worktree)
@@ -2230,6 +2297,9 @@ $prompt_suffix"
     # settings.local.json: per-worktree hook configuration (only in .claude/)
     # Priority: worktree root > .claude/ subdirectory
     set -l nvim_ai_files "$prompt_md_file"
+    if test -n "$gwtfork_handoff_file" -a -f "$gwtfork_handoff_file"
+        set -a nvim_ai_files "$gwtfork_handoff_file"
+    end
     for ai_file in CLAUDE.md AGENTS.md
         if test -f "$worktree_path/$ai_file"
             set -a nvim_ai_files "$worktree_path/$ai_file"
@@ -2654,6 +2724,9 @@ issue_key: \"$issue_key\"
 title: \"$title\"
 ticketing_system: \"$ticketing_system\"
 agent_harness: \"$agent_harness\"
+opencode_fork_session: \"$opencode_fork_session\"
+opencode_fork_source: \"$opencode_fork_source\"
+opencode_fork_note: \"$opencode_fork_note\"
 auto_generated: $auto_generated_str
 started_at: \""(date -u +%Y-%m-%dT%H:%M:%SZ)"\"
 max_iterations: $max_iterations
@@ -2688,6 +2761,16 @@ the post-completion hook will:
 ## Prompt Given
 
 $prompt" >$state_file
+
+        if test -n "$opencode_fork_session"
+            printf '%s\n' \
+                '' \
+                '## OpenCode Fork Handoff' \
+                '' \
+                "Source session: $opencode_fork_session" \
+                "Source worktree: $opencode_fork_source" \
+                "User note: $opencode_fork_note" >>$state_file
+        end
 
         # plan.md is now created synchronously before nvim launches (in nvim buffer list)
 
