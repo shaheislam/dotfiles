@@ -980,7 +980,9 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         # Soft quick doctor preflight is opt-in; it costs ~2s on a healthy setup
         # and OpenCode will still surface real auth/config failures at launch.
         set -l doctor_script "$HOME/dotfiles/scripts/opencode/doctor.sh"
-        if test -x "$doctor_script"; and begin; $opencode_doctor; or test "$OPENCODE_GWTT_DOCTOR" = 1; end
+        if test -x "$doctor_script"; and begin
+                $opencode_doctor; or test "$OPENCODE_GWTT_DOCTOR" = 1
+            end
             set -l doctor_out (bash "$doctor_script" --quick 2>&1)
             set -l doctor_exit $status
             if test $doctor_exit -ne 0
@@ -1450,44 +1452,56 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         mkdir -p "$worktree_path/.claude" 2>/dev/null
     end
 
-    # Background metadata operations (bd + agent-cv) — tracking only, not needed
-    # for Claude to start. Runs in subshell to avoid blocking tmux/Claude setup.
-    # Saves ~4.5s (bd init 2.2s + bd create 1.5s + hook bead 0.75s).
-    begin
-        # Beads agent memory: init → work bead → hook bead → swarm
-        if command -q bd
-            if not test -d "$worktree_path/.beads"
-                cd $worktree_path
-                bd init --quiet >/dev/null 2>&1; or true
-            end
-            if test -d "$worktree_path/.beads"
-                cd $worktree_path
-                set -l bd_create_args "$title" --external-ref "$issue_key" --description "$description" --silent
-                if test -n "$bead_priority"
-                    set -a bd_create_args --priority $bead_priority
-                end
-                bd create $bd_create_args >/dev/null 2>&1; or true
-                # GUPP Hook bead: ephemeral work-slung marker per Gastown Universal Propulsion Principle
-                bd create "hook: $issue_key" \
-                    --ephemeral \
-                    --type event \
-                    --event-category "agent.hooked" \
-                    --event-target "$issue_key" \
-                    --labels "gt:hook,gt:gupp" \
-                    --silent >/dev/null 2>&1; or true
-                # Agent bead: enables bd agent state/heartbeat tracking
-                set -l agent_name "witness-"(basename $worktree_path)
-                set -l agent_bead_id (bd q "$agent_name" --type task --labels "gt:agent" 2>/dev/null)
-                if test -n "$agent_bead_id"
-                    bd agent state "$agent_bead_id" spawning >/dev/null 2>&1; or true
-                    bd kv set "agent.bead_id" "$agent_bead_id" >/dev/null 2>&1; or true
-                end
-                # Swarm molecule from epic (conditional)
-                if test -n "$swarm_epic_id"
-                    bd swarm create "$swarm_epic_id" >/dev/null 2>&1; or true
-                end
-            end
+    # Beads bootstrap must finish before the agent prompt claims the parent
+    # exists. Use bd -C because worktrees may resolve to a shared git-common
+    # Beads database without a physical .beads directory in the worktree.
+    set -l parent_bead_id ""
+    if $use_dynamic_beads; and command -q bd
+        bd -C "$worktree_path" list --status=open --limit=1 >/dev/null 2>&1
+        if test $status -ne 0
+            bd -C "$worktree_path" init --quiet >/dev/null 2>&1; or true
         end
+
+        set -l bd_create_args --title "$title" --external-ref "$issue_key" --description "$description" --silent
+        if test -n "$bead_priority"
+            set -a bd_create_args --priority $bead_priority
+        end
+
+        for attempt in (seq 1 5)
+            set parent_bead_id (bd -C "$worktree_path" create $bd_create_args 2>/dev/null)
+            set -l bd_create_status $status
+            if test $bd_create_status -eq 0; and test -n "$parent_bead_id"
+                break
+            end
+            sleep 0.4
+        end
+
+        # GUPP Hook bead: ephemeral work-slung marker per Gastown Universal Propulsion Principle
+        bd -C "$worktree_path" create "hook: $issue_key" \
+            --ephemeral \
+            --type event \
+            --event-category "agent.hooked" \
+            --event-target "$issue_key" \
+            --labels "gt:hook,gt:gupp" \
+            --silent >/dev/null 2>&1; or true
+
+        # Agent bead: enables bd agent state/heartbeat tracking
+        set -l agent_name "witness-"(basename $worktree_path)
+        set -l agent_bead_id (bd -C "$worktree_path" q "$agent_name" --type task --labels "gt:agent" 2>/dev/null)
+        if test -n "$agent_bead_id"
+            bd -C "$worktree_path" agent state "$agent_bead_id" spawning >/dev/null 2>&1; or true
+            bd -C "$worktree_path" kv set "agent.bead_id" "$agent_bead_id" >/dev/null 2>&1; or true
+        end
+
+        # Swarm molecule from epic (conditional)
+        if test -n "$swarm_epic_id"
+            bd -C "$worktree_path" swarm create "$swarm_epic_id" >/dev/null 2>&1; or true
+        end
+    end
+
+    # Background metadata operations (agent-cv only) — tracking only, not needed
+    # for the agent to start. Runs in subshell to avoid blocking tmux setup.
+    begin
         # Agent CV
         set -l cv_script "$HOME/dotfiles/scripts/agent-cv.sh"
         if test -x "$cv_script"
@@ -1712,14 +1726,24 @@ Do not ask questions - make reasonable decisions and iterate."
 
     # Inject dynamic beads workflow instructions into prompt_suffix
     if $use_dynamic_beads; and command -q bd
+        set -l beads_intro "BEADS SUBTASK TRACKING — A parent bead was created for this ticket (external-ref: $issue_key)."
+        set -l parent_lookup_command "bd list --status=open"
+        if test -n "$parent_bead_id"
+            set beads_intro "$beads_intro
+Parent bead ID: $parent_bead_id."
+            set parent_lookup_command "bd show $parent_bead_id"
+        else
+            set beads_intro "BEADS SUBTASK TRACKING — Parent bead creation was attempted for this ticket (external-ref: $issue_key). If lookup fails, create or locate the parent before creating subtasks."
+        end
+
         set -l beads_suffix "
 
-BEADS SUBTASK TRACKING — A parent bead was created for this ticket (external-ref: $issue_key).
+$beads_intro
 
 ALWAYS decompose multi-step tasks into subtasks. Only skip decomposition for true single-file, single-change fixes.
 
 Workflow:
-1. Find the parent bead: bd list --status=open
+1. Find the parent bead: $parent_lookup_command
 2. Create subtasks linked to parent:
    bd create --title='SUBTASK_TITLE' --description='WHY_AND_WHAT' --type=task --priority=2 --parent PARENT_BEAD_ID
    Use 'bd dep add CHILD_ID BLOCKER_ID' if ordering matters.
@@ -2336,7 +2360,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         'set -l __gwtt_envrc ""' \
         'if functions -q _find_nearest_envrc' \
         '    set __gwtt_envrc (_find_nearest_envrc; or echo "")' \
-        'else' \
+        else \
         '    set -l __gwtt_dir "$PWD"' \
         '    while test -n "$__gwtt_dir"' \
         '        if test -f "$__gwtt_dir/.envrc"' \
@@ -2349,7 +2373,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         '        end' \
         '        set __gwtt_dir "$__gwtt_next"' \
         '    end' \
-        'end' \
+        end \
         'if test -n "$__gwtt_envrc"; and command -q direnv' \
         '    direnv export fish 2>/dev/null | source' \
         '    set -l __gwtt_direnv_status $pipestatus[1]' \
@@ -2358,7 +2382,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         '        set -g __direnv_last_envrc "$__gwtt_envrc"' \
         '        set -g __direnv_export_again 0' \
         '    end' \
-        'end' >$terminal_warmup_script
+        end >$terminal_warmup_script
     chmod +x $terminal_warmup_script
 
     set -l terminal_launch_script "$instance_env/open-terminal.fish"

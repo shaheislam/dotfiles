@@ -325,6 +325,15 @@ test_browser() {
         run_test "ccb Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/ccb.fish'"
         run_test "gwt-ticket Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     fi
+
+    local GWT_TICKET="$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish"
+    # Beads bootstrap: prompt promises a parent bead, so create it before launch.
+    run_test "gwt-ticket creates bead parent before prompt build" \
+        "awk '/Beads bootstrap must finish before the agent prompt/ { seen=1 } /# Build the prompt/ { if (seen) found=1; exit } END { if (found) exit 0; exit 1 }' '$GWT_TICKET'"
+    run_test "gwt-ticket records parent bead id in prompt" \
+        "grep -q 'Parent bead ID:' '$GWT_TICKET'"
+    run_test "gwt-ticket uses bd -C for parent creation" \
+        "grep -q 'bd -C \"\$worktree_path\" create \$bd_create_args' '$GWT_TICKET'"
 }
 
 test_tmux() {
