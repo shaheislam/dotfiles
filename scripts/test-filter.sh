@@ -1016,6 +1016,7 @@ test_opencode() {
     run_test "OpenCode compatibility shim exists" "[ -f '$DOTFILES_ROOT/scripts/bin/opencode' ]"
     run_test "OpenCode compatibility shim executable" "[ -x '$DOTFILES_ROOT/scripts/bin/opencode' ]"
     run_test "OpenCode compatibility shim delegates to ocv" "grep -q 'exec ocv \"\$@\"' '$DOTFILES_ROOT/scripts/bin/opencode'"
+    run_test "OpenCode shim disables OpenTUI graphics probe" "grep -q 'OPENTUI_GRAPHICS' '$DOTFILES_ROOT/scripts/bin/opencode'"
     run_test "OpenCode tmux launcher uses shim" "grep -q 'exec \"\$HOME/dotfiles/scripts/bin/opencode\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode TUI uses transparent theme" "jq -e '.theme == \"transparent\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
     run_test "OpenCode transparent theme exists" "[ -f '$DOTFILES_ROOT/.config/opencode/themes/transparent.json' ]"

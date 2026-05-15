@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# OpenTUI probes Kitty graphics support by default. In tmux panes that reply can
+# occasionally leak into Fish as `Gi=31337;OK`; keep image probing off for
+# OpenCode while leaving terminal graphics enabled for other apps.
+export OPENTUI_GRAPHICS="${OPENTUI_GRAPHICS:-0}"
+
 for ocv_bin in /opt/homebrew/bin/ocv /usr/local/bin/ocv "$HOME/.local/bin/ocv" "$HOME/.bun/bin/ocv"; do
 	if [ -x "$ocv_bin" ]; then
 		exec "$ocv_bin" "$@"
