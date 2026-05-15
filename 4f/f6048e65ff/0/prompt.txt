@@ -1,0 +1,5 @@
+Based on the gwtfork workflow, are there any other enhancements we could make? Does the worktree gwtfork new window even make sense as it's been done? I want to round out this workflow where possible if you have any suggestions
+
+---
+
+▣ DCP | -493.4K removed, +86K summary — Compression #6
