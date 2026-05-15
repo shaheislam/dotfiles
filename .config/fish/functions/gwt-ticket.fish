@@ -130,6 +130,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     set -l edit_prompt_file (gwtt-prompt-file 2>/dev/null; or echo "$HOME/dotfiles/.claude/gwtt-prompt.local.md")
     set -l opencode_model ""
     set -l opencode_provider ""
+    set -l opencode_fork_session ""
     set -l provider_display ""
     set -l opencode_doctor false
     set -l opencode_auth_preflight false
@@ -502,6 +503,16 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
                     echo "Error: --opencode-model requires a model id (e.g., openai/gpt-5.5)"
                     return 1
                 end
+            case --opencode-fork-session
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set opencode_fork_session $argv[$next_i]
+                    set use_codex true
+                    set skip_next true
+                else
+                    echo "Error: --opencode-fork-session requires an OpenCode session id"
+                    return 1
+                end
             case --codex-model
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -801,6 +812,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         echo "  --opencode           Use OpenCode mode (default)"
         echo "  --claude             Use Claude Code fallback instead of OpenCode"
         echo "  --opencode-model M   OpenCode model override (e.g., openai/gpt-5.5, anthropic/claude-opus-4-6)"
+        echo "  --opencode-fork-session ID  Fork an existing OpenCode session into the new worktree"
         echo "  --opencode-doctor    Run OpenCode doctor preflight before launch (off by default)"
         echo "  --opencode-auth-check Check/login OpenCode auth before launch (off by default)"
         echo "  --codex              Legacy alias for --opencode"
@@ -980,7 +992,9 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         # Soft quick doctor preflight is opt-in; it costs ~2s on a healthy setup
         # and OpenCode will still surface real auth/config failures at launch.
         set -l doctor_script "$HOME/dotfiles/scripts/opencode/doctor.sh"
-        if test -x "$doctor_script"; and begin; $opencode_doctor; or test "$OPENCODE_GWTT_DOCTOR" = 1; end
+        if test -x "$doctor_script"; and begin
+                $opencode_doctor; or test "$OPENCODE_GWTT_DOCTOR" = 1
+            end
             set -l doctor_out (bash "$doctor_script" --quick 2>&1)
             set -l doctor_exit $status
             if test $doctor_exit -ne 0
@@ -2064,6 +2078,7 @@ $prompt_suffix"
         if test -n "$opencode_model"
             set opencode_cmd "$opencode_cmd --model $opencode_model"
         end
+        set -l escaped_opencode_fork_session (string escape -- $opencode_fork_session)
         # Auth preflight is opt-in; `opencode auth list` is expensive enough to
         # delay TUI startup, and OpenCode reports auth failures at runtime.
         if $opencode_auth_preflight
@@ -2097,8 +2112,13 @@ $prompt_suffix"
         set -a _ls '        end'
         set -a _ls '    end'
         set -a _ls end
-        set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
-        set -a _ls "$opencode_cmd --prompt \"\$initial_prompt\""
+        if test -n "$opencode_fork_session"
+            set -a _ls "set -gx OPENCODE_FORKED_FROM_SESSION $escaped_opencode_fork_session"
+            set -a _ls "$opencode_cmd --session $escaped_opencode_fork_session --fork"
+        else
+            set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
+            set -a _ls "$opencode_cmd --prompt \"\$initial_prompt\""
+        end
     else
         # --- Claude harness: interactive with send-keys prompt delivery ---
         # Write prompt command to file as single line (for send-keys delivery via rename script)
@@ -2157,6 +2177,9 @@ $prompt_suffix"
         if $use_codex
             set _agent_label OpenCode
             set _cmd_label "Mode:      opencode --model $opencode_model"
+            if test -n "$opencode_fork_session"
+                set _cmd_label "Mode:      opencode --model $opencode_model --session $opencode_fork_session --fork"
+            end
         end
         set -l _primary_label "Claude Code"
         set -l _layout_label "Claude left | nvim top-right | terminal bottom-right"
@@ -2336,7 +2359,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         'set -l __gwtt_envrc ""' \
         'if functions -q _find_nearest_envrc' \
         '    set __gwtt_envrc (_find_nearest_envrc; or echo "")' \
-        'else' \
+        else \
         '    set -l __gwtt_dir "$PWD"' \
         '    while test -n "$__gwtt_dir"' \
         '        if test -f "$__gwtt_dir/.envrc"' \
@@ -2349,7 +2372,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         '        end' \
         '        set __gwtt_dir "$__gwtt_next"' \
         '    end' \
-        'end' \
+        end \
         'if test -n "$__gwtt_envrc"; and command -q direnv' \
         '    direnv export fish 2>/dev/null | source' \
         '    set -l __gwtt_direnv_status $pipestatus[1]' \
@@ -2358,7 +2381,7 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         '        set -g __direnv_last_envrc "$__gwtt_envrc"' \
         '        set -g __direnv_export_again 0' \
         '    end' \
-        'end' >$terminal_warmup_script
+        end >$terminal_warmup_script
     chmod +x $terminal_warmup_script
 
     set -l terminal_launch_script "$instance_env/open-terminal.fish"

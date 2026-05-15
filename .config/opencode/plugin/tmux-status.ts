@@ -90,5 +90,15 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
         }
       }
     },
+    "shell.env": async (input, output) => {
+      const sessionID = input.sessionID ?? currentSessionID
+      if (sessionID) {
+        currentSessionID = sessionID
+        output.env.OPENCODE_SESSION_ID = sessionID
+      }
+      if (currentModel) {
+        output.env.OPENCODE_MODEL = currentModel
+      }
+    },
   }
 }
