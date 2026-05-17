@@ -1,0 +1,61 @@
+{
+  "cli_version": "0.6.1",
+  "checkpoint_id": "ad7b093c92f3",
+  "session_id": "ses_1d238f3f1ffe63Z71sf0lcWBjf",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-17T13:00:35.448629Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "homebrew/Brewfile",
+    "scripts/setup.sh"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-5.5",
+  "turn_id": "678ee73d5139",
+  "token_usage": {
+    "input_tokens": 445913,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 753664,
+    "output_tokens": 5433,
+    "api_call_count": 23
+  },
+  "session_metrics": {
+    "turn_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-17T13:00:35.429462Z",
+    "agent_lines": 17,
+    "agent_removed": 0,
+    "human_added": 709,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 726,
+    "total_lines_changed": 729,
+    "agent_percentage": 2.3319615912208507,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
