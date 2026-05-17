@@ -4,36 +4,78 @@
   "domain": "com.FluidApp.app",
   "managedPreferences": {
     "AccentColorOption": "Cyan",
+    "CommandModeHotkeyShortcut": {
+      "__fluidvoice_type": "json-data",
+      "value": {
+        "keyCode": 55,
+        "modifierFlagsRawValue": 786432,
+        "modifierKeyCodes": [
+          55,
+          58,
+          59
+        ]
+      }
+    },
+    "CommandModeSelectedProviderID": "openai",
+    "CommandModeShortcutEnabled": false,
     "DictationPromptOff": true,
     "EnableDebugLogs": true,
+    "GAAVModeEnabled": false,
     "HotkeyShortcutKey": {
       "__fluidvoice_type": "json-data",
       "value": {
-        "keyCode": 61,
+        "keyCode": 63,
         "modifierFlagsRawValue": 0,
         "modifierKeyCodes": [
-          61
+          63
         ]
       }
     },
     "IntendedDockVisibility": false,
     "LaunchAtStartup": true,
+    "NotchPresentationMode": "minimal",
     "OnboardingAISkipped": true,
     "OnboardingCompleted": true,
     "OnboardingCurrentStep": 4,
     "OnboardingPlaygroundValidated": true,
     "OverlayBottomOffset": 50.0,
+    "OverlayPosition": "top",
+    "OverlaySize": "pill",
     "PlaygroundUsed": true,
+    "PressAndHoldMode": true,
+    "PromptModeHotkeyShortcut": {
+      "__fluidvoice_type": "json-data",
+      "value": {
+        "keyCode": 59,
+        "modifierFlagsRawValue": 0,
+        "modifierKeyCodes": [
+          59
+        ]
+      }
+    },
+    "PromptModeShortcutEnabled": true,
+    "RewriteModeHotkeyShortcut": {
+      "__fluidvoice_type": "json-data",
+      "value": {
+        "keyCode": 54,
+        "modifierFlagsRawValue": 0,
+        "modifierKeyCodes": [
+          54
+        ]
+      }
+    },
     "RewriteModeLinkedToGlobal": true,
     "RewriteModeSelectedModel": "",
     "RewriteModeSelectedProviderID": "openai",
+    "RewriteModeShortcutEnabled": false,
     "SecondaryDictationPromptOff": false,
     "SelectedModelByProvider": {
       "openai": ""
     },
     "SelectedProviderID": "openai",
-    "SelectedSpeechModel": "parakeet-tdt-v2",
+    "SelectedSpeechModel": "cohere-transcribe-6bit",
     "ShowInDock": false,
-    "TranscriptionStartSound": "fluid_sfx_4"
+    "TranscriptionStartSound": "fluid_sfx_4",
+    "VisualizerNoiseThreshold": 0.8
   }
 }
