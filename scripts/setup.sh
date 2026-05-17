@@ -1941,6 +1941,7 @@ phase_9_fonts_and_apps() {
         print_step "Installing GUI Applications..."
         local gui_apps=(
             "firefox"
+            "fluidvoice"
             "raycast"
             "wezterm"
             "nikitabobko/tap/aerospace"
@@ -1961,6 +1962,21 @@ phase_9_fonts_and_apps() {
             brew install --cask "${apps_to_install[@]}" >/dev/null 2>&1 &&
                 print_success "Installed ${#apps_to_install[@]} GUI applications" ||
                 log_verbose "Some GUI applications failed to install"
+        fi
+
+        if pm_is_installed "fluidvoice" || [[ -d /Applications/FluidVoice.app ]]; then
+            print_warning "FluidVoice requires manual first-run privacy setup:"
+            echo "  1. Open FluidVoice from Applications or Spotlight"
+            echo "  2. Grant Microphone access when prompted"
+            echo "  3. Grant Accessibility access so FluidVoice can type into apps"
+            echo "  4. Configure the global hotkey, model, and optional provider keys in FluidVoice settings"
+            echo "  Provider API keys belong in FluidVoice/macOS Keychain, not dotfiles"
+
+            if [[ -f "$DOTFILES_ROOT/scripts/setup/fluidvoice-setup.sh" ]]; then
+                print_step "Checking FluidVoice dotfiles configuration..."
+                bash "$DOTFILES_ROOT/scripts/setup/fluidvoice-setup.sh" ||
+                    log_verbose "FluidVoice dotfiles setup completed with warnings"
+            fi
         fi
 
         # Cask installs the .app bundle but doesn't symlink the CLI — do it here

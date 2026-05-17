@@ -1,0 +1,39 @@
+{
+  "$schema": "dotfiles.fluidvoice.preferences.v1",
+  "description": "Dotfiles-managed non-secret FluidVoice UserDefaults preferences. Provider API keys, transcription history, device IDs, local paths, and macOS privacy permissions are intentionally excluded.",
+  "domain": "com.FluidApp.app",
+  "managedPreferences": {
+    "AccentColorOption": "Cyan",
+    "DictationPromptOff": true,
+    "EnableDebugLogs": true,
+    "HotkeyShortcutKey": {
+      "__fluidvoice_type": "json-data",
+      "value": {
+        "keyCode": 63,
+        "modifierFlagsRawValue": 0,
+        "modifierKeyCodes": [
+          63
+        ]
+      }
+    },
+    "IntendedDockVisibility": false,
+    "LaunchAtStartup": true,
+    "OnboardingAISkipped": true,
+    "OnboardingCompleted": true,
+    "OnboardingCurrentStep": 4,
+    "OnboardingPlaygroundValidated": true,
+    "OverlayBottomOffset": 50.0,
+    "PlaygroundUsed": true,
+    "RewriteModeLinkedToGlobal": true,
+    "RewriteModeSelectedModel": "",
+    "RewriteModeSelectedProviderID": "openai",
+    "SecondaryDictationPromptOff": false,
+    "SelectedModelByProvider": {
+      "openai": ""
+    },
+    "SelectedProviderID": "openai",
+    "SelectedSpeechModel": "parakeet-tdt-v2",
+    "ShowInDock": false,
+    "TranscriptionStartSound": "fluid_sfx_4"
+  }
+}

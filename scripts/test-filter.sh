@@ -204,6 +204,8 @@ test_setup_syntax() {
     run_test "smoke-test.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/smoke-test.sh'"
     run_test "firefox-setup.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/setup/firefox-setup.sh'"
     run_test "firefox-capture-prefs.py syntax valid" "python3 -m py_compile '$DOTFILES_ROOT/scripts/setup/firefox-capture-prefs.py'"
+    run_test "fluidvoice-setup.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/setup/fluidvoice-setup.sh'"
+    run_test "fluidvoice-config.py syntax valid" "python3 -m py_compile '$DOTFILES_ROOT/scripts/setup/fluidvoice-config.py'"
 
     # Check key scripts
     for script in ticket-execute.sh ticket-complete.sh; do
@@ -285,6 +287,17 @@ test_browser() {
     run_test "Firefox capture helper self-test passes" "python3 '$DOTFILES_ROOT/scripts/setup/firefox-capture-prefs.py' --self-test"
     run_test "Firefox capture allow deny sets do not overlap" "python3 -c \"import importlib.util; spec=importlib.util.spec_from_file_location('capture', '$DOTFILES_ROOT/scripts/setup/firefox-capture-prefs.py'); mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); overlap=mod.SAFE_EXACT & mod.DENY_EXACT; assert not overlap, overlap\""
     run_test "Firefox setup exposes pref capture" "grep -q -- '--capture-current-prefs' '$DOTFILES_ROOT/scripts/setup/firefox-setup.sh'"
+    run_test "Brewfile installs FluidVoice" "grep -q 'cask \"fluidvoice\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
+    run_test "setup.sh installs FluidVoice GUI app" "grep -q '\"fluidvoice\"' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh invokes FluidVoice setup" "grep -q 'fluidvoice-setup.sh' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "FluidVoice config source exists" "[ -f '$DOTFILES_ROOT/.config/fluidvoice/config.json' ]"
+    run_test "FluidVoice config source is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.config/fluidvoice/config.json'))\""
+    run_test "FluidVoice setup helper is executable" "[ -x '$DOTFILES_ROOT/scripts/setup/fluidvoice-setup.sh' ]"
+    run_test "FluidVoice config helper is executable" "[ -x '$DOTFILES_ROOT/scripts/setup/fluidvoice-config.py' ]"
+    run_test "FluidVoice config validates" "python3 '$DOTFILES_ROOT/scripts/setup/fluidvoice-config.py' validate --config '$DOTFILES_ROOT/.config/fluidvoice/config.json'"
+    run_test "FluidVoice setup helper self-test passes" "bash '$DOTFILES_ROOT/scripts/setup/fluidvoice-setup.sh' --self-test"
+    run_test "FluidVoice config excludes private state" "! grep -E 'ProviderAPIKeys|ProviderAPIKeyIdentifiers|TranscriptionHistoryEntries|CommandModeChatSessions|AnalyticsAnonymousInstallID|PreferredInputDeviceUID|PreferredOutputDeviceUID|ExternalCoreMLArtifactsDirectories|/Users/|sk-' '$DOTFILES_ROOT/.config/fluidvoice/config.json'"
+    run_test "FluidVoice setup exposes pref capture" "grep -q -- '--capture-current-prefs' '$DOTFILES_ROOT/scripts/setup/fluidvoice-setup.sh'"
     run_test "Firefox policy source exists" "[ -f '$DOTFILES_ROOT/scripts/setup/firefox/policies.json' ]"
     run_test "Firefox policy source is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/scripts/setup/firefox/policies.json'))\""
     run_test "Firefox policy installs Granted extension" "python3 -c \"import json; policies=json.load(open('$DOTFILES_ROOT/scripts/setup/firefox/policies.json'))['policies']; ext=policies['ExtensionSettings']['{b5e0e8de-ebfe-4306-9528-bcc18241a490}']; assert ext['installation_mode'] == 'force_installed'; assert 'granted/latest.xpi' in ext['install_url']\""
