@@ -59,7 +59,6 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
             _codex_accounts_show_info "$acct_dir/auth.json" "$name"
             _codex_accounts_warn_workspace_mismatch "$acct_dir/auth.json" "$name"
             echo "Account '$name' enrolled successfully."
-            _ai_accounts_sync to-opencode "$name" "$acct_dir/auth.json"
 
         case capture refresh
             set -l live_auth "$HOME/.codex/auth.json"
@@ -106,7 +105,6 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
             _codex_accounts_show_info "$acct_dir/auth.json" "$name"
             _codex_accounts_warn_workspace_mismatch "$acct_dir/auth.json" "$name"
             echo "Account '$name' captured from the current Codex session."
-            _ai_accounts_sync to-opencode "$name" "$acct_dir/auth.json"
 
         case remove rm
             if test (count $argv) -lt 1
@@ -138,7 +136,6 @@ function codex-accounts --description "Manage Codex CLI OAuth account profiles f
                 end
             end
             echo "Account '$name' removed."
-            _ai_accounts_sync remove-opencode "$name"
 
         case list ls
             if not test -f "$accounts_file"
@@ -524,10 +521,6 @@ for i in json.load(sys.stdin):
             end
             echo "Sync complete: pushed $push_count, pulled $pull_count, skipped $push_skipped"
 
-        case sync-opencode
-            echo "Syncing codex accounts to opencode..."
-            _ai_accounts_sync all --to-opencode
-
         case dedupe
             _codex_accounts_dedupe
 
@@ -551,9 +544,6 @@ for i in json.load(sys.stdin):
             echo "  1p-pull [name]    Pull account(s) from 1Password" >&2
             echo "  1p-list           List accounts in 1Password" >&2
             echo "  1p-sync           Local-first sync (push local, pull remote-only)" >&2
-            echo "" >&2
-            echo "Cross-sync:" >&2
-            echo "  sync-opencode     Push all profiles to OpenCode" >&2
             echo "" >&2
             echo "Options:" >&2
             echo "  --vault VAULT     1Password vault (default: Private)" >&2
@@ -594,8 +584,6 @@ function _codex_accounts_dedupe --description "Rename codex profiles to canonica
         set -l tmp (mktemp)
         sed "s|^$name\$|$canonical|" "$accounts_file" >"$tmp"
         mv "$tmp" "$accounts_file"
-        _ai_accounts_sync remove-opencode "$name" >/dev/null 2>&1
-        _ai_accounts_sync to-opencode "$canonical" "$canonical_dir/auth.json" >/dev/null 2>&1
         set renamed (math $renamed + 1)
     end
 
@@ -617,7 +605,6 @@ function _codex_accounts_dedupe --description "Rename codex profiles to canonica
         set -l tmp (mktemp)
         grep -vx "$name" "$accounts_file" >"$tmp"
         mv "$tmp" "$accounts_file"
-        _ai_accounts_sync remove-opencode "$name" >/dev/null 2>&1
         set removed (math $removed + 1)
     end
 

@@ -5,13 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PLUGIN="$ROOT/.config/opencode/plugin/claude-compat.ts"
 
 if ! command -v bun >/dev/null 2>&1; then
-	echo "FAIL bun is required for Claude compat validation" >&2
-	exit 1
+    echo "FAIL bun is required for Claude compat validation" >&2
+    exit 1
 fi
 
 if [ ! -f "$PLUGIN" ]; then
-	echo "FAIL missing plugin: $PLUGIN" >&2
-	exit 1
+    echo "FAIL missing plugin: $PLUGIN" >&2
+    exit 1
 fi
 
 TMPDIR="$(mktemp -d)"
@@ -266,56 +266,55 @@ console.log("PASS claude compat validation complete")
 EOF
 
 OPENCODE_CLAUDE_COMPAT_PLUGIN="$PLUGIN" \
-	OPENCODE_TEST_PROJECT="$TEST_PROJECT" \
-	TEST_SESSION_REPORT_OUTPUT="$TMPDIR/session-report.json" \
-	TEST_JFDI_OUTPUT="$TMPDIR/jfdi.log" \
-	TEST_OSASCRIPT_OUTPUT="$TMPDIR/osascript.log" \
-	TEST_OPENCODE_BRIDGE_MODEL_OUTPUT="$TMPDIR/opencode-bridge-model.log" \
-	OPENCODE_JFDI_PROJECT_DIR="$TMPDIR/jfdi" \
-	OPENCODE_CROSS_PROVIDER_BRIDGE=1 \
-	OPENCODE_BRIDGE_TIMEOUT=5 \
-	CROSS_PROVIDER_OPENCODE_PREFLIGHT="$TMPDIR/bin/opencode-preflight" \
-	PATH="$TMPDIR/bin:$PATH" \
-	HOME="$TEST_HOME" \
-	bun "$HARNESS"
+    OPENCODE_TEST_PROJECT="$TEST_PROJECT" \
+    TEST_SESSION_REPORT_OUTPUT="$TMPDIR/session-report.json" \
+    TEST_JFDI_OUTPUT="$TMPDIR/jfdi.log" \
+    TEST_OSASCRIPT_OUTPUT="$TMPDIR/osascript.log" \
+    TEST_OPENCODE_BRIDGE_MODEL_OUTPUT="$TMPDIR/opencode-bridge-model.log" \
+    OPENCODE_JFDI_PROJECT_DIR="$TMPDIR/jfdi" \
+    OPENCODE_CROSS_PROVIDER_BRIDGE=1 \
+    OPENCODE_BRIDGE_TIMEOUT=5 \
+    PATH="$TMPDIR/bin:$PATH" \
+    HOME="$TEST_HOME" \
+    bun "$HARNESS"
 
 grep -q 'anthropic/claude-opus-4-6' "$TMPDIR/opencode-bridge-model.log" || {
-	echo "FAIL OpenCode bridge did not choose Anthropic reviewer for OpenAI executor" >&2
-	exit 1
+    echo "FAIL OpenCode bridge did not choose Anthropic reviewer for OpenAI executor" >&2
+    exit 1
 }
 
 grep -R -q 'synthetic tool failure' "$TEST_HOME/.claude/hooks/logs" || {
-	echo "FAIL tool failure hook did not write failure log" >&2
-	exit 1
+    echo "FAIL tool failure hook did not write failure log" >&2
+    exit 1
 }
 
 grep -q 'display notification' "$TMPDIR/osascript.log" || {
-	echo "FAIL macOS notification hook was not invoked" >&2
-	exit 1
+    echo "FAIL macOS notification hook was not invoked" >&2
+    exit 1
 }
 
 [ -f "$TMPDIR/session-report.json" ] || {
-	echo "FAIL shutdown hook did not write session report" >&2
-	exit 1
+    echo "FAIL shutdown hook did not write session report" >&2
+    exit 1
 }
 
 obsidian_count="$(find "$TEST_HOME/obsidian/Claude/Sessions" -maxdepth 1 -name '*.md' 2>/dev/null | wc -l | tr -d ' ')"
 [ "$obsidian_count" -ge 1 ] || {
-	echo "FAIL shutdown hook did not synthesize an Obsidian session note" >&2
-	exit 1
+    echo "FAIL shutdown hook did not synthesize an Obsidian session note" >&2
+    exit 1
 }
 
 grep -q 'tsx scripts/sync-sessions.ts' "$TMPDIR/jfdi.log" || {
-	echo "FAIL shutdown hook did not trigger JFDI session sync" >&2
-	exit 1
+    echo "FAIL shutdown hook did not trigger JFDI session sync" >&2
+    exit 1
 }
 
 grep -q 'tsx scripts/extract-memories.ts --limit 3' "$TMPDIR/jfdi.log" || {
-	echo "FAIL shutdown hook did not trigger JFDI memory extraction" >&2
-	exit 1
+    echo "FAIL shutdown hook did not trigger JFDI memory extraction" >&2
+    exit 1
 }
 
 grep -q 'tsx scripts/weekly-synthesis.ts --week ' "$TMPDIR/jfdi.log" || {
-	echo "FAIL shutdown hook did not trigger weekly JFDI synthesis" >&2
-	exit 1
+    echo "FAIL shutdown hook did not trigger weekly JFDI synthesis" >&2
+    exit 1
 }

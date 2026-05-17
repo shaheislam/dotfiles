@@ -23,8 +23,6 @@ Short map of the Claude Code hook flows we care about and the current OpenCode e
 | Entire task parity | No OpenCode equivalent yet | Gap | `entire.ts` currently does not handle task/subagent events or `command.executed`. |
 | Worktree create hook | `gwt-ticket` setup plus tmux window layout | Partial | OpenCode does not expose Claude-style `WorktreeCreate`; the orchestrator handles worktree setup before OpenCode starts. |
 | Worktree cleanup on close | `.tmux.conf` bindings and `tmux-worktree-on-exit.fish` -> `scripts/tmux/tmux-worktree-cleanup.sh` | Full | Cleanup is intentionally tied to tmux window close or last-pane exit, not OpenCode process exit. Dirty worktrees are not removed. |
-| Mid-session OpenAI account failover | `.config/opencode/plugin/openai-rotate.ts` | Full | Harnessed and smoke-tested; rotates saved accounts and retries prompts. |
-| Live OpenCode session smoke coverage | `scripts/opencode/test-live-rotation.sh` | Partial | Validates real session continuation after auth switch, but OpenCode's internal 429 retry behavior still limits a raw provider-error parity test. |
 | Cross-provider adversarial bridge | `.config/opencode/plugin/claude-compat.ts` on idle -> `cross-provider-bridge.sh` | Partial | Runs when `CROSS_PROVIDER_BRIDGE=1` or `OPENCODE_CROSS_PROVIDER_BRIDGE=1`, captures the latest assistant text, defaults to an OpenCode sidecar reviewer model, and injects concerns into the next system context. OpenAI executors default to `anthropic/claude-opus-4-6`; Anthropic executors default to `openai/gpt-5.5`. This is advisory context, not a Claude-style blocking Stop decision. |
 | Subagent lifecycle hooks | No OpenCode equivalent yet | Gap | Claude `SubagentStart` and `SubagentStop` events have no direct OpenCode event mapping here. |
 
@@ -46,7 +44,5 @@ Current parity checks live in:
 - `scripts/opencode/test-claude-compat.sh`
 - `scripts/opencode/test-entire-hooks.sh`
 - `scripts/opencode/test-nvim-open.sh`
-- `scripts/opencode/test-rotation.sh`
-- `scripts/opencode/test-live-rotation.sh`
 - `scripts/test-filter.sh opencode`
 - `scripts/opencode/doctor.sh`

@@ -2122,22 +2122,6 @@ $prompt_suffix"
         set -a _ls '        end'
         set -a _ls '    end'
         set -a _ls end
-        # Usage limit preflight is opt-in: the public OpenAI API probe can
-        # disagree with OpenCode's ChatGPT subscription route. Runtime rotation
-        # still handles real 429/usage-limit errors after OpenCode starts.
-        set -a _ls 'if test "$OPENCODE_GWTT_USAGE_PREFLIGHT" = 1'
-        set -a _ls "    bash '$HOME/dotfiles/scripts/opencode/usage-check.sh' --quiet"
-        set -a _ls '    set -l _usage_exit $status'
-        set -a _ls '    if test $_usage_exit -eq 1'
-        set -a _ls "        echo 'OpenAI usage limit reached on current account.'"
-        set -a _ls '        if functions -q opencode-accounts'
-        set -a _ls '            opencode-accounts check-and-rotate'
-        set -a _ls '        else'
-        set -a _ls "            echo 'Run: opencode auth login --provider openai (to switch accounts)'"
-        set -a _ls "            opencode auth login --provider openai"
-        set -a _ls '        end'
-        set -a _ls '    end'
-        set -a _ls end
         if test -n "$opencode_fork_session"
             set -a _ls "set -gx OPENCODE_FORKED_FROM_SESSION $escaped_opencode_fork_session"
             if test -n "$opencode_fork_source"
