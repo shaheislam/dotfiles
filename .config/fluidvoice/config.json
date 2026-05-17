@@ -9,10 +9,10 @@
     "HotkeyShortcutKey": {
       "__fluidvoice_type": "json-data",
       "value": {
-        "keyCode": 63,
+        "keyCode": 61,
         "modifierFlagsRawValue": 0,
         "modifierKeyCodes": [
-          63
+          61
         ]
       }
     },
