@@ -1,0 +1,1 @@
+Remove Willow from our dotfiles as we are using FLuidvoice entirely now, it's far superior
