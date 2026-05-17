@@ -95,6 +95,12 @@ skills/shared/dream/.last-dream
 # CV generation artifacts - these are all generated files
 jobapps/generated/
 jobapps/output/
+jobapps/*.aux
+jobapps/*.log
+jobapps/*.out
+jobapps/*.pdf
+jobapps/*.backup*
+jobapps/*_backup*.tex
 # .claude/skills/        - Custom skills (migrated from commands/)
 # .claude/hooks/         - Hook scripts
 # .claude/templates/     - Templates

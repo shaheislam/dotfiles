@@ -616,7 +616,6 @@ if status is-interactive
 end
 
 alias n=nvim
-alias nvm="env NVIM_APPNAME=nvim-mini nvim" # Minimal Neovim config
 alias fixterm="stty sane"
 alias footyres="$HOME/dotfiles/scripts/bin/footyres" # Football results CLI
 

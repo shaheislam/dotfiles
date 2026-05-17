@@ -40,7 +40,7 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 ## opencode-vim and opencode.nvim together
 
 - `ocv` replaces the terminal TUI and provides full Vim-mode ergonomics when OpenCode runs in tmux or a standalone shell.
-- `scripts/bin/opencode` preserves the command name expected by `gwt-ticket`, tmux launchers, auth rotation, cross-provider hooks, and `opencode.nvim`.
+- `scripts/bin/opencode` preserves the command name expected by `gwt-ticket`, tmux launchers, cross-provider hooks, and `opencode.nvim`.
 - `opencode.nvim` keeps using `opencode --port`; the shim routes that to `ocv --port`, so editor-native prompts inherit the same binary and plugin stack.
 - `.config/opencode/tui.json` stays close to the documented OpenCode schema: it uses the local `transparent` theme to avoid panel background fill, disables mouse capture, and only overrides a few navigation shortcuts.
 - Use `Ctrl-x y` to copy the selected/current message from OpenCode. For arbitrary transcript text, use tmux copy mode: `Ctrl-s [` or `Ctrl-s v`, select with `v`, then yank with `y` or `Enter`.
