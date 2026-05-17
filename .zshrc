@@ -1,5 +1,12 @@
 KEYTIMEOUT=500
 
+# WezTerm should open Fish even when macOS session restoration starts the
+# account login shell directly. Keep this scoped to the first WezTerm shell so
+# running `zsh` manually from Fish still works.
+if [[ -o interactive && -n "${WEZTERM_PANE:-}" && "${SHLVL:-1}" -le 1 && -x /opt/homebrew/bin/fish ]]; then
+  exec /opt/homebrew/bin/fish -l
+fi
+
 # Enable Powerlevel10k instant prompt (or starship)
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh"

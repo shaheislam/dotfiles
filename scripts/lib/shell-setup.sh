@@ -48,6 +48,45 @@ setup_fish() {
     print_success "Fish shell configured with ${#plugins[@]} plugins"
 }
 
+set_fish_as_login_shell() {
+    if ! command_exists fish; then
+        log_verbose "Fish not installed, skipping login shell configuration"
+        return 0
+    fi
+
+    local fish_path
+    fish_path=$(command -v fish)
+
+    local current_shell="${SHELL:-}"
+    if command_exists dscl; then
+        current_shell=$(dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}')
+    elif command_exists getent; then
+        current_shell=$(getent passwd "$(whoami)" | cut -d: -f7)
+    fi
+
+    if [[ "$current_shell" == "$fish_path" ]]; then
+        log_verbose "Fish is already the login shell"
+        return 0
+    fi
+
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        print_warning "DRY RUN: Would set login shell to $fish_path"
+        return 0
+    fi
+
+    if [[ -f /etc/shells ]] && ! grep -qxF "$fish_path" /etc/shells; then
+        print_warning "$fish_path is not listed in /etc/shells; add it before running chsh"
+        return 0
+    fi
+
+    print_step "Setting Fish as the login shell..."
+    if chsh -s "$fish_path" </dev/null 2>/dev/null; then
+        print_success "Login shell set to Fish"
+    else
+        print_warning "Could not change login shell non-interactively. Run: chsh -s $fish_path"
+    fi
+}
+
 # ============================================================================
 # Zsh Shell Setup
 # ============================================================================
@@ -187,10 +226,12 @@ setup_fzf_git() {
 setup_shells_from_profile() {
     local profile=$1
 
-    local packages=$(get_package_list_from_profile "$profile" "shells")
+    local packages
+    packages=$(get_package_list_from_profile "$profile" "shells")
 
     if [[ "$packages" =~ fish ]]; then
         setup_fish
+        set_fish_as_login_shell
     fi
 
     if [[ "$packages" =~ zsh ]]; then

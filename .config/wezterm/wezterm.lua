@@ -78,6 +78,7 @@ config.default_prog = { '/opt/homebrew/bin/fish', '-l' }
 config.set_environment_variables = {
   TERM = 'xterm-256color',
   COLORTERM = 'truecolor',
+  SHELL = '/opt/homebrew/bin/fish',
   STARSHIP_CONFIG = os.getenv("HOME") .. '/.config/starship.toml',
 }
 
