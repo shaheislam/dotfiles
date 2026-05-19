@@ -90,7 +90,7 @@ nix-status
 nix-lsps
 
 # Initialize flake from template
-nix-init-flake <template>  # default, devops, backend, frontend
+nix-init-flake <template>  # default, devops, backend, frontend, garmin-connectiq
 
 # Quick Nix shell with packages
 nix-shell-with nodejs python3 go
@@ -133,6 +133,7 @@ project/
 2. **devops** - Terraform, Ansible, Kubernetes, Docker tools
 3. **backend** - Go, Rust, Python with respective LSPs
 4. **frontend** - TypeScript, React, Vue with modern tooling
+5. **garmin-connectiq** - Java and local Garmin SDK discovery for Monkey C apps
 
 ### Template Structure
 
@@ -155,6 +156,12 @@ nix-init-flake devops
 # Or manually copy
 cp ~/dotfiles/nix/flake-templates/devops.nix flake.nix
 ```
+
+### Garmin Connect IQ Projects
+
+The `garmin-connectiq` template intentionally does not package Garmin's proprietary SDK. It provides Java and discovers the SDK from `CONNECTIQ_HOME`, `GARMIN_CONNECTIQ_SDK`, or Garmin's `current-sdk.cfg` files.
+
+Neovim launches Garmin's official `LanguageServer.jar` from that SDK. Project-specific device context belongs in the app repo through `MONKEYC_DEFAULT_DEVICE` or `manifest.xml`; developer keys should stay local and be referenced with `CONNECTIQ_DEVELOPER_KEY`.
 
 ### Customizing Templates
 

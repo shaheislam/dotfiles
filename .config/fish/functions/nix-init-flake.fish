@@ -6,8 +6,9 @@ function nix-init-flake --description "Initialize a flake.nix from template"
         echo "  devops   - DevOps tools (Terraform, Ansible, K8s)"
         echo "  backend  - Backend development (Go, Rust, Python)"
         echo "  frontend - Frontend development (React, Vue, TypeScript)"
+        echo "  garmin-connectiq - Garmin Connect IQ / Monkey C"
         echo ""
-        echo "Example: nix-init-flake devops"
+        echo "Example: nix-init-flake garmin-connectiq"
         return 1
     end
 
@@ -24,7 +25,7 @@ function nix-init-flake --description "Initialize a flake.nix from template"
         set template_file "$HOME/dotfiles/nix/flake-templates/$template"
         if not test -f $template_file
             echo "Error: Template '$template' not found"
-            echo "Available templates: default, devops, backend, frontend"
+            echo "Available templates: default, devops, backend, frontend, garmin-connectiq"
             return 1
         end
     end

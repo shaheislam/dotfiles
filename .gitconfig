@@ -17,6 +17,9 @@
 	name = Shahe Islam
 	email = shaheislam@users.noreply.github.com
 
+[includeIf "gitdir:~/work/"]
+	path = ~/.gitconfig-work
+
 [delta]
 	navigate = true
 	light = false
@@ -72,3 +75,6 @@
 	textconv = plutil -convert xml1 -o -
 [maintenance]
 	repo = ~/dotfiles
+
+[url "git@github-shaheislam:shaheislam/"]
+	insteadOf = git@github.com:shaheislam/
