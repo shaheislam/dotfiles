@@ -1,0 +1,21 @@
+❯ cd ~
+❯ git clone git@github.com:shaheislam/homelab.git
+Cloning into 'homelab'...
+ERROR: Repository not found.
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+❯ ssh-add ~/.ssh/shaheislam-github
+Enter passphrase for /Users/shahe.islam/.ssh/shaheislam-github:
+Bad passphrase, try again for /Users/shahe.islam/.ssh/shaheislam-github:
+Identity added: /Users/shahe.islam/.ssh/shaheislam-github (/Users/shahe.islam/.ssh/shaheislam-github)
+❯ git clone git@github.com:shaheislam/homelab.git
+Cloning into 'homelab'...
+ERROR: Repository not found.
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+
+~➜                                                             0s how do i fix this so i can clone down our own homelab
