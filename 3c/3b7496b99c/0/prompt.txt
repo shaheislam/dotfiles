@@ -1,0 +1,11 @@
+┃
+  ┃  Ask anything... "Fix broken tests"
+  ┃
+  ┃  Build · GPT-5.5 OpenAI · xhigh
+
+  -- INSERT --      ctrl+t variants  tab agents  ctrl+p commands
+
+
+
+  ● Tip Set "formatter": true in config to enable built-in
+        formatters like prettier, gofmt, and ruff Is this configured in our opencode config check ~/dotfiles
