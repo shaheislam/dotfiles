@@ -75,37 +75,13 @@ base_url = "http://localhost:11434/v1"
 env_key = "OLLAMA_API_KEY"
 wire_api = "responses"
 
-[projects."/Users/shahe/dotfiles"]
+[projects."~/dotfiles"]
 trust_level = "trusted"
 
-[projects."/Users/shahe/neovim"]
+[projects."~/neovim"]
 trust_level = "trusted"
 
-[projects."/Users/shahe/dotfiles-tokyo"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/explain-ipv6"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/what-is-tls-2"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/i-want-to-plan-a-6"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/github-plugin-github-openai-curated-inspect"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-25/whats-the-difference-between-an-ast"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-26/https-pmc-ncbi-nlm-nih-gov"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-26/landing-in-phuket-best-things-to"]
-trust_level = "trusted"
-
-[projects."/Users/shahe.islam/Documents/Codex/2026-04-27/how-does-bik-tax-work-i"]
+[projects."~/dotfiles-tokyo"]
 trust_level = "trusted"
 
 [mcp_servers.playwright]
@@ -137,12 +113,12 @@ network_access = true
 [marketplaces.openai-bundled]
 last_updated = "2026-05-19T17:16:27Z"
 source_type = "local"
-source = "/Users/shahe.islam/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
+source = "~/dotfiles/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
 last_updated = "2026-05-19T18:13:01Z"
 source_type = "local"
-source = "/Users/shahe.islam/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+source = "~/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
 [plugins."browser-use@openai-bundled"]
 enabled = true

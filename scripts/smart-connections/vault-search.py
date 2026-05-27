@@ -1,4 +1,4 @@
-#!/Users/shaheislam/dotfiles/.venv/vault-search/bin/python3
+#!/usr/bin/env python3
 """
 Obsidian Vault Semantic Search (Enhanced)
 
@@ -84,10 +84,7 @@ def keyword_score(query_words: set[str], keywords: list[str]) -> float:
 
 
 def compute_bidirectional_boost(
-    query_idx: int,
-    similarities: np.ndarray,
-    embeddings: np.ndarray,
-    boost_factor: float = 0.1
+    query_idx: int, similarities: np.ndarray, embeddings: np.ndarray, boost_factor: float = 0.1
 ) -> np.ndarray:
     """
     Boost scores when similarity is mutual (A→B strong AND B→A strong).
@@ -102,7 +99,7 @@ def compute_bidirectional_boost(
         if idx == query_idx:
             continue
         # Compute reverse similarity (how similar is query to this result?)
-        reverse_sim = cosine_similarity(embeddings[idx], embeddings[query_idx:query_idx+1])[0]
+        reverse_sim = cosine_similarity(embeddings[idx], embeddings[query_idx : query_idx + 1])[0]
         # Boost if mutual
         mutual_strength = min(similarities[idx], reverse_sim)
         boosted[idx] += mutual_strength * boost_factor
@@ -162,9 +159,7 @@ def search_by_file(
 
     # Apply bidirectional boost
     if bidirectional and len(block_indices) > 0:
-        similarities = compute_bidirectional_boost(
-            block_indices[0], similarities, embeddings
-        )
+        similarities = compute_bidirectional_boost(block_indices[0], similarities, embeddings)
 
     # Build results
     results = []
@@ -185,8 +180,7 @@ def search_by_file(
         if exclude_terms:
             preview_lower = block.get("preview", "").lower()
             heading_lower = block.get("heading", "").lower()
-            if any(term.lower() in preview_lower or term.lower() in heading_lower
-                   for term in exclude_terms):
+            if any(term.lower() in preview_lower or term.lower() in heading_lower for term in exclude_terms):
                 continue
 
         sim = float(similarities[idx])
@@ -200,14 +194,16 @@ def search_by_file(
             kw_score = keyword_score(query_keywords, target_keywords)
             sim = sim * 0.8 + kw_score * 0.2  # 80% semantic, 20% keyword
 
-        results.append({
-            "file": block_file,
-            "title": files.get(block_file, {}).get("title", Path(block_file).stem),
-            "heading": block.get("heading", ""),
-            "preview": block.get("preview", ""),
-            "line": block.get("start_line", 0),
-            "score": sim,
-        })
+        results.append(
+            {
+                "file": block_file,
+                "title": files.get(block_file, {}).get("title", Path(block_file).stem),
+                "heading": block.get("heading", ""),
+                "preview": block.get("preview", ""),
+                "line": block.get("start_line", 0),
+                "score": sim,
+            }
+        )
 
     # Sort by score, dedupe by file (keep best block per file)
     results.sort(key=lambda x: x["score"], reverse=True)
@@ -270,8 +266,7 @@ def search_by_query(
         if exclude_terms:
             preview_lower = block.get("preview", "").lower()
             heading_lower = block.get("heading", "").lower()
-            if any(term.lower() in preview_lower or term.lower() in heading_lower
-                   for term in exclude_terms):
+            if any(term.lower() in preview_lower or term.lower() in heading_lower for term in exclude_terms):
                 continue
 
         sim = float(similarities[idx])
@@ -284,14 +279,16 @@ def search_by_query(
             kw_score = keyword_score(query_words, target_keywords)
             sim = sim * 0.7 + kw_score * 0.3  # 70% semantic, 30% keyword for queries
 
-        results.append({
-            "file": block_file,
-            "title": files.get(block_file, {}).get("title", Path(block_file).stem),
-            "heading": block.get("heading", ""),
-            "preview": block.get("preview", ""),
-            "line": block.get("start_line", 0),
-            "score": sim,
-        })
+        results.append(
+            {
+                "file": block_file,
+                "title": files.get(block_file, {}).get("title", Path(block_file).stem),
+                "heading": block.get("heading", ""),
+                "preview": block.get("preview", ""),
+                "line": block.get("start_line", 0),
+                "score": sim,
+            }
+        )
 
     # Sort and dedupe
     results.sort(key=lambda x: x["score"], reverse=True)
@@ -319,11 +316,13 @@ def save_query_history(vault_path: Path, query: str, query_type: str):
         else:
             history = []
 
-        history.append({
-            "query": query,
-            "type": query_type,
-            "timestamp": datetime.now().isoformat(),
-        })
+        history.append(
+            {
+                "query": query,
+                "type": query_type,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         # Keep last 100 queries
         history = history[-100:]
@@ -359,12 +358,12 @@ def format_results(results: list[dict], output_format: str = "fzf") -> str:
         # Format: "path\tscore\ttitle\theading\tpreview" for fzf-lua
         lines = []
         for r in results:
-            line_info = f":{r['line']}" if r.get('line', 0) > 0 else ""
-            heading = r.get('heading', '')
-            if heading and heading != r.get('title', ''):
+            line_info = f":{r['line']}" if r.get("line", 0) > 0 else ""
+            heading = r.get("heading", "")
+            if heading and heading != r.get("title", ""):
                 display = f"{r['title']} > {heading}"
             else:
-                display = r['title']
+                display = r["title"]
             lines.append(f"{r['file']}{line_info}\t{r['score']:.2f}\t{display}\t{r.get('preview', '')[:80]}")
         return "\n".join(lines)
 
@@ -374,32 +373,31 @@ def format_results(results: list[dict], output_format: str = "fzf") -> str:
     else:  # plain
         lines = []
         for r in results:
-            heading = r.get('heading', '')
-            if heading and heading != r.get('title', ''):
+            heading = r.get("heading", "")
+            if heading and heading != r.get("title", ""):
                 title_display = f"{r['title']} > {heading}"
             else:
-                title_display = r['title']
+                title_display = r["title"]
 
             lines.append(f"{r['score']:.2f}  {title_display}")
             lines.append(f"       {r['file']}:{r.get('line', 0)}")
-            if r.get('preview'):
-                preview = r['preview'][:100] + "..." if len(r.get('preview', '')) > 100 else r.get('preview', '')
-                lines.append(f"       \"{preview}\"")
+            if r.get("preview"):
+                preview = r["preview"][:100] + "..." if len(r.get("preview", "")) > 100 else r.get("preview", "")
+                lines.append(f'       "{preview}"')
             lines.append("")
         return "\n".join(lines)
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Search Obsidian vault for semantically similar notes/blocks"
-    )
+    parser = argparse.ArgumentParser(description="Search Obsidian vault for semantically similar notes/blocks")
     parser.add_argument(
         "file",
         nargs="?",
         help="File to find similar notes for (relative or absolute path)",
     )
     parser.add_argument(
-        "--query", "-q",
+        "--query",
+        "-q",
         help="Text query to search for (instead of file)",
     )
     parser.add_argument(
@@ -409,23 +407,27 @@ def main():
         help="Path to Obsidian vault (default: ~/obsidian)",
     )
     parser.add_argument(
-        "--top", "-n",
+        "--top",
+        "-n",
         type=int,
         default=10,
         help="Number of results (default: 10)",
     )
     parser.add_argument(
-        "--threshold", "-t",
+        "--threshold",
+        "-t",
         type=float,
         default=0.0,
         help="Minimum similarity threshold (default: 0.0)",
     )
     parser.add_argument(
-        "--folder", "-d",
+        "--folder",
+        "-d",
         help="Filter results to this folder prefix",
     )
     parser.add_argument(
-        "--exclude", "-x",
+        "--exclude",
+        "-x",
         action="append",
         help="Exclude results containing these terms (can repeat)",
     )
@@ -440,7 +442,8 @@ def main():
         help="Disable bidirectional similarity boost",
     )
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["fzf", "json", "plain"],
         default="fzf",
         help="Output format (default: fzf)",
