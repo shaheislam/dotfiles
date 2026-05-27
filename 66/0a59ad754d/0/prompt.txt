@@ -1,0 +1,1 @@
+Can we modify out tmux status bar so the colours are different and the edges aren't curved?

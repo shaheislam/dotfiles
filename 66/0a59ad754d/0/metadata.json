@@ -1,0 +1,68 @@
+{
+  "cli_version": "0.6.2",
+  "checkpoint_id": "660a59ad754d",
+  "session_id": "ses_1947f6871ffeNtgOxo8QhELxUS",
+  "strategy": "manual-commit",
+  "created_at": "2026-05-27T22:23:44.185904Z",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    ".tmux.conf",
+    "scripts/tmux/tokyo-night-custom.sh"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-5.5",
+  "turn_id": "6b8ccde3274f",
+  "token_usage": {
+    "input_tokens": 448432,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1949696,
+    "output_tokens": 9113,
+    "api_call_count": 44
+  },
+  "session_metrics": {
+    "turn_count": 10
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-05-27T22:23:44.168122Z",
+    "agent_lines": 43,
+    "agent_removed": 35,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 43,
+    "total_lines_changed": 78,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
