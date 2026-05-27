@@ -90,6 +90,10 @@ Makefile
 # Claude settings (managed manually, not by stow)
 \.claude/settings\.json
 
+# OpenCode package manager artifacts (generated locally, not home config)
+\.opencode/node_modules
+\.opencode/package-lock\.json
+
 # SSH config (managed by link_ssh_config, not stow)
 \.ssh
 

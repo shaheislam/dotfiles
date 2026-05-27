@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Persistent OpenCode server for attach-based TUIs across repos/worktrees. -->
+    <!-- Install: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dotfiles.opencode-serve.plist -->
+    <!-- Restart: launchctl kickstart -k gui/$(id -u)/com.dotfiles.opencode-serve -->
+
+    <key>Label</key>
+    <string>com.dotfiles.opencode-serve</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/shahe/dotfiles/scripts/opencode/serve.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/shahe</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/shahe/.local/state/opencode/serve.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/shahe/.local/state/opencode/serve.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/shahe</string>
+        <key>PATH</key>
+        <string>/Users/shahe/dotfiles/scripts/bin:/opt/homebrew/bin:/usr/local/bin:/Users/shahe/.bun/bin:/Users/shahe/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>OPENCODE_PORT</key>
+        <string>4096</string>
+        <key>OPENTUI_GRAPHICS</key>
+        <string>0</string>
+        <key>OPENCODE_DISABLE_LSP_DOWNLOAD</key>
+        <string>true</string>
+        <key>OPENCODE_SERVER_USERNAME</key>
+        <string>opencode</string>
+    </dict>
+</dict>
+</plist>

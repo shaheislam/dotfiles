@@ -9,12 +9,12 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 - **Editor-driven review loop** – when OpenCode proposes edits, the plugin opens a tab with `:diffpatch`, lets you accept/reject per hunk (`dp`, `do`, `]c`, `[c`), and reloads buffers on approval. The side pane requires manual patch application or copy/paste.
 - **Permission + event awareness** – server-sent events surface inside Neovim via the `OpencodeEvent` autocmd, so you can hook custom automation (notifications, statusline, etc.). The pane view only shows whatever the TUI prints.
 - **Experimental LSP bridge** – enabling `vim.g.opencode_opts.lsp.enabled` turns hover/code-action requests into OpenCode prompts. There is no equivalent API from the tmux pane.
-- **Session UX** – the plugin auto-starts/stops OpenCode servers, exposes commands (`session.select`, `session.interrupt`, etc.) through pickers, and includes optional Snacks integrations. Launching a pane simply spawns `opencode` and leaves lifecycle management to you.
+- **Session UX** – the plugin talks to the same launchd-managed OpenCode server as tmux and shell clients, exposes commands (`session.select`, `session.interrupt`, etc.) through pickers, and includes optional Snacks integrations. Closing the TUI, a pane, or tmux does not stop the backend server.
 
 ## What stays the same
 
 - The backend assistant is still OpenCode-compatible (`opencode` resolves to `ocv`), so authentication, model routing, hooks, and all `.opencode/` scripts remain unchanged.
-- You can connect the plugin to any running OpenCode instance via the `server.port` option, which means the tmux binding can keep a long-lived side pane if you want a dedicated transcript while Neovim handles buffer-aware asks.
+- You can connect the plugin to the shared OpenCode service via the `server.port` option. The tmux binding, `oc` wrappers, and Neovim all attach to `http://127.0.0.1:4096` while passing their own `--dir` so separate repos and worktrees keep distinct roots.
 - Permissions and hooks still flow through the existing `.config/opencode/plugin/claude-compat.ts` stack—`opencode.nvim` just surfaces them in-editor.
 
 ## Comparison snapshot
@@ -31,7 +31,7 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 
 ## Adoption guidance
 
-1. Install the plugin via LazyVim (see upstream README snippet) and set `vim.g.opencode_opts.server.port` to match the port our scripts already use (or let it spawn its own terminal).
+1. Install the plugin via LazyVim (see upstream README snippet) and set `vim.g.opencode_opts.server.port` to the shared service port (`4096`). Neovim should kickstart/poll the service, not spawn an independent server.
 2. Keep `vim.o.autoread = true` so edits from OpenCode reload correctly.
 3. Reuse the recommended keymaps (`<C-a>` ask, `<C-x>` select, `go` operator) or map them under `<leader>o` to avoid conflicts with tmux bindings.
 4. Run `:checkhealth opencode` after wiring it up; the check validates that OpenCode is discoverable and events are flowing.
@@ -40,8 +40,10 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 ## opencode-vim and opencode.nvim together
 
 - `ocv` replaces the terminal TUI and provides full Vim-mode ergonomics when OpenCode runs in tmux or a standalone shell.
-- `scripts/bin/opencode` preserves the command name expected by `gwt-ticket`, tmux launchers, cross-provider hooks, and `opencode.nvim`.
-- `opencode.nvim` keeps using `opencode --port`; the shim routes that to `ocv --port`, so editor-native prompts inherit the same binary and plugin stack.
+- `scripts/bin/opencode` preserves the command name expected by `gwt-ticket`, cross-provider hooks, and low-level OpenCode invocations.
+- `scripts/bin/oc`, the Fish `oc` function, the Zsh `oc` function, and the tmux launcher all run `opencode attach http://127.0.0.1:4096 --dir <current-repo>` so every client reconnects to the same persistent backend.
+- `scripts/opencode/serve.sh` generates a machine-local password at `~/.local/state/opencode/server.password` when one is not provided by `OPENCODE_SERVER_PASSWORD`. Attach wrappers read that file before connecting; the password itself is never committed to dotfiles.
+- `opencode.nvim` uses the shared service too: it kickstarts `com.dotfiles.opencode-serve` when `/path` is not ready, polls with the local password if present, and opens an attached TUI rather than owning server lifecycle.
 - `.config/opencode/tui.json` stays close to the documented OpenCode schema: it uses the local `transparent` theme to avoid panel background fill, disables mouse capture, and only overrides a few navigation shortcuts.
 - Use `Ctrl-x y` to copy the selected/current message from OpenCode. For arbitrary transcript text, use tmux copy mode: `Ctrl-s [` or `Ctrl-s v`, select with `v`, then yank with `y` or `Enter`.
 
@@ -61,7 +63,7 @@ return {
   config = function()
     vim.g.opencode_opts = {
       server = {
-        port = tonumber(vim.env.OPENCODE_PORT or 3333),
+        port = tonumber(vim.env.OPENCODE_PORT or 4096),
       },
       prompts = {
         diagnostics = { name = "diagnostics", prompt = "Explain @diagnostics" },

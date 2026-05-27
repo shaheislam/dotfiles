@@ -3,11 +3,19 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CONFIG_FILE="$ROOT/.config/opencode/opencode.json"
+CONFIG_DIR="$(dirname "$CONFIG_FILE")"
 AUTH_FILE="$HOME/.local/share/opencode/auth.json"
 COMMAND_DIR="$ROOT/.opencode/command"
 AGENT_DIR="$ROOT/.opencode/agents"
 PLUGIN_DIR="$ROOT/.config/opencode/plugin"
 FISH_FUNC="$ROOT/.config/fish/functions/opencode-doctor.fish"
+OC_FISH_FUNC="$ROOT/.config/fish/functions/oc.fish"
+OC_SCRIPT="$ROOT/scripts/bin/oc"
+SERVE_SCRIPT="$ROOT/scripts/opencode/serve.sh"
+SERVE_PLIST="$ROOT/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
+SERVE_LABEL="com.dotfiles.opencode-serve"
+SERVE_URL="http://127.0.0.1:${OPENCODE_PORT:-4096}"
+SERVE_PASSWORD_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/server.password"
 
 PASS_COUNT=0
 WARN_COUNT=0
@@ -42,7 +50,7 @@ resolve_plugin_path() {
     case "$plugin" in
     file://*) printf '%s\n' "${plugin#file://}" ;;
     /*) printf '%s\n' "$plugin" ;;
-    ./*) printf '%s\n' "$ROOT/${plugin#./}" ;;
+    ./*) printf '%s\n' "$CONFIG_DIR/${plugin#./}" ;;
     *) return 1 ;;
     esac
 }
@@ -67,6 +75,55 @@ if command -v ocv >/dev/null 2>&1; then
     fi
 else
     print_result FAIL "ocv binary" "Install with: brew install leohenon/tap/ocv"
+fi
+
+if [ -x "$SERVE_SCRIPT" ]; then
+    print_result PASS "serve script" "$SERVE_SCRIPT"
+else
+    print_result FAIL "serve script" "Missing or not executable: $SERVE_SCRIPT"
+fi
+
+if [ -f "$SERVE_PLIST" ]; then
+    print_result PASS "LaunchAgent" "$SERVE_PLIST"
+else
+    print_result FAIL "LaunchAgent" "Missing $SERVE_PLIST"
+fi
+
+if [ -s "$SERVE_PASSWORD_FILE" ]; then
+    print_result PASS "server password" "$SERVE_PASSWORD_FILE"
+else
+    print_result WARN "server password" "Will be generated on first service start: $SERVE_PASSWORD_FILE"
+fi
+
+if launchctl list 2>/dev/null | grep -q "$SERVE_LABEL"; then
+    print_result PASS "shared server agent" "$SERVE_LABEL loaded"
+else
+    print_result WARN "shared server agent" "Not loaded; run setup.sh or launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/$SERVE_LABEL.plist"
+fi
+
+curl_auth=()
+if [ -n "${OPENCODE_SERVER_PASSWORD:-}" ]; then
+    curl_auth=(-u "${OPENCODE_SERVER_USERNAME:-opencode}:$OPENCODE_SERVER_PASSWORD")
+elif [ -s "$SERVE_PASSWORD_FILE" ]; then
+    curl_auth=(-u "${OPENCODE_SERVER_USERNAME:-opencode}:$(tr -d '\n' <"$SERVE_PASSWORD_FILE")")
+fi
+
+if curl -fsS --max-time 1 "${curl_auth[@]}" "$SERVE_URL/path" >/dev/null 2>&1; then
+    print_result PASS "shared server" "$SERVE_URL"
+else
+    print_result WARN "shared server" "$SERVE_URL is not responding"
+fi
+
+if [ -f "$OC_FISH_FUNC" ]; then
+    print_result PASS "oc fish wrapper" "$OC_FISH_FUNC"
+else
+    print_result WARN "oc fish wrapper" "Missing .config/fish/functions/oc.fish"
+fi
+
+if [ -x "$OC_SCRIPT" ]; then
+    print_result PASS "oc script" "$OC_SCRIPT"
+else
+    print_result WARN "oc script" "Missing or not executable: $OC_SCRIPT"
 fi
 
 if [ -f "$CONFIG_FILE" ] && jq empty "$CONFIG_FILE" >/dev/null 2>&1; then

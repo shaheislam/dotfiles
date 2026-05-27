@@ -2058,6 +2058,24 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
             fi
         fi
 
+        # Setup OpenCode shared server LaunchAgent (attach-based TUIs on port 4096)
+        print_step "Setting up OpenCode shared server..."
+        local opencode_plist="$HOME/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
+        local opencode_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
+        mkdir -p "$HOME/.local/state/opencode"
+        if [[ ! -f "$opencode_plist" && -f "$opencode_plist_source" ]]; then
+            opencode_plist="$opencode_plist_source"
+        fi
+        if [[ -f "$opencode_plist" ]]; then
+            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.opencode-serve"; then
+                launchctl bootstrap "gui/$(id -u)" "$opencode_plist" 2>/dev/null &&
+                    print_success "OpenCode shared server started" ||
+                    log_verbose "OpenCode shared server start skipped"
+            else
+                log_verbose "OpenCode shared server already running"
+            fi
+        fi
+
         # Setup Ticket Queue LaunchAgent (auto-start daemon on login)
         print_step "Setting up ticket queue daemon..."
         local queue_plist="$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"

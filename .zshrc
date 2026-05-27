@@ -149,6 +149,15 @@ alias cat="bat"
 alias k="kubectl"
 alias kc="kubectx"
 alias kn="kubens"
+function oc() {
+    local port=${OPENCODE_PORT:-4096}
+    local password_file="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/server.password"
+    if [ -z "${OPENCODE_SERVER_PASSWORD:-}" ] && [ -s "$password_file" ]; then
+        export OPENCODE_SERVER_PASSWORD="$(tr -d '\n' <"$password_file")"
+    fi
+    export OPENCODE_SERVER_USERNAME="${OPENCODE_SERVER_USERNAME:-opencode}"
+    opencode attach "http://127.0.0.1:${port}" --dir . "$@"
+}
 
 # bat theme
 export BAT_THEME="Catppuccin Mocha"

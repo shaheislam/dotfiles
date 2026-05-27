@@ -22,4 +22,4 @@ else
 	tmux setw -w alternate-screen off >/dev/null 2>&1 || true
 fi
 
-exec "$HOME/dotfiles/scripts/bin/opencode"
+OPENCODE_DIR="$PWD" exec "$HOME/dotfiles/scripts/bin/oc"
