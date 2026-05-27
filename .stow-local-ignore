@@ -33,6 +33,9 @@ GEMINI\.md
 
 # Tmux Session State (dynamically generated)
 \.tmux/resurrect/last$
+^/\.tmux-sock$
+^/tmux-.*\.log$
+^/server exited unexpectedly$
 
 # Tmux Plugins (managed by TPM, not stow)
 \.tmux/plugins
@@ -73,6 +76,10 @@ Makefile
 
 # Work directory (temporary worktree artifacts)
 ^/work$
+^/workspace$
+
+# Generated job application outputs
+^/jobapps/output$
 
 # Devcontainer configs (used in-place, not symlinked to home)
 ^/devcontainer$
@@ -89,10 +96,20 @@ Makefile
 
 # Claude settings (managed manually, not by stow)
 \.claude/settings\.json
+Library/Application Support/Claude/claude_desktop_config\.json
+
+# Skill/runtime materialization can leave identical non-stow files in ~/.claude
+\.claude/skills/pinchtab/agents/openai\.yaml
+
+# App-local generated config/state that should not block stow
+\.config/btop/btop\.conf
+\.config/opencode/dcp\.jsonc
+\.granted/zsh_autocomplete
 
 # OpenCode package manager artifacts (generated locally, not home config)
 \.opencode/node_modules
 \.opencode/package-lock\.json
+\.opencode/accounts
 
 # SSH config (managed by link_ssh_config, not stow)
 \.ssh
