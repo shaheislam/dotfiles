@@ -1,39 +1,39 @@
 {
   "$schema": "https://opencode.ai/theme.json",
   "defs": {
-    "blue": "#7aa2f7",
-    "cyan": "#7dcfff",
-    "purple": "#bb9af7",
-    "green": "#9ece6a",
-    "orange": "#ff9e64",
-    "red": "#f7768e",
-    "yellow": "#e0af68",
-    "teal": "#73daca",
-    "fg": "#c0caf5",
-    "fgLight": "#24283b",
-    "fgMuted": "#9aa5ce",
-    "fgMutedLight": "#5b627d",
-    "comment": "#565f89",
-    "commentLight": "#8a90a8",
-    "dark": "#3b4261",
-    "darkLight": "#d9dce8",
-    "gutter": "#414868",
-    "gutterLight": "#c0c6d8",
-    "borderDim": "#4a5275",
-    "borderDimLight": "#c7cbda"
+    "blue": "#b8d9fc",
+    "cyan": "#b4e2c7",
+    "purple": "#d7cef9",
+    "green": "#d3daad",
+    "orange": "#fac6c1",
+    "red": "#f1c6e2",
+    "yellow": "#efcfab",
+    "teal": "#a7e1e8",
+    "fg": "#d7d5cd",
+    "fgLight": "#262029",
+    "fgMuted": "#97958e",
+    "fgMutedLight": "#5e5762",
+    "comment": "#97958e",
+    "commentLight": "#5e5762",
+    "dark": "#423b45",
+    "darkLight": "#e5e3db",
+    "gutter": "#5e5762",
+    "gutterLight": "#b7b5ad",
+    "borderDim": "#5e5762",
+    "borderDimLight": "#b7b5ad"
   },
   "theme": {
     "primary": {
       "dark": "blue",
-      "light": "#5877d8"
+      "light": "#3d668f"
     },
     "secondary": {
       "dark": "purple",
-      "light": "#7d63d1"
+      "light": "#6f5f9b"
     },
     "accent": {
       "dark": "teal",
-      "light": "#3f88a8"
+      "light": "#32757c"
     },
     "error": "red",
     "warning": "orange",
@@ -56,7 +56,7 @@
     },
     "borderActive": {
       "dark": "cyan",
-      "light": "#5b7bd5"
+      "light": "#32775a"
     },
     "borderSubtle": {
       "dark": "dark",
@@ -70,7 +70,7 @@
     },
     "diffHunkHeader": {
       "dark": "cyan",
-      "light": "#5877d8"
+      "light": "#32775a"
     },
     "diffHighlightAdded": "green",
     "diffHighlightRemoved": "red",
@@ -89,15 +89,15 @@
     },
     "markdownHeading": {
       "dark": "blue",
-      "light": "#4668cf"
+      "light": "#3d668f"
     },
     "markdownLink": {
       "dark": "cyan",
-      "light": "#3f88a8"
+      "light": "#32775a"
     },
     "markdownLinkText": {
       "dark": "teal",
-      "light": "#2f7f76"
+      "light": "#32757c"
     },
     "markdownCode": "green",
     "markdownBlockQuote": {
@@ -112,19 +112,19 @@
     },
     "markdownListItem": {
       "dark": "blue",
-      "light": "#5877d8"
+      "light": "#3d668f"
     },
     "markdownListEnumeration": {
       "dark": "teal",
-      "light": "#2f7f76"
+      "light": "#32757c"
     },
     "markdownImage": {
       "dark": "cyan",
-      "light": "#3f88a8"
+      "light": "#32775a"
     },
     "markdownImageText": {
       "dark": "teal",
-      "light": "#2f7f76"
+      "light": "#32757c"
     },
     "markdownCodeBlock": {
       "dark": "fg",
@@ -136,11 +136,11 @@
     },
     "syntaxKeyword": {
       "dark": "purple",
-      "light": "#7d63d1"
+      "light": "#6f5f9b"
     },
     "syntaxFunction": {
       "dark": "blue",
-      "light": "#4668cf"
+      "light": "#3d668f"
     },
     "syntaxVariable": {
       "dark": "fg",
@@ -150,11 +150,11 @@
     "syntaxNumber": "orange",
     "syntaxType": {
       "dark": "cyan",
-      "light": "#3f88a8"
+      "light": "#32775a"
     },
     "syntaxOperator": {
       "dark": "purple",
-      "light": "#7d63d1"
+      "light": "#6f5f9b"
     },
     "syntaxPunctuation": {
       "dark": "comment",

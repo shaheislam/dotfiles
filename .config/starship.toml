@@ -1,6 +1,6 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-# Minimal prompt inspired by omerxx style with Catppuccin Mocha colors
+# Minimal prompt inspired by omerxx style with Miniautumn colors
 format = """
 $directory\
 $git_branch\
@@ -15,35 +15,35 @@ $cmd_duration\
 # PERF: Keep prompt commands bounded. `git_status` is disabled, so the remaining
 # modules should complete well under this even in worktrees.
 command_timeout = 200
-palette = 'catppuccin_mocha'
+palette = 'miniautumn'
 
-[palettes.catppuccin_mocha]
-rosewater = "#f5e0dc"
-flamingo = "#f2cdcd"
-pink = "#f5c2e7"
-mauve = "#cba6f7"
-red = "#f38ba8"
-maroon = "#eba0ac"
-peach = "#fab387"
-yellow = "#f9e2af"
-green = "#a6e3a1"
-teal = "#94e2d5"
-sky = "#89dceb"
-sapphire = "#74c7ec"
-blue = "#89b4fa"
-lavender = "#b4befe"
-text = "#cdd6f4"
-subtext1 = "#bac2de"
-subtext0 = "#a6adc8"
-overlay2 = "#9399b2"
-overlay1 = "#7f849c"
-overlay0 = "#6c7086"
-surface2 = "#585b70"
-surface1 = "#45475a"
-surface0 = "#313244"
-base = "#1e1e2e"
-mantle = "#181825"
-crust = "#11111b"
+[palettes.miniautumn]
+rosewater = "#f3f1e9"
+flamingo = "#fac6c1"
+pink = "#f1c6e2"
+mauve = "#e4caf1"
+red = "#f1c6e2"
+maroon = "#fac6c1"
+peach = "#fac6c1"
+yellow = "#efcfab"
+green = "#d3daad"
+teal = "#b4e2c7"
+sky = "#a7e1e8"
+sapphire = "#a7e1e8"
+blue = "#b8d9fc"
+lavender = "#d7cef9"
+text = "#d7d5cd"
+subtext1 = "#b7b5ad"
+subtext0 = "#97958e"
+overlay2 = "#97958e"
+overlay1 = "#5e5762"
+overlay0 = "#423b45"
+surface2 = "#5e5762"
+surface1 = "#423b45"
+surface0 = "#1a141d"
+base = "#262029"
+mantle = "#1a141d"
+crust = "#0b060e"
 
 [username]
 show_always = false

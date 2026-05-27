@@ -54,7 +54,7 @@ if status is-interactive
     bind -M default \e\[D backward-char
 
     # Environment Variables
-    set -x BAT_THEME "Catppuccin Mocha"
+    set -x BAT_THEME miniautumn
     set -x BAT_PAGING never # Prevents FZF preview file descriptor errors
     # Pager defaults (avoid tools reading a bad $PAGER value)
     set -x PAGER less
@@ -365,18 +365,18 @@ if status is-interactive
     # Keep the same command but now with preview options from above
     set -gx FZF_ALT_C_COMMAND "fd --type=d --hidden --strip-cwd-prefix --exclude .git"
 
-    # FZF theme colors - Catppuccin Mocha theme to match other tools
-    set -l fg "#cdd6f4" # Text
-    set -l bg "#1e1e2e" # Base
-    set -l bg_highlight "#313244" # Surface0
-    set -l purple "#b4befe" # Lavender
-    set -l blue "#89b4fa" # Blue
-    set -l cyan "#89dceb" # Sky
-    set -l green "#a6e3a1" # Green
-    set -l orange "#fab387" # Peach
-    set -l red "#f38ba8" # Red
-    set -l yellow "#f9e2af" # Yellow
-    set -l magenta "#cba6f7" # Mauve
+    # FZF theme colors - Miniautumn theme to match Neovim
+    set -l fg "#d7d5cd" # Text
+    set -l bg "#262029" # Base
+    set -l bg_highlight "#423b45" # Surface
+    set -l purple "#d7cef9" # Purple
+    set -l blue "#b8d9fc" # Blue
+    set -l cyan "#a7e1e8" # Azure
+    set -l green "#d3daad" # Green
+    set -l orange "#fac6c1" # Orange
+    set -l red "#f1c6e2" # Red
+    set -l yellow "#efcfab" # Yellow
+    set -l magenta "#e4caf1" # Accent
 
     # Enhanced FZF options matching WezTerm aesthetics (simulated transparency)
     # Using -1 for bg creates transparent background effect
@@ -407,7 +407,7 @@ if status is-interactive
         --bind='ctrl-l:clear-screen' \
         --bind='alt-e:execute(nvim {} < /dev/tty > /dev/tty)+abort'"
 
-    # File preview with bat using Catppuccin theme and minimal style
+    # File preview with bat using Miniautumn theme and minimal style
     set -gx FZF_CTRL_T_OPTS "--preview 'bat --color=always --style=numbers,changes --line-range=:500 {} 2>/dev/null || cat {}' \
         --border-label=' Files ' \
         --preview-label=' Preview ' \

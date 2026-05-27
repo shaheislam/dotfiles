@@ -1,5 +1,5 @@
 -- ~/.config/wezterm/wezterm.lua
--- Catppuccin Mocha theme with omerxx-inspired aesthetics
+-- Miniautumn theme with omerxx-inspired aesthetics
 local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
@@ -55,8 +55,36 @@ config.font_rules = {
   },
 }
 
--- Color scheme - Catppuccin Mocha for consistency
-config.color_scheme = 'Catppuccin Mocha'
+-- Color scheme - Miniautumn, matched to mini.nvim's bundled colorscheme
+config.colors = {
+  foreground = '#d7d5cd',
+  background = '#262029',
+  cursor_bg = '#e4caf1',
+  cursor_fg = '#262029',
+  cursor_border = '#e4caf1',
+  selection_bg = '#423b45',
+  selection_fg = '#f3f1e9',
+  ansi = {
+    '#0b060e',
+    '#f1c6e2',
+    '#d3daad',
+    '#efcfab',
+    '#b8d9fc',
+    '#d7cef9',
+    '#b4e2c7',
+    '#d7d5cd',
+  },
+  brights = {
+    '#5e5762',
+    '#f1c6e2',
+    '#d3daad',
+    '#efcfab',
+    '#b8d9fc',
+    '#e4caf1',
+    '#a7e1e8',
+    '#f3f1e9',
+  },
+}
 
 -- Window configuration
 config.window_decorations = "RESIZE"
