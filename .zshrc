@@ -159,6 +159,10 @@ function oc() {
     opencode attach "http://127.0.0.1:${port}" --dir . "$@"
 }
 
+function dotsetup-fast() {
+    "$HOME/dotfiles/scripts/setup.sh" --skip-packages --skip-fonts-apps "$@"
+}
+
 # bat theme
 export BAT_THEME="Catppuccin Mocha"
 
