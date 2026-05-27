@@ -1,0 +1,13 @@
+Can you fix the other hardcoded home values? Nothing should be hardcoded so we can make them device agnostic
+
+---
+
+▣ DCP | -39K removed, +10K summary — Compression #1
+
+---
+
+Do we have this configured in our Opencode setup
+
+                                    ● Tip Use --format json for machine-readable output in scripts
+
+It's one of the Opencode tips
