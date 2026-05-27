@@ -11,11 +11,11 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/shahe/dotfiles/scripts/opencode/serve.sh</string>
+        <string>__DOTFILES_ROOT__/scripts/opencode/serve.sh</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/shahe</string>
+    <string>__HOME__</string>
 
     <key>RunAtLoad</key>
     <true/>
@@ -27,17 +27,17 @@
     <integer>30</integer>
 
     <key>StandardOutPath</key>
-    <string>/Users/shahe/.local/state/opencode/serve.out.log</string>
+    <string>__HOME__/.local/state/opencode/serve.out.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/shahe/.local/state/opencode/serve.err.log</string>
+    <string>__HOME__/.local/state/opencode/serve.err.log</string>
 
     <key>EnvironmentVariables</key>
     <dict>
         <key>HOME</key>
-        <string>/Users/shahe</string>
+        <string>__HOME__</string>
         <key>PATH</key>
-        <string>/Users/shahe/dotfiles/scripts/bin:/opt/homebrew/bin:/usr/local/bin:/Users/shahe/.bun/bin:/Users/shahe/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <string>__DOTFILES_ROOT__/scripts/bin:/opt/homebrew/bin:/usr/local/bin:__HOME__/.bun/bin:__HOME__/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>OPENCODE_PORT</key>
         <string>4096</string>
         <key>OPENTUI_GRAPHICS</key>

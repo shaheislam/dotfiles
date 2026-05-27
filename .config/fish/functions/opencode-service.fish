@@ -9,8 +9,9 @@ function opencode-service --description "Manage the shared OpenCode launchd serv
     set -l password_file "$state_dir/server.password"
     set -l cmd (string lower -- (test -n "$argv[1]"; and echo $argv[1]; or echo status))
 
-    if not test -f "$plist"
-        set plist "$source_plist"
+    if test -f "$source_plist"
+        mkdir -p "$HOME/Library/LaunchAgents"
+        string replace -a __HOME__ "$HOME" <$source_plist | string replace -a __DOTFILES_ROOT__ "$HOME/dotfiles" >$plist
     end
 
     switch "$cmd"

@@ -83,6 +83,9 @@ skills/shared/dream/.last-dream
 .claude/CHANGELOG.md.bak
 .claude/witness.pid
 
+# Checkpoint runtime snapshots (machine/session-specific)
+.checkpoints/pre-prompt-state.json
+
 # Launch templates - machine-specific settings
 .config/launch-templates/.claude/
 
@@ -233,6 +236,10 @@ kind-logs-*/
 
 # Docker buildx state (machine-specific cache/refs)
 .docker/
+
+# Podman machine state (machine-specific sockets, images, and SSH keys)
+.config/containers/podman-connections.json
+.config/containers/podman/machine/
 
 # Container Runtime Logs
 podman-machine.log

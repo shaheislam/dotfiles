@@ -273,6 +273,26 @@ sync_managed_file() {
     cp "$source_path" "$target_path"
 }
 
+materialize_launchagent_template() {
+    local source_path="$1"
+    local target_path="$2"
+
+    [[ -f "$source_path" ]] || return 1
+
+    mkdir -p "$(dirname "$target_path")"
+    if [[ -L "$target_path" ]]; then
+        rm -f "$target_path"
+    fi
+
+    local escaped_home escaped_dotfiles_root
+    escaped_home=$(printf '%s\n' "$HOME" | sed 's/[\/&]/\\&/g')
+    escaped_dotfiles_root=$(printf '%s\n' "$DOTFILES_ROOT" | sed 's/[\/&]/\\&/g')
+    sed \
+        -e "s/__HOME__/$escaped_home/g" \
+        -e "s/__DOTFILES_ROOT__/$escaped_dotfiles_root/g" \
+        "$source_path" >"$target_path"
+}
+
 ensure_macos_command_line_tools_current() {
     [[ "$OS" != "macos" ]] && return 0
 
@@ -1460,6 +1480,8 @@ PTEOF
         fi
         # Load launchd plist for kubectl-fzf-server
         local kubectl_fzf_plist="$HOME/Library/LaunchAgents/com.kubectl-fzf-server.plist"
+        local kubectl_fzf_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.kubectl-fzf-server.plist"
+        materialize_launchagent_template "$kubectl_fzf_plist_source" "$kubectl_fzf_plist" || true
         if [[ -f "$kubectl_fzf_plist" ]] && ! launchctl list 2>/dev/null | grep -q "com.kubectl-fzf-server"; then
             launchctl bootstrap "gui/$(id -u)" "$kubectl_fzf_plist" 2>/dev/null &&
                 print_success "kubectl-fzf-server service started" ||
@@ -2046,8 +2068,7 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
         local ssh_plist="$HOME/Library/LaunchAgents/com.user.ssh-add.plist"
         local ssh_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.user.ssh-add.plist"
         mkdir -p "$HOME/Library/LaunchAgents"
-        if [[ ! -f "$ssh_plist" ]] && [[ -f "$ssh_plist_source" ]]; then
-            cp "$ssh_plist_source" "$ssh_plist"
+        if materialize_launchagent_template "$ssh_plist_source" "$ssh_plist"; then
             print_success "SSH LaunchAgent installed"
         fi
         if [[ -f "$ssh_plist" ]]; then
@@ -2063,9 +2084,8 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
         local opencode_plist="$HOME/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
         local opencode_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
         mkdir -p "$HOME/.local/state/opencode"
-        if [[ ! -f "$opencode_plist" && -f "$opencode_plist_source" ]]; then
-            opencode_plist="$opencode_plist_source"
-        fi
+        mkdir -p "$HOME/Library/LaunchAgents"
+        materialize_launchagent_template "$opencode_plist_source" "$opencode_plist" || true
         if [[ -f "$opencode_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.opencode-serve"; then
                 launchctl bootstrap "gui/$(id -u)" "$opencode_plist" 2>/dev/null &&
@@ -2079,6 +2099,8 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
         # Setup Ticket Queue LaunchAgent (auto-start daemon on login)
         print_step "Setting up ticket queue daemon..."
         local queue_plist="$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
+        local queue_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
+        materialize_launchagent_template "$queue_plist_source" "$queue_plist" || true
         if [[ -f "$queue_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.ticket-queue"; then
                 launchctl bootstrap "gui/$(id -u)" "$queue_plist" 2>/dev/null &&
@@ -2092,6 +2114,8 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
         # Setup Mayor LaunchAgent (global coordinator daemon on login)
         print_step "Setting up mayor daemon..."
         local mayor_plist="$HOME/Library/LaunchAgents/com.dotfiles.gwt-mayor.plist"
+        local mayor_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.gwt-mayor.plist"
+        materialize_launchagent_template "$mayor_plist_source" "$mayor_plist" || true
         if [[ -f "$mayor_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.gwt-mayor"; then
                 launchctl bootstrap "gui/$(id -u)" "$mayor_plist" 2>/dev/null &&
@@ -2105,6 +2129,8 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
         # Setup Monthly Changelog Review LaunchAgent (1st of each month)
         print_step "Setting up changelog review scheduler..."
         local changelog_plist="$HOME/Library/LaunchAgents/com.dotfiles.changelog-review.plist"
+        local changelog_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.changelog-review.plist"
+        materialize_launchagent_template "$changelog_plist_source" "$changelog_plist" || true
         if [[ -f "$changelog_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.changelog-review"; then
                 launchctl bootstrap "gui/$(id -u)" "$changelog_plist" 2>/dev/null &&
@@ -2118,6 +2144,8 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
         # Setup Monthly Insights Review LaunchAgent (1st of each month, +1h after changelog)
         print_step "Setting up insights review scheduler..."
         local insights_plist="$HOME/Library/LaunchAgents/com.dotfiles.insights-review.plist"
+        local insights_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.insights-review.plist"
+        materialize_launchagent_template "$insights_plist_source" "$insights_plist" || true
         if [[ -f "$insights_plist" ]]; then
             if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.insights-review"; then
                 launchctl bootstrap "gui/$(id -u)" "$insights_plist" 2>/dev/null &&
