@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.6.2",
+  "checkpoint_id": "d0abbb4b3d2f",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/bat/config",
+    ".config/bat/themes/miniautumn.tmTheme",
+    ".config/fish/config.fish",
+    ".config/ghostty/config",
+    ".config/opencode/themes/transparent.json",
+    ".config/starship.toml",
+    ".config/wezterm/wezterm.lua",
+    ".tmux.conf",
+    "scripts/tmux/miniautumn-custom.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d0/abbb4b3d2f/0/metadata.json",
+      "transcript": "/d0/abbb4b3d2f/0/full.jsonl",
+      "content_hash": "/d0/abbb4b3d2f/0/content_hash.txt",
+      "prompt": "/d0/abbb4b3d2f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1212466,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3147776,
+    "output_tokens": 21313,
+    "api_call_count": 47
+  }
+}

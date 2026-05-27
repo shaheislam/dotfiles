@@ -1,0 +1,1 @@
+Can you switch our ~/neovim theme to miniautumn
