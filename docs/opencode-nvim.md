@@ -102,6 +102,25 @@ With this setup you can define explicit workflows:
 2. When the SSE recorder drops a new patch, run `scripts/opencode/diffview-latest.sh` to get the file path, then inside Neovim run `:DiffviewFileHistory <patch>` or open it in a scratch buffer for review.
 3. Because the recorder stores metadata (`*.patch.json`), you can show the originating session/message in statuslines or in Entire checkpoints.
 
+## DiffView annotations to OpenCode
+
+`lua/config/annotations.lua` is the lightweight review bridge inspired by princejoogie's `annotate.lua`. It understands normal file buffers and `diffview://...` buffers, normalizes both back to repo-relative paths, and stores review notes in `.tmp/annotations.json`.
+
+Typical flow:
+
+1. Open a DiffView/review buffer.
+2. Add a line comment with `<leader>ana` or `:Annotate add`.
+3. Send the current comment to OpenCode with `<leader>ano` or `:Annotate ask`.
+4. Send all outstanding comments with `<leader>anO` or `:Annotate askall`.
+
+The generated prompt includes the annotation file path/line and the resolution instruction, so OpenCode can fix the comments and then mark each item as `RESOLVED:` in `.tmp/annotations.json`. Use `:Annotate copy` / `:Annotate copyall` when you want the same prompt on the clipboard instead of submitting it directly.
+
+`<leader>anl` / `:Annotate list` opens a floating annotation panel. Inside the panel, use `<CR>`/`o` to jump to the source line, `e` to edit, `d` to delete, `c` to copy, `a` to send the selected annotation to OpenCode, `A` to send all annotations, and `q` to close. `:Annotate qflist` keeps the older quickfix-list view available.
+
+For quick one-off prompts, visual-select text and use `<leader>aoS` to append that exact selection to the running OpenCode TUI prompt. This path talks directly to the shared OpenCode HTTP server using the same local password file as the shell/tmux wrappers, and falls back to copying the text if the server cannot be reached.
+
+DiffView also has explicit comparison pickers: `<leader>gdb` selects two branches and opens `DiffviewOpen branch..branch`; `<leader>gdc` selects two commits and opens `DiffviewOpen commit..commit`. These are small shortcuts for ad hoc comparisons; the existing `<leader>gD` unified picker remains the richer cross-ref workflow.
+
 ## Automated validation
 
 `scripts/test-filter.sh opencode` now covers the new surfaces:
