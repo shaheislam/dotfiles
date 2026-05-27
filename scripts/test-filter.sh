@@ -1025,6 +1025,7 @@ test_opencode() {
     run_test "OpenCode config has gpt-5.4 model" "jq -e '.provider.openai.models[\"gpt-5.4\"]' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
     run_test "OpenCode Vim tap configured" "grep -q 'tap \"leohenon/tap\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
     run_test "OpenCode Vim formula configured" "grep -q 'brew \"leohenon/tap/ocv\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
+    run_test "OpenCode Vim fork cloned by setup" "grep -q 'git@github.com:shaheislam/opencode-vim.git' '$DOTFILES_ROOT/scripts/setup.sh' && grep -q '\$HOME/opencode-vim' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "Legacy anomalyco OpenCode formula removed" "! grep -q 'anomalyco/tap/opencode' '$DOTFILES_ROOT/homebrew/Brewfile'"
     run_test "OpenCode compatibility shim exists" "[ -f '$DOTFILES_ROOT/scripts/bin/opencode' ]"
     run_test "OpenCode compatibility shim executable" "[ -x '$DOTFILES_ROOT/scripts/bin/opencode' ]"

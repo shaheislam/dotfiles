@@ -90,6 +90,7 @@ EXAMPLES:
     # Clone personal repositories (set environment variables)
     OBSIDIAN_REPO=git@github.com:user/obsidian.git \\
     NVIM_REPO=git@github.com:user/nvim.git \\
+    OPENCODE_VIM_REPO=git@github.com:shaheislam/opencode-vim.git \\
     $0 --profile standard
 
 ENVIRONMENT VARIABLES:
@@ -102,6 +103,7 @@ ENVIRONMENT VARIABLES:
     ENABLE_CLAUDE_HEAVY_SETUP=true  Enable Claude MCPs/plugins/LSPs/router/Recall/Agent Teams (Phase 4, default false)
     OBSIDIAN_REPO=<url>     Clone Obsidian vault from repository (Phase 10)
     NVIM_REPO=<url>         Clone personal Neovim config (Phase 10)
+    OPENCODE_VIM_REPO=<url> Clone OpenCode Vim fork to ~/opencode-vim (Phase 10, default: git@github.com:shaheislam/opencode-vim.git; set empty to skip)
 
 For more information: https://github.com/shaheislam/dotfiles
 
@@ -2226,8 +2228,17 @@ phase_10_advanced_features() {
     fi
 
     # Personal repositories (optional - check for SSH key)
-    if [[ -f "$HOME/.ssh/id_rsa" ]] || [[ -f "$HOME/.ssh/id_ed25519" ]]; then
+    if [[ -f "$HOME/.ssh/id_rsa" ]] || [[ -f "$HOME/.ssh/id_ed25519" ]] || [[ -f "$HOME/.ssh/shaheislam-github" ]]; then
         print_step "Cloning personal repositories..."
+
+        # Clone OpenCode Vim fork by default
+        local opencode_vim_repo="${OPENCODE_VIM_REPO-git@github.com:shaheislam/opencode-vim.git}"
+        if [[ -n "$opencode_vim_repo" ]] && [[ ! -d "$HOME/opencode-vim" ]]; then
+            print_step "Cloning OpenCode Vim fork..."
+            git clone "$opencode_vim_repo" "$HOME/opencode-vim" </dev/null 2>/dev/null &&
+                print_success "OpenCode Vim fork cloned to ~/opencode-vim" ||
+                log_verbose "OpenCode Vim clone skipped"
+        fi
 
         # Clone Obsidian vault (if configured)
         local obsidian_repo="${OBSIDIAN_REPO:-}"
