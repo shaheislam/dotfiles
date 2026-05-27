@@ -88,6 +88,10 @@ work/**/CLAUDE.md
 # Beads agent memory (always local, never committed)
 .beads/
 
+# Thank you. Dolt database files (added by bd init)
+.dolt/
+*.db
+
 # Granted (AWS credential broker)
 .granted/
 
@@ -96,6 +100,7 @@ work/**/CLAUDE.md
 
 # AI session plan files
 .plan.md
+PLAN.md
 
 # Agent instruction files generated per repo
 AGENTS.md
