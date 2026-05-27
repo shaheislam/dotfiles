@@ -2,7 +2,7 @@
 # shellcheck disable=SC2034
 # =============================================================================
 # Theme: Tokyo Night Custom
-# Variant: Storm-based with personalised session/window colors
+# Variant: Storm-based with rectangular, muted status colors
 # Base: https://github.com/folke/tokyonight.nvim (storm palette)
 #
 # Edit these colors to customise your tmux status bar appearance.
@@ -17,44 +17,44 @@
 
 declare -gA THEME_COLORS
 
-THEME_COLORS[statusbar-bg]="#292e42"
-THEME_COLORS[statusbar-fg]="#c0caf5"
+THEME_COLORS["statusbar-bg"]="#16161e"
+THEME_COLORS["statusbar-fg"]="#a9b1d6"
 
-# Session (left pill)
-THEME_COLORS[session-bg]="#9ece6a"
-THEME_COLORS[session-fg]="#1a1b26"
-THEME_COLORS[session-prefix-bg]="#e0af68"
-THEME_COLORS[session-copy-bg]="#7dcfff"
+# Session (left segment)
+THEME_COLORS["session-bg"]="#24283b"
+THEME_COLORS["session-fg"]="#a9b1d6"
+THEME_COLORS["session-prefix-bg"]="#3b4261"
+THEME_COLORS["session-copy-bg"]="#29394f"
 
-# Windows (centre pills)
-# Active window: #bb9af7 (purple) is storm default
+# Windows (centre segments)
+# Active window uses a muted blue-grey so it is visible without popping.
 # Try: #7aa2f7 (blue), #73daca (teal), #9ece6a (green), #ff9e64 (orange)
-THEME_COLORS[window-active-base]="#7aa2f7"
+THEME_COLORS["window-active-base"]="#2f3549"
 # Inactive window: #3b4261 is storm default
-THEME_COLORS[window-inactive-base]="#3b4261"
+THEME_COLORS["window-inactive-base"]="#1f2335"
 
 # Pane borders
-THEME_COLORS[pane-border-active]="#7aa2f7"
-THEME_COLORS[pane-border-inactive]="#3b4261"
+THEME_COLORS["pane-border-active"]="#3b4261"
+THEME_COLORS["pane-border-inactive"]="#1f2335"
 
 # Health states (variants auto-generated)
-THEME_COLORS[ok-base]="#394b70"
-THEME_COLORS[good-base]="#9ece6a"
-THEME_COLORS[info-base]="#7dcfff"
-THEME_COLORS[warning-base]="#e0af68"
-THEME_COLORS[error-base]="#f7768e"
-THEME_COLORS[disabled-base]="#565f89"
+THEME_COLORS["ok-base"]="#24283b"
+THEME_COLORS["good-base"]="#31483f"
+THEME_COLORS["info-base"]="#29394f"
+THEME_COLORS["warning-base"]="#4a3f2d"
+THEME_COLORS["error-base"]="#4a2f36"
+THEME_COLORS["disabled-base"]="#3b4261"
 
 # Messages
-THEME_COLORS[message-bg]="#292e42"
-THEME_COLORS[message-fg]="#c0caf5"
+THEME_COLORS["message-bg"]="#1f2335"
+THEME_COLORS["message-fg"]="#a9b1d6"
 
 # Popup and menu
-THEME_COLORS[popup-bg]="#292e42"
-THEME_COLORS[popup-fg]="#c0caf5"
-THEME_COLORS[popup-border]="#7aa2f7"
-THEME_COLORS[menu-bg]="#292e42"
-THEME_COLORS[menu-fg]="#c0caf5"
-THEME_COLORS[menu-selected-bg]="#9ece6a"
-THEME_COLORS[menu-selected-fg]="#24283b"
-THEME_COLORS[menu-border]="#7aa2f7"
+THEME_COLORS["popup-bg"]="#1f2335"
+THEME_COLORS["popup-fg"]="#a9b1d6"
+THEME_COLORS["popup-border"]="#3b4261"
+THEME_COLORS["menu-bg"]="#1f2335"
+THEME_COLORS["menu-fg"]="#a9b1d6"
+THEME_COLORS["menu-selected-bg"]="#2f3549"
+THEME_COLORS["menu-selected-fg"]="#c0caf5"
+THEME_COLORS["menu-border"]="#3b4261"
