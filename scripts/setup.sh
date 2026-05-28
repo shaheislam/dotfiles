@@ -293,6 +293,33 @@ materialize_launchagent_template() {
         "$source_path" >"$target_path"
 }
 
+setup_opencode_shared_server() {
+    [[ "$DETECTED_OS" != "macos" ]] && return 0
+
+    print_step "Setting up OpenCode shared server..."
+
+    local opencode_plist="$HOME/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
+    local opencode_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_warning "DRY RUN: Would install and start OpenCode shared server"
+        return 0
+    fi
+
+    mkdir -p "$HOME/.local/state/opencode"
+    mkdir -p "$HOME/Library/LaunchAgents"
+    materialize_launchagent_template "$opencode_plist_source" "$opencode_plist" || true
+    if [[ -f "$opencode_plist" ]]; then
+        if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.opencode-serve"; then
+            launchctl bootstrap "gui/$(id -u)" "$opencode_plist" 2>/dev/null &&
+                print_success "OpenCode shared server started" ||
+                log_verbose "OpenCode shared server start skipped"
+        else
+            log_verbose "OpenCode shared server already running"
+        fi
+    fi
+}
+
 ensure_macos_command_line_tools_current() {
     [[ "$OS" != "macos" ]] && return 0
 
@@ -2079,23 +2106,6 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
             fi
         fi
 
-        # Setup OpenCode shared server LaunchAgent (attach-based TUIs on port 4096)
-        print_step "Setting up OpenCode shared server..."
-        local opencode_plist="$HOME/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
-        local opencode_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
-        mkdir -p "$HOME/.local/state/opencode"
-        mkdir -p "$HOME/Library/LaunchAgents"
-        materialize_launchagent_template "$opencode_plist_source" "$opencode_plist" || true
-        if [[ -f "$opencode_plist" ]]; then
-            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.opencode-serve"; then
-                launchctl bootstrap "gui/$(id -u)" "$opencode_plist" 2>/dev/null &&
-                    print_success "OpenCode shared server started" ||
-                    log_verbose "OpenCode shared server start skipped"
-            else
-                log_verbose "OpenCode shared server already running"
-            fi
-        fi
-
         # Setup Ticket Queue LaunchAgent (auto-start daemon on login)
         print_step "Setting up ticket queue daemon..."
         local queue_plist="$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
@@ -2907,6 +2917,9 @@ main() {
     # Phases 7-8: sequential (shells setup writes to ~/.config/fish which stow also manages)
     phase_7_shells
     phase_8_dotfiles
+
+    # OpenCode attach mode requires its shared server even when packages/fonts are skipped.
+    setup_opencode_shared_server
 
     # Phase 9: fonts/apps (uses brew casks)
     phase_9_fonts_and_apps
