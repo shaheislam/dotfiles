@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2039,SC2046,SC2086,SC2001,SC2294,SC2295,SC2296
 # The MIT License (MIT)
 #
 # Copyright (c) 2024 Junegunn Choi
@@ -20,7 +22,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# shellcheck disable=SC2039
 [[ $0 == - ]] && return
 
 __fzf_git_color() {
@@ -176,6 +177,7 @@ else
       --no-separator --header-border horizontal \
       --border-label-pos 2 \
       --color 'label:blue' \
+      --color 'bg:-1,bg+:-1,gutter:-1,preview-bg:-1,list-bg:-1,input-bg:-1,header-bg:-1' \
       --preview-window 'right,50%' --preview-border line \
       --bind 'ctrl-/:change-preview-window(down,50%|hidden|)' \
       --query "${FZF_GIT_QUERY:-}" "$@"

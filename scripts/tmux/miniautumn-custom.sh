@@ -40,9 +40,9 @@ THEME_COLORS["message-bg"]="#1a141d"
 THEME_COLORS["message-fg"]="#d7d5cd"
 
 # Popup and menu
-THEME_COLORS["popup-bg"]="#1a141d"
-THEME_COLORS["popup-fg"]="#d7d5cd"
-THEME_COLORS["popup-border"]="#423b45"
+THEME_COLORS["popup-bg"]="default"
+THEME_COLORS["popup-fg"]="default"
+THEME_COLORS["popup-border"]="default"
 THEME_COLORS["menu-bg"]="#1a141d"
 THEME_COLORS["menu-fg"]="#d7d5cd"
 THEME_COLORS["menu-selected-bg"]="#423b45"

@@ -378,9 +378,10 @@ if status is-interactive
     set -l yellow "#efcfab" # Yellow
     set -l magenta "#e4caf1" # Accent
 
-    # Enhanced FZF options matching WezTerm aesthetics (simulated transparency)
-    # Using -1 for bg creates transparent background effect
-    set -gx FZF_DEFAULT_OPTS "--color=fg:$fg,bg:-1,hl:$blue,fg+:$fg,bg+:$bg_highlight,hl+:$magenta,info:$yellow,prompt:$cyan,pointer:$blue,marker:$green,spinner:$cyan,header:$purple,border:$bg_highlight,preview-bg:-1,preview-fg:$fg \
+    # Enhanced FZF options matching WezTerm aesthetics.
+    # Keep every fzf section background transparent so TAB completion popups
+    # inherit the terminal/tmux background instead of painting solid blocks.
+    set -gx FZF_DEFAULT_OPTS "--color=fg:$fg,bg:-1,gutter:-1,hl:$blue,fg+:$fg,bg+:-1,hl+:$magenta,info:$yellow,prompt:$cyan,pointer:$blue,marker:$green,spinner:$cyan,header:$purple,border:$bg_highlight,preview-bg:-1,preview-fg:$fg,list-bg:-1,input-bg:-1,header-bg:-1 \
         --height 60% \
         --layout=reverse \
         --border=rounded \
