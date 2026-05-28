@@ -55,6 +55,11 @@ resolve_plugin_path() {
     esac
 }
 
+plugin_configured() {
+    local plugin="$1"
+    jq -e --arg plugin "$plugin" '(.plugin // []) | index($plugin) != null' "$CONFIG_FILE" >/dev/null 2>&1
+}
+
 echo "OpenCode Doctor"
 echo "Repo:   $ROOT"
 echo "Config: $CONFIG_FILE"
@@ -293,6 +298,12 @@ else
     print_result WARN "compat plugin" "Missing .config/opencode/plugin/claude-compat.ts"
 fi
 
+if [ -f "$CONFIG_FILE" ] && plugin_configured "./plugin/claude-compat.ts"; then
+    print_result PASS "compat configured" "./plugin/claude-compat.ts"
+else
+    print_result WARN "compat configured" "Add ./plugin/claude-compat.ts to opencode.json plugin list"
+fi
+
 if [ -f "$PLUGIN_DIR/project-env.ts" ]; then
     print_result PASS "env plugin" "$PLUGIN_DIR/project-env.ts"
 else
@@ -303,6 +314,12 @@ if [ -f "$PLUGIN_DIR/tmux-status.ts" ]; then
     print_result PASS "tmux plugin" "$PLUGIN_DIR/tmux-status.ts"
 else
     print_result WARN "tmux plugin" "Missing .config/opencode/plugin/tmux-status.ts"
+fi
+
+if [ -f "$CONFIG_FILE" ] && plugin_configured "./plugin/tmux-status.ts"; then
+    print_result PASS "tmux configured" "./plugin/tmux-status.ts"
+else
+    print_result WARN "tmux configured" "Add ./plugin/tmux-status.ts to opencode.json plugin list"
 fi
 
 ROUTING_FILE="$ROOT/.opencode/model-routing.json"

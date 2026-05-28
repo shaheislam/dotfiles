@@ -9,7 +9,7 @@
 #
 # Detection per poll (every 10s):
 #   1. tmux list-panes -a to get pane TTYs
-#   2. ps -t $tty to check for claude/opencode process
+#   2. ps -t $tty to check for claude/opencode/ocv process
 #   3. tmux capture-pane to check for "… (" spinner pattern
 #   4. Set @wname_style accordingly
 #
@@ -110,10 +110,10 @@ check_all_windows() {
             local tty="${pane_entry#*:}"
             [[ -z "$tty" ]] && continue
 
-            # Look for claude, codex, or opencode process on this TTY
+            # Look for claude, codex, opencode, or the ocv OpenCode TUI on this TTY
             # Match with or without path prefix (e.g. "claude ..." or "/opt/homebrew/bin/claude ...")
             # shellcheck disable=SC2009 # macOS pgrep -t behavior varies; ps is stable here.
-            if ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)(claude|codex|opencode)( |$)'; then
+            if ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)(claude|codex|opencode|ocv)( |$)'; then
                 agent_found=true
 
                 # Detect state from the bottom of the pane.

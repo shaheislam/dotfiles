@@ -697,3 +697,5 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     },
   }
 }
+
+export default ClaudeCompatPlugin

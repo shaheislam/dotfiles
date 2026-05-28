@@ -15,7 +15,23 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
     OPENCODE_STATUS: "@opencode_status",
     OPENCODE_MODEL: "@opencode_model",
     OPENCODE_DIR: "@opencode_dir",
+    WNAME_STYLE: "@wname_style",
   } as const
+
+  function statusStyle(statusType: string) {
+    switch (statusType) {
+      case "busy":
+      case "running":
+      case "thinking":
+      case "streaming":
+      case "error":
+        return "#[fg=#f7768e]"
+      case "idle":
+        return "#[fg=#9ece6a]"
+      default:
+        return "#[fg=#e0af68]"
+    }
+  }
 
   async function setTmuxEnv(key: string, value: string) {
     try {
@@ -76,6 +92,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
       .then(async () => {
         await setTmuxEnv("OPENCODE_STATUS", statusType)
         await setTmuxScoped("OPENCODE_STATUS", statusType)
+        await setTmuxScoped("WNAME_STYLE", statusStyle(statusType))
       })
       .catch(() => undefined)
   }
@@ -90,6 +107,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           await setOpenCodeMetadata("OPENCODE_SESSION_ID", session.id)
           await setOpenCodeMetadata("OPENCODE_STATUS", "active")
           await setOpenCodeMetadata("OPENCODE_DIR", directory)
+          await setTmuxScoped("WNAME_STYLE", "#[fg=#e0af68]")
           break
         }
 
@@ -120,6 +138,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
             unsetOpenCodeMetadata("OPENCODE_STATUS"),
             unsetOpenCodeMetadata("OPENCODE_MODEL"),
             unsetOpenCodeMetadata("OPENCODE_DIR"),
+            unsetTmuxScoped("WNAME_STYLE"),
           ])
           break
         }
@@ -137,3 +156,5 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
     },
   }
 }
+
+export default TmuxStatusPlugin

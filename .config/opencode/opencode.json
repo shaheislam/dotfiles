@@ -60,6 +60,8 @@
     "@tarquinen/opencode-dcp@latest",
     "opencode-pty",
     "opencode-vibeguard",
+    "./plugin/claude-compat.ts",
+    "./plugin/tmux-status.ts",
     "./plugin/nvim-open.ts"
   ],
   "autoupdate": false,
