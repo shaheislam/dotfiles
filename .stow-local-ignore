@@ -98,8 +98,8 @@ Makefile
 \.claude/settings\.json
 Library/Application Support/Claude/claude_desktop_config\.json
 
-# OpenCode server plist is materialized from a template by setup/opencode-service
-Library/LaunchAgents/com\.dotfiles\.opencode-serve\.plist
+# LaunchAgent plists are templates materialized by setup helpers.
+Library/LaunchAgents/.*\.plist
 
 # App-local generated config/state that should not block stow
 \.config/btop/btop\.conf
