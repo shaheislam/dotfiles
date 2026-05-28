@@ -68,9 +68,6 @@ if status is-interactive
     set -gx CLAUDE_CODE_EFFORT_LEVEL medium # env var: low|medium|high|max|auto (max=Opus 4.6 only, session-scoped)
     set -gx CLAUDE_CODE_NO_FLICKER 0 # Explicitly disable fullscreen renderer by default to avoid redraw issues
 
-    # PinchTab - Multi-instance Chrome orchestrator for AI agents
-    set -gx PINCHTAB_PORT 9867
-    set -gx PINCHTAB_CONFIG "$HOME/.config/pinchtab/config.json"
     # OpenTelemetry observability (harness engineering)
     set -gx CLAUDE_CODE_ENABLE_TELEMETRY 1
     set -gx OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4318"

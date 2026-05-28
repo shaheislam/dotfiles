@@ -203,7 +203,7 @@ Create `.claude/skills/autoplan/SKILL.md` that:
 
 Features from gstack that this repo already implements well:
 
-- **Browser automation**: 4 tools (PinchTab, agent-browser, Playwright MCP, ClaudeCodeBrowser) vs gstack's single /browse
+- **Browser automation**: agent-browser, Playwright MCP, and ClaudeCodeBrowser vs gstack's single /browse
 - **Code review**: code-review plugin, pr-review-toolkit, claude-review.fish -- more comprehensive than gstack's /review
 - **Cross-model analysis**: codex-bridge-review.sh + cross-provider bridge vs gstack's /codex skill
 - **Telemetry**: Full OTEL LGTM stack (Grafana, Prometheus, Loki, Tempo) vs gstack's JSONL + Supabase

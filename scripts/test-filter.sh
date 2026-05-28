@@ -267,14 +267,10 @@ test_browser() {
 
     run_test "agent-browser config exists" "[ -f '$DOTFILES_ROOT/.agent-browser/config.json' ]"
     run_test "agent-browser config is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.agent-browser/config.json'))\""
-    run_test "PinchTab config exists" "[ -f '$DOTFILES_ROOT/.config/pinchtab/config.json' ]"
-    run_test "PinchTab config is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.config/pinchtab/config.json'))\""
     run_test "agent-browser skill exists" "[ -f '$DOTFILES_ROOT/.claude/skills/agent-browser/SKILL.md' ]"
-    run_test "pinchtab-ctl Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/pinchtab-ctl.fish' ]"
     run_test "ccb Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/ccb.fish' ]"
     run_test "setup.sh configures Playwright MCP" "grep -q 'claude mcp add --scope user playwright bunx @playwright/mcp@latest' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh configures agent-browser" "grep -q 'agent-browser install' '$DOTFILES_ROOT/scripts/setup.sh'"
-    run_test "setup.sh configures PinchTab" "grep -q 'Installing/updating PinchTab' '$DOTFILES_ROOT/scripts/setup.sh' && grep -q 'pinchtab' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "Brewfile installs Firefox" "grep -q 'cask \"firefox\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
     run_test "setup.sh installs Firefox GUI app" "grep -q '\"firefox\"' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh invokes Firefox setup" "grep -q 'firefox-setup.sh' '$DOTFILES_ROOT/scripts/setup.sh'"
@@ -334,7 +330,6 @@ test_browser() {
     run_test "gwt-ticket persists browser_validate state" "grep -q 'browser_validate:' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
 
     if command -v fish &>/dev/null; then
-        run_test "pinchtab-ctl Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/pinchtab-ctl.fish'"
         run_test "ccb Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/ccb.fish'"
         run_test "gwt-ticket Fish syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
     fi

@@ -101,9 +101,6 @@ Library/Application Support/Claude/claude_desktop_config\.json
 # OpenCode server plist is materialized from a template by setup/opencode-service
 Library/LaunchAgents/com\.dotfiles\.opencode-serve\.plist
 
-# Skill/runtime materialization can leave identical non-stow files in ~/.claude
-\.claude/skills/pinchtab/agents/openai\.yaml
-
 # App-local generated config/state that should not block stow
 \.config/btop/btop\.conf
 \.config/opencode/dcp\.jsonc

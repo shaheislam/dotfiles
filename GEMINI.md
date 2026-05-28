@@ -77,7 +77,6 @@
 | `gwt-ticket` | `gwtt` | Autonomous ticket execution (worktree + agent loop) |
 | `gwt-status` | `gwts` | Show worktree + devcontainer status table |
 | `gwt-cleanup` | `gwtclean` | Remove stale devcontainer instances |
-| `pinchtab-ctl` | `ptctl` | PinchTab Chrome orchestrator management |
 
 ## Shell Code Style
 
@@ -102,7 +101,7 @@
 | Type | Pattern | Example |
 |------|---------|---------|
 | Fish function | kebab-case | `gwt-dev`, `otel-start` |
-| Fish alias | short lowercase | `gwtd`, `ptctl` |
+| Fish alias | short lowercase | `gwtd`, `gwts` |
 | Bash function | snake_case | `install_package` |
 | Script file | kebab-case | `setup-mobile-coding.sh` |
 | Config dir | lowercase | `.config/ghostty/` |

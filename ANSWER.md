@@ -164,7 +164,7 @@ Only create a new skill when the capability doesn't fit an existing skill's scop
 | Task creation | `/todo` + `/start` |
 | Research | `/gap-analysis` + `/research-spike` + `/best-practice` |
 | Memory consolidation | `/dream` + JFDI family |
-| Browser automation | `/agent-browser` + Playwright MCP + PinchTab |
+| Browser automation | `/agent-browser` + Playwright MCP |
 | CI/CD review | `ci-check` plugin skill |
 | PR creation | `create-pr` plugin skill |
 | Code review | `code-review` plugin skill |

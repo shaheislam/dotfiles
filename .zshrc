@@ -72,10 +72,6 @@ export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
 export PATH="$HOME/dotfiles/scripts/bin:$PATH"
 export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 
-# PinchTab - Multi-instance Chrome orchestrator for AI agents
-export PINCHTAB_PORT=9867
-export PINCHTAB_CONFIG="$HOME/.config/pinchtab/config.json"
-
 # VSCode and Cursor PATH entries removed
 
 # Initialize tools (using cached initialization for performance)

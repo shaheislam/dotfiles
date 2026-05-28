@@ -1252,37 +1252,6 @@ EAEOF
             log_verbose "agent-browser Chromium install skipped (run 'agent-browser install' manually)"
     fi
 
-    # PinchTab - Multi-instance Chrome orchestrator for AI agents
-    # Provides persistent profiles, multi-agent coordination, dashboard, stealth mode.
-    print_step "Installing/updating PinchTab..."
-    if run_remote_shell_installer bash https://pinchtab.com/install.sh >/dev/null 2>&1; then
-        print_success "PinchTab installed/updated"
-    else
-        if command_exists pinchtab; then
-            print_success "PinchTab already installed"
-        else
-            print_warning "PinchTab install failed (run 'curl -fsSL https://pinchtab.com/install.sh | bash' manually)"
-        fi
-    fi
-
-    # Configure PinchTab defaults
-    if command_exists pinchtab; then
-        PINCHTAB_CONFIG_DIR="$HOME/.config/pinchtab"
-        mkdir -p "$PINCHTAB_CONFIG_DIR"
-        if [[ ! -f "$PINCHTAB_CONFIG_DIR/config.json" ]]; then
-            cat >"$PINCHTAB_CONFIG_DIR/config.json" <<'PTEOF'
-{
-  "port": "9867",
-  "headless": true,
-  "maxTabs": 10,
-  "timeoutSec": 30,
-  "navigateSec": 15
-}
-PTEOF
-            print_success "PinchTab config created at $PINCHTAB_CONFIG_DIR/config.json"
-        fi
-    fi
-
     # Configure Claude Code heavy backup ecosystem only when explicitly requested.
     if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && command_exists claude; then
         print_step "Configuring Claude Code heavy backup integrations..."
