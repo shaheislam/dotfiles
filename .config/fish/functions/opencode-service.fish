@@ -7,6 +7,8 @@ function opencode-service --description "Manage the shared OpenCode launchd serv
     set -l out_log "$state_dir/serve.out.log"
     set -l err_log "$state_dir/serve.err.log"
     set -l password_file "$state_dir/server.password"
+    set -l port (set -q OPENCODE_PORT; and echo $OPENCODE_PORT; or echo 4096)
+    set -l url "http://127.0.0.1:$port"
     set -l cmd (string lower -- (test -n "$argv[1]"; and echo $argv[1]; or echo status))
 
     if test -f "$source_plist"
@@ -30,6 +32,17 @@ function opencode-service --description "Manage the shared OpenCode launchd serv
             else
                 echo "$label not loaded"
                 return 1
+            end
+
+            if command -q curl; and test -s "$password_file"
+                set -l password (string collect <$password_file)
+                command curl -fsS -u "opencode:$password" "$url/path" >/dev/null 2>/dev/null
+                if test $status -eq 0
+                    echo "$url healthy"
+                else
+                    echo "$url not responding" >&2
+                    return 1
+                end
             end
         case logs
             echo "stdout: $out_log"

@@ -32,6 +32,20 @@ const DIFF_KEYS = [
   "hunks",
 ]
 
+const DEFAULT_RECORDED_PREFIXES = [
+  "session.",
+  "tool.",
+  "permission.",
+  "message.patch.",
+  "file.",
+]
+
+const DEFAULT_RECORDED_EVENTS = new Set([
+  "message.updated",
+  "server.instance.disposed",
+  "tui.toast.show",
+])
+
 function looksLikeDiff(candidate: unknown): candidate is string {
   if (typeof candidate !== "string") return false
   const trimmed = candidate.trimStart()
@@ -110,7 +124,7 @@ async function writeJsonl(filePath: string, payload: NormalizedEvent) {
 }
 
 function callEntireHook(hook: string, payload: Record<string, unknown>) {
-  if (process.env.OPENCODE_SSE_DISABLE_ENTIRE === "1") {
+  if (process.env.OPENCODE_SSE_DISABLE_ENTIRE === "1" || process.env.OPENCODE_SSE_ENTIRE !== "1") {
     return Promise.resolve()
   }
   return new Promise<void>((resolve) => {
@@ -132,6 +146,12 @@ function callEntireHook(hook: string, payload: Record<string, unknown>) {
     child.stdin.end()
     child.on("close", () => resolve())
   })
+}
+
+function shouldRecordEvent(type: string) {
+  if (process.env.OPENCODE_SSE_FULL === "1") return true
+  if (DEFAULT_RECORDED_EVENTS.has(type)) return true
+  return DEFAULT_RECORDED_PREFIXES.some((prefix) => type.startsWith(prefix))
 }
 
 function normalizeEvent(event: OpencodeEvent): NormalizedEvent {
@@ -213,6 +233,9 @@ export const OpencodeSseRecorderPlugin: Plugin = async ({ directory }) => {
   return {
     event: async ({ event }) => {
       if (!event) return
+      const eventType = (event as OpencodeEvent).type ?? "unknown"
+      if (!shouldRecordEvent(eventType)) return
+
       const normalized = normalizeEvent(event as OpencodeEvent)
       await writeJsonl(eventLogPath, normalized)
       await callEntireHook("sse-event", normalized)

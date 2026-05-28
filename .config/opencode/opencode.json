@@ -98,6 +98,10 @@
     "prune": true,
     "reserved": 4096
   },
+  "tool_output": {
+    "max_lines": 200,
+    "max_bytes": 8192
+  },
   "watcher": {
     "ignore": [
       "node_modules/**",

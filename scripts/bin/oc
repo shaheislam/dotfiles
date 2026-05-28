@@ -3,10 +3,26 @@ set -euo pipefail
 
 port="${OPENCODE_PORT:-4096}"
 password_file="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/server.password"
+url="http://127.0.0.1:${port}"
+label="com.dotfiles.opencode-serve"
 
 if [ -z "${OPENCODE_SERVER_PASSWORD:-}" ] && [ -s "$password_file" ]; then
 	export OPENCODE_SERVER_PASSWORD="$(tr -d '\n' <"$password_file")"
 fi
 export OPENCODE_SERVER_USERNAME="${OPENCODE_SERVER_USERNAME:-opencode}"
 
-exec opencode attach "http://127.0.0.1:${port}" --dir "${OPENCODE_DIR:-$PWD}" "$@"
+check_server() {
+	command -v curl >/dev/null 2>&1 || return 0
+	curl -fsS -u "${OPENCODE_SERVER_USERNAME}:${OPENCODE_SERVER_PASSWORD:-}" "${url}/path" >/dev/null 2>&1
+}
+
+if ! check_server && command -v launchctl >/dev/null 2>&1; then
+	uid="$(id -u)"
+	launchctl kickstart -k "gui/${uid}/${label}" >/dev/null 2>&1 || true
+	for _ in 1 2 3 4 5; do
+		check_server && break
+		sleep 0.2
+	done
+fi
+
+exec opencode attach "${url}" --dir "${OPENCODE_DIR:-$PWD}" "$@"

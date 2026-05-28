@@ -24,15 +24,19 @@ if [[ "$SELF" != "$CANONICAL" && -x "$CANONICAL" ]]; then
 fi
 
 TMUX_SOCKET="${TMUX%%,*}"
-PID_FILE="/tmp/tmux-claude-watcher.pid"
+SOCKET_ID="${TMUX_SOCKET:-default}"
+SOCKET_ID="${SOCKET_ID//[^A-Za-z0-9_.-]/_}"
+PID_FILE="/tmp/tmux-claude-watcher-${SOCKET_ID}.pid"
 POLL_INTERVAL=10
 
 start_daemon() {
-    # Kill ALL existing watcher instances
-    local my_pid=$$
-    pgrep -f "tmux-claude-watcher.sh start" 2>/dev/null | while read pid; do
-        [[ "$pid" != "$my_pid" ]] && kill "$pid" 2>/dev/null
-    done
+    # Only replace the watcher for this tmux socket. Multiple tmux servers can
+    # coexist, so a global pgrep/kill causes unrelated sockets to lose status.
+    if [[ -f "$PID_FILE" ]]; then
+        local old_pid
+        old_pid=$(cat "$PID_FILE" 2>/dev/null || true)
+        [[ -n "$old_pid" ]] && kill "$old_pid" 2>/dev/null || true
+    fi
     rm -f "$PID_FILE"
     sleep 0.2
 
@@ -40,7 +44,7 @@ start_daemon() {
     rm -rf /tmp/tmux-claude-state 2>/dev/null
 
     (
-        trap "rm -f '$PID_FILE'" EXIT
+        trap 'rm -f "$PID_FILE"' EXIT
         TMUX_SOCKET="${TMUX%%,*}"
 
         while true; do
@@ -55,9 +59,11 @@ start_daemon() {
 }
 
 stop_daemon() {
-    pgrep -f "tmux-claude-watcher.sh start" 2>/dev/null | while read pid; do
-        kill "$pid" 2>/dev/null
-    done
+    if [[ -f "$PID_FILE" ]]; then
+        local old_pid
+        old_pid=$(cat "$PID_FILE" 2>/dev/null || true)
+        [[ -n "$old_pid" ]] && kill "$old_pid" 2>/dev/null || true
+    fi
     rm -f "$PID_FILE"
     echo "Watcher stopped"
 }
@@ -72,8 +78,8 @@ check_all_windows() {
     declare -A seen_windows
     local all_windows=()
 
-    local session win_idx pane_idx pane_tty pane_id
-    while IFS=$'\t' read -r session win_idx pane_idx pane_tty pane_id; do
+    local session win_idx pane_tty pane_id
+    while IFS=$'\t' read -r session win_idx _pane_idx pane_tty pane_id; do
         [[ -z "$session" ]] && continue
         local key="${session}:${win_idx}"
 
@@ -106,6 +112,7 @@ check_all_windows() {
 
             # Look for claude, codex, or opencode process on this TTY
             # Match with or without path prefix (e.g. "claude ..." or "/opt/homebrew/bin/claude ...")
+            # shellcheck disable=SC2009 # macOS pgrep -t behavior varies; ps is stable here.
             if ps -o args= -t "$tty" 2>/dev/null | grep -qE '(^|/)(claude|codex|opencode)( |$)'; then
                 agent_found=true
 
@@ -119,7 +126,7 @@ check_all_windows() {
                 # COMPLETE or _DONE = task finished
                 # Otherwise = idle/waiting for input
                 local pane_bottom
-                pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 20)
+                pane_bottom=$(tmux capture-pane -t "$pid" -S -20 -p 2>/dev/null)
                 if echo "$pane_bottom" | grep -q '… ('; then
                     agent_working=true
                 elif echo "$pane_bottom" | grep -q 'COMPLETE\|_DONE'; then
@@ -130,7 +137,7 @@ check_all_windows() {
                 # No agent process running — check if codex exec completed
                 # (codex exec exits when done, unlike claude which stays interactive)
                 local pane_bottom
-                pane_bottom=$(tmux capture-pane -t "$pid" -p 2>/dev/null | tail -n 20)
+                pane_bottom=$(tmux capture-pane -t "$pid" -S -20 -p 2>/dev/null)
                 if echo "$pane_bottom" | grep -qE 'codex (exec|--full-auto)'; then
                     agent_found=true
                     agent_complete=true

@@ -21,6 +21,7 @@ const DOTFILES_ROOT = join(process.env.HOME || "", "dotfiles")
 const CLAUDE_HOOKS_DIR = join(DOTFILES_ROOT, ".claude", "hooks")
 const TMUX_HOOKS_DIR = join(DOTFILES_ROOT, "scripts", "tmux", "hooks")
 const DREAM_DIR = join(DOTFILES_ROOT, ".claude", "skills", "dream")
+const PLAN_WATCH_DEBOUNCE_MS = 5000
 
 function normalizeMessage(text: string) {
   return text.trim()
@@ -80,6 +81,8 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
   let bridgeReviewRunning = false
   let lastBridgeReviewedAssistant = ""
   let currentOpenCodeModel = process.env.OPENCODE_PRIMARY_MODEL || process.env.OPENCODE_MODEL || ""
+  let lastPlanWatchAt = 0
+  let planWatchRunning: Promise<void> | null = null
 
   function addSessionContext(text: string) {
     const normalized = normalizeMessage(text)
@@ -311,6 +314,26 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     } else {
       addTransientContext(text)
     }
+  }
+
+  async function appendPlanWatch(payload: Record<string, unknown>, force = false) {
+    if (process.env.OPENCODE_PLAN_WATCH_DISABLE === "1") {
+      return
+    }
+
+    const now = Date.now()
+    if (!force && now - lastPlanWatchAt < PLAN_WATCH_DEBOUNCE_MS) {
+      return
+    }
+    if (planWatchRunning && !force) {
+      return
+    }
+
+    lastPlanWatchAt = now
+    planWatchRunning = appendHookMessage(hookPath("plan-watch.sh"), payload).finally(() => {
+      planWatchRunning = null
+    })
+    await planWatchRunning
   }
 
   async function appendPromptContext(prompt: string) {
@@ -569,13 +592,13 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
               cwd: projectDir,
             }),
             appendPromptContext(prompt),
-            appendHookMessage(hookPath("plan-watch.sh"), {
+            appendPlanWatch({
               session_id: currentSessionID ?? undefined,
               tool_name: "UserPromptSubmit",
               tool_input: { prompt },
               prompt,
               cwd: projectDir,
-            }),
+            }, true),
           ])
           break
         }
@@ -638,9 +661,10 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
         await appendHookMessage(hookPath("auto-format.py"), payload)
         await appendHookMessage(hookPath("file-modified.sh"), payload)
         await appendHookMessage(hookPath("ci-lint-on-save.sh"), payload)
+        await appendPlanWatch(payload, true)
+      } else {
+        await appendPlanWatch(payload)
       }
-
-      await appendHookMessage(hookPath("plan-watch.sh"), payload)
     },
 
     "tool.execute.error": async (input, output) => {

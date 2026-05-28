@@ -7,6 +7,8 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
   let currentSessionID: string | null = null
   let currentModel: string | null = null
   const tmuxPane = process.env.TMUX_PANE
+  const lastValues = new Map<string, string>()
+  let pendingStatus: Promise<void> | null = null
 
   const scopedKeys = {
     OPENCODE_SESSION_ID: "@opencode_session_id",
@@ -53,81 +55,29 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
     }
   }
 
-  function setTmuxEnvSync(key: string, value: string) {
-    try {
-      Bun.spawnSync(["tmux", "set-environment", "-g", key, value], {
-        cwd: directory,
-        stdout: "ignore",
-        stderr: "ignore",
-      })
-    } catch {
-      // ignore
-    }
-  }
-
-  function unsetTmuxEnvSync(key: string) {
-    try {
-      Bun.spawnSync(["tmux", "set-environment", "-g", "-u", key], {
-        cwd: directory,
-        stdout: "ignore",
-        stderr: "ignore",
-      })
-    } catch {
-      // ignore
-    }
-  }
-
-  function setTmuxScopedSync(key: keyof typeof scopedKeys, value: string) {
-    if (!tmuxPane) return
-    const option = scopedKeys[key]
-    try {
-      Bun.spawnSync(["tmux", "set-option", "-p", "-t", tmuxPane, option, value], {
-        cwd: directory,
-        stdout: "ignore",
-        stderr: "ignore",
-      })
-      Bun.spawnSync(["tmux", "set-window-option", "-t", tmuxPane, option, value], {
-        cwd: directory,
-        stdout: "ignore",
-        stderr: "ignore",
-      })
-    } catch {
-      // ignore
-    }
-  }
-
-  function unsetTmuxScopedSync(key: keyof typeof scopedKeys) {
-    if (!tmuxPane) return
-    const option = scopedKeys[key]
-    try {
-      Bun.spawnSync(["tmux", "set-option", "-p", "-u", "-t", tmuxPane, option], {
-        cwd: directory,
-        stdout: "ignore",
-        stderr: "ignore",
-      })
-      Bun.spawnSync(["tmux", "set-window-option", "-u", "-t", tmuxPane, option], {
-        cwd: directory,
-        stdout: "ignore",
-        stderr: "ignore",
-      })
-    } catch {
-      // ignore
-    }
-  }
-
   async function setOpenCodeMetadata(key: keyof typeof scopedKeys, value: string) {
+    if (lastValues.get(key) === value) return
+    lastValues.set(key, value)
     await setTmuxEnv(key, value)
     await setTmuxScoped(key, value)
   }
 
-  function setOpenCodeMetadataSync(key: keyof typeof scopedKeys, value: string) {
-    setTmuxEnvSync(key, value)
-    setTmuxScopedSync(key, value)
+  async function unsetOpenCodeMetadata(key: keyof typeof scopedKeys) {
+    if (!lastValues.has(key)) return
+    lastValues.delete(key)
+    await unsetTmuxEnv(key)
+    await unsetTmuxScoped(key)
   }
 
-  function unsetOpenCodeMetadataSync(key: keyof typeof scopedKeys) {
-    unsetTmuxEnvSync(key)
-    unsetTmuxScopedSync(key)
+  function queueStatusUpdate(statusType: string) {
+    if (lastValues.get("OPENCODE_STATUS") === statusType) return
+    lastValues.set("OPENCODE_STATUS", statusType)
+    pendingStatus = (pendingStatus ?? Promise.resolve())
+      .then(async () => {
+        await setTmuxEnv("OPENCODE_STATUS", statusType)
+        await setTmuxScoped("OPENCODE_STATUS", statusType)
+      })
+      .catch(() => undefined)
   }
 
   return {
@@ -156,7 +106,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           const props = (event as any).properties
           const statusType = props?.status?.type
           if (statusType) {
-            setOpenCodeMetadataSync("OPENCODE_STATUS", statusType)
+            queueStatusUpdate(statusType)
           }
           break
         }
@@ -165,10 +115,12 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
         case "server.instance.disposed": {
           currentSessionID = null
           currentModel = null
-          unsetOpenCodeMetadataSync("OPENCODE_SESSION_ID")
-          unsetOpenCodeMetadataSync("OPENCODE_STATUS")
-          unsetOpenCodeMetadataSync("OPENCODE_MODEL")
-          unsetOpenCodeMetadataSync("OPENCODE_DIR")
+          await Promise.all([
+            unsetOpenCodeMetadata("OPENCODE_SESSION_ID"),
+            unsetOpenCodeMetadata("OPENCODE_STATUS"),
+            unsetOpenCodeMetadata("OPENCODE_MODEL"),
+            unsetOpenCodeMetadata("OPENCODE_DIR"),
+          ])
           break
         }
       }
