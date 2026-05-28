@@ -58,7 +58,6 @@ skills/shared/dream/.last-dream
 .claude/agents/entire-search.md
 .gemini/agents/
 .gemini/settings.json
-.opencode/plugins/
 
 # Entire CLI git hooks (regenerated per-worktree by `entire enable`)
 # Project-specific hooks in .githooks/ should still be committed
@@ -287,7 +286,6 @@ awscli-bundle/
 /k3d-colima-setup.sh
 /nvim-pod-installer.sh
 /open-github.sh
-/test-distant.sh
 /test-lsp-inheritance.sh
 /validate-comprehensive.sh
 /validate-linux-runtime.sh

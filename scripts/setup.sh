@@ -293,13 +293,30 @@ materialize_launchagent_template() {
         "$source_path" >"$target_path"
 }
 
+install_launchagent_template() {
+    local label="$1"
+    local started_message="$2"
+    local skipped_message="$3"
+    local already_message="${4:-$label already loaded}"
+    local source_path="$DOTFILES_ROOT/Library/LaunchAgents/$label.plist"
+    local target_path="$HOME/Library/LaunchAgents/$label.plist"
+
+    materialize_launchagent_template "$source_path" "$target_path" || return 1
+
+    if launchctl list 2>/dev/null | grep -q "$label"; then
+        log_verbose "$already_message"
+        return 0
+    fi
+
+    launchctl bootstrap "gui/$(id -u)" "$target_path" 2>/dev/null &&
+        print_success "$started_message" ||
+        log_verbose "$skipped_message"
+}
+
 setup_opencode_shared_server() {
     [[ "$DETECTED_OS" != "macos" ]] && return 0
 
     print_step "Setting up OpenCode shared server..."
-
-    local opencode_plist="$HOME/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
-    local opencode_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.opencode-serve.plist"
 
     if [[ "$DRY_RUN" == "true" ]]; then
         print_warning "DRY RUN: Would install and start OpenCode shared server"
@@ -307,17 +324,11 @@ setup_opencode_shared_server() {
     fi
 
     mkdir -p "$HOME/.local/state/opencode"
-    mkdir -p "$HOME/Library/LaunchAgents"
-    materialize_launchagent_template "$opencode_plist_source" "$opencode_plist" || true
-    if [[ -f "$opencode_plist" ]]; then
-        if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.opencode-serve"; then
-            launchctl bootstrap "gui/$(id -u)" "$opencode_plist" 2>/dev/null &&
-                print_success "OpenCode shared server started" ||
-                log_verbose "OpenCode shared server start skipped"
-        else
-            log_verbose "OpenCode shared server already running"
-        fi
-    fi
+    install_launchagent_template \
+        "com.dotfiles.opencode-serve" \
+        "OpenCode shared server started" \
+        "OpenCode shared server start skipped" \
+        "OpenCode shared server already running" || true
 }
 
 ensure_macos_command_line_tools_current() {
@@ -1474,15 +1485,10 @@ EAEOF
                 print_success "kubectl-fzf-server installed" ||
                 log_verbose "kubectl-fzf-server installation skipped"
         fi
-        # Load launchd plist for kubectl-fzf-server
-        local kubectl_fzf_plist="$HOME/Library/LaunchAgents/com.kubectl-fzf-server.plist"
-        local kubectl_fzf_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.kubectl-fzf-server.plist"
-        materialize_launchagent_template "$kubectl_fzf_plist_source" "$kubectl_fzf_plist" || true
-        if [[ -f "$kubectl_fzf_plist" ]] && ! launchctl list 2>/dev/null | grep -q "com.kubectl-fzf-server"; then
-            launchctl bootstrap "gui/$(id -u)" "$kubectl_fzf_plist" 2>/dev/null &&
-                print_success "kubectl-fzf-server service started" ||
-                log_verbose "kubectl-fzf-server service start skipped"
-        fi
+        install_launchagent_template \
+            "com.kubectl-fzf-server" \
+            "kubectl-fzf-server service started" \
+            "kubectl-fzf-server service start skipped" || true
     fi
 
     # Install consul-template (HashiCorp templating tool)
@@ -2061,79 +2067,42 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
 
         # Setup SSH Key Auto-loading LaunchAgent
         print_step "Setting up SSH key auto-loading..."
-        local ssh_plist="$HOME/Library/LaunchAgents/com.user.ssh-add.plist"
-        local ssh_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.user.ssh-add.plist"
-        mkdir -p "$HOME/Library/LaunchAgents"
-        if materialize_launchagent_template "$ssh_plist_source" "$ssh_plist"; then
-            print_success "SSH LaunchAgent installed"
-        fi
-        if [[ -f "$ssh_plist" ]]; then
-            if ! launchctl list 2>/dev/null | grep -q "com.user.ssh-add"; then
-                launchctl bootstrap "gui/$(id -u)" "$ssh_plist" 2>/dev/null &&
-                    print_success "SSH key auto-loading enabled" ||
-                    log_verbose "SSH LaunchAgent load skipped"
-            fi
-        fi
+        install_launchagent_template \
+            "com.user.ssh-add" \
+            "SSH key auto-loading enabled" \
+            "SSH LaunchAgent load skipped" || true
 
         # Setup Ticket Queue LaunchAgent (auto-start daemon on login)
         print_step "Setting up ticket queue daemon..."
-        local queue_plist="$HOME/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
-        local queue_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.ticket-queue.plist"
-        materialize_launchagent_template "$queue_plist_source" "$queue_plist" || true
-        if [[ -f "$queue_plist" ]]; then
-            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.ticket-queue"; then
-                launchctl bootstrap "gui/$(id -u)" "$queue_plist" 2>/dev/null &&
-                    print_success "Ticket queue daemon started" ||
-                    log_verbose "Ticket queue daemon start skipped"
-            else
-                log_verbose "Ticket queue daemon already running"
-            fi
-        fi
+        install_launchagent_template \
+            "com.dotfiles.ticket-queue" \
+            "Ticket queue daemon started" \
+            "Ticket queue daemon start skipped" \
+            "Ticket queue daemon already running" || true
 
         # Setup Mayor LaunchAgent (global coordinator daemon on login)
         print_step "Setting up mayor daemon..."
-        local mayor_plist="$HOME/Library/LaunchAgents/com.dotfiles.gwt-mayor.plist"
-        local mayor_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.gwt-mayor.plist"
-        materialize_launchagent_template "$mayor_plist_source" "$mayor_plist" || true
-        if [[ -f "$mayor_plist" ]]; then
-            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.gwt-mayor"; then
-                launchctl bootstrap "gui/$(id -u)" "$mayor_plist" 2>/dev/null &&
-                    print_success "Mayor daemon started" ||
-                    log_verbose "Mayor daemon start skipped"
-            else
-                log_verbose "Mayor daemon already running"
-            fi
-        fi
+        install_launchagent_template \
+            "com.dotfiles.gwt-mayor" \
+            "Mayor daemon started" \
+            "Mayor daemon start skipped" \
+            "Mayor daemon already running" || true
 
         # Setup Monthly Changelog Review LaunchAgent (1st of each month)
         print_step "Setting up changelog review scheduler..."
-        local changelog_plist="$HOME/Library/LaunchAgents/com.dotfiles.changelog-review.plist"
-        local changelog_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.changelog-review.plist"
-        materialize_launchagent_template "$changelog_plist_source" "$changelog_plist" || true
-        if [[ -f "$changelog_plist" ]]; then
-            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.changelog-review"; then
-                launchctl bootstrap "gui/$(id -u)" "$changelog_plist" 2>/dev/null &&
-                    print_success "Changelog review scheduler started" ||
-                    log_verbose "Changelog review scheduler start skipped"
-            else
-                log_verbose "Changelog review scheduler already loaded"
-            fi
-        fi
+        install_launchagent_template \
+            "com.dotfiles.changelog-review" \
+            "Changelog review scheduler started" \
+            "Changelog review scheduler start skipped" \
+            "Changelog review scheduler already loaded" || true
 
         # Setup Monthly Insights Review LaunchAgent (1st of each month, +1h after changelog)
         print_step "Setting up insights review scheduler..."
-        local insights_plist="$HOME/Library/LaunchAgents/com.dotfiles.insights-review.plist"
-        local insights_plist_source="$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.insights-review.plist"
-        materialize_launchagent_template "$insights_plist_source" "$insights_plist" || true
-        if [[ -f "$insights_plist" ]]; then
-            if ! launchctl list 2>/dev/null | grep -q "com.dotfiles.insights-review"; then
-                launchctl bootstrap "gui/$(id -u)" "$insights_plist" 2>/dev/null &&
-                    print_success "Insights review scheduler started" ||
-                    log_verbose "Insights review scheduler start skipped"
-            else
-                log_verbose "Insights review scheduler already loaded"
-            fi
-        fi
+        install_launchagent_template \
+            "com.dotfiles.insights-review" \
+            "Insights review scheduler started" \
+            "Insights review scheduler start skipped" \
+            "Insights review scheduler already loaded" || true
 
         # Setup Weekly Claude synthesis LaunchAgent (requires Obsidian vault)
         if [[ -d "$HOME/obsidian" ]] && [[ -f "$DOTFILES_ROOT/scripts/obsidian/install-weekly-synthesis.sh" ]]; then
