@@ -296,7 +296,3 @@ awscli-bundle/
 /validate-macos.sh
 /UNIFIED-SETUP.md
 /license_header
-
-# Entire CLI metadata (duplicate entry for nested repos)
-.entire/
-!.entire/settings.json

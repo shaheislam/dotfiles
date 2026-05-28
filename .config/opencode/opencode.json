@@ -110,7 +110,8 @@
       "*.pyc",
       "__pycache__/**",
       ".direnv/**",
-      ".beads/**"
+      ".beads/**",
+      ".entire/**"
     ]
   },
   "instructions": [
