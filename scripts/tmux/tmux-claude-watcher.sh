@@ -3,7 +3,7 @@
 #
 # 4-state color scheme (purely realtime — no persistent state files):
 #   Red (#f7768e)    = Agent actively working (spinner + "… (" visible)
-#   Orange (#e0af68) = Waiting for user input (agent present, no spinner)
+#   Yellow (#e0af68) = Waiting for user input (agent present, no spinner)
 #   Green (#9ece6a)  = Task completed (COMPLETE or _DONE in pane)
 #   Default          = No agent in window
 #
@@ -154,7 +154,7 @@ check_all_windows() {
             elif $agent_complete; then
                 style="#[fg=#9ece6a]" # green — task completed
             else
-                style="#[fg=#e0af68]" # orange — waiting for input
+                style="#[fg=#e0af68]" # yellow — waiting for input
             fi
         fi
 

@@ -7,6 +7,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
   let currentSessionID: string | null = null
   let currentModel: string | null = null
   const tmuxPane = process.env.TMUX_PANE
+  const tmuxWindow = process.env.TMUX_AGENT_TARGET || tmuxPane
   const lastValues = new Map<string, string>()
   let pendingStatus: Promise<void> | null = null
 
@@ -27,7 +28,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
       case "error":
         return "#[fg=#f7768e]"
       case "idle":
-        return "#[fg=#9ece6a]"
+        return "#[fg=#e0af68]"
       default:
         return "#[fg=#e0af68]"
     }
@@ -50,22 +51,28 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
   }
 
   async function setTmuxScoped(key: keyof typeof scopedKeys, value: string) {
-    if (!tmuxPane) return
+    const target = key === "WNAME_STYLE" ? tmuxWindow : tmuxPane
+    if (!target) return
     const option = scopedKeys[key]
     try {
-      await $`tmux set-option -p -t ${tmuxPane} ${option} ${value}`.quiet().nothrow()
-      await $`tmux set-window-option -t ${tmuxPane} ${option} ${value}`.quiet().nothrow()
+      if (key !== "WNAME_STYLE" && tmuxPane) {
+        await $`tmux set-option -p -t ${tmuxPane} ${option} ${value}`.quiet().nothrow()
+      }
+      await $`tmux set-window-option -t ${target} ${option} ${value}`.quiet().nothrow()
     } catch {
       // tmux may not support scoped user options in older sessions — ignore
     }
   }
 
   async function unsetTmuxScoped(key: keyof typeof scopedKeys) {
-    if (!tmuxPane) return
+    const target = key === "WNAME_STYLE" ? tmuxWindow : tmuxPane
+    if (!target) return
     const option = scopedKeys[key]
     try {
-      await $`tmux set-option -p -u -t ${tmuxPane} ${option}`.quiet().nothrow()
-      await $`tmux set-window-option -u -t ${tmuxPane} ${option}`.quiet().nothrow()
+      if (key !== "WNAME_STYLE" && tmuxPane) {
+        await $`tmux set-option -p -u -t ${tmuxPane} ${option}`.quiet().nothrow()
+      }
+      await $`tmux set-window-option -u -t ${target} ${option}`.quiet().nothrow()
     } catch {
       // ignore
     }

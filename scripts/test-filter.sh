@@ -1054,6 +1054,7 @@ test_opencode() {
     run_test "OpenCode zsh oc function exists" "grep -q '^function oc()' '$DOTFILES_ROOT/.zshrc' && grep -q 'scripts/bin/oc' '$DOTFILES_ROOT/.zshrc'"
     run_test "OpenCode tmux launcher uses oc wrapper" "grep -q 'scripts/bin/oc' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher mirrors status color" "grep -q 'OPENCODE_STATUS' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q '@wname_style' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
+    run_test "OpenCode tmux launcher clears pane style" "grep -q 'set-option -p -u' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'clear_pane_style' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher keeps cleanup trap" "grep -q 'trap cleanup EXIT' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q 'exec \"\$HOME/dotfiles/scripts/bin/oc\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode doctor resolves config-relative plugins" "grep -q 'CONFIG_DIR' '$DOTFILES_ROOT/scripts/opencode/doctor.sh' && grep -q '\$CONFIG_DIR' '$DOTFILES_ROOT/scripts/opencode/doctor.sh'"
     run_test "OpenCode TUI uses transparent theme" "jq -e '.theme == \"transparent\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
@@ -1123,6 +1124,8 @@ test_opencode() {
     run_test "OpenCode tmux status uses shell input session" "grep -q 'input.sessionID' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
     run_test "OpenCode tmux status uses scoped options" "grep -q '@opencode_session_id' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
     run_test "OpenCode tmux status colors window names" "grep -q '@wname_style' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
+    run_test "OpenCode tmux window style avoids pane scope" "grep -q 'key !== \"WNAME_STYLE\"' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts' && grep -q 'TMUX_AGENT_TARGET' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
+    run_test "OpenCode tmux idle status is yellow" "python3 -c \"import pathlib,re; text=pathlib.Path('$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts').read_text(); assert re.search(r'case \\\"idle\\\":\\n\\s*return \\\"#\\[fg=#e0af68\\]\\\"', text)\""
     run_test "OpenCode tmux status has default export" "grep -q 'export default TmuxStatusPlugin' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
     run_test "OpenCode SSE recorder plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/sse-recorder.ts' ]"
 

@@ -23,7 +23,7 @@ status_style() {
         printf '%s\n' '#[fg=#f7768e]'
         ;;
     idle)
-        printf '%s\n' '#[fg=#9ece6a]'
+        printf '%s\n' '#[fg=#e0af68]'
         ;;
     *)
         printf '%s\n' '#[fg=#e0af68]'
@@ -43,6 +43,11 @@ opencode_status() {
 set_window_style() {
     [ -n "$STYLE_TARGET" ] || return 0
     tmux set-window-option -t "$STYLE_TARGET" @wname_style "$(status_style "$1")" >/dev/null 2>&1 || true
+}
+
+clear_pane_style() {
+    [ -n "$WINDOW" ] || return 0
+    tmux set-option -p -u -t "$WINDOW" @wname_style >/dev/null 2>&1 || true
 }
 
 sync_window_style() {
@@ -71,6 +76,7 @@ cleanup() {
     if [ -n "$SYNC_PID" ]; then
         kill "$SYNC_PID" >/dev/null 2>&1 || true
     fi
+    clear_pane_style
     if [ -n "$STYLE_TARGET" ]; then
         tmux set-window-option -t "$STYLE_TARGET" -u @wname_style >/dev/null 2>&1 || true
     fi
@@ -86,6 +92,7 @@ else
 fi
 
 if [ -n "$STYLE_TARGET" ]; then
+    clear_pane_style
     set_window_style active
     sync_window_style &
     SYNC_PID="$!"
