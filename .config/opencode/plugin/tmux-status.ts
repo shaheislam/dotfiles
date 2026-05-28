@@ -136,8 +136,7 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           break
         }
 
-        case "session.deleted":
-        case "server.instance.disposed": {
+        case "session.deleted": {
           currentSessionID = null
           currentModel = null
           await Promise.all([
@@ -147,6 +146,12 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
             unsetOpenCodeMetadata("OPENCODE_DIR"),
             unsetTmuxScoped("WNAME_STYLE"),
           ])
+          break
+        }
+
+        case "server.instance.disposed": {
+          // OpenCode can dispose transient server instances while the attached
+          // TUI is still alive. The tmux launcher owns final color cleanup.
           break
         }
       }

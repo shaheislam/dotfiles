@@ -626,9 +626,14 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
           break
         }
 
-        case "server.instance.disposed":
         case "session.deleted": {
           handleShutdown()
+          break
+        }
+
+        case "server.instance.disposed": {
+          // Do not run Claude's tmux end hook for transient OpenCode server
+          // disposal events; the wrapper cleanup handles real TUI exit.
           break
         }
       }

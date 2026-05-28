@@ -52,14 +52,12 @@ clear_pane_style() {
 
 sync_window_style() {
     local status=""
-    local last_status=""
 
     while :; do
         status="$(opencode_status)"
-        if [ "$status" != "$last_status" ]; then
-            set_window_style "$status"
-            last_status="$status"
-        fi
+        # Reassert every poll. Other tmux hooks/reloads can clear @wname_style
+        # without changing OPENCODE_STATUS, so change-only updates are brittle.
+        set_window_style "$status"
         sleep 0.5
     done
 }

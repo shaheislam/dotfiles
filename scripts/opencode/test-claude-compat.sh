@@ -125,6 +125,8 @@ chmod +x "$TMPDIR/bin/timeout"
 
 HARNESS="$TMPDIR/harness.mjs"
 cat >"$HARNESS" <<'EOF'
+import { existsSync } from "node:fs"
+
 const pluginUrl = new URL(`file://${process.env.OPENCODE_CLAUDE_COMPAT_PLUGIN}`)
 const { ClaudeCompatPlugin } = await import(pluginUrl.href)
 
@@ -253,6 +255,10 @@ if (!bridgeTransform.system.some((entry) => entry.includes("synthetic bridge con
 
 await hooks.event({ event: { type: "tui.toast.show", properties: { title: "Test", message: "toast", variant: "info" } } })
 await hooks.event({ event: { type: "server.instance.disposed", properties: {} } })
+if (existsSync(process.env.TEST_SESSION_REPORT_OUTPUT)) {
+  fail("server disposal wrote shutdown session report")
+}
+await hooks.event({ event: { type: "session.deleted", properties: {} } })
 
 console.log("PASS npm guard")
 console.log("PASS settings guard")
