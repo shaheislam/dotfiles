@@ -39,7 +39,7 @@ Comparison of patterns from [superset-sh/superset](https://github.com/superset-s
 - `scripts/sync-mcp-config.sh` — converts `.mcp.json` into:
 
   - Codex: appends `[mcp_servers.*]` TOML sections
-  - OpenCode: generates `opencode.json`
+  - OpenCode: updates the valid `mcp` section in `.config/opencode/opencode.json` or project `opencode.json`
 - Auto-syncs during `gwt-setup`
 
 ## Deferred (Not Implemented)

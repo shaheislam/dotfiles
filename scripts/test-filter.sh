@@ -252,13 +252,15 @@ test_mcp() {
 
     run_test "setup.sh uses bunx for shared stdio MCP servers" "python3 -c \"import pathlib; text=pathlib.Path('$DOTFILES_ROOT/scripts/setup.sh').read_text(); required=['context7 bunx', 'steampipe bunx', 'playwright bunx', 'drawio bunx']; assert all(item in text for item in required)\""
     run_test "setup.sh keeps deepwiki SSE exception" "grep -q 'claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "sync-mcp-config script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/sync-mcp-config.sh'"
+    run_test "sync-mcp-config OpenCode MCP shape valid" "bash '$DOTFILES_ROOT/scripts/test-sync-mcp-config.sh' >/dev/null"
 
     # deniedMcpServers: blocks unused claude.ai managed integrations to reclaim KV-cache tokens
     local settings="$DOTFILES_ROOT/.claude/settings.json"
     if [ -f "$settings" ]; then
         run_test "settings.json declares deniedMcpServers" "python3 -c \"import json; s=json.load(open('$settings')); assert isinstance(s.get('deniedMcpServers'), list) and len(s['deniedMcpServers']) > 0\""
-        run_test "deniedMcpServers includes unused integrations" "python3 -c \"import json; denied=set(json.load(open('$settings')).get('deniedMcpServers', [])); required={'claude_ai_Notion','claude_ai_Linear','claude_ai_Invideo'}; assert required <= denied, f'missing: {required - denied}'\""
-        run_test "deniedMcpServers keeps used integrations unblocked" "python3 -c \"import json; denied=set(json.load(open('$settings')).get('deniedMcpServers', [])); used={'claude_ai_Atlassian','claude_ai_Gmail','claude_ai_Google_Calendar','claude_ai_Google_Drive'}; assert not (used & denied), f'blocks used: {used & denied}'\""
+        run_test "deniedMcpServers includes unused integrations" "python3 -c \"import json; entries=json.load(open('$settings')).get('deniedMcpServers', []); denied={e.get('serverName') if isinstance(e, dict) else e for e in entries}; required={'claude_ai_Notion','claude_ai_Linear','claude_ai_Invideo'}; assert required <= denied, f'missing: {required - denied}'\""
+        run_test "deniedMcpServers keeps used integrations unblocked" "python3 -c \"import json; entries=json.load(open('$settings')).get('deniedMcpServers', []); denied={e.get('serverName') if isinstance(e, dict) else e for e in entries}; used={'claude_ai_Atlassian','claude_ai_Gmail','claude_ai_Google_Calendar','claude_ai_Google_Drive'}; assert not (used & denied), f'blocks used: {used & denied}'\""
     fi
 }
 

@@ -7,7 +7,7 @@
 # Supported agents:
 #   - Claude Code: reads .mcp.json natively (no action needed)
 #   - Codex: .codex/config.toml [mcp_servers.*] section
-#   - OpenCode: opencode.json remote servers section
+#   - OpenCode: .config/opencode/opencode.json or project opencode.json mcp section
 #
 # Usage:
 #   sync-mcp-config.sh [--dry-run] [repo-root]
@@ -78,33 +78,37 @@ if [ -f "$codex_config" ]; then
     fi
 fi
 
-# --- OpenCode: generate opencode.json if not exists ---
-opencode_config="$REPO_ROOT/opencode.json"
-
-if [ ! -f "$opencode_config" ]; then
-    # Generate OpenCode config from .mcp.json
-    opencode_json=$(jq '{
-        mcpServers: .mcpServers | to_entries | map({
-            key: .key,
-            value: {
-                type: "local",
-                command: .value.command,
-                args: .value.args
-            }
-        }) | from_entries
-    }' "$MCP_FILE" 2>/dev/null || true)
-
-    if [ -n "$opencode_json" ]; then
-        if $DRY_RUN; then
-            echo "[opencode] Would create opencode.json"
-        else
-            echo "$opencode_json" >"$opencode_config"
-            echo "[opencode] Created opencode.json with MCP servers"
-            synced=$((synced + 1))
-        fi
-    fi
+# --- OpenCode: merge .mcp.json into the mcp config section ---
+if [ -f "$REPO_ROOT/.config/opencode/opencode.json" ]; then
+    opencode_config="$REPO_ROOT/.config/opencode/opencode.json"
 else
-    echo "[opencode] opencode.json exists (skipping — edit manually if needed)"
+    opencode_config="$REPO_ROOT/opencode.json"
+fi
+
+opencode_mcp=$(jq '.mcpServers | to_entries | map({
+    key: .key,
+    value: {
+        type: "local",
+        command: ([.value.command] + (.value.args // [])),
+        enabled: true
+    }
+}) | from_entries' "$MCP_FILE" 2>/dev/null || true)
+
+if [ -n "$opencode_mcp" ]; then
+    if $DRY_RUN; then
+        echo "[opencode] Would sync MCP servers to ${opencode_config#"$REPO_ROOT"/}"
+    else
+        mkdir -p "$(dirname "$opencode_config")"
+        tmp_file=$(mktemp)
+        if [ -f "$opencode_config" ]; then
+            jq --argjson mcp "$opencode_mcp" '.mcp = ((.mcp // {}) + $mcp)' "$opencode_config" >"$tmp_file"
+        else
+            jq -n --argjson mcp "$opencode_mcp" '{"$schema":"https://opencode.ai/config.json", mcp: $mcp}' >"$tmp_file"
+        fi
+        mv "$tmp_file" "$opencode_config"
+        echo "[opencode] Synced MCP servers to ${opencode_config#"$REPO_ROOT"/}"
+        synced=$((synced + 1))
+    fi
 fi
 
 echo ""
