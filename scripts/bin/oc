@@ -5,6 +5,8 @@ port="${OPENCODE_PORT:-4096}"
 password_file="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/server.password"
 url="http://127.0.0.1:${port}"
 label="com.dotfiles.opencode-serve"
+plist="$HOME/Library/LaunchAgents/${label}.plist"
+source_plist="$HOME/dotfiles/Library/LaunchAgents/${label}.plist"
 
 if [ -z "${OPENCODE_SERVER_PASSWORD:-}" ] && [ -s "$password_file" ]; then
 	export OPENCODE_SERVER_PASSWORD="$(tr -d '\n' <"$password_file")"
@@ -16,9 +18,30 @@ check_server() {
 	curl -fsS -u "${OPENCODE_SERVER_USERNAME}:${OPENCODE_SERVER_PASSWORD:-}" "${url}/path" >/dev/null 2>&1
 }
 
-if ! check_server && command -v launchctl >/dev/null 2>&1; then
+materialize_plist() {
+	[ -f "$source_plist" ] || return 1
+	mkdir -p "$(dirname "$plist")"
+	local escaped_home escaped_dotfiles_root
+	escaped_home=$(printf '%s\n' "$HOME" | sed 's/[\/&]/\\&/g')
+	escaped_dotfiles_root=$(printf '%s\n' "$HOME/dotfiles" | sed 's/[\/&]/\\&/g')
+	sed \
+		-e "s/__HOME__/${escaped_home}/g" \
+		-e "s/__DOTFILES_ROOT__/${escaped_dotfiles_root}/g" \
+		"$source_plist" >"$plist"
+}
+
+start_server() {
+	command -v launchctl >/dev/null 2>&1 || return 0
+	local uid
 	uid="$(id -u)"
+	launchctl kickstart -k "gui/${uid}/${label}" >/dev/null 2>&1 && return 0
+	materialize_plist || return 0
+	launchctl bootstrap "gui/${uid}" "$plist" >/dev/null 2>&1 || true
 	launchctl kickstart -k "gui/${uid}/${label}" >/dev/null 2>&1 || true
+}
+
+if ! check_server; then
+	start_server
 	for _ in 1 2 3 4 5; do
 		check_server && break
 		sleep 0.2
