@@ -81,14 +81,18 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
   async function setOpenCodeMetadata(key: keyof typeof scopedKeys, value: string) {
     if (lastValues.get(key) === value) return
     lastValues.set(key, value)
-    await setTmuxEnv(key, value)
+    if (key !== "OPENCODE_STATUS") {
+      await setTmuxEnv(key, value)
+    }
     await setTmuxScoped(key, value)
   }
 
   async function unsetOpenCodeMetadata(key: keyof typeof scopedKeys) {
     if (!lastValues.has(key)) return
     lastValues.delete(key)
-    await unsetTmuxEnv(key)
+    if (key !== "OPENCODE_STATUS") {
+      await unsetTmuxEnv(key)
+    }
     await unsetTmuxScoped(key)
   }
 
@@ -97,7 +101,6 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
     lastValues.set("OPENCODE_STATUS", statusType)
     pendingStatus = (pendingStatus ?? Promise.resolve())
       .then(async () => {
-        await setTmuxEnv("OPENCODE_STATUS", statusType)
         await setTmuxScoped("OPENCODE_STATUS", statusType)
         await setTmuxScoped("WNAME_STYLE", statusStyle(statusType))
       })

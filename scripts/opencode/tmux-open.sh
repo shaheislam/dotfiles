@@ -32,12 +32,9 @@ status_style() {
 }
 
 opencode_status() {
-    local line=""
-    line="$(tmux show-environment -g OPENCODE_STATUS 2>/dev/null || true)"
-    case "$line" in
-    OPENCODE_STATUS=*) printf '%s\n' "${line#OPENCODE_STATUS=}" ;;
-    *) printf '%s\n' active ;;
-    esac
+    local status=""
+    [ -n "$STYLE_TARGET" ] && status="$(tmux show-window-option -t "$STYLE_TARGET" -v @opencode_status 2>/dev/null || true)"
+    printf '%s\n' "${status:-active}"
 }
 
 set_window_style() {
@@ -56,7 +53,7 @@ sync_window_style() {
     while :; do
         status="$(opencode_status)"
         # Reassert every poll. Other tmux hooks/reloads can clear @wname_style
-        # without changing OPENCODE_STATUS, so change-only updates are brittle.
+        # without changing the window status, so change-only updates are brittle.
         set_window_style "$status"
         sleep 0.5
     done
