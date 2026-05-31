@@ -73,7 +73,7 @@ scrollback-limit = 10000
 shell-integration = detect
 
 # Disable audible bell (prevents sound on every keystroke with tmux activity monitoring)
-audible-bell = false
+bell-features = no-audio
 
 # =============================================================================
 # KEYBINDINGS - WezTerm Parity
@@ -97,7 +97,8 @@ keybind = ctrl+'=clear_screen
 # --- Open Claude in new tab (CMD+a) ---
 # Unbind select_all first, then bind to Claude
 keybind = super+a=unbind
-keybind = super+a=new_tab:/opt/homebrew/bin/fish -c claude
+keybind = super+a=new_tab
+keybind = chain=text:claude\n
 
 # --- Open Neovim (CMD+e) ---
 keybind = super+e=text:nvim .\n
