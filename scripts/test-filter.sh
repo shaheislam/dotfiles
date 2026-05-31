@@ -1092,6 +1092,7 @@ test_opencode() {
     run_test "OpenCode tmux launcher uses oc wrapper" "grep -q 'scripts/bin/oc' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher owns window color" "grep -q '@wname_style' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q '@opencode_status' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher reads state file" "grep -q 'opencode/tmux-status' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'STATUS_FILE' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
+    run_test "OpenCode tmux launcher prefers pane-local activity" "grep -q 'capture-pane' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'esc interrupt' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher avoids shared status" "! grep -q '@opencode_status\|show-environment -g OPENCODE_STATUS' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher reasserts status color" "grep -q 'set_window_style \"\$status\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q 'last_status' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher clears pane style" "grep -q 'set-option -p -u' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'clear_pane_style' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"

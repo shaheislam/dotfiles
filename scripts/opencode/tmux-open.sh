@@ -48,6 +48,20 @@ status_file() {
 
 opencode_status() {
     local status=""
+    local pane_text=""
+
+    if [ -n "$WINDOW" ]; then
+        pane_text="$(tmux capture-pane -t "$WINDOW" -S -30 -p 2>/dev/null || true)"
+        if printf '%s\n' "$pane_text" | grep -q 'esc interrupt'; then
+            printf '%s\n' busy
+            return 0
+        fi
+        if printf '%s\n' "$pane_text" | grep -q 'ctrl[+]p commands'; then
+            printf '%s\n' idle
+            return 0
+        fi
+    fi
+
     if [ -n "$STATUS_FILE" ] && [ -s "$STATUS_FILE" ]; then
         IFS= read -r status <"$STATUS_FILE" || status=""
     fi
