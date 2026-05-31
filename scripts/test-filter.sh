@@ -377,7 +377,7 @@ test_tmux() {
     run_test "setup omits PowerKit plugin" "! grep -q 'tmux-powerkit' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "tmux native inactive windows use agent colors" "grep -q '^setw -g window-status-format .*@wname_style' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux native current window uses agent colors" "grep -q '^setw -g window-status-current-format .*@wname_style' '$DOTFILES_ROOT/.tmux.conf'"
-    run_test "tmux native status-right includes Git and datetime" "grep -q '^set -g status-right .*git:%s%s.*%H:%M %a %d %b' '$DOTFILES_ROOT/.tmux.conf'"
+    run_test "tmux native status-right includes Git branch and time" "grep -q '^set -g status-right .*%s%s.*%H:%M' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux session manager reads agent window style" "grep -q '#{@wname_style}' '$DOTFILES_ROOT/scripts/tmux/tmux-session-manager.sh' && ! grep -q '●◆' '$DOTFILES_ROOT/scripts/tmux/tmux-session-manager.sh'"
     run_test "tmux extended keys use csi-u for Pi" "grep -q '^set -g extended-keys on' '$DOTFILES_ROOT/.tmux.conf' && grep -q '^set -g extended-keys-format csi-u' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux-resurrect plugin configured" \
