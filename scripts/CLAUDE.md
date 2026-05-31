@@ -51,7 +51,7 @@
 | `anki/` | Anki flashcard generation |
 | `cv/` | CV compilation and LaTeX tooling |
 | `aws/` | AWS helper scripts |
-| `tmux/` | tmux watcher, session management |
+| `tmux/` | tmux hooks, status helpers, session management |
 | `pihole/` | Pi-hole DNS management |
 | `ticket-queue/` | Ticket queue management |
 | `tools/` | Standalone tool scripts |

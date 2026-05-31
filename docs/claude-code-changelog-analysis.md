@@ -53,7 +53,7 @@ The most significant changes since this dotfiles repo was last updated:
 
 | Version | Change | Current State | Recommended Action |
 |---------|--------|---------------|-------------------|
-| 2.1.33 | `TeammateIdle` + `TaskCompleted` hook events | Not using | **Consider adding hooks** for tmux-claude-watcher integration with Agent Teams |
+| 2.1.33 | `TeammateIdle` + `TaskCompleted` hook events | Not using | **Consider adding hooks** for tmux `@wname_style` integration with Agent Teams |
 | 2.1.33 | Agent Teams tmux fix | Already using Agent Teams | **No action** - fixes tmux send/receive which was broken |
 | 2.1.32 | Auto-memory feature | Not configured | Works automatically, no config needed |
 | 2.1.16 | Task management system | Not configured | Enable via `CLAUDE_CODE_ENABLE_TASKS` (default: true since 2.1.19) |
@@ -105,7 +105,7 @@ Two new hook events for multi-agent workflows:
 - **`TeammateIdle`**: Fires when an agent teammate goes idle
 - **`TaskCompleted`**: Fires when a task is marked completed
 
-These could integrate with the existing `tmux-claude-watcher.sh` daemon to provide native hook-based idle detection instead of the current polling approach (every 3 seconds).
+These could integrate with the event-driven tmux `@wname_style` path to provide native hook-based idle detection for Agent Teams.
 
 ### Agent Memory Frontmatter (2.1.33)
 
@@ -206,7 +206,7 @@ Slash commands and skills are now the same system:
 3. ✅ `claude-opus-4-5-migration` plugin already removed from previous review
 
 ### Short-Term (New from 2.1.33-34)
-1. **Explore `TeammateIdle`/`TaskCompleted` hooks** - could replace polling in `tmux-claude-watcher.sh` with native event-driven detection
+1. **Explore `TeammateIdle`/`TaskCompleted` hooks** - could extend native event-driven tmux window status detection
 2. **Add `memory` frontmatter** to custom agents in `.claude/agents/` for cross-session persistence
 3. **Consider `Task(agent_type)` restrictions** for agents that should only delegate to specific sub-agent types
 4. **Add plugin names** to skill descriptions for better discoverability (auto-enabled in 2.1.33)

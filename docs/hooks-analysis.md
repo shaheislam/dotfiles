@@ -411,7 +411,7 @@ This would hook into `nix develop` or check `nix/global/flake.nix` for available
 
 5. **Stow Conflict Detection** (PostToolUse Edit|Write): After editing dotfiles, check if the edit would create a stow conflict (file exists in home dir but isn't a symlink). Warn before the conflict manifests during `stow`.
 
-6. **tmux Watcher Integration** (SubagentStop): When a subagent completes in a tmux-based Agent Teams session, update the tmux-claude-watcher status to show completion. Currently watcher only tracks idle/stuck.
+6. **tmux Window Status Integration** (SubagentStop): When a subagent completes in a tmux-based Agent Teams session, update window-scoped `@wname_style` through the event-driven hook path.
 
 7. **Fish Function Syntax Validation** (PostToolUse Edit|Write): When editing `.config/fish/functions/*.fish`, run `fish --no-execute` to validate syntax before the function gets loaded. Our dotfiles are primarily Fish — this catches errors early.
 

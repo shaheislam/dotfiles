@@ -7,6 +7,7 @@ set -euo pipefail
 WINDOW=${TMUX_PANE:-}
 STYLE_TARGET=""
 SYNC_PID=""
+STATUS_FILE=""
 
 if [ -n "${TMUX:-}" ]; then
     STYLE_TARGET="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"
@@ -22,7 +23,7 @@ status_style() {
     busy | running | thinking | streaming | error)
         printf '%s\n' '#[fg=#f7768e]'
         ;;
-    idle)
+    idle | active)
         printf '%s\n' '#[fg=#e0af68]'
         ;;
     *)
@@ -31,10 +32,26 @@ status_style() {
     esac
 }
 
+status_key() {
+    if command -v shasum >/dev/null 2>&1; then
+        printf '%s' "${OPENCODE_DIR:-$PWD}" | shasum -a 256 | cut -d ' ' -f 1
+    else
+        printf '%s' "${OPENCODE_DIR:-$PWD}" | cksum | tr ' ' '-'
+    fi
+}
+
+status_file() {
+    local dir="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/tmux-status"
+    mkdir -p "$dir"
+    printf '%s/%s.status\n' "$dir" "$(status_key)"
+}
+
 opencode_status() {
     local status=""
-    [ -n "$STYLE_TARGET" ] && status="$(tmux show-window-option -t "$STYLE_TARGET" -v @opencode_status 2>/dev/null || true)"
-    printf '%s\n' "${status:-active}"
+    if [ -n "$STATUS_FILE" ] && [ -s "$STATUS_FILE" ]; then
+        IFS= read -r status <"$STATUS_FILE" || status=""
+    fi
+    printf '%s\n' "${status:-idle}"
 }
 
 set_window_style() {
@@ -87,8 +104,9 @@ else
 fi
 
 if [ -n "$STYLE_TARGET" ]; then
+    STATUS_FILE="$(status_file)"
     clear_pane_style
-    set_window_style active
+    set_window_style "$(opencode_status)"
     sync_window_style &
     SYNC_PID="$!"
 fi

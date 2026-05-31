@@ -1,7 +1,7 @@
 function gwt-doctor --description "Agent orchestration health check"
     # Usage: gwt-doctor [--fix] [--help]
     #
-    # Runs 9 health checks on the agent orchestration stack.
+    # Runs health checks on the agent orchestration stack.
     # Reports PASS/WARN/FAIL for each check with colored output.
     #
     # Options:
@@ -95,26 +95,24 @@ function gwt-doctor --description "Agent orchestration health check"
         set warn_count (math $warn_count + 1)
     end
 
-    # ── Check 2: tmux-claude-watcher ──
-    set -l watcher_pid_file /tmp/tmux-claude-watcher.pid
+    # ── Check 2: tmux agent window colors ──
     if not command -q tmux; or not tmux list-sessions >/dev/null 2>&1
-        printf "  %s[WARN]%s tmux-claude-watcher: tmux not running (skipped)\n" (set_color yellow) (set_color normal)
+        printf "  %s[WARN]%s tmux agent colors: tmux not running (skipped)\n" (set_color yellow) (set_color normal)
         set warn_count (math $warn_count + 1)
-    else if test -f "$watcher_pid_file"
-        if kill -0 (cat $watcher_pid_file) 2>/dev/null
-            printf "  %s[PASS]%s tmux-claude-watcher running (PID %s)\n" (set_color green) (set_color normal) (cat $watcher_pid_file)
+    else
+        set -l inactive_format (tmux show-option -gqv window-status-format 2>/dev/null)
+        set -l current_format (tmux show-option -gqv window-status-current-format 2>/dev/null)
+        if string match -q '*@wname_style*' -- $inactive_format; and string match -q '*@wname_style*' -- $current_format
+            printf "  %s[PASS]%s tmux agent colors wired through @wname_style\n" (set_color green) (set_color normal)
             set pass_count (math $pass_count + 1)
         else
-            printf "  %s[FAIL]%s tmux-claude-watcher: stale PID file\n" (set_color red) (set_color normal)
+            printf "  %s[FAIL]%s tmux agent colors: status formats missing @wname_style\n" (set_color red) (set_color normal)
             set fail_count (math $fail_count + 1)
             if $do_fix
-                rm -f $watcher_pid_file
-                printf "         → Removed stale PID file\n"
+                tmux source-file ~/.tmux.conf
+                printf "         → Reloaded ~/.tmux.conf\n"
             end
         end
-    else
-        printf "  %s[WARN]%s tmux-claude-watcher not running\n" (set_color yellow) (set_color normal)
-        set warn_count (math $warn_count + 1)
     end
 
     # ── Check 3: Merge queue daemon ──

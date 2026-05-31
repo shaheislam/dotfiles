@@ -20,15 +20,15 @@ cmux replaces **both Ghostty and tmux's multiplexing** with a single app. It rea
 | tmux sessions | cmux workspaces |
 | tmux windows | cmux surfaces/tabs |
 | tmux panes/splits | cmux panes (split right/down) |
-| tmux-claude-watcher.sh | Built-in notification rings + sidebar badges |
+| Tmux agent window colors | Built-in notification rings + sidebar badges |
 | tmux-session-manager.sh | Sidebar with git branch, PR status, ports |
 | External browser | In-app scriptable browser (from agent-browser) |
-| tmux-powerkit status bar | Sidebar metadata: set-status, set-progress, log |
+| Native tmux status bar | Sidebar metadata: set-status, set-progress, log |
 
 ## Key benefits for this setup
 
 ### 1. Agent notification system (biggest win)
-The custom `tmux-claude-watcher.sh` polls every 10s, parses pane output for spinner patterns, and color-codes window names. It's clever but fragile (races with hooks, indicator flicker, requires daemon management). cmux replaces all of this with:
+The current tmux setup color-codes agent windows through Claude hooks and OpenCode status files. It avoids the old polling daemon, but cmux would still provide a richer native notification model:
 - **Blue notification rings** on panes when agents need attention
 - **Sidebar badges** showing latest notification text per workspace
 - **Cmd+Shift+U** to jump to most recent unread
@@ -36,7 +36,7 @@ The custom `tmux-claude-watcher.sh` polls every 10s, parses pane output for spin
 - **macOS system notifications** with actual context, not just "Claude is waiting"
 
 ### 2. Sidebar metadata per workspace
-Current tmux shows git branch in the powerkit status bar (global, not per-window). cmux sidebar shows **per workspace**: git branch, linked PR status/number, working directory, listening ports, and notification text. This directly replaces `gwt-status` for visual awareness.
+Current tmux shows git branch in the native status bar (global, not per-window). cmux sidebar shows **per workspace**: git branch, linked PR status/number, working directory, listening ports, and notification text. This directly replaces `gwt-status` for visual awareness.
 
 ### 3. Scriptable in-app browser
 Agents can snapshot accessibility tree, click elements, fill forms, evaluate JS — all via CLI/socket API. Currently requires switching to an external browser. The `cmux browser` API is ported from Vercel's agent-browser.
@@ -106,7 +106,7 @@ cmux send --text "claude --dangerously-skip-permissions"
 cmux send-key --key enter
 cmux read-screen --surface <id>
 
-# Notifications (= tmux-claude-watcher.sh replacement)
+# Notifications (= tmux agent window status replacement)
 cmux notify --title "Claude Code" --body "Waiting for input"
 cmux list-notifications
 cmux clear-notifications

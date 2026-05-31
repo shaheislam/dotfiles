@@ -25,9 +25,9 @@ Your dotfiles-gastown setup has independently reimplemented **~65-70%** of Gasto
 | # | Gastown Feature | Gastown Component | Dotfiles Equivalent | Coverage | Notes |
 |---|----------------|-------------------|---------------------|----------|-------|
 | | **AGENT HIERARCHY** | | | | |
-| 1 | Daemon (Go background process) | `daemon.Daemon` - 3min heartbeat checks | `tmux-claude-watcher.sh` | Partial | Yours monitors tmux windows for idle, but lacks Dolt/Deacon lifecycle management |
+| 1 | Daemon (Go background process) | `daemon.Daemon` - 3min heartbeat checks | Event-driven tmux window status | Partial | Tmux windows expose agent state, but there is no Dolt/Deacon lifecycle management |
 | 2 | Boot Agent (ephemeral triage) | `boot` - spawned by daemon for AI triage | `agent-triage.sh` | Full | Both analyze agent state and decide START/WAKE/NUDGE/NOTHING |
-| 3 | Deacon (health orchestrator) | `deacon` - patrol cycles, lifecycle mgmt | `tmux-claude-watcher.sh` + `agent-state.sh` | Partial | Combined in watcher script; no dedicated Deacon agent with patrol cycles |
+| 3 | Deacon (health orchestrator) | `deacon` - patrol cycles, lifecycle mgmt | `agent-state.sh` + hook-based tmux status | Partial | Status is event-driven; no dedicated Deacon agent with patrol cycles |
 | 4 | Mayor (global coordinator) | `mayor` - dispatches work, handles escalations | None | None | No global work coordinator agent |
 | 5 | Witness (rig-level monitor) | `witness` - monitors polecats & refinery | `worktree-witness.sh` | Full | Per-worktree lifecycle monitor with crash detection and auto-retry |
 | 6 | Refinery (merge processor) | `refinery` - validates & merges branches | `merge-queue.sh` | Partial | Serialized merge queue exists but lacks intelligent rebase/conflict resolution |
@@ -60,7 +60,7 @@ Your dotfiles-gastown setup has independently reimplemented **~65-70%** of Gasto
 | | | | | | |
 | | **HEALTH & MONITORING** | | | | |
 | 27 | 4-Layer Health Monitoring | Daemon → Boot → Deacon → Witness | Watcher + Triage + Witness | Partial | 3 layers vs 4; no dedicated Deacon patrol cycle |
-| 28 | GUPP Violation Detection | Daemon detects 30min stuck + work hooked | `tmux-claude-watcher.sh` (10min) | Full | Watcher detects stuck agents (iteration unchanged >10min) |
+| 28 | GUPP Violation Detection | Daemon detects 30min stuck + work hooked | Hook-based agent state | Partial | Window status is event-driven; stuck-agent patrols need a separate lifecycle check |
 | 29 | Heartbeat Files | Age-based health assessment | tmux session existence checks | Divergent | ZFC-style: derive from tmux state, not heartbeat files |
 | 30 | `gt peek` (health check) | Ping individual agent health | `agent-state.sh <worktree>` | Full | State derivation from tmux + git + ralph-loop |
 | 31 | `gt doctor` (diagnostics) | System-wide health check | `gwt-doctor` | Full | Agent orchestration health check |

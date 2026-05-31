@@ -60,10 +60,10 @@ Each line prevents a concrete mistake agents repeatedly make.
 | **Single background agent** | Runs 1 agent during manual work | ralph-loop, gwt-parallel for multiple | **SUPERIOR** |
 | **End-of-day kickoff** | Last 30 min for agent setup | No structured routine | **GAP** |
 | **Notification control** | Disables notifications deliberately | macOS notifications active | **GAP** |
-| **Check on breaks** | Reviews during natural work breaks | tmux-claude-watcher with indicators | **SUPERIOR** |
+| **Check on breaks** | Reviews during natural work breaks | Hook-driven tmux window indicators | **SUPERIOR** |
 | **Daily utilization** | 10-20% of workday | Not measured | **GAP** |
 
-**Analysis**: Our tmux-claude-watcher and indicator system is **superior** to Hashimoto's manual checking approach. However, we lack the disciplined daily routines he describes. The end-of-day kickoff pattern is a valuable workflow practice we should document.
+**Analysis**: Our hook-driven tmux indicator system is **superior** to Hashimoto's manual checking approach. However, we lack the disciplined daily routines he describes. The end-of-day kickoff pattern is a valuable workflow practice we should document.
 
 ---
 
@@ -124,7 +124,7 @@ Each line prevents a concrete mistake agents repeatedly make.
 | Task categorization | Manual 4-category | Automated execution | **Our setup** |
 | Parallel development | Single agent | Worktrees + devcontainers | **Our setup** |
 | Ticket automation | gh triage reports | Full autonomous execution | **Our setup** |
-| Activity monitoring | Manual breaks | tmux-claude-watcher | **Our setup** |
+| Activity monitoring | Manual breaks | Hook-driven tmux status | **Our setup** |
 | Research workflows | Structured approach | No dedicated workflow | **Hashimoto** |
 | Model diversity | Multi-provider | Single provider | **Hashimoto** |
 | Negative space docs | Acknowledged | Not documented | **Hashimoto** |

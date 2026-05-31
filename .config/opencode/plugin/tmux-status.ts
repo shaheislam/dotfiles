@@ -1,108 +1,43 @@
-// OpenCode plugin: push session metadata into tmux environment variables.
-// tmux status bar segments can read these via #{E:OPENCODE_SESSION_ID}, etc.
-// Requires tmux to be running — degrades silently if not.
+// OpenCode plugin: mirror session status to a per-directory state file.
+// The tmux launcher owns tmux window options because only it reliably knows
+// which tmux window hosts the attached TUI.
 import type { Plugin } from "@opencode-ai/plugin"
+import { createHash } from "node:crypto"
+import { mkdir, rm, writeFile } from "node:fs/promises"
+import { homedir } from "node:os"
+import { join } from "node:path"
 
-export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
+export const TmuxStatusPlugin: Plugin = async ({ directory }) => {
   let currentSessionID: string | null = null
   let currentModel: string | null = null
-  const tmuxPane = process.env.TMUX_PANE
-  const tmuxWindow = process.env.TMUX_AGENT_TARGET || tmuxPane
-  const lastValues = new Map<string, string>()
+  let lastStatus: string | null = null
   let pendingStatus: Promise<void> | null = null
+  const statusDir = join(process.env.XDG_STATE_HOME || join(homedir(), ".local", "state"), "opencode", "tmux-status")
+  const statusFile = join(statusDir, `${createHash("sha256").update(directory).digest("hex")}.status`)
 
-  const scopedKeys = {
-    OPENCODE_SESSION_ID: "@opencode_session_id",
-    OPENCODE_STATUS: "@opencode_status",
-    OPENCODE_MODEL: "@opencode_model",
-    OPENCODE_DIR: "@opencode_dir",
-    WNAME_STYLE: "@wname_style",
-  } as const
-
-  function statusStyle(statusType: string) {
-    switch (statusType) {
-      case "busy":
-      case "running":
-      case "thinking":
-      case "streaming":
-      case "error":
-        return "#[fg=#f7768e]"
-      case "idle":
-        return "#[fg=#e0af68]"
-      default:
-        return "#[fg=#e0af68]"
-    }
-  }
-
-  async function setTmuxEnv(key: string, value: string) {
+  async function writeStatusFile(statusType: string) {
     try {
-      await $`tmux set-environment -g ${key} ${value}`.quiet().nothrow()
+      await mkdir(statusDir, { recursive: true })
+      await writeFile(statusFile, `${statusType}\n`, "utf8")
     } catch {
-      // tmux not running or not in a tmux session — ignore
+      // state-file mirroring is best-effort
     }
   }
 
-  async function unsetTmuxEnv(key: string) {
+  async function removeStatusFile() {
     try {
-      await $`tmux set-environment -g -u ${key}`.quiet().nothrow()
+      await rm(statusFile, { force: true })
     } catch {
       // ignore
     }
-  }
-
-  async function setTmuxScoped(key: keyof typeof scopedKeys, value: string) {
-    const target = key === "WNAME_STYLE" ? tmuxWindow : tmuxPane
-    if (!target) return
-    const option = scopedKeys[key]
-    try {
-      if (key !== "WNAME_STYLE" && tmuxPane) {
-        await $`tmux set-option -p -t ${tmuxPane} ${option} ${value}`.quiet().nothrow()
-      }
-      await $`tmux set-window-option -t ${target} ${option} ${value}`.quiet().nothrow()
-    } catch {
-      // tmux may not support scoped user options in older sessions — ignore
-    }
-  }
-
-  async function unsetTmuxScoped(key: keyof typeof scopedKeys) {
-    const target = key === "WNAME_STYLE" ? tmuxWindow : tmuxPane
-    if (!target) return
-    const option = scopedKeys[key]
-    try {
-      if (key !== "WNAME_STYLE" && tmuxPane) {
-        await $`tmux set-option -p -u -t ${tmuxPane} ${option}`.quiet().nothrow()
-      }
-      await $`tmux set-window-option -u -t ${target} ${option}`.quiet().nothrow()
-    } catch {
-      // ignore
-    }
-  }
-
-  async function setOpenCodeMetadata(key: keyof typeof scopedKeys, value: string) {
-    if (lastValues.get(key) === value) return
-    lastValues.set(key, value)
-    if (key !== "OPENCODE_STATUS") {
-      await setTmuxEnv(key, value)
-    }
-    await setTmuxScoped(key, value)
-  }
-
-  async function unsetOpenCodeMetadata(key: keyof typeof scopedKeys) {
-    if (!lastValues.has(key)) return
-    lastValues.delete(key)
-    if (key !== "OPENCODE_STATUS") {
-      await unsetTmuxEnv(key)
-    }
-    await unsetTmuxScoped(key)
   }
 
   function queueStatusUpdate(statusType: string) {
-    if (lastValues.get("OPENCODE_STATUS") === statusType) return
-    lastValues.set("OPENCODE_STATUS", statusType)
+    if (lastStatus === statusType) return
+    lastStatus = statusType
     pendingStatus = (pendingStatus ?? Promise.resolve())
       .then(async () => {
-        await setTmuxScoped("OPENCODE_STATUS", statusType)
-        await setTmuxScoped("WNAME_STYLE", statusStyle(statusType))
+        await writeStatusFile(statusType)
       })
       .catch(() => undefined)
   }
@@ -114,10 +49,8 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           const session = (event as any).properties?.info
           if (!session?.id) break
           currentSessionID = session.id
-          await setOpenCodeMetadata("OPENCODE_SESSION_ID", session.id)
-          await setOpenCodeMetadata("OPENCODE_STATUS", "active")
-          await setOpenCodeMetadata("OPENCODE_DIR", directory)
-          await setTmuxScoped("WNAME_STYLE", "#[fg=#e0af68]")
+          lastStatus = "idle"
+          await writeStatusFile("idle")
           break
         }
 
@@ -125,7 +58,6 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
           const msg = (event as any).properties?.info
           if (msg?.role === "assistant" && msg?.modelID) {
             currentModel = msg.modelID
-            await setOpenCodeMetadata("OPENCODE_MODEL", msg.modelID)
           }
           break
         }
@@ -142,13 +74,8 @@ export const TmuxStatusPlugin: Plugin = async ({ $, directory }) => {
         case "session.deleted": {
           currentSessionID = null
           currentModel = null
-          await Promise.all([
-            unsetOpenCodeMetadata("OPENCODE_SESSION_ID"),
-            unsetOpenCodeMetadata("OPENCODE_STATUS"),
-            unsetOpenCodeMetadata("OPENCODE_MODEL"),
-            unsetOpenCodeMetadata("OPENCODE_DIR"),
-            unsetTmuxScoped("WNAME_STYLE"),
-          ])
+          lastStatus = null
+          await removeStatusFile()
           break
         }
 

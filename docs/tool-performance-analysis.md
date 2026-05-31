@@ -144,7 +144,7 @@ Pros over tmux:
 
 Cons vs tmux:
 - 13x more memory per session
-- Your entire agent orchestration system (`gwt-ticket`, `gwt-parallel`, `gwt-doctor`, `tmux-claude-watcher.sh`) relies on tmux's session/window/pane model
+- Your agent orchestration system (`gwt-ticket`, `gwt-parallel`, `gwt-doctor`, hook-driven tmux window status) relies on tmux's session/window/pane model
 - No equivalent to your 15 TPM plugins
 - Stability concerns for long-running sessions (critical for ralph-loop)
 - Smaller ecosystem and community

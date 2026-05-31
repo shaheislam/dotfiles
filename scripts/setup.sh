@@ -1617,7 +1617,6 @@ phase_6_multiplexer() {
             "yardnsm/tmux-1password"         # 1Password integration
             "roosta/tmux-fuzzback"           # FZF scrollback search
             "sainnhe/tmux-fzf"               # FZF integration for tmux
-            "fabioluciano/tmux-powerkit"     # Status bar powerline theme
             "tmux-plugins/tmux-continuum"    # Auto-save and restore across tmux restarts; keep last
         )
 
@@ -1701,14 +1700,6 @@ phase_6_multiplexer() {
         bash "$DOTFILES_ROOT/scripts/setup-tmux-dracula.sh" >/dev/null 2>&1 &&
             print_success "Dracula theme customizations applied" ||
             log_verbose "Dracula theme setup completed with warnings"
-    fi
-
-    # Reset Claude activity watcher daemon
-    if [[ -f "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" ]]; then
-        print_step "Resetting Claude activity watcher..."
-        "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" stop 2>/dev/null
-        "$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh" start </dev/null 2>/dev/null
-        print_success "Claude watcher restarted"
     fi
 
     mark_step_complete "multiplexer"
