@@ -24,7 +24,7 @@ fi
 if [[ "$workspace" == "$terminal_workspace" && "$is_terminal" == "true" ]]; then
     aero_set_window_floating "$focused_window_id"
     aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
-    aero_resize_focused_window_to_ratio 0.75 0.75
+    aero_resize_terminal_window
     aerospace focus --window-id "$focused_window_id" >/dev/null 2>&1 || true
     exit 0
 fi

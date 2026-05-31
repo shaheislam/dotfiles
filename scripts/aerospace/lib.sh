@@ -208,6 +208,10 @@ aero_resize_focused_window() {
     aero_resize_focused_window_to_ratio 0.92 0.88
 }
 
+aero_resize_terminal_window() {
+    aero_resize_focused_window_to_ratio 0.75 0.72
+}
+
 aero_resize_focused_window_to_ratio() {
     local width_ratio="${1:-0.92}"
     local height_ratio="${2:-0.88}"

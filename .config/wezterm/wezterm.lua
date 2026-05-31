@@ -135,6 +135,8 @@ config.window_padding = {
 
 -- Disable font size adjustment with mouse wheel
 config.adjust_window_size_when_changing_font_size = false
+-- Snap window sizes to terminal cell increments so tmux fills the bottom edge.
+config.use_resize_increments = true
 
 -- Key bindings (enhanced with omerxx style)
 config.keys = {
