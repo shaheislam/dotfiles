@@ -50,6 +50,13 @@ skills/shared/dream/.last-dream
 # Beads agent memory (local-only, never committed)
 .beads/
 
+# Pi coding agent runtime state (config stays tracked under .pi/agent/)
+.pi/agent/auth.json
+.pi/agent/git/
+.pi/agent/npm/
+.pi/agent/sessions/
+.pi/agent/mcp.json
+
 # Entire CLI metadata (managed by entireio/cli)
 .entire/
 !.entire/settings.json

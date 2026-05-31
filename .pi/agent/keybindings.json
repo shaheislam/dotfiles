@@ -1,0 +1,67 @@
+{
+  "tui.editor.cursorUp": [
+    "up",
+    "alt+k"
+  ],
+  "tui.editor.cursorDown": [
+    "down",
+    "alt+j"
+  ],
+  "tui.editor.cursorLeft": [
+    "left",
+    "alt+h"
+  ],
+  "tui.editor.cursorRight": [
+    "right",
+    "alt+l"
+  ],
+  "tui.editor.cursorWordLeft": [
+    "alt+left",
+    "alt+b"
+  ],
+  "tui.editor.cursorWordRight": [
+    "alt+right",
+    "alt+w"
+  ],
+  "tui.editor.cursorLineStart": [
+    "home",
+    "ctrl+a",
+    "alt+0"
+  ],
+  "tui.editor.cursorLineEnd": [
+    "end",
+    "ctrl+e",
+    "alt+4"
+  ],
+  "tui.editor.pageUp": [
+    "pageup",
+    "ctrl+b"
+  ],
+  "tui.editor.pageDown": [
+    "pagedown",
+    "ctrl+f"
+  ],
+  "tui.input.newLine": [
+    "shift+enter",
+    "ctrl+j"
+  ],
+  "tui.input.submit": [
+    "enter"
+  ],
+  "app.editor.external": "ctrl+g",
+  "app.tools.expand": [
+    "ctrl+o",
+    "ctrl+x"
+  ],
+  "app.model.select": "ctrl+l",
+  "app.model.cycleForward": "ctrl+p",
+  "app.model.cycleBackward": "ctrl+n",
+  "app.thinking.cycle": "shift+tab",
+  "app.session.tree": "ctrl+s",
+  "app.session.new": "ctrl+shift+n",
+  "app.session.fork": "ctrl+shift+f",
+  "app.session.rename": "ctrl+shift+r",
+  "app.clear": "ctrl+u",
+  "app.interrupt": "ctrl+c",
+  "app.suspend": "ctrl+z"
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/settings/settings-schema.json",
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-5.5",
+  "defaultThinkingLevel": "medium",
+  "hideThinkingBlock": false,
+  "thinkingBudgets": {
+    "minimal": 1024,
+    "low": 4096,
+    "medium": 10240,
+    "high": 32768,
+    "xhigh": 65536
+  },
+  "theme": "transparent",
+  "quietStartup": true,
+  "collapseChangelog": true,
+  "enableInstallTelemetry": false,
+  "doubleEscapeAction": "clear",
+  "treeFilterMode": "git",
+  "editorPaddingX": 1,
+  "autocompleteMaxVisible": 12,
+  "showHardwareCursor": false,
+  "warnings": {
+    "anthropicExtraUsage": true
+  },
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 4096,
+    "keepRecentTokens": 12000
+  },
+  "branchSummary": {
+    "reserveTokens": 4096,
+    "skipPrompt": false
+  },
+  "steeringMode": "auto",
+  "followUpMode": "auto",
+  "transport": "auto",
+  "terminal": {
+    "images": true
+  },
+  "packages": [
+    "npm:context-mode",
+    "npm:pi-mcp-adapter",
+    "npm:pi-subagents",
+    "npm:pi-web-access",
+    "npm:@juicesharp/rpiv-ask-user-question",
+    "npm:@juicesharp/rpiv-todo",
+    "npm:pi-simplify"
+  ],
+  "extensions": [],
+  "skills": [
+    "skills"
+  ],
+  "prompts": [],
+  "themes": [
+    "themes"
+  ],
+  "enableSkillCommands": true,
+  "lastChangelogVersion": "0.78.0"
+}

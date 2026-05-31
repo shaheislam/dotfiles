@@ -66,7 +66,7 @@ else
     fail "skills/work/ directory missing"
 fi
 
-for harness_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills; do
+for harness_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills .pi/agent/skills; do
     if [ -d "$DOTFILES_DIR/$harness_dir" ]; then
         pass "$harness_dir directory exists"
     else
@@ -358,7 +358,7 @@ else
     fail "Harness skill surfaces have drift" "Run scripts/sync-skills-harnesses.sh"
 fi
 
-for harness_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills; do
+for harness_dir in .claude/skills .agents/skills .gemini/skills .opencode/skills .pi/agent/skills; do
     if [ -L "$DOTFILES_DIR/$harness_dir/dotfiles-sync" ]; then
         pass "$harness_dir has central dotfiles-sync link"
     else

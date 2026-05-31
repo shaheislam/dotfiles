@@ -1090,6 +1090,22 @@ phase_4_cloud_tools() {
         fi
     }
 
+    _install_pi() {
+        if command_exists bun; then
+            bun add -g @earendil-works/pi-coding-agent@latest >/dev/null 2>&1 &&
+                print_success "Pi coding agent installed" ||
+                print_warning "Failed to install Pi coding agent"
+        else
+            print_warning "bun not found; skipping Pi coding agent install"
+        fi
+
+        if command_exists pi; then
+            pi --version >/dev/null 2>&1 &&
+                print_success "Pi coding agent verified" ||
+                print_warning "Pi coding agent installed but version check failed"
+        fi
+    }
+
     _install_sonar() {
         print_step "Installing/updating SonarQube CLI..."
         local sonar_version="0.10.0.1266"
@@ -1148,6 +1164,7 @@ phase_4_cloud_tools() {
     _install_codex
     _install_openclaw
     _install_opencode
+    _install_pi
     _install_sonar
 
     # Codex post-install: generate Fish completions and set up MCP servers

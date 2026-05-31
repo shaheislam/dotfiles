@@ -138,6 +138,7 @@ cask "1password-cli"  # 1Password CLI for tmux-1password plugin
 cask "kiro-cli"  # Kiro CLI (formerly Amazon Q Developer)
 brew "leohenon/tap/ocv"  # OpenCode fork with Vim mode; exposed as opencode via scripts/bin shim
 # opencode-with-claude: installed via bun globally in scripts/setup.sh
+# Pi coding agent: installed via bun globally in scripts/setup.sh
 brew "zippoxer/tap/recall"  # Search and resume Claude Code conversations
 brew "openclaw-cli"  # Self-hosted personal AI assistant gateway CLI
 brew "agent-browser"  # AI-optimized headless browser automation CLI (ref-based interaction model)

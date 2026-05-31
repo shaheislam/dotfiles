@@ -51,6 +51,7 @@ list_groups() {
     echo "  stow          - GNU Stow compatibility"
     echo "  claude        - Claude Code configuration files"
     echo "  gemini        - Gemini CLI docs, setup wiring, and package checks"
+    echo "  pi            - Pi coding agent config, theme, packages, and setup wiring"
     echo "  setup-syntax  - setup.sh bash syntax validation"
     echo "  brewfile      - Brewfile structure and duplicates"
     echo "  mcp           - MCP server configuration parity"
@@ -193,6 +194,33 @@ test_gemini() {
     run_test "setup.sh verifies Gemini CLI" "grep -q 'Verifying Gemini CLI' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "GEMINI.md references filtered Gemini tests" "grep -q 'scripts/test-filter.sh gemini' '$DOTFILES_ROOT/GEMINI.md'"
     run_test "tools.md documents Gemini CLI" "grep -q 'Gemini CLI' '$DOTFILES_ROOT/tools.md'"
+    if command -v shellcheck &>/dev/null; then
+        run_test "test-filter.sh passes ShellCheck" "shellcheck '$DOTFILES_ROOT/scripts/test-filter.sh'"
+    fi
+}
+
+test_pi() {
+    echo -e "${BLUE}--- Pi Coding Agent Tests ---${NC}"
+    local pi_root="$DOTFILES_ROOT/.pi/agent"
+    local required_theme_keys="accent border borderAccent borderMuted success error warning muted dim text thinkingText selectedBg userMessageBg userMessageText customMessageBg customMessageText customMessageLabel toolPendingBg toolSuccessBg toolErrorBg toolTitle toolOutput mdHeading mdLink mdLinkUrl mdCode mdCodeBlock mdCodeBlockBorder mdQuote mdQuoteBorder mdHr mdListBullet toolDiffAdded toolDiffRemoved toolDiffContext syntaxComment syntaxKeyword syntaxFunction syntaxVariable syntaxString syntaxNumber syntaxType syntaxOperator syntaxPunctuation thinkingOff thinkingMinimal thinkingLow thinkingMedium thinkingHigh thinkingXhigh bashMode"
+
+    run_test ".pi/agent settings exists" "[ -f '$pi_root/settings.json' ]"
+    run_test ".pi/agent keybindings exists" "[ -f '$pi_root/keybindings.json' ]"
+    run_test ".pi/agent transparent theme exists" "[ -f '$pi_root/themes/transparent.json' ]"
+    run_test ".pi/agent AGENTS.md exists" "[ -f '$pi_root/AGENTS.md' ]"
+    run_test "Pi settings JSON valid" "python3 -c \"import json; json.load(open('$pi_root/settings.json'))\""
+    run_test "Pi keybindings JSON valid" "python3 -c \"import json; json.load(open('$pi_root/keybindings.json'))\""
+    run_test "Pi transparent theme JSON valid" "python3 -c \"import json; json.load(open('$pi_root/themes/transparent.json'))\""
+    run_test "Pi settings selects transparent theme" "python3 -c \"import json; data=json.load(open('$pi_root/settings.json')); assert data.get('theme') == 'transparent'\""
+    run_test "Pi settings enables skill commands" "python3 -c \"import json; data=json.load(open('$pi_root/settings.json')); assert data.get('enableSkillCommands') is True\""
+    run_test "Pi settings includes curated packages" "python3 -c \"import json; pkgs=json.load(open('$pi_root/settings.json')).get('packages', []); required={'npm:context-mode','npm:pi-mcp-adapter','npm:pi-subagents','npm:pi-web-access','npm:@juicesharp/rpiv-ask-user-question','npm:@juicesharp/rpiv-todo','npm:pi-simplify'}; assert required <= set(pkgs)\""
+    run_test "Pi transparent theme has required keys" "python3 -c \"import json; data=json.load(open('$pi_root/themes/transparent.json')); required=set('$required_theme_keys'.split()); assert data.get('name') == 'transparent'; assert required <= set(data.get('colors', {}))\""
+    run_test "Pi transparent theme uses terminal passthrough backgrounds" "python3 -c \"import json; colors=json.load(open('$pi_root/themes/transparent.json'))['colors']; assert colors['userMessageBg'] == ''; assert colors['customMessageBg'] == ''; assert colors['toolPendingBg'] == ''\""
+    run_test "Skill sync targets Pi" "grep -q '\.pi/agent/skills' '$DOTFILES_ROOT/scripts/sync-skills-harnesses.sh'"
+    run_test "Skills profile tests include Pi surface" "grep -q '\.pi/agent/skills' '$DOTFILES_ROOT/scripts/test-skills-profile.sh'"
+    run_test "Brewfile documents Pi install" "grep -q 'Pi coding agent' '$DOTFILES_ROOT/homebrew/Brewfile'"
+    run_test "setup.sh installs Pi via bun" "grep -q '@earendil-works/pi-coding-agent@latest' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh verifies Pi CLI" "grep -q 'Pi coding agent verified' '$DOTFILES_ROOT/scripts/setup.sh'"
     if command -v shellcheck &>/dev/null; then
         run_test "test-filter.sh passes ShellCheck" "shellcheck '$DOTFILES_ROOT/scripts/test-filter.sh'"
     fi
@@ -343,6 +371,13 @@ test_tmux() {
     run_test "tmux scripts directory exists" "[ -d '$DOTFILES_ROOT/scripts/tmux' ]"
     run_test "Claude watcher script exists" "[ -f '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
     run_test "Claude watcher is executable" "[ -x '$DOTFILES_ROOT/scripts/tmux/tmux-claude-watcher.sh' ]"
+    run_test "tmux wname injector exists" "[ -f '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh' ]"
+    run_test "tmux wname injector is executable" "[ -x '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh' ]"
+    run_test "tmux wname injector syntax valid" "bash -n '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh'"
+    run_test "tmux wname injector patches both formats" "grep -q 'inject window-status-format' '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh' && grep -q 'inject window-status-current-format' '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh'"
+    run_test "tmux wname injector retries PowerKit repaint" "grep -q 'for _ in 1 2 3 4 5' '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh' && grep -q 'sleep 0.25' '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh' && grep -q 'inject_all' '$DOTFILES_ROOT/scripts/tmux/inject-wname-style.sh'"
+    run_test "tmux wname injector runs in background" "grep -q \"run-shell -b '~/dotfiles/scripts/tmux/inject-wname-style.sh'\" '$DOTFILES_ROOT/.tmux.conf'"
+    run_test "tmux extended keys use csi-u for Pi" "grep -q '^set -g extended-keys on' '$DOTFILES_ROOT/.tmux.conf' && grep -q '^set -g extended-keys-format csi-u' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux-resurrect plugin configured" \
         "grep -q \"tmux-plugins/tmux-resurrect\" '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux-continuum plugin configured" \
@@ -1440,6 +1475,7 @@ fish) test_fish ;;
 stow) test_stow ;;
 claude) test_claude ;;
 gemini) test_gemini ;;
+pi) test_pi ;;
 setup-syntax) test_setup_syntax ;;
 brewfile) test_brewfile ;;
 mcp) test_mcp ;;
@@ -1464,6 +1500,7 @@ all)
     test_stow
     test_claude
     test_gemini
+    test_pi
     test_setup_syntax
     test_brewfile
     test_mcp

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Inject @wname_style into window-status-format for agent coloring,
 # and fix overflow marker styling for Tokyo Night theme consistency.
-# Run after TPM/powerkit generates the format strings.
+# Run after TPM/powerkit generates the format strings. PowerKit reloads
+# asynchronously, so retry briefly to survive a late repaint of #W.
 #
 # When @wname_style is set on a window (by tmux-claude-watcher.sh),
 # it overrides the text color of the window name in the status bar.
@@ -39,6 +40,13 @@ fix_markers() {
     [[ "$patched" != "$fmt" ]] && tmux set-option -g "status-format[0]" "$patched"
 }
 
-inject window-status-format
-inject window-status-current-format
-fix_markers
+inject_all() {
+    inject window-status-format
+    inject window-status-current-format
+    fix_markers
+}
+
+for _ in 1 2 3 4 5; do
+    inject_all
+    sleep 0.25
+done

@@ -12,6 +12,7 @@ TARGETS=(
     ".agents/skills"
     ".gemini/skills"
     ".opencode/skills"
+    ".pi/agent/skills"
 )
 
 usage() {
@@ -23,6 +24,7 @@ Links central skills into harness-specific skill directories:
   .agents/skills   Codex CLI / Agent Skills standard
   .gemini/skills   Gemini CLI / Agent Skills standard
   .opencode/skills OpenCode bridge surface
+  .pi/agent/skills Pi coding agent global skills
 
 Default mode creates or refreshes managed symlinks. --check reports drift only.
 EOF
@@ -43,18 +45,18 @@ resolve_source() {
     local value="$1"
 
     case "$value" in
-        dotfiles:*)
-            printf '%s/%s\n' "$SKILLS_ROOT" "${value#dotfiles:}"
-            ;;
-        path:~*)
-            printf '%s%s\n' "$HOME" "${value#path:~}"
-            ;;
-        path:*)
-            printf '%s\n' "${value#path:}"
-            ;;
-        *)
-            return 1
-            ;;
+    dotfiles:*)
+        printf '%s/%s\n' "$SKILLS_ROOT" "${value#dotfiles:}"
+        ;;
+    path:~*)
+        printf '%s%s\n' "$HOME" "${value#path:~}"
+        ;;
+    path:*)
+        printf '%s\n' "${value#path:}"
+        ;;
+    *)
+        return 1
+        ;;
     esac
 }
 
@@ -119,8 +121,8 @@ is_managed_link() {
     local link_target resolved
     link_target="$(readlink "$target")"
     case "$link_target" in
-        /*) resolved="$link_target" ;;
-        *) resolved="$(cd "$(dirname "$target")" && cd "$(dirname "$link_target")" && pwd)/$(basename "$link_target")" ;;
+    /*) resolved="$link_target" ;;
+    *) resolved="$(cd "$(dirname "$target")" && cd "$(dirname "$link_target")" && pwd)/$(basename "$link_target")" ;;
     esac
 
     [[ "$resolved" == "$SKILLS_ROOT"/* || "$resolved" == "$HOME"/.agents/skills/* ]]
@@ -141,8 +143,8 @@ resolved_link_path() {
 
     link_target="$(readlink "$target")"
     case "$link_target" in
-        /*) absolute_path "$link_target" ;;
-        *) absolute_path "$(dirname "$target")/$link_target" ;;
+    /*) absolute_path "$link_target" ;;
+    *) absolute_path "$(dirname "$target")/$link_target" ;;
     esac
 }
 
