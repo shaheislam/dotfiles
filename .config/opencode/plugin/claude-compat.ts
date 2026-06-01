@@ -1,6 +1,7 @@
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import type { Plugin } from "@opencode-ai/plugin"
 
 type HookResult = {
@@ -24,6 +25,7 @@ const DREAM_DIR = join(DOTFILES_ROOT, ".claude", "skills", "dream")
 const PLAN_WATCH_DEBOUNCE_MS = 5000
 const STARTUP_FAST_TIMEOUT_MS = 500
 const STARTUP_CONTEXT_TIMEOUT_MS = 2500
+const MAINTENANCE_TTL_MS = 24 * 60 * 60 * 1000
 
 function normalizeMessage(text: string) {
   return text.trim()
@@ -242,8 +244,7 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
   }
 
-  async function runContextScript(script: string, timeoutMs = 0) {
-    const result = await runScript(script, undefined, {}, timeoutMs)
+  function addContextResult(result: HookResult) {
     if (result.stdout) {
       addSessionContext(result.stdout)
     }
@@ -263,6 +264,43 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     } catch {
       return String(output)
     }
+  }
+
+  function maintenanceStampPath(name: string) {
+    const projectHash = createHash("sha256").update(projectDir).digest("hex").slice(0, 16)
+    return join(process.env.HOME || tmpdir(), ".cache", "opencode", "claude-compat-maintenance", projectHash, `${name}.stamp`)
+  }
+
+  function shouldRunMaintenance(name: string) {
+    if (process.env.OPENCODE_MAINTENANCE_DISABLE === "1") {
+      return false
+    }
+
+    const stampPath = maintenanceStampPath(name)
+    try {
+      if (Date.now() - statSync(stampPath).mtimeMs < MAINTENANCE_TTL_MS) {
+        return false
+      }
+    } catch {
+      // Missing or unreadable stamps should not prevent self-healing.
+    }
+
+    try {
+      mkdirSync(dirname(stampPath), { recursive: true })
+      writeFileSync(stampPath, new Date().toISOString(), "utf8")
+    } catch {
+      // Cache writes are best-effort; still run the maintenance hook.
+    }
+
+    return true
+  }
+
+  async function runMaintenanceScript(name: string, script: string) {
+    if (!shouldRunMaintenance(name)) {
+      return { stdout: "", stderr: "", exitCode: 0 }
+    }
+
+    return runScript(script, undefined, {}, STARTUP_CONTEXT_TIMEOUT_MS)
   }
 
   function buildToolPayload(tool: string, args: Record<string, unknown>, toolOutput?: string): ToolPayload {
@@ -536,8 +574,8 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
 
     const startupTasks = [
-      runScript(join(DOTFILES_ROOT, "scripts", "fix-hookify-imports.sh"), undefined, {}, STARTUP_CONTEXT_TIMEOUT_MS),
-      runScript(hookPath("plugin-chmod-fix.sh"), undefined, {}, STARTUP_CONTEXT_TIMEOUT_MS),
+      runMaintenanceScript("fix-hookify-imports", join(DOTFILES_ROOT, "scripts", "fix-hookify-imports.sh")),
+      runMaintenanceScript("plugin-chmod-fix", hookPath("plugin-chmod-fix.sh")),
     ]
 
     if (mode === "full" && process.env.OPENCODE_DREAM_DISABLE !== "1") {
@@ -552,13 +590,22 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
 
     await Promise.all(startupTasks)
 
-    await runContextScript(hookPath("work-detect.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
-    await runContextScript(hookPath("lsp-status.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
+    const contextScripts = [
+      hookPath("work-detect.sh"),
+      hookPath("lsp-status.sh"),
+    ]
     if (process.env.OPENCODE_PLAN_RESUME_DISABLE !== "1") {
-      await runContextScript(hookPath("plan-resume.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
+      contextScripts.push(hookPath("plan-resume.sh"))
     }
     if (process.env.OPENCODE_CHANGELOG_RESUME_DISABLE !== "1") {
-      await runContextScript(hookPath("changelog-resume.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
+      contextScripts.push(hookPath("changelog-resume.sh"))
+    }
+
+    const contextResults = await Promise.all(
+      contextScripts.map((script) => runScript(script, undefined, {}, STARTUP_CONTEXT_TIMEOUT_MS)),
+    )
+    for (const result of contextResults) {
+      addContextResult(result)
     }
   }
 
