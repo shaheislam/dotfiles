@@ -67,6 +67,7 @@
   "autoupdate": false,
   "share": "disabled",
   "permission": "allow",
+  "lsp": true,
   "agent": {
     "precise": {
       "description": "Low-temperature deterministic reasoning for correctness-critical work",
