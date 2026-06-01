@@ -1,0 +1,31 @@
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .config/opencode/plugin/claude-compat.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.opencode/plugins/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+❯ git add .
+❯ git commit -m "speed up opencode"
+Harness pre-commit: checking staged files...
+
+Pre-commit: all checks passed
+[main 83d55325] speed up opencode
+ 1 file changed, 57 insertions(+), 10 deletions(-)
+❯ git status
+On branch main
+Your branch is ahead of 'origin/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.opencode/plugins/
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+~/dotfiles➜ 
+
+Why is this untracked?
