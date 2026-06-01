@@ -62,6 +62,7 @@ skills/shared/dream/.last-dream
 !.entire/settings.json
 
 # Generated agent runtime surfaces (materialized per worktree)
+.opencode/plugins/
 .claude/agents/entire-search.md
 .gemini/agents/
 .gemini/settings.json
