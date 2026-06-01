@@ -58,10 +58,8 @@
   "small_model": "anthropic/claude-haiku-4-5",
   "plugin": [
     "@tarquinen/opencode-dcp@latest",
-    "opencode-pty",
-    "opencode-vibeguard",
     "./plugin/claude-compat.ts",
-    "./plugin/tmux-status.ts",
+    "./plugin/session-env.ts",
     "./plugin/nvim-open.ts"
   ],
   "autoupdate": false,

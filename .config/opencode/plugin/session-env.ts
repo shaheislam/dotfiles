@@ -2,7 +2,7 @@
 // Tmux window colors are pane-local and owned by scripts/opencode/tmux-open.sh.
 import type { Plugin } from "@opencode-ai/plugin"
 
-export const TmuxStatusPlugin: Plugin = async () => {
+export const SessionEnvPlugin: Plugin = async () => {
   let currentSessionID: string | null = null
   let currentModel: string | null = null
 
@@ -50,4 +50,4 @@ export const TmuxStatusPlugin: Plugin = async () => {
   }
 }
 
-export default TmuxStatusPlugin
+export default SessionEnvPlugin

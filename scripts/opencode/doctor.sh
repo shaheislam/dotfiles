@@ -204,17 +204,17 @@ except Exception:
     fi
 fi
 
-# npm plugins configured in opencode.json
+# Plugins configured in opencode.json
 if [ -f "$CONFIG_FILE" ]; then
     plugin_list="$(jq -r '.plugin // [] | join(", ")' "$CONFIG_FILE" 2>/dev/null || true)"
     if [ -n "$plugin_list" ]; then
-        plugin_npm_count="$(jq '.plugin // [] | length' "$CONFIG_FILE" 2>/dev/null || echo 0)"
-        print_result PASS "npm plugins" "$plugin_npm_count configured: $plugin_list"
+        plugin_count_configured="$(jq '.plugin // [] | length' "$CONFIG_FILE" 2>/dev/null || echo 0)"
+        print_result PASS "plugins" "$plugin_count_configured configured: $plugin_list"
     else
-        print_result WARN "npm plugins" "No npm plugins in opencode.json"
+        print_result WARN "plugins" "No plugins in opencode.json"
     fi
 
-    # Check npm plugin cache and local file plugins
+    # Check external plugin cache and local file plugins
     npm_cache="$HOME/.cache/opencode/node_modules"
     for pkg in $(jq -r '.plugin // [] | .[]' "$CONFIG_FILE" 2>/dev/null); do
         if plugin_path="$(resolve_plugin_path "$pkg")"; then
@@ -244,25 +244,6 @@ if [ -f "$CONFIG_FILE" ]; then
             print_result WARN "Claude subscription plugin" "Run: bun add -g opencode-with-claude@latest"
         fi
     fi
-fi
-
-# DCP config
-if [ -f "$ROOT/.opencode/dcp.jsonc" ]; then
-    print_result PASS "DCP config" ".opencode/dcp.jsonc"
-else
-    print_result WARN "DCP config" "Missing .opencode/dcp.jsonc"
-fi
-
-# VibeGuard config
-if [ -f "$ROOT/.opencode/vibeguard.config.json" ]; then
-    vg_enabled="$(jq -r '.enabled // false' "$ROOT/.opencode/vibeguard.config.json" 2>/dev/null || echo false)"
-    if [ "$vg_enabled" = "true" ]; then
-        print_result PASS "VibeGuard" "Enabled"
-    else
-        print_result WARN "VibeGuard" "Disabled in config"
-    fi
-else
-    print_result WARN "VibeGuard" "Missing vibeguard.config.json"
 fi
 
 command_count="$(count_files "$COMMAND_DIR")"
@@ -304,22 +285,34 @@ else
     print_result WARN "compat configured" "Add ./plugin/claude-compat.ts to opencode.json plugin list"
 fi
 
+if [ -f "$CONFIG_FILE" ] && plugin_configured "@tarquinen/opencode-dcp@latest"; then
+    print_result PASS "DCP configured" "@tarquinen/opencode-dcp@latest"
+else
+    print_result WARN "DCP configured" "Add @tarquinen/opencode-dcp@latest to opencode.json plugin list"
+fi
+
+if [ -f "$ROOT/.opencode/dcp.jsonc" ] && [ -f "$ROOT/.config/opencode/dcp.jsonc" ]; then
+    print_result PASS "DCP config" ".opencode/dcp.jsonc and .config/opencode/dcp.jsonc"
+else
+    print_result WARN "DCP config" "Missing DCP config file"
+fi
+
 if [ -f "$PLUGIN_DIR/project-env.ts" ]; then
     print_result PASS "env plugin" "$PLUGIN_DIR/project-env.ts"
 else
     print_result WARN "env plugin" "Missing .config/opencode/plugin/project-env.ts"
 fi
 
-if [ -f "$PLUGIN_DIR/tmux-status.ts" ]; then
-    print_result PASS "tmux plugin" "$PLUGIN_DIR/tmux-status.ts"
+if [ -f "$PLUGIN_DIR/session-env.ts" ]; then
+    print_result PASS "session env plugin" "$PLUGIN_DIR/session-env.ts"
 else
-    print_result WARN "tmux plugin" "Missing .config/opencode/plugin/tmux-status.ts"
+    print_result WARN "session env plugin" "Missing .config/opencode/plugin/session-env.ts"
 fi
 
-if [ -f "$CONFIG_FILE" ] && plugin_configured "./plugin/tmux-status.ts"; then
-    print_result PASS "tmux configured" "./plugin/tmux-status.ts"
+if [ -f "$CONFIG_FILE" ] && plugin_configured "./plugin/session-env.ts"; then
+    print_result PASS "session env configured" "./plugin/session-env.ts"
 else
-    print_result WARN "tmux configured" "Add ./plugin/tmux-status.ts to opencode.json plugin list"
+    print_result WARN "session env configured" "Add ./plugin/session-env.ts to opencode.json plugin list"
 fi
 
 ROUTING_FILE="$ROOT/.opencode/model-routing.json"

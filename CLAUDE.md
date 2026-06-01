@@ -81,7 +81,7 @@
 Bind-mounts `~/.claude` into containers. Key file: `scripts/devcontainer/export-claude-credentials.sh`. Details in `.claude/rules/worktree-devcontainer.md`.
 
 ### Agent Window Status
-Tmux window colors are event-driven. Claude wrapper/hooks and OpenCode `tmux-open.sh` set window-scoped `@wname_style`; OpenCode status is mirrored through `.config/opencode/plugin/tmux-status.ts` state files.
+Tmux window colors are event-driven. Claude wrapper/hooks and OpenCode `tmux-open.sh` set window-scoped `@wname_style`; OpenCode session metadata is exposed through `.config/opencode/plugin/session-env.ts`.
 
 ### Agent Orchestration (Gastown Patterns)
 Multi-agent lifecycle management. Details in `.claude/rules/agent-orchestration.md`. Core scripts: `agent-state.sh`, `worktree-witness.sh`, `merge-queue.sh`, `agent-triage.sh`, `phase-gates.sh`. Higher-level: convoys, molecules, town-beads, mayor, dashboard.
