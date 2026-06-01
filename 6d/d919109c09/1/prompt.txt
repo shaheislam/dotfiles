@@ -1,0 +1,1 @@
+https://github.com/ex-machina-co/opencode-anthropic-auth Do we not have this set up for Opencode? Why isn't our Opus model within Opencode using our subscription?
