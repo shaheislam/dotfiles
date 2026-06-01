@@ -1,0 +1,3 @@
+Is it worth enabling doom_loop to true in our opencode config?
+
+https://opencode.ai/docs/permissions/
