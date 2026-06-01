@@ -1,0 +1,7 @@
+I've ran ~/dotfiles➜  tmux source-file ~/.tmux.conf
+
+But its still flickering
+
+---
+
+▣ DCP | -227.7K removed, +40.8K summary — Compression #3
