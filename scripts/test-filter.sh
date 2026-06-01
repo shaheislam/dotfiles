@@ -378,7 +378,7 @@ test_tmux() {
     run_test "setup omits PowerKit plugin" "! grep -q 'tmux-powerkit' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "tmux native inactive windows use agent colors" "grep -q '^setw -g window-status-format .*@wname_style' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux native current window uses agent colors" "grep -q '^setw -g window-status-current-format .*@wname_style' '$DOTFILES_ROOT/.tmux.conf'"
-    run_test "tmux native status-right includes Git branch and time" "grep -q '^set -g status-right .*%s%s.*%H:%M' '$DOTFILES_ROOT/.tmux.conf'"
+    run_test "tmux native status-right avoids shell commands" "grep -q '^set -g status-right .*%H:%M' '$DOTFILES_ROOT/.tmux.conf' && ! grep -q '^set -g status-right .*#(' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux session manager reads agent window style" "grep -q '#{@wname_style}' '$DOTFILES_ROOT/scripts/tmux/tmux-session-manager.sh' && ! grep -q '●◆' '$DOTFILES_ROOT/scripts/tmux/tmux-session-manager.sh'"
     run_test "tmux extended keys use csi-u for Pi" "grep -q '^set -g extended-keys on' '$DOTFILES_ROOT/.tmux.conf' && grep -q '^set -g extended-keys-format csi-u' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux-resurrect plugin configured" \
@@ -391,6 +391,8 @@ test_tmux() {
         "grep -q \"tmux-plugins/tmux-continuum\" '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "tmux-continuum auto-restore enabled" \
         "grep -q \"@continuum-restore 'on'\" '$DOTFILES_ROOT/.tmux.conf'"
+    run_test "tmux-continuum autosave runs outside status-right" \
+        "grep -q \"@continuum-save-interval '0'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q 'tmux-status-finalize.sh' '$DOTFILES_ROOT/.tmux.conf' && [ -x '$DOTFILES_ROOT/scripts/tmux/tmux-continuum-autosave.sh'"
     run_test "tmux-resurrect restores Neovim sessions" \
         "grep -q \"@resurrect-processes '.*nvim.*vim\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-nvim 'session'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-vim 'session'\" '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux-resurrect captures pane contents" \
