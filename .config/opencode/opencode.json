@@ -65,7 +65,10 @@
   ],
   "autoupdate": false,
   "share": "disabled",
-  "permission": "allow",
+  "permission": {
+    "*": "allow",
+    "doom_loop": "ask"
+  },
   "lsp": true,
   "agent": {
     "precise": {
