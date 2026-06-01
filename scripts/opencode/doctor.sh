@@ -237,6 +237,12 @@ if [ -f "$CONFIG_FILE" ]; then
     done
 
     if [ -f "$PLUGIN_DIR/opencode-with-claude.ts" ]; then
+        if plugin_configured "./plugin/opencode-with-claude.ts"; then
+            print_result PASS "Claude subscription config" "./plugin/opencode-with-claude.ts loaded"
+        else
+            print_result WARN "Claude subscription config" "Add ./plugin/opencode-with-claude.ts to opencode.json plugin list"
+        fi
+
         claude_plugin="$HOME/.bun/install/global/node_modules/opencode-with-claude/dist/index.js"
         if [ -f "$claude_plugin" ]; then
             print_result PASS "Claude subscription plugin" "Bun global install available"

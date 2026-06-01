@@ -58,6 +58,7 @@
   "small_model": "anthropic/claude-haiku-4-5",
   "plugin": [
     "@tarquinen/opencode-dcp@latest",
+    "./plugin/opencode-with-claude.ts",
     "./plugin/claude-compat.ts",
     "./plugin/session-env.ts",
     "./plugin/nvim-open.ts"

@@ -135,6 +135,10 @@ function fail(message) {
   process.exit(1)
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 const projectDir = process.env.OPENCODE_TEST_PROJECT
 
 const hooks = await ClaudeCompatPlugin({
@@ -226,9 +230,17 @@ if (!transformOutput.system.some((entry) => entry.toLowerCase().includes("deepwi
 
 await hooks.event({ event: { type: "session.created", properties: { info: { id: "ses_test" } } } })
 
-const sessionTransform = { system: [] }
-await hooks["experimental.chat.system.transform"]({}, sessionTransform)
-if (!sessionTransform.system.some((entry) => entry.includes("OpenCode changelog parity test entry"))) {
+let changelogInjected = false
+for (let attempt = 0; attempt < 20; attempt += 1) {
+  const sessionTransform = { system: [] }
+  await hooks["experimental.chat.system.transform"]({}, sessionTransform)
+  if (sessionTransform.system.some((entry) => entry.includes("OpenCode changelog parity test entry"))) {
+    changelogInjected = true
+    break
+  }
+  await sleep(50)
+}
+if (!changelogInjected) {
   fail("session start did not inject changelog context")
 }
 

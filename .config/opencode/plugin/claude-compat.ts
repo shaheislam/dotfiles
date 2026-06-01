@@ -22,6 +22,8 @@ const CLAUDE_HOOKS_DIR = join(DOTFILES_ROOT, ".claude", "hooks")
 const TMUX_HOOKS_DIR = join(DOTFILES_ROOT, "scripts", "tmux", "hooks")
 const DREAM_DIR = join(DOTFILES_ROOT, ".claude", "skills", "dream")
 const PLAN_WATCH_DEBOUNCE_MS = 5000
+const STARTUP_FAST_TIMEOUT_MS = 500
+const STARTUP_CONTEXT_TIMEOUT_MS = 2500
 
 function normalizeMessage(text: string) {
   return text.trim()
@@ -102,6 +104,7 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     script: string,
     payload?: Record<string, unknown>,
     extraEnv: Record<string, string> = {},
+    timeoutMs = 0,
   ): Promise<HookResult> {
     if (!existsSync(script)) {
       return { stdout: "", stderr: "", exitCode: 0 }
@@ -125,13 +128,18 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     const [stdout, stderr, exitCode] = await Promise.all([
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
-      proc.exited,
+      waitForProcess(proc, timeoutMs),
     ])
 
     return { stdout: stdout.trim(), stderr: stderr.trim(), exitCode }
   }
 
-  async function runCommand(command: string, args: string[] = [], payload?: Record<string, unknown>): Promise<HookResult> {
+  async function runCommand(
+    command: string,
+    args: string[] = [],
+    payload?: Record<string, unknown>,
+    timeoutMs = 0,
+  ): Promise<HookResult> {
     const proc = Bun.spawn([command, ...args], {
       cwd: projectDir,
       env: {
@@ -149,10 +157,36 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     const [stdout, stderr, exitCode] = await Promise.all([
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
-      proc.exited,
+      waitForProcess(proc, timeoutMs),
     ])
 
     return { stdout: stdout.trim(), stderr: stderr.trim(), exitCode }
+  }
+
+  async function waitForProcess(proc: { exited: Promise<number>; kill: () => void }, timeoutMs: number) {
+    if (timeoutMs <= 0) {
+      return proc.exited
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timedOut = new Promise<number>((resolve) => {
+      timer = setTimeout(() => {
+        try {
+          proc.kill()
+        } catch {
+          // Process may have exited between the timeout firing and kill.
+        }
+        resolve(124)
+      }, timeoutMs)
+    })
+
+    try {
+      return await Promise.race([proc.exited, timedOut])
+    } finally {
+      if (timer) {
+        clearTimeout(timer)
+      }
+    }
   }
 
   function runScriptSync(
@@ -208,8 +242,8 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
   }
 
-  async function runContextScript(script: string) {
-    const result = await runScript(script)
+  async function runContextScript(script: string, timeoutMs = 0) {
+    const result = await runScript(script, undefined, {}, timeoutMs)
     if (result.stdout) {
       addSessionContext(result.stdout)
     }
@@ -398,6 +432,14 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
     return process.env.OPENCODE_CROSS_PROVIDER_BRIDGE === "1" || process.env.CROSS_PROVIDER_BRIDGE === "1"
   }
 
+  function startupContextMode() {
+    const mode = process.env.OPENCODE_STARTUP_CONTEXT
+    if (mode === "off" || mode === "full") {
+      return mode
+    }
+    return "light"
+  }
+
   function defaultOpenCodeReviewerModel() {
     const executorModel = currentOpenCodeModel || process.env.OPENCODE_PRIMARY_MODEL || process.env.OPENCODE_MODEL || "openai/gpt-5.5"
     if (executorModel.startsWith("anthropic/")) {
@@ -488,18 +530,36 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
   }
 
   async function collectSessionStartContext() {
-    await Promise.all([
-      runScript(join(DOTFILES_ROOT, "scripts", "fix-hookify-imports.sh")),
-      runScript(hookPath("plugin-chmod-fix.sh")),
-      runScript(tmuxHookPath("tmux-agent-start.sh")),
-      runScript(dreamPath("count-session.sh")),
-      runCommand("bd", ["prime"]).catch(() => ({ stdout: "", stderr: "", exitCode: 0 })),
-    ])
+    const mode = startupContextMode()
+    if (mode === "off") {
+      return
+    }
 
-    await runContextScript(hookPath("work-detect.sh"))
-    await runContextScript(hookPath("lsp-status.sh"))
-    await runContextScript(hookPath("plan-resume.sh"))
-    await runContextScript(hookPath("changelog-resume.sh"))
+    const startupTasks = [
+      runScript(join(DOTFILES_ROOT, "scripts", "fix-hookify-imports.sh"), undefined, {}, STARTUP_CONTEXT_TIMEOUT_MS),
+      runScript(hookPath("plugin-chmod-fix.sh"), undefined, {}, STARTUP_CONTEXT_TIMEOUT_MS),
+    ]
+
+    if (mode === "full" && process.env.OPENCODE_DREAM_DISABLE !== "1") {
+      startupTasks.push(runScript(dreamPath("count-session.sh"), undefined, {}, STARTUP_CONTEXT_TIMEOUT_MS))
+    }
+
+    if (mode === "full" && process.env.OPENCODE_BD_PRIME_DISABLE !== "1") {
+      startupTasks.push(
+        runCommand("bd", ["prime"], undefined, STARTUP_CONTEXT_TIMEOUT_MS).catch(() => ({ stdout: "", stderr: "", exitCode: 0 })),
+      )
+    }
+
+    await Promise.all(startupTasks)
+
+    await runContextScript(hookPath("work-detect.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
+    await runContextScript(hookPath("lsp-status.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
+    if (process.env.OPENCODE_PLAN_RESUME_DISABLE !== "1") {
+      await runContextScript(hookPath("plan-resume.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
+    }
+    if (process.env.OPENCODE_CHANGELOG_RESUME_DISABLE !== "1") {
+      await runContextScript(hookPath("changelog-resume.sh"), STARTUP_CONTEXT_TIMEOUT_MS)
+    }
   }
 
   function handleShutdown() {
@@ -549,7 +609,8 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
           messageTexts.clear()
           messageOrder.length = 0
           lastBridgeReviewedAssistant = ""
-          await collectSessionStartContext()
+          await runScript(tmuxHookPath("tmux-agent-start.sh"), undefined, {}, STARTUP_FAST_TIMEOUT_MS)
+          void collectSessionStartContext().catch(() => {})
           break
         }
 

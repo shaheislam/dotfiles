@@ -318,6 +318,11 @@ setup_opencode_shared_server() {
 
     print_step "Setting up OpenCode shared server..."
 
+    local claude_subscription_plugin="$HOME/.bun/install/global/node_modules/opencode-with-claude/dist/index.js"
+    if [[ ! -f "$claude_subscription_plugin" ]]; then
+        print_warning "OpenCode Claude subscription plugin missing; run full setup without --skip-packages"
+    fi
+
     if [[ "$DRY_RUN" == "true" ]]; then
         print_warning "DRY RUN: Would install and start OpenCode shared server"
         return 0
