@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "6dd919109c09",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/opencode/plugin/claude-compat.ts",
+    "scripts/opencode/test-claude-compat.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/6d/d919109c09/0/metadata.json",
+      "transcript": "/6d/d919109c09/0/full.jsonl",
+      "content_hash": "/6d/d919109c09/0/content_hash.txt",
+      "prompt": "/6d/d919109c09/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 591099,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1453056,
+    "output_tokens": 8089,
+    "api_call_count": 28
+  }
+}

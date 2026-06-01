@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "6dd919109c09",
+  "session_id": "ses_17b78a7daffedxpixl72h1uygo",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-01T18:59:10.219963Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/opencode/plugin/claude-compat.ts",
+    "scripts/opencode/test-claude-compat.sh"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-5.5",
+  "turn_id": "44bed88a61a9",
+  "token_usage": {
+    "input_tokens": 591099,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1453056,
+    "output_tokens": 8089,
+    "api_call_count": 28
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-01T18:59:10.205617Z",
+    "agent_lines": 93,
+    "agent_removed": 20,
+    "human_added": 15,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 108,
+    "total_lines_changed": 131,
+    "agent_percentage": 86.25954198473282,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
