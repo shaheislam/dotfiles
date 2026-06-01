@@ -392,7 +392,7 @@ test_tmux() {
     run_test "tmux-continuum auto-restore enabled" \
         "grep -q \"@continuum-restore 'on'\" '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux-continuum autosave runs outside status-right" \
-        "grep -q \"@continuum-save-interval '0'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q 'tmux-status-finalize.sh' '$DOTFILES_ROOT/.tmux.conf' && [ -x '$DOTFILES_ROOT/scripts/tmux/tmux-continuum-autosave.sh'"
+        "grep -q \"@continuum-save-interval '0'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q 'tmux-status-finalize.sh' '$DOTFILES_ROOT/.tmux.conf' && [ -x '$DOTFILES_ROOT/scripts/tmux/tmux-continuum-autosave.sh' ]"
     run_test "tmux-resurrect restores Neovim sessions" \
         "grep -q \"@resurrect-processes '.*nvim.*vim\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-nvim 'session'\" '$DOTFILES_ROOT/.tmux.conf' && grep -q \"@resurrect-strategy-vim 'session'\" '$DOTFILES_ROOT/.tmux.conf'"
     run_test "tmux-resurrect captures pane contents" \
