@@ -6,9 +6,9 @@
 set -g kubectl_use_fzf true
 set -g __kubectl_fzf_functions_dir (status dirname)
 
-# Cache configuration for kubectl-fzf-server integration
-set -g KUBECTL_FZF_CACHE "/tmp/kubectl_fzf_cache"
-set -g KUBECTL_FZF_CACHE_MAX_AGE 60  # seconds
+# Optional local cache configuration for expensive kubectl lookups
+set -g KUBECTL_FZF_CACHE /tmp/kubectl_fzf_cache
+set -g KUBECTL_FZF_CACHE_MAX_AGE 60 # seconds
 
 function __kubectl_fzf_load_native_helpers --description "Load native kubectl completion helpers on demand"
     if functions -q __fish_kubectl_print_resource_types
@@ -30,7 +30,7 @@ function __kubectl_fzf_load_native_helpers --description "Load native kubectl co
 end
 
 # Cache-aware resource fetching function
-# Checks kubectl-fzf-server cache first, falls back to API
+# Checks the local cache first, then falls back to the Kubernetes API
 function __fish_kubectl_print_resource_cached --description "Get resources with cache support"
     set -l resource_type $argv[1]
 
@@ -107,7 +107,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             end
 
             # Multiple matches - use FZF with descriptions
-            if test "$kubectl_use_fzf" = "true"
+            if test "$kubectl_use_fzf" = true
                 set -l selected (printf '%s\n' $filtered_flags | fzf --ansi --height=40% --prompt="Flag: " --query="$current" \
                     --delimiter='\t' --with-nth=1,2 --tabstop=4)
                 echo $selected | string split \t | head -1
@@ -123,7 +123,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     set -l resource_type ""
     set -l resource_name ""
     set -l last_arg ""
-    set -l position 0  # 0=need subcmd, 1=need resource_type, 2=need resource_name, 3+=flags
+    set -l position 0 # 0=need subcmd, 1=need resource_type, 2=need resource_name, 3+=flags
 
     for i in (seq 2 (count $cmd))
         set -l arg $cmd[$i]
@@ -139,7 +139,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         # Skip values after namespace flag
         if test $i -gt 2
             set -l prev $cmd[(math $i - 1)]
-            if test "$prev" = "-n"; or test "$prev" = "--namespace"
+            if test "$prev" = -n; or test "$prev" = --namespace
                 continue
             end
         end
@@ -184,7 +184,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
             return
         case --field-selector
             # Field selector completion
-            set -l field_resource_type "pods"
+            set -l field_resource_type pods
             if test -n "$resource_type"
                 set field_resource_type $resource_type
             end
@@ -265,10 +265,10 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         end
 
         # Multiple matches - use FZF and directly modify commandline
-        if test "$kubectl_use_fzf" = "true"
+        if test "$kubectl_use_fzf" = true
             # Write completions to temp file
             set -l tmp_input (mktemp)
-            printf '%s\n' $completions > $tmp_input
+            printf '%s\n' $completions >$tmp_input
 
             # Run fzf via bash - this provides proper TTY context
             # Use --tmux if available for popup (avoids TTY issues entirely)
@@ -335,7 +335,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set fzf_prompt "Pod: "
                 end
 
-            # Debug supports pods and nodes
+                # Debug supports pods and nodes
             case debug
                 if test -z "$resource_type"
                     set completions (
@@ -347,7 +347,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set preview_cmd "kubectl get {} -o yaml 2>/dev/null | bat --color=always --language=yaml --style=numbers"
                 end
 
-            # Port-forward supports pods, services, deployments
+                # Port-forward supports pods, services, deployments
             case port-forward
                 if test -z "$resource_type"
                     # Show pods and services with prefixes
@@ -365,7 +365,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set fzf_prompt "Port: "
                 end
 
-            # Commands that need resource type first
+                # Commands that need resource type first
             case get describe delete edit patch label annotate
                 if test -z "$resource_type"
                     set completions (__fish_kubectl_print_resource_types)
@@ -382,7 +382,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     end
                 end
 
-            # Rollout commands
+                # Rollout commands
             case rollout
                 if test -z "$resource_type"
                     set completions status history undo restart pause resume
@@ -394,7 +394,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     end
                 end
 
-            # Scale commands
+                # Scale commands
             case scale
                 if test -z "$resource_type"
                     set completions deployment statefulset replicaset
@@ -404,7 +404,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set fzf_prompt "$resource_type: "
                 end
 
-            # Top command
+                # Top command
             case top
                 if test -z "$resource_type"
                     set completions pods nodes
@@ -414,14 +414,14 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set fzf_prompt "$resource_type: "
                 end
 
-            # Create command
+                # Create command
             case create
                 if test -z "$resource_type"
                     set completions deployment service configmap secret namespace job cronjob serviceaccount role rolebinding clusterrole clusterrolebinding quota
                     set fzf_prompt "Resource type: "
                 end
 
-            # Expose command
+                # Expose command
             case expose
                 if test -z "$resource_type"
                     set completions pod service deployment replicaset
@@ -431,7 +431,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set fzf_prompt "$resource_type: "
                 end
 
-            # Config commands
+                # Config commands
             case config
                 if test -z "$resource_type"
                     set completions view use-context get-contexts get-clusters current-context set-context set-cluster
@@ -444,14 +444,14 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
                     set fzf_prompt "Cluster: "
                 end
 
-            # Node operations
+                # Node operations
             case cordon uncordon drain taint
                 if test -z "$resource_type"
                     set completions (__fish_kubectl_print_resource nodes)
                     set fzf_prompt "Node: "
                 end
 
-            # Default: show resource types
+                # Default: show resource types
             case '*'
                 if test -z "$resource_type"
                     set completions (__fish_kubectl_print_resource_types)
@@ -488,13 +488,13 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
     end
 
     # Multiple matches - use FZF or plain output
-    if test "$kubectl_use_fzf" != "true"
+    if test "$kubectl_use_fzf" != true
         printf '%s\n' $completions
         return
     end
 
     # FZF selection with current token as initial query and multi-select - strip description from selected result
-    if test "$show_preview" = "true"; and test -n "$preview_cmd"
+    if test "$show_preview" = true; and test -n "$preview_cmd"
         # Build alt-e command based on resource type context
         set -l alt_e_cmd "bash -c 'tmpfile=/tmp/kubectl-edit-{}-\$(date +%s).yaml; kubectl get $resource_type {} -o yaml > \"\$tmpfile\" 2>/dev/null && nvim \"\$tmpfile\" < /dev/tty > /dev/tty && kubectl apply -f \"\$tmpfile\"; rm -f \"\$tmpfile\"'"
         # Build kubectl action commands for Alt+F keybindings
@@ -565,7 +565,7 @@ function kubectl_fzf_native --description "FZF-powered kubectl completion using 
         # Node-specific header with cordon/uncordon/drain
         if contains -- $resource_type node nodes
             set header_text 'Alt+3:yaml 4:desc O:cordon U:uncordon D:drain | N:ns A:all-ns F:finalizers W:events K:kubent Ctrl+R:reload'
-        # Events-specific header with timestamp sorting
+            # Events-specific header with timestamp sorting
         else if contains -- $resource_type events event
             set header_text 'Ctrl+K:sort-first L:sort-last R:reload | Alt+N:ns A:all-ns 3:yaml 4:desc G:get-all'
             set -l selected (printf '%s\n' $completions | fzf --height=60% --multi \
@@ -643,7 +643,7 @@ end
 
 # Toggle function
 function kubectl_toggle_fzf --description "Toggle FZF mode for kubectl completions"
-    if test "$kubectl_use_fzf" = "true"
+    if test "$kubectl_use_fzf" = true
         set -g kubectl_use_fzf false
         echo "kubectl FZF completions disabled"
     else

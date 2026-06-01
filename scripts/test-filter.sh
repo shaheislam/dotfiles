@@ -236,6 +236,8 @@ test_setup_syntax() {
     run_test "firefox-capture-prefs.py syntax valid" "python3 -m py_compile '$DOTFILES_ROOT/scripts/setup/firefox-capture-prefs.py'"
     run_test "fluidvoice-setup.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/setup/fluidvoice-setup.sh'"
     run_test "fluidvoice-config.py syntax valid" "python3 -m py_compile '$DOTFILES_ROOT/scripts/setup/fluidvoice-config.py'"
+    run_test "failed LaunchAgent plists removed" "[ ! -e '$DOTFILES_ROOT/Library/LaunchAgents/com.dotfiles.agent-monitor.plist' ] && [ ! -e '$DOTFILES_ROOT/Library/LaunchAgents/com.kubectl-fzf-server.plist' ] && [ ! -e '$DOTFILES_ROOT/Library/LaunchAgents/com.user.ssh-add.plist' ]"
+    run_test "setup avoids optional background agents" "! grep -q 'com.dotfiles.ticket-queue\|com.dotfiles.gwt-mayor\|com.dotfiles.changelog-review\|com.dotfiles.insights-review\|com.kubectl-fzf-server\|com.user.ssh-add\|com.dotfiles.agent-monitor' '$DOTFILES_ROOT/scripts/setup.sh'"
 
     # Check key scripts
     for script in ticket-execute.sh ticket-complete.sh; do
@@ -297,12 +299,11 @@ test_mcp() {
 test_browser() {
     echo -e "${BLUE}--- Browser Automation Tests ---${NC}"
 
-    run_test "agent-browser config exists" "[ -f '$DOTFILES_ROOT/.agent-browser/config.json' ]"
-    run_test "agent-browser config is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.agent-browser/config.json'))\""
-    run_test "agent-browser skill exists" "[ -f '$DOTFILES_ROOT/.claude/skills/agent-browser/SKILL.md' ]"
+    run_test "agent-browser config removed" "[ ! -e '$DOTFILES_ROOT/.agent-browser/config.json' ]"
+    run_test "agent-browser skill source removed" "[ ! -e '$DOTFILES_ROOT/skills/shared/agent-browser/SKILL.md' ]"
     run_test "ccb Fish function exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/ccb.fish' ]"
     run_test "setup.sh configures Playwright MCP" "grep -q 'claude mcp add --scope user playwright bunx @playwright/mcp@latest' '$DOTFILES_ROOT/scripts/setup.sh'"
-    run_test "setup.sh configures agent-browser" "grep -q 'agent-browser install' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh omits agent-browser" "! grep -q 'agent-browser install' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "Brewfile installs Firefox" "grep -q 'cask \"firefox\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
     run_test "setup.sh installs Firefox GUI app" "grep -q '\"firefox\"' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh invokes Firefox setup" "grep -q 'firefox-setup.sh' '$DOTFILES_ROOT/scripts/setup.sh'"
@@ -404,6 +405,10 @@ test_tmux() {
         "! grep -q \"tmux-plugins/tmux-copycat\" '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup omits stale tmux-smooth-scroll plugin" \
         "! grep -q \"azorng/tmux-smooth-scroll\" '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "tmux omits unused plugin layer" \
+        "! grep -q 'tmux-prefix-highlight\|tmux-sidebar\|tmux-cpu\|laktak/extrakto\|tmux-notify\|tmux-1password\|tmux-fuzzback' '$DOTFILES_ROOT/.tmux.conf'"
+    run_test "setup omits unused tmux plugin layer" \
+        "! grep -q 'tmux-prefix-highlight\|tmux-sidebar\|tmux-cpu\|laktak/extrakto\|tmux-notify\|tmux-1password\|tmux-fuzzback' '$DOTFILES_ROOT/scripts/setup.sh'"
 
     # Session close behavior: closing last window should switch to another session, not detach
     run_test "detach-on-destroy set to off (switch session on close)" \
@@ -1091,7 +1096,7 @@ test_opencode() {
     run_test "OpenCode zsh oc function exists" "grep -q '^function oc()' '$DOTFILES_ROOT/.zshrc' && grep -q 'scripts/bin/oc' '$DOTFILES_ROOT/.zshrc'"
     run_test "OpenCode tmux launcher uses oc wrapper" "grep -q 'scripts/bin/oc' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher owns window color" "grep -q '@wname_style' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q '@opencode_status' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
-    run_test "OpenCode tmux launcher reads state file" "grep -q 'opencode/tmux-status' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'STATUS_FILE' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
+    run_test "OpenCode tmux launcher is pane-local only" "! grep -q 'opencode/tmux-status\|STATUS_FILE' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher prefers pane-local activity" "grep -q 'capture-pane' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'esc interrupt' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher avoids shared status" "! grep -q '@opencode_status\|show-environment -g OPENCODE_STATUS' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher reasserts status color" "grep -q 'set_window_style \"\$status\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q 'last_status' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
@@ -1166,8 +1171,8 @@ test_opencode() {
     run_test "OpenCode tmux status uses shell input session" "grep -q 'input.sessionID' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
     run_test "OpenCode tmux status avoids tmux writes" "! grep -q 'tmux set-\|@wname_style\|@opencode_status\|TMUX_AGENT_TARGET\|TMUX_PANE' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
     run_test "OpenCode tmux status avoids global coupling" "! grep -q 'setTmuxEnv\|setTmuxScoped\|OPENCODE_STATUS' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
-    run_test "OpenCode tmux status keeps color on server disposal" "grep -q 'transient server instances' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts' && grep -q 'launcher owns final color cleanup' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
-    run_test "OpenCode tmux status writes shared state" "grep -q 'opencode.*tmux-status' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts' && grep -q 'writeStatusFile(statusType)' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
+    run_test "OpenCode tmux status keeps session metadata on server disposal" "grep -q 'transient server instances' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts' && grep -q 'Session metadata is cleared only on deletion' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
+    run_test "OpenCode tmux status avoids shared state files" "! grep -q 'opencode.*tmux-status\|writeStatusFile\|statusFile\|statusDir' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
     run_test "OpenCode tmux idle status is yellow" "python3 -c \"import pathlib,re; text=pathlib.Path('$DOTFILES_ROOT/scripts/opencode/tmux-open.sh').read_text(); assert re.search(r'idle \\\\| active\\\\)\\\\n\\\\s*printf .*#\\\\[fg=#e0af68\\\\]', text)\""
     run_test "Claude stop hook sets idle yellow" "grep -q '#\[fg=#e0af68\]' '$DOTFILES_ROOT/scripts/tmux/hooks/tmux-agent-stop.sh' && ! grep -q '#\[fg=#9ece6a\]' '$DOTFILES_ROOT/scripts/tmux/hooks/tmux-agent-stop.sh'"
     run_test "OpenCode tmux status has default export" "grep -q 'export default TmuxStatusPlugin' '$DOTFILES_ROOT/.config/opencode/plugin/tmux-status.ts'"
@@ -1432,7 +1437,7 @@ test_gitattributes() {
     run_test "Fish files enforce LF" "git -C '$DOTFILES_ROOT' check-attr eol -- .config/fish/config.fish | grep -q 'lf'"
     run_test "PNG files marked binary" "git -C '$DOTFILES_ROOT' check-attr binary -- generated-diagrams/diagram_335a360a.png | grep -q 'set'"
     run_test "JSON files use json diff driver" "git -C '$DOTFILES_ROOT' check-attr diff -- .config/vscode/settings.json | grep -q 'json'"
-    run_test "Plist files use plist diff driver" "git -C '$DOTFILES_ROOT' check-attr diff -- Library/LaunchAgents/com.user.ssh-add.plist | grep -q 'plist'"
+    run_test "Plist files use plist diff driver" "git -C '$DOTFILES_ROOT' check-attr diff -- Library/LaunchAgents/com.dotfiles.opencode-serve.plist | grep -q 'plist'"
 
     # Verify JSON diff driver produces valid output
     run_test "JSON diff driver produces sorted output" "bash '$DOTFILES_ROOT/scripts/git-diff-json.sh' '$DOTFILES_ROOT/.config/vscode/settings.json' | head -1 | grep -q '{'"

@@ -22,13 +22,13 @@ cmux replaces **both Ghostty and tmux's multiplexing** with a single app. It rea
 | tmux panes/splits | cmux panes (split right/down) |
 | Tmux agent window colors | Built-in notification rings + sidebar badges |
 | tmux-session-manager.sh | Sidebar with git branch, PR status, ports |
-| External browser | In-app scriptable browser (from agent-browser) |
+| External browser automation | In-app scriptable browser |
 | Native tmux status bar | Sidebar metadata: set-status, set-progress, log |
 
 ## Key benefits for this setup
 
 ### 1. Agent notification system (biggest win)
-The current tmux setup color-codes agent windows through Claude hooks and OpenCode status files. It avoids the old polling daemon, but cmux would still provide a richer native notification model:
+The current tmux setup color-codes agent windows through Claude hooks and pane-local OpenCode status. It avoids the old polling daemon, but cmux would still provide a richer native notification model:
 - **Blue notification rings** on panes when agents need attention
 - **Sidebar badges** showing latest notification text per workspace
 - **Cmd+Shift+U** to jump to most recent unread
@@ -39,7 +39,7 @@ The current tmux setup color-codes agent windows through Claude hooks and OpenCo
 Current tmux shows git branch in the native status bar (global, not per-window). cmux sidebar shows **per workspace**: git branch, linked PR status/number, working directory, listening ports, and notification text. This directly replaces `gwt-status` for visual awareness.
 
 ### 3. Scriptable in-app browser
-Agents can snapshot accessibility tree, click elements, fill forms, evaluate JS — all via CLI/socket API. Currently requires switching to an external browser. The `cmux browser` API is ported from Vercel's agent-browser.
+Agents can snapshot accessibility trees, click elements, fill forms, and evaluate JS via CLI/socket APIs. Today that goes through Playwright/Firefox/PinchTab style tooling; cmux would make the browser surface native to the terminal app.
 
 ### 4. Full CLI/socket API
 Everything scriptable: `cmux new-workspace`, `cmux new-split`, `cmux send`, `cmux read-screen`, `cmux notify`, etc. The `gwt-*` Fish functions can be ported to use `cmux` CLI instead of `tmux` commands.
@@ -51,9 +51,8 @@ Swift/AppKit, not Electron. GPU-accelerated rendering via libghostty. Lower memo
 
 ### tmux plugin ecosystem
 - **vim-tmux-navigator**: cmux has its own pane navigation (Cmd+h/j/k/l). Need to verify Neovim integration.
-- **tmux-thumbs/extrakto**: No equivalent. Rely on Ghostty's built-in URL/text selection or external tools.
-- **tmux-fzf/tmux-fuzzback**: Replace with cmux `find-window` CLI + custom fzf wrappers.
-- **tmux-1password**: Use 1Password CLI directly or Raycast integration.
+- **tmux-thumbs**: No direct equivalent. Rely on Ghostty's built-in URL/text selection or external tools.
+- **tmux-fzf**: Replace with cmux `find-window` CLI + custom fzf wrappers.
 - **tmux-yank/copy mode**: cmux inherits Ghostty's clipboard handling. Vi copy mode may differ.
 
 ### Remote/SSH session persistence

@@ -103,7 +103,6 @@
 ### Browser & Automation
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
-| `agent-browser` | `/agent-browser` | Browser automation for AI agents |
 | `capture-screen` | `/capture-screen` | Programmatic screenshot capture |
 | `cross-ref` | `/cross-ref` | Cross-reference worktree changes |
 

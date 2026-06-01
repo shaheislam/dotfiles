@@ -1271,15 +1271,6 @@ EAEOF
         fi
     fi
 
-    # agent-browser - AI-optimized headless browser CLI (ref-based interaction model)
-    # Complements Playwright MCP with persistent daemon + accessibility tree snapshots.
-    if command_exists agent-browser; then
-        print_step "Configuring agent-browser..."
-        run_noninteractive agent-browser install >/dev/null 2>&1 &&
-            print_success "agent-browser Chromium installed" ||
-            log_verbose "agent-browser Chromium install skipped (run 'agent-browser install' manually)"
-    fi
-
     # Configure Claude Code heavy backup ecosystem only when explicitly requested.
     if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && command_exists claude; then
         print_step "Configuring Claude Code heavy backup integrations..."
@@ -1494,20 +1485,6 @@ EAEOF
         fi
     fi
 
-    # Install kubectl-fzf-server for fast completions (macOS only)
-    if [[ "$DETECTED_OS" == "macos" ]] && command_exists go; then
-        if ! command_exists kubectl-fzf-server; then
-            print_step "Installing kubectl-fzf-server..."
-            go install github.com/bonnefoa/kubectl-fzf/v3/cmd/kubectl-fzf-server@main >/dev/null 2>&1 &&
-                print_success "kubectl-fzf-server installed" ||
-                log_verbose "kubectl-fzf-server installation skipped"
-        fi
-        install_launchagent_template \
-            "com.kubectl-fzf-server" \
-            "kubectl-fzf-server service started" \
-            "kubectl-fzf-server service start skipped" || true
-    fi
-
     # Install consul-template (HashiCorp templating tool)
     if ! command_exists consul-template; then
         print_step "Installing consul-template..."
@@ -1579,16 +1556,6 @@ phase_6_multiplexer() {
 
     install_packages_from_profile "$PROFILE" "multiplexer"
 
-    # Install 1Password CLI (required by tmux-1password plugin)
-    if ! command_exists op; then
-        print_step "Installing 1Password CLI (required by tmux-1password plugin)..."
-        brew install --cask 1password-cli >/dev/null 2>&1 &&
-            print_success "1Password CLI installed" ||
-            print_warning "Failed to install 1Password CLI - install manually with: brew install --cask 1password-cli"
-    else
-        print_success "1Password CLI already installed"
-    fi
-
     # Install TPM
     if command_exists tmux && [[ ! -d "$HOME/.tmux/plugins/tpm" ]]; then
         print_step "Installing Tmux Plugin Manager..."
@@ -1604,18 +1571,11 @@ phase_6_multiplexer() {
         local tmux_plugins=(
             "tmux-plugins/tmux-sensible"
             "tmux-plugins/tmux-yank"
-            "tmux-plugins/tmux-prefix-highlight"
             "tmux-plugins/tmux-open"
             "tmux-plugins/tmux-pain-control"
-            "tmux-plugins/tmux-sidebar"
             "tmux-plugins/tmux-resurrect"
-            "tmux-plugins/tmux-cpu"
             "christoomey/vim-tmux-navigator" # Vim/tmux seamless navigation
             "fcsonline/tmux-thumbs"          # Rust-based text hints
-            "laktak/extrakto"                # Text extraction with FZF
-            "rickstaa/tmux-notify"           # macOS notification on command completion
-            "yardnsm/tmux-1password"         # 1Password integration
-            "roosta/tmux-fuzzback"           # FZF scrollback search
             "sainnhe/tmux-fzf"               # FZF integration for tmux
             "tmux-plugins/tmux-continuum"    # Auto-save and restore across tmux restarts; keep last
         )
@@ -2072,45 +2032,6 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
                 print_success "macOS defaults configured (Finder, Dock, developer settings)" ||
                 log_verbose "macOS defaults completed with warnings"
         fi
-
-        # Setup SSH Key Auto-loading LaunchAgent
-        print_step "Setting up SSH key auto-loading..."
-        install_launchagent_template \
-            "com.user.ssh-add" \
-            "SSH key auto-loading enabled" \
-            "SSH LaunchAgent load skipped" || true
-
-        # Setup Ticket Queue LaunchAgent (auto-start daemon on login)
-        print_step "Setting up ticket queue daemon..."
-        install_launchagent_template \
-            "com.dotfiles.ticket-queue" \
-            "Ticket queue daemon started" \
-            "Ticket queue daemon start skipped" \
-            "Ticket queue daemon already running" || true
-
-        # Setup Mayor LaunchAgent (global coordinator daemon on login)
-        print_step "Setting up mayor daemon..."
-        install_launchagent_template \
-            "com.dotfiles.gwt-mayor" \
-            "Mayor daemon started" \
-            "Mayor daemon start skipped" \
-            "Mayor daemon already running" || true
-
-        # Setup Monthly Changelog Review LaunchAgent (1st of each month)
-        print_step "Setting up changelog review scheduler..."
-        install_launchagent_template \
-            "com.dotfiles.changelog-review" \
-            "Changelog review scheduler started" \
-            "Changelog review scheduler start skipped" \
-            "Changelog review scheduler already loaded" || true
-
-        # Setup Monthly Insights Review LaunchAgent (1st of each month, +1h after changelog)
-        print_step "Setting up insights review scheduler..."
-        install_launchagent_template \
-            "com.dotfiles.insights-review" \
-            "Insights review scheduler started" \
-            "Insights review scheduler start skipped" \
-            "Insights review scheduler already loaded" || true
 
         # Setup Weekly Claude synthesis LaunchAgent (requires Obsidian vault)
         if [[ -d "$HOME/obsidian" ]] && [[ -f "$DOTFILES_ROOT/scripts/obsidian/install-weekly-synthesis.sh" ]]; then

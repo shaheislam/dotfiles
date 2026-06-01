@@ -113,10 +113,10 @@ Test cross-platform via Colima + Docker. Location: `scripts/docker/`. ALWAYS tes
 Multi-channel AI inbox. CLI: `openclaw` / `claw`. Config: `scripts/openclaw/openclaw-base.json`. Docs: `docs/openclaw-setup.md`.
 
 ### Browser Automation
-Three browser tools for AI agents, each with different strengths:
-- **agent-browser**: Single-daemon ref-based CLI. Config: `.agent-browser/config.json`. Skill: `.claude/skills/agent-browser/`.
+Browser automation uses targeted tools instead of a local browser daemon:
 - **Playwright MCP**: Structured MCP tool calls. Via `bunx @playwright/mcp@latest`.
 - **ClaudeCodeBrowser**: Firefox MCP. Fish: `ccb`. Install: `scripts/setup.sh`.
+- **PinchTab**: Preferred for ref-based persistent-profile browser work when available.
 
 ### Peripheral Tools
 - **Mobile Coding**: Mosh + Tailscale (`scripts/setup-mobile-coding.sh`)
