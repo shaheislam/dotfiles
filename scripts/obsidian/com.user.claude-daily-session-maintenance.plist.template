@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.claude-daily-session-maintenance</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__DOTFILES_ROOT__/scripts/obsidian/daily-session-maintenance.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <!-- Daily at 09:30 local time. -->
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/claude-daily-session-maintenance.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/claude-daily-session-maintenance.log</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>__HOME__</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>OBSIDIAN_VAULT</key>
+        <string>__HOME__/obsidian</string>
+    </dict>
+</dict>
+</plist>

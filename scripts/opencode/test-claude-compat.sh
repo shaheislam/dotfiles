@@ -327,10 +327,10 @@ grep -q 'tsx scripts/sync-sessions.ts' "$TMPDIR/jfdi.log" || {
     exit 1
 }
 
-grep -q 'tsx scripts/extract-memories.ts --limit 3' "$TMPDIR/jfdi.log" || {
-    echo "FAIL shutdown hook did not trigger JFDI memory extraction" >&2
+if grep -q 'tsx scripts/extract-memories.ts --limit 3' "$TMPDIR/jfdi.log"; then
+    echo "FAIL shutdown hook triggered deferred JFDI memory extraction" >&2
     exit 1
-}
+fi
 
 grep -q 'tsx scripts/weekly-synthesis.ts --week ' "$TMPDIR/jfdi.log" || {
     echo "FAIL shutdown hook did not trigger weekly JFDI synthesis" >&2

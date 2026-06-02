@@ -2048,6 +2048,16 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
             fi
         fi
 
+        # Setup Daily Claude session maintenance LaunchAgent (requires Obsidian vault)
+        if [[ -d "$HOME/obsidian" ]] && [[ -f "$DOTFILES_ROOT/scripts/obsidian/install-daily-session-maintenance.sh" ]]; then
+            print_step "Setting up daily Claude session maintenance scheduler..."
+            if bash "$DOTFILES_ROOT/scripts/obsidian/install-daily-session-maintenance.sh" >/dev/null 2>&1; then
+                print_success "Daily Claude session maintenance scheduler installed"
+            else
+                log_verbose "Daily Claude session maintenance scheduler setup skipped"
+            fi
+        fi
+
         # Setup CopyQ clipboard manager
         if command_exists copyq || [[ -d "/Applications/CopyQ.app" ]]; then
             print_step "Setting up CopyQ..."

@@ -373,10 +373,6 @@
             "type": "command"
           },
           {
-            "command": "bash ~/dotfiles/scripts/hook-run.sh 120 python3 ~/.claude/hooks/jfdi/session-end-extract.py",
-            "type": "command"
-          },
-          {
             "command": "bash ~/.claude/skills/dream/dream-hook.sh 2>/dev/null || true",
             "type": "command"
           }
