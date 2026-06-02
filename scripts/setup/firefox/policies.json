@@ -12,6 +12,37 @@
       "{b5e0e8de-ebfe-4306-9528-bcc18241a490}": {
         "installation_mode": "force_installed",
         "install_url": "https://addons.mozilla.org/firefox/downloads/latest/granted/latest.xpi"
+      },
+      "{c2c003ee-bd69-42a2-b0e9-6f34222cb046}": {
+        "installation_mode": "force_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/auto-tab-discard/latest.xpi"
+      }
+    },
+    "3rdparty": {
+      "Extensions": {
+        "{c2c003ee-bd69-42a2-b0e9-6f34222cb046}": {
+          "period": 3600,
+          "number": 8,
+          "audio": true,
+          "pinned": true,
+          "form": true,
+          "online": true,
+          "mode": "time-based",
+          "memory-enabled": false,
+          "simultaneous-jobs": 1,
+          "trash.enabled": false,
+          "startup-unpinned": false,
+          "startup-pinned": false,
+          "whitelist-url": [
+            "*://github.com/*",
+            "*://*.github.com/*",
+            "*://*.atlassian.net/*",
+            "*://app.slack.com/*",
+            "*://teams.microsoft.com/*",
+            "*://meet.google.com/*",
+            "*://*.zoom.us/*"
+          ]
+        }
       }
     },
     "Preferences": {
@@ -33,6 +64,10 @@
       },
       "layout.css.prefers-color-scheme.content-override": {
         "Value": 0,
+        "Status": "default"
+      },
+      "browser.tabs.unloadOnLowMemory": {
+        "Value": true,
         "Status": "default"
       }
     }

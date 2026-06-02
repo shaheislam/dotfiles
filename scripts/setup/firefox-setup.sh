@@ -91,6 +91,26 @@ copy_managed_file() {
     return 1
 }
 
+install_policy_with_sudo() {
+    local policy_dir="$1"
+    local policy_target="$2"
+
+    if [[ "${FIREFOX_POLICY_USE_SUDO:-1}" != "1" ]]; then
+        return 1
+    fi
+
+    if [[ ! -t 0 ]]; then
+        return 1
+    fi
+
+    if ! command -v sudo >/dev/null 2>&1; then
+        return 1
+    fi
+
+    log_info "Firefox policy install requires admin rights; prompting via sudo"
+    sudo mkdir -p "$policy_dir" && sudo cp "$POLICY_SOURCE" "$policy_target" && sudo chmod 0644 "$policy_target"
+}
+
 resolve_profile_path() {
     local profile_ref="$1"
 
@@ -204,12 +224,22 @@ install_policy() {
     fi
 
     if [[ -d "$policy_dir" && ! -w "$policy_dir" ]]; then
+        if install_policy_with_sudo "$policy_dir" "$policy_target"; then
+            log_success "Installed Firefox policies.json with sudo"
+            return 0
+        fi
+
         log_info "Firefox app bundle policy directory is not writable; skipping enterprise policy"
         log_info "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
         return 0
     fi
 
     if [[ ! -d "$policy_dir" && -d "$resources_dir" && ! -w "$resources_dir" ]]; then
+        if install_policy_with_sudo "$policy_dir" "$policy_target"; then
+            log_success "Installed Firefox policies.json with sudo"
+            return 0
+        fi
+
         log_info "Firefox app bundle is not writable; skipping enterprise policy"
         log_info "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
         return 0

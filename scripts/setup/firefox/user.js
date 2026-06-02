@@ -16,6 +16,10 @@ user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);
 user_pref("svg.context-properties.content.enabled", true);
 user_pref("layout.css.backdrop-filter.enabled", true);
 
+// Prefer unloading idle/background tabs over swapping the whole browser under memory pressure.
+// Auto Tab Discard's 60-minute policy is managed by scripts/setup/firefox/policies.json.
+user_pref("browser.tabs.unloadOnLowMemory", true);
+
 // Keep startup/new-tab noise low without changing browsing data.
 user_pref("browser.shell.checkDefaultBrowser", false);
 user_pref("browser.startup.homepage_override.mstone", "ignore");
