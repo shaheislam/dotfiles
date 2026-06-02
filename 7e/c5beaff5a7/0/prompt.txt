@@ -1,0 +1,1 @@
+[Image 1] Is there a way to look at all 588 procesese in btop and determine if there are optimisations which can be made?

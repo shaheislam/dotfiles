@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "7ec5beaff5a7",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/opencode/opencode.json",
+    ".config/opencode/plugin/claude-compat.ts",
+    "CLAUDE.md",
+    "docs/nvim-claude-bridge.md",
+    "docs/opencode-hook-parity.md",
+    "docs/opencode-nvim.md",
+    "scripts/opencode/doctor.sh",
+    "scripts/opencode/test-claude-compat.sh",
+    "scripts/opencode/tmux-open.sh",
+    "scripts/test-filter.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/7e/c5beaff5a7/0/metadata.json",
+      "transcript": "/7e/c5beaff5a7/0/full.jsonl",
+      "content_hash": "/7e/c5beaff5a7/0/content_hash.txt",
+      "prompt": "/7e/c5beaff5a7/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 1896131,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2535424,
+    "output_tokens": 25394,
+    "api_call_count": 50
+  }
+}
