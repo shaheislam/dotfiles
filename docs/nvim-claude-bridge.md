@@ -2,7 +2,7 @@
 
 Event-driven bridge that gives OpenCode and Claude-compatible harnesses awareness of your Neovim editor state. Neovim writes diagnostics, focus, git hunks, and test results to a shared state file; the agent harness reads it before each prompt.
 
-The `/tmp/nvim-claude-bridge` path and `nvim-bridge.sh` hook name are retained for compatibility. OpenCode consumes the same reader through `.config/opencode/plugin/claude-compat.ts`.
+The `/tmp/nvim-claude-bridge` path and `nvim-bridge.sh` hook name are retained for compatibility. OpenCode consumes the same reader through `.config/opencode/plugin/harness-compat.ts`.
 
 ## Architecture
 
@@ -78,7 +78,7 @@ Neovim (writer)                        Agent reader (OpenCode/Claude)
 ## Setup
 
 1. The Neovim module loads automatically via `autocmds.lua`
-2. Claude Code wires the hook in `.claude/settings.json` under `UserPromptSubmit`; OpenCode calls it through `.config/opencode/plugin/claude-compat.ts`
+2. Claude Code wires the hook in `.claude/settings.json` under `UserPromptSubmit`; OpenCode calls it through `.config/opencode/plugin/harness-compat.ts`
 3. No configuration needed -- both sides auto-detect the project
 
 ## Fish Commands
@@ -108,7 +108,7 @@ cc-bridge help      # Usage info
 
 **Hook not injecting context**:
 - Verify Claude wiring: `jq '.hooks.UserPromptSubmit' .claude/settings.json`
-- Verify OpenCode wiring: `grep -q nvim-bridge.sh .config/opencode/plugin/claude-compat.ts`
+- Verify OpenCode wiring: `grep -q nvim-bridge.sh .config/opencode/plugin/harness-compat.ts`
 - Test manually: `CLAUDE_PROJECT_DIR=$(pwd) bash .claude/hooks/nvim-bridge.sh`
 - Check `jq` is installed: `command -v jq`
 

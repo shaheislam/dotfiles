@@ -4,26 +4,26 @@ Short map of the Claude Code hook flows we care about and the current OpenCode e
 
 | Claude flow | OpenCode equivalent | Status | Notes |
 |---|---|---|---|
-| Session start context | `.config/opencode/plugin/claude-compat.ts` -> `fix-hookify-imports.sh`, `plugin-chmod-fix.sh`, `bd prime`, `work-detect.sh`, `lsp-status.sh`, `plan-resume.sh`, `changelog-resume.sh`, tmux start, dream count | Full | Reuses existing Claude-side scripts where possible. |
-| User prompt submit | `.config/opencode/plugin/claude-compat.ts` on `message.part.updated` -> `nvim-bridge.sh`, `prompt-inject-context.py`, `plan-watch.sh`, tmux prompt hook | Full | Fires once per user message text part. JFDI context is injected only when the hook returns relevant memory context. |
-| PreToolUse Bash guard | `.config/opencode/plugin/claude-compat.ts` -> `use_bun.py`, `validate-bash.py`, `ci-precommit.sh` | Full | Blocks npm-family commands and dangerous bash. |
-| PreToolUse Edit/Write/MultiEdit/ApplyPatch guard | `.config/opencode/plugin/claude-compat.ts` -> `settings-edit-redirect.py`, `protect-files.py` | Full | Prevents direct writes and patch edits to Claude settings, secrets, npm lockfiles, git internals, and generated dependency files. Python hooks share `.claude/hooks/lib/changed_files.py` for direct and patch path extraction. |
-| PostToolUse Read context | `.config/opencode/plugin/claude-compat.ts` -> `deepwiki-context.py`, `plan-watch.sh` | Full | Injects transient system context after reads and watches plan freshness. |
-| PostToolUse Edit/Write/MultiEdit/ApplyPatch helpers | `.config/opencode/plugin/claude-compat.ts` -> `auto-format.py`, `file-modified.sh`, `ci-lint-on-save.sh`, `plan-watch.sh` | Full | Reuses Claude post-edit helpers for all OpenCode write-like tools, including patch payloads. `auto-format.py`, `file-modified.sh`, and `ci-lint-on-save.sh` iterate all existing changed paths and skip deleted patch targets. |
+| Session start context | `.config/opencode/plugin/harness-compat.ts` -> `fix-hookify-imports.sh`, `plugin-chmod-fix.sh`, `bd prime`, `work-detect.sh`, `lsp-status.sh`, `plan-resume.sh`, `changelog-resume.sh`, tmux start, dream count | Full | Reuses existing Claude-side scripts where possible. |
+| User prompt submit | `.config/opencode/plugin/harness-compat.ts` on `message.part.updated` -> `nvim-bridge.sh`, `prompt-inject-context.py`, `plan-watch.sh`, tmux prompt hook | Full | Fires once per user message text part. JFDI context is injected only when the hook returns relevant memory context. |
+| PreToolUse Bash guard | `.config/opencode/plugin/harness-compat.ts` -> `use_bun.py`, `validate-bash.py`, `ci-precommit.sh` | Full | Blocks npm-family commands and dangerous bash. |
+| PreToolUse Edit/Write/MultiEdit/ApplyPatch guard | `.config/opencode/plugin/harness-compat.ts` -> `settings-edit-redirect.py`, `protect-files.py` | Full | Prevents direct writes and patch edits to Claude settings, secrets, npm lockfiles, git internals, and generated dependency files. Python hooks share `.claude/hooks/lib/changed_files.py` for direct and patch path extraction. |
+| PostToolUse Read context | `.config/opencode/plugin/harness-compat.ts` -> `deepwiki-context.py`, `plan-watch.sh` | Full | Injects transient system context after reads and watches plan freshness. |
+| PostToolUse Edit/Write/MultiEdit/ApplyPatch helpers | `.config/opencode/plugin/harness-compat.ts` -> `auto-format.py`, `file-modified.sh`, `ci-lint-on-save.sh`, `plan-watch.sh` | Full | Reuses Claude post-edit helpers for all OpenCode write-like tools, including patch payloads. `auto-format.py`, `file-modified.sh`, and `ci-lint-on-save.sh` iterate all existing changed paths and skip deleted patch targets. |
 | File created or edited opens in Neovim | `.config/opencode/plugin/nvim-open.ts` -> `scripts/nvim-open-file.sh` | Full | Runs only inside tmux, parses direct file args and patch payloads, skips noisy/generated paths, and avoids interrupting Neovim insert mode. Covered by `scripts/opencode/test-nvim-open.sh`. |
-| Tool failure logging | `.config/opencode/plugin/claude-compat.ts` -> `log-tool-failure.py` | Full | Handles `tool.execute.error` plus best-effort event aliases and writes Claude-style failure JSONL logs. |
-| PreCompact context persistence | `.config/opencode/plugin/claude-compat.ts` -> `bd prime`, `plan-persist.sh`, `changelog-persist.sh` | Full | Wired through `experimental.session.compacting`. `bd prime` is best-effort for bootstrap environments. |
-| Notification logging | `.config/opencode/plugin/claude-compat.ts` on `tui.toast.show` -> `log-notification.sh`, `macos_notification.py`, `tmux-agent-notify.sh` | Full | Maps OpenCode toast events to Claude-style notification side effects. |
-| Session end report | `.config/opencode/plugin/claude-compat.ts` shutdown -> `scripts/harness/session-report.sh --json` | Full | Runs synchronously on shutdown. |
-| Obsidian session synthesis | `.config/opencode/plugin/claude-compat.ts` shutdown -> `scripts/obsidian/session-synthesize.sh --cwd <project>` | Full | Produces session note output when substantive context exists. |
-| JFDI sync/extract | `.config/opencode/plugin/claude-compat.ts` shutdown -> `scripts/opencode/jfdi-shutdown-sync.sh` | Full | Supports sync, extract, Obsidian refresh, and env-based opt-out. |
+| Tool failure logging | `.config/opencode/plugin/harness-compat.ts` -> `log-tool-failure.py` | Full | Handles `tool.execute.error` plus best-effort event aliases and writes Claude-style failure JSONL logs. |
+| PreCompact context persistence | `.config/opencode/plugin/harness-compat.ts` -> `bd prime`, `plan-persist.sh`, `changelog-persist.sh` | Full | Wired through `experimental.session.compacting`. `bd prime` is best-effort for bootstrap environments. |
+| Notification logging | `.config/opencode/plugin/harness-compat.ts` on `tui.toast.show` -> `log-notification.sh`, `macos_notification.py`, `tmux-agent-notify.sh` | Full | Maps OpenCode toast events to Claude-style notification side effects. |
+| Session end report | `.config/opencode/plugin/harness-compat.ts` shutdown -> `scripts/harness/session-report.sh --json` | Full | Runs synchronously on shutdown. |
+| Obsidian session synthesis | `.config/opencode/plugin/harness-compat.ts` shutdown -> `scripts/obsidian/session-synthesize.sh --cwd <project>` | Full | Produces session note output when substantive context exists. |
+| JFDI sync/extract | `.config/opencode/plugin/harness-compat.ts` shutdown -> `scripts/opencode/jfdi-shutdown-sync.sh` | Full | Supports sync, extract, Obsidian refresh, and env-based opt-out. |
 | Weekly JFDI synthesis | `scripts/opencode/jfdi-shutdown-sync.sh` -> `weekly-synthesis.ts --week <ISO week>` | Full | Runs at most once per week via a stamp file. |
 | Entire session lifecycle | `.config/opencode/plugin/entire.ts` -> `session-start`, `turn-start`, `turn-end`, `compaction`, `session-end` | Full | Uses sync hook calls for exit-sensitive events. |
 | Entire todo parity | No OpenCode equivalent yet | Gap | `entire.ts` currently does not handle `todo.updated` or `todowrite`. |
 | Entire task parity | No OpenCode equivalent yet | Gap | `entire.ts` currently does not handle task/subagent events or `command.executed`. |
 | Worktree create hook | `gwt-ticket` setup plus tmux window layout | Partial | OpenCode does not expose Claude-style `WorktreeCreate`; the orchestrator handles worktree setup before OpenCode starts. |
 | Worktree cleanup on close | `.tmux.conf` bindings and `tmux-worktree-on-exit.fish` -> `scripts/tmux/tmux-worktree-cleanup.sh` | Full | Cleanup is intentionally tied to tmux window close or last-pane exit, not OpenCode process exit. Dirty worktrees are not removed. |
-| Cross-provider adversarial bridge | `.config/opencode/plugin/claude-compat.ts` on idle -> `cross-provider-bridge.sh` | Partial | Runs when `CROSS_PROVIDER_BRIDGE=1` or `OPENCODE_CROSS_PROVIDER_BRIDGE=1`, captures the latest assistant text, defaults to an OpenCode sidecar reviewer model, and injects concerns into the next system context. OpenAI executors default to `anthropic/claude-opus-4-6`; Anthropic executors default to `openai/gpt-5.5`. This is advisory context, not a Claude-style blocking Stop decision. |
+| Cross-provider adversarial bridge | `.config/opencode/plugin/harness-compat.ts` on idle -> `cross-provider-bridge.sh` | Partial | Runs when `CROSS_PROVIDER_BRIDGE=1` or `OPENCODE_CROSS_PROVIDER_BRIDGE=1`, captures the latest assistant text, defaults to an OpenCode sidecar reviewer model, and injects concerns into the next system context. OpenAI executors default to `anthropic/claude-opus-4-6`; Anthropic executors default to `openai/gpt-5.5`. This is advisory context, not a Claude-style blocking Stop decision. |
 | Subagent lifecycle hooks | No OpenCode equivalent yet | Gap | Claude `SubagentStart` and `SubagentStop` events have no direct OpenCode event mapping here. |
 
 ## Cleanup Semantics
@@ -41,7 +41,7 @@ Worktree cleanup remains tmux-owned:
 
 Current parity checks live in:
 
-- `scripts/opencode/test-claude-compat.sh`
+- `scripts/opencode/test-harness-compat.sh`
 - `scripts/opencode/test-entire-hooks.sh`
 - `scripts/opencode/test-nvim-open.sh`
 - `scripts/test-filter.sh opencode`

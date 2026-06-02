@@ -143,9 +143,9 @@ Browser automation uses targeted tools instead of a local browser daemon:
   - Native selection: when mouse capture is disruptive (copy-on-select workflows, tmux copy-mode, etc.) combine fullscreen rendering with `CLAUDE_CODE_DISABLE_MOUSE=1` so the terminal keeps native selection.
 
 ### Agent Harness Hooks
-Lifecycle hooks live in `.claude/hooks/` for Claude Code compatibility and are also reused by OpenCode through `.config/opencode/plugin/claude-compat.ts`. Details in `.claude/rules/hooks.md`, `docs/claude-code-hooks.md`, and `docs/opencode-hook-parity.md`.
+Lifecycle hooks live in `.claude/hooks/` for Claude Code compatibility and are also reused by OpenCode through `.config/opencode/plugin/harness-compat.ts`. Details in `.claude/rules/hooks.md`, `docs/claude-code-hooks.md`, and `docs/opencode-hook-parity.md`.
 
-**Adding hooks**: Create executable in `.claude/hooks/` → wire Claude in `.claude/settings.json` and OpenCode in `.config/opencode/plugin/claude-compat.ts` when relevant → add tests → update docs.
+**Adding hooks**: Create executable in `.claude/hooks/` → wire Claude in `.claude/settings.json` and OpenCode in `.config/opencode/plugin/harness-compat.ts` when relevant → add tests → update docs.
 
 **Settings Edit Workaround** ([#37029](https://github.com/anthropics/claude-code/issues/37029)): `--dangerously-skip-permissions` still prompts for edits to `~/.claude/settings*.json`. A PreToolUse hook (`settings-edit-redirect.py`) blocks Edit/Write on these files and redirects to `jq` via Bash. When modifying Claude settings, ALWAYS use Bash + jq instead of Edit.
 
@@ -158,7 +158,7 @@ Lifecycle hooks live in `.claude/hooks/` for Claude Code compatibility and are a
 9 LSP servers via `boostvolt/claude-code-lsps` (pyright, typescript, gopls, rust-analyzer, bash, yaml, terraform, lua, nix). Reuses Nix devShell binaries. Fish: `cc-lsp status|install|doctor`. Details in `.claude/rules/lsp-nix.md`.
 
 ### Neovim Agent Bridge
-Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit`-compatible hook. OpenCode consumes it via `claude-compat.ts`; Claude Code consumes it via `.claude/settings.json`. Fish: `cc-bridge status|cat|clean`. Docs: `docs/nvim-claude-bridge.md`.
+Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit`-compatible hook. OpenCode consumes it via `harness-compat.ts`; Claude Code consumes it via `.claude/settings.json`. Fish: `cc-bridge status|cat|clean`. Docs: `docs/nvim-claude-bridge.md`.
 
 ### Remote Control & Agent Teams
 - **Remote Control**: `cc-rc start|interactive|status|enable|disable`. Launch commands use `--remote-control` flag for deterministic per-session enablement. Config fallback via `enableRemoteControl` in `~/.claude.json`.
@@ -167,7 +167,7 @@ Neovim state → `/tmp/nvim-claude-bridge/` → `UserPromptSubmit`-compatible ho
 ### Claude Pipeline & Cross-Provider Bridge
 - **Pipeline**: `claude-pipeline` / `cpipe`. Presets: `review`, `cheap`, `local`, `council`, `redteam`. Docs: `docs/claude-pipeline.md`.
 - **Cross-Provider Bridge**: `CROSS_PROVIDER_BRIDGE=1 claude`. Providers: Codex, Gemini, Ollama, DeepSeek. Details in `.claude/rules/cross-provider.md`.
-- **OpenCode Bridge Review**: `gwtt --bridge TICKET-123` runs OpenCode with an OpenCode sidecar reviewer model by default. OpenAI executors review with Anthropic; Anthropic executors review with OpenAI. Concerns are injected back into OpenCode context through `.config/opencode/plugin/claude-compat.ts`; use `--bridge-mode redteam` for hostile review or `--bridge-providers` for external harnesses.
+- **OpenCode Bridge Review**: `gwtt --bridge TICKET-123` runs OpenCode with an OpenCode sidecar reviewer model by default. OpenAI executors review with Anthropic; Anthropic executors review with OpenAI. Concerns are injected back into OpenCode context through `.config/opencode/plugin/harness-compat.ts`; use `--bridge-mode redteam` for hostile review or `--bridge-providers` for external harnesses.
 - **Codex Account Rotation**: `codex-rotate` wraps codex with round-robin rotation across multiple OAuth accounts. Profiles in `~/.codex/accounts/<name>/auth.json` (machine-local, gitignored). Enroll: `codex-accounts add <name>`. OpenCode bridge review can use Codex as an adversarial reviewer.
 - **Codex 1Password Sync**: `codex-accounts 1p-push|1p-pull|1p-list|1p-sync [--vault VAULT] [--force]`. Stores auth tokens as 1Password Secure Notes (tag: `codex-account`, vault: `Private`). Conflict detection via `.1p-meta` (content hash + remote timestamp). `1p-sync` is local-first: pushes local, pulls remote-only.
 - **DQS**: Council (`cpipe --preset council`), Red Team, First Principles. Docs: `docs/decision-quality-system.md`.

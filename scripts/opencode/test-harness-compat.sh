@@ -2,10 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PLUGIN="$ROOT/.config/opencode/plugin/claude-compat.ts"
+PLUGIN="$ROOT/.config/opencode/plugin/harness-compat.ts"
 
 if ! command -v bun >/dev/null 2>&1; then
-    echo "FAIL bun is required for Claude compat validation" >&2
+    echo "FAIL bun is required for harness compat validation" >&2
     exit 1
 fi
 
@@ -127,8 +127,8 @@ HARNESS="$TMPDIR/harness.mjs"
 cat >"$HARNESS" <<'EOF'
 import { existsSync } from "node:fs"
 
-const pluginUrl = new URL(`file://${process.env.OPENCODE_CLAUDE_COMPAT_PLUGIN}`)
-const { ClaudeCompatPlugin } = await import(pluginUrl.href)
+const pluginUrl = new URL(`file://${process.env.OPENCODE_HARNESS_COMPAT_PLUGIN}`)
+const { HarnessCompatPlugin } = await import(pluginUrl.href)
 
 function fail(message) {
   console.error(`FAIL ${message}`)
@@ -141,7 +141,7 @@ function sleep(ms) {
 
 const projectDir = process.env.OPENCODE_TEST_PROJECT
 
-const hooks = await ClaudeCompatPlugin({
+const hooks = await HarnessCompatPlugin({
   directory: projectDir,
   worktree: projectDir,
   client: {},
@@ -280,10 +280,10 @@ console.log("PASS changelog context")
 console.log("PASS tool failure logging")
 console.log("PASS adversarial bridge context")
 console.log("PASS shutdown hooks")
-console.log("PASS claude compat validation complete")
+console.log("PASS harness compat validation complete")
 EOF
 
-OPENCODE_CLAUDE_COMPAT_PLUGIN="$PLUGIN" \
+OPENCODE_HARNESS_COMPAT_PLUGIN="$PLUGIN" \
     OPENCODE_TEST_PROJECT="$TEST_PROJECT" \
     TEST_SESSION_REPORT_OUTPUT="$TMPDIR/session-report.json" \
     TEST_JFDI_OUTPUT="$TMPDIR/jfdi.log" \

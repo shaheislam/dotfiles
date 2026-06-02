@@ -72,7 +72,7 @@ function isWriteTool(tool: string) {
   return ["write", "edit", "multiedit", "patch", "apply_patch", "apply-patch"].includes(tool.toLowerCase())
 }
 
-export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
+export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
   const projectDir = worktree || directory
   const sessionContext = new Set<string>()
   const transientContext: string[] = []
@@ -268,7 +268,7 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
 
   function maintenanceStampPath(name: string) {
     const projectHash = createHash("sha256").update(projectDir).digest("hex").slice(0, 16)
-    return join(process.env.HOME || tmpdir(), ".cache", "opencode", "claude-compat-maintenance", projectHash, `${name}.stamp`)
+    return join(process.env.HOME || tmpdir(), ".cache", "opencode", "harness-compat-maintenance", projectHash, `${name}.stamp`)
   }
 
   function shouldRunMaintenance(name: string) {
@@ -811,4 +811,4 @@ export const ClaudeCompatPlugin: Plugin = async ({ directory, worktree }) => {
   }
 }
 
-export default ClaudeCompatPlugin
+export default HarnessCompatPlugin

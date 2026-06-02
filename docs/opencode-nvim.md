@@ -15,7 +15,7 @@ OpenCode already lives in our tmux workflow: prefix + `Ctrl-s` + `O` opens the T
 
 - The backend assistant is still OpenCode-compatible (`opencode` resolves to `ocv`), so authentication, model routing, hooks, and all `.opencode/` scripts remain unchanged.
 - You can connect the plugin to the shared OpenCode service via the `server.port` option. The tmux binding, `oc` wrappers, and Neovim all attach to `http://127.0.0.1:4096` while passing their own `--dir` so separate repos and worktrees keep distinct roots.
-- Permissions and hooks still flow through the existing `.config/opencode/plugin/claude-compat.ts` stack—`opencode.nvim` just surfaces them in-editor.
+- Permissions and hooks still flow through the existing `.config/opencode/plugin/harness-compat.ts` stack—`opencode.nvim` just surfaces them in-editor.
 
 ## Comparison snapshot
 

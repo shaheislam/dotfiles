@@ -279,16 +279,16 @@ else
     print_result WARN "entire plugin" "Missing .config/opencode/plugin/entire.ts"
 fi
 
-if [ -f "$PLUGIN_DIR/claude-compat.ts" ]; then
-    print_result PASS "compat plugin" "$PLUGIN_DIR/claude-compat.ts"
+if [ -f "$PLUGIN_DIR/harness-compat.ts" ]; then
+    print_result PASS "compat plugin" "$PLUGIN_DIR/harness-compat.ts"
 else
-    print_result WARN "compat plugin" "Missing .config/opencode/plugin/claude-compat.ts"
+    print_result WARN "compat plugin" "Missing .config/opencode/plugin/harness-compat.ts"
 fi
 
-if [ -f "$CONFIG_FILE" ] && plugin_configured "./plugin/claude-compat.ts"; then
-    print_result PASS "compat configured" "./plugin/claude-compat.ts"
+if [ -f "$CONFIG_FILE" ] && plugin_configured "./plugin/harness-compat.ts"; then
+    print_result PASS "compat configured" "./plugin/harness-compat.ts"
 else
-    print_result WARN "compat configured" "Add ./plugin/claude-compat.ts to opencode.json plugin list"
+    print_result WARN "compat configured" "Add ./plugin/harness-compat.ts to opencode.json plugin list"
 fi
 
 if [ -f "$CONFIG_FILE" ] && plugin_configured "@tarquinen/opencode-dcp@latest"; then
@@ -335,21 +335,21 @@ else
     print_result WARN "fish wrapper" "Missing opencode-doctor.fish"
 fi
 
-CLAUDE_COMPAT_TEST="$ROOT/scripts/opencode/test-claude-compat.sh"
+HARNESS_COMPAT_TEST="$ROOT/scripts/opencode/test-harness-compat.sh"
 ENTIRE_HOOKS_TEST="$ROOT/scripts/opencode/test-entire-hooks.sh"
 JFDI_SYNC_SCRIPT="$ROOT/scripts/opencode/jfdi-shutdown-sync.sh"
 
-if [ -x "$CLAUDE_COMPAT_TEST" ]; then
-    print_result PASS "compat harness" "$CLAUDE_COMPAT_TEST"
+if [ -x "$HARNESS_COMPAT_TEST" ]; then
+    print_result PASS "compat harness" "$HARNESS_COMPAT_TEST"
     if [ "${1:-}" != "--quick" ]; then
-        if "$CLAUDE_COMPAT_TEST" >/dev/null 2>&1; then
+        if "$HARNESS_COMPAT_TEST" >/dev/null 2>&1; then
             print_result PASS "compat recovery" "Simulation passed"
         else
             print_result WARN "compat recovery" "Simulation failed"
         fi
     fi
 else
-    print_result WARN "compat harness" "Missing scripts/opencode/test-claude-compat.sh"
+    print_result WARN "compat harness" "Missing scripts/opencode/test-harness-compat.sh"
 fi
 
 if [ -x "$ENTIRE_HOOKS_TEST" ]; then

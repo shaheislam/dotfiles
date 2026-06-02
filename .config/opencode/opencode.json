@@ -59,7 +59,7 @@
   "plugin": [
     "@tarquinen/opencode-dcp@latest",
     "./plugin/opencode-with-claude.ts",
-    "./plugin/claude-compat.ts",
+    "./plugin/harness-compat.ts",
     "./plugin/session-env.ts",
     "./plugin/nvim-open.ts"
   ],

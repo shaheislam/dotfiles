@@ -11,6 +11,7 @@ ATTACH_FILE=""
 UNREGISTER_ATTACH=1
 STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 ATTACH_DIR="$STATE_HOME/opencode/attaches"
+OPENCODE_TMUX_STATUS_INTERVAL="${OPENCODE_TMUX_STATUS_INTERVAL:-2}"
 
 if [ -n "${TMUX:-}" ]; then
 	STYLE_TARGET="$(tmux display-message -p '#{window_id}' 2>/dev/null || true)"
@@ -71,7 +72,7 @@ sync_window_style() {
 		# Reassert every poll. Other tmux hooks/reloads can clear @wname_style
 		# without changing the window status, so change-only updates are brittle.
 		set_window_style "$status"
-		sleep 0.5
+		sleep "$OPENCODE_TMUX_STATUS_INTERVAL"
 	done
 }
 
