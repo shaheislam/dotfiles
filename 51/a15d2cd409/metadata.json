@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "51a15d2cd409",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    ".config/fish/functions/opencode-service.fish",
+    ".tmux.conf",
+    "scripts/opencode/cleanup-pane.sh",
+    "scripts/opencode/tmux-open.sh",
+    "scripts/test-filter.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/51/a15d2cd409/0/metadata.json",
+      "transcript": "/51/a15d2cd409/0/full.jsonl",
+      "content_hash": "/51/a15d2cd409/0/content_hash.txt",
+      "prompt": "/51/a15d2cd409/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 960658,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 1072640,
+    "output_tokens": 12377,
+    "api_call_count": 32
+  }
+}

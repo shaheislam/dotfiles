@@ -1,0 +1,8 @@
+The console is returning this
+
+● Tip Add .ts filesConsolee(Focused)gins/ for eve[Copyo(ctrl+y)]
+ [18:19:36] [WARN] '"Possible EventTarget memory leak detected. 11 destroy
+   ed listeners added to [P2]. MaxListeners is undefined. Use events.setMa
+>  isteners() to increase limit"' 
+
+does the serve.sh for opencode-server need to be optimised?
