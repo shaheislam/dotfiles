@@ -1,0 +1,1 @@
+Use the ps command to check all processes on our laptop and see if there's anything else that can be optimised?

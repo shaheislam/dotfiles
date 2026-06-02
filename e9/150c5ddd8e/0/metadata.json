@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "e9150c5ddd8e",
+  "session_id": "ses_17682d2d3fferamVyvM9Wr9VQT",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-02T19:01:59.513164Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".config/fish/conf.d/ssh-agent.fish"
+  ],
+  "agent": "OpenCode",
+  "model": "gpt-5.5",
+  "turn_id": "4edd4c6e2dd3",
+  "checkpoint_transcript_start": 90,
+  "transcript_lines_at_start": 90,
+  "token_usage": {
+    "input_tokens": 856584,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2988544,
+    "output_tokens": 8585,
+    "api_call_count": 27
+  },
+  "session_metrics": {
+    "turn_count": 10
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-02T19:01:59.469998Z",
+    "agent_lines": 70,
+    "agent_removed": 8,
+    "human_added": 1,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 71,
+    "total_lines_changed": 80,
+    "agent_percentage": 97.5,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
