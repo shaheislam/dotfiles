@@ -1,0 +1,1 @@
+[Image 1] Why are there so many duplicate processes when i run btop? Is there anything you can do to optimise this?

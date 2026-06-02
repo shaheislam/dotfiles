@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.6.3",
+  "checkpoint_id": "b3a2a5746ed2",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/obsidian/com.user.claude-daily-session-maintenance.plist.template",
+    "scripts/obsidian/daily-session-maintenance.sh",
+    "scripts/obsidian/install-daily-session-maintenance.sh",
+    "scripts/opencode/jfdi-shutdown-sync.sh",
+    "scripts/opencode/test-claude-compat.sh",
+    "scripts/setup.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b3/a2a5746ed2/0/metadata.json",
+      "transcript": "/b3/a2a5746ed2/0/full.jsonl",
+      "content_hash": "/b3/a2a5746ed2/0/content_hash.txt",
+      "prompt": "/b3/a2a5746ed2/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 689224,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 2281984,
+    "output_tokens": 12667,
+    "api_call_count": 39
+  }
+}
