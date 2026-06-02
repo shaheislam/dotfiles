@@ -7,8 +7,8 @@ set -euo pipefail
 WINDOW=${TMUX_PANE:-}
 STYLE_TARGET=""
 SYNC_PID=""
-ATTACH_PID=""
 ATTACH_FILE=""
+UNREGISTER_ATTACH=1
 STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 ATTACH_DIR="$STATE_HOME/opencode/attaches"
 
@@ -91,12 +91,17 @@ pane_key() {
 
 register_attach() {
 	[ -n "$WINDOW" ] || return 0
-	[ -n "$ATTACH_PID" ] || return 0
+	[ -n "${1:-}" ] || return 0
+
+	local attach_pid="$1"
+	shift
 
 	mkdir -p "$ATTACH_DIR"
-	ATTACH_FILE="$ATTACH_DIR/$(pane_key "$WINDOW").pid"
+	if [ -z "$ATTACH_FILE" ]; then
+		ATTACH_FILE="$ATTACH_DIR/$(pane_key "$WINDOW").pid"
+	fi
 	{
-		printf 'pid=%s\n' "$ATTACH_PID"
+		printf 'pid=%s\n' "$attach_pid"
 		printf 'pane=%s\n' "$WINDOW"
 		printf 'cwd=%s\n' "$PWD"
 		printf 'started=%s\n' "$(date +%s)"
@@ -105,18 +110,12 @@ register_attach() {
 }
 
 unregister_attach() {
+	[ "$UNREGISTER_ATTACH" = "1" ] || return 0
 	[ -n "$ATTACH_FILE" ] || return 0
 	rm -f "$ATTACH_FILE" >/dev/null 2>&1 || true
 }
 
-kill_attach() {
-	[ -n "$ATTACH_PID" ] || return 0
-	kill -0 "$ATTACH_PID" >/dev/null 2>&1 || return 0
-	kill "$ATTACH_PID" >/dev/null 2>&1 || true
-}
-
 cleanup() {
-	kill_attach
 	unregister_attach
 	if [ -n "$SYNC_PID" ]; then
 		kill "$SYNC_PID" >/dev/null 2>&1 || true
@@ -129,9 +128,9 @@ cleanup() {
 }
 
 trap cleanup EXIT
-trap 'status=129; cleanup; trap - EXIT; exit "$status"' HUP
+trap 'UNREGISTER_ATTACH=0; status=129; cleanup; trap - EXIT; exit "$status"' HUP
 trap 'status=130; cleanup; trap - EXIT; exit "$status"' INT
-trap 'status=143; cleanup; trap - EXIT; exit "$status"' TERM
+trap 'UNREGISTER_ATTACH=0; status=143; cleanup; trap - EXIT; exit "$status"' TERM
 
 if [ -n "$WINDOW" ]; then
 	tmux setw -t "$WINDOW" alternate-screen off >/dev/null 2>&1 || true
@@ -146,9 +145,14 @@ if [ -n "$STYLE_TARGET" ]; then
 	SYNC_PID="$!"
 fi
 
+if [ -n "$WINDOW" ]; then
+	mkdir -p "$ATTACH_DIR"
+	ATTACH_FILE="$ATTACH_DIR/$(pane_key "$WINDOW").pid"
+fi
+
 status=0
-OPENCODE_DIR="$PWD" "$HOME/dotfiles/scripts/bin/oc" "$@" &
-ATTACH_PID="$!"
-register_attach "$@"
-wait "$ATTACH_PID" || status="$?"
+(
+	register_attach "$BASHPID" "$@"
+	OPENCODE_DIR="$PWD" exec "$HOME/dotfiles/scripts/bin/oc" "$@"
+) || status="$?"
 exit "$status"

@@ -1105,7 +1105,7 @@ test_opencode() {
     run_test "OpenCode tmux launcher avoids shared status" "! grep -q '@opencode_status\|show-environment -g OPENCODE_STATUS' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher reasserts status color" "grep -q 'set_window_style \"\$status\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q 'last_status' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher clears pane style" "grep -q 'set-option -p -u' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'clear_pane_style' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
-    run_test "OpenCode tmux launcher keeps cleanup trap" "grep -q 'trap cleanup EXIT' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q 'exec \"\$HOME/dotfiles/scripts/bin/oc\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
+    run_test "OpenCode tmux launcher keeps cleanup trap" "grep -q 'trap cleanup EXIT' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'exec \"\$HOME/dotfiles/scripts/bin/oc\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && ! grep -q 'wait \"\$ATTACH_PID\"' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode tmux launcher registers attach ownership" "grep -q 'ATTACH_DIR' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh' && grep -q 'register_attach' '$DOTFILES_ROOT/scripts/opencode/tmux-open.sh'"
     run_test "OpenCode pane cleanup script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/cleanup-pane.sh' ]"
     run_test "OpenCode pane cleanup script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/cleanup-pane.sh' ]"
