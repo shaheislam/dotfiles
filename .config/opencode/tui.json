@@ -11,6 +11,7 @@
   "vim_enter_submit": false,
   "keybinds": {
     "leader": "ctrl+x",
+    "command_list": "<leader>p",
     "copy_mode": "<leader>v",
     "messages_copy": "<leader>y",
     "tool_details": "<leader>d",
