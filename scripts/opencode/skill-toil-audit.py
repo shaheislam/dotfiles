@@ -2,8 +2,8 @@
 """Audit OpenCode history for repetitive workflows that may deserve skills.
 
 The script is intentionally read-only. It opens the OpenCode SQLite database
-with SQLite's immutable/read-only URI mode, parses message/part JSON in Python,
-and reports candidates rather than creating skills automatically.
+with SQLite's read-only URI mode, parses message/part JSON in Python, and
+reports candidates rather than creating skills automatically.
 """
 
 from __future__ import annotations
@@ -100,9 +100,18 @@ STOP_WORDS = {
 
 @dataclasses.dataclass(frozen=True)
 class PromptEntry:
+    message_id: str
     text: str
     session_title: str
     directory: str
+    session_id: str
+    time_created: int
+
+
+@dataclasses.dataclass(frozen=True)
+class ToolEvent:
+    tool: str
+    status: str
     session_id: str
     time_created: int
 
@@ -117,6 +126,8 @@ class Candidate:
     reason: str
     prompts: list[PromptEntry]
     existing_skill: str | None = None
+    tool_sequences: list[tuple[str, int]] = dataclasses.field(default_factory=list)
+    tool_counts: list[tuple[str, int]] = dataclasses.field(default_factory=list)
 
     @property
     def count(self) -> int:
@@ -138,7 +149,7 @@ def expand_path(value: str) -> Path:
 def sqlite_readonly_connection(db_path: Path) -> sqlite3.Connection:
     if not db_path.exists():
         raise FileNotFoundError(f"OpenCode database not found: {db_path}")
-    uri = f"file:{db_path}?mode=ro&immutable=1"
+    uri = f"file:{db_path}?mode=ro"
     return sqlite3.connect(uri, uri=True)
 
 
@@ -193,6 +204,7 @@ def load_entries(conn: sqlite3.Connection, days: int | None) -> list[PromptEntry
         SELECT
             s.title,
             s.directory,
+            m.id,
             m.session_id,
             m.time_created,
             m.data,
@@ -205,7 +217,9 @@ def load_entries(conn: sqlite3.Connection, days: int | None) -> list[PromptEntry
     """
 
     entries: list[PromptEntry] = []
-    for title, directory, session_id, created, message_raw, part_raw in conn.execute(query, (cutoff_ms, cutoff_ms)):
+    for title, directory, message_id, session_id, created, message_raw, part_raw in conn.execute(
+        query, (cutoff_ms, cutoff_ms)
+    ):
         message = json_loads(message_raw)
         if message.get("role") != "user":
             continue
@@ -220,6 +234,7 @@ def load_entries(conn: sqlite3.Connection, days: int | None) -> list[PromptEntry
 
         entries.append(
             PromptEntry(
+                message_id=str(message_id),
                 text=redact(text),
                 session_title=str(title or "Untitled"),
                 directory=str(directory or ""),
@@ -228,6 +243,51 @@ def load_entries(conn: sqlite3.Connection, days: int | None) -> list[PromptEntry
             )
         )
     return entries
+
+
+def load_tool_events(conn: sqlite3.Connection, days: int | None) -> list[ToolEvent]:
+    cutoff_ms = None
+    if days is not None:
+        cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
+        cutoff_ms = int(cutoff.timestamp() * 1000)
+
+    query = """
+        SELECT
+            p.session_id,
+            p.time_created,
+            m.data,
+            p.data
+        FROM part p
+        JOIN message m ON m.id = p.message_id
+        WHERE (? IS NULL OR p.time_created >= ?)
+        ORDER BY p.session_id ASC, p.time_created ASC, p.id ASC
+    """
+
+    events: list[ToolEvent] = []
+    for session_id, created, message_raw, part_raw in conn.execute(query, (cutoff_ms, cutoff_ms)):
+        message = json_loads(message_raw)
+        if message.get("role") != "assistant":
+            continue
+
+        part = json_loads(part_raw)
+        if part.get("type") != "tool":
+            continue
+
+        tool = part.get("tool")
+        if not isinstance(tool, str) or not tool:
+            continue
+
+        state = part.get("state")
+        status = state.get("status") if isinstance(state, dict) else None
+        events.append(
+            ToolEvent(
+                tool=tool,
+                status=str(status or "unknown"),
+                session_id=str(session_id),
+                time_created=int(created or 0),
+            )
+        )
+    return events
 
 
 def load_existing_skills(repo_root: Path) -> dict[str, str]:
@@ -269,6 +329,12 @@ def nearest_skill(text: str, skills: dict[str, str]) -> str | None:
             best_name = name
             best_score = overlap
     return best_name if best_score >= 2 else None
+
+
+def tool_context_text(candidate: Candidate) -> str:
+    tools = [tool for tool, _count in candidate.tool_counts]
+    sequences = [sequence for sequence, _count in candidate.tool_sequences]
+    return " ".join(tools + sequences)
 
 
 def classify_prompt_group(key: str, prompts: list[PromptEntry], skills: dict[str, str]) -> Candidate:
@@ -363,6 +429,96 @@ def cluster_session_themes(entries: list[PromptEntry], min_count: int, skills: d
     return candidates
 
 
+def tools_after_prompt(
+    prompt: PromptEntry,
+    prompts_by_session: dict[str, list[PromptEntry]],
+    tools_by_session: dict[str, list[ToolEvent]],
+    window_ms: int,
+) -> list[str]:
+    next_prompt_time = None
+    for other in prompts_by_session.get(prompt.session_id, []):
+        if other.time_created > prompt.time_created:
+            next_prompt_time = other.time_created
+            break
+
+    end_time = prompt.time_created + window_ms
+    if next_prompt_time is not None:
+        end_time = min(end_time, next_prompt_time)
+
+    tools = []
+    for event in tools_by_session.get(prompt.session_id, []):
+        if prompt.time_created <= event.time_created < end_time:
+            tools.append(event.tool)
+        if event.time_created >= end_time:
+            break
+    return tools
+
+
+def attach_tool_signals(
+    candidates: list[Candidate],
+    entries: list[PromptEntry],
+    tool_events: list[ToolEvent],
+    skills: dict[str, str],
+) -> None:
+    prompts_by_session: dict[str, list[PromptEntry]] = defaultdict(list)
+    for entry in entries:
+        prompts_by_session[entry.session_id].append(entry)
+    for prompts in prompts_by_session.values():
+        prompts.sort(key=lambda prompt: prompt.time_created)
+
+    tools_by_session: dict[str, list[ToolEvent]] = defaultdict(list)
+    for event in tool_events:
+        tools_by_session[event.session_id].append(event)
+    for events in tools_by_session.values():
+        events.sort(key=lambda event: event.time_created)
+
+    window_ms = 20 * 60 * 1000
+    for candidate in candidates:
+        sequence_counter: Counter[str] = Counter()
+        tool_counter: Counter[str] = Counter()
+        sequence_sessions: dict[str, set[str]] = defaultdict(set)
+
+        for prompt in candidate.prompts:
+            tools = tools_after_prompt(prompt, prompts_by_session, tools_by_session, window_ms)
+            if not tools:
+                continue
+
+            compact_tools = tools[:8]
+            sequence = " -> ".join(compact_tools)
+            sequence_counter[sequence] += 1
+            sequence_sessions[sequence].add(prompt.session_id)
+            tool_counter.update(compact_tools)
+
+        candidate.tool_counts = tool_counter.most_common(8)
+        candidate.tool_sequences = [
+            (sequence, count)
+            for sequence, count in sequence_counter.most_common(5)
+            if len(sequence_sessions[sequence]) >= 2 or count >= 2
+        ]
+
+        if not candidate.tool_sequences:
+            continue
+
+        candidate.score += 10 + min(sum(count for _sequence, count in candidate.tool_sequences), 10)
+        skill_text = " ".join(prompt.session_title for prompt in candidate.prompts) + " " + tool_context_text(candidate)
+        existing = candidate.existing_skill or nearest_skill(skill_text, skills)
+        if existing:
+            candidate.existing_skill = existing
+            if candidate.action == "new-skill-candidate":
+                candidate.action = "improve-existing-skill"
+                candidate.kind = "existing-skill-tool-overlap"
+                candidate.title = f"Improve `{existing}` coverage"
+            candidate.reason = (
+                f"Prompt history plus repeated tool sequence overlaps existing `{existing}` skill; adjust that skill "
+                "before creating a duplicate."
+            )
+            candidate.score += 5
+        elif candidate.action in {"inspect-session-theme", "script-alias-or-command"}:
+            candidate.reason += (
+                " Repeated post-prompt tool sequences are present; inspect whether this is a reusable workflow."
+            )
+
+
 def apply_decisions(candidates: list[Candidate], decisions_path: Path | None) -> list[Candidate]:
     if decisions_path is None or not decisions_path.exists():
         return candidates
@@ -377,11 +533,29 @@ def apply_decisions(candidates: list[Candidate], decisions_path: Path | None) ->
     return filtered
 
 
+def dedupe_candidates(candidates: list[Candidate]) -> list[Candidate]:
+    best: dict[tuple[str, str | None, tuple[str, ...], tuple[str, ...]], Candidate] = {}
+    for candidate in candidates:
+        session_ids = tuple(sorted({prompt.session_id for prompt in candidate.prompts}))
+        sequences = tuple(sequence for sequence, _count in candidate.tool_sequences[:2])
+        key = (candidate.action, candidate.existing_skill, session_ids, sequences)
+        previous = best.get(key)
+        if previous is None or candidate.score > previous.score:
+            best[key] = candidate
+    return list(best.values())
+
+
 def top_candidates(
-    entries: list[PromptEntry], min_count: int, skills: dict[str, str], decisions_path: Path | None
+    entries: list[PromptEntry],
+    tool_events: list[ToolEvent],
+    min_count: int,
+    skills: dict[str, str],
+    decisions_path: Path | None,
 ) -> list[Candidate]:
     candidates = cluster_prompt_repeats(entries, min_count, skills)
     candidates.extend(cluster_session_themes(entries, min_count, skills))
+    attach_tool_signals(candidates, entries, tool_events, skills)
+    candidates = dedupe_candidates(candidates)
     candidates = apply_decisions(candidates, decisions_path)
     candidates.sort(key=lambda candidate: (candidate.score, candidate.latest_ms), reverse=True)
     return candidates
@@ -434,6 +608,8 @@ def candidate_to_dict(candidate: Candidate) -> dict[str, Any]:
         "latest": format_time(candidate.latest_ms),
         "existing_skill": candidate.existing_skill,
         "proposed_skill_name": proposed_skill_name(candidate) if candidate.action == "new-skill-candidate" else None,
+        "tool_counts": [{"tool": tool, "count": count} for tool, count in candidate.tool_counts],
+        "tool_sequences": [{"sequence": sequence, "count": count} for sequence, count in candidate.tool_sequences],
         "reason": candidate.reason,
         "samples": samples,
     }
@@ -475,9 +651,18 @@ def render_markdown(candidates: list[Candidate], entries: list[PromptEntry], arg
                 f"- Proposed skill name: `{data['proposed_skill_name'] or 'n/a'}`",
                 f"- Reason: {data['reason']}",
                 "",
-                "Samples:",
+                "Tool-use signals:",
             ]
         )
+        if data["tool_sequences"]:
+            for sequence in data["tool_sequences"][:3]:
+                lines.append(f"- Sequence `{sequence['sequence']}` repeated `{sequence['count']}` times")
+        elif data["tool_counts"]:
+            tools = ", ".join(f"`{item['tool']}` x{item['count']}" for item in data["tool_counts"][:5])
+            lines.append(f"- Tools: {tools}")
+        else:
+            lines.append("- No repeated post-prompt tool sequence found")
+        lines.extend(["", "Samples:"])
         for sample in data["samples"]:
             text = sample["text"].replace("\n", " ")
             lines.append(f"- `{sample['date']}` `{sample['session_title']}`: {text}")
@@ -560,11 +745,12 @@ def run(args: argparse.Namespace) -> str:
     conn = sqlite_readonly_connection(expand_path(args.db))
     try:
         entries = load_entries(conn, args.days)
+        tool_events = load_tool_events(conn, args.days)
     finally:
         conn.close()
     skills = load_existing_skills(expand_path(args.repo_root))
     decisions_path = expand_path(args.decisions) if args.decisions else None
-    candidates = top_candidates(entries, args.min_count, skills, decisions_path)
+    candidates = top_candidates(entries, tool_events, args.min_count, skills, decisions_path)
     return render_json(candidates, entries, args) if args.json else render_markdown(candidates, entries, args)
 
 
@@ -574,7 +760,7 @@ def create_fixture_db(path: Path) -> None:
         """
         CREATE TABLE session (id text PRIMARY KEY, title text, directory text);
         CREATE TABLE message (id text PRIMARY KEY, session_id text, time_created integer, data text);
-        CREATE TABLE part (id text PRIMARY KEY, message_id text, session_id text, data text);
+        CREATE TABLE part (id text PRIMARY KEY, message_id text, session_id text, time_created integer, data text);
         """
     )
     now = int(dt.datetime.now(dt.timezone.utc).timestamp() * 1000)
@@ -594,12 +780,44 @@ def create_fixture_db(path: Path) -> None:
             {"type": "text", "text": "Can we mine OpenCode history for skill candidates?"},
         ),
         (
+            "m1a",
+            "s1",
+            now - 2500,
+            {"role": "assistant"},
+            "p1a",
+            {"type": "tool", "tool": "grep", "state": {"status": "completed", "input": {"pattern": "secret=abc"}}},
+        ),
+        (
+            "m1b",
+            "s1",
+            now - 2400,
+            {"role": "assistant"},
+            "p1b",
+            {"type": "tool", "tool": "read", "state": {"status": "completed", "input": {"filePath": "/tmp/file"}}},
+        ),
+        (
             "m2",
             "s2",
             now - 2000,
             {"role": "user"},
             "p2",
             {"type": "text", "text": "Can we mine OpenCode history for skill candidates?"},
+        ),
+        (
+            "m2a",
+            "s2",
+            now - 1500,
+            {"role": "assistant"},
+            "p2a",
+            {"type": "tool", "tool": "grep", "state": {"status": "completed", "input": {"pattern": "token=abc"}}},
+        ),
+        (
+            "m2b",
+            "s2",
+            now - 1400,
+            {"role": "assistant"},
+            "p2b",
+            {"type": "tool", "tool": "read", "state": {"status": "completed", "input": {"filePath": "/tmp/file"}}},
         ),
         (
             "m3",
@@ -615,7 +833,9 @@ def create_fixture_db(path: Path) -> None:
         conn.execute(
             "INSERT INTO message VALUES (?, ?, ?, ?)", (message_id, session_id, created, json.dumps(message_data))
         )
-        conn.execute("INSERT INTO part VALUES (?, ?, ?, ?)", (part_id, message_id, session_id, json.dumps(part_data)))
+        conn.execute(
+            "INSERT INTO part VALUES (?, ?, ?, ?, ?)", (part_id, message_id, session_id, created, json.dumps(part_data))
+        )
     conn.commit()
     conn.close()
 
@@ -641,7 +861,10 @@ def self_test() -> None:
         assert report["prompts_analyzed"] == 2, report
         assert report["candidates"], report
         assert report["candidates"][0]["count"] == 2, report
+        assert report["candidates"][0]["tool_sequences"], report
+        assert report["candidates"][0]["tool_sequences"][0]["sequence"] == "grep -> read", report
         assert "DCP" not in json.dumps(report), report
+        assert "secret=abc" not in json.dumps(report), report
 
 
 def main(argv: Iterable[str] | None = None) -> int:

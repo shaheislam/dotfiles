@@ -25,11 +25,12 @@ python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude
 
 ## What It Checks
 
-- Opens `~/.local/share/opencode/opencode.db` read-only with SQLite `mode=ro&immutable=1`.
+- Opens `~/.local/share/opencode/opencode.db` read-only with SQLite `mode=ro` so active WAL-backed history can be inspected safely.
 - Extracts user text prompts from `message` and `part` JSON, ignoring `ignored: true` parts and compression/system noise.
+- Extracts assistant `tool` parts and builds privacy-safe post-prompt tool-use sequences such as `grep -> read -> apply_patch`.
 - Redacts obvious secrets before printing samples.
 - Clusters exact normalized prompt repeats and recurring session-title themes.
-- Compares candidates against existing skills in `~/dotfiles/skills/` to avoid duplicate skills.
+- Compares prompt and tool-use candidates against existing skills in `~/dotfiles/skills/` to avoid duplicate skills.
 - Classifies each candidate as `new-skill-candidate`, `improve-existing-skill`, `script-alias-or-command`, `inspect-session-theme`, or no result below threshold.
 
 ## Decision Rule
@@ -47,10 +48,11 @@ Otherwise recommend a command, alias, script, documentation update, or no action
 
 1. Run the audit with the desired time window.
 2. Review the top candidates and their samples.
-3. If the action is `improve-existing-skill`, edit that skill instead of creating a duplicate.
-4. If the action is `new-skill-candidate`, inspect nearby session context before creating the skill.
-5. Add fixture-backed checks or invariant tests for any accepted skill workflow.
-6. Run `python3 scripts/validate-skills.py`, `scripts/sync-skills-harnesses.sh --check`, and `scripts/test-filter.sh opencode` after changes.
+3. Review `Tool-use signals` to see whether repeated tool sequences imply a reusable workflow, script, or skill eval.
+4. If the action is `improve-existing-skill`, edit that skill instead of creating a duplicate.
+5. If the action is `new-skill-candidate`, inspect nearby session context before creating the skill.
+6. Add fixture-backed checks or invariant tests for any accepted skill workflow.
+7. Run `python3 scripts/validate-skills.py`, `scripts/sync-skills-harnesses.sh --check`, and `scripts/test-filter.sh opencode` after changes.
 
 ## Tracking Decisions
 

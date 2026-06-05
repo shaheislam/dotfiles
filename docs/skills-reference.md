@@ -165,7 +165,7 @@ Use `python3 scripts/validate-skills.py` to validate skills, `scripts/sync-skill
 
 ### Skill TOIL Audit
 
-`skills/shared/skill-toil-audit/SKILL.md` wraps `scripts/opencode/skill-toil-audit.py` to periodically inspect local OpenCode history for repeated prompts and recurring workflows. The script opens `~/.local/share/opencode/opencode.db` read-only, extracts user prompts from `message` + `part` JSON, ignores compression/system noise, redacts obvious secrets, clusters repeated prompts and session themes, maps candidates against existing skills, and classifies each recommendation as a new skill, existing skill improvement, script/alias/command, or session-theme inspection.
+`skills/shared/skill-toil-audit/SKILL.md` wraps `scripts/opencode/skill-toil-audit.py` to periodically inspect local OpenCode history for repeated prompts and recurring workflows. The script opens `~/.local/share/opencode/opencode.db` with SQLite `mode=ro`, extracts user prompts from `message` + `part` JSON, extracts assistant `tool` parts, ignores compression/system noise, redacts obvious secrets, clusters repeated prompts and session themes, summarizes privacy-safe post-prompt tool sequences, maps prompt and tool-use candidates against existing skills, and classifies each recommendation as a new skill, existing skill improvement, script/alias/command, or session-theme inspection.
 
 Common runs:
 
@@ -176,7 +176,7 @@ python3 scripts/opencode/skill-toil-audit.py --all --json
 python3 scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude/Audit/skill-toil-$(date +%F).md
 ```
 
-Regression coverage lives in the script's fixture-backed `--self-test` mode and `scripts/test-filter.sh opencode`.
+Regression coverage lives in the script's fixture-backed `--self-test` mode and `scripts/test-filter.sh opencode`. The fixture asserts repeated tool sequences are detected without printing raw tool inputs or secrets.
 
 Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `skill-toil-audit`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `petlab-aws`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
 
