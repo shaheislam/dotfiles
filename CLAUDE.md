@@ -22,6 +22,10 @@
 - Neovim config lives in `~/neovim` (separate repo, NOT part of dotfiles)
 
 ### Canonical Data Strategy
+- Before creating or improving any workflow, config, script, prompt, template, hook, skill, or integration, ask whether the improvement should persist across devices
+- If it should persist, implement the durable source of truth in `~/dotfiles` so it travels via git, stow, and setup scripts
+- Avoid one-off changes in `~`, third-party repos, local app state, or machine-specific paths unless they are runtime-only or explicitly temporary
+- If a runtime repo needs the improvement, generate or sync it from `~/dotfiles` rather than making that repo the source of truth
 - Keep user-owned canonical data, reusable templates, and integration scripts in `~/dotfiles`
 - Treat third-party repos (for example `~/career-ops`) as disposable runtime engines that are recloned and repopulated from dotfiles
 - Prefer env-driven sync/generation into external repos over cross-repo symlinks so workflows remain portable across machines and worktrees
