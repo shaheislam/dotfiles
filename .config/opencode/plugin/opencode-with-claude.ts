@@ -42,8 +42,32 @@ async function loadSharedPlugin(input: Parameters<Plugin>[0]) {
       // OpenCode can initialize plugins multiple times in one process while it
       // bootstraps worker/session phases. Reuse a single upstream plugin
       // instance so Meridian only starts one Claude proxy per run.
-      const modulePath = `${home}/.bun/install/global/node_modules/opencode-with-claude/dist/index.js`
-      const { ClaudeMaxPlugin } = (await import(modulePath)) as ClaudePluginModule
+      const packageName = "opencode-with-claude"
+      const moduleOverride = process.env.OPENCODE_WITH_CLAUDE_MODULE
+      const modulePaths = [
+        moduleOverride,
+        `${home}/.bun/install/global/node_modules/opencode-with-claude/dist/index.js`,
+        `${home}/.bun/install/global/node_modules/opencode-with-claude/dist/index.mjs`,
+      ].filter(Boolean) as string[]
+
+      let module: ClaudePluginModule | null = null
+      try {
+        module = (await import(packageName)) as ClaudePluginModule
+      } catch {
+        for (const modulePath of modulePaths) {
+          if (!existsSync(modulePath)) {
+            continue
+          }
+          module = (await import(modulePath)) as ClaudePluginModule
+          break
+        }
+      }
+
+      if (!module) {
+        throw new Error("opencode-with-claude is not installed; run `bun add -g opencode-with-claude@latest`")
+      }
+
+      const { ClaudeMaxPlugin } = module
       return ClaudeMaxPlugin(input)
     })().catch((error) => {
       sharedPluginPromise = null

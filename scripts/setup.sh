@@ -318,8 +318,7 @@ setup_opencode_shared_server() {
 
     print_step "Setting up OpenCode shared server..."
 
-    local claude_subscription_plugin="$HOME/.bun/install/global/node_modules/opencode-with-claude/dist/index.js"
-    if [[ ! -f "$claude_subscription_plugin" ]]; then
+    if ! command_exists bun || ! bun -e "import('opencode-with-claude').then(() => process.exit(0)).catch(() => process.exit(1))" >/dev/null 2>&1; then
         print_warning "OpenCode Claude subscription plugin missing; run full setup without --skip-packages"
     fi
 
