@@ -335,6 +335,24 @@ setup_opencode_shared_server() {
         "OpenCode shared server already running" || true
 }
 
+setup_skill_toil_audit_scheduler() {
+    [[ "$DETECTED_OS" != "macos" ]] && return 0
+
+    print_step "Setting up monthly Skill TOIL audit scheduler..."
+
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_warning "DRY RUN: Would install monthly Skill TOIL audit scheduler"
+        return 0
+    fi
+
+    mkdir -p "$HOME/.local/state/opencode/skill-toil-audit"
+    install_launchagent_template \
+        "com.dotfiles.skill-toil-audit" \
+        "Monthly Skill TOIL audit scheduler started" \
+        "Monthly Skill TOIL audit scheduler start skipped" \
+        "Monthly Skill TOIL audit scheduler already loaded" || true
+}
+
 ensure_macos_command_line_tools_current() {
     [[ "$OS" != "macos" ]] && return 0
 
@@ -2801,6 +2819,7 @@ main() {
 
     # OpenCode attach mode requires its shared server even when packages/fonts are skipped.
     setup_opencode_shared_server
+    setup_skill_toil_audit_scheduler
 
     # Phase 9: fonts/apps (uses brew casks)
     phase_9_fonts_and_apps

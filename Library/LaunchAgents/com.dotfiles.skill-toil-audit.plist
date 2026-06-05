@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Monthly per-device Skill TOIL audit. -->
+    <!-- Runs on the 1st of each month at 09:30 local time. -->
+    <!-- Install: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dotfiles.skill-toil-audit.plist -->
+    <!-- Remove:  launchctl bootout gui/$(id -u)/com.dotfiles.skill-toil-audit -->
+
+    <key>Label</key>
+    <string>com.dotfiles.skill-toil-audit</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__DOTFILES_ROOT__/scripts/opencode/skill-toil-audit-monthly.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__DOTFILES_ROOT__</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Day</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/.local/state/opencode/skill-toil-audit/monthly.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>__HOME__/.local/state/opencode/skill-toil-audit/monthly.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>__HOME__</string>
+        <key>DOTFILES_ROOT</key>
+        <string>__DOTFILES_ROOT__</string>
+        <key>PATH</key>
+        <string>__DOTFILES_ROOT__/scripts/bin:/opt/homebrew/bin:/usr/local/bin:__HOME__/.bun/bin:__HOME__/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>

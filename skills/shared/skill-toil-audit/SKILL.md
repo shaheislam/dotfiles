@@ -17,6 +17,7 @@ python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py $ARGUMENTS
 Useful examples:
 
 ```bash
+python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py
 python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --days 30
 python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --days 90 --min-count 2 --stubs
 python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --all --json
@@ -32,6 +33,23 @@ python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude
 - Clusters exact normalized prompt repeats and recurring session-title themes.
 - Compares prompt and tool-use candidates against existing skills in `~/dotfiles/skills/` to avoid duplicate skills.
 - Classifies each candidate as `new-skill-candidate`, `improve-existing-skill`, `script-alias-or-command`, `inspect-session-theme`, or no result below threshold.
+
+## Monthly Per-Device Automation
+
+`scripts/opencode/skill-toil-audit-monthly.sh` runs this audit with safe monthly defaults:
+
+```bash
+python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --days 30 --min-count 3 --limit 20
+```
+
+The monthly wrapper:
+
+- Runs at most once per calendar month on each device using `~/.local/state/opencode/skill-toil-audit/last-run-month`.
+- Saves reports under `~/obsidian/Claude/Audit/skill-toil/<hostname>/` when Obsidian exists, otherwise under `~/.local/state/opencode/skill-toil-audit/reports/`.
+- Opens a `skill-toil-YYYY-MM` tmux window when a tmux server is already running.
+- Runs headlessly and writes logs/reports when tmux is not available.
+
+On macOS, setup installs `Library/LaunchAgents/com.dotfiles.skill-toil-audit.plist` to run the wrapper on the 1st of each month at 09:30 local time.
 
 ## Decision Rule
 

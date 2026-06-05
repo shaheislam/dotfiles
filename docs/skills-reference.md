@@ -170,11 +170,14 @@ Use `python3 scripts/validate-skills.py` to validate skills, `scripts/sync-skill
 Common runs:
 
 ```bash
+python3 scripts/opencode/skill-toil-audit.py
 python3 scripts/opencode/skill-toil-audit.py --days 30
 python3 scripts/opencode/skill-toil-audit.py --days 90 --min-count 2 --stubs
 python3 scripts/opencode/skill-toil-audit.py --all --json
 python3 scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude/Audit/skill-toil-$(date +%F).md
 ```
+
+Monthly per-device automation is handled by `scripts/opencode/skill-toil-audit-monthly.sh` and `Library/LaunchAgents/com.dotfiles.skill-toil-audit.plist`. The wrapper runs the audit with `--days 30 --min-count 3 --limit 20`, records a local guard in `~/.local/state/opencode/skill-toil-audit/last-run-month`, saves reports by hostname under `~/obsidian/Claude/Audit/skill-toil/<hostname>/` when available, and opens a `skill-toil-YYYY-MM` tmux window only if a tmux server is already running.
 
 Regression coverage lives in the script's fixture-backed `--self-test` mode and `scripts/test-filter.sh opencode`. The fixture asserts repeated tool sequences are detected without printing raw tool inputs or secrets.
 
