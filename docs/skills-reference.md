@@ -159,6 +159,10 @@ This repo intentionally has one checked-in canonical skill library and generated
 
 Use `python3 scripts/validate-skills.py` to validate skills, `scripts/sync-skills-harnesses.sh --check` to detect harness drift, and `scripts/test-skills-profile.sh` to validate profiles, manifests, and Agent Skills metadata.
 
+### AGENTS.md Realignment Skill
+
+`skills/shared/agents-md-realign/SKILL.md` wraps `scripts/tools/realign-agents-md.sh` to maintain hierarchical `AGENTS.md` files across `~/dotfiles`, `~/neovim`, and `~/work/*`. It keeps personal repos commit-friendly while making work-repo `AGENTS.md` files local-only through `.git/info/exclude`. With `--agentic`, the skill discovers target repos and uses isolated subagents to propose repo-specific `AGENTS.md` refactors before the main agent applies reviewed changes.
+
 Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `petlab-aws`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
 
 Compatibility wrappers cover common external slash-command names that the screenshot expects: `commit`, `review-pr`, `full-review`, `deploy-check`, `build-fix`, `verify`, `handoff`, `ticket`, `checkpoint`, `rebase`, and `audit`.

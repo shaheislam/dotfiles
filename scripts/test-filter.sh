@@ -1392,12 +1392,33 @@ test_agents_md() {
     echo -e "${BLUE}--- AGENTS.md Validation ---${NC}"
     run_test "Root AGENTS.md exists" "[ -f '$DOTFILES_ROOT/AGENTS.md' ]"
 
+    for agents_file in \
+        scripts/AGENTS.md \
+        .config/fish/AGENTS.md \
+        .config/opencode/AGENTS.md \
+        .claude/AGENTS.md \
+        homebrew/AGENTS.md \
+        devcontainer/AGENTS.md \
+        docs/AGENTS.md; do
+        run_test "$agents_file exists" "[ -f '$DOTFILES_ROOT/$agents_file' ]"
+    done
+
     if [ -f "$DOTFILES_ROOT/AGENTS.md" ]; then
         # Check it contains practical guidance (Hashimoto style)
         run_test "AGENTS.md mentions file locations" "grep -qi 'file.location\|\.tmux\.conf\|config\.fish' '$DOTFILES_ROOT/AGENTS.md'"
         run_test "AGENTS.md mentions available tools" "grep -qi 'available.tool\|smoke-test\|validate' '$DOTFILES_ROOT/AGENTS.md'"
         run_test "AGENTS.md mentions common mistakes" "grep -qi 'mistake\|avoid\|never\|do not' '$DOTFILES_ROOT/AGENTS.md'"
+        run_test "AGENTS.md points to subdirectory guidance" "grep -q 'Subdirectory Guidance' '$DOTFILES_ROOT/AGENTS.md'"
     fi
+
+    run_test "AGENTS realign script exists" "[ -f '$DOTFILES_ROOT/scripts/tools/realign-agents-md.sh' ]"
+    run_test "AGENTS realign script executable" "[ -x '$DOTFILES_ROOT/scripts/tools/realign-agents-md.sh' ]"
+    run_test "AGENTS realign script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/tools/realign-agents-md.sh'"
+    run_test "AGENTS realign script lists repos" "'$DOTFILES_ROOT/scripts/tools/realign-agents-md.sh' --list-repos --personal | grep -q '$DOTFILES_ROOT'"
+    run_test "AGENTS realign script accepts agentic flag" "'$DOTFILES_ROOT/scripts/tools/realign-agents-md.sh' --dry-run --agentic --batch-size 1 --personal >/dev/null"
+    run_test "AGENTS realign skill exists" "[ -f '$DOTFILES_ROOT/skills/shared/agents-md-realign/SKILL.md' ]"
+    run_test "AGENTS realign skill names itself" "grep -q '^name: agents-md-realign' '$DOTFILES_ROOT/skills/shared/agents-md-realign/SKILL.md'"
+    run_test "AGENTS realign skill documents subagents" "grep -q 'Spawn one subagent per repo' '$DOTFILES_ROOT/skills/shared/agents-md-realign/SKILL.md'"
 }
 
 test_integrations() {

@@ -102,5 +102,6 @@ work/**/CLAUDE.md
 .plan.md
 PLAN.md
 
-# Agent instruction files generated per repo
+# Agent instruction files generated per work repo; personal repos can re-include
+# durable AGENTS.md files with repo-local !AGENTS.md / !**/AGENTS.md rules.
 AGENTS.md

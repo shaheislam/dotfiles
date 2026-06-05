@@ -2,6 +2,10 @@
 .gitignore_local
 .config/git/hooks/
 
+# AGENTS.md is globally ignored for work repos; dotfiles keeps tracked guidance.
+!AGENTS.md
+!**/AGENTS.md
+
 # Tmux plugin manager and plugins
 .tmux/plugins/
 

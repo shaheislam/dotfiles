@@ -106,6 +106,17 @@ Run `skills-manifest sync` inside a repo to materialize central and manifest ski
 3. Run `scripts/sync-skills-harnesses.sh` to refresh project harness surfaces.
 4. Run `skills-profile activate <profile>` only when updating personal `~/.claude/skills/`.
 
+## AGENTS.md Realignment
+
+Use `agents-md-realign` to refresh hierarchical `AGENTS.md` guidance and local-ignore policy across `~/dotfiles`, `~/neovim`, and `~/work/*` repos:
+
+```bash
+scripts/tools/realign-agents-md.sh --dry-run --all
+scripts/tools/realign-agents-md.sh --apply --all
+```
+
+For deeper repo-specific refactors, invoke the skill with `--agentic`. The skill discovers target repos and uses isolated subagents to propose per-repo `AGENTS.md` changes before the main agent applies reviewed edits.
+
 ## Cross-Tool Compatibility
 
 Skills follow the [Agent Skills standard](https://agentskills.io/specification).
