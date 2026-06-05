@@ -415,6 +415,8 @@ test_tmux() {
         "! grep -q 'tmux-prefix-highlight\|tmux-sidebar\|tmux-cpu\|laktak/extrakto\|tmux-notify\|tmux-1password\|tmux-fuzzback' '$DOTFILES_ROOT/.tmux.conf'"
     run_test "setup omits unused tmux plugin layer" \
         "! grep -q 'tmux-prefix-highlight\|tmux-sidebar\|tmux-cpu\|laktak/extrakto\|tmux-notify\|tmux-1password\|tmux-fuzzback' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "tmux target handler preserves chooser and routes files" \
+        "bash '$DOTFILES_ROOT/scripts/tmux/validate-tmux-url-handler.sh'"
 
     # Session close behavior: closing last window should switch to another session, not detach
     run_test "detach-on-destroy set to off (switch session on close)" \

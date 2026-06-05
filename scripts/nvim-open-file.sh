@@ -2,7 +2,7 @@
 #
 # nvim-open-file.sh - Open a file in the Neovim pane of the launching tmux window
 #
-# Usage: nvim-open-file.sh <file-path> [--target TMUX-TARGET]
+# Usage: nvim-open-file.sh <file-path> [--line LINE] [--target TMUX-TARGET]
 #
 # Window-local only — never reaches across to other windows. By default the
 # target is derived from TMUX_PANE so background hooks do not follow the active
@@ -18,11 +18,16 @@
 set -euo pipefail
 
 file_path=""
+line_number=""
 target=""
 source_pane="${TMUX_PANE:-}"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
+    --line)
+        line_number="$2"
+        shift 2
+        ;;
     --target)
         target="$2"
         source_pane="$2"
@@ -30,7 +35,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     -*)
         echo "Error: unknown option $1" >&2
-        echo "Usage: nvim-open-file.sh <file-path> [--target TMUX-TARGET]" >&2
+        echo "Usage: nvim-open-file.sh <file-path> [--line LINE] [--target TMUX-TARGET]" >&2
         exit 1
         ;;
     *)
@@ -42,6 +47,11 @@ done
 
 if [[ -z "$file_path" ]]; then
     echo "Error: file path required" >&2
+    exit 1
+fi
+
+if [[ -n "$line_number" && ! "$line_number" =~ ^[0-9]+$ ]]; then
+    echo "Error: --line must be a positive integer" >&2
     exit 1
 fi
 
@@ -94,8 +104,13 @@ if [[ -n "$nvim_pane" ]]; then
     # nvim already running — open file as a buffer
     tmux send-keys -t "${target}.${nvim_pane}" Escape Enter
     sleep 0.3
-    tmux send-keys -t "${target}.${nvim_pane}" \
-        ":lua vim.cmd('edit ' .. [[${file_path}]]); vim.cmd('checktime')" Enter
+    if [[ -n "$line_number" ]]; then
+        tmux send-keys -t "${target}.${nvim_pane}" \
+            ":lua vim.cmd('edit ' .. [[${file_path}]]); vim.api.nvim_win_set_cursor(0, {${line_number}, 0}); vim.cmd('normal! zz'); vim.cmd('checktime')" Enter
+    else
+        tmux send-keys -t "${target}.${nvim_pane}" \
+            ":lua vim.cmd('edit ' .. [[${file_path}]]); vim.cmd('checktime')" Enter
+    fi
     echo "Opened ${file_path} in nvim pane ${nvim_pane} (${target})"
 else
     # No nvim — open in a new pane using the same adaptive heuristic as
@@ -109,6 +124,10 @@ else
         orientation="-h"
     fi
     quoted_path=$(printf '%q' "$file_path")
-    tmux split-window "$orientation" -c '#{pane_current_path}' -t "$split_target" "nvim $quoted_path"
+    if [[ -n "$line_number" ]]; then
+        tmux split-window "$orientation" -c '#{pane_current_path}' -t "$split_target" "nvim +$line_number $quoted_path"
+    else
+        tmux split-window "$orientation" -c '#{pane_current_path}' -t "$split_target" "nvim $quoted_path"
+    fi
     echo "Opened nvim split (${orientation}) with ${file_path} (${target})"
 fi
