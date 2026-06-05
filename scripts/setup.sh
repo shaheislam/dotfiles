@@ -2038,15 +2038,6 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
             fi
         fi
 
-        # Firefox policies live in the app bundle; profile prefs, userChrome,
-        # userContent, and Sidebery CSS are copied into the local default profile
-        # without touching cookies or history.
-        if [[ -f "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ]]; then
-            print_step "Configuring Firefox for Granted..."
-            bash "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ||
-                log_verbose "Firefox setup completed with warnings"
-        fi
-
         # Execute macOS defaults configuration
         if [[ -f "$DOTFILES_ROOT/scripts/setup/macos-defaults.sh" ]]; then
             print_step "Applying macOS system defaults..."
@@ -2137,6 +2128,21 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
     fi
 
     mark_step_complete "fonts_and_apps"
+}
+
+setup_firefox_dotfiles() {
+    [[ "$DETECTED_OS" == "macos" ]] || return 0
+    [[ "$DRY_RUN" == "true" ]] && return 0
+
+    # Firefox policies live in the app bundle; profile prefs, userChrome,
+    # userContent, and Sidebery CSS are copied into the local default profile
+    # without touching cookies, history, sessions, or logins. This runs outside
+    # Phase 9 so fast/--skip-fonts-apps setup still applies tracked policy.
+    if [[ -f "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ]]; then
+        print_step "Applying Firefox dotfiles policy and profile config..."
+        bash "$DOTFILES_ROOT/scripts/setup/firefox-setup.sh" ||
+            log_verbose "Firefox setup completed with warnings"
+    fi
 }
 
 phase_10_advanced_features() {
@@ -2823,6 +2829,10 @@ main() {
 
     # Phase 9: fonts/apps (uses brew casks)
     phase_9_fonts_and_apps
+
+    # Keep Firefox extension policy/profile config in parity even on fast setup
+    # runs that skip font and GUI application installation.
+    setup_firefox_dotfiles
 
     # Phase 10: advanced features (cargo, go installs — independent of brew)
     phase_10_advanced_features
