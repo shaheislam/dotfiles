@@ -422,6 +422,10 @@
             "type": "command"
           },
           {
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 5 python3 ~/.claude/hooks/log-skill-invocation.py --harness claude",
+            "type": "command"
+          },
+          {
             "command": "bash ~/.claude/hooks/plan-watch.sh 2>/dev/null || true",
             "type": "command"
           }

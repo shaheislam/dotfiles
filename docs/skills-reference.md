@@ -165,7 +165,7 @@ Use `python3 scripts/validate-skills.py` to validate skills, `scripts/sync-skill
 
 ### Skill TOIL Audit
 
-`skills/shared/skill-toil-audit/SKILL.md` wraps `scripts/opencode/skill-toil-audit.py` to periodically inspect local OpenCode history for repeated prompts and recurring workflows. The script opens `~/.local/share/opencode/opencode.db` with SQLite `mode=ro`, extracts user prompts from `message` + `part` JSON, extracts assistant `tool` parts, ignores compression/system noise, redacts obvious secrets, clusters repeated prompts and session themes, summarizes privacy-safe post-prompt tool sequences, maps prompt and tool-use candidates against existing skills, and classifies each recommendation as a new skill, existing skill improvement, script/alias/command, or session-theme inspection.
+`skills/shared/skill-toil-audit/SKILL.md` wraps `scripts/opencode/skill-toil-audit.py` to periodically inspect local OpenCode history for repeated prompts, recurring workflows, and skill bloat. The script opens `~/.local/share/opencode/opencode.db` with SQLite `mode=ro`, extracts user prompts from `message` + `part` JSON, extracts assistant `tool` parts, ignores compression/system noise, redacts obvious secrets, clusters repeated prompts and session themes, summarizes privacy-safe post-prompt tool sequences, maps prompt and tool-use candidates against existing skills, and classifies each recommendation as a new skill, existing skill improvement, script/alias/command, or session-theme inspection.
 
 Common runs:
 
@@ -179,7 +179,9 @@ python3 scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude/Audit/skil
 
 Monthly per-device automation is handled by `scripts/opencode/skill-toil-audit-monthly.sh` and `Library/LaunchAgents/com.dotfiles.skill-toil-audit.plist`. The wrapper runs the audit with `--days 30 --min-count 3 --limit 20`, records a local guard in `~/.local/state/opencode/skill-toil-audit/last-run-month`, saves reports by hostname under `~/obsidian/Claude/Audit/skill-toil/<hostname>/` when available, and opens a `skill-toil-YYYY-MM` tmux window only if a tmux server is already running.
 
-Regression coverage lives in the script's fixture-backed `--self-test` mode and `scripts/test-filter.sh opencode`. The fixture asserts repeated tool sequences are detected without printing raw tool inputs or secrets.
+Skill invocation tracking is handled by `.claude/hooks/log-skill-invocation.py`. Claude wires it through `UserPromptSubmit`; OpenCode wires it through `.config/opencode/plugin/harness-compat.ts`. The hook stores only privacy-safe metadata in `~/.local/state/agent-skills/invocations.jsonl`: timestamp, harness, skill name, session id, cwd, and prompt hash. `skill-toil-audit.py` combines that tracker with historical slash prompts to classify skills as active, stale-review, candidate-merge, keep-safety-rare, keep-compatibility-wrapper, or needing a better trigger description.
+
+Regression coverage lives in the script's fixture-backed `--self-test` mode and `scripts/test-filter.sh opencode`. The fixture asserts repeated tool sequences and skill inventory classifications are detected without printing raw tool inputs or secrets.
 
 Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `skill-toil-audit`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `petlab-aws`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
 

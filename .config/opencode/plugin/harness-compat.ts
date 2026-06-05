@@ -699,6 +699,12 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
               prompt,
               cwd: projectDir,
             }),
+            runScript(hookPath("log-skill-invocation.py"), {
+              hook_type: "UserPromptSubmit",
+              session_id: currentSessionID ?? undefined,
+              prompt,
+              cwd: projectDir,
+            }, { SKILL_INVOCATION_HARNESS: "opencode" }),
             appendPromptContext(prompt),
             appendPlanWatch({
               session_id: currentSessionID ?? undefined,

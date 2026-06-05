@@ -33,6 +33,18 @@ python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude
 - Clusters exact normalized prompt repeats and recurring session-title themes.
 - Compares prompt and tool-use candidates against existing skills in `~/dotfiles/skills/` to avoid duplicate skills.
 - Classifies each candidate as `new-skill-candidate`, `improve-existing-skill`, `script-alias-or-command`, `inspect-session-theme`, or no result below threshold.
+- Reports skill inventory health using explicit invocation logs, historical slash prompts, stale-skill review candidates, and overlap signals.
+
+## Skill Usage Tracking
+
+Explicit slash-skill invocations are tracked without storing prompt text:
+
+- Claude `UserPromptSubmit` runs `.claude/hooks/log-skill-invocation.py --harness claude`.
+- OpenCode's harness compatibility plugin runs the same hook with `SKILL_INVOCATION_HARNESS=opencode`.
+- The hook appends JSONL to `~/.local/state/agent-skills/invocations.jsonl`.
+- Each record stores timestamp, harness, skill name, session id, cwd, and a prompt hash only.
+
+The audit combines that tracker with local OpenCode and Claude history to classify skills as `active`, `stale-review`, `candidate-merge`, `keep-safety-rare`, `keep-compatibility-wrapper`, or `needs-better-trigger-description`.
 
 ## Monthly Per-Device Automation
 
@@ -67,10 +79,11 @@ Otherwise recommend a command, alias, script, documentation update, or no action
 1. Run the audit with the desired time window.
 2. Review the top candidates and their samples.
 3. Review `Tool-use signals` to see whether repeated tool sequences imply a reusable workflow, script, or skill eval.
-4. If the action is `improve-existing-skill`, edit that skill instead of creating a duplicate.
-5. If the action is `new-skill-candidate`, inspect nearby session context before creating the skill.
-6. Add fixture-backed checks or invariant tests for any accepted skill workflow.
-7. Run `python3 scripts/validate-skills.py`, `scripts/sync-skills-harnesses.sh --check`, and `scripts/test-filter.sh opencode` after changes.
+4. Review `Skill Inventory` before deleting or adding skills; prefer merge/deprecate over immediate deletion.
+5. If the action is `improve-existing-skill`, edit that skill instead of creating a duplicate.
+6. If the action is `new-skill-candidate`, inspect nearby session context before creating the skill.
+7. Add fixture-backed checks or invariant tests for any accepted skill workflow.
+8. Run `python3 scripts/validate-skills.py`, `scripts/sync-skills-harnesses.sh --check`, and `scripts/test-filter.sh opencode` after changes.
 
 ## Tracking Decisions
 

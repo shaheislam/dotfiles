@@ -24,6 +24,7 @@ from typing import Any, Iterable
 
 
 DEFAULT_DB = "~/.local/share/opencode/opencode.db"
+DEFAULT_INVOCATIONS = "~/.local/state/agent-skills/invocations.jsonl"
 SECRET_PATTERNS = [
     re.compile(r"(?i)(api[_-]?key|token|secret|password)\s*[:=]\s*['\"]?[^\s'\"]+"),
     re.compile(r"\b(sk-[A-Za-z0-9_-]{12,})\b"),
@@ -49,6 +50,30 @@ GENERIC_ACTION_PROMPTS = {
     "make these changes",
     "yes do this",
     "do this",
+}
+SAFETY_RARE_SKILLS = {
+    "careful",
+    "freeze",
+    "unfreeze",
+    "guard",
+    "security-audit",
+    "fact-checker",
+    "macos-cleaner",
+    "fix",
+}
+COMPATIBILITY_WRAPPER_SKILLS = {
+    "audit",
+    "build-fix",
+    "checkpoint",
+    "commit",
+    "deploy-check",
+    "full-review",
+    "handoff",
+    "rebase",
+    "review-pr",
+    "ticket",
+    "verify",
+    "wrap-up",
 }
 STOP_WORDS = {
     "the",
@@ -140,6 +165,34 @@ class Candidate:
     @property
     def latest_ms(self) -> int:
         return max(prompt.time_created for prompt in self.prompts)
+
+
+@dataclasses.dataclass(frozen=True)
+class SkillInfo:
+    name: str
+    category: str
+    path: str
+    description: str
+    body_size: int
+
+
+@dataclasses.dataclass
+class SkillInventoryItem:
+    skill: SkillInfo
+    explicit_invocations: int = 0
+    inferred_mentions: int = 0
+    candidate_refs: int = 0
+    last_seen_ms: int = 0
+    classification: str = "never-seen"
+    reason: str = "No explicit invocation or prompt-history evidence found."
+    overlaps: list[tuple[str, int]] = dataclasses.field(default_factory=list)
+
+
+@dataclasses.dataclass(frozen=True)
+class SkillUsageEvent:
+    skill: str
+    source: str
+    time_created: int
 
 
 def expand_path(value: str) -> Path:
@@ -291,16 +344,117 @@ def load_tool_events(conn: sqlite3.Connection, days: int | None) -> list[ToolEve
 
 
 def load_existing_skills(repo_root: Path) -> dict[str, str]:
-    skills: dict[str, str] = {}
-    for root in (repo_root / "skills" / "shared", repo_root / "skills" / "personal", repo_root / "skills" / "work"):
-        if not root.is_dir():
+    return {skill.name: skill.description for skill in load_skill_inventory(repo_root)}
+
+
+def load_skill_inventory(repo_root: Path) -> list[SkillInfo]:
+    skills: list[SkillInfo] = []
+    skills_root = repo_root / "skills"
+    for category_root in (skills_root / "shared", skills_root / "personal", skills_root / "work"):
+        if not category_root.is_dir():
             continue
-        for skill_md in sorted(root.glob("*/SKILL.md")):
+        for skill_md in sorted(category_root.glob("*/SKILL.md")):
             content = skill_md.read_text(encoding="utf-8", errors="replace")
             description_match = re.search(r"^description:\s*(.+)$", content, re.MULTILINE)
             description = description_match.group(1).strip().strip("\"'") if description_match else ""
-            skills[skill_md.parent.name] = description
+            body = re.sub(r"^---\n.*?\n---\n", "", content, flags=re.DOTALL)
+            skills.append(
+                SkillInfo(
+                    name=skill_md.parent.name,
+                    category=category_root.name,
+                    path=str(skill_md.relative_to(repo_root)),
+                    description=description,
+                    body_size=len(body),
+                )
+            )
     return skills
+
+
+def extract_slash_skills(text: str, known_skills: set[str]) -> list[str]:
+    found = []
+    for match in re.finditer(r"(?m)^\s*/([a-z0-9][a-z0-9-]{0,63})(?=\s|$)", text.lower()):
+        skill = match.group(1)
+        if skill in known_skills and skill not in found:
+            found.append(skill)
+    return found
+
+
+def load_invocation_events(path: Path, days: int | None, known_skills: set[str]) -> list[SkillUsageEvent]:
+    if not path.exists():
+        return []
+    cutoff_ms = None
+    if days is not None:
+        cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
+        cutoff_ms = int(cutoff.timestamp() * 1000)
+
+    events: list[SkillUsageEvent] = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        skill = data.get("skill")
+        if not isinstance(skill, str) or skill not in known_skills:
+            continue
+        timestamp = data.get("timestamp")
+        created = 0
+        if isinstance(timestamp, str):
+            try:
+                created = int(dt.datetime.fromisoformat(timestamp.replace("Z", "+00:00")).timestamp() * 1000)
+            except ValueError:
+                created = 0
+        if cutoff_ms is not None and created and created < cutoff_ms:
+            continue
+        source_value = data.get("harness")
+        source = source_value if isinstance(source_value, str) else "tracker"
+        events.append(SkillUsageEvent(skill=skill, source=source, time_created=created))
+    return events
+
+
+def text_values(value: Any) -> Iterable[str]:
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from text_values(item)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            if key in {"content", "text", "prompt"}:
+                yield from text_values(item)
+
+
+def load_claude_history_usage(projects_root: Path, days: int | None, known_skills: set[str]) -> list[SkillUsageEvent]:
+    if not projects_root.is_dir():
+        return []
+    cutoff_ms = None
+    if days is not None:
+        cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=days)
+        cutoff_ms = int(cutoff.timestamp() * 1000)
+
+    events: list[SkillUsageEvent] = []
+    for path in projects_root.glob("**/*.jsonl"):
+        if cutoff_ms is not None and int(path.stat().st_mtime * 1000) < cutoff_ms:
+            continue
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                data = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            created = int(path.stat().st_mtime * 1000)
+            timestamp = data.get("timestamp") if isinstance(data, dict) else None
+            if isinstance(timestamp, str):
+                try:
+                    created = int(dt.datetime.fromisoformat(timestamp.replace("Z", "+00:00")).timestamp() * 1000)
+                except ValueError:
+                    pass
+            if cutoff_ms is not None and created < cutoff_ms:
+                continue
+            for text in text_values(data):
+                for skill in extract_slash_skills(text, known_skills):
+                    events.append(SkillUsageEvent(skill=skill, source="claude-history", time_created=created))
+    return events
 
 
 def token_set(text: str) -> set[str]:
@@ -561,6 +715,102 @@ def top_candidates(
     return candidates
 
 
+def infer_skill_usage_from_prompts(
+    entries: list[PromptEntry], inventory: list[SkillInfo]
+) -> dict[str, SkillInventoryItem]:
+    known = {skill.name for skill in inventory}
+    items = {skill.name: SkillInventoryItem(skill=skill) for skill in inventory}
+    for entry in entries:
+        lowered = entry.text.lower()
+        explicit = set(extract_slash_skills(lowered, known))
+        for skill in explicit:
+            items[skill].explicit_invocations += 1
+            items[skill].last_seen_ms = max(items[skill].last_seen_ms, entry.time_created)
+        for skill in known:
+            if skill in explicit:
+                continue
+            if re.search(r"\b" + re.escape(skill) + r"\b", lowered):
+                items[skill].inferred_mentions += 1
+                items[skill].last_seen_ms = max(items[skill].last_seen_ms, entry.time_created)
+    return items
+
+
+def skill_overlaps(inventory: list[SkillInfo]) -> dict[str, list[tuple[str, int]]]:
+    tokenized = {skill.name: token_set(f"{skill.name} {skill.description}") for skill in inventory}
+    overlaps: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    for left_index, left in enumerate(inventory):
+        for right in inventory[left_index + 1 :]:
+            overlap = len(tokenized[left.name] & tokenized[right.name])
+            union = len(tokenized[left.name] | tokenized[right.name]) or 1
+            if overlap >= 4 or overlap / union >= 0.24:
+                overlaps[left.name].append((right.name, overlap))
+                overlaps[right.name].append((left.name, overlap))
+    for values in overlaps.values():
+        values.sort(key=lambda item: item[1], reverse=True)
+    return overlaps
+
+
+def build_skill_inventory_report(
+    inventory: list[SkillInfo],
+    entries: list[PromptEntry],
+    candidates: list[Candidate],
+    invocation_events: list[SkillUsageEvent],
+) -> list[SkillInventoryItem]:
+    items = infer_skill_usage_from_prompts(entries, inventory)
+    for event in invocation_events:
+        if event.skill not in items:
+            continue
+        items[event.skill].explicit_invocations += 1
+        items[event.skill].last_seen_ms = max(items[event.skill].last_seen_ms, event.time_created)
+
+    for candidate in candidates:
+        if candidate.existing_skill and candidate.existing_skill in items:
+            items[candidate.existing_skill].candidate_refs += 1
+
+    overlaps = skill_overlaps(inventory)
+    for name, item in items.items():
+        item.overlaps = overlaps.get(name, [])[:3]
+        total_usage = item.explicit_invocations + item.inferred_mentions + item.candidate_refs
+        if name in SAFETY_RARE_SKILLS:
+            item.classification = "keep-safety-rare"
+            item.reason = "Low-frequency safety or recovery workflow; keep even when usage is rare."
+        elif name in COMPATIBILITY_WRAPPER_SKILLS:
+            item.classification = "keep-compatibility-wrapper"
+            item.reason = "Compatibility or workflow wrapper that preserves expected slash-command behavior."
+        elif item.explicit_invocations > 0 or item.candidate_refs > 0:
+            item.classification = "active"
+            item.reason = "Explicit invocation or prompt-history candidate evidence found."
+        elif item.overlaps and total_usage == 0:
+            item.classification = "candidate-merge"
+            item.reason = "No usage evidence and overlapping trigger language; review for consolidation."
+        elif total_usage == 0:
+            item.classification = "stale-review"
+            item.reason = "No usage evidence in the current window; review before deleting."
+        elif not item.skill.description or len(item.skill.description) < 50:
+            item.classification = "needs-better-trigger-description"
+            item.reason = "Usage exists but description is too short to guide reliable activation."
+        else:
+            item.classification = "active"
+            item.reason = "Mention evidence found in local prompt history."
+    return sorted(items.values(), key=lambda item: (item.classification, -item.explicit_invocations, item.skill.name))
+
+
+def inventory_item_to_dict(item: SkillInventoryItem) -> dict[str, Any]:
+    return {
+        "name": item.skill.name,
+        "category": item.skill.category,
+        "path": item.skill.path,
+        "classification": item.classification,
+        "explicit_invocations": item.explicit_invocations,
+        "inferred_mentions": item.inferred_mentions,
+        "candidate_refs": item.candidate_refs,
+        "last_seen": format_time(item.last_seen_ms) if item.last_seen_ms else None,
+        "body_size": item.skill.body_size,
+        "overlaps": [{"skill": skill, "token_overlap": count} for skill, count in item.overlaps],
+        "reason": item.reason,
+    }
+
+
 def format_time(ms: int) -> str:
     if not ms:
         return "unknown"
@@ -615,7 +865,47 @@ def candidate_to_dict(candidate: Candidate) -> dict[str, Any]:
     }
 
 
-def render_markdown(candidates: list[Candidate], entries: list[PromptEntry], args: argparse.Namespace) -> str:
+def render_inventory_markdown(items: list[SkillInventoryItem], limit: int) -> list[str]:
+    counts = Counter(item.classification for item in items)
+    lines = [
+        "## Skill Inventory",
+        "",
+        f"Skills analyzed: `{len(items)}`",
+        "",
+        "Classification counts:",
+    ]
+    for name, count in sorted(counts.items()):
+        lines.append(f"- `{name}`: `{count}`")
+
+    review_items = [
+        item
+        for item in items
+        if item.classification in {"candidate-merge", "stale-review", "needs-better-trigger-description"}
+    ]
+    if not review_items:
+        lines.extend(["", "No skill cleanup candidates met the current review thresholds.", ""])
+        return lines
+
+    lines.extend(["", "Review candidates:"])
+    for item in review_items[:limit]:
+        overlaps = ", ".join(f"`{skill}` ({count})" for skill, count in item.overlaps[:3]) or "none"
+        last_seen = format_time(item.last_seen_ms) if item.last_seen_ms else "never"
+        lines.extend(
+            [
+                f"- `{item.skill.name}`: `{item.classification}`",
+                f"  Path: `{item.skill.path}`; explicit `{item.explicit_invocations}`, mentions `{item.inferred_mentions}`, candidate refs `{item.candidate_refs}`, last seen `{last_seen}`; overlaps: {overlaps}; reason: {item.reason}",
+            ]
+        )
+    lines.append("")
+    return lines
+
+
+def render_markdown(
+    candidates: list[Candidate],
+    entries: list[PromptEntry],
+    inventory_items: list[SkillInventoryItem],
+    args: argparse.Namespace,
+) -> str:
     lines = [
         "# Skill TOIL Audit",
         "",
@@ -634,6 +924,7 @@ def render_markdown(candidates: list[Candidate], entries: list[PromptEntry], arg
 
     if not candidates:
         lines.append("No candidates met the current threshold.")
+        lines.extend(render_inventory_markdown(inventory_items, args.inventory_limit))
         return "\n".join(lines) + "\n"
 
     for index, candidate in enumerate(candidates[: args.limit], start=1):
@@ -696,10 +987,16 @@ def render_markdown(candidates: list[Candidate], entries: list[PromptEntry], arg
             )
         lines.append("")
 
+    lines.extend(render_inventory_markdown(inventory_items, args.inventory_limit))
     return "\n".join(lines).rstrip() + "\n"
 
 
-def render_json(candidates: list[Candidate], entries: list[PromptEntry], args: argparse.Namespace) -> str:
+def render_json(
+    candidates: list[Candidate],
+    entries: list[PromptEntry],
+    inventory_items: list[SkillInventoryItem],
+    args: argparse.Namespace,
+) -> str:
     return (
         json.dumps(
             {
@@ -708,6 +1005,7 @@ def render_json(candidates: list[Candidate], entries: list[PromptEntry], args: a
                 "prompts_analyzed": len(entries),
                 "min_count": args.min_count,
                 "candidates": [candidate_to_dict(candidate) for candidate in candidates[: args.limit]],
+                "skill_inventory": [inventory_item_to_dict(item) for item in inventory_items],
             },
             indent=2,
             sort_keys=True,
@@ -730,6 +1028,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--limit", type=int, default=20, help="Maximum candidates to print.")
     parser.add_argument("--json", action="store_true", help="Emit JSON instead of Markdown.")
     parser.add_argument("--save", help="Write the report to this path as well as stdout.")
+    parser.add_argument("--invocations", default=DEFAULT_INVOCATIONS, help="Skill invocation JSONL tracker path.")
+    parser.add_argument(
+        "--inventory-limit", type=int, default=15, help="Maximum skill inventory review items to print."
+    )
+    parser.add_argument(
+        "--no-claude-history", action="store_true", help="Skip best-effort Claude JSONL slash usage scan."
+    )
     parser.add_argument(
         "--stubs",
         action="store_true",
@@ -748,10 +1053,21 @@ def run(args: argparse.Namespace) -> str:
         tool_events = load_tool_events(conn, args.days)
     finally:
         conn.close()
-    skills = load_existing_skills(expand_path(args.repo_root))
+    repo_root = expand_path(args.repo_root)
+    inventory = load_skill_inventory(repo_root)
+    skills = {skill.name: skill.description for skill in inventory}
     decisions_path = expand_path(args.decisions) if args.decisions else None
     candidates = top_candidates(entries, tool_events, args.min_count, skills, decisions_path)
-    return render_json(candidates, entries, args) if args.json else render_markdown(candidates, entries, args)
+    known_skills = {skill.name for skill in inventory}
+    invocation_events = load_invocation_events(expand_path(args.invocations), args.days, known_skills)
+    if not args.no_claude_history:
+        invocation_events.extend(load_claude_history_usage(expand_path("~/.claude/projects"), args.days, known_skills))
+    inventory_items = build_skill_inventory_report(inventory, entries, candidates, invocation_events)
+    return (
+        render_json(candidates, entries, inventory_items, args)
+        if args.json
+        else render_markdown(candidates, entries, inventory_items, args)
+    )
 
 
 def create_fixture_db(path: Path) -> None:
@@ -851,11 +1167,48 @@ def self_test() -> None:
             "---\nname: skill-toil-audit\ndescription: Audit OpenCode session history for repeated skill candidates.\n---\n",
             encoding="utf-8",
         )
+        stale_dir = repo_root / "skills" / "shared" / "unused-helper"
+        stale_dir.mkdir(parents=True)
+        (stale_dir / "SKILL.md").write_text(
+            "---\nname: unused-helper\ndescription: Helper workflow with no current usage evidence.\n---\n",
+            encoding="utf-8",
+        )
+        guard_dir = repo_root / "skills" / "shared" / "guard"
+        guard_dir.mkdir(parents=True)
+        (guard_dir / "SKILL.md").write_text(
+            "---\nname: guard\ndescription: Maximum safety mode for destructive command protection.\n---\n",
+            encoding="utf-8",
+        )
         create_fixture_db(db_path)
+        invocation_path = tmp_path / "invocations.jsonl"
+        invocation_path.write_text(
+            json.dumps(
+                {
+                    "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(),
+                    "harness": "test",
+                    "skill": "skill-toil-audit",
+                    "prompt_hash": "abc123",
+                }
+            )
+            + "\n",
+            encoding="utf-8",
+        )
 
         parser = build_parser()
         args = parser.parse_args(
-            ["--db", str(db_path), "--repo-root", str(repo_root), "--all", "--min-count", "2", "--json"]
+            [
+                "--db",
+                str(db_path),
+                "--repo-root",
+                str(repo_root),
+                "--invocations",
+                str(invocation_path),
+                "--all",
+                "--min-count",
+                "2",
+                "--json",
+                "--no-claude-history",
+            ]
         )
         report = json.loads(run(args))
         assert report["prompts_analyzed"] == 2, report
@@ -863,6 +1216,10 @@ def self_test() -> None:
         assert report["candidates"][0]["count"] == 2, report
         assert report["candidates"][0]["tool_sequences"], report
         assert report["candidates"][0]["tool_sequences"][0]["sequence"] == "grep -> read", report
+        inventory = {item["name"]: item for item in report["skill_inventory"]}
+        assert inventory["skill-toil-audit"]["explicit_invocations"] == 1, report
+        assert inventory["guard"]["classification"] == "keep-safety-rare", report
+        assert inventory["unused-helper"]["classification"] in {"stale-review", "candidate-merge"}, report
         assert "DCP" not in json.dumps(report), report
         assert "secret=abc" not in json.dumps(report), report
 
