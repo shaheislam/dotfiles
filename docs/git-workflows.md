@@ -439,6 +439,8 @@ gitlocal-setup --force --add-pattern '*.tmp'
 
 **Default excludes**: `.gitignore_local`, `*.local`, `.env.local`, `.vscode/`, `.idea/`, `.claude/`, `.codex/`, `.DS_Store`, `*.swp`, `.pyrightconfig.json`
 
+**Work repo convention**: when run against `~/work`, the script also ignores `AGENTS.md` so work-repo agent instructions can be local-only. Personal source-of-truth repos such as `~/dotfiles` and `~/neovim` keep `AGENTS.md` trackable.
+
 ### git-check-identity (gci)
 
 > Source: `~/.config/fish/functions/git-check-identity.fish`

@@ -52,6 +52,8 @@ For each git repository, the script:
    - Language-specific configs (`.pyrightconfig.json`, etc.)
    - Personal notes and scripts
 
+For repositories under `~/work`, the script also ignores `AGENTS.md` by default. This keeps work-repo agent guidance local to the machine and out of shared company repositories. Personal source-of-truth repos such as `~/dotfiles` and `~/neovim` should keep committed `AGENTS.md` files.
+
 ## Directory Structure
 
 ```
@@ -160,6 +162,12 @@ Track your TODOs and notes:
 - `TODO.local.md`
 - `NOTES.md`
 - `.notes/` directory
+
+### Work-Repo Agent Guidance
+Keep repo-specific agent instructions local in work repositories:
+- `~/work/<repo>/AGENTS.md` is ignored by default through `.gitignore_local`
+- `~/dotfiles/AGENTS.md` and `~/neovim/AGENTS.md` remain commit-worthy durable guidance
+- Use `gitlocal-setup --no-ignore-agents-md` if a work repository intentionally needs a committed `AGENTS.md`
 
 ## Troubleshooting
 

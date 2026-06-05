@@ -18,6 +18,8 @@ DRY_RUN=false
 FORCE_MODE=false
 ADD_PATTERNS=()
 VERBOSE=false
+IGNORE_AGENTS_MD=false
+IGNORE_AGENTS_MD_SET=false
 
 # Counters
 REPOS_PROCESSED=0
@@ -42,6 +44,16 @@ while [[ $# -gt 0 ]]; do
 		ADD_PATTERNS+=("$2")
 		shift 2
 		;;
+	--ignore-agents-md)
+		IGNORE_AGENTS_MD=true
+		IGNORE_AGENTS_MD_SET=true
+		shift
+		;;
+	--no-ignore-agents-md)
+		IGNORE_AGENTS_MD=false
+		IGNORE_AGENTS_MD_SET=true
+		shift
+		;;
 	--verbose | -v)
 		VERBOSE=true
 		shift
@@ -58,6 +70,9 @@ while [[ $# -gt 0 ]]; do
 		echo "  --dry-run          Show what would be done without making changes"
 		echo "  --force            Overwrite existing exclude files with template"
 		echo "  --add-pattern PAT  Add custom pattern to all exclude files"
+		echo "  --ignore-agents-md Ignore AGENTS.md as a local-only agent guide"
+		echo "  --no-ignore-agents-md"
+		echo "                     Do not ignore AGENTS.md, even under ~/work"
 		echo "  --verbose, -v      Show detailed output"
 		echo "  --help, -h         Show this help message"
 		echo ""
@@ -91,6 +106,17 @@ if [[ -z "$DEFAULT_DIR" ]]; then
 	DEFAULT_DIR="$HOME/work"
 fi
 
+# Work repositories use local AGENTS.md files for personal agent guidance.
+# Personal source-of-truth repos such as ~/dotfiles and ~/neovim should keep
+# AGENTS.md trackable unless explicitly overridden.
+if [[ "$IGNORE_AGENTS_MD_SET" == false ]]; then
+	case "$DEFAULT_DIR" in
+	"$HOME/work" | "$HOME/work"/*)
+		IGNORE_AGENTS_MD=true
+		;;
+	esac
+fi
+
 # Default patterns to add to exclude files
 DEFAULT_EXCLUDES=(
 	".gitignore_local"
@@ -108,6 +134,10 @@ DEFAULT_EXCLUDES=(
 	".eslintrc.local.json"
 	"tsconfig.local.json"
 )
+
+if [[ "$IGNORE_AGENTS_MD" == true ]]; then
+	DEFAULT_EXCLUDES+=("AGENTS.md")
+fi
 
 # Function to log verbose messages
 log_verbose() {
@@ -380,7 +410,10 @@ echo -e "Found ${GREEN}${#GIT_REPOS[@]}${NC} repositories"
 
 # Debug: Show first few repos
 if [[ "$VERBOSE" == true ]]; then
-	echo "Debug: First 3 repos: ${GIT_REPOS[0]}, ${GIT_REPOS[1]}, ${GIT_REPOS[2]}"
+	echo "Debug: First repos:"
+	for repo in "${GIT_REPOS[@]:0:3}"; do
+		echo "  $repo"
+	done
 fi
 
 # Process each repository
