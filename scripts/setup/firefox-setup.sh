@@ -12,6 +12,7 @@ USER_CHROME_SOURCE="${FIREFOX_USER_CHROME_SOURCE:-$SCRIPT_DIR/firefox/chrome/use
 USER_CONTENT_SOURCE="${FIREFOX_USER_CONTENT_SOURCE:-$SCRIPT_DIR/firefox/chrome/userContent.css}"
 SIDEBERY_CSS_SOURCE="${FIREFOX_SIDEBERY_CSS_SOURCE:-$SCRIPT_DIR/firefox/chrome/sidebery.css}"
 CAPTURE_PREFS_HELPER="$SCRIPT_DIR/firefox-capture-prefs.py"
+HISTORY_TAB_DISCARD_HELPER="$SCRIPT_DIR/firefox-history-tab-discard.py"
 
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
@@ -28,6 +29,10 @@ log_success() {
 
 log_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+firefox_policy_target() {
+    printf '%s/Contents/Resources/distribution/policies.json\n' "$FIREFOX_APP"
 }
 
 backup_existing_file() {
@@ -215,8 +220,10 @@ find_default_profile() {
 
 install_policy() {
     local policy_dir="$FIREFOX_APP/Contents/Resources/distribution"
-    local policy_target="$FIREFOX_APP/Contents/Resources/distribution/policies.json"
+    local policy_target=""
     local resources_dir="$FIREFOX_APP/Contents/Resources"
+
+    policy_target="$(firefox_policy_target)"
 
     if [[ ! -d "$FIREFOX_APP" ]]; then
         log_warning "Firefox.app not found at $FIREFOX_APP; skipping enterprise policy"
@@ -229,8 +236,8 @@ install_policy() {
             return 0
         fi
 
-        log_info "Firefox app bundle policy directory is not writable; skipping enterprise policy"
-        log_info "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
+        log_warning "Firefox app bundle policy directory is not writable; enterprise policy was not updated"
+        log_warning "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
         return 0
     fi
 
@@ -240,8 +247,8 @@ install_policy() {
             return 0
         fi
 
-        log_info "Firefox app bundle is not writable; skipping enterprise policy"
-        log_info "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
+        log_warning "Firefox app bundle is not writable; enterprise policy was not updated"
+        log_warning "Manual policy install: sudo mkdir -p \"$policy_dir\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
         return 0
     fi
 
@@ -251,6 +258,30 @@ install_policy() {
 
     log_warning "Manual policy install: sudo mkdir -p \"$(dirname "$policy_target")\" && sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
     return 1
+}
+
+validate_policy_install() {
+    local policy_target=""
+
+    if [[ ! -d "$FIREFOX_APP" ]]; then
+        return 0
+    fi
+
+    policy_target="$(firefox_policy_target)"
+
+    if [[ ! -f "$policy_target" ]]; then
+        log_warning "Firefox policies.json is not installed; Auto Tab Discard managed config will not apply"
+        return 1
+    fi
+
+    if ! cmp -s "$POLICY_SOURCE" "$policy_target"; then
+        log_warning "Installed Firefox policies.json differs from dotfiles source"
+        log_warning "Rerun setup with sudo access or install manually: sudo cp \"$POLICY_SOURCE\" \"$policy_target\""
+        return 1
+    fi
+
+    log_success "Firefox policies.json matches dotfiles source"
+    return 0
 }
 
 install_user_js() {
@@ -326,6 +357,15 @@ capture_current_prefs() {
     python3 "$CAPTURE_PREFS_HELPER" --firefox-root "$FIREFOX_ROOT" --user-js "$USER_JS_SOURCE" "$@"
 }
 
+recommend_tab_discard_policy() {
+    if ! command -v python3 >/dev/null 2>&1; then
+        log_warning "python3 is required to recommend Firefox tab discard policy"
+        return 1
+    fi
+
+    python3 "$HISTORY_TAB_DISCARD_HELPER" --firefox-root "$FIREFOX_ROOT" "$@"
+}
+
 self_test() {
     local tmp_dir=""
     local profile_dir=""
@@ -391,6 +431,11 @@ main() {
         capture_current_prefs "$@"
         return 0
         ;;
+    --recommend-tab-discard-policy)
+        shift
+        recommend_tab_discard_policy "$@"
+        return 0
+        ;;
     esac
 
     if [[ "$(uname -s)" != "Darwin" ]]; then
@@ -408,6 +453,7 @@ main() {
     local had_warnings=false
 
     install_policy || had_warnings=true
+    validate_policy_install || had_warnings=true
     install_user_js || had_warnings=true
     install_user_chrome || had_warnings=true
     install_sidebery_css || had_warnings=true
