@@ -1132,6 +1132,12 @@ test_opencode() {
     run_test "OpenCode TUI keeps insert Enter as newline" "jq -e '.vim_enter_submit == false' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
     run_test "OpenCode TUI leaves Enter defaults" "jq -e '(.keybinds.input_submit? == null) and (.keybinds.input_newline? == null) and (.keybinds.input_force_submit? == null)' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
     run_test "OpenCode TUI copy mode avoids variant conflict" "jq -e '.keybinds.copy_mode == \"<leader>v\" and .keybinds.variant_list == \"<leader>V\"' '$DOTFILES_ROOT/.config/opencode/tui.json' >/dev/null 2>&1"
+    run_test "OpenCode skill TOIL audit script exists" "[ -f '$DOTFILES_ROOT/scripts/opencode/skill-toil-audit.py' ]"
+    run_test "OpenCode skill TOIL audit script executable" "[ -x '$DOTFILES_ROOT/scripts/opencode/skill-toil-audit.py' ]"
+    run_test "OpenCode skill TOIL audit compiles" "python3 -m py_compile '$DOTFILES_ROOT/scripts/opencode/skill-toil-audit.py'"
+    run_test "OpenCode skill TOIL audit self-test passes" "python3 '$DOTFILES_ROOT/scripts/opencode/skill-toil-audit.py' --self-test"
+    run_test "Skill TOIL audit skill exists" "[ -f '$DOTFILES_ROOT/skills/shared/skill-toil-audit/SKILL.md' ]"
+    run_test "Skill TOIL audit documented" "grep -q 'skill-toil-audit.py' '$DOTFILES_ROOT/docs/skills-reference.md'"
 
     run_test "OpenCode command directory exists" "[ -d '$DOTFILES_ROOT/.opencode/command' ]"
     run_test "OpenCode doctor command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/doctor.md' ]"

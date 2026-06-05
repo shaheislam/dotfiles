@@ -163,7 +163,22 @@ Use `python3 scripts/validate-skills.py` to validate skills, `scripts/sync-skill
 
 `skills/shared/agents-md-realign/SKILL.md` wraps `scripts/tools/realign-agents-md.sh` to maintain hierarchical `AGENTS.md` files across `~/dotfiles`, `~/neovim`, and `~/work/*`. It keeps personal repos commit-friendly while making work-repo `AGENTS.md` files local-only through `.git/info/exclude`. With `--agentic`, the skill discovers target repos and uses isolated subagents to propose repo-specific `AGENTS.md` refactors before the main agent applies reviewed changes.
 
-Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `petlab-aws`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
+### Skill TOIL Audit
+
+`skills/shared/skill-toil-audit/SKILL.md` wraps `scripts/opencode/skill-toil-audit.py` to periodically inspect local OpenCode history for repeated prompts and recurring workflows. The script opens `~/.local/share/opencode/opencode.db` read-only, extracts user prompts from `message` + `part` JSON, ignores compression/system noise, redacts obvious secrets, clusters repeated prompts and session themes, maps candidates against existing skills, and classifies each recommendation as a new skill, existing skill improvement, script/alias/command, or session-theme inspection.
+
+Common runs:
+
+```bash
+python3 scripts/opencode/skill-toil-audit.py --days 30
+python3 scripts/opencode/skill-toil-audit.py --days 90 --min-count 2 --stubs
+python3 scripts/opencode/skill-toil-audit.py --all --json
+python3 scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude/Audit/skill-toil-$(date +%F).md
+```
+
+Regression coverage lives in the script's fixture-backed `--self-test` mode and `scripts/test-filter.sh opencode`.
+
+Core workflows include `start`, `wrap-up`, `ship`, `fix`, `session-review`, `continue-claude-work`, `ticket-execute`, `todo`, `jira`, `security-audit`, `gap-analysis`, `best-practice`, `research-spike`, `prompt-optimizer`, `skill-toil-audit`, `context-health`, `morning-brief`, `dotfiles-sync`, `fish-reload`, `mcp-restart`, `git-config-fix`, `aws-profile`, `petlab-aws`, `confluence`, `diagram`, `article`, `youtube`, `cv-generate`, `jfdi`, `jfdi-sync`, `jfdi-extract`, `jfdi-recall`, `jfdi-synthesis`, `dream`, `careful`, `freeze`, `unfreeze`, `guard`, `capture-screen`, `cross-ref`, `macos-cleaner`, `claude-cleanup`, `s3-search`, `s3-upload`, `autoplan`, `fact-checker`, `retro`, and `commit-mode`.
 
 Compatibility wrappers cover common external slash-command names that the screenshot expects: `commit`, `review-pr`, `full-review`, `deploy-check`, `build-fix`, `verify`, `handoff`, `ticket`, `checkpoint`, `rebase`, and `audit`.
 
