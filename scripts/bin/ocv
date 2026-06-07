@@ -37,6 +37,9 @@ should_wrap_in_tmux() {
 	serve | --help | -h | help | --version | version)
 		return 1
 		;;
+	-*)
+		return 0
+		;;
 	*)
 		return 1
 		;;
