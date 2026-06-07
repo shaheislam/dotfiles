@@ -146,6 +146,8 @@ if [ -n "$STYLE_TARGET" ]; then
 	SYNC_PID="$!"
 fi
 
+export OPENCODE_TMUX_WRAPPER_ACTIVE=1
+
 if [ -n "$WINDOW" ]; then
 	mkdir -p "$ATTACH_DIR"
 	ATTACH_FILE="$ATTACH_DIR/$(pane_key "$WINDOW").pid"

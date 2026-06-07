@@ -26,9 +26,30 @@ find_real_ocv() {
 	return 1
 }
 
+should_wrap_in_tmux() {
+	[ -n "${TMUX:-}" ] || return 1
+	[ -z "${OPENCODE_TMUX_WRAPPER_ACTIVE:-}" ] || return 1
+
+	case "${1:-}" in
+	"" | attach)
+		return 0
+		;;
+	serve | --help | -h | help | --version | version)
+		return 1
+		;;
+	*)
+		return 1
+		;;
+	esac
+}
+
+if should_wrap_in_tmux "${1:-}"; then
+	exec "$HOME/dotfiles/scripts/opencode/tmux-open.sh" "$@"
+fi
+
 if ocv_bin="$(find_real_ocv)"; then
 	exec "$ocv_bin" "$@"
 fi
 
-printf 'opencode shim: ocv is not installed. Run: brew install leohenon/tap/ocv\n' >&2
+printf 'ocv shim: ocv is not installed. Run: brew install leohenon/tap/ocv\n' >&2
 exit 127
