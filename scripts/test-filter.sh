@@ -71,6 +71,7 @@ list_groups() {
     echo "  subagents     - Claude Code subagent files"
     echo "  integrations  - Third-party provider integrations"
     echo "  opencode      - OpenCode project config, commands, agents, and plugins"
+    echo "  db-sandbox    - Agent database sandbox script, hooks, and plugin wiring"
     echo "  all           - Run all groups"
 }
 
@@ -81,7 +82,7 @@ test_fish() {
     run_test "Fish config.fish has no bare export statements" "! grep -qE '^[[:space:]]*export ' '$DOTFILES_ROOT/.config/fish/config.fish'"
 
     # Check key functions exist
-    for func in gwt-dev gwt-ticket gwt-parallel gwt-status devcon pihole tmux-main; do
+    for func in gwt-dev gwt-ticket gwt-parallel gwt-status devcon pihole tmux-main db; do
         run_test "Fish function $func exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/$func.fish' ]"
     done
 
@@ -146,6 +147,32 @@ test_fish() {
         "grep -A3 'tmux-main' '$DOTFILES_ROOT/.config/fish/config.fish' | grep -q 'if test .*status -eq 0'"
     run_test "tmux-main removes stale default socket before retry" \
         "grep -q 'socket_path' '$DOTFILES_ROOT/.config/fish/functions/tmux-main.fish' && grep -q 'rm -f \"' '$DOTFILES_ROOT/.config/fish/functions/tmux-main.fish' && grep -q 'tmux ls >/dev/null 2>&1' '$DOTFILES_ROOT/.config/fish/functions/tmux-main.fish'"
+}
+
+test_db_sandbox() {
+    echo -e "${BLUE}--- DB Sandbox Tests ---${NC}"
+
+    run_test "DB sandbox script exists" "[ -x '$DOTFILES_ROOT/scripts/db-sandbox.sh' ]"
+    run_test "DB sandbox script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/db-sandbox.sh'"
+    run_test "DB sandbox context command works" "'$DOTFILES_ROOT/scripts/db-sandbox.sh' context | grep -q ."
+    run_test "DB sandbox supports compose mode" "grep -q 'docker compose' '$DOTFILES_ROOT/scripts/db-sandbox.sh' && grep -q 'compose.override.yml' '$DOTFILES_ROOT/scripts/db-sandbox.sh'"
+    run_test "DB sandbox supports own sidecars" "grep -q 'docker run -d' '$DOTFILES_ROOT/scripts/db-sandbox.sh' && grep -q 'db-sandbox.context' '$DOTFILES_ROOT/scripts/db-sandbox.sh'"
+    run_test "DB sandbox generates env file" "grep -q 'DATABASE_URL' '$DOTFILES_ROOT/scripts/db-sandbox.sh' && grep -q 'REDIS_URL' '$DOTFILES_ROOT/scripts/db-sandbox.sh' && grep -q 'MYSQL_URL' '$DOTFILES_ROOT/scripts/db-sandbox.sh'"
+    run_test "DB sandbox uses port allocator" "grep -q 'port-allocator.sh' '$DOTFILES_ROOT/scripts/db-sandbox.sh' && grep -q 'PORT_SPARE_1' '$DOTFILES_ROOT/scripts/db-sandbox.sh'"
+    run_test "DB fish wrapper exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/db.fish' ]"
+    run_test "DB fish wrapper syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/db.fish'"
+    run_test "GWT DB wrapper exists" "[ -f '$DOTFILES_ROOT/.config/fish/functions/gwt-db.fish' ]"
+    run_test "GWT DB wrapper syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/functions/gwt-db.fish'"
+    run_test "Claude DB hook exists" "[ -x '$DOTFILES_ROOT/.claude/hooks/db-sandbox.sh' ]"
+    run_test "Claude DB hook syntax valid" "bash -n '$DOTFILES_ROOT/.claude/hooks/db-sandbox.sh'"
+    run_test "Claude SessionStart runs DB hook" "grep -q 'db-sandbox.sh' '$DOTFILES_ROOT/.claude/settings.json'"
+    run_test "OpenCode DB plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/db-sandbox.ts' ]"
+    run_test "OpenCode DB plugin compiles" "bun build '$DOTFILES_ROOT/.config/opencode/plugin/db-sandbox.ts' --outfile '/var/folders/6f/ql32_f2n2r1bm5xf1mn0nr000000gn/T/opencode/db-sandbox-test.js'"
+    run_test "OpenCode DB plugin configured" "jq -e '.plugin[] | select(. == \"./plugin/db-sandbox.ts\")' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode DB plugin injects env" "grep -q 'Object.assign(output.env' '$DOTFILES_ROOT/.config/opencode/plugin/db-sandbox.ts' && grep -q '.env.db' '$DOTFILES_ROOT/.config/opencode/plugin/db-sandbox.ts'"
+    run_test "OpenCode DB plugin gates auto start" "grep -q '.db-sandbox.toml' '$DOTFILES_ROOT/.config/opencode/plugin/db-sandbox.ts' && grep -q 'DB_SANDBOX' '$DOTFILES_ROOT/.config/opencode/plugin/db-sandbox.ts'"
+    run_test "GWT cleanup prunes DB sandboxes" "grep -q 'db-sandbox.sh.*prune' '$DOTFILES_ROOT/.config/fish/functions/gwt-cleanup.fish'"
+    run_test "CLAUDE.md documents DB sandbox" "grep -q 'DB Sandbox' '$DOTFILES_ROOT/CLAUDE.md' && grep -q 'DB_SANDBOX' '$DOTFILES_ROOT/CLAUDE.md'"
 }
 
 test_stow() {
@@ -1629,8 +1656,10 @@ merge-driver) bash "$SCRIPT_DIR/tests/test-merge-driver.sh" ;;
 openclaw) bash "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 integrations) test_integrations ;;
 opencode) test_opencode ;;
+db-sandbox) test_db_sandbox ;;
 all)
     test_fish
+    test_db_sandbox
     test_shell_parity
     test_stow
     test_claude

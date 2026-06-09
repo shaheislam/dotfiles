@@ -67,6 +67,7 @@
     "./plugin/opencode-with-claude.ts",
     "./plugin/harness-compat.ts",
     "./plugin/session-env.ts",
+    "./plugin/db-sandbox.ts",
     "./plugin/nvim-open.ts"
   ],
   "autoupdate": false,

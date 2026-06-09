@@ -91,6 +91,10 @@ function gwt-cleanup --description "Clean up stale worktree devcontainer instanc
         end
     end
 
+    if test -x "$HOME/dotfiles/scripts/db-sandbox.sh"
+        bash "$HOME/dotfiles/scripts/db-sandbox.sh" prune 2>/dev/null || true
+    end
+
     # Standalone reconcile: run session reconciliation and return
     if $do_reconcile; and not $do_prune
         set -l synth_script "$HOME/dotfiles/scripts/obsidian/session-synthesize.sh"

@@ -74,6 +74,7 @@
 | `gwt-parallel` | - | Launch multiple worktrees in tmux windows |
 | `gwt-status` | `gwts` | Show worktree + devcontainer status table |
 | `gwt-cleanup` | `gwtclean` | Remove stale devcontainer instances |
+| `db` | - | Manage per-project Postgres/Redis/MySQL sandboxes for agent testing |
 | `gwt-ticket` | `gwtt` | Autonomous ticket execution (worktree + OpenCode + nvim). OpenCode is default; use `--claude` for Claude Code fallback and `--bridge` for adversarial review |
 | `gwt-doctor` | `gwtdoc` | Agent orchestration health check (detects Claude + Codex) |
 | `codex-accounts` | - | Manage Codex CLI OAuth account profiles (`add`, `remove`, `list`, `status`, `1p-push`, `1p-pull`, `1p-list`, `1p-sync`) |
@@ -150,6 +151,9 @@ Browser automation uses targeted tools instead of a local browser daemon:
 Lifecycle hooks live in `.claude/hooks/` for Claude Code compatibility and are also reused by OpenCode through `.config/opencode/plugin/harness-compat.ts`. Details in `.claude/rules/hooks.md`, `docs/claude-code-hooks.md`, and `docs/opencode-hook-parity.md`.
 
 **Adding hooks**: Create executable in `.claude/hooks/` → wire Claude in `.claude/settings.json` and OpenCode in `.config/opencode/plugin/harness-compat.ts` when relevant → add tests → update docs.
+
+### DB Sandbox
+Host-native agent database testing uses `scripts/db-sandbox.sh` through the Fish `db` wrapper. `db up postgres,redis,mysql` starts an isolated sandbox for the current project context, using Docker Compose when a compose file declares matching DB services or own sidecars otherwise. State and generated env live under `~/.claude/db-sandbox/<context>/`; OpenCode injects `.env.db` through `.config/opencode/plugin/db-sandbox.ts`. Safe auto-start requires `DB_SANDBOX=postgres,redis` or a project `.db-sandbox.toml` with `engines = ["postgres", "redis"]`; otherwise agents only receive env when the sandbox already exists.
 
 **Settings Edit Workaround** ([#37029](https://github.com/anthropics/claude-code/issues/37029)): `--dangerously-skip-permissions` still prompts for edits to `~/.claude/settings*.json`. A PreToolUse hook (`settings-edit-redirect.py`) blocks Edit/Write on these files and redirects to `jq` via Bash. When modifying Claude settings, ALWAYS use Bash + jq instead of Edit.
 

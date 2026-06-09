@@ -297,6 +297,10 @@
             "type": "command"
           },
           {
+            "command": "bash ~/.claude/hooks/db-sandbox.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
             "command": "bash ~/.claude/hooks/plan-resume.sh 2>/dev/null || true",
             "type": "command"
           },
@@ -348,6 +352,10 @@
           },
           {
             "command": "bash ~/.claude/hooks/lsp-status.sh 2>/dev/null || true",
+            "type": "command"
+          },
+          {
+            "command": "bash ~/.claude/hooks/db-sandbox.sh 2>/dev/null || true",
             "type": "command"
           },
           {
