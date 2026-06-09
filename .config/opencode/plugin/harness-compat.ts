@@ -20,10 +20,8 @@ type ToolPayload = {
 
 const DOTFILES_ROOT = join(process.env.HOME || "", "dotfiles")
 const CLAUDE_HOOKS_DIR = join(DOTFILES_ROOT, ".claude", "hooks")
-const TMUX_HOOKS_DIR = join(DOTFILES_ROOT, "scripts", "tmux", "hooks")
 const DREAM_DIR = join(DOTFILES_ROOT, ".claude", "skills", "dream")
 const PLAN_WATCH_DEBOUNCE_MS = 5000
-const STARTUP_FAST_TIMEOUT_MS = 500
 const STARTUP_CONTEXT_TIMEOUT_MS = 2500
 const MAINTENANCE_TTL_MS = 24 * 60 * 60 * 1000
 const AUDIO_LOCK = join(process.env.XDG_STATE_HOME || join(process.env.HOME || "", ".local", "state"), "opencode", "audio.lock")
@@ -35,10 +33,6 @@ function normalizeMessage(text: string) {
 
 function hookPath(...parts: string[]) {
   return join(CLAUDE_HOOKS_DIR, ...parts)
-}
-
-function tmuxHookPath(name: string) {
-  return join(TMUX_HOOKS_DIR, name)
 }
 
 function dreamPath(name: string) {
@@ -695,7 +689,6 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
     shutdownHandled = true
 
-    runScriptSync(tmuxHookPath("tmux-agent-end.sh"))
     runCommandSync("bash", [join(projectDir, "scripts", "harness", "session-report.sh"), "--json"])
     runCommandSync("bash", [join(DOTFILES_ROOT, "scripts", "obsidian", "session-synthesize.sh"), "--cwd", projectDir])
     runCommandSync("bash", [join(DOTFILES_ROOT, "scripts", "opencode", "jfdi-shutdown-sync.sh")])
@@ -713,7 +706,6 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
 
     runScriptSync(hookPath("log-notification.sh"), payload)
     runScriptSync(hookPath("macos_notification.py"), payload)
-    runScriptSync(tmuxHookPath("tmux-agent-notify.sh"), payload)
   }
 
   function appendCompactContext(output: { context: string[] }, result: HookResult) {
@@ -745,7 +737,6 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
           messageSessionIDs.clear()
           messageOrder.length = 0
           lastBridgeReviewedAssistant = ""
-          await runScript(tmuxHookPath("tmux-agent-start.sh"), undefined, {}, STARTUP_FAST_TIMEOUT_MS)
           void collectSessionStartContext().catch(() => {})
           break
         }
@@ -788,7 +779,6 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
           seenPromptMessages.add(part.messageID)
           const prompt = part.text ?? ""
           await Promise.all([
-            runScript(tmuxHookPath("tmux-agent-prompt.sh")),
             appendHookMessage(hookPath("nvim-bridge.sh"), {
               session_id: currentSessionID ?? undefined,
               tool_name: "UserPromptSubmit",
@@ -817,7 +807,6 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
         case "session.status": {
           const sessionID = (event.properties as { sessionID?: string }).sessionID ?? currentSessionID
           if (event.properties.status.type === "idle" && isPrimarySession(sessionID)) {
-            await runScript(tmuxHookPath("tmux-agent-stop.sh"))
             void playIdleBell()
             await runOpenCodeBridgeReview()
           }
