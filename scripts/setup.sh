@@ -19,6 +19,7 @@ MODE="${MODE:-auto}"
 DRY_RUN=false
 NO_CONFIRM=false
 VERBOSE=false
+AUDIT_APPS=false
 SKIP_PACKAGES=false
 SKIP_DOTFILES=false
 SKIP_SHELLS=false
@@ -47,6 +48,8 @@ OPTIONS:
     --dry-run                  Preview actions without executing
     --no-confirm               Skip confirmation prompts
     --verbose                  Show detailed output
+
+    --audit-apps               Report missing macOS Brewfile/manual apps and exit
 
     --skip-packages            Skip package installation
     --skip-dotfiles            Skip dotfiles symlinking
@@ -163,6 +166,10 @@ parse_args() {
             VERBOSE=true
             shift
             ;;
+        --audit-apps)
+            AUDIT_APPS=true
+            shift
+            ;;
         --skip-packages)
             SKIP_PACKAGES=true
             shift
@@ -218,7 +225,7 @@ parse_args() {
     fi
 
     # Export for child modules
-    export PROFILE DRY_RUN NO_CONFIRM VERBOSE SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
+    export PROFILE DRY_RUN NO_CONFIRM VERBOSE AUDIT_APPS SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
     export ENABLE_CLAUDE_CODE_BACKUP ENABLE_CLAUDE_HEAVY_SETUP
     export DOTFILES_ROOT SCRIPT_DIR
 }
@@ -235,6 +242,10 @@ load_modules() {
     # Load package manager
     # shellcheck source=./lib/package-manager.sh
     source "$SCRIPT_DIR/lib/package-manager.sh"
+
+    # Load macOS app audit helpers
+    # shellcheck source=./lib/app-audit.sh
+    source "$SCRIPT_DIR/lib/app-audit.sh"
 
     # Load other modules
     # shellcheck source=./lib/binary-installer.sh
@@ -1960,22 +1971,17 @@ phase_9_fonts_and_apps() {
             echo "  Then: cp /tmp/my-fonts/DankMono\\ Nerd\\ Font/*.otf ~/Library/Fonts/"
         fi
 
-        # Install GUI Applications (batch — single brew invocation)
+        # Install GUI Applications from the Brewfile (batch — single brew invocation)
         print_step "Installing GUI Applications..."
-        local gui_apps=(
-            "firefox"
-            "fluidvoice"
-            "raycast"
-            "wezterm"
-            "nikitabobko/tap/aerospace"
-            "amazon-q"
-            "ngrok"
-            "altair-graphql-client"
-        )
+        local gui_apps=()
         local apps_to_install=()
+        while IFS= read -r app; do
+            [[ -n "$app" ]] && gui_apps+=("$app")
+        done < <(brewfile_gui_casks "$DOTFILES_ROOT/homebrew/Brewfile")
+
         for app in "${gui_apps[@]}"; do
             local app_name="${app##*/}"
-            if pm_is_installed "$app_name"; then
+            if brewfile_cask_installed "$app"; then
                 print_success "$app_name already installed"
             else
                 apps_to_install+=("$app")
@@ -2808,6 +2814,12 @@ main() {
     local start_time=$SECONDS
     parse_args "$@"
     load_modules
+
+    if [[ "$AUDIT_APPS" == "true" ]]; then
+        print_missing_apps_report "$DOTFILES_ROOT/homebrew/Brewfile"
+        exit 0
+    fi
+
     preflight_checks
     show_summary
 
@@ -2845,6 +2857,8 @@ main() {
     phase_10_advanced_features
 
     phase_11_optional_features
+
+    print_missing_apps_report "$DOTFILES_ROOT/homebrew/Brewfile"
 
     # Ensure Homebrew background auto-updates are configured (runs every time, not gated by phase)
     if command_exists brew && brew tap | grep -q "domt4/autoupdate" 2>/dev/null; then

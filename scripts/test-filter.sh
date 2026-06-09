@@ -256,6 +256,7 @@ test_pi() {
 test_setup_syntax() {
     echo -e "${BLUE}--- Setup Script Syntax Tests ---${NC}"
     run_test "setup.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "app-audit.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/lib/app-audit.sh'"
     run_test "smoke-test.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/smoke-test.sh'"
     run_test "firefox-setup.sh syntax valid" "bash -n '$DOTFILES_ROOT/scripts/setup/firefox-setup.sh'"
     run_test "firefox-capture-prefs.py syntax valid" "python3 -m py_compile '$DOTFILES_ROOT/scripts/setup/firefox-capture-prefs.py'"
@@ -282,6 +283,11 @@ test_brewfile() {
         DUPES=$(grep -E '^(brew|cask|mas) ' "$DOTFILES_ROOT/homebrew/Brewfile" | sort | uniq -d | wc -l | tr -d ' ')
         run_test "No duplicate Brewfile entries" "[ '$DUPES' -eq 0 ]"
     fi
+
+    run_test "app audit extracts Firefox cask" "bash -c 'source \"$DOTFILES_ROOT/scripts/lib/app-audit.sh\"; brewfile_casks \"$DOTFILES_ROOT/homebrew/Brewfile\" | grep -qx firefox'"
+    run_test "app audit extracts FluidVoice cask" "bash -c 'source \"$DOTFILES_ROOT/scripts/lib/app-audit.sh\"; brewfile_casks \"$DOTFILES_ROOT/homebrew/Brewfile\" | grep -qx fluidvoice'"
+    run_test "app audit extracts MAS app" "bash -c 'source \"$DOTFILES_ROOT/scripts/lib/app-audit.sh\"; brewfile_mas_apps \"$DOTFILES_ROOT/homebrew/Brewfile\" | grep -q 1552826194'"
+    run_test "app audit excludes font casks from GUI install list" "bash -c 'source \"$DOTFILES_ROOT/scripts/lib/app-audit.sh\"; ! brewfile_gui_casks \"$DOTFILES_ROOT/homebrew/Brewfile\" | grep -q font-'"
 }
 
 test_mcp() {
@@ -331,7 +337,7 @@ test_browser() {
     run_test "setup.sh configures Playwright MCP" "grep -q 'claude mcp add --scope user playwright bunx @playwright/mcp@latest' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh omits agent-browser" "! grep -q 'agent-browser install' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "Brewfile installs Firefox" "grep -q 'cask \"firefox\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
-    run_test "setup.sh installs Firefox GUI app" "grep -q '\"firefox\"' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs GUI apps from Brewfile" "grep -q 'brewfile_gui_casks' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh invokes Firefox setup" "grep -q 'firefox-setup.sh' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "Firefox setup helper exists" "[ -f '$DOTFILES_ROOT/scripts/setup/firefox-setup.sh' ]"
     run_test "Firefox setup helper self-test passes" "bash '$DOTFILES_ROOT/scripts/setup/firefox-setup.sh' --self-test"
@@ -348,7 +354,7 @@ test_browser() {
     run_test "Firefox setup exposes pref capture" "grep -q -- '--capture-current-prefs' '$DOTFILES_ROOT/scripts/setup/firefox-setup.sh'"
     run_test "Firefox setup exposes tab discard recommendation" "grep -q -- '--recommend-tab-discard-policy' '$DOTFILES_ROOT/scripts/setup/firefox-setup.sh'"
     run_test "Brewfile installs FluidVoice" "grep -q 'cask \"fluidvoice\"' '$DOTFILES_ROOT/homebrew/Brewfile'"
-    run_test "setup.sh installs FluidVoice GUI app" "grep -q '\"fluidvoice\"' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh installs FluidVoice from Brewfile casks" "grep -q 'brewfile_gui_casks' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "setup.sh invokes FluidVoice setup" "grep -q 'fluidvoice-setup.sh' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "FluidVoice config source exists" "[ -f '$DOTFILES_ROOT/.config/fluidvoice/config.json' ]"
     run_test "FluidVoice config source is valid JSON" "python3 -c \"import json; json.load(open('$DOTFILES_ROOT/.config/fluidvoice/config.json'))\""
