@@ -16,6 +16,9 @@
         "claude-opus-4-6": {
           "name": "Claude Opus 4.6"
         },
+        "claude-opus-4-8": {
+          "name": "Claude Opus 4.8"
+        },
         "claude-sonnet-4-6": {
           "name": "Claude Sonnet 4.6"
         },
@@ -71,6 +74,10 @@
   },
   "lsp": true,
   "agent": {
+    "plan": {
+      "mode": "primary",
+      "model": "anthropic/claude-opus-4-8"
+    },
     "precise": {
       "description": "Low-temperature deterministic reasoning for correctness-critical work",
       "mode": "primary",

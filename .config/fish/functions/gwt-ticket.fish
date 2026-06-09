@@ -2439,9 +2439,8 @@ Use \`.claude/hooks/changelog-append.sh <type> \"message\"\` to append structure
         set -a nvim_ai_files "$changelog_file"
     end
 
-    # Common nvim launch flags: suppress messages + auto-reload timer for plan.md
-    # Timer: 2s delay to let buffers load, then checktime every 5s for on-disk changes
-    set -l nvim_base_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10' --cmd 'lua vim.defer_fn(function() local t = vim.uv.new_timer() t:start(5000, 5000, vim.schedule_wrap(function() pcall(vim.cmd, \"checktime\") end)) end, 2000)'"
+    # Common nvim launch flags. Neovim's hotreload/autoread handles external file changes.
+    set -l nvim_base_cmd "nvim --cmd 'set shortmess=aoOtTIF' --cmd 'set cmdheight=10'"
     set -l nvim_cmd "$nvim_base_cmd"
     if test (count $nvim_ai_files) -gt 0
         set nvim_cmd "$nvim_cmd $nvim_ai_files"
