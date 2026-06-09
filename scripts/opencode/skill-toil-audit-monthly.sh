@@ -4,6 +4,8 @@ set -euo pipefail
 
 DOTFILES_ROOT="${DOTFILES_ROOT:-$HOME/dotfiles}"
 AUDIT_SCRIPT="$DOTFILES_ROOT/scripts/opencode/skill-toil-audit.py"
+STATS_SCRIPT="$DOTFILES_ROOT/scripts/opencode/skill-stats.py"
+STATS_DB="${SKILL_STATS_DB:-${XDG_STATE_HOME:-$HOME/.local/state}/agent-skills/skill-stats.sqlite}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/skill-toil-audit"
 LOG_DIR="$STATE_DIR"
 LOCAL_MARKER="$STATE_DIR/last-run-month"
@@ -20,7 +22,9 @@ usage() {
     cat <<EOF
 Usage: skill-toil-audit-monthly.sh [--force] [--no-tmux] [--dry-run]
 
-Runs scripts/opencode/skill-toil-audit.py with low-impact monthly defaults:
+Rebuilds the privacy-safe skill stats SQLite index, then runs
+scripts/opencode/skill-toil-audit.py with low-impact monthly defaults:
+  skill-stats.py rebuild-index --days 90
   --days 30 --min-count 3 --limit 20
 
 The local guard is per-device and lives at:
@@ -106,13 +110,21 @@ run_audit() {
     report="$(report_path)"
 
     if [[ "$DRY_RUN" == true ]]; then
+        printf 'DRY RUN: would rebuild skill stats DB %s\n' "$STATS_DB"
         printf 'DRY RUN: would write report to %s\n' "$report"
         printf 'DRY RUN: would update marker %s to %s\n' "$LOCAL_MARKER" "$MONTH"
         return 0
     fi
 
+    python3 "$STATS_SCRIPT" --db "$STATS_DB" rebuild-index --days 90
     python3 "$AUDIT_SCRIPT" --days 30 --min-count 3 --limit 20 --save "$report"
     printf '%s\n' "$MONTH" >"$LOCAL_MARKER"
+    printf '\nSkill stats DB rebuilt: %s\n' "$STATS_DB"
+    printf '\nTop skills, 30d:\n'
+    python3 "$STATS_SCRIPT" --db "$STATS_DB" top --days 30 --limit 10
+    printf '\nUnused skills, 90d:\n'
+    python3 "$STATS_SCRIPT" --db "$STATS_DB" unused --days 90 --limit 10
+    printf '\nSkill evolution review branch: skill-evolve/%s\n' "$MONTH"
     printf '\nReport written: %s\n' "$report"
     printf 'Monthly marker updated: %s\n' "$LOCAL_MARKER"
 }
@@ -128,6 +140,11 @@ main() {
 
     if [[ ! -f "$AUDIT_SCRIPT" ]]; then
         printf 'Audit script not found: %s\n' "$AUDIT_SCRIPT" >&2
+        return 1
+    fi
+
+    if [[ ! -f "$STATS_SCRIPT" ]]; then
+        printf 'Stats script not found: %s\n' "$STATS_SCRIPT" >&2
         return 1
     fi
 

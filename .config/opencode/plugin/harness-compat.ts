@@ -776,6 +776,10 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
         await appendHookMessage(hookPath("deepwiki-context.py"), payload)
       }
 
+      if (tool === "skill") {
+        await runScript(hookPath("log-skill-invocation.py"), payload, { SKILL_INVOCATION_HARNESS: "opencode" })
+      }
+
       if (isWriteTool(tool)) {
         await appendHookMessage(hookPath("auto-format.py"), payload)
         await appendHookMessage(hookPath("file-modified.sh"), payload)

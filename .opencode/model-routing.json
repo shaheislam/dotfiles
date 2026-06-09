@@ -2,7 +2,7 @@
   "$comment": "Task-to-model routing presets. Used by OpenCode commands to select the right model for the job.",
   "presets": {
     "plan": {
-      "model": "anthropic/claude-opus-4-7",
+      "model": "anthropic/claude-opus-4-8",
       "description": "Architecture, design, and implementation planning"
     },
     "review": {

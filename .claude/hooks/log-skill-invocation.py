@@ -46,6 +46,31 @@ def prompt_from_payload(payload: dict[str, Any]) -> str:
     return ""
 
 
+def tool_skill_from_payload(payload: dict[str, Any], known_skills: set[str]) -> tuple[str, str] | None:
+    tool_name = payload.get("tool_name") or payload.get("name")
+    tool_input = payload.get("tool_input")
+    if not isinstance(tool_input, dict):
+        tool_input = payload.get("input")
+    if not isinstance(tool_input, dict):
+        return None
+
+    candidates = [
+        tool_input.get("skill"),
+        tool_input.get("skill_name"),
+        tool_input.get("name"),
+        payload.get("skill"),
+    ]
+    for candidate in candidates:
+        if isinstance(candidate, str) and candidate in known_skills:
+            return candidate, str(tool_name or "skill")
+    if isinstance(tool_name, str) and tool_name.lower() in {"skill", "loadskill", "load_skill"}:
+        prompt = prompt_from_payload(payload)
+        matches = invoked_skills(prompt, known_skills)
+        if matches:
+            return matches[0], tool_name
+    return None
+
+
 def prompt_hash(prompt: str) -> str:
     normalized = re.sub(r"\s+", " ", prompt.strip().lower())
     return hashlib.sha1(normalized.encode("utf-8")).hexdigest()[:16]
@@ -79,23 +104,45 @@ def build_parser() -> argparse.ArgumentParser:
 
 def run(payload: dict[str, Any], harness: str, log_path: Path, root: Path) -> int:
     prompt = prompt_from_payload(payload)
-    skills = invoked_skills(prompt, canonical_skills(root))
-    if not skills:
+    known_skills = canonical_skills(root)
+    slash_matches = invoked_skills(prompt, known_skills)
+    tool_match = tool_skill_from_payload(payload, known_skills)
+    if not slash_matches and not tool_match:
         return 0
 
     now = dt.datetime.now(dt.timezone.utc).isoformat()
     entries = []
-    for skill in skills:
+    for skill in slash_matches:
         entries.append(
             {
                 "timestamp": now,
                 "harness": harness,
                 "skill": skill,
+                "source": "slash",
                 "session_id": payload.get("session_id"),
+                "message_id": payload.get("message_id"),
+                "transcript_src": payload.get("transcript_src"),
                 "cwd": payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR"),
                 "prompt_hash": prompt_hash(prompt),
             }
         )
+    if tool_match:
+        skill, tool_name = tool_match
+        if skill not in slash_matches:
+            entries.append(
+                {
+                    "timestamp": now,
+                    "harness": harness,
+                    "skill": skill,
+                    "source": "tool",
+                    "tool_name": tool_name,
+                    "session_id": payload.get("session_id"),
+                    "message_id": payload.get("message_id"),
+                    "transcript_src": payload.get("transcript_src"),
+                    "cwd": payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR"),
+                    "prompt_hash": prompt_hash(prompt),
+                }
+            )
     write_jsonl(log_path, entries)
     return len(entries)
 
@@ -113,7 +160,11 @@ def self_test() -> None:
         assert run(payload, "test", log_path, root) == 1
         data = log_path.read_text(encoding="utf-8")
         assert "skill-toil-audit" in data
+        assert '"source":"slash"' in data
         assert "token=secret" not in data
+        tool_payload = {"tool_name": "Skill", "tool_input": {"skill": "skill-toil-audit"}, "session_id": "s1"}
+        assert run(tool_payload, "test", log_path, root) == 1
+        assert '"source":"tool"' in log_path.read_text(encoding="utf-8")
 
 
 def main() -> int:

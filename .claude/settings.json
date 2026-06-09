@@ -231,6 +231,15 @@
           }
         ],
         "matcher": "Edit|Write|MultiEdit|ApplyPatch"
+      },
+      {
+        "hooks": [
+          {
+            "command": "bash ~/dotfiles/scripts/hook-run.sh 5 python3 ~/.claude/hooks/log-skill-invocation.py --harness claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "Skill"
       }
     ],
     "SessionEnd": [

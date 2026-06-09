@@ -37,12 +37,14 @@ python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --save ~/obsidian/Claude
 
 ## Skill Usage Tracking
 
-Explicit slash-skill invocations are tracked without storing prompt text:
+Explicit slash-skill and skill-tool invocations are tracked without storing prompt text:
 
 - Claude `UserPromptSubmit` runs `.claude/hooks/log-skill-invocation.py --harness claude`.
 - OpenCode's harness compatibility plugin runs the same hook with `SKILL_INVOCATION_HARNESS=opencode`.
 - The hook appends JSONL to `~/.local/state/agent-skills/invocations.jsonl`.
-- Each record stores timestamp, harness, skill name, session id, cwd, and a prompt hash only.
+- Each record stores timestamp, harness, skill name, source (`slash` or `tool`), session id, cwd, transcript pointers when available, and a prompt hash only.
+- `scripts/opencode/skill-stats.py rebuild-index --days 90` rebuilds `~/.local/state/agent-skills/skill-stats.sqlite` from the JSONL log and read-only OpenCode history.
+- The SQLite index stores usage summaries, repeated prompt clusters, near-misses, and conservative `unclear` outcomes without raw prompt text.
 
 The audit combines that tracker with local OpenCode and Claude history to classify skills as `active`, `stale-review`, `candidate-merge`, `keep-safety-rare`, `keep-compatibility-wrapper`, or `needs-better-trigger-description`.
 
@@ -51,12 +53,15 @@ The audit combines that tracker with local OpenCode and Claude history to classi
 `scripts/opencode/skill-toil-audit-monthly.sh` runs this audit with safe monthly defaults:
 
 ```bash
+python3 ~/dotfiles/scripts/opencode/skill-stats.py rebuild-index --days 90
 python3 ~/dotfiles/scripts/opencode/skill-toil-audit.py --days 30 --min-count 3 --limit 20
 ```
 
 The monthly wrapper:
 
 - Runs at most once per calendar month on each device using `~/.local/state/opencode/skill-toil-audit/last-run-month`.
+- Rebuilds `~/.local/state/agent-skills/skill-stats.sqlite` before writing the audit report.
+- Prints top 30-day skills, unused 90-day skills, and the `skill-evolve/YYYY-MM` review branch name in the tmux/log output.
 - Saves reports under `~/obsidian/Claude/Audit/skill-toil/<hostname>/` when Obsidian exists, otherwise under `~/.local/state/opencode/skill-toil-audit/reports/`.
 - Opens a `skill-toil-YYYY-MM` tmux window when a tmux server is already running.
 - Runs headlessly and writes logs/reports when tmux is not available.

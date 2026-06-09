@@ -25,6 +25,7 @@ SKIP_SHELLS=false
 SKIP_FONTS_APPS=false
 ENABLE_CLAUDE_CODE_BACKUP="${ENABLE_CLAUDE_CODE_BACKUP:-true}"
 ENABLE_CLAUDE_HEAVY_SETUP="${ENABLE_CLAUDE_HEAVY_SETUP:-false}"
+MERIDIAN_PACKAGE_SPEC="${MERIDIAN_PACKAGE_SPEC:-@rynfar/meridian@1.42.1}"
 
 # ============================================================================
 # Help
@@ -1102,6 +1103,12 @@ phase_4_cloud_tools() {
             bun add -g opencode-with-claude@latest >/dev/null 2>&1 &&
                 print_success "opencode-with-claude installed" ||
                 print_warning "Failed to install opencode-with-claude"
+            bun add -g "$MERIDIAN_PACKAGE_SPEC" >/dev/null 2>&1 &&
+                print_success "Meridian installed from $MERIDIAN_PACKAGE_SPEC" ||
+                print_warning "Failed to install Meridian from $MERIDIAN_PACKAGE_SPEC"
+            node "$DOTFILES_ROOT/scripts/opencode/patch-meridian-opus-4-8.js" >/dev/null 2>&1 &&
+                print_success "Meridian patched for Claude Opus 4.8 support" ||
+                print_warning "Failed to patch Meridian for Claude Opus 4.8 support"
             if [ -f "$HOME/.npmrc.setup-bak" ]; then
                 mv "$HOME/.npmrc.setup-bak" "$HOME/.npmrc"
             elif $npmrc_was_missing && [ -f "$HOME/.npmrc" ]; then
