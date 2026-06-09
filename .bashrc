@@ -1,15 +1,10 @@
 # ~/.bashrc - Bash configuration managed by dotfiles
 # Symlinked via GNU Stow
 
-# PATH Configuration (mirrors Fish and Zsh)
-export PATH="/opt/homebrew/bin:$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
-export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-export PATH="$HOME/.bun/bin:$PATH"
-export PATH="$HOME/.cargo/bin:$PATH"
-export PATH="$HOME/.rd/bin:$PATH"
-export PATH="$HOME/dotfiles/scripts/bin:$PATH"
-export PATH="$HOME/.nix-profile/bin:$PATH"
-export PATH="$HOME/.claude/local/node_modules/.bin:$PATH"
+# Shared PATH/env substrate (mirrors Fish and Zsh script-facing behavior)
+if [ -f "$HOME/.config/shell/env.sh" ]; then
+  . "$HOME/.config/shell/env.sh"
+fi
 
 # Prompt - Starship (consistent with Fish and Zsh)
 if command -v starship &> /dev/null; then
@@ -62,13 +57,6 @@ if command -v fzf &> /dev/null; then
   eval "$(fzf --bash)"
 fi
 
-# BAT_PAGING fix (prevents FZF preview errors)
-export BAT_PAGING="auto"
-
-# Editor Configuration
-export EDITOR="nvim"
-export VISUAL="nvim"
-
 # Basic Aliases (add more as needed)
 alias ls='ls --color=auto'
 alias ll='ls -lah'
@@ -83,5 +71,6 @@ export HISTCONTROL=ignoredups:erasedups
 shopt -s histappend
 
 # Added by sonarqube-cli installer
-export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
-. "$HOME/.cargo/env"
+if [ -f "$HOME/.cargo/env" ]; then
+  . "$HOME/.cargo/env"
+fi

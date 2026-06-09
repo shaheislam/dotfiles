@@ -48,6 +48,7 @@ run_test() {
 list_groups() {
     echo "Available test groups:"
     echo "  fish          - Fish shell configuration and functions"
+    echo "  shell-parity  - Shared Bash/Zsh/Fish PATH and env parity"
     echo "  stow          - GNU Stow compatibility"
     echo "  claude        - Claude Code configuration files"
     echo "  gemini        - Gemini CLI docs, setup wiring, and package checks"
@@ -154,6 +155,30 @@ test_stow() {
     run_test "Stow ignores README" "grep -q 'README' '$DOTFILES_ROOT/.stow-local-ignore'"
     run_test "No tmux.conf in .config/tmux" "[ ! -f '$DOTFILES_ROOT/.config/tmux/tmux.conf' ]"
     run_test "tmux.conf at repo root" "[ -f '$DOTFILES_ROOT/.tmux.conf' ]"
+}
+
+test_shell_parity() {
+    echo -e "${BLUE}--- Shell Parity Tests ---${NC}"
+    run_test "Shared shell env exists" "[ -f '$DOTFILES_ROOT/.config/shell/env.sh' ]"
+    run_test "Shared paths list exists" "[ -f '$DOTFILES_ROOT/.config/shell/paths.list' ]"
+    run_test "Shared env has valid Bash syntax" "bash -n '$DOTFILES_ROOT/.config/shell/env.sh'"
+    run_test "Shared env is POSIX-sourceable" "env -i HOME='$HOME' PATH='/usr/bin:/bin' DOTFILES_HOME='$DOTFILES_ROOT' sh -c \". '$DOTFILES_ROOT/.config/shell/env.sh'; test \\\"\\\$EDITOR\\\" = nvim\""
+    run_test "Bash sources shared env" "grep -q '.config/shell/env.sh' '$DOTFILES_ROOT/.bashrc'"
+    run_test "Zsh sources shared env" "grep -q '.config/shell/env.sh' '$DOTFILES_ROOT/.zshrc'"
+    run_test "Fish reads shared paths list" "grep -q '.config/shell/paths.list' '$DOTFILES_ROOT/.config/fish/paths.fish'"
+    run_test "Bash resolves shared script path" "DOTFILES_HOME='$DOTFILES_ROOT' HOME='$HOME' bash -c \". '$DOTFILES_ROOT/.config/shell/env.sh'; command -v gwt-ticket\""
+    run_test "Zsh resolves shared script path" "DOTFILES_HOME='$DOTFILES_ROOT' HOME='$HOME' zsh -c \"source '$DOTFILES_ROOT/.config/shell/env.sh'; command -v gwt-ticket\""
+    run_test "Bash preserves core system PATH entries" "DOTFILES_HOME='$DOTFILES_ROOT' HOME='$HOME' PATH='/usr/bin:/bin:/usr/sbin:/sbin' bash -c \". '$DOTFILES_ROOT/.config/shell/env.sh'; command -v mkdir >/dev/null && command -v cat >/dev/null && command -v ls >/dev/null\""
+    run_test "Zsh preserves core system PATH entries" "DOTFILES_HOME='$DOTFILES_ROOT' HOME='$HOME' PATH='/usr/bin:/bin:/usr/sbin:/sbin' zsh -c \"source '$DOTFILES_ROOT/.config/shell/env.sh'; command -v mkdir >/dev/null && command -v cat >/dev/null && command -v ls >/dev/null\""
+    if command -v fish &>/dev/null; then
+        run_test "Fish shared env syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/conf.d/00-env.fish'"
+        run_test "Fish paths syntax valid" "fish -n '$DOTFILES_ROOT/.config/fish/paths.fish'"
+        run_test "Fish resolves shared script path" "DOTFILES_HOME='$DOTFILES_ROOT' fish -c 'source $DOTFILES_ROOT/.config/fish/conf.d/00-env.fish; source $DOTFILES_ROOT/.config/fish/paths.fish; command -q gwt-ticket'"
+    fi
+    for shim in gwt-ticket gwt-dev gwt-claude aws-sso; do
+        run_test "Executable shim exists: $shim" "[ -x '$DOTFILES_ROOT/scripts/bin/$shim' ]"
+        run_test "Executable shim syntax valid: $shim" "bash -n '$DOTFILES_ROOT/scripts/bin/$shim'"
+    done
 }
 
 test_claude() {
@@ -1566,6 +1591,7 @@ case "$GROUP" in
     exit 0
     ;;
 fish) test_fish ;;
+shell-parity) test_shell_parity ;;
 stow) test_stow ;;
 claude) test_claude ;;
 gemini) test_gemini ;;
@@ -1591,6 +1617,7 @@ integrations) test_integrations ;;
 opencode) test_opencode ;;
 all)
     test_fish
+    test_shell_parity
     test_stow
     test_claude
     test_gemini

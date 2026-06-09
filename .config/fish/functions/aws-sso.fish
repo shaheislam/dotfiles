@@ -1,6 +1,14 @@
 function aws-sso --description "Authenticate with AWS SSO with fzf profile selection"
     set -l profile $argv[1]
 
+    if test "$profile" = --help; or test "$profile" = -h
+        echo "Usage: aws-sso [profile]"
+        echo ""
+        echo "Authenticate with AWS SSO and export credentials for the selected profile."
+        echo "If no profile is provided, choose one with fzf."
+        return 0
+    end
+
     if test -z "$profile"
         # Use fzf to select profile
         set -l profiles (aws configure list-profiles 2>/dev/null)

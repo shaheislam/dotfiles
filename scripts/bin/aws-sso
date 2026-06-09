@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  --help|-h)
+    cat <<'EOF'
+Usage: aws-sso [profile]
+
+Authenticate with AWS SSO and export credentials for the selected profile.
+If no profile is provided, choose one with fzf.
+EOF
+    exit 0
+    ;;
+esac
+
+exec fish -c 'source ~/.config/fish/functions/aws-sso.fish; aws-sso $argv' -- "$@"

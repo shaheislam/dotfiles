@@ -7,6 +7,11 @@ if [[ -o interactive && -n "${WEZTERM_PANE:-}" && "${SHLVL:-1}" -le 1 && -x /opt
   exec /opt/homebrew/bin/fish -l
 fi
 
+# Shared PATH/env substrate (mirrors Fish and Bash script-facing behavior)
+if [[ -f "$HOME/.config/shell/env.sh" ]]; then
+  source "$HOME/.config/shell/env.sh"
+fi
+
 # Enable Powerlevel10k instant prompt (or starship)
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k/.p10k-instant-prompt-${(%):-%n}.zsh"
@@ -61,18 +66,7 @@ if [ -f "$ZSH/oh-my-zsh.sh" ]; then
   source "$ZSH/oh-my-zsh.sh"
 fi
 
-# Paths
-export PATH="$HOME/.local/bin:$HOME/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
-
-# Homebrew auto-update: run `brew update` at most once per day when using any brew command
-export HOMEBREW_AUTO_UPDATE_SECS=86400
-export PATH="$HOME/Library/Python/3.9/bin:$PATH"
-export PATH="$HOME/.bun/bin:$PATH"
-export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
-export PATH="$HOME/dotfiles/scripts/bin:$PATH"
-export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
-
-# VSCode and Cursor PATH entries removed
+# VSCode and Cursor PATH entries are managed by ~/.config/shell/paths.list.
 
 # Initialize tools (using cached initialization for performance)
 command -v zoxide >/dev/null && _cache_tool_init zoxide "zoxide init zsh"
@@ -107,7 +101,7 @@ if [ -f "$HOME/fzf-git.sh/fzf-git.sh" ]; then
 fi
 
 # FZF configuration
-source <(fzf --zsh)
+command -v fzf >/dev/null && source <(fzf --zsh)
 
 # FZF theme - Tokyo Night
 fg="#c0caf5"
@@ -153,9 +147,6 @@ function dotsetup-fast() {
     "$HOME/dotfiles/scripts/setup.sh" --skip-packages --skip-fonts-apps "$@"
 }
 
-# bat theme
-export BAT_THEME="Catppuccin Mocha"
-
 # thefuck
 command -v thefuck >/dev/null && _cache_tool_init thefuck "thefuck --alias"
 
@@ -183,28 +174,4 @@ fi
 # Source powerlevel10k config if using it
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
-# Added by sonarqube-cli installer
-export PATH="$HOME/.local/share/sonarqube-cli/bin:$PATH"
-
-# Clean stale PATH entries inherited from launchers or optional tools. This only
-# removes entries that do not currently exist and preserves first-seen order.
-typeset -a _clean_path_entries _seen_path_entries
-for _path_entry in $path; do
-  if [[ -z "$_path_entry" || "$_path_entry" == /home/node/* || ! -d "$_path_entry" ]]; then
-    continue
-  fi
-  if (( ${_seen_path_entries[(Ie)$_path_entry]} == 0 )); then
-    _clean_path_entries+=("$_path_entry")
-    _seen_path_entries+=("$_path_entry")
-  fi
-done
-path=("${_clean_path_entries[@]}")
-export PATH
-unset _clean_path_entries _seen_path_entries _path_entry
-
-# OpenTelemetry observability (harness engineering)
-export CLAUDE_CODE_ENABLE_TELEMETRY=1
-export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4318"
-
-# Claude Code fullscreen rendering (research preview)
-export CLAUDE_CODE_NO_FLICKER=1
+# Shared telemetry and Claude Code defaults are exported by ~/.config/shell/env.sh.

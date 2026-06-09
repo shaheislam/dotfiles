@@ -4,6 +4,7 @@
 
 # Source test helpers
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/lib/test-helpers.sh"
 
 print_header "Cross-Platform Abstraction Tests"
@@ -41,13 +42,15 @@ run_test "Fish config uses clipboard abstraction" \
 # ============================================
 print_subheader "2. PATH Management"
 
-# Test Zsh has OS-aware paths
-run_test "Zsh has OS detection for paths" \
-    "grep -q 'if \[\[ \"\$(uname -s)\" == \"Darwin\" \]\]' $HOME/.zshrc"
+# Test shells load the shared OS-aware path substrate
+run_test "Zsh sources shared shell env" \
+    "grep -q '.config/shell/env.sh' $REPO_ROOT/.zshrc"
 
-# Test Fish has OS-aware paths
-run_test "Fish paths.fish has OS detection" \
-    "grep -q 'if test (uname -s) = \"Darwin\"' $HOME/.config/fish/paths.fish"
+run_test "Shared shell env has OS detection for paths" \
+    "grep -q 'uname -s' $REPO_ROOT/.config/shell/env.sh"
+
+run_test "Fish reads shared paths list" \
+    "grep -q '.config/shell/paths.list' $REPO_ROOT/.config/fish/paths.fish"
 
 # Test Zsh PATH includes correct OS paths
 if is_macos; then
@@ -203,13 +206,12 @@ fi
 # ============================================
 print_subheader "7. Python Environment"
 
-# Test Fish paths.fish has Python paths
+# Test shells have OS-aware Python paths through shared and Fish-specific env
 run_test "Fish has OS-aware Python paths" \
-    "grep -q 'if test (uname -s) = \"Darwin\"' $HOME/.config/fish/paths.fish && grep -q 'Library/Python' $HOME/.config/fish/paths.fish"
+    "grep -q 'status buildinfo' $REPO_ROOT/.config/fish/paths.fish && grep -q 'PYTHONPATH' $REPO_ROOT/.config/fish/paths.fish"
 
-# Test Zsh has Python paths
 run_test "Zsh has OS-aware Python paths" \
-    "grep -q 'PATH.*Python' $HOME/.zshrc || grep -q 'PYTHONPATH' $HOME/.config/fish/paths.fish"
+    "grep -q 'PYTHONPATH' $REPO_ROOT/.config/shell/env.sh"
 
 # Test Python PATH is set correctly
 if is_macos; then
@@ -271,9 +273,9 @@ fi
 # ============================================
 print_subheader "10. npm Installation (Codex CLI)"
 
-# Test setup script has npm fallback for Linux
-run_test "Setup script has npm user-local fallback" \
-    "grep -q 'npm install --prefix' $HOME/dotfiles/scripts/setup.sh"
+# Test Codex install follows repo policy: bun avoids npm global shadowing
+run_test "Setup script installs Codex with bun" \
+    "grep -q 'bun install -g @openai/codex' $REPO_ROOT/scripts/setup.sh"
 
 # Test npm is available
 run_test_warn "npm is available" \
