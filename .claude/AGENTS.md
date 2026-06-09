@@ -8,6 +8,7 @@ Specialized agent system for Claude Code with domain, project-specific, and comp
 - Do not suggest `unset` for interactive shell usage; use `set -e VAR` in Fish.
 - `env -u VAR command` is acceptable for one-off commands started from Fish.
 - If an example requires Bash or Zsh syntax, label it explicitly.
+- Structural code queries: use `sg` from ast-grep for AST-aware search/rewrite when regex text search is too noisy and LSP symbol lookup is not the right shape.
 
 ## Overview
 

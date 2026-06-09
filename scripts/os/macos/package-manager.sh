@@ -174,7 +174,7 @@ pm_map_package_name() {
     development-tools) echo "" ;;
 
     # CLI tools - most have same names
-    ripgrep | fd | fzf | bat | jq | htop | curl | wget | git | stow | tmux) echo "$generic" ;;
+    ripgrep | ast-grep | fd | fzf | bat | jq | htop | curl | wget | git | stow | tmux) echo "$generic" ;;
 
     # Modern CLI tools
     eza) echo "eza" ;;

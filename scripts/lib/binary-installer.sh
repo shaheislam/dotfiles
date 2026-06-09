@@ -65,6 +65,11 @@ get_binary_download_url() {
         [[ -z "$latest_tag" ]] && return 1
         echo "https://github.com/BurntSushi/ripgrep/releases/download/${latest_tag}/ripgrep-${latest_tag}-${arch_suffix}.tar.gz"
         ;;
+    ast-grep)
+        latest_tag=$(get_latest_release_tag "ast-grep/ast-grep") || return 1
+        [[ -z "$latest_tag" ]] && return 1
+        echo "https://github.com/ast-grep/ast-grep/releases/download/${latest_tag}/app-${arch_suffix}.zip"
+        ;;
     fd)
         latest_tag=$(get_latest_release_tag "sharkdp/fd") || return 1
         [[ -z "$latest_tag" ]] && return 1
@@ -208,10 +213,15 @@ get_binary_download_url() {
 install_binary() {
     local tool=$1
     local install_dir="${2:-$HOME/.local/bin}"
+    local executable=$tool
+
+    case "$tool" in
+    ast-grep) executable="sg" ;;
+    esac
 
     # Check if already installed
-    if command_exists "$tool"; then
-        log_verbose "$tool already installed"
+    if command_exists "$executable"; then
+        log_verbose "$executable already installed"
         return 0
     fi
 
@@ -236,36 +246,43 @@ install_binary() {
     temp_dir=$(mktemp -d)
     trap 'rm -rf "$temp_dir"' RETURN
 
+    local archive="$temp_dir/archive.tar.gz"
+    case "$url" in
+    *.zip) archive="$temp_dir/archive.zip" ;;
+    *.tar.bz2 | *.tbz2) archive="$temp_dir/archive.tar.bz2" ;;
+    *.tar.xz | *.txz) archive="$temp_dir/archive.tar.xz" ;;
+    esac
+
     # Download and extract
-    if ! download_file "$url" "$temp_dir/archive.tar.gz"; then
+    if ! download_file "$url" "$archive"; then
         print_warning "Failed to download $tool"
         return 1
     fi
 
     # Extract
     mkdir -p "$temp_dir/extracted"
-    if ! extract_archive "$temp_dir/archive.tar.gz" "$temp_dir/extracted"; then
+    if ! extract_archive "$archive" "$temp_dir/extracted"; then
         print_warning "Failed to extract $tool"
         return 1
     fi
 
     # Find and install binary
     local binary
-    binary=$(find "$temp_dir/extracted" -type f -name "$tool" \( -perm -u+x -o -perm -g+x -o -perm -o+x \) | head -1)
+    binary=$(find "$temp_dir/extracted" -type f -name "$executable" \( -perm -u+x -o -perm -g+x -o -perm -o+x \) | head -1)
 
     if [[ -z "$binary" ]]; then
         # Try common patterns
-        binary=$(find "$temp_dir/extracted" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) | grep -E "/$tool$|/${tool}-[^/]+$" | head -1)
+        binary=$(find "$temp_dir/extracted" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) | grep -E "/$executable$|/${executable}-[^/]+$" | head -1)
     fi
 
     if [[ -n "$binary" ]]; then
         mkdir -p "$install_dir"
-        cp "$binary" "$install_dir/$tool"
-        chmod +x "$install_dir/$tool"
-        print_success "Installed: $tool"
+        cp "$binary" "$install_dir/$executable"
+        chmod +x "$install_dir/$executable"
+        print_success "Installed: $executable"
         return 0
     else
-        print_warning "Binary not found in archive for $tool"
+        print_warning "Binary not found in archive for $tool ($executable)"
         return 1
     fi
 }
@@ -276,7 +293,7 @@ install_binaries_from_profile() {
     # All tools supported by get_binary_download_url()
     local binaries=(
         # Original modern CLI tools (ripgrep→rg and fd are in Brewfile)
-        "starship" "eza" "zoxide" "bat"
+        "starship" "eza" "zoxide" "bat" "ast-grep"
 
         # Additional modern CLI tools (bottom→btm is in Brewfile)
         "btop" "procs" "dust" "duf"

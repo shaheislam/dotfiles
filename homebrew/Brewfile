@@ -59,6 +59,7 @@ brew "kubie"
 brew "starship"
 brew "fzf"
 brew "ripgrep"
+brew "ast-grep"  # AST-aware structural search/rewrite; CLI executable is sg
 brew "neovim"
 brew "tree-sitter-cli"  # Required for nvim-treesitter
 brew "luarocks"  # For installing Lua dependencies (e.g., sqlite.lua for telescope-smart-history)
