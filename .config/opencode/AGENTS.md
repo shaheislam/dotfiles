@@ -13,6 +13,9 @@ Rules for `~/dotfiles/.config/opencode`.
 - Keep plugin and harness behavior aligned with Claude-compatible hooks when relevant.
 - Update docs when adding commands, agents, skills, or plugin behavior that agents need to know.
 - Prefer small changes to existing plugin files over adding parallel mechanisms.
+- OpenCode tmux status is event-driven through `plugin/harness-compat.ts`; `scripts/opencode/tmux-open.sh` only handles tmux setup, alternate-screen behavior, attach tracking, and cleanup.
+- The harness plays a macOS idle bell on primary-session `session.status: idle`; set `OPENCODE_BELL=0` to disable it or `OPENCODE_BELL_SOUND=/path/to/file.aiff` to override the sound.
+- Keep slash commands in `command/` short and low-context; avoid fragment expanders or large boilerplate unless usage data justifies the picker/context cost.
 
 ## Validation
 

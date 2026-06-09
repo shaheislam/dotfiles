@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import type { Plugin } from "@opencode-ai/plugin"
@@ -26,6 +26,8 @@ const PLAN_WATCH_DEBOUNCE_MS = 5000
 const STARTUP_FAST_TIMEOUT_MS = 500
 const STARTUP_CONTEXT_TIMEOUT_MS = 2500
 const MAINTENANCE_TTL_MS = 24 * 60 * 60 * 1000
+const AUDIO_LOCK = join(process.env.XDG_STATE_HOME || join(process.env.HOME || "", ".local", "state"), "opencode", "audio.lock")
+const DEFAULT_BELL_SOUND = "/System/Library/Sounds/Glass.aiff"
 
 function normalizeMessage(text: string) {
   return text.trim()
@@ -78,7 +80,9 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
   const transientContext: string[] = []
   const messageRoles = new Map<string, string>()
   const messageTexts = new Map<string, string>()
+  const messageSessionIDs = new Map<string, string>()
   const messageOrder: string[] = []
+  const sessionParentIDs = new Map<string, string | null>()
   const seenPromptMessages = new Set<string>()
   let currentSessionID: string | null = null
   let shutdownHandled = false
@@ -87,6 +91,7 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
   let currentOpenCodeModel = process.env.OPENCODE_PRIMARY_MODEL || process.env.OPENCODE_MODEL || ""
   let lastPlanWatchAt = 0
   let planWatchRunning: Promise<void> | null = null
+  let bellGeneration = 0
 
   function addSessionContext(text: string) {
     const normalized = normalizeMessage(text)
@@ -100,6 +105,12 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
     if (normalized) {
       transientContext.push(normalized)
     }
+  }
+
+  function isPrimarySession(sessionID?: string | null) {
+    if (!sessionID) return true
+    if (!sessionParentIDs.has(sessionID)) return true
+    return !sessionParentIDs.get(sessionID)
   }
 
   async function runScript(
@@ -188,6 +199,75 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
       if (timer) {
         clearTimeout(timer)
       }
+    }
+  }
+
+  function processIsAlive(pid: number) {
+    try {
+      process.kill(pid, 0)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  function acquireAudioLock() {
+    try {
+      mkdirSync(dirname(AUDIO_LOCK), { recursive: true })
+      writeFileSync(AUDIO_LOCK, String(process.pid), { flag: "wx" })
+      return true
+    } catch {
+      try {
+        const lockPid = Number.parseInt(readFileSync(AUDIO_LOCK, "utf8").trim(), 10)
+        if (Number.isFinite(lockPid) && processIsAlive(lockPid)) {
+          return false
+        }
+        writeFileSync(AUDIO_LOCK, String(process.pid))
+        return true
+      } catch {
+        return false
+      }
+    }
+  }
+
+  function releaseAudioLock() {
+    try {
+      const lockPid = Number.parseInt(readFileSync(AUDIO_LOCK, "utf8").trim(), 10)
+      if (lockPid === process.pid) {
+        unlinkSync(AUDIO_LOCK)
+      }
+    } catch {
+      // Best-effort cleanup only.
+    }
+  }
+
+  function afplayRunning() {
+    const proc = Bun.spawnSync(["pgrep", "-x", "afplay"], { stdout: "ignore", stderr: "ignore" })
+    return proc.exitCode === 0
+  }
+
+  async function playIdleBell() {
+    if (process.env.OPENCODE_BELL === "0") return
+    if (process.platform !== "darwin") return
+
+    const sound = process.env.OPENCODE_BELL_SOUND || DEFAULT_BELL_SOUND
+    if (!existsSync(sound)) return
+
+    const generation = bellGeneration + 1
+    bellGeneration = generation
+
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (generation !== bellGeneration) return
+      if (!afplayRunning() && acquireAudioLock()) {
+        try {
+          const proc = Bun.spawn(["afplay", sound], { stdout: "ignore", stderr: "ignore" })
+          await proc.exited
+        } finally {
+          releaseAudioLock()
+        }
+        return
+      }
+      await Bun.sleep(50)
     }
   }
 
@@ -647,13 +727,22 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
     event: async ({ event }) => {
       switch (event.type) {
         case "session.created": {
-          currentSessionID = event.properties.info.id
+          const session = event.properties.info as { id?: string; parentID?: string | null }
+          if (!session?.id) break
+
+          sessionParentIDs.set(session.id, session.parentID ?? null)
+          if (!isPrimarySession(session.id)) {
+            break
+          }
+
+          currentSessionID = session.id
           shutdownHandled = false
           sessionContext.clear()
           transientContext.length = 0
           seenPromptMessages.clear()
           messageRoles.clear()
           messageTexts.clear()
+          messageSessionIDs.clear()
           messageOrder.length = 0
           lastBridgeReviewedAssistant = ""
           await runScript(tmuxHookPath("tmux-agent-start.sh"), undefined, {}, STARTUP_FAST_TIMEOUT_MS)
@@ -662,9 +751,12 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
         }
 
         case "message.updated": {
-          const info = event.properties.info as { id?: string; role?: string; modelID?: string }
+          const info = event.properties.info as { id?: string; role?: string; modelID?: string; sessionID?: string }
           if (info?.id) {
             rememberMessage(info.id, info.role)
+            if (info.sessionID) {
+              messageSessionIDs.set(info.id, info.sessionID)
+            }
           }
           if (typeof info?.modelID === "string" && info.modelID) {
             currentOpenCodeModel = info.modelID
@@ -673,8 +765,13 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
         }
 
         case "message.part.updated": {
-          const { part } = event.properties
+          const { part } = event.properties as { part: { type?: string; messageID: string; text?: string; sessionID?: string } }
           if (part.type !== "text") {
+            break
+          }
+
+          const sessionID = part.sessionID ?? messageSessionIDs.get(part.messageID) ?? currentSessionID
+          if (!isPrimarySession(sessionID)) {
             break
           }
 
@@ -718,8 +815,10 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
         }
 
         case "session.status": {
-          if (event.properties.status.type === "idle") {
+          const sessionID = (event.properties as { sessionID?: string }).sessionID ?? currentSessionID
+          if (event.properties.status.type === "idle" && isPrimarySession(sessionID)) {
             await runScript(tmuxHookPath("tmux-agent-stop.sh"))
+            void playIdleBell()
             await runOpenCodeBridgeReview()
           }
           break
@@ -741,6 +840,19 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
         }
 
         case "session.deleted": {
+          const session = (event.properties as { info?: { id?: string } }).info
+          const primary = isPrimarySession(session?.id)
+          if (session?.id) {
+            sessionParentIDs.delete(session.id)
+            for (const [messageID, sessionID] of messageSessionIDs) {
+              if (sessionID === session.id) {
+                messageSessionIDs.delete(messageID)
+              }
+            }
+          }
+          if (!primary) {
+            break
+          }
           handleShutdown()
           break
         }
