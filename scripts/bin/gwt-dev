@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec fish -c 'source ~/.config/fish/functions/gwt-dev.fish; gwt-dev $argv' -- "$@"

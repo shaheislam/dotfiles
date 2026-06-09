@@ -1,0 +1,22 @@
+# Canonical managed PATH entries for Bash, Zsh, and Fish.
+# Listed entries are added in order when the directory exists.
+$DOTFILES_HOME/scripts/bin
+/opt/homebrew/bin
+$HOME/bin
+$HOME/.local/bin
+/usr/bin
+$HOME/.iximiuz/labctl/bin
+$HOME/.nix-profile/bin
+/nix/var/nix/profiles/default/bin
+$HOME/.local/share/mise/shims
+$HOME/.bun/bin
+$HOME/.cargo/bin
+/usr/local/bin
+$HOME/Library/Python/3.9/bin
+$HOME/.rd/bin
+$HOME/.local/share/sonarqube-cli/bin
+$DOTFILES_HOME/scripts
+${KREW_ROOT:-$HOME/.krew}/bin
+$HOME/work/terraform-provision
+/opt/homebrew/opt/openjdk/bin
+/Applications/Visual Studio Code.app/Contents/Resources/app/bin

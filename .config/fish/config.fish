@@ -50,24 +50,8 @@ if status is-interactive
     bind -M default \e\[C forward-char
     bind -M default \e\[D backward-char
 
-    # Environment Variables
-    set -x BAT_THEME miniautumn
-    set -x BAT_PAGING never # Prevents FZF preview file descriptor errors
-    # Pager defaults (avoid tools reading a bad $PAGER value)
-    set -x PAGER less
-    set -x MANPAGER "less -R"
-    set -x STARSHIP_CONFIG $HOME/.config/starship.toml
+    # Shared environment variables are set in conf.d/00-env.fish.
     # set -x TERM screen-256color  # Disabled to prevent VS Code integration issues
-
-    # Claude Code environment
-    set -gx FORCE_AUTOUPDATE_PLUGINS 1 # Auto-update plugins on session start
-    set -gx CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD 1 # Load CLAUDE.md from --add-dir paths
-    set -gx CLAUDE_CODE_EFFORT_LEVEL medium # env var: low|medium|high|max|auto (max=Opus 4.6 only, session-scoped)
-    set -gx CLAUDE_CODE_NO_FLICKER 0 # Explicitly disable fullscreen renderer by default to avoid redraw issues
-
-    # OpenTelemetry observability (harness engineering)
-    set -gx CLAUDE_CODE_ENABLE_TELEMETRY 1
-    set -gx OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4318"
 
     # ==================== Platform-Specific Configuration ====================
 
@@ -116,10 +100,6 @@ if status is-interactive
     if test -f ~/.env
         sed -E '/^[[:space:]]*#/d; /^[[:space:]]*$/d; s/^export[[:space:]]+//; s/^([^=]+)=["'"'"']?([^"'"'"']*)["'"'"']?$/set -gx \1 "\2"/' ~/.env | source
     end
-
-    # ==================== Homebrew Auto-Update ====================
-    # Update Homebrew index daily when any brew command is run (default: 300s/5min)
-    set -gx HOMEBREW_AUTO_UPDATE_SECS 86400
 
     # ==================== Tool Initialization (Cached for Performance) ====================
     # Using __cache_tool_init for ~50-100ms startup improvement
@@ -802,7 +782,4 @@ end
 
 # PATH is managed in .config/fish/paths.fish with one batched update.
 
-# Opencode LSP integration with Nix
-# Prevent Opencode from downloading its own LSP servers
-# Uses Nix-managed LSP servers instead (from PATH)
-set -gx OPENCODE_DISABLE_LSP_DOWNLOAD true
+# Opencode LSP integration with Nix is exported in conf.d/00-env.fish.

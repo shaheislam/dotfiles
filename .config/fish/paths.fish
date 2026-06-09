@@ -1,5 +1,6 @@
 # Centralized PATH Management for Fish Shell
-# This file contains all PATH configurations for the Fish shell
+# Managed path entries live in ~/.config/shell/paths.list so Bash, Zsh, and
+# Fish resolve the same script-facing commands.
 
 # PERF: Use Fish's builtin build info instead of spawning uname.
 set -l _os Linux
@@ -12,62 +13,42 @@ end
 # __fish_reconstruct_path each time, which shows up on every new shell.
 set -l managed_paths
 
-# Keep wrappers first so repo-owned shims win over package-manager installs.
-set -a managed_paths $HOME/dotfiles/scripts/bin
+set -l managed_paths_file "$DOTFILES_HOME/.config/shell/paths.list"
+if not test -f "$managed_paths_file"
+    set managed_paths_file "$HOME/.config/shell/paths.list"
+end
+if test -f "$managed_paths_file"
+    for entry in (string split \n -- (string collect <$managed_paths_file))
+        set entry (string trim -- $entry)
+        if test -z "$entry"; or string match -q '#*' -- $entry
+            continue
+        end
 
-# Homebrew must stay before /usr/bin so Homebrew git is used on macOS.
-if test "$_os" = Darwin
-    set -a managed_paths /opt/homebrew/bin
+        set -l expanded $entry
+        set expanded (string replace -a '$HOME' "$HOME" -- $expanded)
+        set expanded (string replace -a '${HOME}' "$HOME" -- $expanded)
+        set expanded (string replace -a '$DOTFILES_HOME' (set -q DOTFILES_HOME; and echo $DOTFILES_HOME; or echo "$HOME/dotfiles") -- $expanded)
+        set expanded (string replace -a '${DOTFILES_HOME}' (set -q DOTFILES_HOME; and echo $DOTFILES_HOME; or echo "$HOME/dotfiles") -- $expanded)
+        if set -q KREW_ROOT
+            set expanded (string replace -a '${KREW_ROOT:-$HOME/.krew}' "$KREW_ROOT" -- $expanded)
+        else
+            set expanded (string replace -a '${KREW_ROOT:-$HOME/.krew}' "$HOME/.krew" -- $expanded)
+        end
+        set -a managed_paths $expanded
+    end
+else
+    # Fallback for pre-stow/bootstrap shells.
+    set -a managed_paths $HOME/dotfiles/scripts/bin /opt/homebrew/bin $HOME/bin $HOME/.local/bin /usr/bin /usr/local/bin
 end
 
-# Preserve the current command-resolution order for user and system bins.
-set -a managed_paths \
-    $HOME/bin \
-    $HOME/.local/bin \
-    /usr/bin
-
-# Agent/dev workflow paths, ordered to match the previous resolved PATH.
-set -a managed_paths \
-    $HOME/.iximiuz/labctl/bin \
-    $HOME/.nix-profile/bin \
-    /nix/var/nix/profiles/default/bin \
-    $HOME/.local/share/mise/shims \
-    $HOME/.bun/bin \
-    $HOME/.cargo/bin
-
 if test "$_os" = Darwin
-    set -a managed_paths \
-        /usr/local/bin \
-        $HOME/Library/Python/3.9/bin
     set -x PYTHONPATH /opt/homebrew/lib/python3.11/site-packages
 else
-    set -a managed_paths /usr/local/bin
     # Linux Python path - use glob with fallback to avoid errors when no match
     for pypath in $HOME/.local/lib/python3.*/site-packages
         set -a managed_paths $pypath
     end
     set -x PYTHONPATH /usr/lib/python3/dist-packages
-end
-
-set -a managed_paths \
-    $HOME/.rd/bin \
-    $HOME/.local/share/sonarqube-cli/bin \
-    $HOME/dotfiles/scripts
-
-if set -q KREW_ROOT
-    set -a managed_paths $KREW_ROOT/.krew/bin
-else
-    set -a managed_paths $HOME/.krew/bin
-end
-
-set -a managed_paths $HOME/work/terraform-provision
-
-if test -d /opt/homebrew/opt/openjdk/bin
-    set -a managed_paths /opt/homebrew/opt/openjdk/bin
-end
-
-if test -d "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
-    set -a managed_paths "/Applications/Visual Studio Code.app/Contents/Resources/app/bin"
 end
 
 set -l next_fish_user_paths
