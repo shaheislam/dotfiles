@@ -1603,6 +1603,12 @@ phase_5_editors() {
 
     # Install Neovim plugins automatically
     if command_exists nvim; then
+        if [[ -d "$HOME/neovim" ]]; then
+            print_step "Linking pre-cloned Neovim config..."
+            ensure_symlink_target "$HOME/neovim" "$HOME/.config/nvim"
+            print_success "Neovim config linked to ~/.config/nvim"
+        fi
+
         print_step "Installing Neovim plugins via Lazy.nvim..."
         nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1 &&
             print_success "Neovim plugins installed successfully" ||
@@ -1614,6 +1620,28 @@ phase_5_editors() {
             python3 -m pip install --user pynvim >/dev/null 2>&1 &&
                 print_success "pynvim installed" ||
                 log_verbose "pynvim installation completed with warnings"
+        fi
+
+        # Homebrew covers most no-sudo LSPs. Install Node-only language servers here.
+        if command_exists npm; then
+            local node_lsp_packages=(
+                "dockerfile-language-server-nodejs"
+                "@microsoft/compose-language-service"
+                "graphql-language-service-cli"
+            )
+
+            print_step "Installing Node-based Neovim language servers..."
+            for package in "${node_lsp_packages[@]}"; do
+                if command_exists bun; then
+                    bun install -g "$package" >/dev/null 2>&1 ||
+                        npm install -g "$package" >/dev/null 2>&1 ||
+                        log_verbose "Failed to install Node LSP package: $package"
+                else
+                    npm install -g "$package" >/dev/null 2>&1 ||
+                        log_verbose "Failed to install Node LSP package: $package"
+                fi
+            done
+            print_success "Node-based Neovim language servers installed"
         fi
     fi
 
@@ -2402,7 +2430,9 @@ phase_11_optional_features() {
     if [[ "${ENABLE_NIX:-false}" == "true" ]]; then
         print_header "Phase 11: Optional Features - Nix Package Manager"
 
-        if ! command_exists nix; then
+        if ! command_exists nix && ! should_use_sudo; then
+            print_warning "Skipping Nix installation in --no-sudo mode; Homebrew language servers provide the baseline Neovim IDE setup"
+        elif ! command_exists nix; then
             print_step "Installing Nix package manager (Determinate Systems installer)..."
             # Use Determinate Systems installer for better macOS support
             if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix </dev/null | sh -s -- install --no-confirm; then

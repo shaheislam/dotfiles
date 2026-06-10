@@ -129,6 +129,28 @@ brew "pipx"
 brew "gemini-cli"
 brew "mas"  # Mac App Store CLI
 
+# Language Servers & Editor Tooling
+# Baseline no-sudo LSP/tool coverage for Neovim; project-specific Nix LSPs remain optional.
+brew "gopls"
+brew "delve"
+brew "golangci-lint"
+brew "rust-analyzer"
+brew "emmylua_ls"
+brew "lua-language-server"
+brew "typescript-language-server"
+brew "vscode-langservers-extracted"
+brew "yaml-language-server"
+brew "bash-language-server"
+brew "terraform-ls"
+brew "taplo"
+brew "marksman"
+brew "markdownlint-cli"
+brew "basedpyright"
+brew "helm-ls"
+brew "jdtls"
+brew "yamllint"
+brew "zig"  # C compiler fallback for nvim-treesitter parser builds without Xcode CLT
+
 # AI Tools
 # claude-code: installed via native `claude install` (see scripts/bin/claude)
 # Installer invocation lives in scripts/setup.sh (native fallback to bunx bootstrap)
