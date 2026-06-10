@@ -148,6 +148,26 @@ COLIMA_CPU=8 COLIMA_MEMORY=16 ./scripts/docker/colima-setup.sh start
 
 ## Multi-Distribution Testing
 
+### Linux/WSL Parity Slice
+
+Use the parity runner for the focused CLI + agentic harness validation path:
+
+```bash
+# Fast local check, Ubuntu only
+./scripts/docker/parity-runner.sh ubuntu
+
+# Full supported Linux matrix
+./scripts/docker/parity-runner.sh all
+
+# Build images without running tests
+./scripts/docker/parity-runner.sh --build-only all
+```
+
+This runner validates `scripts/parity/manifest.yml` and the Bats checks in
+`scripts/tests/parity.bats`. It is intentionally narrower than the full installation tests:
+it catches drift in Linux/WSL categorization before the broader setup path is
+rerouted through every package-manager abstraction.
+
 ### Quick Test All Distributions
 
 Use the test runner script for coordinated multi-distribution testing:

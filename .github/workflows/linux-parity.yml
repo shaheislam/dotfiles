@@ -1,0 +1,43 @@
+name: Linux WSL Parity
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  manifest:
+    name: Manifest Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate parity manifest
+        run: scripts/parity/validate.sh --report
+
+  container-parity:
+    name: Container Parity (${{ matrix.distro }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [ubuntu, debian, fedora, arch]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test parity image
+        run: scripts/docker/parity-runner.sh --verbose ${{ matrix.distro }}
+
+  macos-sanity:
+    name: macOS Setup Sanity
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate setup syntax
+        run: bash -n scripts/setup.sh

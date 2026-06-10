@@ -72,6 +72,7 @@ list_groups() {
     echo "  integrations  - Third-party provider integrations"
     echo "  opencode      - OpenCode project config, commands, agents, and plugins"
     echo "  db-sandbox    - Agent database sandbox script, hooks, and plugin wiring"
+    echo "  parity        - Linux/WSL parity manifest and bats checks"
     echo "  all           - Run all groups"
 }
 
@@ -1614,6 +1615,21 @@ test_gitattributes() {
     run_test "setup.sh registers lockfile merge driver" "grep -q 'merge.lockfile.driver' '$DOTFILES_ROOT/scripts/setup.sh'"
 }
 
+test_parity() {
+    echo -e "${BLUE}--- Linux/WSL Parity Tests ---${NC}"
+    run_test "parity manifest validates" "bash '$DOTFILES_ROOT/scripts/parity/validate.sh'"
+    run_test "parity validator syntax valid" "python3 -m py_compile '$DOTFILES_ROOT/scripts/parity/validate.py'"
+    run_test "parity docker runner syntax valid" "bash -n '$DOTFILES_ROOT/scripts/docker/parity-runner.sh'"
+    run_test "scheduler shim syntax valid" "bash -n '$DOTFILES_ROOT/scripts/lib/scheduler.sh'"
+    run_test "setup sources scheduler shim" "grep -q 'lib/scheduler.sh' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "OpenCode server uses scheduler shim" "grep -q 'scheduler_register_service' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "Skill TOIL audit uses scheduler shim" "grep -q 'scheduler_register_timer' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "parity bats suite exists" "[ -f '$DOTFILES_ROOT/scripts/tests/parity.bats' ]"
+    if command -v bats >/dev/null 2>&1; then
+        run_test "parity bats suite passes" "DOTFILES_ROOT='$DOTFILES_ROOT' bats '$DOTFILES_ROOT/scripts/tests/parity.bats'"
+    fi
+}
+
 print_summary() {
     echo ""
     echo -e "${BLUE}--- Summary ---${NC}"
@@ -1657,6 +1673,7 @@ openclaw) bash "$SCRIPT_DIR/openclaw/test-openclaw.sh" ;;
 integrations) test_integrations ;;
 opencode) test_opencode ;;
 db-sandbox) test_db_sandbox ;;
+parity) test_parity ;;
 all)
     test_fish
     test_db_sandbox
@@ -1681,6 +1698,7 @@ all)
     test_entire
     test_integrations
     test_opencode
+    test_parity
     test_gitattributes
     # OpenClaw tests run from their own script (separate counters)
     # External test suites run as subprocesses (own set -e / counters)

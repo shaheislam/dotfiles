@@ -172,6 +172,8 @@ package-lock.json
 testfolder/
 test/
 scripts/tests/
+!scripts/tests/
+!scripts/tests/parity.bats
 
 # Work directory (temporary worktree artifacts)
 work/
