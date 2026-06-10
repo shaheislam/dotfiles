@@ -41,7 +41,7 @@ USAGE:
 
 OPTIONS:
     --profile <name>           Installation profile (minimal|standard|comprehensive|dev|ops)
-    --os <type>                OS type (auto|macos|linux) - default: auto-detect
+    --os <type>                OS type (auto|macos|linux|wsl) - default: auto-detect
     --mode <mode>              Installation mode (auto|online|offline) - default: auto-detect
     --offline-package <path>   Path to offline package for offline installation
 
@@ -256,6 +256,9 @@ load_modules() {
 
     # shellcheck source=./lib/dotfiles-manager.sh
     source "$SCRIPT_DIR/lib/dotfiles-manager.sh"
+
+    # shellcheck source=./lib/scheduler.sh
+    source "$SCRIPT_DIR/lib/scheduler.sh"
 }
 
 ensure_symlink_target() {
@@ -326,40 +329,37 @@ install_launchagent_template() {
 }
 
 setup_opencode_shared_server() {
-    [[ "$DETECTED_OS" != "macos" ]] && return 0
-
     print_step "Setting up OpenCode shared server..."
 
     if ! command_exists bun || ! bun -e "import('opencode-with-claude').then(() => process.exit(0)).catch(() => process.exit(1))" >/dev/null 2>&1; then
         print_warning "OpenCode Claude subscription plugin missing; run full setup without --skip-packages"
     fi
 
-    if [[ "$DRY_RUN" == "true" ]]; then
-        print_warning "DRY RUN: Would install and start OpenCode shared server"
-        return 0
-    fi
-
     mkdir -p "$HOME/.local/state/opencode"
-    install_launchagent_template \
+    scheduler_register_service \
         "com.dotfiles.opencode-serve" \
+        "$DOTFILES_ROOT/scripts/opencode/serve.sh" \
+        "$HOME" \
+        "$HOME/.local/state/opencode/serve.out.log" \
+        "$HOME/.local/state/opencode/serve.err.log" \
         "OpenCode shared server started" \
         "OpenCode shared server start skipped" \
-        "OpenCode shared server already running" || true
+        "OpenCode shared server already running" \
+        "true" || true
 }
 
 setup_skill_toil_audit_scheduler() {
-    [[ "$DETECTED_OS" != "macos" ]] && return 0
-
     print_step "Setting up monthly Skill TOIL audit scheduler..."
 
-    if [[ "$DRY_RUN" == "true" ]]; then
-        print_warning "DRY RUN: Would install monthly Skill TOIL audit scheduler"
-        return 0
-    fi
-
     mkdir -p "$HOME/.local/state/opencode/skill-toil-audit"
-    install_launchagent_template \
+    scheduler_register_timer \
         "com.dotfiles.skill-toil-audit" \
+        "$DOTFILES_ROOT/scripts/opencode/skill-toil-audit-monthly.sh" \
+        "$DOTFILES_ROOT" \
+        "$HOME/.local/state/opencode/skill-toil-audit/monthly.out.log" \
+        "$HOME/.local/state/opencode/skill-toil-audit/monthly.err.log" \
+        "*-*-01 09:30:00" \
+        "30 9 1 * *" \
         "Monthly Skill TOIL audit scheduler started" \
         "Monthly Skill TOIL audit scheduler start skipped" \
         "Monthly Skill TOIL audit scheduler already loaded" || true
@@ -443,10 +443,14 @@ preflight_checks() {
         exit 1
     fi
 
-    # Detect OS if auto
+    # Detect OS if auto; otherwise honor the explicit override so Linux/WSL
+    # paths can be validated from containers and non-native hosts.
     if [[ "$OS" == "auto" ]]; then
         OS=$(detect_os)
         print_success "Detected OS: $OS"
+    else
+        export DETECTED_OS="$OS"
+        print_success "Using requested OS: $DETECTED_OS"
     fi
 
     check_sudo
