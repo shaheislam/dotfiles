@@ -1,13 +1,10 @@
 import type { Plugin } from "@opencode-ai/plugin"
 
 const FORK_COMMAND = "fork"
-const FORKGWTT_COMMAND = "forkgwtt"
-const LEGACY_GWT_FORK_COMMAND = "gwtfork"
-const FORKPANE_COMMAND = "forkpane"
+const GWT_FORK_COMMAND = "gwtfork"
 const TUI_FORK_COMMAND = "session_fork"
 const HANDLED_FORK = "__OPENCODE_FORK_HANDLED__"
-const HANDLED_FORKGWTT = "__OPENCODE_FORKGWTT_HANDLED__"
-const HANDLED_FORKPANE = "__OPENCODE_FORKPANE_HANDLED__"
+const HANDLED_GWT_FORK = "__OPENCODE_GWTFORK_HANDLED__"
 
 function parseArgs(input: string) {
   const args: string[] = []
@@ -59,7 +56,7 @@ function decodeOutput(output: Uint8Array | undefined) {
 
 function summarizeOutput(output: string) {
   const line = output.split("\n").find((candidate) => candidate.trim().length > 0)
-  return line?.trim() || "fork launched"
+  return line?.trim() || "gwtfork launched"
 }
 
 const ForkCommandPlugin: Plugin = async ({ client, directory }) => ({
@@ -69,14 +66,9 @@ const ForkCommandPlugin: Plugin = async ({ client, directory }) => ({
       description: "Fork the current OpenCode session in this worktree",
       template: "Fork the current OpenCode session in this worktree.",
     }
-    input.command[FORKGWTT_COMMAND] ??= {
+    input.command[GWT_FORK_COMMAND] ??= {
       description: "Fork the current OpenCode session into a new gwtt worktree and tmux window",
       template: "Fork the current OpenCode session into a new gwtt worktree and tmux window.",
-    }
-    input.command[LEGACY_GWT_FORK_COMMAND] ??= input.command[FORKGWTT_COMMAND]
-    input.command[FORKPANE_COMMAND] ??= {
-      description: "Fork the current OpenCode session into a new tmux split pane",
-      template: "Fork the current OpenCode session into a new tmux split pane.",
     }
   },
   "command.execute.before": async (input) => {
@@ -89,66 +81,20 @@ const ForkCommandPlugin: Plugin = async ({ client, directory }) => ({
       throw new Error(HANDLED_FORK)
     }
 
-    if (input.command === FORKPANE_COMMAND) {
-      const args = parseArgs(input.arguments || "")
-      const result = Bun.spawnSync(
-        ["fish", "-c", 'opencode-forkpane --session "$OPENCODE_SESSION_ID" --dir "$OPENCODE_DIR" $argv', "--", ...args],
-        {
-          cwd: directory,
-          env: {
-            ...process.env,
-            OPENCODE_SESSION_ID: input.sessionID,
-            OPENCODE_DIR: directory,
-          },
-          stdout: "pipe",
-          stderr: "pipe",
-        },
-      )
-
-      const stdout = decodeOutput(result.stdout)
-      const stderr = decodeOutput(result.stderr)
-      const output = [stdout, stderr].filter(Boolean).join("\n")
-
-      if (result.exitCode !== 0) {
-        await client.tui.showToast({
-          query: { directory },
-          body: {
-            title: "forkpane failed",
-            message: summarizeOutput(output || `exit ${result.exitCode}`),
-            variant: "error",
-            duration: 10000,
-          },
-        })
-        throw new Error(output || `forkpane failed with exit ${result.exitCode}`)
-      }
-
-      await client.tui.showToast({
-        query: { directory },
-        body: {
-          title: "forkpane launched",
-          message: summarizeOutput(output),
-          variant: "success",
-          duration: 8000,
-        },
-      })
-
-      throw new Error(HANDLED_FORKPANE)
-    }
-
-    if (input.command !== FORKGWTT_COMMAND && input.command !== LEGACY_GWT_FORK_COMMAND) return
+    if (input.command !== GWT_FORK_COMMAND) return
 
     const args = parseArgs(input.arguments || "")
     if (args.length === 0) {
       await client.tui.showToast({
         query: { directory },
         body: {
-          title: "forkgwtt needs a name",
-          message: "Usage: /forkgwtt <worktree-name> [note...]",
+          title: "gwtfork needs a name",
+          message: "Usage: /gwtfork <worktree-name> [note...]",
           variant: "error",
           duration: 6000,
         },
       })
-      throw new Error("Usage: /forkgwtt <worktree-name> [note...]")
+      throw new Error("Usage: /gwtfork <worktree-name> [note...]")
     }
 
     const result = Bun.spawnSync(
@@ -173,26 +119,26 @@ const ForkCommandPlugin: Plugin = async ({ client, directory }) => ({
       await client.tui.showToast({
         query: { directory },
         body: {
-          title: "forkgwtt failed",
+          title: "gwtfork failed",
           message: summarizeOutput(output || `exit ${result.exitCode}`),
           variant: "error",
           duration: 10000,
         },
       })
-      throw new Error(output || `forkgwtt failed with exit ${result.exitCode}`)
+      throw new Error(output || `gwtfork failed with exit ${result.exitCode}`)
     }
 
     await client.tui.showToast({
       query: { directory },
       body: {
-        title: "forkgwtt launched",
+        title: "gwtfork launched",
         message: summarizeOutput(output),
         variant: "success",
         duration: 8000,
       },
     })
 
-    throw new Error(HANDLED_FORKGWTT)
+    throw new Error(HANDLED_GWT_FORK)
   },
 })
 
