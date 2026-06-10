@@ -125,6 +125,10 @@ pm_install_batch() {
         [[ -n "$m" ]] && mapped+=("$m")
     done
 
+    if [[ ${#mapped[@]} -eq 0 ]]; then
+        return 0
+    fi
+
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         print_warning "DRY RUN: Would install batch via $LINUX_PM: ${mapped[*]}"
         return 0

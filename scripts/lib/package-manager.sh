@@ -4,7 +4,7 @@
 # Defines the common interface that OS-specific implementations must provide
 
 # Source common utilities
-# shellcheck source=./common.sh
+# shellcheck disable=SC1091
 source "$SCRIPT_DIR/lib/common.sh"
 
 # ============================================================================
@@ -60,6 +60,14 @@ install_package_group() {
     print_step "Installing $group_name packages..."
     echo ""
 
+    if [[ ${#packages[@]} -eq 0 ]]; then
+        print_step "[$group_name] Summary:"
+        echo "  • Newly installed: 0"
+        echo "  • Already installed: 0"
+        echo ""
+        return 0
+    fi
+
     local to_install=()
     local skipped=()
 
@@ -95,7 +103,7 @@ install_package_group() {
                 fi
             done
         fi
-    else
+    elif [[ ${#to_install[@]} -gt 0 ]]; then
         # No batch function available — install individually
         for package in "${to_install[@]}"; do
             if pm_install "$package"; then
@@ -199,6 +207,10 @@ get_package_list_from_profile() {
         fi
     done <"$profile_file"
 
+    if [[ ${#packages[@]} -eq 0 ]]; then
+        return 0
+    fi
+
     # Return packages as space-separated string
     echo "${packages[*]}"
 }
@@ -207,21 +219,23 @@ install_packages_from_profile() {
     local profile=$1
     local section=$2
 
-    local packages=$(get_package_list_from_profile "$profile" "$section")
+    local package_list
+    package_list=$(get_package_list_from_profile "$profile" "$section")
 
-    if [[ -z "$packages" ]]; then
+    if [[ -z "$package_list" ]]; then
         print_step "No packages configured for [$section]"
         log_verbose "Skipping empty section: $section"
         return 0
     fi
 
     # Show package count
-    local package_array=($packages)
+    local package_array=()
+    read -r -a package_array <<<"$package_list"
     print_step "Found ${#package_array[@]} package(s) in [$section] to process"
-    log_verbose "Package list: ${packages}"
+    log_verbose "Package list: ${package_list}"
     echo ""
 
-    install_package_group "$section" $packages
+    install_package_group "$section" "${package_array[@]}"
 }
 
 # ============================================================================

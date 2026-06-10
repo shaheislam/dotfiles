@@ -154,9 +154,11 @@ setup_zsh() {
             log_verbose "$plugin_name already installed"
         fi
     done
-    for pid in "${zsh_pids[@]}"; do
-        wait "$pid" 2>/dev/null || true
-    done
+    if [[ ${#zsh_pids[@]} -gt 0 ]]; then
+        for pid in "${zsh_pids[@]}"; do
+            wait "$pid" 2>/dev/null || true
+        done
+    fi
 
     print_success "Zsh shell configured with Powerlevel10k and ${#plugins[@]} plugins"
 }

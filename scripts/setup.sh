@@ -1663,9 +1663,11 @@ phase_6_multiplexer() {
             fi
         done
         # Wait for all parallel clones to finish
-        for pid in "${clone_pids[@]}"; do
-            wait "$pid" 2>/dev/null || true
-        done
+        if [[ ${#clone_pids[@]} -gt 0 ]]; then
+            for pid in "${clone_pids[@]}"; do
+                wait "$pid" 2>/dev/null || true
+            done
+        fi
 
         print_success "Tmux plugins installed"
 
@@ -1694,12 +1696,16 @@ phase_6_multiplexer() {
                 timeout_cmd=(timeout 60)
             fi
 
+            local update_cmd=("$HOME/.tmux/plugins/tpm/bin/update_plugins" all)
+            if [[ ${#timeout_cmd[@]} -gt 0 ]]; then
+                update_cmd=("${timeout_cmd[@]}" "${update_cmd[@]}")
+            fi
+
             if env \
                 GIT_CONFIG_COUNT=1 \
                 GIT_CONFIG_KEY_0=core.fsmonitor \
                 GIT_CONFIG_VALUE_0=false \
-                "${timeout_cmd[@]}" \
-                "$HOME/.tmux/plugins/tpm/bin/update_plugins" all </dev/null >/dev/null 2>&1; then
+                "${update_cmd[@]}" </dev/null >/dev/null 2>&1; then
                 log_verbose "Tmux plugins updated"
             else
                 local update_status=$?
@@ -2011,14 +2017,16 @@ phase_9_fonts_and_apps() {
             [[ -n "$app" ]] && gui_apps+=("$app")
         done < <(brewfile_gui_casks "$DOTFILES_ROOT/homebrew/Brewfile")
 
-        for app in "${gui_apps[@]}"; do
-            local app_name="${app##*/}"
-            if brewfile_cask_installed "$app"; then
-                print_success "$app_name already installed"
-            else
-                apps_to_install+=("$app")
-            fi
-        done
+        if [[ ${#gui_apps[@]} -gt 0 ]]; then
+            for app in "${gui_apps[@]}"; do
+                local app_name="${app##*/}"
+                if brewfile_cask_installed "$app"; then
+                    print_success "$app_name already installed"
+                else
+                    apps_to_install+=("$app")
+                fi
+            done
+        fi
         if [[ ${#apps_to_install[@]} -gt 0 ]]; then
             brew install --cask "${apps_to_install[@]}" >/dev/null 2>&1 &&
                 print_success "Installed ${#apps_to_install[@]} GUI applications" ||
