@@ -130,6 +130,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
     set -l edit_prompt_file (gwtt-prompt-file 2>/dev/null; or echo "$HOME/dotfiles/.claude/gwtt-prompt.local.md")
     set -l opencode_model ""
     set -l opencode_provider ""
+    set -l opencode_session ""
     set -l opencode_fork_session ""
     set -l opencode_fork_source ""
     set -l opencode_fork_note ""
@@ -515,6 +516,16 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
                     echo "Error: --opencode-fork-session requires an OpenCode session id"
                     return 1
                 end
+            case --opencode-session
+                set -l next_i (math $i + 1)
+                if test $next_i -le (count $argv)
+                    set opencode_session $argv[$next_i]
+                    set use_codex true
+                    set skip_next true
+                else
+                    echo "Error: --opencode-session requires an OpenCode session id"
+                    return 1
+                end
             case --opencode-fork-source
                 set -l next_i (math $i + 1)
                 if test $next_i -le (count $argv)
@@ -834,6 +845,7 @@ function gwt-ticket --description "Execute ticket autonomously with OpenCode, nv
         echo "  --opencode           Use OpenCode mode (default)"
         echo "  --claude             Use Claude Code fallback instead of OpenCode"
         echo "  --opencode-model M   OpenCode model override (e.g., openai/gpt-5.5, anthropic/claude-opus-4-6)"
+        echo "  --opencode-session ID       Attach an existing OpenCode session in the new worktree"
         echo "  --opencode-fork-session ID  Fork an existing OpenCode session into the new worktree"
         echo "  --opencode-fork-source PATH Source worktree path for OpenCode fork handoff metadata"
         echo "  --opencode-fork-note TEXT   User note for OpenCode fork handoff metadata"
@@ -2103,6 +2115,7 @@ $prompt_suffix"
             set opencode_cmd "$opencode_cmd --model $opencode_model"
         end
         set -l escaped_opencode_fork_session (string escape -- $opencode_fork_session)
+        set -l escaped_opencode_session (string escape -- $opencode_session)
         set -l escaped_opencode_fork_source (string escape -- $opencode_fork_source)
         set -l escaped_opencode_fork_note (string escape -- $opencode_fork_note)
         # Auth preflight is opt-in; `opencode auth list` is expensive enough to
@@ -2130,6 +2143,10 @@ $prompt_suffix"
             if test -n "$opencode_fork_note"
                 set -a _ls "set -gx OPENCODE_FORK_NOTE $escaped_opencode_fork_note"
             end
+        end
+        if test -n "$opencode_session"
+            set -a _ls "$opencode_cmd --session $escaped_opencode_session"
+        else if test -n "$opencode_fork_session"
             set -a _ls "$opencode_cmd --session $escaped_opencode_fork_session --fork"
         else
             set -a _ls "set -l initial_prompt (cat '$prompt_cmd_file')"
@@ -2193,7 +2210,9 @@ $prompt_suffix"
         if $use_codex
             set _agent_label OpenCode
             set _cmd_label "Mode:      opencode --model $opencode_model"
-            if test -n "$opencode_fork_session"
+            if test -n "$opencode_session"
+                set _cmd_label "Mode:      opencode --model $opencode_model --session $opencode_session"
+            else if test -n "$opencode_fork_session"
                 set _cmd_label "Mode:      opencode --model $opencode_model --session $opencode_fork_session --fork"
             end
         end
@@ -2248,9 +2267,9 @@ $prompt_suffix"
         '' \
         "$prompt" >$prompt_md_file
 
-    set -l gwtfork_handoff_file ""
+    set -l forkgwtt_handoff_file ""
     if test -n "$opencode_fork_session"
-        set gwtfork_handoff_file "$worktree_path/.claude/gwtfork.local.md"
+        set forkgwtt_handoff_file "$worktree_path/.claude/forkgwtt.local.md"
         set -l fork_source_branch ""
         set -l fork_source_dirty false
         set -l fork_source_status ""
@@ -2277,47 +2296,47 @@ $prompt_suffix"
             '' \
             '## User Note' \
             '' \
-            "$opencode_fork_note" >$gwtfork_handoff_file
+            "$opencode_fork_note" >$forkgwtt_handoff_file
         printf '%s\n' \
             '' \
             '## Source Dirty Context' \
             '' \
             "Dirty at fork: $fork_source_dirty" \
             '' \
-            'The new worktree starts from git HEAD. Staged, unstaged, and untracked source changes are not copied into the fork.' >>$gwtfork_handoff_file
+            'The new worktree starts from git HEAD. Staged, unstaged, and untracked source changes are not copied into the fork.' >>$forkgwtt_handoff_file
         if test -n "$fork_source_status"
             printf '%s\n' \
                 '' \
                 '```text' \
                 "$fork_source_status" \
-                '```' >>$gwtfork_handoff_file
+                '```' >>$forkgwtt_handoff_file
         end
         if test -n "$fork_source_staged_stat" -o -n "$fork_source_unstaged_stat"
             printf '%s\n' \
                 '' \
                 '### Diff Stat' \
-                '' >>$gwtfork_handoff_file
+                '' >>$forkgwtt_handoff_file
             if test -n "$fork_source_staged_stat"
                 printf '%s\n' \
                     'Staged:' \
                     '```text' \
                     "$fork_source_staged_stat" \
                     '```' \
-                    '' >>$gwtfork_handoff_file
+                    '' >>$forkgwtt_handoff_file
             end
             if test -n "$fork_source_unstaged_stat"
                 printf '%s\n' \
                     'Unstaged:' \
                     '```text' \
                     "$fork_source_unstaged_stat" \
-                    '```' >>$gwtfork_handoff_file
+                    '```' >>$forkgwtt_handoff_file
             end
         end
         printf '%s\n' \
             '' \
             '## Handoff' \
             '' \
-            'This worktree was created from an OpenCode session fork. Continue from the inherited conversation while keeping file changes isolated to this worktree.' >>$gwtfork_handoff_file
+            'This worktree was created from an OpenCode session fork. Continue from the inherited conversation while keeping file changes isolated to this worktree.' >>$forkgwtt_handoff_file
     end
 
     # Detect AI guidance files to auto-open in nvim buffers
@@ -2327,8 +2346,8 @@ $prompt_suffix"
     # settings.local.json: per-worktree hook configuration (only in .claude/)
     # Priority: worktree root > .claude/ subdirectory
     set -l nvim_ai_files "$prompt_md_file"
-    if test -n "$gwtfork_handoff_file" -a -f "$gwtfork_handoff_file"
-        set -a nvim_ai_files "$gwtfork_handoff_file"
+    if test -n "$forkgwtt_handoff_file" -a -f "$forkgwtt_handoff_file"
+        set -a nvim_ai_files "$forkgwtt_handoff_file"
     end
     for ai_file in CLAUDE.md AGENTS.md
         if test -f "$worktree_path/$ai_file"
