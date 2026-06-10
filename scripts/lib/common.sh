@@ -358,7 +358,16 @@ check_sudo() {
     fi
 }
 
+should_use_sudo() {
+    [[ "${NO_SUDO:-false}" != "true" ]]
+}
+
 require_sudo() {
+    if ! should_use_sudo; then
+        print_error "This operation is disabled by --no-sudo"
+        return 1
+    fi
+
     if [[ "${HAS_SUDO:-false}" != "true" ]]; then
         print_error "This operation requires sudo access"
         return 1

@@ -20,6 +20,7 @@ DRY_RUN=false
 NO_CONFIRM=false
 VERBOSE=false
 AUDIT_APPS=false
+NO_SUDO="${NO_SUDO:-false}"
 SKIP_PACKAGES=false
 SKIP_DOTFILES=false
 SKIP_SHELLS=false
@@ -50,6 +51,7 @@ OPTIONS:
     --verbose                  Show detailed output
 
     --audit-apps               Report missing macOS Brewfile/manual apps and exit
+    --no-sudo                  Never run host sudo; skip or warn for privileged steps
 
     --skip-packages            Skip package installation
     --skip-dotfiles            Skip dotfiles symlinking
@@ -84,6 +86,9 @@ EXAMPLES:
 
     # Automated installation (CI/scripts)
     $0 --profile minimal --no-confirm
+
+    # Locked-down laptop setup without host sudo
+    $0 --no-sudo
 
     # Enable optional features (Nix, Pulse, Pi-Hole, Self-Hosted LLM, SonarQube)
     ENABLE_NIX=true ENABLE_PULSE=true ENABLE_PIHOLE=true ENABLE_SELFHOST_LLM=true ENABLE_SONARQUBE=true $0 --profile comprehensive
@@ -170,6 +175,11 @@ parse_args() {
             AUDIT_APPS=true
             shift
             ;;
+        --no-sudo)
+            NO_SUDO=true
+            SKIP_FONTS_APPS=true
+            shift
+            ;;
         --skip-packages)
             SKIP_PACKAGES=true
             shift
@@ -224,8 +234,12 @@ parse_args() {
         esac
     fi
 
+    if [[ "$NO_SUDO" == "true" ]]; then
+        SKIP_FONTS_APPS=true
+    fi
+
     # Export for child modules
-    export PROFILE DRY_RUN NO_CONFIRM VERBOSE AUDIT_APPS SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
+    export PROFILE DRY_RUN NO_CONFIRM VERBOSE AUDIT_APPS NO_SUDO SKIP_PACKAGES SKIP_DOTFILES SKIP_SHELLS SKIP_FONTS_APPS
     export ENABLE_CLAUDE_CODE_BACKUP ENABLE_CLAUDE_HEAVY_SETUP
     export DOTFILES_ROOT SCRIPT_DIR
 }
@@ -379,6 +393,12 @@ ensure_macos_command_line_tools_current() {
             return 0
         fi
 
+        if ! should_use_sudo; then
+            print_warning "Xcode Command Line Tools are not installed; skipping auto-install in --no-sudo mode"
+            print_warning "Install manually with: xcode-select --install"
+            return 0
+        fi
+
         print_error "Xcode Command Line Tools are not installed"
         print_warning "Install them with: xcode-select --install"
         return 1
@@ -396,6 +416,12 @@ ensure_macos_command_line_tools_current() {
 
     if [[ "$DRY_RUN" == "true" ]]; then
         print_warning "DRY RUN: Would install $clt_label"
+        return 0
+    fi
+
+    if ! should_use_sudo; then
+        print_warning "Command Line Tools update available: $clt_label"
+        print_warning "Skipping CLT auto-update in --no-sudo mode; update from System Settings when possible"
         return 0
     fi
 
@@ -483,6 +509,7 @@ show_summary() {
     echo "Profile: $PROFILE"
     echo "Mode: $DETECTED_MODE"
     echo "Sudo Access: ${HAS_SUDO:-false}"
+    echo "No-Sudo Mode: $NO_SUDO"
     echo ""
 
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -740,10 +767,15 @@ phase_2_cli_tools() {
     # OpenJDK symlink for Jenkins CLI
     if brew list openjdk >/dev/null 2>&1; then
         if [[ ! -d "/Library/Java/JavaVirtualMachines/openjdk.jdk" ]]; then
-            print_step "Symlinking OpenJDK for system Java discovery..."
-            sudo ln -sfn "$(brew --prefix openjdk)/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk.jdk 2>/dev/null &&
-                print_success "OpenJDK symlinked to /Library/Java/JavaVirtualMachines/" ||
-                print_warning "Failed to symlink OpenJDK (may need sudo)"
+            if should_use_sudo; then
+                print_step "Symlinking OpenJDK for system Java discovery..."
+                sudo ln -sfn "$(brew --prefix openjdk)/libexec/openjdk.jdk" /Library/Java/JavaVirtualMachines/openjdk.jdk 2>/dev/null &&
+                    print_success "OpenJDK symlinked to /Library/Java/JavaVirtualMachines/" ||
+                    print_warning "Failed to symlink OpenJDK (may need sudo)"
+            else
+                print_warning "Skipping OpenJDK system symlink in --no-sudo mode"
+                log_verbose "Jenkins CLI can still use Homebrew OpenJDK directly from $(brew --prefix openjdk)"
+            fi
         else
             print_success "OpenJDK already symlinked"
         fi
@@ -2407,21 +2439,25 @@ EOF
                 local nix_custom_src="$DOTFILES_ROOT/nix/nix.custom.conf"
                 local nix_custom_dst="/etc/nix/nix.custom.conf"
                 local nix_machine_conf="/etc/nix/nix.machine.conf"
-                if [[ ! -L "$nix_custom_dst" ]] || [[ "$(readlink "$nix_custom_dst")" != "$nix_custom_src" ]]; then
-                    print_step "Symlinking nix.custom.conf from dotfiles..."
-                    sudo ln -sf "$nix_custom_src" "$nix_custom_dst"
-                    if sudo launchctl list | grep -q "systems.determinate.nix-daemon"; then
-                        sudo launchctl kickstart -k system/systems.determinate.nix-daemon
+                if should_use_sudo; then
+                    if [[ ! -L "$nix_custom_dst" ]] || [[ "$(readlink "$nix_custom_dst")" != "$nix_custom_src" ]]; then
+                        print_step "Symlinking nix.custom.conf from dotfiles..."
+                        sudo ln -sf "$nix_custom_src" "$nix_custom_dst"
+                        if sudo launchctl list | grep -q "systems.determinate.nix-daemon"; then
+                            sudo launchctl kickstart -k system/systems.determinate.nix-daemon
+                        fi
                     fi
-                fi
-                # Create machine-local config if absent (included by nix.custom.conf, not in dotfiles)
-                if [[ ! -f "$nix_machine_conf" ]]; then
-                    sudo tee "$nix_machine_conf" >/dev/null <<'MACHINE_CONF'
+                    # Create machine-local config if absent (included by nix.custom.conf, not in dotfiles)
+                    if [[ ! -f "$nix_machine_conf" ]]; then
+                        sudo tee "$nix_machine_conf" >/dev/null <<'MACHINE_CONF'
 # Machine-specific Nix settings — not tracked by dotfiles.
 # Example for corporate proxies that intercept TLS (e.g. Capgemini/zscaler):
 #   ssl-cert-file = /etc/ssl/cert.pem
 MACHINE_CONF
-                    print_success "Created $nix_machine_conf (edit for machine-specific settings)"
+                        print_success "Created $nix_machine_conf (edit for machine-specific settings)"
+                    fi
+                else
+                    print_warning "Skipping Nix daemon/system config in --no-sudo mode"
                 fi
             fi
 
@@ -2499,9 +2535,13 @@ MACHINE_CONF
             brew services start redis 2>/dev/null || log_verbose "Redis service may already be running"
             print_success "Redis service started"
         elif command_exists systemctl; then
-            sudo systemctl enable redis 2>/dev/null || true
-            sudo systemctl start redis 2>/dev/null || true
-            print_success "Redis service started (systemd)"
+            if should_use_sudo; then
+                sudo systemctl enable redis 2>/dev/null || true
+                sudo systemctl start redis 2>/dev/null || true
+                print_success "Redis service started (systemd)"
+            else
+                print_warning "Skipping Redis systemd service start in --no-sudo mode"
+            fi
         else
             print_warning "Cannot start Redis service automatically"
         fi
@@ -2695,7 +2735,9 @@ EOF
     if [[ "${ENABLE_SELFHOST_LLM:-false}" == "true" ]]; then
         print_header "Phase 11: Optional Features - Self-Hosted LLM Stack"
 
-        if [[ -f "$DOTFILES_ROOT/scripts/setup-selfhost-llm.sh" ]]; then
+        if ! should_use_sudo; then
+            print_warning "Skipping self-hosted LLM setup in --no-sudo mode"
+        elif [[ -f "$DOTFILES_ROOT/scripts/setup-selfhost-llm.sh" ]]; then
             print_step "Running self-hosted LLM setup (Ollama + Open WebUI)..."
             if bash "$DOTFILES_ROOT/scripts/setup-selfhost-llm.sh"; then
                 print_success "Self-hosted LLM stack installed"

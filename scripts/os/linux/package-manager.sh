@@ -66,6 +66,7 @@ pm_update() {
         print_warning "DRY RUN: Would update package cache ($LINUX_PM)"
         return 0
     fi
+    should_use_sudo || return 0
     [[ "${HAS_SUDO:-false}" != "true" ]] && return 0
 
     print_step "Updating package cache..."
@@ -91,6 +92,10 @@ pm_install() {
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
         print_warning "DRY RUN: Would install $package via $LINUX_PM"
         return 0
+    fi
+    if ! should_use_sudo; then
+        print_warning "Cannot install $package (--no-sudo)"
+        return 1
     fi
     if [[ "${HAS_SUDO:-false}" != "true" ]]; then
         print_warning "Cannot install $package (no sudo)"
@@ -124,6 +129,7 @@ pm_install_batch() {
         print_warning "DRY RUN: Would install batch via $LINUX_PM: ${mapped[*]}"
         return 0
     fi
+    should_use_sudo || return 1
     [[ "${HAS_SUDO:-false}" != "true" ]] && return 1
 
     case "$LINUX_PM" in
@@ -177,6 +183,7 @@ pm_remove() {
         print_warning "DRY RUN: Would remove $package via $LINUX_PM"
         return 0
     fi
+    should_use_sudo || return 1
     [[ "${HAS_SUDO:-false}" != "true" ]] && return 1
 
     case "$LINUX_PM" in
@@ -197,6 +204,7 @@ pm_cleanup() {
         print_warning "DRY RUN: Would clean package manager caches ($LINUX_PM)"
         return 0
     fi
+    should_use_sudo || return 0
     [[ "${HAS_SUDO:-false}" != "true" ]] && return 0
 
     case "$LINUX_PM" in

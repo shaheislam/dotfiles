@@ -19,6 +19,9 @@ Universal setup system that works seamlessly on macOS and Linux with flexible pr
 
 # Automated installation (no prompts)
 ./scripts/setup.sh --profile minimal --no-confirm
+
+# Locked-down laptop setup without host sudo
+./scripts/setup.sh --no-sudo
 ```
 
 ## Architecture
@@ -119,6 +122,7 @@ DevOps/SRE focused toolset
 ```bash
 --dry-run           # Preview actions without executing
 --no-confirm        # Skip confirmation prompts (for automation)
+--no-sudo           # Never run host sudo; skip or warn for privileged steps
 --verbose           # Show detailed output and debug information
 ```
 
@@ -127,7 +131,16 @@ DevOps/SRE focused toolset
 --skip-packages     # Skip package installation phase
 --skip-dotfiles     # Skip dotfiles symlinking phase
 --skip-shells       # Skip shell configuration phase
+--skip-fonts-apps   # Skip macOS fonts and GUI applications phase
 ```
+
+## No-Sudo Mode
+
+Use `./scripts/setup.sh --no-sudo` or the Fish helper `dotsetup-nosudo` on managed laptops where sudo is unavailable. Homebrew must already work from the user account; setup will not run the official Homebrew installer in this mode.
+
+No-sudo mode keeps the user-space parts of setup: Homebrew CLI tooling, stow-managed dotfiles, shell configuration, tmux, Neovim, and user-space agent tooling.
+
+No-sudo mode skips or warns for privileged system changes: macOS fonts/apps, Command Line Tools auto-update, the OpenJDK `/Library/Java` system symlink, Nix daemon system config, Linux Pulse Redis systemd startup, and the optional self-hosted LLM installer.
 
 ### Help
 ```bash

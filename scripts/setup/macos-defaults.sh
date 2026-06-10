@@ -134,10 +134,13 @@ while IFS= read -r service; do
 done < <(networksetup -listallnetworkservices | tail -n +2)
 
 # Flush DNS cache to apply changes immediately
-sudo dscacheutil -flushcache 2>/dev/null || true
-sudo killall -HUP mDNSResponder 2>/dev/null || true
-
-echo "  ✓ DNS cache flushed"
+if [[ "${NO_SUDO:-false}" == "true" ]]; then
+    echo "  ⚠ DNS cache flush skipped (--no-sudo)"
+else
+    sudo dscacheutil -flushcache 2>/dev/null || true
+    sudo killall -HUP mDNSResponder 2>/dev/null || true
+    echo "  ✓ DNS cache flushed"
+fi
 
 # =============================================================================
 # Apply Changes

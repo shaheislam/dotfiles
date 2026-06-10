@@ -13,6 +13,12 @@ ensure_homebrew() {
         return 0
     fi
 
+    if [[ "${NO_SUDO:-false}" == "true" ]]; then
+        print_error "Homebrew is required for --no-sudo setup but was not found in PATH"
+        print_warning "Install Homebrew first with an admin-approved or user-owned prefix, then rerun setup"
+        return 1
+    fi
+
     print_step "Installing Homebrew..."
 
     if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then

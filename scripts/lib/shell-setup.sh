@@ -75,7 +75,12 @@ set_fish_as_login_shell() {
     fi
 
     if [[ -f /etc/shells ]] && ! grep -qxF "$fish_path" /etc/shells; then
-        print_warning "$fish_path is not listed in /etc/shells; add it before running chsh"
+        if [[ "${NO_SUDO:-false}" == "true" ]]; then
+            print_warning "$fish_path is not listed in /etc/shells; login shell change skipped in --no-sudo mode"
+            print_warning "Set your terminal startup command to '$fish_path' or ask an admin to add it to /etc/shells"
+        else
+            print_warning "$fish_path is not listed in /etc/shells; add it before running chsh"
+        fi
         return 0
     fi
 

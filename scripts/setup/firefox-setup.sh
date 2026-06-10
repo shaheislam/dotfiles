@@ -230,6 +230,11 @@ install_policy() {
         return 0
     fi
 
+    if [[ "${NO_SUDO:-false}" == "true" ]]; then
+        log_warning "Skipping Firefox app-bundle enterprise policy in --no-sudo mode"
+        return 0
+    fi
+
     if [[ -d "$policy_dir" && ! -w "$policy_dir" ]]; then
         if install_policy_with_sudo "$policy_dir" "$policy_target"; then
             log_success "Installed Firefox policies.json with sudo"
