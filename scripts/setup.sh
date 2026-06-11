@@ -1353,13 +1353,12 @@ EAEOF
     if [[ "$ENABLE_CLAUDE_HEAVY_SETUP" == "true" ]] && command_exists claude; then
         print_step "Configuring Claude Code heavy backup integrations..."
 
-        # Core MCP servers (sequential — all write to shared settings.json)
-        claude mcp add --scope user context7 bunx @upstash/context7-mcp >/dev/null 2>&1 || true
-        claude mcp add --scope user steampipe bunx @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
-        claude mcp add --scope user playwright bunx @playwright/mcp@latest >/dev/null 2>&1 || true
-        claude mcp add --scope user drawio bunx drawio-mcp-server >/dev/null 2>&1 || true
-        # deepwiki remains a Claude CLI-only SSE server; `.mcp.json` currently models stdio servers only.
-        claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse >/dev/null 2>&1 || true
+        # Core MCP servers (sequential — all write to shared settings.json).
+        # Keep argv identical to .mcp.json to avoid cross-scope endpoint warnings.
+        # Avoid process-bound servers like drawio that conflict on fixed ports.
+        claude mcp add --scope user context7 bunx -y @upstash/context7-mcp >/dev/null 2>&1 || true
+        claude mcp add --scope user steampipe bunx -y @turbot/steampipe-mcp postgresql://steampipe@localhost:9193/steampipe >/dev/null 2>&1 || true
+        claude mcp add --scope user playwright bunx -y @playwright/mcp@latest >/dev/null 2>&1 || true
 
         print_success "Claude Code MCP configuration complete"
         log_verbose "Verify with: claude mcp list"

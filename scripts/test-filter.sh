@@ -342,8 +342,9 @@ test_mcp() {
         run_test "setup.sh registers .mcp.json stdio servers" "python3 -c \"import json, pathlib, re; servers=set(json.load(open('$mcp_config')).get('mcpServers', {})); setup=pathlib.Path('$DOTFILES_ROOT/scripts/setup.sh').read_text(); configured=set(re.findall(r'claude mcp add --scope user ([a-z0-9-]+) ', setup)); assert servers <= configured\""
     fi
 
-    run_test "setup.sh uses bunx for shared stdio MCP servers" "python3 -c \"import pathlib; text=pathlib.Path('$DOTFILES_ROOT/scripts/setup.sh').read_text(); required=['context7 bunx', 'steampipe bunx', 'playwright bunx', 'drawio bunx']; assert all(item in text for item in required)\""
-    run_test "setup.sh keeps deepwiki SSE exception" "grep -q 'claude mcp add --scope user --transport sse deepwiki https://mcp.deepwiki.com/sse' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh uses bunx for shared stdio MCP servers" "python3 -c \"import pathlib; text=pathlib.Path('$DOTFILES_ROOT/scripts/setup.sh').read_text(); required=['context7 bunx -y', 'steampipe bunx -y', 'playwright bunx -y']; assert all(item in text for item in required)\""
+    run_test "setup.sh omits process-bound drawio MCP" "! grep -q 'claude mcp add --scope user drawio' '$DOTFILES_ROOT/scripts/setup.sh'"
+    run_test "setup.sh omits failing deepwiki MCP" "! grep -q 'claude mcp add --scope user --transport sse deepwiki' '$DOTFILES_ROOT/scripts/setup.sh'"
     run_test "sync-mcp-config script syntax valid" "bash -n '$DOTFILES_ROOT/scripts/sync-mcp-config.sh'"
     run_test "sync-mcp-config OpenCode MCP shape valid" "bash '$DOTFILES_ROOT/scripts/test-sync-mcp-config.sh' >/dev/null"
 

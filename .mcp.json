@@ -21,13 +21,6 @@
         "-y",
         "@upstash/context7-mcp"
       ]
-    },
-    "drawio": {
-      "command": "bunx",
-      "args": [
-        "-y",
-        "drawio-mcp-server"
-      ]
     }
   }
 }
