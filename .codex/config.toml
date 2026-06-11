@@ -84,6 +84,9 @@ trust_level = "trusted"
 [projects."~/dotfiles-tokyo"]
 trust_level = "trusted"
 
+[projects."/Users/shaheislam/dotfiles"]
+trust_level = "trusted"
+
 [mcp_servers.playwright]
 command = "bunx"
 args = ["@playwright/mcp@latest"]

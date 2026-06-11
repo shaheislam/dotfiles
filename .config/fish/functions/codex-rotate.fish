@@ -5,6 +5,13 @@ function codex-rotate --description "Run codex with automatic account rotation (
     set -l codex_auth "$HOME/.codex/auth.json"
     set -l original_auth_tmp ""
     set -l original_hash ""
+    set -l codex_bin (_codex_rotate_find_codex)
+
+    if test -z "$codex_bin"
+        echo "codex-rotate: Codex CLI not found." >&2
+        echo "  Install with: bun install -g @openai/codex@latest" >&2
+        return 127
+    end
 
     if test -f "$codex_auth"
         set original_auth_tmp (mktemp)
@@ -21,7 +28,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
         if test -n "$plain_workspace_id"
             set plain_codex_args -c "forced_chatgpt_workspace_id=\"$plain_workspace_id\"" $plain_codex_args
         end
-        codex $plain_codex_args
+        "$codex_bin" $plain_codex_args
         set -l exit_code $status
         _codex_rotate_cleanup_temp "$original_auth_tmp"
         return $exit_code
@@ -36,7 +43,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
         if test -n "$plain_workspace_id"
             set plain_codex_args -c "forced_chatgpt_workspace_id=\"$plain_workspace_id\"" $plain_codex_args
         end
-        codex $plain_codex_args
+        "$codex_bin" $plain_codex_args
         set -l exit_code $status
         _codex_rotate_cleanup_temp "$original_auth_tmp"
         return $exit_code
@@ -134,7 +141,7 @@ function codex-rotate --description "Run codex with automatic account rotation (
         end
         tail -n 0 -f "$stderr_file" >&2 &
         set -l stderr_tail_pid $last_pid
-        codex $codex_args 2>"$stderr_file"
+        "$codex_bin" $codex_args 2>"$stderr_file"
         set -l exit_code $status
         kill $stderr_tail_pid >/dev/null 2>&1
         wait $stderr_tail_pid >/dev/null 2>&1
@@ -147,11 +154,16 @@ function codex-rotate --description "Run codex with automatic account rotation (
             end
             echo "codex-rotate: Codex binary is broken. Attempting reinstall..." >&2
             bun install -g @openai/codex@latest 2>&1 | tail -1 >&2
+            set codex_bin (_codex_rotate_find_codex)
+            if test -z "$codex_bin"
+                _codex_rotate_cleanup_temp "$original_auth_tmp"
+                return 127
+            end
             # Retry once after reinstall
             set -l retry_stderr (mktemp)
             tail -n 0 -f "$retry_stderr" >&2 &
             set -l retry_tail_pid $last_pid
-            codex $codex_args 2>"$retry_stderr"
+            "$codex_bin" $codex_args 2>"$retry_stderr"
             set -l retry_code $status
             kill $retry_tail_pid >/dev/null 2>&1
             wait $retry_tail_pid >/dev/null 2>&1
@@ -234,4 +246,18 @@ function _codex_rotate_cleanup_temp --description "Delete temp auth snapshot if 
     if test -n "$argv[1]"; and test -f "$argv[1]"
         rm -f "$argv[1]"
     end
+end
+
+function _codex_rotate_find_codex --description "Find an executable Codex CLI, skipping shadowing directories"
+    set -l candidates (command -s codex 2>/dev/null)
+    set -a candidates "$HOME/.bun/bin/codex" /opt/homebrew/bin/codex /usr/local/bin/codex
+
+    for candidate in $candidates
+        if test -x "$candidate"; and not test -d "$candidate"
+            echo "$candidate"
+            return 0
+        end
+    end
+
+    return 1
 end
