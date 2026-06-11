@@ -1243,6 +1243,16 @@ test_opencode() {
     run_test "Skill evolve skill exists" "[ -f '$DOTFILES_ROOT/skills/shared/skill-evolve/SKILL.md' ]"
     run_test "Skill TOIL audit documented" "grep -q 'skill-toil-audit.py' '$DOTFILES_ROOT/docs/skills-reference.md' && grep -q 'skill-stats.py' '$DOTFILES_ROOT/docs/skills-reference.md'"
 
+    run_test "Plan criteria validator exists" "[ -f '$DOTFILES_ROOT/scripts/plan-validate-criteria.sh' ]"
+    run_test "Plan criteria validator executable" "[ -x '$DOTFILES_ROOT/scripts/plan-validate-criteria.sh' ]"
+    run_test "Plan criteria validator syntax valid" "bash -n '$DOTFILES_ROOT/scripts/plan-validate-criteria.sh'"
+    run_test "OpenCode goal command plugin exists" "[ -f '$DOTFILES_ROOT/.config/opencode/plugin/goal-command.ts' ]"
+    run_test "OpenCode goal command plugin configured" "jq -e '.plugin[] | select(. == \"./plugin/goal-command.ts\")' '$DOTFILES_ROOT/.config/opencode/opencode.json' >/dev/null 2>&1"
+    run_test "OpenCode goal command uses living plan" "grep -q '.plan.md' '$DOTFILES_ROOT/.config/opencode/plugin/goal-command.ts' && grep -q 'plan-validate-criteria.sh' '$DOTFILES_ROOT/.config/opencode/plugin/goal-command.ts'"
+    run_test "OpenCode goal command re-reads plan" "grep -q 'first re-read' '$DOTFILES_ROOT/.config/opencode/plugin/goal-command.ts' && grep -q 'from disk' '$DOTFILES_ROOT/.config/opencode/plugin/goal-command.ts'"
+    run_test "OpenCode goal plugin registers confirm command" "grep -q 'confirm-plan-completion' '$DOTFILES_ROOT/.config/opencode/plugin/goal-command.ts'"
+    run_test "OpenCode completion command runs criteria validator" "grep -q 'plan-validate-criteria.sh' '$DOTFILES_ROOT/.config/opencode/command/confirm-plan-completion.md'"
+
     run_test "OpenCode command directory exists" "[ -d '$DOTFILES_ROOT/.opencode/command' ]"
     run_test "OpenCode doctor command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/doctor.md' ]"
     run_test "OpenCode review command exists" "[ -f '$DOTFILES_ROOT/.opencode/command/review-changes.md' ]"
