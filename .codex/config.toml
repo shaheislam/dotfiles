@@ -99,14 +99,6 @@ args = ["-y", "@turbot/steampipe-mcp", "postgresql://steampipe@localhost:9193/st
 command = "bunx"
 args = ["@upstash/context7-mcp"]
 
-[mcp_servers.drawio]
-command = "bunx"
-args = ["-y", "drawio-mcp-server"]
-
-[mcp_servers.claudecodebrowser]
-command = "python3"
-args = ["~/.claudecodebrowser/mcp-server/stdio_wrapper.py"]
-
 [notice]
 hide_rate_limit_model_nudge = true
 

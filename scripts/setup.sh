@@ -1250,7 +1250,9 @@ phase_4_cloud_tools() {
         mkdir -p "$fish_comp_dir"
         codex completion fish >"$fish_comp_dir/codex.fish" 2>/dev/null || true
 
-        # MCP servers (mirror key Claude Code MCP servers)
+        # MCP servers safe for Codex to start per session. Avoid process-bound
+        # servers like drawio/ClaudeCodeBrowser that conflict with existing ports
+        # or need shell path expansion in Codex's direct argv launcher.
         codex mcp add context7 -- bunx @upstash/context7-mcp >/dev/null 2>&1 || true
         codex mcp add playwright -- bunx @playwright/mcp@latest >/dev/null 2>&1 || true
         log_verbose "Codex CLI: completions and MCP servers configured"
