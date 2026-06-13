@@ -1,0 +1,6 @@
+# Raw Sidebery exports may contain pinned-tab URLs / snapshot data.
+sidebery-export.json
+
+# Frecency-derived pin helper — local-only by default.
+# Remove this line if you want it tracked.
+pinning-helper.md

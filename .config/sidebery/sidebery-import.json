@@ -1,0 +1,465 @@
+{
+  "ver": "5.5.2",
+  "sidebar": {
+    "panels": [
+      {
+        "type": "tabs",
+        "id": "c409fac4-3695-4369-a905-34e4a204b6f4",
+        "name": "Work \u00b7 GDS",
+        "color": "orange",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "firefox-container-2",
+        "dropTabCtx": "firefox-container-2",
+        "moveRules": [
+          {
+            "id": "515b17ee-2012-413d-a673-2e7bfc9c82b3",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://*.gov.uk/"
+          },
+          {
+            "id": "c7bcb26f-48aa-4a98-a4ab-8b9e101e782e",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://gdsgovukagents.atlassian.net/"
+          },
+          {
+            "id": "8b9b97da-375a-492b-ad07-347697ea403c",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://github.com/govuk-once/"
+          },
+          {
+            "id": "e095c009-f42d-46f1-a518-772e9c960210",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://github.com/gds-tech-and-security/"
+          },
+          {
+            "id": "33452fdb-807f-4836-a2cc-6fb46051ae92",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://github.com/alphagov/"
+          },
+          {
+            "id": "314b5eb1-0c5a-455b-a9e2-48ea9e62ceea",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://khub.net/"
+          },
+          {
+            "id": "a2270fd8-4264-4034-a4e8-aa73be50e9bd",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://cabinet-office.gov.uk/"
+          }
+        ],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": true
+      },
+      {
+        "type": "tabs",
+        "id": "eec2cd80-2877-4eaf-a23b-d5ce83721eaf",
+        "name": "Work \u00b7 AWS+Infra",
+        "color": "orange",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "firefox-container-2",
+        "dropTabCtx": "firefox-container-2",
+        "moveRules": [
+          {
+            "id": "2225e48e-92ad-413b-a13c-c5af34e63dd2",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://*.aws.amazon.com/"
+          },
+          {
+            "id": "c9984341-b824-4252-a8b1-00acd5c915e8",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://signin.aws.amazon.com/"
+          },
+          {
+            "id": "f34312da-5ca1-400a-a2b2-fbdf58d7a583",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://*.signin.aws/"
+          },
+          {
+            "id": "2f62d0b3-6e1e-4ca4-af8d-81be1354e398",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://*.okta.com/"
+          },
+          {
+            "id": "cda2d3b9-449b-495e-a99b-662e7ee8c684",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://github.com/aws-samples/"
+          },
+          {
+            "id": "641b11e9-d679-4f63-abb4-53f0649ccdd6",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://github.com/goauthentik/"
+          }
+        ],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": true
+      },
+      {
+        "type": "tabs",
+        "id": "39d2bd10-3ab9-4fec-ac97-3c62d783b42a",
+        "name": "Work \u00b7 Comms",
+        "color": "orange",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "firefox-container-2",
+        "dropTabCtx": "firefox-container-2",
+        "moveRules": [
+          {
+            "id": "21f5930f-b2e8-434d-ab3e-4c563608cb4b",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "/^https:\\/\\/mail\\.google\\.com\\/mail\\/u\\/[1-9]/"
+          },
+          {
+            "id": "b11ec2c9-e7d6-4676-a13b-ccd1e46227f4",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "/^https:\\/\\/calendar\\.google\\.com\\/calendar\\/u\\/[1-9]/"
+          },
+          {
+            "id": "6824745c-3870-4ad9-abff-6cfb42d8bfbc",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://*.slack.com/"
+          },
+          {
+            "id": "828ea641-bf3f-4eb2-a34e-4a303bb1d6e4",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://mural.co/"
+          },
+          {
+            "id": "c096ee78-f7d1-43ab-a41b-d91a8de55481",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://*.cloud.microsoft/"
+          },
+          {
+            "id": "061fde66-f3f3-4c4a-ae34-4176772caa9a",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://*.office.com/"
+          },
+          {
+            "id": "d7abd455-387c-467b-aa68-3d76987e98ff",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://outlook.office.com/"
+          }
+        ],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": true
+      },
+      {
+        "type": "tabs",
+        "id": "2915d375-bd22-4e2e-a8b5-be549c7d72fe",
+        "name": "AI",
+        "color": "cyan",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "firefox-container-1",
+        "dropTabCtx": "firefox-container-1",
+        "moveRules": [
+          {
+            "id": "992e162c-0ae3-4d30-a433-3800eaee6d76",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://chatgpt.com/"
+          },
+          {
+            "id": "7937eb84-17b8-4b33-a5ec-bda838fd5ab7",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://claude.ai/"
+          },
+          {
+            "id": "f4df94a0-8583-46ba-a89f-b4bff725cb5c",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://claude.com/"
+          },
+          {
+            "id": "a221a5ad-454e-4139-a73c-8a671b1b5a19",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://console.anthropic.com/"
+          },
+          {
+            "id": "4145e654-0ec3-4b9e-a0e0-2d9048d692dd",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://openai.com/"
+          },
+          {
+            "id": "e306ae61-17f1-4dda-a336-4431cdf803ba",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://*.openai.com/"
+          },
+          {
+            "id": "e1609e71-779b-484d-a33a-6805c36150b8",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://*.perplexity.ai/"
+          },
+          {
+            "id": "f430e49c-3aac-45a9-a9c6-1d58920e928c",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://opencode.ai/"
+          }
+        ],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": true
+      },
+      {
+        "type": "tabs",
+        "id": "73fc1611-6ab7-4a79-a6b3-8fd04150535f",
+        "name": "Personal",
+        "color": "blue",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "firefox-container-1",
+        "dropTabCtx": "firefox-container-1",
+        "moveRules": [
+          {
+            "id": "4ee67ba1-4cac-461f-a465-232d65610f74",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "/^https:\\/\\/mail\\.google\\.com\\/mail\\/u\\/0/"
+          },
+          {
+            "id": "5bd03cf4-ce8e-48db-aaeb-53f03c50f857",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://github.com/shaheislam/"
+          },
+          {
+            "id": "23352cc4-94e5-4bc9-a895-8a91224cca53",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://github.com/leohenon/"
+          },
+          {
+            "id": "3c87587d-1563-4032-a2d1-dedfcbcc4ea4",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://github.com/anthropics/"
+          },
+          {
+            "id": "4ed63f04-5241-4c19-a088-d11bd79a55b6",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://www.youtube.com/"
+          },
+          {
+            "id": "e3f8e017-7dd4-470e-a9f8-73b4b7514171",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://youtube.com/"
+          },
+          {
+            "id": "a4172de0-805b-4944-a456-6bf313e7094a",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://www.bbc.co.uk/"
+          },
+          {
+            "id": "25557f07-39de-4a13-ab7b-68bc313e5e2c",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://www.reddit.com/"
+          },
+          {
+            "id": "ecbf4f8c-74f6-4712-a71e-18ea9b9147ce",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://x.com/"
+          },
+          {
+            "id": "b80c8fa6-920f-46cb-ae89-8b5776f86637",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://www.linkedin.com/"
+          },
+          {
+            "id": "2975de54-67e2-49b4-a2ca-0589486064e8",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://www.netflix.com/"
+          },
+          {
+            "id": "3b3669af-046f-4d04-afa6-f1927c363721",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://plex.tv/"
+          },
+          {
+            "id": "549609cd-6d56-4f98-a053-9737b2edc135",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://en.wikipedia.org/"
+          },
+          {
+            "id": "7c69169f-fa59-4b87-a5f7-bca1facdf38c",
+            "active": true,
+            "containerId": "firefox-container-1",
+            "url": "https://www.robertwalters.com/"
+          }
+        ],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": true
+      },
+      {
+        "type": "tabs",
+        "id": "da75af06-36bd-4913-a10a-f9fc5f3920cf",
+        "name": "Banking",
+        "color": "green",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "firefox-container-3",
+        "dropTabCtx": "firefox-container-3",
+        "moveRules": [],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": false
+      },
+      {
+        "type": "tabs",
+        "id": "d84faec0-c954-42d6-ac0b-09bdb4beeec9",
+        "name": "Shopping",
+        "color": "pink",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "firefox-container-4",
+        "dropTabCtx": "firefox-container-4",
+        "moveRules": [
+          {
+            "id": "376556d5-2916-43c9-ac7e-d19062922c36",
+            "active": true,
+            "containerId": "firefox-container-4",
+            "url": "https://www.amazon.co.uk/"
+          },
+          {
+            "id": "68e19ec3-85e4-4460-ad5c-da4dd45bef0b",
+            "active": true,
+            "containerId": "firefox-container-4",
+            "url": "https://www.amazon.com/"
+          },
+          {
+            "id": "783553f8-9972-47fc-acb8-227e7e47b7b1",
+            "active": true,
+            "containerId": "firefox-container-4",
+            "url": "https://www.airbnb.co.uk/"
+          },
+          {
+            "id": "459b4337-f181-4c7c-af8e-b6e96a3514d3",
+            "active": true,
+            "containerId": "firefox-container-4",
+            "url": "https://www.openrent.co.uk/"
+          },
+          {
+            "id": "b260de8d-53d8-4096-a7e2-c3fc38d06712",
+            "active": true,
+            "containerId": "firefox-container-4",
+            "url": "https://www.bose.co.uk/"
+          }
+        ],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": true
+      },
+      {
+        "type": "tabs",
+        "id": "197f8c9a-d455-4607-aa9f-8072bdc3f9cd",
+        "name": "Scratch",
+        "color": "red",
+        "iconSVG": "icon_tabs",
+        "iconIMGSrc": "",
+        "iconIMG": "",
+        "lockedPanel": false,
+        "skipOnSwitching": false,
+        "noEmpty": false,
+        "newTabCtx": "none",
+        "dropTabCtx": "none",
+        "moveRules": [],
+        "moveExcludedTo": -1,
+        "bookmarksFolderId": -1,
+        "newTabBtns": [],
+        "srcPanelConfig": null,
+        "urlRulesActive": false
+      }
+    ],
+    "nav": [
+      "c409fac4-3695-4369-a905-34e4a204b6f4",
+      "eec2cd80-2877-4eaf-a23b-d5ce83721eaf",
+      "39d2bd10-3ab9-4fec-ac97-3c62d783b42a",
+      "2915d375-bd22-4e2e-a8b5-be549c7d72fe",
+      "73fc1611-6ab7-4a79-a6b3-8fd04150535f",
+      "da75af06-36bd-4913-a10a-f9fc5f3920cf",
+      "d84faec0-c954-42d6-ac0b-09bdb4beeec9",
+      "197f8c9a-d455-4607-aa9f-8072bdc3f9cd"
+    ]
+  }
+}

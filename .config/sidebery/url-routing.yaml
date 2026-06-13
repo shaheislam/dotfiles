@@ -1,0 +1,166 @@
+# Sidebery URL routing — canonical source of truth.
+#
+# This file is the durable, hand-edited spec. The Sidebery-importable JSON
+# is GENERATED from this file by `scripts/sidebery/build-import.py`.
+# Edit YAML, regenerate JSON, then Sidebery → Settings → Help → Import.
+#
+# Portability across devices:
+#   - All cross-references are by NAME (panel name, container name), never
+#     by integer userContextId or extension UUID. The generator resolves
+#     container names to live `firefox-container-N` cookieStoreIds at
+#     generate time on whichever device runs it. Firefox Sync syncs the
+#     Multi-Account Containers engine, so userContextId values stay
+#     consistent across devices — but we never bake them in here.
+#
+# Rule syntax (moveRules.value):
+#   - Plain string  -> Sidebery treats as "starts with" prefix match.
+#   - "/regex/flags" -> Sidebery treats as regex when wrapped in slashes.
+# We use prefix matching where possible (faster + clearer); regex only
+# when path-discrimination is needed (e.g. Gmail /u/N/ split).
+
+version: 1
+generated_by: scripts/sidebery/build-import.py
+
+containers:
+  # Names resolved live; defaults assumed unless overridden.
+  - name: Personal
+    color: blue
+    icon: fingerprint
+  - name: Work
+    color: orange
+    icon: briefcase
+  - name: Banking
+    color: green
+    icon: dollar
+  - name: Shopping
+    color: pink
+    icon: cart
+  - name: Throwaway
+    color: red
+    icon: circle
+    # New container. If absent at generate time you'll be told to create it
+    # manually in about:preferences#containers (Sidebery cannot create them
+    # via import — that's a Firefox-native UI concern).
+
+panels:
+
+  # ── Work cluster ────────────────────────────────────────────────────────
+  - name: Work · GDS
+    icon: icon_tabs
+    color: orange
+    container: Work
+    no_empty: false
+    rules:
+      - "https://*.gov.uk/"
+      - "https://gdsgovukagents.atlassian.net/"
+      - "https://github.com/govuk-once/"
+      - "https://github.com/gds-tech-and-security/"
+      - "https://github.com/alphagov/"
+      - "https://khub.net/"
+      - "https://cabinet-office.gov.uk/"
+
+  - name: Work · AWS+Infra
+    icon: icon_tabs
+    color: orange
+    container: Work
+    rules:
+      - "https://*.aws.amazon.com/"
+      - "https://signin.aws.amazon.com/"
+      - "https://*.signin.aws/"
+      - "https://*.okta.com/"
+      - "https://github.com/aws-samples/"
+      - "https://github.com/goauthentik/"
+
+  - name: Work · Comms
+    icon: icon_tabs
+    color: orange
+    container: Work
+    rules:
+      # Gmail /u/N/ where N>=1 = work accounts
+      - "/^https:\\/\\/mail\\.google\\.com\\/mail\\/u\\/[1-9]/"
+      # Calendar work accounts
+      - "/^https:\\/\\/calendar\\.google\\.com\\/calendar\\/u\\/[1-9]/"
+      - "https://*.slack.com/"
+      - "https://mural.co/"
+      - "https://*.cloud.microsoft/"
+      - "https://*.office.com/"
+      - "https://outlook.office.com/"
+
+  # ── Personal cluster ────────────────────────────────────────────────────
+  - name: AI
+    icon: icon_tabs
+    color: cyan
+    container: Personal
+    rules:
+      - "https://chatgpt.com/"
+      - "https://claude.ai/"
+      - "https://claude.com/"
+      - "https://console.anthropic.com/"
+      - "https://openai.com/"
+      - "https://*.openai.com/"
+      - "https://*.perplexity.ai/"
+      - "https://opencode.ai/"
+
+  - name: Personal
+    icon: icon_tabs
+    color: blue
+    container: Personal
+    rules:
+      # Personal Gmail /u/0/
+      - "/^https:\\/\\/mail\\.google\\.com\\/mail\\/u\\/0/"
+      # GitHub personal/OSS — catches everything not already routed above
+      - "https://github.com/shaheislam/"
+      - "https://github.com/leohenon/"
+      - "https://github.com/anthropics/"
+      - "https://www.youtube.com/"
+      - "https://youtube.com/"
+      - "https://www.bbc.co.uk/"
+      - "https://www.reddit.com/"
+      - "https://x.com/"
+      - "https://www.linkedin.com/"
+      - "https://www.netflix.com/"
+      - "https://plex.tv/"
+      - "https://en.wikipedia.org/"
+      # Recruitment / career — review with bd if you want it elsewhere.
+      - "https://www.robertwalters.com/"
+
+  # ── Sensitive cluster ───────────────────────────────────────────────────
+  - name: Banking
+    icon: icon_tabs
+    color: green
+    container: Banking
+    rules:
+      # Seed your banks here. Patterns left empty intentionally — populate
+      # as you log into each. Banking container provides strict isolation.
+      # Example: "https://*.monzo.com/"
+
+  # ── Shopping ────────────────────────────────────────────────────────────
+  - name: Shopping
+    icon: icon_tabs
+    color: pink
+    container: Shopping
+    rules:
+      - "https://www.amazon.co.uk/"
+      - "https://www.amazon.com/"
+      - "https://www.airbnb.co.uk/"
+      - "https://www.openrent.co.uk/"
+      - "https://www.bose.co.uk/"
+
+  # ── Catch-all ───────────────────────────────────────────────────────────
+  - name: Scratch
+    icon: icon_tabs
+    color: red
+    container: Throwaway
+    no_empty: false
+    rules: []
+    # Last panel acts as Sidebery's natural landing area for unrouted tabs.
+    # Throwaway container = ephemeral cookies, clean weekly.
+
+# ── Pinning policy ────────────────────────────────────────────────────────
+# Sidebery doesn't import pinned-tab state through the panels schema, but
+# you can right-click → "Pin tab" in the sidebar. The build-import script
+# emits a one-time `pinning-helper.md` listing top-3 hosts per panel by
+# frecency, so you can pin them manually in <90s.
+pinning:
+  per_panel_top_n: 3
+  source: history          # alternative: "manual"
