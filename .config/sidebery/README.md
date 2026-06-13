@@ -10,6 +10,7 @@ this machine and any Firefox-Sync'd device.
 | `url-routing.yaml` | **SoT** — hand-edited. Defines panels, containers, URL rules, pinning policy. |
 | `sidebery-import.json` | Generated. Drop-in import for Sidebery → Settings → Help → Import. |
 | `pinning-helper.md` | Generated. Top-3 hosts per panel for manual pin-tab after import. |
+| `keymap-alignment.md` | Hand-edited audit of tmux × Nvim × Aerospace × Ghostty × Sidebery bindings + recommended Sidebery rebinds. |
 | `../../scripts/sidebery/build-import.py` | YAML → JSON generator. |
 | `../../scripts/sidebery/dump-history.py` | Frecency dump from `places.sqlite`. |
 

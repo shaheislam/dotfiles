@@ -177,6 +177,12 @@
             "active": true,
             "containerId": "firefox-container-2",
             "url": "https://outlook.office.com/"
+          },
+          {
+            "id": "159ab6a5-d212-4ed9-a1d5-145a7e164729",
+            "active": true,
+            "containerId": "firefox-container-2",
+            "url": "https://www.robertwalters.com/"
           }
         ],
         "moveExcludedTo": -1,
@@ -345,12 +351,6 @@
             "active": true,
             "containerId": "firefox-container-1",
             "url": "https://en.wikipedia.org/"
-          },
-          {
-            "id": "7c69169f-fa59-4b87-a5f7-bca1facdf38c",
-            "active": true,
-            "containerId": "firefox-container-1",
-            "url": "https://www.robertwalters.com/"
           }
         ],
         "moveExcludedTo": -1,

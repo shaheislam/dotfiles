@@ -85,6 +85,8 @@ panels:
       - "https://*.cloud.microsoft/"
       - "https://*.office.com/"
       - "https://outlook.office.com/"
+      # Recruitment / career — work-adjacent comms surface.
+      - "https://www.robertwalters.com/"
 
   # ── Personal cluster ────────────────────────────────────────────────────
   - name: AI
@@ -121,8 +123,6 @@ panels:
       - "https://www.netflix.com/"
       - "https://plex.tv/"
       - "https://en.wikipedia.org/"
-      # Recruitment / career — review with bd if you want it elsewhere.
-      - "https://www.robertwalters.com/"
 
   # ── Sensitive cluster ───────────────────────────────────────────────────
   - name: Banking
