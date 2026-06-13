@@ -55,10 +55,24 @@ if [[ -n "$line_number" && ! "$line_number" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 
-# Not in tmux — nothing to do
+# Not in tmux — try to recover context from OpenCode attach files.
+# OpenCode's launchd server inherits neither $TMUX nor $TMUX_PANE, but
+# tmux-open.sh writes a pane= entry to an attach file we can read directly.
 if [[ -z "${TMUX:-}" ]]; then
-    echo "Not in tmux, skipping nvim open" >&2
-    exit 0
+    _attach_dir="${XDG_STATE_HOME:-$HOME/.local/state}/opencode/attaches"
+    _recovered_pane=""
+    if tmux info >/dev/null 2>&1 && [[ -d "$_attach_dir" ]]; then
+        _recovered_pane=$(
+            find "$_attach_dir" -maxdepth 1 -name '*.pid' \
+                -exec grep -h '^pane=' {} + 2>/dev/null |
+                head -1 | cut -d= -f2
+        )
+    fi
+    if [[ -z "$_recovered_pane" ]]; then
+        echo "Not in tmux, skipping nvim open" >&2
+        exit 0
+    fi
+    source_pane="$_recovered_pane"
 fi
 
 # Default target: window containing the pane that launched the hook. A bare
