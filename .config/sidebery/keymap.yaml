@@ -1,0 +1,104 @@
+# Sidebery keybinding intent — canonical source of truth.
+#
+# Generator (`scripts/sidebery/build-import.py`) emits:
+#   - `keymap-checklist.md`  - hand-applied checklist matching this file.
+#
+# Why not auto-inject into sidebery-import.json?
+# Sidebery's keybinding storage schema isn't documented as a stable
+# import contract — its UI is the canonical surface, and it catches
+# conflicts inline. The dotfiles canonical record lives here; the
+# checklist is the application surface.
+#
+# Scope:
+#   - `global` = browser-level Firefox command, set via:
+#       about:addons → ⚙ → Manage Extension Shortcuts.
+#     Limited to ~4 slots; declared in Sidebery's manifest.json.
+#   - `panel`  = sidebar-focused, set via:
+#       Sidebery → Settings → Keybindings.
+#     Unlimited; fires only when sidebar has focus.
+#
+# Alignment rationale lives in `keymap-alignment.md`.
+
+version: 1
+
+bindings:
+  # ── Global (Firefox extension shortcut, browser-wide) ─────────────────
+  - action: activate_panel_1
+    chord: "Ctrl+Shift+1"
+    scope: global
+    note: "Avoids Aerospace alt-1..4 shadow."
+  - action: activate_panel_2
+    chord: "Ctrl+Shift+2"
+    scope: global
+  - action: activate_panel_3
+    chord: "Ctrl+Shift+3"
+    scope: global
+  - action: activate_panel_4
+    chord: "Ctrl+Shift+4"
+    scope: global
+  - action: next_panel
+    chord: "Ctrl+Shift+]"
+    scope: global
+    note: "Browser-wide cycle, like next-tab muscle memory."
+  - action: prev_panel
+    chord: "Ctrl+Shift+["
+    scope: global
+
+  # ── Panel-scoped (sidebar focus required) ─────────────────────────────
+  # Vim navigation mirrors vim-tmux-navigator + Nvim h/j/k/l.
+  - action: next_tab
+    chord: "j"
+    scope: panel
+  - action: prev_tab
+    chord: "k"
+    scope: panel
+  - action: next_panel
+    chord: "l"
+    scope: panel
+    note: "Sidebar-focused panel cycle. Global Ctrl+Shift+] still works."
+  - action: prev_panel
+    chord: "h"
+    scope: panel
+
+  # Tab actions
+  - action: activate_tab
+    chord: "Enter"
+    scope: panel
+  - action: edit_url
+    chord: "e"
+    scope: panel
+    note: "Mirrors tmux `prefix e` + Ghostty `super+e` (= editor surface)."
+  - action: search_tabs
+    chord: "/"
+    scope: panel
+  - action: reload_tab
+    chord: "r"
+    scope: panel
+  - action: duplicate_tab
+    chord: "Ctrl+D"
+    scope: panel
+  - action: pin_tab
+    chord: "Ctrl+Shift+P"
+    scope: panel
+  - action: close_tab
+    chord: "Ctrl+W"
+    scope: panel
+    note: "Sidebery default; aligned with Ghostty super+w."
+  - action: new_tab_in_panel
+    chord: "Ctrl+T"
+    scope: panel
+    note: "Sidebery default; aligned with Ghostty super+t."
+
+  # Tree-style tab manipulation (uses Vim fold semantics)
+  - action: collapse_tabs
+    chord: "zc"
+    scope: panel
+  - action: expand_tabs
+    chord: "zo"
+    scope: panel
+  - action: collapse_all_tabs
+    chord: "zM"
+    scope: panel
+  - action: expand_all_tabs
+    chord: "zR"
+    scope: panel

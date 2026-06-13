@@ -130,9 +130,14 @@ panels:
     color: green
     container: Banking
     rules:
-      # Seed your banks here. Patterns left empty intentionally — populate
-      # as you log into each. Banking container provides strict isolation.
-      # Example: "https://*.monzo.com/"
+      # Subdomain glob catches auth.*, business.*, app.* etc. Banks rotate
+      # subdomains across login/transactions/help flows — pinning to apex
+      # would miss them.
+      - "https://*.revolut.com/"
+      - "https://*.monzo.com/"
+      - "https://*.starlingbank.com/"
+      - "https://*.lloydsbank.com/"
+      - "https://*.lloyds.com/"
 
   # ── Shopping ────────────────────────────────────────────────────────────
   - name: Shopping

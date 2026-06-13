@@ -372,12 +372,43 @@
         "noEmpty": false,
         "newTabCtx": "firefox-container-3",
         "dropTabCtx": "firefox-container-3",
-        "moveRules": [],
+        "moveRules": [
+          {
+            "id": "59f39eb8-804e-4fb3-a856-1a3f3c93c5b2",
+            "active": true,
+            "containerId": "firefox-container-3",
+            "url": "https://*.revolut.com/"
+          },
+          {
+            "id": "bc2a8c1d-5b8f-49e1-a5e3-81dbcf06a4a9",
+            "active": true,
+            "containerId": "firefox-container-3",
+            "url": "https://*.monzo.com/"
+          },
+          {
+            "id": "97a8818d-d993-4195-a963-1e0d32b39a8f",
+            "active": true,
+            "containerId": "firefox-container-3",
+            "url": "https://*.starlingbank.com/"
+          },
+          {
+            "id": "f2a337c8-020d-4450-a4a5-c794e430df4c",
+            "active": true,
+            "containerId": "firefox-container-3",
+            "url": "https://*.lloydsbank.com/"
+          },
+          {
+            "id": "024fb941-848b-4c98-ad7c-f3b9777ad044",
+            "active": true,
+            "containerId": "firefox-container-3",
+            "url": "https://*.lloyds.com/"
+          }
+        ],
         "moveExcludedTo": -1,
         "bookmarksFolderId": -1,
         "newTabBtns": [],
         "srcPanelConfig": null,
-        "urlRulesActive": false
+        "urlRulesActive": true
       },
       {
         "type": "tabs",

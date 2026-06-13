@@ -43,8 +43,10 @@ except ImportError:
 
 REPO = Path(__file__).resolve().parents[2]
 YAML_PATH = REPO / ".config/sidebery/url-routing.yaml"
+KEYMAP_YAML = REPO / ".config/sidebery/keymap.yaml"
 OUT_JSON = REPO / ".config/sidebery/sidebery-import.json"
 PIN_DOC = REPO / ".config/sidebery/pinning-helper.md"
+KEYMAP_DOC = REPO / ".config/sidebery/keymap-checklist.md"
 
 # Mozilla default name <-> userContextId fallback (used when containers.json
 # can't be resolved or names are localised null). Firefox Sync keeps these
@@ -184,7 +186,46 @@ def main() -> int:
 
     # Pinning helper — surface top hosts per panel from frecency, if available.
     write_pinning_helper(spec, name_to_csid)
+    # Keymap checklist — hand-applied via Sidebery UI / about:addons.
+    write_keymap_checklist()
     return 0
+
+
+def write_keymap_checklist() -> None:
+    if not KEYMAP_YAML.is_file():
+        return
+    km = yaml.safe_load(KEYMAP_YAML.read_text())
+    bindings = km.get("bindings") or []
+    global_b = [b for b in bindings if b.get("scope") == "global"]
+    panel_b = [b for b in bindings if b.get("scope") == "panel"]
+    lines = [
+        "# Sidebery keybindings — apply checklist",
+        "",
+        "Generated from `keymap.yaml`. Sidebery's UI is the canonical",
+        "application surface; this checklist matches what to enter where.",
+        "",
+        "## Global (browser-wide)",
+        "",
+        "Set via: `about:addons` → ⚙ (top-right gear) → **Manage Extension Shortcuts**.",
+        "",
+        "| Action | Chord | Note |",
+        "|---|---|---|",
+    ]
+    for b in global_b:
+        lines.append(f"| `{b['action']}` | `{b['chord']}` | {b.get('note', '')} |")
+    lines += [
+        "",
+        "## Panel-scoped (sidebar focus required)",
+        "",
+        "Set via: Sidebery → **Settings** → **Keybindings** tab.",
+        "",
+        "| Action | Chord | Note |",
+        "|---|---|---|",
+    ]
+    for b in panel_b:
+        lines.append(f"| `{b['action']}` | `{b['chord']}` | {b.get('note', '')} |")
+    KEYMAP_DOC.write_text("\n".join(lines) + "\n")
+    print(f"Wrote {KEYMAP_DOC}")
 
 
 def write_pinning_helper(spec: dict[str, Any], name_to_csid: dict[str, str]) -> None:
