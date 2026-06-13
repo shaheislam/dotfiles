@@ -1,0 +1,55 @@
+/* Sidebery sidebar theme — miniautumn palette.
+ *
+ * Loaded into Sidebery via Settings → Styles → Sidebar (or via the
+ * `styles` block in sidebery-import.json — `build-import.py` reads this
+ * file on every regen).
+ *
+ * Container color overrides repaint the container dots so they read
+ * legibly against the dark espresso background. Sidebery's defaults
+ * assume light/dark grey themes; warm-bg themes need this.
+ */
+
+:root {
+  --frame-bg: #2f1c10;
+  --frame-fg: #e0c5a0;
+  --frame-border: #4a2f1f;
+
+  --tabs-fg: #e0c5a0;
+  --tabs-bg-hover: #3d2618;
+  --tabs-activated-bg: #4a2f1f;
+  --tabs-activated-fg: #ffe6c5;
+  --tabs-activated-bg-shadow: inset 2px 0 0 0 #e0826a;
+  --tabs-border-radius: 6px;
+  --tabs-height: 30px;
+  --tabs-indent: 8px;
+
+  --tabs-loading-fg: #cfa15c;
+  --tabs-audio-fg: #62a8a2;
+  --tabs-pinned-bg: #3a2316;
+
+  --bookmarks-fg: #e0c5a0;
+  --bookmarks-folder-fg: #cfa15c;
+
+  --nav-btn-fg: #e0c5a0;
+  --nav-btn-bg-hover: #3d2618;
+  --nav-btn-bg-active: #4a2f1f;
+
+  --container-personal-fg: #e0826a;
+  --container-work-fg: #7596a4;
+  --container-shopping-fg: #9aa055;
+  --container-banking-fg: #cfa15c;
+  --container-finance-fg: #b18ec7;
+}
+
+#root.root {
+  background: var(--frame-bg);
+  color: var(--frame-fg);
+  font-feature-settings: "ss01", "cv11";
+}
+
+.Tab[data-active="true"] {
+  font-weight: 600;
+}
+
+.Tab .audio { color: var(--tabs-audio-fg); }
+.Tab .progress-spinner { stroke: var(--tabs-loading-fg); }

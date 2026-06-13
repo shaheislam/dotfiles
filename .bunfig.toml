@@ -1,0 +1,7 @@
+[install]
+# clonefile = APFS copy-on-write on macOS (near-zero disk per worktree)
+# Falls back to hardlink on Linux for equivalent savings on ext4/btrfs.
+backend = "clonefile"
+
+[install.cache]
+dir = "~/.bun/install/cache"

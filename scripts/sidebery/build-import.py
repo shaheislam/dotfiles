@@ -44,6 +44,8 @@ except ImportError:
 REPO = Path(__file__).resolve().parents[2]
 YAML_PATH = REPO / ".config/sidebery/url-routing.yaml"
 KEYMAP_YAML = REPO / ".config/sidebery/keymap.yaml"
+SIDEBAR_CSS = REPO / ".config/sidebery/sidebar.css"
+GROUP_CSS = REPO / ".config/sidebery/group.css"
 OUT_JSON = REPO / ".config/sidebery/sidebery-import.json"
 PIN_DOC = REPO / ".config/sidebery/pinning-helper.md"
 KEYMAP_DOC = REPO / ".config/sidebery/keymap-checklist.md"
@@ -180,6 +182,15 @@ def main() -> int:
             "nav": [p["id"] for p in panels],
         },
     }
+    # Styles block — only emit if the CSS files exist.
+    styles = {}
+    if SIDEBAR_CSS.is_file():
+        styles["sidebarCSS"] = SIDEBAR_CSS.read_text()
+    if GROUP_CSS.is_file():
+        styles["groupCSS"] = GROUP_CSS.read_text()
+    if styles:
+        out["styles"] = styles
+        print(f"Bundled styles: {', '.join(styles.keys())}")
     OUT_JSON.parent.mkdir(parents=True, exist_ok=True)
     OUT_JSON.write_text(json.dumps(out, indent=2) + "\n")
     print(f"\nWrote {OUT_JSON} ({len(panels)} panels, {sum(len(p['moveRules']) for p in panels)} rules)")

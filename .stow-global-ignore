@@ -1,0 +1,5 @@
+# Stow global ignore patterns
+# Cache and generated directories that should never be stowed
+\.ruff_cache
+__pycache__
+\.DS_Store
