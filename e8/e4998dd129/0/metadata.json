@@ -1,0 +1,78 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "e8e4998dd129",
+  "session_id": "ses_13f3f292affeZD3dG0NL1dXJQR",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-13T15:35:27.82238Z",
+  "branch": "main",
+  "checkpoints_count": 5,
+  "files_touched": [
+    ".config/fish/functions/__gwt_auto_source_ports.fish",
+    ".config/fish/functions/gwt-dev.fish",
+    "scripts/port-allocator.sh"
+  ],
+  "agent": "OpenCode",
+  "model": "claude-opus-4-8",
+  "turn_id": "351ab2f4a356",
+  "checkpoint_transcript_start": 22,
+  "transcript_lines_at_start": 22,
+  "token_usage": {
+    "input_tokens": 102,
+    "cache_creation_tokens": 2059649,
+    "cache_read_tokens": 651325,
+    "output_tokens": 43194,
+    "api_call_count": 23
+  },
+  "session_metrics": {
+    "turn_count": 9
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-13T15:35:27.709969Z",
+    "agent_lines": 96,
+    "agent_removed": 6,
+    "human_added": 224,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 320,
+    "total_lines_changed": 328,
+    "agent_percentage": 31.097560975609756,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}

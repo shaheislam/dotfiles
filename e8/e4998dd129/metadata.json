@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "e8e4998dd129",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 5,
+  "files_touched": [
+    ".config/fish/functions/__gwt_auto_source_ports.fish",
+    ".config/fish/functions/gwt-dev.fish",
+    "scripts/port-allocator.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/e8/e4998dd129/0/metadata.json",
+      "transcript": "/e8/e4998dd129/0/full.jsonl",
+      "content_hash": "/e8/e4998dd129/0/content_hash.txt",
+      "prompt": "/e8/e4998dd129/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 102,
+    "cache_creation_tokens": 2059649,
+    "cache_read_tokens": 651325,
+    "output_tokens": 43194,
+    "api_call_count": 23
+  }
+}
