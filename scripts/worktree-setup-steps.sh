@@ -161,7 +161,52 @@ step_6() {
     return 0
 }
 
-TOTAL_STEPS=6
+STEP_NAMES[7]="Warm dependency caches"
+step_7() {
+    local ran=0
+    # bun
+    if [ -f "$WORKTREE_PATH/bun.lockb" ] || [ -f "$WORKTREE_PATH/package.json" ]; then
+        if command -v bun >/dev/null 2>&1; then
+            echo "   bun install --frozen-lockfile"
+            (cd "$WORKTREE_PATH" && bun install --frozen-lockfile 2>&1 | tail -3) || true
+            ran=1
+        fi
+    fi
+    # uv (Python)
+    if [ -f "$WORKTREE_PATH/uv.lock" ]; then
+        if command -v uv >/dev/null 2>&1; then
+            echo "   uv sync --frozen"
+            (cd "$WORKTREE_PATH" && uv sync --frozen 2>&1 | tail -3) || true
+            ran=1
+        fi
+    elif [ -f "$WORKTREE_PATH/requirements.txt" ]; then
+        if command -v uv >/dev/null 2>&1; then
+            echo "   uv pip install -r requirements.txt"
+            (cd "$WORKTREE_PATH" && uv pip install -r requirements.txt 2>&1 | tail -3) || true
+            ran=1
+        fi
+    fi
+    # go
+    if [ -f "$WORKTREE_PATH/go.mod" ]; then
+        if command -v go >/dev/null 2>&1; then
+            echo "   go mod download"
+            (cd "$WORKTREE_PATH" && go mod download 2>/dev/null) || true
+            ran=1
+        fi
+    fi
+    # cargo (registry only — no build)
+    if [ -f "$WORKTREE_PATH/Cargo.toml" ]; then
+        if command -v cargo >/dev/null 2>&1; then
+            echo "   cargo fetch"
+            (cd "$WORKTREE_PATH" && cargo fetch 2>/dev/null) || true
+            ran=1
+        fi
+    fi
+    [ "$ran" -eq 0 ] && echo "   (no recognized lockfile — skipped)"
+    return 0
+}
+
+TOTAL_STEPS=7
 
 # --- Show status ---
 if $SHOW_STATUS; then

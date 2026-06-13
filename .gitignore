@@ -70,6 +70,7 @@ skills/shared/dream/.last-dream
 .claude/agents/entire-search.md
 .gemini/agents/
 .gemini/settings.json
+!.gemini/settings.json
 
 # Entire CLI git hooks (regenerated per-worktree by `entire enable`)
 # Project-specific hooks in .githooks/ should still be committed

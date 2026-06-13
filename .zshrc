@@ -171,6 +171,18 @@ if command -v granted &> /dev/null 2>&1; then
     eval "$(granted completion --shell zsh)" 2>/dev/null || true
 fi
 
+# Package manager cache dirs (mirrors conf.d/00-env.fish)
+export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+export UV_CACHE_DIR="${UV_CACHE_DIR:-$HOME/.cache/uv}"
+export UV_LINK_MODE="${UV_LINK_MODE:-hardlink}"
+export GOPATH="${GOPATH:-$HOME/go}"
+export GOMODCACHE="${GOMODCACHE:-$HOME/go/pkg/mod}"
+export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
+for _d in "$HOME/.bun/install/cache" "$HOME/.cache/uv" "$HOME/.cargo/registry" "$HOME/go/pkg/mod"; do
+    [[ -d "$_d" ]] || mkdir -p "$_d" 2>/dev/null
+done
+unset _d
+
 # Source powerlevel10k config if using it
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 

@@ -188,6 +188,28 @@ function gwt-dev --description "Create worktree with isolated devcontainer"
         end
     end
 
+    # Write .envrc with port/db injection block if not already present
+    set -l envrc_path "$abs_wt/.envrc"
+    if not grep -qF GWT_PORTS_BEGIN "$envrc_path" 2>/dev/null
+        set -l envrc_existed false
+        if test -f "$envrc_path"
+            set envrc_existed true
+            echo "" >>"$envrc_path"
+        end
+        begin
+            echo "# --- GWT_PORTS_BEGIN ---"
+            echo "# Auto-injected by gwt-dev. Remove this block to opt out."
+            echo "test -f .env.ports && dotenv .env.ports"
+            echo "test -f .env.db && dotenv .env.db"
+            echo "# --- GWT_PORTS_END ---"
+        end >>"$envrc_path"
+        if $envrc_existed
+            echo "   .envrc: appended port/db block"
+        else
+            echo "   .envrc: created with port/db block"
+        end
+    end
+
     # Skip devcontainer if requested
     if $do_no_devcon
         echo "Worktree created: $worktree_path"

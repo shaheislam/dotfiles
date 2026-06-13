@@ -68,7 +68,9 @@
     "source=${localEnv:HOME}/.devcontainer/instances/${localEnv:DEVCON_INSTANCE:default}/work,target=/work,type=bind,consistency=cached",
     "source=${localEnv:HOME}/neovim,target=/devcontainer/neovim,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.aws/config,target=/home/node/.aws/config,type=bind,readonly",
-    "source=${localEnv:HOME}/dotfiles,target=/home/node/dotfiles,type=bind,consistency=cached"
+    "source=${localEnv:HOME}/dotfiles,target=/home/node/dotfiles,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.bun/install/cache,target=/home/node/.bun/install/cache,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.cache/uv,target=/home/node/.cache/uv,type=bind,consistency=cached"
   ],
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
@@ -79,6 +81,7 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
+  "initializeCommand": "mkdir -p ${localEnv:HOME}/.bun/install/cache ${localEnv:HOME}/.cache/uv",
   "postCreateCommand": "/usr/local/bin/setup-nvim-env.sh && /home/node/dotfiles/scripts/setup-devcontainer-shell.sh",
   "postStartCommand": "sudo /usr/local/bin/init-firewall.sh",
   "waitFor": "postStartCommand"

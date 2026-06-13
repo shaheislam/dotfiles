@@ -209,6 +209,7 @@ cmd_cleanup() {
 
 cmd_env() {
     local name="$1"
+    local shell_fmt="${2:-bash}"
     local base
     base=$(cmd_get "$name") || {
         echo "Error: No allocation for '$name'" >&2
@@ -217,11 +218,21 @@ cmd_env() {
 
     local i=0
     for pname in "${PORT_NAMES[@]}"; do
-        echo "PORT_${pname}=$((base + i))"
+        local val=$((base + i))
+        if [ "$shell_fmt" = "fish" ]; then
+            echo "set -gx PORT_${pname} ${val}"
+        else
+            echo "PORT_${pname}=${val}"
+        fi
         i=$((i + 1))
     done
-    echo "PORT_BASE=$base"
-    echo "PORT_RANGE=$PORTS_PER_WORKSPACE"
+    if [ "$shell_fmt" = "fish" ]; then
+        echo "set -gx PORT_BASE ${base}"
+        echo "set -gx PORT_RANGE ${PORTS_PER_WORKSPACE}"
+    else
+        echo "PORT_BASE=${base}"
+        echo "PORT_RANGE=${PORTS_PER_WORKSPACE}"
+    fi
 }
 
 # --- Main ---
@@ -255,10 +266,20 @@ cleanup)
     ;;
 env)
     [ -z "${2:-}" ] && {
-        echo "Usage: port-allocator.sh env <worktree-name>" >&2
+        echo "Usage: port-allocator.sh env <worktree-name> [--shell bash|fish]" >&2
         exit 1
     }
-    cmd_env "$2"
+    _env_shell="bash"
+    case "${3:-}" in
+    --shell=bash | bash) _env_shell="bash" ;;
+    --shell=fish | fish) _env_shell="fish" ;;
+    --shell)
+        case "${4:-}" in
+        bash | fish) _env_shell="${4}" ;;
+        esac
+        ;;
+    esac
+    cmd_env "$2" "$_env_shell"
     ;;
 *)
     echo "Usage: port-allocator.sh {allocate|release|get|list|cleanup|env} [worktree-name]"
@@ -271,7 +292,7 @@ env)
     echo "  get      <name>  Get existing base port (no create)"
     echo "  list             List all allocations"
     echo "  cleanup          Remove allocations for deleted worktrees"
-    echo "  env      <name>  Print PORT_* environment variables"
+    echo "  env      <name>  Print PORT_* env vars [--shell bash|fish]"
     echo ""
     echo "Environment:"
     echo "  GWT_PORT_BASE              Starting port (default: 10000)"

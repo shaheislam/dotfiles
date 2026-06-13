@@ -33,3 +33,18 @@ set -q CLAUDE_CODE_NO_FLICKER; or set -gx CLAUDE_CODE_NO_FLICKER 0
 set -q CLAUDE_CODE_ENABLE_TELEMETRY; or set -gx CLAUDE_CODE_ENABLE_TELEMETRY 1
 set -q OTEL_EXPORTER_OTLP_ENDPOINT; or set -gx OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4318"
 set -q OPENCODE_DISABLE_LSP_DOWNLOAD; or set -gx OPENCODE_DISABLE_LSP_DOWNLOAD true
+
+# Package manager cache dirs — explicit paths enable devcontainer bind mounts
+# and ensure all shells agree on the canonical location.
+set -q BUN_INSTALL; or set -gx BUN_INSTALL "$HOME/.bun"
+set -q UV_CACHE_DIR; or set -gx UV_CACHE_DIR "$HOME/.cache/uv"
+set -q UV_LINK_MODE; or set -gx UV_LINK_MODE hardlink
+set -q GOPATH; or set -gx GOPATH "$HOME/go"
+set -q GOMODCACHE; or set -gx GOMODCACHE "$HOME/go/pkg/mod"
+set -q CARGO_HOME; or set -gx CARGO_HOME "$HOME/.cargo"
+
+# Ensure cache dirs exist so devcontainer bind mounts always have a source.
+for _cache_dir in "$HOME/.bun/install/cache" "$HOME/.cache/uv" "$HOME/.cargo/registry" "$HOME/go/pkg/mod"
+    test -d "$_cache_dir"; or mkdir -p "$_cache_dir" 2>/dev/null
+end
+set -e _cache_dir
