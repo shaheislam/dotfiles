@@ -11,6 +11,9 @@
 
 set -euo pipefail
 
+# Guard: never trigger dream from inside a dream (child session spawned by claude -p)
+[ -n "${CLAUDE_PARENT_SESSION_ID:-}" ] && exit 1
+
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$SKILL_DIR/.dream-config"
 
