@@ -1,0 +1,46 @@
+{
+  "cli_version": "0.7.5",
+  "checkpoint_id": "7ce57dc61099",
+  "session_id": "ses_13f3f292affeZD3dG0NL1dXJQR",
+  "strategy": "manual-commit",
+  "created_at": "2026-06-13T14:24:18.962372Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/nvim-open-file.sh"
+  ],
+  "agent": "OpenCode",
+  "model": "claude-sonnet-4-6",
+  "turn_id": "351ab2f4a356",
+  "token_usage": {
+    "input_tokens": 60,
+    "cache_creation_tokens": 823520,
+    "cache_read_tokens": 737188,
+    "output_tokens": 21177,
+    "api_call_count": 20
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-06-13T14:24:18.928478Z",
+    "agent_lines": 17,
+    "agent_removed": 3,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 17,
+    "total_lines_changed": 20,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
