@@ -629,6 +629,18 @@ test_hooks() {
     run_test "protect-files allows normal files" "echo '{\"tool_input\":{\"file_path\":\"/app/src/main.py\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
     run_test "protect-files blocks protected patch target" "python3 -c \"import json; print(json.dumps({'tool_input': {'patchText': '*** Begin Patch\\n*** Update File: /app/package-lock.json\\n*** End Patch'}}))\" | python3 '$hooks_dir/protect-files.py' 2>/dev/null; [ \$? -eq 2 ]"
 
+    # Functional: worktree-boundary.py enforces edits stay inside the worktree
+    run_test "worktree-boundary hook exists" "[ -f '$hooks_dir/worktree-boundary.py' ]"
+    run_test "worktree-boundary hook executable" "[ -x '$hooks_dir/worktree-boundary.py' ]"
+    run_test "worktree-boundary allows path inside boundary" "echo '{\"tool_input\":{\"file_path\":\"$DOTFILES_ROOT/foo.txt\"}}' | WORKTREE_BOUNDARY='$DOTFILES_ROOT' python3 '$hooks_dir/worktree-boundary.py' 2>/dev/null"
+    run_test "worktree-boundary blocks path outside boundary" "echo '{\"tool_input\":{\"file_path\":\"/tmp/outside-boundary-$$/file.txt\"}}' | WORKTREE_BOUNDARY='$DOTFILES_ROOT/_fake_only' python3 '$hooks_dir/worktree-boundary.py' 2>/dev/null; [ \$? -eq 2 ]"
+    run_test "worktree-boundary override skips check" "echo '{\"tool_input\":{\"file_path\":\"/etc/passwd\"}}' | WORKTREE_BOUNDARY='$DOTFILES_ROOT' WORKTREE_BOUNDARY_OVERRIDE=1 python3 '$hooks_dir/worktree-boundary.py' 2>/dev/null"
+    run_test "worktree-boundary allows ~/.claude/settings.json" "echo '{\"tool_input\":{\"file_path\":\"'\$HOME'/.claude/settings.json\"}}' | WORKTREE_BOUNDARY='$DOTFILES_ROOT' python3 '$hooks_dir/worktree-boundary.py' 2>/dev/null"
+    run_test "worktree-boundary fails open with no boundary" "env -u WORKTREE_BOUNDARY -u CLAUDE_PROJECT_DIR bash -c 'cd /tmp && echo {} | python3 \"$hooks_dir/worktree-boundary.py\"' 2>/dev/null"
+    run_test "worktree-boundary wired in settings.json" "python3 -c \"import json; d=json.load(open('$settings')); hooks=[h for entry in d['hooks']['PreToolUse'] if entry.get('matcher','').startswith('Edit') for h in entry['hooks']]; assert any('worktree-boundary.py' in h['command'] for h in hooks)\""
+    run_test "worktree-boundary wired in opencode harness-compat" "grep -q 'worktree-boundary.py' '$DOTFILES_ROOT/.config/opencode/plugin/harness-compat.ts'"
+    run_test "gwt-ticket exports WORKTREE_BOUNDARY" "grep -q 'set -gx WORKTREE_BOUNDARY' '$DOTFILES_ROOT/.config/fish/functions/gwt-ticket.fish'"
+
     # Functional: protect-files.py allowlist (avoid false positives)
     run_test "protect-files allows .env.example" "echo '{\"tool_input\":{\"file_path\":\"/app/.env.example\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"
     run_test "protect-files allows bun.lockb" "echo '{\"tool_input\":{\"file_path\":\"/app/bun.lockb\"}}' | python3 '$hooks_dir/protect-files.py' 2>/dev/null"

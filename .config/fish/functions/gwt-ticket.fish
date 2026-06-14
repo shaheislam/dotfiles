@@ -1946,6 +1946,10 @@ $prompt_suffix"
     # repo_root is already resolved via realpath at line 676 — reuse directly
     # Compute paths: container-internal when using devcon, host paths otherwise
     set -l add_dir_path $repo_root
+    # Export the worktree boundary so the worktree-boundary.py PreToolUse hook
+    # can refuse Edit/Write/MultiEdit operations on paths outside this worktree.
+    # See .claude/hooks/worktree-boundary.py for the enforcement logic.
+    set -gx WORKTREE_BOUNDARY $repo_root
     set -l worktree_basename (basename $worktree_path)
     set -l repo_basename $repo
     if $use_devcon

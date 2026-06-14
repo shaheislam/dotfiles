@@ -432,6 +432,7 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
     const payload = buildToolPayload(tool, args)
     maybeBlock(await runScript(hookPath("settings-edit-redirect.py"), payload))
     maybeBlock(await runScript(hookPath("protect-files.py"), payload))
+    maybeBlock(await runScript(hookPath("worktree-boundary.py"), payload))
   }
 
   async function appendHookMessage(script: string, payload: Record<string, unknown>, useSessionContext = false) {

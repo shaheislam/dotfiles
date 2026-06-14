@@ -228,6 +228,10 @@
           {
             "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/protect-files.py\"; test -f \"$f\" || f=\"$HOME/.claude/hooks/protect-files.py\"; test -f \"$f\" && python3 \"$f\" || true",
             "type": "command"
+          },
+          {
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-boundary.py\"; test -f \"$f\" || f=\"$HOME/.claude/hooks/worktree-boundary.py\"; if test -f \"$f\"; then python3 \"$f\"; fi",
+            "type": "command"
           }
         ],
         "matcher": "Edit|Write|MultiEdit|ApplyPatch"
