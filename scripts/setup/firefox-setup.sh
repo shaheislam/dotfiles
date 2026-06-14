@@ -362,6 +362,30 @@ capture_current_prefs() {
     python3 "$CAPTURE_PREFS_HELPER" --firefox-root "$FIREFOX_ROOT" --user-js "$USER_JS_SOURCE" "$@"
 }
 
+regenerate_sidebery_import() {
+    # Re-emit .config/sidebery/sidebery-import.json so panel/container bindings
+    # reflect the live containers.json (catches Throwaway / freshly-created
+    # containers on this device). Uses uv + PEP 723 inline metadata in the
+    # generator, so PyYAML is auto-provisioned.
+    local repo_root="$SCRIPT_DIR/../.."
+    local generator="$repo_root/scripts/sidebery/build-import.py"
+
+    [[ -f "$generator" ]] || return 0
+    command -v uv >/dev/null 2>&1 || {
+        log_info "uv not installed; skipping Sidebery import regeneration"
+        return 0
+    }
+
+    log_info "Regenerating Sidebery import JSON..."
+    if uv run --script "$generator" >/dev/null 2>&1; then
+        log_success "Sidebery import regenerated"
+        return 0
+    fi
+
+    log_warning "Sidebery import regeneration failed (run manually: uv run --script $generator)"
+    return 1
+}
+
 recommend_tab_discard_policy() {
     if ! command -v python3 >/dev/null 2>&1; then
         log_warning "python3 is required to recommend Firefox tab discard policy"
@@ -463,6 +487,7 @@ main() {
     install_user_chrome || had_warnings=true
     install_sidebery_css || had_warnings=true
     install_user_content || had_warnings=true
+    regenerate_sidebery_import || had_warnings=true
 
     if [[ "$had_warnings" == "true" ]]; then
         log_warning "Firefox dotfiles setup completed with warnings"
