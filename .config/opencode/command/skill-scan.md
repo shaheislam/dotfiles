@@ -1,0 +1,1 @@
+../../../.claude/commands/skill-scan.md

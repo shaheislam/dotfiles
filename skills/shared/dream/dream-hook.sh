@@ -9,8 +9,10 @@
 
 set -euo pipefail
 
-# Guard: never spawn a dream from inside a dream (child session spawned by claude -p)
-[ -n "${CLAUDE_PARENT_SESSION_ID:-}" ] && exit 0
+# Guard: never spawn a dream from inside a dream.
+# CLAUDE_PARENT_SESSION_ID is SDK-internal and NOT inherited by OS-spawned Stop hook
+# subprocesses. Pass DREAM_SESSION=1 explicitly at claude -p spawn instead.
+[ -n "${DREAM_SESSION:-}" ] && exit 0
 
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$SKILL_DIR/.dream-config"
@@ -29,6 +31,17 @@ LINE_LIMIT=$(read_config "DREAM_LINE_LIMIT" "200")
 
 # Run the condition check
 if bash "$SKILL_DIR/should-dream.sh" 2>/dev/null; then
+    # Write .last-dream NOW as a mutex lock before spawning the dream.
+    # Parallel Stop hooks all check should-dream.sh before any dream completes.
+    # Without this lock they all see the stale timestamp and each spawn a dream
+    # → storm. Writing here collapses parallel triggers to one.
+    for _d in "$HOME/.claude/projects/"*/memory/; do
+        if [[ -d "$_d" ]]; then
+            date +%s >"$_d/.last-dream"
+            break
+        fi
+    done
+
     # Write status: running
     echo "running" >"$STATUS_FILE"
 
@@ -53,8 +66,8 @@ For detailed guidance on the 4-phase consolidation process, read ~/.claude/skill
 
 ${SESSION_CONTEXT}"
 
-    # Spawn dream in background
-    nohup claude -p "$DREAM_PROMPT" \
+    # Spawn dream in background; DREAM_SESSION=1 prevents re-entry via Stop hook
+    nohup env DREAM_SESSION=1 claude -p "$DREAM_PROMPT" \
         --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
         >"/tmp/dream-$(date +%Y%m%d-%H%M%S).log" 2>&1 &
 

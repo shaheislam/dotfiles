@@ -11,8 +11,10 @@
 
 set -euo pipefail
 
-# Guard: never trigger dream from inside a dream (child session spawned by claude -p)
-[ -n "${CLAUDE_PARENT_SESSION_ID:-}" ] && exit 1
+# Guard: never trigger dream from inside a dream.
+# CLAUDE_PARENT_SESSION_ID is NOT inherited by OS-spawned subprocesses — use DREAM_SESSION=1
+# passed explicitly at the claude -p spawn site in dream-hook.sh instead.
+[ -n "${DREAM_SESSION:-}" ] && exit 1
 
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$SKILL_DIR/.dream-config"

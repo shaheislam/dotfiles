@@ -309,3 +309,6 @@ awscli-bundle/
 /validate-macos.sh
 /UNIFIED-SETUP.md
 /license_header
+
+# SkillSpector ephemeral scan reports (canonical baseline stays in .skillspector/)
+.local/share/skillscan/

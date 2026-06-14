@@ -196,6 +196,7 @@ brew "age"
 brew "hadolint"
 brew "popeye"    # Kubernetes cluster scanner
 brew "conftest"  # Policy testing with OPA/Rego
+brew "yara"      # Pattern matching engine (system lib for yara-python / skillspector)
 
 # Code Quality Tools
 brew "sonar-scanner"  # SonarQube scanner CLI for local code quality analysis
