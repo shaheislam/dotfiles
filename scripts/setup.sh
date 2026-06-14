@@ -2171,15 +2171,6 @@ print(d.get('stdout', '').split(chr(10))[0][:120])
                 log_verbose "Codex open destination setup completed with warnings"
         fi
 
-        # Overlay managed Firefox prefs (user.js) into the active profile.
-        # Gated on Firefox being installed; idempotent (backs up any existing user.js).
-        if [[ -d "/Applications/Firefox.app" ]] && [[ -f "$DOTFILES_ROOT/scripts/firefox/install-user-js.sh" ]]; then
-            print_step "Installing Firefox user.js overlay..."
-            bash "$DOTFILES_ROOT/scripts/firefox/install-user-js.sh" >/dev/null 2>&1 &&
-                print_success "Firefox user.js installed (restart Firefox to apply)" ||
-                log_verbose "Firefox user.js install completed with warnings"
-        fi
-
         # Install ClaudeUsage menu bar app (subscription usage tracker)
         # https://github.com/linuxlewis/claude-usage
         if [[ -d "/Applications/ClaudeUsage.app" ]]; then

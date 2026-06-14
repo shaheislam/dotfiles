@@ -37,6 +37,17 @@ user_pref("extensions.pocket.enabled", false);
 user_pref("toolkit.telemetry.enabled", false);
 user_pref("toolkit.telemetry.unified", false);
 
+// Enable history sync so cross-device frecency drives Sidebery routing recs.
+user_pref("services.sync.engine.history", true);
+
+// Send DNT + GPC privacy signals.
+user_pref("privacy.donottrackheader.enabled", true);
+user_pref("privacy.globalprivacycontrol.enabled", true);
+user_pref("privacy.globalprivacycontrol.functionality.enabled", true);
+
+// Closing the last tab in a window shouldn't close the window itself.
+user_pref("browser.tabs.closeWindowWithLastTab", false);
+
 // BEGIN captured Firefox preferences
 // Generated from the local Firefox default profile by scripts/setup/firefox-capture-prefs.py.
 // The helper excludes profile/session/device-specific prefs before writing this block.

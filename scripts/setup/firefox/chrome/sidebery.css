@@ -1,100 +1,65 @@
-/* Dotfiles-managed Sidebery transparency overlay. */
-/* Use with Sidebery Appearance > Color scheme > dark. */
-/* Imported by userContent.css; paste the rules inside @-moz-document into Sidebery's Styles editor if needed. */
+/* Dotfiles-managed Sidebery theme overlay — miniautumn palette.
+ *
+ * This is the CHROME-CSS fallback path (applied by Firefox to the
+ * Sidebery extension iframe via @-moz-document). Useful before
+ * Sidebery's own sync has propagated `.config/sidebery/sidebar.css`
+ * on a fresh device.
+ *
+ * Canonical source for Sidebery internal styles lives at
+ * `.config/sidebery/sidebar.css` and is bundled into
+ * `sidebery-import.json` for Sidebery's settings storage.
+ *
+ * Targets Sidebery 5.x variable names (unprefixed `--frame-bg` etc.).
+ * Tested against Sidebery 5.5.2; revisit if variable naming changes.
+ */
 
-/* Sidebery sidebar/group pages are moz-extension URLs with profile-local UUIDs. */
-/* Tested against Sidebery 5.x vars/classes; revisit if Sidebery changes its internal DOM. */
-@-moz-document regexp("^moz-extension://.*/sidebar/index\\.html.*"), regexp("^moz-extension://.*/group/group\\.html.*") {
+@-moz-document regexp("^moz-extension://.*/sidebar/index\\.html.*"),
+               regexp("^moz-extension://.*/group/group\\.html.*") {
   :root,
   #root {
     color-scheme: dark;
 
-    --s-frame-bg: rgba(26, 27, 38, 0.34) !important;
-    --s-frame-fg: #c0caf5 !important;
-    --s-toolbar-bg: rgba(36, 40, 59, 0.28) !important;
-    --s-toolbar-fg: #c0caf5 !important;
-    --s-toolbar-border: rgba(122, 162, 247, 0.12) !important;
-    --s-act-el-bg: rgba(122, 162, 247, 0.22) !important;
-    --s-act-el-fg: #ffffff !important;
-    --s-act-el-border: rgba(122, 162, 247, 0.34) !important;
-    --s-popup-bg: rgba(36, 40, 59, 0.86) !important;
-    --s-popup-border: rgba(122, 162, 247, 0.20) !important;
-    --s-accent: #7aa2f7 !important;
-    --general-border-radius: 8px !important;
-    --tabs-normal-bg: rgba(36, 40, 59, 0.30) !important;
-    --tabs-activated-bg: rgba(122, 162, 247, 0.22) !important;
-    --tabs-activated-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.32), 0 8px 20px rgba(0, 0, 0, 0.18) !important;
+    --frame-bg: #2f1c10 !important;
+    --frame-fg: #e0c5a0 !important;
+    --frame-border: #4a2f1f !important;
+
+    --tabs-fg: #e0c5a0 !important;
+    --tabs-bg-hover: #3d2618 !important;
+    --tabs-activated-bg: #4a2f1f !important;
+    --tabs-activated-fg: #ffe6c5 !important;
+    --tabs-activated-bg-shadow: inset 2px 0 0 0 #e0826a !important;
+    --tabs-border-radius: 6px !important;
+    --tabs-height: 30px !important;
+    --tabs-indent: 8px !important;
+
+    --tabs-loading-fg: #cfa15c !important;
+    --tabs-audio-fg: #62a8a2 !important;
+    --tabs-pinned-bg: #3a2316 !important;
+
+    --bookmarks-fg: #e0c5a0 !important;
+    --bookmarks-folder-fg: #cfa15c !important;
+
+    --nav-btn-fg: #e0c5a0 !important;
+    --nav-btn-bg-hover: #3d2618 !important;
+    --nav-btn-bg-active: #4a2f1f !important;
+
+    --container-personal-fg: #e0826a !important;
+    --container-work-fg: #7596a4 !important;
+    --container-shopping-fg: #9aa055 !important;
+    --container-banking-fg: #cfa15c !important;
+    --container-finance-fg: #b18ec7 !important;
   }
 
-  html,
-  body,
-  #root_container,
-  #root,
-  .main-box,
-  .central-box,
-  .panel-box,
-  .panel,
-  .TabsPanel,
-  .ScrollBox,
-  .scroll-container,
-  .AnimatedTabList,
-  .PinnedTabsBar,
-  .NavigationBar,
-  .BottomBar,
-  .TabsPanel .new-tab-btns,
-  .TabsPanel .bottom-space {
-    background-color: transparent !important;
+  #root.root {
+    background: var(--frame-bg) !important;
+    color: var(--frame-fg) !important;
+    font-feature-settings: "ss01", "cv11";
   }
 
-  body {
-    background: linear-gradient(180deg, rgba(26, 27, 38, 0.62), rgba(26, 27, 38, 0.34)) !important;
-    color: #c0caf5 !important;
+  .Tab[data-active="true"] {
+    font-weight: 600;
   }
 
-  #root {
-    backdrop-filter: blur(14px) saturate(1.12) !important;
-  }
-
-  .Tab .body,
-  .TabsPanel .new-tab-btn,
-  .Sidebar .tool-btn,
-  .NavigationBar .nav-item {
-    background-color: rgba(36, 40, 59, 0.26) !important;
-    box-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.10) !important;
-  }
-
-  .Tab:hover .body,
-  .TabsPanel .new-tab-btn:hover,
-  .Sidebar .tool-btn:hover,
-  .NavigationBar .nav-item:hover {
-    background-color: rgba(122, 162, 247, 0.12) !important;
-  }
-
-  .Tab[data-active="true"] .body,
-  .NavigationBar .nav-item[data-active="true"],
-  .NavigationBar .nav-item[data-sel="true"] {
-    background-color: rgba(122, 162, 247, 0.22) !important;
-    box-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.34), 0 8px 20px rgba(0, 0, 0, 0.18) !important;
-  }
-
-  .Tab[data-selected="true"] .body:before,
-  .Tab[data-selected="true"]:hover .body:before,
-  .Tab[data-selected="true"]:active .body:before {
-    background-color: rgba(122, 162, 247, 0.16) !important;
-    box-shadow: inset 0 0 0 1px rgba(122, 162, 247, 0.36) !important;
-  }
-
-  .NavigationBar .hidden-panels-popup,
-  .CtxMenu,
-  .Popup {
-    background-color: rgba(36, 40, 59, 0.86) !important;
-    border: 1px solid rgba(122, 162, 247, 0.18) !important;
-    border-radius: 10px !important;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.32) !important;
-  }
-
-  .ScrollBox .top-shadow[data-show="true"],
-  .ScrollBox .bottom-shadow[data-show="true"] {
-    opacity: 0.45 !important;
-  }
+  .Tab .audio { color: var(--tabs-audio-fg) !important; }
+  .Tab .progress-spinner { stroke: var(--tabs-loading-fg) !important; }
 }
