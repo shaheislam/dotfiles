@@ -32,7 +32,20 @@ Pick sidebery-import.json, tick "Sidebar (panels, navigation, ...)"
 Pin top tabs from pinning-helper.md manually (~90s)
 ```
 
-## Cross-device portability
+## Cross-device portability — what's automatic vs manual
+
+| Layer | Mechanism | First-device | Subsequent devices |
+|---|---|---|---|
+| YAML/JSON/CSS SoT | `git` + `stow` | edit + commit | `git pull` |
+| Firefox prefs (`user.js`) | `scripts/setup.sh` calls `scripts/firefox/install-user-js.sh` automatically when Firefox is detected | runs during full setup | re-runs on next `setup.sh`, or invoke manually |
+| Firefox containers (Personal/Work/Banking/Shopping/Throwaway) | Firefox Sync's Multi-Account Containers engine | create `Throwaway` once via `about:preferences#containers` | Sync propagates within minutes |
+| Sidebery panels + rules + CSS + keybindings | **Manual import** OR Sidebery's own sync feature | import `sidebery-import.json` via Sidebery → Settings → Help → Import | either re-import per device, OR enable Sidebery → Settings → Help → **Sync** to auto-propagate |
+| Firefox history (used for routing recommendations) | `services.sync.engine.history` = true (set by `user.js`) | first sync after toggle | merged automatically |
+| Keybinding application | manual via Sidebery UI / `about:addons` | apply per `keymap-checklist.md` | re-apply OR rely on Sidebery sync |
+
+**TL;DR**: dotfiles + stow + setup.sh handles the source-of-truth + the prefs layer automatically. Sidebery's *applied state* needs either (a) a one-time import per device, or (b) Sidebery's own sync toggled on so the first device propagates to the rest. **Option (b) is recommended** — Sidebery → Settings → Help → Sync → enable. Then subsequent devices just need `git pull && stow . && setup.sh` and Sidebery picks up the import via its own sync.
+
+## Cross-device portability — implementation details
 
 This profile is sync'd via Firefox Sync. The design assumes that:
 
