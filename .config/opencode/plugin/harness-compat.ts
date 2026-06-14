@@ -77,6 +77,10 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
   const messageSessionIDs = new Map<string, string>()
   const messageOrder: string[] = []
   const sessionParentIDs = new Map<string, string | null>()
+  // Per-session project directory, extracted defensively from session.created.
+  // Resolves the launchd-server shared-state problem where the closure-captured
+  // projectDir is pinned to whatever the OpenCode server first booted with.
+  const sessionProjectDirs = new Map<string, string>()
   const seenPromptMessages = new Set<string>()
   let currentSessionID: string | null = null
   let shutdownHandled = false
@@ -428,11 +432,26 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
     }
   }
 
+  function resolveSessionBoundary(): string {
+    // Prefer per-session directory tracked from session.created. Falls back to
+    // closure-captured projectDir, which is the OpenCode server's startup dir
+    // (often stale across worktrees in the shared-launchd model).
+    if (currentSessionID) {
+      const dir = sessionProjectDirs.get(currentSessionID)
+      if (dir) return dir
+    }
+    return projectDir
+  }
+
   async function handleWritePreTool(tool: string, args: Record<string, unknown>) {
     const payload = buildToolPayload(tool, args)
     maybeBlock(await runScript(hookPath("settings-edit-redirect.py"), payload))
     maybeBlock(await runScript(hookPath("protect-files.py"), payload))
-    maybeBlock(await runScript(hookPath("worktree-boundary.py"), payload))
+    maybeBlock(
+      await runScript(hookPath("worktree-boundary.py"), payload, {
+        WORKTREE_BOUNDARY: resolveSessionBoundary(),
+      }),
+    )
   }
 
   async function appendHookMessage(script: string, payload: Record<string, unknown>, useSessionContext = false) {
@@ -720,10 +739,24 @@ export const HarnessCompatPlugin: Plugin = async ({ directory, worktree }) => {
     event: async ({ event }) => {
       switch (event.type) {
         case "session.created": {
-          const session = event.properties.info as { id?: string; parentID?: string | null }
+          const session = event.properties.info as {
+            id?: string
+            parentID?: string | null
+            directory?: string
+            worktree?: string
+            cwd?: string
+            path?: string
+          }
           if (!session?.id) break
 
           sessionParentIDs.set(session.id, session.parentID ?? null)
+          // Defensive: try multiple field names since the OpenCode SDK shape
+          // for session directory is undocumented here. First non-empty wins.
+          // If none match, fall back to the closure-captured projectDir at runtime.
+          const sessionDir = session.directory || session.worktree || session.cwd || session.path
+          if (typeof sessionDir === "string" && sessionDir.length > 0) {
+            sessionProjectDirs.set(session.id, sessionDir)
+          }
           if (!isPrimarySession(session.id)) {
             break
           }
